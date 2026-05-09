@@ -1,0 +1,33 @@
+#include "app.h"
+
+#include <utility>
+
+#include "browser_window.h"
+
+namespace vimbrowser {
+
+App::App(std::string initial_url, bool disable_gpu)
+    : initial_url_(std::move(initial_url)), disable_gpu_(disable_gpu) {}
+
+void App::OnBeforeCommandLineProcessing(
+    const CefString& process_type,
+    CefRefPtr<CefCommandLine> command_line) {
+  // Keep the shell minimal and deterministic. These are Chromium switches, not
+  // external UI toolkits.
+  command_line->AppendSwitch("disable-extensions");
+  command_line->AppendSwitch("disable-background-networking");
+  command_line->AppendSwitch("disable-sync");
+  command_line->AppendSwitch("no-default-browser-check");
+  command_line->AppendSwitchWithValue("disable-features", "Translate,MediaRouter");
+
+  if (disable_gpu_) {
+    command_line->AppendSwitch("disable-gpu");
+  }
+}
+
+void App::OnContextInitialized() {
+  CefRefPtr<BrowserWindow> window(new BrowserWindow(initial_url_));
+  window->Create();
+}
+
+}  // namespace vimbrowser

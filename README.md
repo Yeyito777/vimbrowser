@@ -10,19 +10,58 @@ Goals:
 - no Qt, no QtWebEngine, no qutebrowser dependency
 - minimal C++ source, built directly against CEF headers/wrapper
 
-Bootstrap/build:
+## Build
 
 ```bash
-./scripts/bootstrap-cef.sh
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/vimbrowser --disable-gpu https://example.com
+make build
+make install
 ```
 
-DevTools/CDP:
+The first build downloads the Linux x86_64 CEF **minimal** binary/source
+distribution into `third_party/cef/` and builds only the small C++ shell plus the
+CEF wrapper library.
 
-- remote debugging defaults to `127.0.0.1:9222`
-- pass `--remote-debugging-port=0` to disable or another port to override
+Run:
 
-Current state: skeleton app with one browser window, URL startup, basic app/client
-hooks, and a clean place to build vim command handling next.
+```bash
+vimbrowser --disable-gpu https://example.com
+```
+
+or directly:
+
+```bash
+./build/Release/vimbrowser --disable-gpu https://example.com
+```
+
+`~/.local/bin/vimbrowser` is a tiny launcher script that `cd`s into
+`build/Release` before execing the binary. CEF needs that runtime directory for
+`icudtl.dat`, pak files, locales, and shared libraries.
+
+## DevTools / CDP
+
+Remote debugging defaults to `127.0.0.1:9222`:
+
+```bash
+curl http://127.0.0.1:9222/json/version
+curl http://127.0.0.1:9222/json/list
+```
+
+Use another port:
+
+```bash
+vimbrowser --remote-debugging-port=9333 https://example.com
+```
+
+Use `--remote-debugging-port=0` to disable remote CDP.
+
+## Current shell behavior
+
+- one top-level CEF Views window
+- Alloy runtime style, no Chrome toolbar
+- URL/search startup argument
+- persistent cache under `~/.cache/vimbrowser/cef` by default
+- `Ctrl+Shift+I` opens DevTools
+- `r` reloads when focus is not in an editable field
+
+Next work: native vim command layer (`o`, `t`, command bar, tab model, hints)
+on top of this CEF/CDP core.
