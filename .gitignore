@@ -1,0 +1,9 @@
+/build/
+/third_party/cef/
+/third_party/downloads/
+*.o
+*.a
+*.so
+*.log
+.cache/
+compile_commands.json
