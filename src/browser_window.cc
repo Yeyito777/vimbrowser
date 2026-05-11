@@ -239,12 +239,6 @@ void BrowserWindow::BuildChrome() {
   command_panel_ = CefPanel::CreatePanel(this);
   command_panel_->SetID(kCommandPanelId);
   command_panel_->SetBackgroundColor(theme::kAppBg);
-  CefBoxLayoutSettings command_settings = {};
-  command_settings.size = sizeof(command_settings);
-  command_settings.horizontal = false;
-  command_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  CefRefPtr<CefBoxLayout> command_layout =
-      command_panel_->SetToBoxLayout(command_settings);
 
   command_separator_panel_ = CefPanel::CreatePanel(nullptr);
   command_separator_panel_->SetID(kCommandSeparatorPanelId);
@@ -256,7 +250,6 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_->SetBackgroundColor(theme::kAppBg);
   command_content_panel_->SetToFillLayout();
   command_panel_->AddChildView(command_content_panel_);
-  command_layout->SetFlexForView(command_content_panel_, 1);
 
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
@@ -693,6 +686,9 @@ void BrowserWindow::Layout() {
   command_separator_panel_->SetSize(CefSize(width, 1));
   command_content_panel_->SetSize(CefSize(width, kCommandHeight));
   command_field_->SetSize(CefSize(width, kCommandHeight));
+  command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
+  command_content_panel_->SetBounds(CefRect(0, 1, width, kCommandHeight));
+  command_field_->SetBounds(CefRect(0, 0, width, kCommandHeight));
 
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
@@ -711,9 +707,6 @@ void BrowserWindow::Layout() {
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();
-  }
-  if (command_panel_->GetLayout()) {
-    command_panel_->Layout();
   }
   if (command_content_panel_->GetLayout()) {
     command_content_panel_->Layout();
