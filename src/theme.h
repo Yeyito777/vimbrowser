@@ -8,6 +8,8 @@ constexpr cef_color_t Rgb(int r, int g, int b) {
   return CefColorSetARGB(255, r, g, b);
 }
 
+constexpr cef_color_t kTransparent = CefColorSetARGB(0, 0, 0, 0);
+
 // Whale theme, mirrored from ~/Workspace/exocortex/tui/src/themes/whale.ts.
 constexpr cef_color_t kAppBg = Rgb(0, 5, 15);             // #00050f
 constexpr cef_color_t kTopbarBg = Rgb(29, 155, 240);      // #1d9bf0
