@@ -65,3 +65,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 
 Next work: native vim command layer (`o`, `t`, command bar, tab model, hints)
 on top of this CEF/CDP core.
+
+## License
+
+MIT. See `LICENSE`.

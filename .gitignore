@@ -1,9 +1,13 @@
 /build/
 /third_party/cef/
 /third_party/downloads/
+/third_party/.cef-extract.*/
 *.o
 *.a
 *.so
 *.log
 .cache/
 compile_commands.json
+CMakeUserPresets.json
+core
+core.*
