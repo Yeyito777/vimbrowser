@@ -71,6 +71,12 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 Next work: hints and broader qutebrowser command compatibility on top of this
 CEF/CDP core.
 
+## Design
+
+The visual source of truth is `docs/design.md`. vimbrowser follows the
+Exocortex TUI whale theme: terminal-esque, square corners, explicit dark chrome
+backgrounds, and `#ffffff` for normal non-dimmed text.
+
 ## License
 
 MIT. See `LICENSE`.
