@@ -7,13 +7,15 @@
 
 namespace vimbrowser {
 
+class BrowserWindow;
+
 class BrowserClient final : public CefClient,
                             public CefLifeSpanHandler,
                             public CefLoadHandler,
                             public CefKeyboardHandler,
                             public CefDevToolsMessageObserver {
  public:
-  BrowserClient();
+  explicit BrowserClient(BrowserWindow* owner = nullptr);
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -41,6 +43,7 @@ class BrowserClient final : public CefClient,
   void ShowDevTools();
 
  private:
+  BrowserWindow* owner_ = nullptr;
   CefRefPtr<CefBrowser> browser_;
   CefRefPtr<CefRegistration> devtools_registration_;
 

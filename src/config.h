@@ -13,5 +13,6 @@ struct Config {
 
 Config ParseConfig(int argc, char* argv[]);
 std::string ResolveUrlOrSearch(std::string input);
+std::string DisplayUrl(std::string url);
 
 }  // namespace vimbrowser

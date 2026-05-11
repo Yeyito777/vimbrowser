@@ -66,6 +66,19 @@ std::string ResolveUrlOrSearch(std::string input) {
   return "https://www.google.com/search?q=" + PercentEncode(input);
 }
 
+std::string DisplayUrl(std::string url) {
+  if (StartsWith(url, "https://")) {
+    url.erase(0, 8);
+  } else if (StartsWith(url, "http://")) {
+    url.erase(0, 7);
+  }
+  if (url.size() > 28) {
+    url.resize(27);
+    url += "...";
+  }
+  return url;
+}
+
 Config ParseConfig(int argc, char* argv[]) {
   Config config;
   config.cache_path = DefaultCachePath();

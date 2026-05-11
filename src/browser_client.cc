@@ -3,15 +3,19 @@
 #include <iostream>
 #include <string>
 
+#include "browser_window.h"
 #include "include/cef_app.h"
 
 namespace vimbrowser {
 
-BrowserClient::BrowserClient() = default;
+BrowserClient::BrowserClient(BrowserWindow* owner) : owner_(owner) {}
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
   devtools_registration_ = browser->GetHost()->AddDevToolsMessageObserver(this);
+  if (owner_) {
+    owner_->OnClientBrowserCreated(this);
+  }
   std::cout << "vimbrowser: browser ready; CDP available on remote debugging port" << std::endl;
 }
 
@@ -46,6 +50,10 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
     return false;
   }
 
+  if (owner_ && owner_->HandleBrowserKeyEvent(event)) {
+    return true;
+  }
+
   const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
   const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
 
@@ -53,11 +61,6 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
   // Chromium; this proves the CEF/CDP path is alive before we build the vim UI.
   if (ctrl && shift && event.windows_key_code == 'I') {
     ShowDevTools();
-    return true;
-  }
-
-  if (!event.focus_on_editable_field && event.windows_key_code == 'R' && !ctrl) {
-    browser->Reload();
     return true;
   }
 
