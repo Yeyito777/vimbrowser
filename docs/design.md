@@ -100,12 +100,8 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
 
 - Background: `appBg` / `#00050f` or `sidebarBg` / `#030814` depending on
   surrounding composition. Prefer `appBg` for a bottom full-width command line.
-- The bottom command/status area is always reserved in layout. It should not be a
-  floating overlay and should not appear/disappear in a way that causes page
-  layout jumps when entering command mode. In normal mode the same reserved area
-  remains available for future mode/status text.
-- In normal mode, the row displays page scroll position followed by the full
-  current URL. Long URLs stay left-anchored so the scheme/start is visible.
+- The bottom command area appears only when a command/prompt/mode needs it. It
+  is not a normal-mode informational status line.
 - Focus border/separator: `borderFocused` / `#1c94e5`, square corners only.
 - Prompt/command prefix (`open`, `open -t`): `command` / `#aed6fe` or `accent`
   if acting as a prompt marker.

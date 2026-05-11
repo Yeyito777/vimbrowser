@@ -29,9 +29,6 @@ class BrowserClient final : public CefClient,
                    ErrorCode error_code,
                    const CefString& error_text,
                    const CefString& failed_url) override;
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
-                 CefRefPtr<CefFrame> frame,
-                 int httpStatusCode) override;
 
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,
@@ -41,21 +38,14 @@ class BrowserClient final : public CefClient,
   bool OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
                          const void* message,
                          size_t message_size) override;
-  void OnDevToolsMethodResult(CefRefPtr<CefBrowser> browser,
-                              int message_id,
-                              bool success,
-                              const void* result,
-                              size_t result_size) override;
 
   CefRefPtr<CefBrowser> browser() const { return browser_; }
   void ShowDevTools();
-  void RequestScrollStatus();
 
  private:
   BrowserWindow* owner_ = nullptr;
   CefRefPtr<CefBrowser> browser_;
   CefRefPtr<CefRegistration> devtools_registration_;
-  int pending_scroll_message_id_ = 0;
 
   IMPLEMENT_REFCOUNTING(BrowserClient);
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
