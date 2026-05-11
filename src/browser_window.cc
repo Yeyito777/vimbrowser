@@ -108,6 +108,30 @@ void BrowserWindow::Create() {
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
+  UpdateStatusLine();
+  RequestActiveScrollStatus();
+}
+
+void BrowserWindow::OnClientLoadEnd(BrowserClient* client, const std::string& url) {
+  for (Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      tab.url = url;
+      RefreshSidebar();
+      if (&tab == ActiveTab()) {
+        UpdateStatusLine();
+        RequestActiveScrollStatus();
+      }
+      return;
+    }
+  }
+}
+
+void BrowserWindow::OnClientScrollStatus(BrowserClient* client,
+                                         const std::string& scroll) {
+  if (Tab* tab = ActiveTab(); tab && tab->client.get() == client) {
+    scroll_status_ = scroll.empty() ? "All" : scroll;
+    UpdateStatusLine();
+  }
 }
 
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
@@ -475,6 +499,7 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
   if (activate) {
     ActivateTab(tabs_.size() - 1);
   }
+  UpdateStatusLine();
 }
 
 void BrowserWindow::ActivateTab(size_t index) {
@@ -489,7 +514,10 @@ void BrowserWindow::ActivateTab(size_t index) {
   active_index_ = index;
   tabs_[active_index_].view->SetVisible(true);
   tabs_[active_index_].view->RequestFocus();
+  scroll_status_ = "All";
   RefreshSidebar();
+  UpdateStatusLine();
+  RequestActiveScrollStatus();
   Layout();
 }
 
@@ -539,7 +567,8 @@ void BrowserWindow::CommitCommand() {
 
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
-  SetCommandText("");
+  command_text_.clear();
+  UpdateStatusLine();
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -599,6 +628,39 @@ void BrowserWindow::SetCommandText(std::string text) {
   command_field_->SetText(command_text_);
   command_field_->SelectRange(CefRange(command_text_.size(), command_text_.size()));
   RestyleCommandText();
+}
+
+void BrowserWindow::UpdateStatusLine() {
+  if (!command_field_ || mode_ != Mode::kNormal) {
+    return;
+  }
+
+  std::string url;
+  if (Tab* tab = ActiveTab(); tab) {
+    if (tab->client && tab->client->browser() &&
+        tab->client->browser()->GetMainFrame()) {
+      url = tab->client->browser()->GetMainFrame()->GetURL().ToString();
+    }
+    if (url.empty()) {
+      url = tab->url;
+    }
+  }
+
+  const std::string status = scroll_status_ + "  " + url;
+  command_field_->SetText(status);
+  // Keep normal-mode status anchored at the beginning. Long URLs should show
+  // their scheme/start, not force-scroll the read-only field to the tail.
+  command_field_->SelectRange(CefRange(0, 0));
+  command_field_->SetTextColor(theme::kText);
+  command_field_->ApplyTextColor(theme::kText, CefRange());
+  command_field_->ApplyTextColor(theme::kVimNormal,
+                                 CefRange(0, scroll_status_.size()));
+}
+
+void BrowserWindow::RequestActiveScrollStatus() {
+  if (Tab* tab = ActiveTab(); tab && tab->client) {
+    tab->client->RequestScrollStatus();
+  }
 }
 
 void BrowserWindow::Layout() {
@@ -690,7 +752,11 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     command_field_->SetSelectionTextColor(theme::kText);
     command_field_->SetSelectionBackgroundColor(theme::kSelectionBg);
     command_field_->SetBackgroundColor(theme::kAppBg);
-    RestyleCommandText();
+    if (mode_ == Mode::kNormal) {
+      UpdateStatusLine();
+    } else {
+      RestyleCommandText();
+    }
   }
 }
 

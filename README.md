@@ -67,6 +67,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - `Shift+j` / `Shift+k` switch tabs
 - left qutebrowser-style tab sidebar
 - always-reserved bottom qutebrowser-style command/status line
+- normal-mode status line shows page scroll position and full current URL
 
 Next work: hints and broader qutebrowser command compatibility on top of this
 CEF/CDP core.
