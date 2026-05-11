@@ -224,7 +224,7 @@ void BrowserWindow::BuildChrome() {
 
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
-  command_field_->SetFontList("monospace, 13px");
+  command_field_->SetFontList("JetBrains Mono, 13px");
   command_field_->SetReadOnly(true);
   command_field_->SetFocusable(false);
   command_field_->SetTextColor(theme::kText);
@@ -714,7 +714,7 @@ std::string BrowserWindow::SidebarHtml() const {
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#030814;color:#ffffff;font:12px monospace;}"
+         "background:#030814;color:#ffffff;font:12px 'JetBrains Mono', monospace;}"
          ".row{height:24px;line-height:24px;white-space:nowrap;overflow:hidden;"
          "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;}"
          ".row.active{background:#0f193c;color:#ffffff;}"
