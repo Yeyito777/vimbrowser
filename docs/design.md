@@ -102,6 +102,8 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
   surrounding composition. Prefer `appBg` for a bottom full-width command line.
 - The bottom command area appears only when a command/prompt/mode needs it. It
   is not a normal-mode informational status line.
+- When visible, the command area overlays the page bottom. It must not resize,
+  reflow, push, or otherwise shift web content.
 - Focus border/separator: `borderFocused` / `#1c94e5`, square corners only.
 - Prompt/command prefix (`open`, `open -t`): `command` / `#aed6fe` or `accent`
   if acting as a prompt marker.

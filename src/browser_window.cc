@@ -239,12 +239,14 @@ void BrowserWindow::BuildChrome() {
   command_field_->SetBackgroundColor(theme::kAppBg);
   command_field_->SetPlaceholderText("");
   command_content_panel_->AddChildView(command_field_);
-  command_panel_->SetVisible(false);
-  root_panel_->AddChildView(command_panel_);
+  command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
+                                            false);
+  command_overlay_->SetVisible(false);
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
+  command_overlay_ = nullptr;
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
@@ -500,7 +502,7 @@ void BrowserWindow::ActivateRelative(int delta) {
 void BrowserWindow::BeginCommand(Mode mode) {
   mode_ = mode;
   SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
-  command_panel_->SetVisible(true);
+  command_overlay_->SetVisible(true);
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -535,7 +537,7 @@ void BrowserWindow::CommitCommand() {
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
   SetCommandText("");
-  command_panel_->SetVisible(false);
+  command_overlay_->SetVisible(false);
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -605,9 +607,11 @@ void BrowserWindow::Layout() {
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
-  const int command_total_height = mode_ == Mode::kNormal ? 0 : kCommandHeight + 1;
-  const int main_height = std::max(1, height - command_total_height);
-  command_panel_->SetVisible(mode_ != Mode::kNormal);
+  const int command_total_height = kCommandHeight + 1;
+  const int main_height = height;
+  if (command_overlay_) {
+    command_overlay_->SetVisible(mode_ != Mode::kNormal);
+  }
 
   root_panel_->SetBounds(CefRect(0, 0, width, height));
   RestyleView(root_panel_);
@@ -631,6 +635,10 @@ void BrowserWindow::Layout() {
   command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
   command_content_panel_->SetBounds(CefRect(0, 1, width, kCommandHeight));
   command_field_->SetBounds(CefRect(0, 0, width, kCommandHeight));
+  if (command_overlay_) {
+    command_overlay_->SetBounds(CefRect(0, std::max(0, height - command_total_height),
+                                        width, command_total_height));
+  }
 
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
