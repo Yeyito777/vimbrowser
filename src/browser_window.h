@@ -79,6 +79,8 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> root_panel_;
   CefRefPtr<CefPanel> main_panel_;
   CefRefPtr<CefPanel> sidebar_panel_;
+  CefRefPtr<CefPanel> sidebar_content_panel_;
+  CefRefPtr<CefPanel> sidebar_border_panel_;
   CefRefPtr<BrowserClient> sidebar_client_;
   CefRefPtr<CefBrowserView> sidebar_view_;
   CefRefPtr<CefPanel> content_panel_;

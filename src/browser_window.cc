@@ -24,6 +24,9 @@ constexpr int kCommandPanelId = 104;
 constexpr int kCommandFieldId = 105;
 constexpr int kCommandSeparatorPanelId = 106;
 constexpr int kCommandContentPanelId = 107;
+constexpr int kSidebarContentPanelId = 108;
+constexpr int kSidebarBorderPanelId = 109;
+constexpr int kCommandOverlayWidth = 10000;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -138,7 +141,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
       nullptr, this);
   sidebar_view_->SetPreferAccelerators(true);
   sidebar_view_->SetVisible(true);
-  sidebar_panel_->AddChildView(sidebar_view_);
+  sidebar_content_panel_->AddChildView(sidebar_view_);
 
   window_->CenterWindow(CefSize(1200, 800));
   window_->Show();
@@ -170,8 +173,25 @@ void BrowserWindow::BuildChrome() {
   sidebar_panel_ = CefPanel::CreatePanel(this);
   sidebar_panel_->SetID(kSidebarPanelId);
   sidebar_panel_->SetBackgroundColor(theme::kSidebarBg);
-  sidebar_panel_->SetToFillLayout();
+  CefBoxLayoutSettings sidebar_settings = {};
+  sidebar_settings.size = sizeof(sidebar_settings);
+  sidebar_settings.horizontal = true;
+  sidebar_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  CefRefPtr<CefBoxLayout> sidebar_layout =
+      sidebar_panel_->SetToBoxLayout(sidebar_settings);
   main_panel_->AddChildView(sidebar_panel_);
+
+  sidebar_content_panel_ = CefPanel::CreatePanel(nullptr);
+  sidebar_content_panel_->SetID(kSidebarContentPanelId);
+  sidebar_content_panel_->SetBackgroundColor(theme::kSidebarBg);
+  sidebar_content_panel_->SetToFillLayout();
+  sidebar_panel_->AddChildView(sidebar_content_panel_);
+  sidebar_layout->SetFlexForView(sidebar_content_panel_, 1);
+
+  sidebar_border_panel_ = CefPanel::CreatePanel(nullptr);
+  sidebar_border_panel_->SetID(kSidebarBorderPanelId);
+  sidebar_border_panel_->SetBackgroundColor(theme::kAccent);
+  sidebar_panel_->AddChildView(sidebar_border_panel_);
 
   content_panel_ = CefPanel::CreatePanel(nullptr);
   content_panel_->SetID(kContentPanelId);
@@ -182,18 +202,17 @@ void BrowserWindow::BuildChrome() {
 
   command_panel_ = CefPanel::CreatePanel(this);
   command_panel_->SetID(kCommandPanelId);
-  command_panel_->SetBackgroundColor(theme::kBorderFocused);
+  command_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings command_settings = {};
   command_settings.size = sizeof(command_settings);
   command_settings.horizontal = false;
-  command_settings.inside_border_insets = CefInsets(0, 1, 1, 1);
   command_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
   CefRefPtr<CefBoxLayout> command_layout =
       command_panel_->SetToBoxLayout(command_settings);
 
   command_separator_panel_ = CefPanel::CreatePanel(nullptr);
   command_separator_panel_->SetID(kCommandSeparatorPanelId);
-  command_separator_panel_->SetBackgroundColor(theme::kBorderFocused);
+  command_separator_panel_->SetBackgroundColor(theme::kAccent);
   command_panel_->AddChildView(command_separator_panel_);
 
   command_content_panel_ = CefPanel::CreatePanel(this);
@@ -232,6 +251,8 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_panel_ = nullptr;
   content_panel_ = nullptr;
   command_separator_panel_ = nullptr;
+  sidebar_border_panel_ = nullptr;
+  sidebar_content_panel_ = nullptr;
   sidebar_view_ = nullptr;
   sidebar_client_ = nullptr;
   sidebar_panel_ = nullptr;
@@ -346,14 +367,20 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarWidth, 1);
   }
+  if (id == kSidebarContentPanelId) {
+    return CefSize(kSidebarWidth - 1, 1);
+  }
+  if (id == kSidebarBorderPanelId) {
+    return CefSize(1, 1);
+  }
   if (id == kMainPanelId || id == kRootPanelId) {
     return CefSize(1200, 800);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1200, kCommandHeight + 3);
+    return CefSize(kCommandOverlayWidth, kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(1200, kCommandHeight + 2);
+    return CefSize(kCommandOverlayWidth, kCommandHeight);
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
@@ -369,14 +396,20 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarWidth, 1);
   }
+  if (id == kSidebarContentPanelId) {
+    return CefSize(kSidebarWidth - 1, 1);
+  }
+  if (id == kSidebarBorderPanelId) {
+    return CefSize(1, 1);
+  }
   if (id == kCommandFieldId) {
     return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight + 3);
+    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight + 2);
+    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight);
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(1, mode_ == Mode::kNormal ? 0 : 1);
@@ -390,10 +423,10 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
     return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight);
   }
   if (id == kCommandPanelId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight + 3);
+    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight + 2);
+    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight);
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(0, mode_ == Mode::kNormal ? 0 : 1);
@@ -569,7 +602,7 @@ void BrowserWindow::Layout() {
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
-  const int overlay_height = kCommandHeight + 3;
+  const int overlay_height = kCommandHeight + 1;
   if (command_overlay_) {
     command_overlay_->SetVisible(mode_ != Mode::kNormal);
   }
@@ -578,6 +611,8 @@ void BrowserWindow::Layout() {
   RestyleView(root_panel_);
   RestyleView(main_panel_);
   RestyleView(sidebar_panel_);
+  RestyleView(sidebar_content_panel_);
+  RestyleView(sidebar_border_panel_);
   RestyleView(content_panel_);
   RestyleView(command_panel_);
   RestyleView(command_content_panel_);
@@ -585,9 +620,11 @@ void BrowserWindow::Layout() {
   RestyleView(command_field_);
   main_panel_->SetSize(CefSize(width, height));
   sidebar_panel_->SetSize(CefSize(kSidebarWidth, height));
+  sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, height));
+  sidebar_border_panel_->SetSize(CefSize(1, height));
   command_panel_->SetSize(CefSize(width, overlay_height));
   command_separator_panel_->SetSize(CefSize(width, 1));
-  command_content_panel_->SetSize(CefSize(width, kCommandHeight + 2));
+  command_content_panel_->SetSize(CefSize(width, kCommandHeight));
   command_field_->SetSize(CefSize(width, kCommandHeight));
   if (command_overlay_) {
     command_overlay_->SetBounds(CefRect(0, std::max(0, height - overlay_height),
@@ -603,8 +640,11 @@ void BrowserWindow::Layout() {
   if (sidebar_panel_->GetLayout()) {
     sidebar_panel_->Layout();
   }
+  if (sidebar_content_panel_->GetLayout()) {
+    sidebar_content_panel_->Layout();
+  }
   if (sidebar_view_) {
-    sidebar_view_->SetSize(CefSize(kSidebarWidth, height));
+    sidebar_view_->SetSize(CefSize(kSidebarWidth - 1, height));
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();
@@ -631,12 +671,16 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
   const int id = view->GetID();
   if (id == kSidebarPanelId) {
     view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (id == kSidebarContentPanelId) {
+    view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (id == kSidebarBorderPanelId) {
+    view->SetBackgroundColor(theme::kAccent);
   } else if (id == kCommandPanelId) {
-    view->SetBackgroundColor(theme::kBorderFocused);
+    view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandSeparatorPanelId) {
-    view->SetBackgroundColor(theme::kBorderFocused);
+    view->SetBackgroundColor(theme::kAccent);
   } else if (id == kRootPanelId || id == kMainPanelId || id == kContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandFieldId) {
@@ -672,8 +716,7 @@ std::string BrowserWindow::SidebarHtml() const {
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#030814;color:#ffffff;font:12px monospace;}"
          ".row{height:24px;line-height:24px;white-space:nowrap;overflow:hidden;"
-         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;"
-         "border-right:1px solid #1d9bf0;}"
+         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;}"
          ".row.active{background:#0f193c;color:#ffffff;}"
          ".row.active .marker{color:#48cae4;}"
          ".marker{color:#48cae4;}"
