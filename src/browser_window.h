@@ -6,9 +6,7 @@
 #include "browser_client.h"
 #include "include/views/cef_box_layout.h"
 #include "include/views/cef_browser_view.h"
-#include "include/views/cef_button_delegate.h"
 #include "include/views/cef_fill_layout.h"
-#include "include/views/cef_label_button.h"
 #include "include/views/cef_overlay_controller.h"
 #include "include/views/cef_panel.h"
 #include "include/views/cef_textfield.h"
@@ -20,7 +18,6 @@ namespace vimbrowser {
 
 class BrowserWindow final : public CefWindowDelegate,
                             public CefBrowserViewDelegate,
-                            public CefButtonDelegate,
                             public CefTextfieldDelegate {
  public:
   explicit BrowserWindow(std::string initial_url);
@@ -47,7 +44,6 @@ class BrowserWindow final : public CefWindowDelegate,
   bool OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                   const CefKeyEvent& event) override;
   void OnAfterUserAction(CefRefPtr<CefTextfield> textfield) override;
-  void OnButtonPressed(CefRefPtr<CefButton> button) override;
 
  private:
   enum class Mode {
@@ -69,6 +65,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void RefreshSidebar();
   void RestyleView(CefRefPtr<CefView> view);
   void RestyleCommandText();
+  std::string SidebarHtml() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
 
@@ -82,8 +79,11 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> root_panel_;
   CefRefPtr<CefPanel> main_panel_;
   CefRefPtr<CefPanel> sidebar_panel_;
+  CefRefPtr<BrowserClient> sidebar_client_;
+  CefRefPtr<CefBrowserView> sidebar_view_;
   CefRefPtr<CefPanel> content_panel_;
   CefRefPtr<CefPanel> command_panel_;
+  CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
   CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
