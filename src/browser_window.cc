@@ -672,8 +672,10 @@ std::string BrowserWindow::SidebarHtml() const {
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#030814;color:#ffffff;font:12px monospace;}"
          ".row{height:24px;line-height:24px;white-space:nowrap;overflow:hidden;"
-         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;}"
+         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;"
+         "border-right:1px solid #1d9bf0;}"
          ".row.active{background:#0f193c;color:#ffffff;}"
+         ".row.active .marker{color:#48cae4;}"
          ".marker{color:#48cae4;}"
          "::selection{background:#4f5258;color:#ffffff;}"
          "</style></head><body>" +
