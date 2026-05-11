@@ -26,7 +26,6 @@ constexpr int kCommandSeparatorPanelId = 106;
 constexpr int kCommandContentPanelId = 107;
 constexpr int kSidebarContentPanelId = 108;
 constexpr int kSidebarBorderPanelId = 109;
-constexpr int kCommandOverlayWidth = 10000;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -44,6 +43,19 @@ bool IsPlain(const CefKeyEvent& event) {
   return !(event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
          !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
          !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
+}
+
+bool IsEnterKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x0D || event.native_key_code == 36;
+}
+
+bool IsEscapeKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x1B || event.native_key_code == 9 ||
+         event.character == 0x1B || event.unmodified_character == 0x1B;
+}
+
+bool IsBackspaceKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x08 || event.native_key_code == 22;
 }
 
 std::string HtmlEscape(const std::string& value) {
@@ -234,18 +246,11 @@ void BrowserWindow::BuildChrome() {
   command_field_->SetBackgroundColor(theme::kAppBg);
   command_field_->SetPlaceholderText("");
   command_content_panel_->AddChildView(command_field_);
-
-  // Command mode is a visual overlay, not part of the document/content layout.
-  // This keeps the web view at a stable size and avoids reordering/reflowing
-  // pages when entering or leaving command mode.
-  command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
-                                            false);
-  command_overlay_->SetVisible(false);
+  root_panel_->AddChildView(command_panel_);
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
-  command_overlay_ = nullptr;
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
@@ -277,6 +282,10 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  if (mode_ != Mode::kNormal) {
+    return HandleCommandModeKey(event);
+  }
+
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -349,12 +358,12 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
     return false;
   }
 
-  if (event.windows_key_code == 0x0D) {
+  if (IsEnterKey(event)) {
     CommitCommand();
     return true;
   }
 
-  if (event.windows_key_code == 0x1B) {
+  if (IsEscapeKey(event)) {
     CancelCommand();
     return true;
   }
@@ -377,10 +386,10 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(1200, 800);
   }
   if (id == kCommandPanelId) {
-    return CefSize(kCommandOverlayWidth, kCommandHeight + 1);
+    return CefSize(1200, kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(kCommandOverlayWidth, kCommandHeight);
+    return CefSize(1200, kCommandHeight);
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
@@ -403,16 +412,16 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, 1);
   }
   if (id == kCommandFieldId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight);
+    return CefSize(1, kCommandHeight);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight + 1);
+    return CefSize(1, kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight);
+    return CefSize(1, kCommandHeight);
   }
   if (id == kCommandSeparatorPanelId) {
-    return CefSize(1, mode_ == Mode::kNormal ? 0 : 1);
+    return CefSize(1, 1);
   }
   return CefSize();
 }
@@ -420,16 +429,16 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
 CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
   if (id == kCommandFieldId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight);
+    return CefSize(0, kCommandHeight);
   }
   if (id == kCommandPanelId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight + 1);
+    return CefSize(0, kCommandHeight + 1);
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight);
+    return CefSize(0, kCommandHeight);
   }
   if (id == kCommandSeparatorPanelId) {
-    return CefSize(0, mode_ == Mode::kNormal ? 0 : 1);
+    return CefSize(0, 1);
   }
   return CefSize();
 }
@@ -497,7 +506,6 @@ void BrowserWindow::ActivateRelative(int delta) {
 void BrowserWindow::BeginCommand(Mode mode) {
   mode_ = mode;
   SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
-  command_overlay_->SetVisible(true);
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -532,7 +540,6 @@ void BrowserWindow::CommitCommand() {
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
   SetCommandText("");
-  command_overlay_->SetVisible(false);
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -545,15 +552,15 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   }
 
   if (IsRawKeyDown(event)) {
-    if (event.windows_key_code == 0x0D) {
+    if (IsEnterKey(event)) {
       CommitCommand();
       return true;
     }
-    if (event.windows_key_code == 0x1B) {
+    if (IsEscapeKey(event)) {
       CancelCommand();
       return true;
     }
-    if (event.windows_key_code == 0x08) {
+    if (IsBackspaceKey(event)) {
       const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
       if (command_text_.size() > prefix.size()) {
         command_text_.pop_back();
@@ -602,10 +609,8 @@ void BrowserWindow::Layout() {
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
-  const int overlay_height = kCommandHeight + 1;
-  if (command_overlay_) {
-    command_overlay_->SetVisible(mode_ != Mode::kNormal);
-  }
+  const int command_total_height = kCommandHeight + 1;
+  const int main_height = std::max(1, height - command_total_height);
 
   root_panel_->SetBounds(CefRect(0, 0, width, height));
   RestyleView(root_panel_);
@@ -618,18 +623,14 @@ void BrowserWindow::Layout() {
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
   RestyleView(command_field_);
-  main_panel_->SetSize(CefSize(width, height));
-  sidebar_panel_->SetSize(CefSize(kSidebarWidth, height));
-  sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, height));
-  sidebar_border_panel_->SetSize(CefSize(1, height));
-  command_panel_->SetSize(CefSize(width, overlay_height));
+  main_panel_->SetSize(CefSize(width, main_height));
+  sidebar_panel_->SetSize(CefSize(kSidebarWidth, main_height));
+  sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
+  sidebar_border_panel_->SetSize(CefSize(1, main_height));
+  command_panel_->SetSize(CefSize(width, command_total_height));
   command_separator_panel_->SetSize(CefSize(width, 1));
   command_content_panel_->SetSize(CefSize(width, kCommandHeight));
   command_field_->SetSize(CefSize(width, kCommandHeight));
-  if (command_overlay_) {
-    command_overlay_->SetBounds(CefRect(0, std::max(0, height - overlay_height),
-                                        width, overlay_height));
-  }
 
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
@@ -644,7 +645,7 @@ void BrowserWindow::Layout() {
     sidebar_content_panel_->Layout();
   }
   if (sidebar_view_) {
-    sidebar_view_->SetSize(CefSize(kSidebarWidth - 1, height));
+    sidebar_view_->SetSize(CefSize(kSidebarWidth - 1, main_height));
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();

@@ -7,7 +7,6 @@
 #include "include/views/cef_box_layout.h"
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_fill_layout.h"
-#include "include/views/cef_overlay_controller.h"
 #include "include/views/cef_panel.h"
 #include "include/views/cef_textfield.h"
 #include "include/views/cef_textfield_delegate.h"
@@ -88,7 +87,6 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
   CefRefPtr<CefTextfield> command_field_;
-  CefRefPtr<CefOverlayController> command_overlay_;
 
   IMPLEMENT_REFCOUNTING(BrowserWindow);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
