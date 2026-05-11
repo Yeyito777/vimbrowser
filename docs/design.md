@@ -69,8 +69,8 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
      widget/style.
 
 4. **Terminal-esque, not desktop-widget-esque.**
-   - Prefer flat color blocks, crisp separators, JetBrains Mono text, compact
-     rows, and direct state indication.
+   - Prefer flat color blocks, crisp separators, monospace text, compact rows,
+     and direct state indication.
    - Avoid gradients, shadows, glass, animations-for-flair, pill buttons, and
      native toolkit-looking decoration.
 
@@ -83,20 +83,11 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
    - The web page can be whatever the web page is.
    - vimbrowser chrome must never leave default toolkit background showing.
 
-7. **JetBrains Mono only for browser chrome.**
-   - All vimbrowser-owned UI text uses `JetBrains Mono`.
-   - Do not allow native toolkit/default sans fonts in browser chrome.
-   - If a fallback is required by an API, it must be explicit and after
-     JetBrains Mono, e.g. `"JetBrains Mono", monospace`.
-   - CEF Views font lists should name JetBrains Mono directly, e.g.
-     `JetBrains Mono, 13px`.
-
 ## Current UI mapping
 
 ### Left tab sidebar
 
 - Body background: `sidebarBg` / `#030814`.
-- Font: `JetBrains Mono`.
 - Active tab row background: `sidebarSelBg` / `#0f193c`.
 - Active tab marker (`▸` or future equivalent): `accent` / `#1d9bf0` or
   `vimNormal` / `#48cae4` if it specifically represents normal-mode focus.
@@ -109,7 +100,6 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
 
 - Background: `appBg` / `#00050f` or `sidebarBg` / `#030814` depending on
   surrounding composition. Prefer `appBg` for a bottom full-width command line.
-- Font: `JetBrains Mono`.
 - Focus border/separator: `borderFocused` / `#1c94e5`, square corners only.
 - Prompt/command prefix (`open`, `open -t`): `command` / `#aed6fe` or `accent`
   if acting as a prompt marker.
