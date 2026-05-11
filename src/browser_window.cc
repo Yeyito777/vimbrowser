@@ -5,28 +5,32 @@
 
 #include "config.h"
 #include "include/cef_browser.h"
-#include "include/views/cef_button.h"
+#include "include/cef_color_ids.h"
+#include "theme.h"
 
 namespace vimbrowser {
 namespace {
 
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
-constexpr cef_color_t kChromeBackground = CefColorSetARGB(255, 0, 5, 15);
-constexpr cef_color_t kSidebarBackground = CefColorSetARGB(255, 0, 10, 24);
-constexpr cef_color_t kActiveTabBackground = CefColorSetARGB(255, 20, 45, 80);
-constexpr cef_color_t kInactiveTabBackground = CefColorSetARGB(255, 0, 10, 24);
-constexpr cef_color_t kTextColor = CefColorSetARGB(255, 220, 235, 255);
-constexpr cef_color_t kAccentColor = CefColorSetARGB(255, 80, 170, 255);
 constexpr int kRootPanelId = 100;
 constexpr int kMainPanelId = 101;
 constexpr int kSidebarPanelId = 102;
 constexpr int kContentPanelId = 103;
 constexpr int kCommandFieldId = 104;
+constexpr int kCommandSeparatorPanelId = 105;
 constexpr int kTabLabelBaseId = 1000;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
+}
+
+bool IsCharEvent(const CefKeyEvent& event) {
+  return event.type == KEYEVENT_CHAR;
+}
+
+bool IsPrintableAscii(char16_t c) {
+  return c >= 0x20 && c <= 0x7e;
 }
 
 bool IsPlain(const CefKeyEvent& event) {
@@ -51,6 +55,34 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_ = window;
   window_->SetTitle("vimbrowser");
+  window_->SetThemeColor(CEF_ColorPrimaryBackground, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorPrimaryForeground, theme::kText);
+  window_->SetThemeColor(CEF_ColorSecondaryForeground, theme::kMuted);
+  window_->SetThemeColor(CEF_ColorAccent, theme::kAccent);
+  window_->SetThemeColor(CEF_ColorTextfieldBackground, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldBackgroundDisabled, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldFilledBackground, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldForeground, theme::kText);
+  window_->SetThemeColor(CEF_ColorTextfieldFilledForegroundInvalid, theme::kText);
+  window_->SetThemeColor(CEF_ColorTextfieldForegroundIcon, theme::kText);
+  window_->SetThemeColor(CEF_ColorTextfieldForegroundLabel, theme::kText);
+  window_->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholder, theme::kMuted);
+  window_->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholderInvalid, theme::kMuted);
+  window_->SetThemeColor(CEF_ColorTextfieldHover, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldSelectionBackground, theme::kSelectionBg);
+  window_->SetThemeColor(CEF_ColorTextfieldSelectionForeground, theme::kText);
+  window_->SetThemeColor(CEF_ColorTextfieldFilledUnderline, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldFilledUnderlineFocused, theme::kAppBg);
+  // Hide CEF's rounded textfield outline. We draw a square one-pixel separator
+  // ourselves so command mode remains terminal-esque and has no rounded corners.
+  window_->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorNativeTextfieldBorderUnfocused, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorLabelForeground, theme::kText);
+  window_->SetThemeColor(CEF_ColorButtonBackground, theme::kSidebarBg);
+  window_->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
+  window_->ThemeChanged();
   window_->SetToFillLayout();
   BuildChrome();
   AddTab(initial_url_, true);
@@ -62,7 +94,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
 void BrowserWindow::BuildChrome() {
   root_panel_ = CefPanel::CreatePanel(this);
   root_panel_->SetID(kRootPanelId);
-  root_panel_->SetBackgroundColor(kChromeBackground);
+  root_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings root_settings = {};
   root_settings.size = sizeof(root_settings);
   root_settings.horizontal = false;
@@ -72,7 +104,7 @@ void BrowserWindow::BuildChrome() {
 
   main_panel_ = CefPanel::CreatePanel(this);
   main_panel_->SetID(kMainPanelId);
-  main_panel_->SetBackgroundColor(kChromeBackground);
+  main_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings main_settings = {};
   main_settings.size = sizeof(main_settings);
   main_settings.horizontal = true;
@@ -83,7 +115,7 @@ void BrowserWindow::BuildChrome() {
 
   sidebar_panel_ = CefPanel::CreatePanel(this);
   sidebar_panel_->SetID(kSidebarPanelId);
-  sidebar_panel_->SetBackgroundColor(kSidebarBackground);
+  sidebar_panel_->SetBackgroundColor(theme::kSidebarBg);
   CefBoxLayoutSettings sidebar_settings = {};
   sidebar_settings.size = sizeof(sidebar_settings);
   sidebar_settings.horizontal = false;
@@ -93,18 +125,28 @@ void BrowserWindow::BuildChrome() {
 
   content_panel_ = CefPanel::CreatePanel(nullptr);
   content_panel_->SetID(kContentPanelId);
-  content_panel_->SetBackgroundColor(kChromeBackground);
+  content_panel_->SetBackgroundColor(theme::kAppBg);
   content_panel_->SetToFillLayout();
   main_panel_->AddChildView(content_panel_);
   main_layout->SetFlexForView(content_panel_, 1);
 
+  command_separator_panel_ = CefPanel::CreatePanel(nullptr);
+  command_separator_panel_->SetID(kCommandSeparatorPanelId);
+  command_separator_panel_->SetBackgroundColor(theme::kBorderFocused);
+  command_separator_panel_->SetVisible(false);
+  root_panel_->AddChildView(command_separator_panel_);
+
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
   command_field_->SetFontList("monospace, 13px");
-  command_field_->SetTextColor(kTextColor);
-  command_field_->SetSelectionTextColor(CefColorSetARGB(255, 0, 0, 0));
-  command_field_->SetSelectionBackgroundColor(kAccentColor);
-  command_field_->SetBackgroundColor(CefColorSetARGB(255, 0, 16, 32));
+  command_field_->SetReadOnly(true);
+  command_field_->SetFocusable(false);
+  command_field_->SetTextColor(theme::kText);
+  command_field_->SetPlaceholderTextColor(theme::kMuted);
+  command_field_->SetSelectionTextColor(theme::kText);
+  command_field_->SetSelectionBackgroundColor(theme::kSelectionBg);
+  command_field_->SetBackgroundColor(theme::kAppBg);
+  command_field_->SetPlaceholderText("");
   command_field_->SetVisible(false);
   root_panel_->AddChildView(command_field_);
 }
@@ -113,6 +155,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
   command_field_ = nullptr;
   content_panel_ = nullptr;
+  command_separator_panel_ = nullptr;
   sidebar_panel_ = nullptr;
   main_panel_ = nullptr;
   root_panel_ = nullptr;
@@ -143,11 +186,11 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
-  if (!IsRawKeyDown(event)) {
-    return false;
+  if (mode_ != Mode::kNormal) {
+    return HandleCommandModeKey(event);
   }
 
-  if (mode_ != Mode::kNormal) {
+  if (!IsRawKeyDown(event)) {
     return false;
   }
 
@@ -195,6 +238,12 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   return false;
 }
 
+void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
+  if (textfield == command_field_) {
+    RestyleCommandText();
+  }
+}
+
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                                const CefKeyEvent& event) {
   if (!IsRawKeyDown(event) || mode_ == Mode::kNormal) {
@@ -214,15 +263,6 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
   return false;
 }
 
-void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
-  for (size_t i = 0; i < tabs_.size(); ++i) {
-    if (tabs_[i].label.get() == button.get()) {
-      ActivateTab(i);
-      return;
-    }
-  }
-}
-
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
   if (id == kSidebarPanelId) {
@@ -233,6 +273,9 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
+  }
+  if (id == kCommandSeparatorPanelId) {
+    return CefSize(1200, 1);
   }
   if (id >= kTabLabelBaseId) {
     return CefSize(kSidebarWidth, 24);
@@ -248,6 +291,9 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kCommandFieldId) {
     return CefSize(1, mode_ == Mode::kNormal ? 0 : kCommandHeight);
   }
+  if (id == kCommandSeparatorPanelId) {
+    return CefSize(1, mode_ == Mode::kNormal ? 0 : 1);
+  }
   if (id >= kTabLabelBaseId) {
     return CefSize(kSidebarWidth, 24);
   }
@@ -256,16 +302,20 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
-  if (id == kSidebarPanelId) {
-    return CefSize(kSidebarWidth, 0);
-  }
   if (id == kCommandFieldId) {
     return CefSize(0, mode_ == Mode::kNormal ? 0 : kCommandHeight);
+  }
+  if (id == kCommandSeparatorPanelId) {
+    return CefSize(0, mode_ == Mode::kNormal ? 0 : 1);
   }
   if (id >= kTabLabelBaseId) {
     return CefSize(kSidebarWidth, 24);
   }
   return CefSize();
+}
+
+void BrowserWindow::OnThemeChanged(CefRefPtr<CefView> view) {
+  RestyleView(view);
 }
 
 cef_runtime_style_t BrowserWindow::GetWindowRuntimeStyle() {
@@ -278,7 +328,7 @@ cef_runtime_style_t BrowserWindow::GetBrowserRuntimeStyle() {
 
 void BrowserWindow::AddTab(std::string url, bool activate) {
   CefBrowserSettings browser_settings;
-  browser_settings.background_color = CefColorSetARGB(255, 5, 8, 18);
+  browser_settings.background_color = theme::kAppBg;
 
   Tab tab;
   tab.url = std::move(url);
@@ -289,11 +339,17 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
   tab.view->SetVisible(false);
   content_panel_->AddChildView(tab.view);
 
-  tab.label = CefLabelButton::CreateLabelButton(this, "");
+  tab.label = CefTextfield::CreateTextfield(this);
   tab.label->SetID(kTabLabelBaseId + static_cast<int>(tabs_.size()));
   tab.label->SetFontList("monospace, 12px");
-  tab.label->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_LEFT);
-  tab.label->SetMinimumSize(CefSize(kSidebarWidth, 24));
+  tab.label->SetReadOnly(true);
+  tab.label->SetFocusable(false);
+  tab.label->SetTextColor(theme::kText);
+  tab.label->SetSelectionTextColor(theme::kText);
+  tab.label->SetSelectionBackgroundColor(theme::kSelectionBg);
+  tab.label->SetPlaceholderText("");
+  tab.label->SetPlaceholderTextColor(theme::kMuted);
+  tab.label->SetBackgroundColor(theme::kSidebarBg);
   sidebar_panel_->AddChildView(tab.label);
 
   tabs_.push_back(tab);
@@ -333,16 +389,19 @@ void BrowserWindow::ActivateRelative(int delta) {
 
 void BrowserWindow::BeginCommand(Mode mode) {
   mode_ = mode;
-  command_field_->SetText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
+  SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
   command_field_->SetVisible(true);
-  command_field_->RequestFocus();
+  command_separator_panel_->SetVisible(true);
+  if (Tab* tab = ActiveTab(); tab) {
+    tab->view->RequestFocus();
+  }
   command_field_->SelectRange(CefRange(command_field_->GetText().ToString().size(),
                                        command_field_->GetText().ToString().size()));
   Layout();
 }
 
 void BrowserWindow::CommitCommand() {
-  std::string text = command_field_->GetText().ToString();
+  std::string text = command_text_;
   const Mode command_mode = mode_;
   const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
   if (text.rfind(prefix, 0) == 0) {
@@ -366,12 +425,68 @@ void BrowserWindow::CommitCommand() {
 
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
-  command_field_->SetText("");
+  SetCommandText("");
   command_field_->SetVisible(false);
+  command_separator_panel_->SetVisible(false);
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
   Layout();
+}
+
+bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
+  if (mode_ == Mode::kNormal) {
+    return false;
+  }
+
+  if (IsRawKeyDown(event)) {
+    if (event.windows_key_code == 0x0D) {
+      CommitCommand();
+      return true;
+    }
+    if (event.windows_key_code == 0x1B) {
+      CancelCommand();
+      return true;
+    }
+    if (event.windows_key_code == 0x08) {
+      const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
+      if (command_text_.size() > prefix.size()) {
+        command_text_.pop_back();
+        SetCommandText(command_text_);
+      }
+      return true;
+    }
+    const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+    const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
+    const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+    const char16_t c = event.character ? event.character : event.unmodified_character;
+    if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
+      command_text_.push_back(static_cast<char>(c));
+      SetCommandText(command_text_);
+    }
+    return true;
+  }
+
+  if (IsCharEvent(event)) {
+    const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+    const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
+    const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+    const char16_t c = event.character ? event.character : event.unmodified_character;
+    if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
+      command_text_.push_back(static_cast<char>(c));
+      SetCommandText(command_text_);
+    }
+    return true;
+  }
+
+  return true;
+}
+
+void BrowserWindow::SetCommandText(std::string text) {
+  command_text_ = std::move(text);
+  command_field_->SetText(command_text_);
+  command_field_->SelectRange(CefRange(command_text_.size(), command_text_.size()));
+  RestyleCommandText();
 }
 
 void BrowserWindow::Layout() {
@@ -383,11 +498,20 @@ void BrowserWindow::Layout() {
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
   const int command_height = mode_ == Mode::kNormal ? 0 : kCommandHeight;
+  const int separator_height = mode_ == Mode::kNormal ? 0 : 1;
   command_field_->SetVisible(mode_ != Mode::kNormal);
+  command_separator_panel_->SetVisible(mode_ != Mode::kNormal);
 
   root_panel_->SetBounds(CefRect(0, 0, width, height));
-  main_panel_->SetSize(CefSize(width, std::max(1, height - command_height)));
-  sidebar_panel_->SetSize(CefSize(kSidebarWidth, std::max(1, height - command_height)));
+  RestyleView(root_panel_);
+  RestyleView(main_panel_);
+  RestyleView(sidebar_panel_);
+  RestyleView(content_panel_);
+  RestyleView(command_separator_panel_);
+  RestyleView(command_field_);
+  main_panel_->SetSize(CefSize(width, std::max(1, height - command_height - separator_height)));
+  sidebar_panel_->SetSize(CefSize(kSidebarWidth, std::max(1, height - command_height - separator_height)));
+  command_separator_panel_->SetSize(CefSize(width, separator_height));
   command_field_->SetSize(CefSize(width, command_height));
 
   if (root_panel_->GetLayout()) {
@@ -407,12 +531,75 @@ void BrowserWindow::Layout() {
 void BrowserWindow::RefreshSidebar() {
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text = (active ? "▸ " : "  ") + std::to_string(i + 1) + ": " +
+    std::string text = (active ? "> " : "  ") + std::to_string(i + 1) + ": " +
                        DisplayUrl(tabs_[i].url);
     tabs_[i].label->SetText(text);
-    tabs_[i].label->SetEnabledTextColors(active ? kAccentColor : kTextColor);
-    tabs_[i].label->SetBackgroundColor(active ? kActiveTabBackground
-                                              : kInactiveTabBackground);
+    tabs_[i].label->SetReadOnly(true);
+    tabs_[i].label->SetFocusable(false);
+    tabs_[i].label->SetTextColor(theme::kText);
+    tabs_[i].label->ApplyTextColor(theme::kText, CefRange());
+    if (active) {
+      tabs_[i].label->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
+    }
+    tabs_[i].label->SetSelectionTextColor(theme::kText);
+    tabs_[i].label->SetSelectionBackgroundColor(theme::kSelectionBg);
+    tabs_[i].label->SetBackgroundColor(active ? theme::kSidebarSelBg
+                                              : theme::kSidebarBg);
+  }
+}
+
+void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
+  if (!view) {
+    return;
+  }
+
+  const int id = view->GetID();
+  if (id == kSidebarPanelId) {
+    view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (id == kCommandSeparatorPanelId) {
+    view->SetBackgroundColor(theme::kBorderFocused);
+  } else if (id == kRootPanelId || id == kMainPanelId || id == kContentPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kCommandFieldId) {
+    command_field_->SetTextColor(theme::kText);
+    command_field_->SetPlaceholderTextColor(theme::kMuted);
+    command_field_->SetSelectionTextColor(theme::kText);
+    command_field_->SetSelectionBackgroundColor(theme::kSelectionBg);
+    command_field_->SetBackgroundColor(theme::kAppBg);
+    RestyleCommandText();
+  } else if (id >= kTabLabelBaseId) {
+    for (size_t i = 0; i < tabs_.size(); ++i) {
+      if (tabs_[i].label.get() == view.get()) {
+        const bool active = i == active_index_;
+        tabs_[i].label->SetReadOnly(true);
+        tabs_[i].label->SetFocusable(false);
+        tabs_[i].label->SetTextColor(theme::kText);
+        tabs_[i].label->ApplyTextColor(theme::kText, CefRange());
+        if (active) {
+          tabs_[i].label->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
+        }
+        tabs_[i].label->SetSelectionTextColor(theme::kText);
+        tabs_[i].label->SetSelectionBackgroundColor(theme::kSelectionBg);
+        tabs_[i].label->SetBackgroundColor(active ? theme::kSidebarSelBg
+                                                  : theme::kSidebarBg);
+        return;
+      }
+    }
+  }
+}
+
+void BrowserWindow::RestyleCommandText() {
+  if (!command_field_) {
+    return;
+  }
+
+  const std::string text = command_field_->GetText().ToString();
+  command_field_->SetTextColor(theme::kText);
+  command_field_->ApplyTextColor(theme::kText, CefRange());
+
+  const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
+  if (mode_ != Mode::kNormal && text.rfind(prefix, 0) == 0) {
+    command_field_->ApplyTextColor(theme::kCommand, CefRange(0, prefix.size()));
   }
 }
 

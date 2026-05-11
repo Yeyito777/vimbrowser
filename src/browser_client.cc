@@ -46,12 +46,12 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                                   const CefKeyEvent& event,
                                   CefEventHandle os_event,
                                   bool* is_keyboard_shortcut) {
-  if (event.type != KEYEVENT_RAWKEYDOWN) {
-    return false;
-  }
-
   if (owner_ && owner_->HandleBrowserKeyEvent(event)) {
     return true;
+  }
+
+  if (event.type != KEYEVENT_RAWKEYDOWN) {
+    return false;
   }
 
   const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
