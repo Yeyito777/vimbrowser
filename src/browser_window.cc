@@ -799,8 +799,9 @@ void BrowserWindow::SetCommandText(std::string text) {
                                    ? command_text_
                                    : vim::WithCursor(command_vim_, command_text_);
   command_field_->SetText(rendered);
-  command_field_->SelectRange(CefRange(std::min(rendered.size(), command_vim_.cursor + 1),
-                                       std::min(rendered.size(), command_vim_.cursor + 1)));
+  const size_t cursor_offset = vim::CursorDisplayOffset(command_vim_, command_text_);
+  command_field_->SelectRange(CefRange(std::min(rendered.size(), cursor_offset + 1),
+                                       std::min(rendered.size(), cursor_offset + 1)));
   RestyleCommandText();
 }
 
@@ -1187,6 +1188,11 @@ void BrowserWindow::RestyleCommandText() {
   const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
   if (mode_ != Mode::kNormal && text.rfind(prefix, 0) == 0) {
     command_field_->ApplyTextColor(theme::kCommand, CefRange(0, prefix.size()));
+  }
+  if (mode_ != Mode::kNormal) {
+    const size_t cursor_offset = vim::CursorDisplayOffset(command_vim_, command_text_);
+    command_field_->ApplyTextColor(theme::kVimNormal,
+                                   CefRange(cursor_offset, cursor_offset + 1));
   }
 }
 

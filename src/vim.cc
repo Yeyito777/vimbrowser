@@ -6,6 +6,7 @@ namespace vimbrowser::vim {
 
 namespace {
 constexpr const char* kCursorGlyph = "█";
+constexpr const char* kBarCursorGlyph = "|";
 }
 
 void Reset(LineEditState& state, size_t cursor, size_t floor, Mode mode) {
@@ -54,6 +55,9 @@ void EnterInsertAfter(LineEditState& state, const std::string& text) {
 
 void LeaveInsert(LineEditState& state, const std::string& text) {
   Clamp(state, text);
+  if (state.cursor == text.size() && state.cursor > state.floor) {
+    --state.cursor;
+  }
   state.mode = Mode::kNormal;
 }
 
@@ -88,8 +92,20 @@ std::string WithCursor(const LineEditState& state, const std::string& text) {
   LineEditState clamped = state;
   Clamp(clamped, text);
   std::string rendered = text;
-  rendered.insert(clamped.cursor, kCursorGlyph);
+  if (clamped.mode == Mode::kInsert) {
+    rendered.insert(clamped.cursor, kBarCursorGlyph);
+  } else if (clamped.cursor < rendered.size()) {
+    rendered.replace(clamped.cursor, 1, kCursorGlyph);
+  } else {
+    rendered.insert(clamped.cursor, kCursorGlyph);
+  }
   return rendered;
+}
+
+size_t CursorDisplayOffset(const LineEditState& state, const std::string& text) {
+  LineEditState clamped = state;
+  Clamp(clamped, text);
+  return clamped.cursor;
 }
 
 }  // namespace vimbrowser::vim

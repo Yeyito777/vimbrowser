@@ -30,6 +30,8 @@ near-matches unless a platform API cannot represent the exact value.
 | normal-mode color | `#48cae4` | `vimNormal`, `cursorBg`, `cursorColor` | Normal mode indicator, caret/cursor emphasis, current-mode glyphs |
 | insert-mode color | `#2ec4b6` | `vimInsert` | Future insert-mode indicator |
 | visual-mode color | `#c792ea` | `vimVisual` | Future visual-mode indicator/selection mode marker |
+| terminal cursor | `#48cae4` | `cursorColor`, st color 258 | Vim cursor glyph/bar color |
+| terminal reverse cursor text | `#f1faee` | st color 259 | Text/foreground used by the terminal's reverse cursor; use only where a native reverse cursor can be implemented cleanly |
 | user/bubble background | `#090d35` | `userBg`, `historyLineBg` | Elevated/content-ish dark panel surfaces when needed |
 | sidebar background | `#030814` | `sidebarBg` | Left tab sidebar body |
 | sidebar selected background | `#0f193c` | `sidebarSelBg` | Active tab row background |
@@ -111,6 +113,26 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
 - Placeholder text: `muted` / `#646464`.
 - Selection: `selectionBg` / `#4f5258` with `#ffffff` text unless platform
   constraints require another high-contrast pairing.
+
+### Cursor
+
+Match the cursor behavior from `~/Config/st` where possible:
+
+- Cursor color: `#48cae4` (`defaultcs`, st color 258).
+- Bar/underline cursor thickness in st is `2px`; vimbrowser bar cursors should
+  read as a thin terminal caret, not a wide widget caret.
+- Vim normal mode uses a steady block cursor (`cursorshape = 2`, DECSCUSR
+  `\e[2 q`).
+- Vim insert mode uses a steady bar cursor (DECSCUSR `\e[6 q`).
+- The cursor does not blink.
+- The cursor is square/terminal-like: no rounded caret, no native toolkit glow.
+- When an implementation can draw a true reverse-video block, use cursor
+  background `#48cae4` with text/background reversed in the spirit of st. If a
+  toolkit text widget cannot draw per-cell backgrounds, approximate with an
+  explicit `#48cae4` block glyph in normal mode and a thin `#48cae4` bar glyph in
+  insert mode.
+- If the vimbrowser window/surface is unfocused in the future, follow st's
+  unfocused convention: show an outline/hollow cursor rather than a filled one.
 
 ### Root/app background
 
