@@ -90,7 +90,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void FillCommandAutocomplete(const std::string& name);
   int CommandAutocompleteVisibleRows() const;
   int CommandAutocompleteHeight() const;
+  int CommandAutocompleteWidth() const;
   void SetCommandText(std::string text);
+  void UpdateAutocompleteView();
   void Layout();
   void RefreshSidebar();
   void SetFocusArea(FocusArea area);
@@ -104,6 +106,7 @@ class BrowserWindow final : public CefWindowDelegate,
   cef_color_t ModeIndicatorColor() const;
   std::string SidebarHtml() const;
   std::string CommandHtml() const;
+  std::string AutocompleteHtml() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
 
@@ -136,6 +139,10 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<BrowserClient> command_client_;
   CefRefPtr<CefBrowserView> command_view_;
   CefRefPtr<CefOverlayController> command_overlay_;
+  CefRefPtr<CefPanel> autocomplete_panel_;
+  CefRefPtr<BrowserClient> autocomplete_client_;
+  CefRefPtr<CefBrowserView> autocomplete_view_;
+  CefRefPtr<CefOverlayController> autocomplete_overlay_;
   CefRefPtr<CefPanel> mode_indicator_panel_;
   CefRefPtr<CefLabelButton> mode_indicator_label_;
   CefRefPtr<CefOverlayController> mode_indicator_overlay_;
