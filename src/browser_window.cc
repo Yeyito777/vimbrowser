@@ -843,7 +843,7 @@ void BrowserWindow::Layout() {
   command_separator_panel_->SetSize(CefSize(width, 1));
   command_content_panel_->SetSize(CefSize(width, kCommandHeight));
   command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
-  command_content_panel_->SetBounds(CefRect(0, 1, width, kCommandHeight));
+  command_content_panel_->SetBounds(CefRect(0, 0, width, command_total_height));
   if (command_overlay_) {
     command_overlay_->SetBounds(CefRect(0, std::max(0, height - command_total_height),
                                         width, command_total_height));
@@ -876,7 +876,7 @@ void BrowserWindow::Layout() {
     sidebar_view_->SetSize(CefSize(kSidebarWidth - 1, main_height));
   }
   if (command_view_) {
-    command_view_->SetSize(CefSize(width, kCommandHeight));
+    command_view_->SetSize(CefSize(width, command_total_height));
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();
@@ -1170,6 +1170,7 @@ std::string BrowserWindow::CommandHtml() const {
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#00050f;color:#ffffff;font:13px monospace;}"
+         ".top-border{height:1px;background:#1c94e5;width:100%;}"
          ".line{position:relative;height:28px;line-height:28px;padding-left:10px;"
          "white-space:pre;overflow:hidden;background:#00050f;}"
          ".cells{display:inline-grid;grid-auto-flow:column;grid-auto-columns:8px;"
@@ -1182,7 +1183,7 @@ std::string BrowserWindow::CommandHtml() const {
          "pointer-events:none;}"
          ".cursor.bar{width:2px;z-index:3}.cursor.block{width:8px;z-index:1}"
          "::selection{background:#4f5258;color:#ffffff}"
-         "</style></head><body><div class=\"line\"><div id=\"cursor\" "
+         "</style></head><body><div class=\"top-border\"></div><div class=\"line\"><div id=\"cursor\" "
          "class=\"cursor bar\"></div><span id=\"cells\" class=\"cells\"></span>"
          "</div><script>"
          "function esc(s){return String(s).replace(/[&<>\"']/g,function(c){return "
