@@ -56,7 +56,7 @@ const std::vector<CompletionItem>& CommandList() {
 
 const std::vector<CompletionItem>& OpenArgList() {
   static const std::vector<CompletionItem> args = {
-      {"-t", "open in a new tab"},
+      {"tab", "open in a new tab"},
   };
   return args;
 }
@@ -743,7 +743,7 @@ void BrowserWindow::BeginCommand(Mode mode) {
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
   mode_ = mode;
-  command_text_ = mode == Mode::kCommandOpenNext ? ":open -t " : ":open ";
+  command_text_ = mode == Mode::kCommandOpenNext ? ":open tab " : ":open ";
   vim::Reset(command_vim_, command_text_.size(), 0, vim::Mode::kInsert);
   ClearCommandAutocomplete();
   command_overlay_->SetVisible(true);
@@ -764,10 +764,12 @@ void BrowserWindow::CommitCommand() {
     if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
       text.erase(0, after_command);
       text = Trim(text);
-      if (StartsWithCaseInsensitive(text, "-t") &&
-          (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2])))) {
+      if ((StartsWithCaseInsensitive(text, "tab") &&
+           (text.size() == 3 || std::isspace(static_cast<unsigned char>(text[3])))) ||
+          (StartsWithCaseInsensitive(text, "-t") &&
+           (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2]))))) {
         open_in_new_tab = true;
-        text.erase(0, 2);
+        text.erase(0, StartsWithCaseInsensitive(text, "tab") ? 3 : 2);
         text = Trim(text);
       } else {
         open_in_new_tab = false;
@@ -779,10 +781,12 @@ void BrowserWindow::CommitCommand() {
     if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
       text.erase(0, after_command);
       text = Trim(text);
-      if (StartsWithCaseInsensitive(text, "-t") &&
-          (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2])))) {
+      if ((StartsWithCaseInsensitive(text, "tab") &&
+           (text.size() == 3 || std::isspace(static_cast<unsigned char>(text[3])))) ||
+          (StartsWithCaseInsensitive(text, "-t") &&
+           (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2]))))) {
         open_in_new_tab = true;
-        text.erase(0, 2);
+        text.erase(0, StartsWithCaseInsensitive(text, "tab") ? 3 : 2);
         text = Trim(text);
       } else {
         open_in_new_tab = false;
@@ -863,12 +867,12 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     const size_t arg_start = after_command.find_last_of(" \t");
     const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
     const std::string completed_args = arg_start == std::string::npos ? "" : after_command.substr(0, arg_start + 1);
-    const bool already_has_tab_arg = completed_args.find("-t") != std::string::npos ||
-                                     (arg_prefix == "-t" && !after_command.empty() &&
+    const bool already_has_tab_arg = completed_args.find("tab") != std::string::npos ||
+                                     (arg_prefix == "tab" && !after_command.empty() &&
                                       std::isspace(static_cast<unsigned char>(after_command.back())));
     const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
                                     (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
-    if (!already_has_tab_arg && (completing_new_arg || StartsWithCaseInsensitive(arg_prefix, "-"))) {
+    if (!already_has_tab_arg && (completing_new_arg || !arg_prefix.empty())) {
       for (const CompletionItem& item : OpenArgList()) {
         if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
@@ -1537,7 +1541,7 @@ std::string BrowserWindow::CommandHtml() const {
          "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
          "window.vimbrowserSetCommand=function(s){"
          "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
-         "var valid={':open':{'-t':true}};"
+         "var valid={':open':{'tab':true}};"
          "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
          "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
          "while((wm=re.exec(full))!==null)words.push({w:wm[0],e:wm.index+wm[0].length});"

@@ -173,7 +173,7 @@ When open:
 - `Enter` sends the command from either command insert or normal mode.
 - command row top border should be focus color `#1c94e5`.
 - command text uses existing command styling:
-  - `open` / `open -t`: `#aed6fe`
+  - `:open` / `:open tab`: `#aed6fe`
   - typed URL/search: `#ffffff`
 - On Enter/Escape:
   - clear command text

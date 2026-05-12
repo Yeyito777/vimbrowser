@@ -107,7 +107,7 @@ The whale theme uses ANSI default red/yellow/blue/magenta for some tokens:
 - When visible, the command area overlays the page bottom. It must not resize,
   reflow, push, or otherwise shift web content.
 - Focus border/separator: `borderFocused` / `#1c94e5`, square corners only.
-- Prompt/command prefix (`open`, `open -t`): `command` / `#aed6fe` or `accent`
+- Prompt/command prefix (`:open`, `:open tab`): `command` / `#aed6fe` or `accent`
   if acting as a prompt marker.
 - User-entered URL/search text: `#ffffff`.
 - Placeholder text: `muted` / `#646464`.
