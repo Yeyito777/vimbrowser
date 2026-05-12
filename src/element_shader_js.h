@@ -73,14 +73,6 @@ inline const char* ElementShaderScript() {
   function brightness(c) { return (c.r + c.g + c.b) / (3 * 255); }
   function setImportant(style, property, value) { style.setProperty(property, value, 'important'); }
 
-  function signalReady() {
-    try {
-      if (typeof window.__vimbrowserShaderReady === 'function') {
-        window.__vimbrowserShaderReady();
-      }
-    } catch (_) {}
-  }
-
   function installGlobalStyle() {
     let style = document.getElementById(STYLE_ID);
     if (!style) {
@@ -225,7 +217,6 @@ inline const char* ElementShaderScript() {
     if (!state) state = window[STATE_KEY] = {enabled:false, touched:new Set(), observer:null, pending:false};
     state.enabled = true;
     applyAll(state);
-    signalReady();
     if (!state.observer) {
       state.observer = new MutationObserver(function() { schedule(state); });
       state.observer.observe(document.documentElement || document, {
@@ -244,7 +235,6 @@ inline const char* ElementShaderScript() {
     if (state.observer) { state.observer.disconnect(); state.observer = null; }
     removeGlobalStyle();
     restore(state);
-    signalReady();
   }
 
   window.__vimbrowserSetElementShader = function(next) { next ? enable() : disable(); };

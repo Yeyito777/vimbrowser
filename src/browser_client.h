@@ -44,10 +44,6 @@ class BrowserClient final : public CefClient,
   bool OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
                          const void* message,
                          size_t message_size) override;
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
-                                CefProcessId source_process,
-                                CefRefPtr<CefProcessMessage> message) override;
 
   CefRefPtr<CefBrowser> browser() const { return browser_; }
   void ShowDevTools();
