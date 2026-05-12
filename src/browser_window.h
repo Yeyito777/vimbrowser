@@ -35,7 +35,6 @@ class BrowserWindow final : public CefWindowDelegate,
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
-  void OnClientLoadEnd(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
@@ -119,10 +118,6 @@ class BrowserWindow final : public CefWindowDelegate,
   void ScrollActivePageToBottom();
   void OpenClipboard(bool new_tab);
   void ZoomActivePage(cef_zoom_command_t command);
-  void SetShaderEnabled(bool enabled);
-  void ToggleShader();
-  void ApplyShaderToTab(Tab& tab);
-  void ApplyShaderToAllTabs();
   void YankActiveUrl();
   void YankActiveTitle();
   void YankActiveMarkdown();
@@ -150,7 +145,6 @@ class BrowserWindow final : public CefWindowDelegate,
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
-  bool shader_enabled_ = true;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
   std::vector<Tab> closed_tabs_;
