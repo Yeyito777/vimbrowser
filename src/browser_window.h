@@ -35,7 +35,6 @@ class BrowserWindow final : public CefWindowDelegate,
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
-  void OnClientBeforeClose(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
@@ -148,7 +147,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool sidebar_visible_ = true;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
-  std::vector<CefRefPtr<BrowserClient>> closing_clients_;
+  std::vector<Tab> closed_tabs_;
   size_t active_index_ = 0;
 
   CefRefPtr<CefWindow> window_;

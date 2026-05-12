@@ -315,15 +315,6 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   }
 }
 
-void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
-  closing_clients_.erase(
-      std::remove_if(closing_clients_.begin(), closing_clients_.end(),
-                     [client](const CefRefPtr<BrowserClient>& closing) {
-                       return closing.get() == client;
-                     }),
-      closing_clients_.end());
-}
-
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_ = window;
   window_->SetTitle("vimbrowser");
@@ -871,21 +862,38 @@ void BrowserWindow::CloseActiveTab() {
   }
 
   if (tabs_[closing].view) {
-    content_inner_panel_->RemoveChildView(tabs_[closing].view);
+    tabs_[closing].view->SetVisible(false);
   }
-  if (tabs_[closing].client && tabs_[closing].client->browser()) {
-    closing_clients_.push_back(tabs_[closing].client);
-    tabs_[closing].client->browser()->GetHost()->CloseBrowser(true);
-  }
+
+  Tab closed_tab = tabs_[closing];
+
+  const size_t next_index = closing == 0 ? 0 : closing - 1;
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
-  last_tab_close_placeholder_ = false;
-  active_index_ = std::min(closing, tabs_.size() - 1);
+  active_index_ = std::min(next_index, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
+  if (focus_area_ == FocusArea::kWebView) {
+    tabs_[active_index_].view->RequestFocus();
+  }
   RefreshSidebar();
   Layout();
+  closed_tabs_.push_back(closed_tab);
+  last_tab_close_placeholder_ = false;
 }
 
 void BrowserWindow::UndoCloseTab() {
+  if (!closed_tabs_.empty()) {
+    Tab tab = closed_tabs_.back();
+    closed_tabs_.pop_back();
+    std::cerr << "vimbrowser: undo-close-tab view url=" << tab.url
+              << " count=" << tabs_.size() << std::endl;
+    tab.view->SetVisible(false);
+    tabs_.push_back(tab);
+    RefreshSidebar();
+    Layout();
+    ActivateTab(tabs_.size() - 1);
+    return;
+  }
+
   if (closed_tab_urls_.empty()) {
     std::cerr << "vimbrowser: undo-close-tab ignored; stack empty" << std::endl;
     return;
