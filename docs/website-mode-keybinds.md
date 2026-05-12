@@ -67,10 +67,13 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `:` — command line prefilled with `:`
 - [x] `o` — command line prefilled with `:open `
 - [x] `O` — command line prefilled with `:open tab `
+- [x] `Ctrl-S` — toggle element shader (`:shader`)
+- [x] `:shader` — toggle element shader
+- [x] `:shader on` — enable element shader
+- [x] `:shader off` — disable element shader
 
 ## Explicitly not part of this batch
 
-- [ ] shader toggle
 - [ ] hints / all hint-related binds
 - [ ] `Ctrl-M`
 - [ ] `Ctrl-N`

@@ -36,6 +36,14 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                              CefRefPtr<CefFrame> frame,
+                              int http_status_code) {
+  if (owner_ && frame && frame->IsMain()) {
+    owner_->OnClientLoadEnd(this);
+  }
+}
+
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode error_code,

@@ -27,6 +27,7 @@ add_executable(vimbrowser
   src/browser_window.h
   src/config.cc
   src/config.h
+  src/element_shader_js.h
   src/main.cc
   src/tab.h
   src/theme.h

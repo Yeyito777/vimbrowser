@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "config.h"
+#include "element_shader_js.h"
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
@@ -54,6 +55,7 @@ constexpr int kCommandCursorBlockWidth = 8;
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
+      {":shader", "toggle element shader"},
       {":tab-focus", "focus tab by number or title"},
   };
   return commands;
@@ -62,6 +64,14 @@ const std::vector<CompletionItem>& CommandList() {
 const std::vector<CompletionItem>& OpenArgList() {
   static const std::vector<CompletionItem> args = {
       {"tab", "open in a new tab"},
+  };
+  return args;
+}
+
+const std::vector<CompletionItem>& ShaderArgList() {
+  static const std::vector<CompletionItem> args = {
+      {"on", "enable element shader"},
+      {"off", "disable element shader"},
   };
   return args;
 }
@@ -210,6 +220,16 @@ std::string DataUrl(const std::string& html) {
   return out.str();
 }
 
+std::string ElementShaderScriptFor(bool enabled) {
+  std::string script = ElementShaderScript();
+  const std::string placeholder = "__VIMBROWSER_SHADER_ENABLED__";
+  const size_t pos = script.find(placeholder);
+  if (pos != std::string::npos) {
+    script.replace(pos, placeholder.size(), enabled ? "true" : "false");
+  }
+  return script;
+}
+
 std::string Trim(std::string value) {
   auto is_space = [](unsigned char c) { return std::isspace(c); };
   value.erase(value.begin(), std::find_if(value.begin(), value.end(),
@@ -300,6 +320,12 @@ void BrowserWindow::Create() {
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
+  for (Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      ApplyShaderToTab(tab);
+      return;
+    }
+  }
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
@@ -310,6 +336,21 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
         last_tab_close_placeholder_ = false;
       }
       RefreshSidebar();
+      return;
+    }
+  }
+}
+
+void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
+  for (Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      ApplyShaderToTab(tab);
+      return;
+    }
+  }
+  for (Tab& tab : closed_tabs_) {
+    if (tab.client.get() == client) {
+      ApplyShaderToTab(tab);
       return;
     }
   }
@@ -981,6 +1022,25 @@ void BrowserWindow::CommitCommand() {
   std::string text = Trim(command_text_);
   bool open_in_new_tab = mode_ == Mode::kCommandOpenNext;
 
+  if (StartsWithCaseInsensitive(text, ":shader")) {
+    const size_t after_command = 7;
+    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+      text.erase(0, after_command);
+      text = Trim(text);
+      CancelCommand();
+      if (text.empty()) {
+        ToggleShader();
+      } else if (StartsWithCaseInsensitive(text, "on") &&
+                 (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2])))) {
+        SetShaderEnabled(true);
+      } else if (StartsWithCaseInsensitive(text, "off") &&
+                 (text.size() == 3 || std::isspace(static_cast<unsigned char>(text[3])))) {
+        SetShaderEnabled(false);
+      }
+      return;
+    }
+  }
+
   if (StartsWithCaseInsensitive(text, ":tab-focus")) {
     const size_t after_command = 10;
     if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
@@ -1137,6 +1197,38 @@ void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
   }
 }
 
+void BrowserWindow::SetShaderEnabled(bool enabled) {
+  if (shader_enabled_ == enabled) {
+    ApplyShaderToAllTabs();
+    return;
+  }
+  shader_enabled_ = enabled;
+  std::cerr << "vimbrowser: element shader " << (shader_enabled_ ? "on" : "off") << std::endl;
+  ApplyShaderToAllTabs();
+}
+
+void BrowserWindow::ToggleShader() {
+  SetShaderEnabled(!shader_enabled_);
+}
+
+void BrowserWindow::ApplyShaderToTab(Tab& tab) {
+  if (!tab.client || !tab.client->browser() || !tab.client->browser()->GetMainFrame()) {
+    return;
+  }
+  const std::string script = ElementShaderScriptFor(shader_enabled_);
+  CefRefPtr<CefFrame> frame = tab.client->browser()->GetMainFrame();
+  frame->ExecuteJavaScript(script, frame->GetURL(), 0);
+}
+
+void BrowserWindow::ApplyShaderToAllTabs() {
+  for (Tab& tab : tabs_) {
+    ApplyShaderToTab(tab);
+  }
+  for (Tab& tab : closed_tabs_) {
+    ApplyShaderToTab(tab);
+  }
+}
+
 void BrowserWindow::YankActiveUrl() {
   WriteClipboardText(ActiveTabUrl());
 }
@@ -1207,6 +1299,19 @@ void BrowserWindow::UpdateCommandAutocomplete() {
                                     (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
     if (!already_has_tab_arg && (completing_new_arg || !arg_prefix.empty())) {
       for (const CompletionItem& item : OpenArgList()) {
+        if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
+          matches.push_back(item);
+        }
+      }
+    }
+  } else if (StartsWithCaseInsensitive(typed_command, ":shader") &&
+             IsTokenBoundary(typed_command, 7)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
+    if (completing_new_arg || !arg_prefix.empty()) {
+      for (const CompletionItem& item : ShaderArgList()) {
         if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
         }
@@ -1633,6 +1738,11 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     return true;
   }
 
+  if (ctrl && !shift && IsCtrlKey(event, 'S')) {
+    ToggleShader();
+    return true;
+  }
+
   if (IsCtrlKey(event, 'M')) {
     ToggleSidebar();
     return true;
@@ -2003,7 +2113,7 @@ std::string BrowserWindow::CommandHtml() const {
          "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
          "window.vimbrowserSetCommand=function(s){"
          "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
-         "var valid={':open':{'tab':true},':tab-focus':{}};"
+         "var valid={':open':{'tab':true},':shader':{'on':true,'off':true},':tab-focus':{}};"
          "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
          "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
          "while((wm=re.exec(full))!==null)words.push({w:wm[0],e:wm.index+wm[0].length});"
