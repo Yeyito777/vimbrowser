@@ -77,6 +77,25 @@ bool IsPlainLetterKey(const CefKeyEvent& event, char key) {
          c == upper || c == lower;
 }
 
+char PlainKeyChar(const CefKeyEvent& event) {
+  if (!IsPlain(event)) {
+    return 0;
+  }
+  const char16_t c = event.character ? event.character : event.unmodified_character;
+  if (IsPrintableAscii(c)) {
+    return static_cast<char>(c);
+  }
+  if (event.windows_key_code >= 'A' && event.windows_key_code <= 'Z') {
+    const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+    return static_cast<char>(shift ? event.windows_key_code
+                                   : std::tolower(event.windows_key_code));
+  }
+  if (event.windows_key_code >= 0x20 && event.windows_key_code <= 0x7e) {
+    return static_cast<char>(event.windows_key_code);
+  }
+  return 0;
+}
+
 bool IsEnterKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x0D || event.native_key_code == 36;
 }
@@ -609,6 +628,8 @@ void BrowserWindow::BeginCommand(Mode mode) {
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
   mode_ = mode;
+  command_pending_find_ = 0;
+  command_pending_g_ = false;
   command_text_ = mode == Mode::kCommandOpenNext ? "open -t " : "open ";
   vim::Reset(command_vim_, command_text_.size(), command_text_.size(),
              vim::Mode::kInsert);
@@ -646,6 +667,8 @@ void BrowserWindow::CommitCommand() {
 
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
+  command_pending_find_ = 0;
+  command_pending_g_ = false;
   vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
   SetCommandText("");
   command_overlay_->SetVisible(false);
@@ -695,35 +718,74 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     }
 
     if (command_vim_.mode == vim::Mode::kNormal) {
-      if (IsPlainLetterKey(event, 'i')) {
+      const char key = PlainKeyChar(event);
+      if (command_pending_find_) {
+        if (key) {
+          const bool forward = command_pending_find_ == 'f';
+          if (forward) {
+            vim::FindForward(command_vim_, command_text_, key);
+          } else {
+            vim::FindBackward(command_vim_, command_text_, key);
+          }
+          command_last_find_ = key;
+          command_last_find_forward_ = forward;
+          command_pending_find_ = 0;
+          command_pending_g_ = false;
+          SetCommandText(command_text_);
+          suppress_next_char_event_ = true;
+        }
+        return true;
+      }
+      if (command_pending_g_) {
+        command_pending_g_ = false;
+        if (key == 'g') {
+          vim::MoveLineStart(command_vim_, command_text_);
+          SetCommandText(command_text_);
+          suppress_next_char_event_ = true;
+        }
+        return true;
+      }
+      if (key == 'i') {
         vim::EnterInsert(command_vim_, command_text_);
         SetCommandText(command_text_);
         UpdateModeIndicator();
         suppress_next_char_event_ = true;
         return true;
       }
-      if (IsPlainLetterKey(event, 'a')) {
+      if (key == 'a') {
         vim::EnterInsertAfter(command_vim_, command_text_);
         SetCommandText(command_text_);
         UpdateModeIndicator();
         suppress_next_char_event_ = true;
         return true;
       }
-      if (IsPlainLetterKey(event, 'h')) {
-        vim::MoveLeft(command_vim_, command_text_);
-        SetCommandText(command_text_);
-        return true;
-      }
-      if (IsPlainLetterKey(event, 'l')) {
-        vim::MoveRight(command_vim_, command_text_);
-        SetCommandText(command_text_);
-        return true;
-      }
-      if (IsPlainLetterKey(event, 'x')) {
-        vim::DeleteAtCursor(command_vim_, command_text_);
-        SetCommandText(command_text_);
-        return true;
-      }
+      if (key == 'I') vim::EnterInsertAtLineStart(command_vim_, command_text_);
+      else if (key == 'A') vim::EnterInsertAtLineEnd(command_vim_, command_text_);
+      else if (key == 'h') vim::MoveLeft(command_vim_, command_text_);
+      else if (key == 'l') vim::MoveRight(command_vim_, command_text_);
+      else if (key == 'w') vim::MoveWordForward(command_vim_, command_text_);
+      else if (key == 'b') vim::MoveWordBackward(command_vim_, command_text_);
+      else if (key == 'e') vim::MoveWordEnd(command_vim_, command_text_);
+      else if (key == 'W') vim::MoveWordForwardBig(command_vim_, command_text_);
+      else if (key == 'B') vim::MoveWordBackwardBig(command_vim_, command_text_);
+      else if (key == 'E') vim::MoveWordEndBig(command_vim_, command_text_);
+      else if (key == '0') vim::MoveLineStart(command_vim_, command_text_);
+      else if (key == '$') vim::MoveLineEnd(command_vim_, command_text_);
+      else if (key == 'g') { command_pending_g_ = true; suppress_next_char_event_ = true; return true; }
+      else if (key == 'G') vim::MoveLineEnd(command_vim_, command_text_);
+      else if (key == 'f' || key == 'F') { command_pending_find_ = key; command_pending_g_ = false; suppress_next_char_event_ = true; return true; }
+      else if (key == ';' && command_last_find_) {
+        if (command_last_find_forward_) vim::FindForward(command_vim_, command_text_, command_last_find_);
+        else vim::FindBackward(command_vim_, command_text_, command_last_find_);
+      } else if (key == ',' && command_last_find_) {
+        if (command_last_find_forward_) vim::FindBackward(command_vim_, command_text_, command_last_find_);
+        else vim::FindForward(command_vim_, command_text_, command_last_find_);
+      } else if (key == 'x') vim::DeleteAtCursor(command_vim_, command_text_);
+      else return true;
+      SetCommandText(command_text_);
+      if (key == 'I' || key == 'A') UpdateModeIndicator();
+      suppress_next_char_event_ = true;
+      return true;
     }
 
     if (command_vim_.mode == vim::Mode::kInsert) {
@@ -761,22 +823,54 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     }
 
     if (command_vim_.mode == vim::Mode::kNormal) {
-      if (IsPlainLetterKey(event, 'i')) {
+      const char key = PlainKeyChar(event);
+      if (command_pending_find_) {
+        if (key) {
+          const bool forward = command_pending_find_ == 'f';
+          if (forward) vim::FindForward(command_vim_, command_text_, key);
+          else vim::FindBackward(command_vim_, command_text_, key);
+          command_last_find_ = key;
+          command_last_find_forward_ = forward;
+          command_pending_find_ = 0;
+          command_pending_g_ = false;
+          SetCommandText(command_text_);
+        }
+      } else if (command_pending_g_) {
+        command_pending_g_ = false;
+        if (key == 'g') {
+          vim::MoveLineStart(command_vim_, command_text_);
+          SetCommandText(command_text_);
+        }
+      } else if (key == 'i') {
         vim::EnterInsert(command_vim_, command_text_);
         SetCommandText(command_text_);
         UpdateModeIndicator();
-      } else if (IsPlainLetterKey(event, 'a')) {
+      } else if (key == 'a') {
         vim::EnterInsertAfter(command_vim_, command_text_);
         SetCommandText(command_text_);
         UpdateModeIndicator();
-      } else if (IsPlainLetterKey(event, 'h')) {
-        vim::MoveLeft(command_vim_, command_text_);
-        SetCommandText(command_text_);
-      } else if (IsPlainLetterKey(event, 'l')) {
-        vim::MoveRight(command_vim_, command_text_);
-        SetCommandText(command_text_);
-      } else if (IsPlainLetterKey(event, 'x')) {
-        vim::DeleteAtCursor(command_vim_, command_text_);
+      } else if (key == 'I') { vim::EnterInsertAtLineStart(command_vim_, command_text_); SetCommandText(command_text_); UpdateModeIndicator(); }
+      else if (key == 'A') { vim::EnterInsertAtLineEnd(command_vim_, command_text_); SetCommandText(command_text_); UpdateModeIndicator(); }
+      else if (key == 'h') vim::MoveLeft(command_vim_, command_text_);
+      else if (key == 'l') vim::MoveRight(command_vim_, command_text_);
+      else if (key == 'w') vim::MoveWordForward(command_vim_, command_text_);
+      else if (key == 'b') vim::MoveWordBackward(command_vim_, command_text_);
+      else if (key == 'e') vim::MoveWordEnd(command_vim_, command_text_);
+      else if (key == 'W') vim::MoveWordForwardBig(command_vim_, command_text_);
+      else if (key == 'B') vim::MoveWordBackwardBig(command_vim_, command_text_);
+      else if (key == 'E') vim::MoveWordEndBig(command_vim_, command_text_);
+      else if (key == '0') vim::MoveLineStart(command_vim_, command_text_);
+      else if (key == 'g') command_pending_g_ = true;
+      else if (key == '$' || key == 'G') vim::MoveLineEnd(command_vim_, command_text_);
+      else if (key == 'f' || key == 'F') { command_pending_find_ = key; command_pending_g_ = false; }
+      else if (key == ';' && command_last_find_) {
+        if (command_last_find_forward_) vim::FindForward(command_vim_, command_text_, command_last_find_);
+        else vim::FindBackward(command_vim_, command_text_, command_last_find_);
+      } else if (key == ',' && command_last_find_) {
+        if (command_last_find_forward_) vim::FindBackward(command_vim_, command_text_, command_last_find_);
+        else vim::FindForward(command_vim_, command_text_, command_last_find_);
+      } else if (key == 'x') vim::DeleteAtCursor(command_vim_, command_text_);
+      if (key && key != 'i' && key != 'a' && key != 'I' && key != 'A' && key != 'f' && key != 'F') {
         SetCommandText(command_text_);
       }
     }
