@@ -6,7 +6,9 @@
 #include "browser_client.h"
 #include "include/views/cef_box_layout.h"
 #include "include/views/cef_browser_view.h"
+#include "include/views/cef_button_delegate.h"
 #include "include/views/cef_fill_layout.h"
+#include "include/views/cef_label_button.h"
 #include "include/views/cef_overlay_controller.h"
 #include "include/views/cef_panel.h"
 #include "include/views/cef_textfield.h"
@@ -18,6 +20,7 @@ namespace vimbrowser {
 
 class BrowserWindow final : public CefWindowDelegate,
                             public CefBrowserViewDelegate,
+                            public CefButtonDelegate,
                             public CefTextfieldDelegate {
  public:
   explicit BrowserWindow(std::string initial_url);
@@ -44,6 +47,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                   const CefKeyEvent& event) override;
   void OnAfterUserAction(CefRefPtr<CefTextfield> textfield) override;
+  void OnButtonPressed(CefRefPtr<CefButton> button) override;
 
  private:
   enum class Mode {
@@ -82,6 +86,9 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   void RestyleView(CefRefPtr<CefView> view);
   void RestyleCommandText();
+  void UpdateModeIndicator();
+  std::string ModeIndicatorText() const;
+  cef_color_t ModeIndicatorColor() const;
   std::string SidebarHtml() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
@@ -111,6 +118,9 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_separator_panel_;
   CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
+  CefRefPtr<CefPanel> mode_indicator_panel_;
+  CefRefPtr<CefLabelButton> mode_indicator_label_;
+  CefRefPtr<CefOverlayController> mode_indicator_overlay_;
 
   IMPLEMENT_REFCOUNTING(BrowserWindow);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);

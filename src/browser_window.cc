@@ -9,6 +9,7 @@
 #include "config.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
+#include "include/views/cef_button.h"
 #include "theme.h"
 
 namespace vimbrowser {
@@ -27,6 +28,13 @@ constexpr int kCommandContentPanelId = 107;
 constexpr int kSidebarContentPanelId = 108;
 constexpr int kSidebarBorderPanelId = 109;
 constexpr int kContentInnerPanelId = 110;
+constexpr int kModeIndicatorPanelId = 111;
+constexpr int kModeIndicatorFieldId = 112;
+// Experimental chrome-level mode indicator. Flip to false to disable without
+// touching the mode/focus state machines.
+constexpr bool kModeIndicatorEnabled = true;
+constexpr int kModeIndicatorWidth = 96;
+constexpr int kModeIndicatorHeight = 24;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -275,11 +283,38 @@ void BrowserWindow::BuildChrome() {
   command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
                                             false);
   command_overlay_->SetVisible(false);
+
+  if (kModeIndicatorEnabled) {
+    mode_indicator_panel_ = CefPanel::CreatePanel(this);
+    mode_indicator_panel_->SetID(kModeIndicatorPanelId);
+    mode_indicator_panel_->SetBackgroundColor(theme::kUserBg);
+    mode_indicator_panel_->SetToFillLayout();
+
+    mode_indicator_label_ = CefLabelButton::CreateLabelButton(this, "");
+    mode_indicator_label_->SetID(kModeIndicatorFieldId);
+    mode_indicator_label_->SetFontList("monospace, 12px");
+    mode_indicator_label_->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+    mode_indicator_label_->SetFocusable(false);
+    mode_indicator_label_->SetInkDropEnabled(false);
+    mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
+    mode_indicator_label_->SetEnabledTextColors(theme::kText);
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+    mode_indicator_panel_->AddChildView(mode_indicator_label_);
+
+    mode_indicator_overlay_ = window_->AddOverlayView(
+        mode_indicator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+    mode_indicator_overlay_->SetVisible(true);
+  }
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
+  mode_indicator_overlay_ = nullptr;
   command_overlay_ = nullptr;
+  mode_indicator_label_ = nullptr;
+  mode_indicator_panel_ = nullptr;
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
@@ -407,6 +442,11 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
   }
 }
 
+void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
+  // The mode indicator is implemented as a CefLabelButton because CEF exposes
+  // centering for labels/buttons but not textfields. It is display-only.
+}
+
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                                const CefKeyEvent& event) {
   if (!IsRawKeyDown(event) || mode_ == Mode::kNormal) {
@@ -452,6 +492,12 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (id == kCommandSeparatorPanelId) {
     return CefSize(1200, 1);
   }
+  if (id == kModeIndicatorPanelId) {
+    return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
+  }
+  if (id == kModeIndicatorFieldId) {
+    return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
+  }
   return CefSize(1200, 800);
 }
 
@@ -478,6 +524,9 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kCommandSeparatorPanelId) {
     return CefSize(1, 1);
   }
+  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId) {
+    return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
+  }
   return CefSize();
 }
 
@@ -494,6 +543,9 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(0, 1);
+  }
+  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId) {
+    return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
   return CefSize();
 }
@@ -567,6 +619,7 @@ void BrowserWindow::BeginCommand(Mode mode) {
   mode_ = mode;
   SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
   command_overlay_->SetVisible(true);
+  UpdateModeIndicator();
   if (Tab* tab = ActiveTab(); tab) {
     tab->view->RequestFocus();
   }
@@ -604,6 +657,7 @@ void BrowserWindow::CancelCommand() {
   command_overlay_->SetVisible(false);
   focus_area_ = previous_focus_area_ == FocusArea::kCommandLine ? FocusArea::kWebView
                                                                 : previous_focus_area_;
+  UpdateModeIndicator();
   if (Tab* tab = ActiveTab(); tab) {
     if (focus_area_ == FocusArea::kWebView) {
       tab->view->RequestFocus();
@@ -696,6 +750,8 @@ void BrowserWindow::Layout() {
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
   RestyleView(command_field_);
+  RestyleView(mode_indicator_panel_);
+  RestyleView(mode_indicator_label_);
   main_panel_->SetSize(CefSize(width, main_height));
   sidebar_panel_->SetSize(CefSize(sidebar_visible_ ? kSidebarWidth : 0, main_height));
   sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
@@ -713,6 +769,17 @@ void BrowserWindow::Layout() {
   if (command_overlay_) {
     command_overlay_->SetBounds(CefRect(0, std::max(0, height - command_total_height),
                                         width, command_total_height));
+  }
+  if (mode_indicator_overlay_ && mode_indicator_panel_ && mode_indicator_label_) {
+    mode_indicator_overlay_->SetVisible(true);
+    mode_indicator_overlay_->SetBounds(
+        CefRect(std::max(0, width - kModeIndicatorWidth), 0,
+                kModeIndicatorWidth, kModeIndicatorHeight));
+    mode_indicator_panel_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    mode_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    mode_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
+                                             kModeIndicatorHeight));
+    UpdateModeIndicator();
   }
 
   if (root_panel_->GetLayout()) {
@@ -739,6 +806,9 @@ void BrowserWindow::Layout() {
   if (command_content_panel_->GetLayout()) {
     command_content_panel_->Layout();
   }
+  if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
+    mode_indicator_panel_->Layout();
+  }
 }
 
 void BrowserWindow::RefreshSidebar() {
@@ -762,6 +832,7 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
     }
   }
   RefreshSidebar();
+  UpdateModeIndicator();
   Layout();
 }
 
@@ -821,12 +892,14 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
                  website_mode_ == WebsiteMode::kVisual) {
         website_mode_ = WebsiteMode::kWebsiteNormal;
       }
+      UpdateModeIndicator();
       return true;
     }
 
     if (website_mode_ == WebsiteMode::kWebsiteNormal) {
       if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
         website_mode_ = WebsiteMode::kInsert;
+        UpdateModeIndicator();
         return true;
       }
 
@@ -860,6 +933,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     if (website_mode_ == WebsiteMode::kWebsiteNormal &&
         (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a'))) {
       website_mode_ = WebsiteMode::kInsert;
+      UpdateModeIndicator();
       return true;
     }
     return IsPlainPrintableKey(event);
@@ -903,7 +977,74 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     command_field_->SetSelectionBackgroundColor(theme::kSelectionBg);
     command_field_->SetBackgroundColor(theme::kAppBg);
     RestyleCommandText();
+  } else if (id == kModeIndicatorPanelId) {
+    view->SetBackgroundColor(theme::kUserBg);
+  } else if (id == kModeIndicatorFieldId && mode_indicator_label_) {
+    mode_indicator_label_->SetEnabledTextColors(ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
+    mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
+    mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+    UpdateModeIndicator();
   }
+}
+
+void BrowserWindow::UpdateModeIndicator() {
+  if (!kModeIndicatorEnabled || !mode_indicator_label_) {
+    return;
+  }
+
+  const std::string text = ModeIndicatorText();
+  mode_indicator_label_->SetText(text);
+  mode_indicator_label_->SetEnabledTextColors(ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
+  mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
+  mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
+std::string BrowserWindow::ModeIndicatorText() const {
+  if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
+    return "COMMAND";
+  }
+  if (focus_area_ == FocusArea::kTabSidebar) {
+    return "SIDEBAR";
+  }
+
+  switch (website_mode_) {
+    case WebsiteMode::kWebsiteNormal:
+      return "WEBSITE";
+    case WebsiteMode::kNormal:
+      return "NORMAL";
+    case WebsiteMode::kInsert:
+      return "INSERT";
+    case WebsiteMode::kVisual:
+      return "VISUAL";
+  }
+  return "WEBSITE";
+}
+
+cef_color_t BrowserWindow::ModeIndicatorColor() const {
+  if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
+    return theme::kCommand;
+  }
+  if (focus_area_ == FocusArea::kTabSidebar) {
+    return theme::kBorderFocused;
+  }
+
+  switch (website_mode_) {
+    case WebsiteMode::kWebsiteNormal:
+      return theme::kVimNormal;
+    case WebsiteMode::kNormal:
+      return theme::kVimNormal;
+    case WebsiteMode::kInsert:
+      return theme::kVimInsert;
+    case WebsiteMode::kVisual:
+      return theme::kVimVisual;
+  }
+  return theme::kVimNormal;
 }
 
 std::string BrowserWindow::SidebarHtml() const {
