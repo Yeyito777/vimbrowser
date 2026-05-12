@@ -18,8 +18,12 @@ install: build
 	rm -f $(INSTALL_BIN)
 	printf '%s\n' '#!/usr/bin/env bash' \
 	  'set -euo pipefail' \
+	  'log_dir="$${XDG_CACHE_HOME:-$$HOME/.cache}/vimbrowser"' \
+	  'mkdir -p "$$log_dir"' \
+	  'log_file="$$log_dir/vimbrowser.log"' \
+	  'printf "\\n[%s] vimbrowser %q\\n" "$$(date --iso-8601=seconds)" "$$*" >> "$$log_file"' \
 	  'cd "$(abspath $(BUILD_DIR))/Release"' \
-	  'exec ./vimbrowser "$$@"' > $(INSTALL_BIN)
+	  'exec ./vimbrowser "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
 	chmod +x $(INSTALL_BIN)
 	@echo 'installed $(INSTALL_BIN) -> $(abspath $(BUILD_DIR))/Release/vimbrowser'
 

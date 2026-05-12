@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cctype>
+#include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <utility>
@@ -312,6 +313,15 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
       return;
     }
   }
+}
+
+void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
+  closing_clients_.erase(
+      std::remove_if(closing_clients_.begin(), closing_clients_.end(),
+                     [client](const CefRefPtr<BrowserClient>& closing) {
+                       return closing.get() == client;
+                     }),
+      closing_clients_.end());
 }
 
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
@@ -844,6 +854,8 @@ void BrowserWindow::CloseActiveTab() {
 
   const size_t closing = active_index_;
   const std::string url = ActiveTabUrl();
+  std::cerr << "vimbrowser: close-tab index=" << (closing + 1)
+            << " count=" << tabs_.size() << " url=" << url << std::endl;
   if (!url.empty()) {
     closed_tab_urls_.push_back(url);
   }
@@ -862,6 +874,7 @@ void BrowserWindow::CloseActiveTab() {
     content_inner_panel_->RemoveChildView(tabs_[closing].view);
   }
   if (tabs_[closing].client && tabs_[closing].client->browser()) {
+    closing_clients_.push_back(tabs_[closing].client);
     tabs_[closing].client->browser()->GetHost()->CloseBrowser(true);
   }
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
@@ -874,10 +887,14 @@ void BrowserWindow::CloseActiveTab() {
 
 void BrowserWindow::UndoCloseTab() {
   if (closed_tab_urls_.empty()) {
+    std::cerr << "vimbrowser: undo-close-tab ignored; stack empty" << std::endl;
     return;
   }
   const std::string url = closed_tab_urls_.back();
   closed_tab_urls_.pop_back();
+  std::cerr << "vimbrowser: undo-close-tab url=" << url
+            << " placeholder=" << last_tab_close_placeholder_
+            << " count=" << tabs_.size() << std::endl;
   if (last_tab_close_placeholder_ && tabs_.size() == 1 &&
       active_index_ == 0 && tabs_[0].client && tabs_[0].client->browser()) {
     last_tab_close_placeholder_ = false;

@@ -24,6 +24,9 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 }
 
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+  if (owner_) {
+    owner_->OnClientBeforeClose(this);
+  }
   devtools_registration_ = nullptr;
   browser_ = nullptr;
 }
