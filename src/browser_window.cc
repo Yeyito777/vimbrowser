@@ -34,7 +34,12 @@ constexpr int kModeIndicatorFieldId = 112;
 constexpr bool kModeIndicatorEnabled = true;
 constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
+constexpr int kCommandTextInsetX = 10;
 constexpr int kCommandCharWidth = 8;
+constexpr int kCommandCursorTop = 5;
+constexpr int kCommandCursorHeight = 18;
+constexpr int kCommandCursorBarWidth = 2;
+constexpr int kCommandCursorBlockWidth = 8;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -1169,35 +1174,36 @@ std::string BrowserWindow::CommandHtml() const {
     cells_html += "<span class=\"cell eof\"></span>";
   }
 
+  const int cursor_left = kCommandTextInsetX +
+                          static_cast<int>(cursor) * kCommandCharWidth;
   std::string cursor_html;
   if (insert_cursor) {
-    cursor_html = "<div class=\"cursor-cell insert\" style=\"grid-column:" +
-                  std::to_string(cursor + 1) + "\"><div class=\"bar\"></div></div>";
+    cursor_html = "<div class=\"cursor bar\" style=\"left:" +
+                  std::to_string(cursor_left) + "px\"></div>";
   } else if (normal_cursor) {
-    cursor_html = "<div class=\"cursor-cell normal\" style=\"grid-column:" +
-                  std::to_string(cursor + 1) + "\"><div class=\"block\"></div></div>";
+    cursor_html = "<div class=\"cursor block\" style=\"left:" +
+                  std::to_string(cursor_left) + "px\"></div>";
   }
 
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#00050f;color:#ffffff;font:13px monospace;}"
-         ".line{display:grid;grid-auto-flow:column;grid-auto-columns:8px;"
-         "justify-content:start;align-items:stretch;position:relative;height:28px;"
-         "line-height:28px;padding-left:10px;white-space:pre;overflow:hidden;"
-         "background:#00050f;}"
+         ".line{position:relative;height:28px;line-height:28px;padding-left:10px;"
+         "white-space:pre;overflow:hidden;background:#00050f;}"
+         ".cells{display:inline-grid;grid-auto-flow:column;grid-auto-columns:8px;"
+         "justify-content:start;align-items:center;position:relative;z-index:2;}"
          ".cell{width:8px;height:28px;line-height:28px;text-align:center;"
-         "position:relative;z-index:2;}"
+         "position:relative;}"
          ".prefix{color:#aed6fe}.text{color:#ffffff}.eof{color:#ffffff}"
          ".under-cursor{color:#00050f}"
-         ".cursor-cell{width:8px;height:28px;position:relative;z-index:1;"
-         "grid-row:1;pointer-events:none;}"
-         ".cursor-cell.insert{z-index:3}.cursor-cell.normal{z-index:1}"
-         ".bar{position:absolute;left:0;top:0;width:2px;height:28px;background:#48cae4}"
-         ".block{position:absolute;left:0;top:0;width:8px;height:28px;background:#48cae4}"
+         ".cursor{position:absolute;top:5px;height:18px;background:#48cae4;"
+         "pointer-events:none;}"
+         ".cursor.bar{width:2px;z-index:3}.cursor.block{width:8px;z-index:1}"
          "::selection{background:#4f5258;color:#ffffff}"
          "</style></head><body><div class=\"line\">" +
-         cursor_html + cells_html + "</div></body></html>";
+         cursor_html + "<span class=\"cells\">" + cells_html +
+         "</span></div></body></html>";
 }
 
 Tab* BrowserWindow::ActiveTab() {
