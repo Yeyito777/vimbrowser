@@ -897,6 +897,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     }
 
     if (website_mode_ == WebsiteMode::kWebsiteNormal) {
+      if (IsPlain(event) && event.windows_key_code == 'O') {
+        BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
+                                                            : Mode::kCommandOpenCurrent);
+        return true;
+      }
+
       if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
         website_mode_ = WebsiteMode::kInsert;
         UpdateModeIndicator();
@@ -913,6 +919,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     }
 
     if (website_mode_ == WebsiteMode::kNormal || website_mode_ == WebsiteMode::kVisual) {
+      if (website_mode_ == WebsiteMode::kNormal && IsPlain(event) &&
+          event.windows_key_code == 'O') {
+        BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
+                                                            : Mode::kCommandOpenCurrent);
+        return true;
+      }
+
       // Regular Vim normal/visual modes are skeleton states for future operators,
       // text objects, and selections. For now they intentionally swallow plain
       // printable keys and perform no page action.
