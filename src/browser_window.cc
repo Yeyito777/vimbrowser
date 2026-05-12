@@ -34,7 +34,6 @@ constexpr int kModeIndicatorFieldId = 112;
 constexpr bool kModeIndicatorEnabled = true;
 constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
-constexpr int kCommandTextInsetX = 10;
 constexpr int kCommandCharWidth = 8;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -1157,41 +1156,48 @@ std::string BrowserWindow::CommandHtml() const {
   const bool insert_cursor = mode_ != Mode::kNormal &&
                              command_vim_.mode == vim::Mode::kInsert;
 
-  std::string text_html;
+  std::string cells_html;
   for (size_t i = 0; i < command_text_.size(); ++i) {
-    std::string classes = i < prefix.size() ? "prefix" : "text";
+    std::string classes = i < prefix.size() ? "cell prefix" : "cell text";
     if (normal_cursor && i == cursor) {
       classes += " under-cursor";
     }
-    text_html += "<span class=\"" + classes + "\">" +
-                 HtmlEscape(command_text_.substr(i, 1)) + "</span>";
+    cells_html += "<span class=\"" + classes + "\">" +
+                  HtmlEscape(command_text_.substr(i, 1)) + "</span>";
+  }
+  if (cursor >= command_text_.size()) {
+    cells_html += "<span class=\"cell eof\"></span>";
   }
 
-  const int cursor_left = kCommandTextInsetX +
-                          static_cast<int>(cursor) * kCommandCharWidth;
   std::string cursor_html;
   if (insert_cursor) {
-    cursor_html = "<div class=\"cursor bar\" style=\"left:" +
-                  std::to_string(cursor_left) + "px\"></div>";
+    cursor_html = "<div class=\"cursor-cell insert\" style=\"grid-column:" +
+                  std::to_string(cursor + 1) + "\"><div class=\"bar\"></div></div>";
   } else if (normal_cursor) {
-    cursor_html = "<div class=\"cursor block\" style=\"left:" +
-                  std::to_string(cursor_left) + "px\"></div>";
+    cursor_html = "<div class=\"cursor-cell normal\" style=\"grid-column:" +
+                  std::to_string(cursor + 1) + "\"><div class=\"block\"></div></div>";
   }
 
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#00050f;color:#ffffff;font:13px monospace;}"
-         ".line{position:relative;height:28px;line-height:28px;padding-left:10px;"
-         "white-space:pre;overflow:hidden;background:#00050f;}"
-         ".prefix{color:#aed6fe}.text{color:#ffffff}"
-         ".under-cursor{color:#00050f;position:relative;z-index:2}"
-         ".cursor{position:absolute;top:5px;height:18px;background:#48cae4;"
-         "z-index:1;pointer-events:none}"
-         ".cursor.bar{width:2px}.cursor.block{width:8px}"
+         ".line{display:grid;grid-auto-flow:column;grid-auto-columns:8px;"
+         "justify-content:start;align-items:stretch;position:relative;height:28px;"
+         "line-height:28px;padding-left:10px;white-space:pre;overflow:hidden;"
+         "background:#00050f;}"
+         ".cell{width:8px;height:28px;line-height:28px;text-align:center;"
+         "position:relative;z-index:2;}"
+         ".prefix{color:#aed6fe}.text{color:#ffffff}.eof{color:#ffffff}"
+         ".under-cursor{color:#00050f}"
+         ".cursor-cell{width:8px;height:28px;position:relative;z-index:1;"
+         "grid-row:1;pointer-events:none;}"
+         ".cursor-cell.insert{z-index:3}.cursor-cell.normal{z-index:1}"
+         ".bar{position:absolute;left:0;top:0;width:2px;height:28px;background:#48cae4}"
+         ".block{position:absolute;left:0;top:0;width:8px;height:28px;background:#48cae4}"
          "::selection{background:#4f5258;color:#ffffff}"
          "</style></head><body><div class=\"line\">" +
-         cursor_html + text_html + "</div></body></html>";
+         cursor_html + cells_html + "</div></body></html>";
 }
 
 Tab* BrowserWindow::ActiveTab() {

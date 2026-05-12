@@ -133,6 +133,15 @@ Match the cursor behavior from `~/Config/st` where possible:
 - Normal-mode block cursor is an independently drawn `#48cae4` cell behind the
   character at the cursor. The text under that block changes to `#00050f`, so the
   result reads as a true reverse-video terminal cursor.
+- Cursor placement follows `st`'s cell model, not proportional text metrics:
+  cursor x-position is the start of terminal cell `cx`, equivalent to
+  `borderpx + cx * win.cw` in `~/Config/st/x.c`.
+- The bar cursor is drawn at the left edge of the current cell with width
+  `cursorthickness` (`2px`) and full cell height, equivalent to st's
+  `XftDrawRect(..., borderpx + cx * win.cw, borderpx + cy * win.ch,
+  cursorthickness, win.ch)`.
+- The block cursor occupies the full terminal cell. The glyph inside that cell is
+  centered by the cell layout, not left-aligned against the block.
 - If the vimbrowser window/surface is unfocused in the future, follow st's
   unfocused convention: show an outline/hollow cursor rather than a filled one.
 
