@@ -11,6 +11,7 @@ struct Tab {
   std::string url;
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
+  bool shader_pending = false;
 };
 
 }  // namespace vimbrowser

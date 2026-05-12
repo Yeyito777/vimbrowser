@@ -90,6 +90,19 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
+bool BrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                             CefRefPtr<CefFrame> frame,
+                                             CefProcessId source_process,
+                                             CefRefPtr<CefProcessMessage> message) {
+  if (message && message->GetName() == "vimbrowser:shader-ready") {
+    if (owner_) {
+      owner_->OnClientShaderReady(this);
+    }
+    return true;
+  }
+  return false;
+}
+
 void BrowserClient::ShowDevTools() {
   if (!browser_) {
     return;

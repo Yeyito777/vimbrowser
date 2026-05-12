@@ -36,6 +36,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
   void OnClientLoadEnd(BrowserClient* client);
+  void OnClientShaderReady(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;

@@ -15,6 +15,7 @@
 #include "include/cef_color_ids.h"
 #include "include/cef_navigation_entry.h"
 #include "include/cef_parser.h"
+#include "include/cef_process_message.h"
 #include "include/cef_values.h"
 #include "include/views/cef_button.h"
 #include "theme.h"
@@ -332,6 +333,10 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
       tab.url = url;
+      tab.shader_pending = shader_enabled_;
+      if (shader_enabled_ && active_index_ < tabs_.size() && tabs_[active_index_].client.get() == client && tab.view) {
+        tab.view->SetVisible(false);
+      }
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
       }
@@ -351,6 +356,22 @@ void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
   for (Tab& tab : closed_tabs_) {
     if (tab.client.get() == client) {
       ApplyShaderToTab(tab);
+      return;
+    }
+  }
+}
+
+void BrowserWindow::OnClientShaderReady(BrowserClient* client) {
+  for (Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      tab.shader_pending = false;
+      if (active_index_ < tabs_.size() && tabs_[active_index_].client.get() == client && tab.view) {
+        tab.view->SetVisible(true);
+        if (focus_area_ == FocusArea::kWebView) {
+          tab.view->RequestFocus();
+        }
+        Layout();
+      }
       return;
     }
   }
@@ -805,6 +826,7 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
 
   Tab tab;
   tab.url = std::move(url);
+  tab.shader_pending = shader_enabled_;
   tab.client = new BrowserClient(this);
   tab.view = CefBrowserView::CreateBrowserView(tab.client, tab.url, browser_settings,
                                                nullptr, nullptr, this);
@@ -831,8 +853,9 @@ void BrowserWindow::ActivateTab(size_t index) {
   }
 
   active_index_ = index;
-  tabs_[active_index_].view->SetVisible(true);
-  if (focus_area_ == FocusArea::kWebView) {
+  const bool visible = !tabs_[active_index_].shader_pending || !shader_enabled_;
+  tabs_[active_index_].view->SetVisible(visible);
+  if (visible && focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
   RefreshSidebar();
@@ -1198,6 +1221,14 @@ void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
 }
 
 void BrowserWindow::SetShaderEnabled(bool enabled) {
+  if (!enabled) {
+    for (Tab& tab : tabs_) {
+      tab.shader_pending = false;
+      if (&tab == ActiveTab() && tab.view) {
+        tab.view->SetVisible(true);
+      }
+    }
+  }
   if (shader_enabled_ == enabled) {
     ApplyShaderToAllTabs();
     return;
@@ -1215,8 +1246,11 @@ void BrowserWindow::ApplyShaderToTab(Tab& tab) {
   if (!tab.client || !tab.client->browser() || !tab.client->browser()->GetMainFrame()) {
     return;
   }
+  CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("vimbrowser:set-shader");
+  message->GetArgumentList()->SetBool(0, shader_enabled_);
   const std::string script = ElementShaderScriptFor(shader_enabled_);
   CefRefPtr<CefFrame> frame = tab.client->browser()->GetMainFrame();
+  frame->SendProcessMessage(PID_RENDERER, message);
   frame->ExecuteJavaScript(script, frame->GetURL(), 0);
 }
 
