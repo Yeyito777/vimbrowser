@@ -79,11 +79,12 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   void RestyleView(CefRefPtr<CefView> view);
-  void RestyleCommandText();
+  void UpdateCommandView();
   void UpdateModeIndicator();
   std::string ModeIndicatorText() const;
   cef_color_t ModeIndicatorColor() const;
   std::string SidebarHtml() const;
+  std::string CommandHtml() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
 
@@ -112,7 +113,8 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
-  CefRefPtr<CefTextfield> command_field_;
+  CefRefPtr<BrowserClient> command_client_;
+  CefRefPtr<CefBrowserView> command_view_;
   CefRefPtr<CefOverlayController> command_overlay_;
   CefRefPtr<CefPanel> mode_indicator_panel_;
   CefRefPtr<CefLabelButton> mode_indicator_label_;

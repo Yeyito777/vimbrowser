@@ -126,11 +126,13 @@ Match the cursor behavior from `~/Config/st` where possible:
 - Vim insert mode uses a steady bar cursor (DECSCUSR `\e[6 q`).
 - The cursor does not blink.
 - The cursor is square/terminal-like: no rounded caret, no native toolkit glow.
-- When an implementation can draw a true reverse-video block, use cursor
-  background `#48cae4` with text/background reversed in the spirit of st. If a
-  toolkit text widget cannot draw per-cell backgrounds, approximate with an
-  explicit `#48cae4` block glyph in normal mode and a thin `#48cae4` bar glyph in
-  insert mode.
+- The cursor is rendered separately from the text buffer. Do not insert cursor
+  glyphs such as `|` or `█` into the command/page text.
+- Insert-mode bar cursor is an independently drawn full-height `2px` bar. It must
+  not replace, hide, shift, or otherwise consume a text character.
+- Normal-mode block cursor is an independently drawn `#48cae4` cell behind the
+  character at the cursor. The text under that block changes to `#00050f`, so the
+  result reads as a true reverse-video terminal cursor.
 - If the vimbrowser window/surface is unfocused in the future, follow st's
   unfocused convention: show an outline/hollow cursor rather than a filled one.
 
