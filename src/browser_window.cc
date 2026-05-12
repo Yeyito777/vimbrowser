@@ -26,6 +26,7 @@ constexpr int kCommandSeparatorPanelId = 106;
 constexpr int kCommandContentPanelId = 107;
 constexpr int kSidebarContentPanelId = 108;
 constexpr int kSidebarBorderPanelId = 109;
+constexpr int kContentInnerPanelId = 110;
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -56,6 +57,16 @@ bool IsEscapeKey(const CefKeyEvent& event) {
 
 bool IsBackspaceKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x08 || event.native_key_code == 22;
+}
+
+bool IsCtrlKey(const CefKeyEvent& event, char key) {
+  if (!(event.modifiers & EVENTFLAG_CONTROL_DOWN)) {
+    return false;
+  }
+  return event.windows_key_code == key || event.windows_key_code == key + ('a' - 'A') ||
+         event.character == key || event.character == key + ('a' - 'A') ||
+         event.unmodified_character == key ||
+         event.unmodified_character == key + ('a' - 'A');
 }
 
 std::string HtmlEscape(const std::string& value) {
@@ -208,9 +219,14 @@ void BrowserWindow::BuildChrome() {
   content_panel_ = CefPanel::CreatePanel(nullptr);
   content_panel_->SetID(kContentPanelId);
   content_panel_->SetBackgroundColor(theme::kAppBg);
-  content_panel_->SetToFillLayout();
   main_panel_->AddChildView(content_panel_);
   main_layout->SetFlexForView(content_panel_, 1);
+
+  content_inner_panel_ = CefPanel::CreatePanel(nullptr);
+  content_inner_panel_->SetID(kContentInnerPanelId);
+  content_inner_panel_->SetBackgroundColor(theme::kAppBg);
+  content_inner_panel_->SetToFillLayout();
+  content_panel_->AddChildView(content_inner_panel_);
 
   command_panel_ = CefPanel::CreatePanel(this);
   command_panel_->SetID(kCommandPanelId);
@@ -218,7 +234,7 @@ void BrowserWindow::BuildChrome() {
 
   command_separator_panel_ = CefPanel::CreatePanel(nullptr);
   command_separator_panel_->SetID(kCommandSeparatorPanelId);
-  command_separator_panel_->SetBackgroundColor(theme::kAccent);
+  command_separator_panel_->SetBackgroundColor(theme::kBorderFocused);
   command_panel_->AddChildView(command_separator_panel_);
 
   command_content_panel_ = CefPanel::CreatePanel(this);
@@ -250,6 +266,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
+  content_inner_panel_ = nullptr;
   content_panel_ = nullptr;
   command_separator_panel_ = nullptr;
   sidebar_border_panel_ = nullptr;
@@ -286,6 +303,10 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return false;
   }
 
+  if (HandleGlobalFocusKey(event)) {
+    return true;
+  }
+
   return HandleNormalModeKey(event);
 }
 
@@ -296,6 +317,10 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
 
   if (!IsRawKeyDown(event)) {
     return false;
+  }
+
+  if (HandleGlobalFocusKey(event)) {
+    return true;
   }
 
   if (event.focus_on_editable_field) {
@@ -325,16 +350,25 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   }
 
   if (IsPlain(event) && event.windows_key_code == 'O') {
+    if (focus_area_ != FocusArea::kTabSidebar) {
+      return false;
+    }
     BeginCommand(shift ? Mode::kCommandOpenNext : Mode::kCommandOpenCurrent);
     return true;
   }
 
   if (shift && event.windows_key_code == 'J') {
+    if (focus_area_ != FocusArea::kTabSidebar) {
+      return false;
+    }
     ActivateRelative(1);
     return true;
   }
 
   if (shift && event.windows_key_code == 'K') {
+    if (focus_area_ != FocusArea::kTabSidebar) {
+      return false;
+    }
     ActivateRelative(-1);
     return true;
   }
@@ -462,7 +496,7 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
                                                nullptr, nullptr, this);
   tab.view->SetPreferAccelerators(true);
   tab.view->SetVisible(false);
-  content_panel_->AddChildView(tab.view);
+  content_inner_panel_->AddChildView(tab.view);
 
   tabs_.push_back(tab);
   RefreshSidebar();
@@ -500,6 +534,9 @@ void BrowserWindow::ActivateRelative(int delta) {
 }
 
 void BrowserWindow::BeginCommand(Mode mode) {
+  previous_focus_area_ = focus_area_ == FocusArea::kCommandLine ? previous_focus_area_
+                                                                : focus_area_;
+  focus_area_ = FocusArea::kCommandLine;
   mode_ = mode;
   SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
   command_overlay_->SetVisible(true);
@@ -538,8 +575,14 @@ void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
   SetCommandText("");
   command_overlay_->SetVisible(false);
+  focus_area_ = previous_focus_area_ == FocusArea::kCommandLine ? FocusArea::kWebView
+                                                                : previous_focus_area_;
   if (Tab* tab = ActiveTab(); tab) {
-    tab->view->RequestFocus();
+    if (focus_area_ == FocusArea::kWebView) {
+      tab->view->RequestFocus();
+    } else if (focus_area_ == FocusArea::kTabSidebar && sidebar_view_) {
+      sidebar_view_->RequestFocus();
+    }
   }
   Layout();
 }
@@ -612,6 +655,7 @@ void BrowserWindow::Layout() {
   if (command_overlay_) {
     command_overlay_->SetVisible(mode_ != Mode::kNormal);
   }
+  sidebar_panel_->SetVisible(sidebar_visible_);
 
   root_panel_->SetBounds(CefRect(0, 0, width, height));
   RestyleView(root_panel_);
@@ -620,14 +664,18 @@ void BrowserWindow::Layout() {
   RestyleView(sidebar_content_panel_);
   RestyleView(sidebar_border_panel_);
   RestyleView(content_panel_);
+  RestyleView(content_inner_panel_);
   RestyleView(command_panel_);
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
   RestyleView(command_field_);
   main_panel_->SetSize(CefSize(width, main_height));
-  sidebar_panel_->SetSize(CefSize(kSidebarWidth, main_height));
+  sidebar_panel_->SetSize(CefSize(sidebar_visible_ ? kSidebarWidth : 0, main_height));
   sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
   sidebar_border_panel_->SetSize(CefSize(1, main_height));
+  const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
+  const int content_width = std::max(1, width - content_x);
+  content_inner_panel_->SetBounds(CefRect(0, 0, content_width, main_height));
   command_panel_->SetSize(CefSize(width, command_total_height));
   command_separator_panel_->SetSize(CefSize(width, 1));
   command_content_panel_->SetSize(CefSize(width, kCommandHeight));
@@ -658,6 +706,9 @@ void BrowserWindow::Layout() {
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();
   }
+  if (content_inner_panel_->GetLayout()) {
+    content_inner_panel_->Layout();
+  }
   if (command_content_panel_->GetLayout()) {
     command_content_panel_->Layout();
   }
@@ -667,6 +718,57 @@ void BrowserWindow::RefreshSidebar() {
   if (sidebar_client_ && sidebar_client_->browser()) {
     sidebar_client_->browser()->GetMainFrame()->LoadURL(DataUrl(SidebarHtml()));
   }
+}
+
+void BrowserWindow::SetFocusArea(FocusArea area) {
+  if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
+    sidebar_visible_ = true;
+  }
+  focus_area_ = area;
+  if (focus_area_ == FocusArea::kWebView) {
+    if (Tab* tab = ActiveTab(); tab) {
+      tab->view->RequestFocus();
+    }
+  } else if (focus_area_ == FocusArea::kTabSidebar) {
+    if (sidebar_view_) {
+      sidebar_view_->RequestFocus();
+    }
+  }
+  RefreshSidebar();
+  Layout();
+}
+
+void BrowserWindow::ToggleSidebar() {
+  sidebar_visible_ = !sidebar_visible_;
+  if (!sidebar_visible_ && focus_area_ == FocusArea::kTabSidebar) {
+    focus_area_ = FocusArea::kWebView;
+  } else if (sidebar_visible_) {
+    focus_area_ = FocusArea::kTabSidebar;
+  }
+  SetFocusArea(focus_area_);
+}
+
+bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event)) {
+    return false;
+  }
+
+  if (IsCtrlKey(event, 'M')) {
+    ToggleSidebar();
+    return true;
+  }
+
+  if (IsCtrlKey(event, 'J') || IsCtrlKey(event, 'K')) {
+    if (!sidebar_visible_) {
+      SetFocusArea(FocusArea::kWebView);
+      return true;
+    }
+    SetFocusArea(focus_area_ == FocusArea::kTabSidebar ? FocusArea::kWebView
+                                                       : FocusArea::kTabSidebar);
+    return true;
+  }
+
+  return false;
 }
 
 void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
@@ -680,14 +782,22 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
   } else if (id == kSidebarContentPanelId) {
     view->SetBackgroundColor(theme::kSidebarBg);
   } else if (id == kSidebarBorderPanelId) {
-    view->SetBackgroundColor(theme::kAccent);
+    view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
+                                 ? theme::kBorderFocused
+                                 : theme::kBorderUnfocused);
   } else if (id == kCommandPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandSeparatorPanelId) {
-    view->SetBackgroundColor(theme::kAccent);
-  } else if (id == kRootPanelId || id == kMainPanelId || id == kContentPanelId) {
+    view->SetBackgroundColor(focus_area_ == FocusArea::kCommandLine
+                                 ? theme::kBorderFocused
+                                 : theme::kBorderUnfocused);
+  } else if (id == kContentPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kContentInnerPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kRootPanelId || id == kMainPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandFieldId) {
     command_field_->SetTextColor(theme::kText);
@@ -700,6 +810,8 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
 }
 
 std::string BrowserWindow::SidebarHtml() const {
+  const std::string text_color = "#ffffff";
+  const std::string marker_color = "#48cae4";
   std::string rows;
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
@@ -720,12 +832,12 @@ std::string BrowserWindow::SidebarHtml() const {
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#030814;color:#ffffff;font:12px monospace;}"
+         "background:#030814;color:" + text_color + ";font:12px monospace;}"
          ".row{height:24px;line-height:24px;white-space:nowrap;overflow:hidden;"
-         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:#ffffff;}"
-         ".row.active{background:#0f193c;color:#ffffff;}"
-         ".row.active .marker{color:#48cae4;}"
-         ".marker{color:#48cae4;}"
+         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:" + text_color + ";}"
+         ".row.active{background:#0f193c;color:" + text_color + ";}"
+         ".row.active .marker{color:" + marker_color + ";}"
+         ".marker{color:" + marker_color + ";}"
          "::selection{background:#4f5258;color:#ffffff;}"
          "</style></head><body>" +
          rows + "</body></html>";

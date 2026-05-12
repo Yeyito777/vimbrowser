@@ -52,6 +52,12 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandOpenNext,
   };
 
+  enum class FocusArea {
+    kTabSidebar,
+    kWebView,
+    kCommandLine,
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
@@ -63,6 +69,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void SetCommandText(std::string text);
   void Layout();
   void RefreshSidebar();
+  void SetFocusArea(FocusArea area);
+  void ToggleSidebar();
+  bool HandleGlobalFocusKey(const CefKeyEvent& event);
   void RestyleView(CefRefPtr<CefView> view);
   void RestyleCommandText();
   std::string SidebarHtml() const;
@@ -72,6 +81,9 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string initial_url_;
   std::string command_text_;
   Mode mode_ = Mode::kNormal;
+  FocusArea focus_area_ = FocusArea::kWebView;
+  FocusArea previous_focus_area_ = FocusArea::kWebView;
+  bool sidebar_visible_ = true;
   std::vector<Tab> tabs_;
   size_t active_index_ = 0;
 
@@ -84,6 +96,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<BrowserClient> sidebar_client_;
   CefRefPtr<CefBrowserView> sidebar_view_;
   CefRefPtr<CefPanel> content_panel_;
+  CefRefPtr<CefPanel> content_inner_panel_;
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
