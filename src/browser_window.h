@@ -15,6 +15,7 @@
 #include "include/views/cef_textfield_delegate.h"
 #include "include/views/cef_window.h"
 #include "tab.h"
+#include "vim.h"
 
 namespace vimbrowser {
 
@@ -62,13 +63,6 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandLine,
   };
 
-  enum class WebsiteMode {
-    kWebsiteNormal,
-    kNormal,
-    kInsert,
-    kVisual,
-  };
-
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
@@ -95,10 +89,12 @@ class BrowserWindow final : public CefWindowDelegate,
 
   std::string initial_url_;
   std::string command_text_;
+  vim::LineEditState command_vim_;
   Mode mode_ = Mode::kNormal;
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
-  WebsiteMode website_mode_ = WebsiteMode::kWebsiteNormal;
+  vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
+  bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
   std::vector<Tab> tabs_;
   size_t active_index_ = 0;

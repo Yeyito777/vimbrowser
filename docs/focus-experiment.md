@@ -163,6 +163,14 @@ that behavior.
 When open:
 
 - focus becomes `kCommandLine`.
+- command row starts in insert mode and displays a terminal-style block cursor.
+- `Escape` from command insert mode switches to command normal mode without
+  closing the command line.
+- `Escape` from command normal mode closes/cancels the command line.
+- `i` / `a` from command normal mode re-enter command insert mode.
+- `h` / `l` move the command cursor in command normal mode.
+- `x` deletes at the command cursor in command normal mode.
+- `Enter` sends the command from either command insert or normal mode.
 - command row top border should be focus color `#1c94e5`.
 - command text uses existing command styling:
   - `open` / `open -t`: `#aed6fe`
@@ -223,6 +231,10 @@ Remaining notes/questions after these answers:
   - insert `Escape`: regular Vim normal
   - regular Vim normal/visual `Escape`: website-normal
   - visual/operators are intentionally only wired as future enum states for now.
+- `src/vim.h` / `src/vim.cc` now hold a small shared Vim-mode/line-edit module
+  so command line and future Vim surfaces can share mode names, cursor movement,
+  insert/normal transitions, and basic edit operations instead of each view
+  growing separate ad-hoc Vim state.
 
 Original questions:
 

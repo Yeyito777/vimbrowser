@@ -30,6 +30,8 @@ add_executable(vimbrowser
   src/main.cc
   src/tab.h
   src/theme.h
+  src/vim.cc
+  src/vim.h
 )
 
 SET_EXECUTABLE_TARGET_PROPERTIES(vimbrowser)

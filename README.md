@@ -73,6 +73,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   returns to website-normal mode
 - left qutebrowser-style tab sidebar
 - bottom qutebrowser-style command line while command mode is active
+- command line starts in insert mode, shows a block cursor, supports `Escape` to
+  command-normal mode, then `i` / `a` / `h` / `l` / `x` for a minimal shared Vim
+  editing skeleton
 
 Next work: hints and broader qutebrowser command compatibility on top of this
 CEF/CDP core.

@@ -617,7 +617,10 @@ void BrowserWindow::BeginCommand(Mode mode) {
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
   mode_ = mode;
-  SetCommandText(mode == Mode::kCommandOpenNext ? "open -t " : "open ");
+  command_text_ = mode == Mode::kCommandOpenNext ? "open -t " : "open ";
+  vim::Reset(command_vim_, command_text_.size(), command_text_.size(),
+             vim::Mode::kInsert);
+  SetCommandText(command_text_);
   command_overlay_->SetVisible(true);
   UpdateModeIndicator();
   if (Tab* tab = ActiveTab(); tab) {
@@ -653,6 +656,7 @@ void BrowserWindow::CommitCommand() {
 
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
+  vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
   SetCommandText("");
   command_overlay_->SetVisible(false);
   focus_area_ = previous_focus_area_ == FocusArea::kCommandLine ? FocusArea::kWebView
@@ -679,36 +683,108 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return true;
     }
     if (IsEscapeKey(event)) {
+      if (command_vim_.mode == vim::Mode::kInsert) {
+        vim::LeaveInsert(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        UpdateModeIndicator();
+        return true;
+      }
       CancelCommand();
       return true;
     }
     if (IsBackspaceKey(event)) {
-      const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
-      if (command_text_.size() > prefix.size()) {
-        command_text_.pop_back();
+      if (command_vim_.mode == vim::Mode::kInsert) {
+        vim::Backspace(command_vim_, command_text_);
         SetCommandText(command_text_);
       }
       return true;
     }
-    const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
-    const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
-    const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
-    const char16_t c = event.character ? event.character : event.unmodified_character;
-    if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
-      command_text_.push_back(static_cast<char>(c));
-      SetCommandText(command_text_);
+
+    if (command_vim_.mode == vim::Mode::kNormal) {
+      if (IsPlainLetterKey(event, 'i')) {
+        vim::EnterInsert(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        UpdateModeIndicator();
+        suppress_next_char_event_ = true;
+        return true;
+      }
+      if (IsPlainLetterKey(event, 'a')) {
+        vim::EnterInsertAfter(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        UpdateModeIndicator();
+        suppress_next_char_event_ = true;
+        return true;
+      }
+      if (IsPlainLetterKey(event, 'h')) {
+        vim::MoveLeft(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        return true;
+      }
+      if (IsPlainLetterKey(event, 'l')) {
+        vim::MoveRight(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        return true;
+      }
+      if (IsPlainLetterKey(event, 'x')) {
+        vim::DeleteAtCursor(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        return true;
+      }
     }
+
+    if (command_vim_.mode == vim::Mode::kInsert) {
+      const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+      const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
+      const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+      const char16_t c = event.character ? event.character : event.unmodified_character;
+      if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
+        vim::InsertChar(command_vim_, command_text_, static_cast<char>(c));
+        SetCommandText(command_text_);
+        suppress_next_char_event_ = true;
+      }
+      return true;
+    }
+
     return true;
   }
 
   if (IsCharEvent(event)) {
-    const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
-    const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
-    const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
-    const char16_t c = event.character ? event.character : event.unmodified_character;
-    if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
-      command_text_.push_back(static_cast<char>(c));
-      SetCommandText(command_text_);
+    if (suppress_next_char_event_) {
+      suppress_next_char_event_ = false;
+      return true;
+    }
+
+    if (command_vim_.mode == vim::Mode::kInsert) {
+      const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+      const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
+      const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+      const char16_t c = event.character ? event.character : event.unmodified_character;
+      if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
+        vim::InsertChar(command_vim_, command_text_, static_cast<char>(c));
+        SetCommandText(command_text_);
+      }
+      return true;
+    }
+
+    if (command_vim_.mode == vim::Mode::kNormal) {
+      if (IsPlainLetterKey(event, 'i')) {
+        vim::EnterInsert(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        UpdateModeIndicator();
+      } else if (IsPlainLetterKey(event, 'a')) {
+        vim::EnterInsertAfter(command_vim_, command_text_);
+        SetCommandText(command_text_);
+        UpdateModeIndicator();
+      } else if (IsPlainLetterKey(event, 'h')) {
+        vim::MoveLeft(command_vim_, command_text_);
+        SetCommandText(command_text_);
+      } else if (IsPlainLetterKey(event, 'l')) {
+        vim::MoveRight(command_vim_, command_text_);
+        SetCommandText(command_text_);
+      } else if (IsPlainLetterKey(event, 'x')) {
+        vim::DeleteAtCursor(command_vim_, command_text_);
+        SetCommandText(command_text_);
+      }
     }
     return true;
   }
@@ -718,8 +794,13 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
 
 void BrowserWindow::SetCommandText(std::string text) {
   command_text_ = std::move(text);
-  command_field_->SetText(command_text_);
-  command_field_->SelectRange(CefRange(command_text_.size(), command_text_.size()));
+  vim::Clamp(command_vim_, command_text_);
+  const std::string rendered = mode_ == Mode::kNormal
+                                   ? command_text_
+                                   : vim::WithCursor(command_vim_, command_text_);
+  command_field_->SetText(rendered);
+  command_field_->SelectRange(CefRange(std::min(rendered.size(), command_vim_.cursor + 1),
+                                       std::min(rendered.size(), command_vim_.cursor + 1)));
   RestyleCommandText();
 }
 
@@ -886,17 +967,17 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
 
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
-      if (website_mode_ == WebsiteMode::kInsert) {
-        website_mode_ = WebsiteMode::kNormal;
-      } else if (website_mode_ == WebsiteMode::kNormal ||
-                 website_mode_ == WebsiteMode::kVisual) {
-        website_mode_ = WebsiteMode::kWebsiteNormal;
+      if (website_mode_ == vim::Mode::kInsert) {
+        website_mode_ = vim::Mode::kNormal;
+      } else if (website_mode_ == vim::Mode::kNormal ||
+                 website_mode_ == vim::Mode::kVisual) {
+        website_mode_ = vim::Mode::kWebsiteNormal;
       }
       UpdateModeIndicator();
       return true;
     }
 
-    if (website_mode_ == WebsiteMode::kWebsiteNormal) {
+    if (website_mode_ == vim::Mode::kWebsiteNormal) {
       if (IsPlain(event) && event.windows_key_code == 'O') {
         BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
                                                             : Mode::kCommandOpenCurrent);
@@ -904,7 +985,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
 
       if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
-        website_mode_ = WebsiteMode::kInsert;
+        website_mode_ = vim::Mode::kInsert;
         UpdateModeIndicator();
         return true;
       }
@@ -918,8 +999,8 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       return false;
     }
 
-    if (website_mode_ == WebsiteMode::kNormal || website_mode_ == WebsiteMode::kVisual) {
-      if (website_mode_ == WebsiteMode::kNormal && IsPlain(event) &&
+    if (website_mode_ == vim::Mode::kNormal || website_mode_ == vim::Mode::kVisual) {
+      if (website_mode_ == vim::Mode::kNormal && IsPlain(event) &&
           event.windows_key_code == 'O') {
         BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
                                                             : Mode::kCommandOpenCurrent);
@@ -940,12 +1021,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   if (IsCharEvent(event)) {
-    if (website_mode_ == WebsiteMode::kInsert) {
+    if (website_mode_ == vim::Mode::kInsert) {
       return false;
     }
-    if (website_mode_ == WebsiteMode::kWebsiteNormal &&
+    if (website_mode_ == vim::Mode::kWebsiteNormal &&
         (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a'))) {
-      website_mode_ = WebsiteMode::kInsert;
+      website_mode_ = vim::Mode::kInsert;
       UpdateModeIndicator();
       return true;
     }
@@ -1020,20 +1101,20 @@ void BrowserWindow::UpdateModeIndicator() {
 
 std::string BrowserWindow::ModeIndicatorText() const {
   if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
-    return "COMMAND";
+    return command_vim_.mode == vim::Mode::kNormal ? "CMD-N" : "CMD-I";
   }
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";
   }
 
   switch (website_mode_) {
-    case WebsiteMode::kWebsiteNormal:
+    case vim::Mode::kWebsiteNormal:
       return "WEBSITE";
-    case WebsiteMode::kNormal:
+    case vim::Mode::kNormal:
       return "NORMAL";
-    case WebsiteMode::kInsert:
+    case vim::Mode::kInsert:
       return "INSERT";
-    case WebsiteMode::kVisual:
+    case vim::Mode::kVisual:
       return "VISUAL";
   }
   return "WEBSITE";
@@ -1048,13 +1129,13 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
   }
 
   switch (website_mode_) {
-    case WebsiteMode::kWebsiteNormal:
+    case vim::Mode::kWebsiteNormal:
       return theme::kVimNormal;
-    case WebsiteMode::kNormal:
+    case vim::Mode::kNormal:
       return theme::kVimNormal;
-    case WebsiteMode::kInsert:
+    case vim::Mode::kInsert:
       return theme::kVimInsert;
-    case WebsiteMode::kVisual:
+    case vim::Mode::kVisual:
       return theme::kVimVisual;
   }
   return theme::kVimNormal;
