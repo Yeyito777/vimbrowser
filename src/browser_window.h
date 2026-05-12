@@ -19,6 +19,11 @@
 
 namespace vimbrowser {
 
+struct CompletionItem {
+  std::string name;
+  std::string description;
+};
+
 class BrowserWindow final : public CefWindowDelegate,
                             public CefBrowserViewDelegate,
                             public CefButtonDelegate,
@@ -63,11 +68,6 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandLine,
   };
 
-  struct CompletionItem {
-    std::string name;
-    std::string description;
-  };
-
   struct CommandAutocompleteState {
     bool active = false;
     int selection = -1;
@@ -88,6 +88,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateCommandAutocomplete();
   bool CycleCommandAutocomplete(int direction);
   void FillCommandAutocomplete(const std::string& name);
+  int CommandAutocompleteVisibleRows() const;
+  int CommandAutocompleteHeight() const;
   void SetCommandText(std::string text);
   void Layout();
   void RefreshSidebar();

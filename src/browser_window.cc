@@ -19,6 +19,8 @@ namespace {
 
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
+constexpr int kCommandAutocompleteRowHeight = 22;
+constexpr int kCommandAutocompleteMaxVisible = 8;
 constexpr int kRootPanelId = 100;
 constexpr int kMainPanelId = 101;
 constexpr int kSidebarPanelId = 102;
@@ -42,6 +44,20 @@ constexpr int kCommandCursorTop = 5;
 constexpr int kCommandCursorHeight = 18;
 constexpr int kCommandCursorBarWidth = 2;
 constexpr int kCommandCursorBlockWidth = 8;
+
+const std::vector<CompletionItem>& CommandList() {
+  static const std::vector<CompletionItem> commands = {
+      {":open", "open URL/search in current tab"},
+  };
+  return commands;
+}
+
+const std::vector<CompletionItem>& OpenArgList() {
+  static const std::vector<CompletionItem> args = {
+      {"-t", "open in a new tab"},
+  };
+  return args;
+}
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
@@ -209,6 +225,16 @@ bool StartsWithCaseInsensitive(const std::string& value, const std::string& pref
     }
   }
   return true;
+}
+
+bool IsWhitespaceOnly(const std::string& value) {
+  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
+    return std::isspace(c);
+  });
+}
+
+bool IsTokenBoundary(const std::string& value, size_t pos) {
+  return pos >= value.size() || std::isspace(static_cast<unsigned char>(value[pos]));
 }
 
 }  // namespace
@@ -780,17 +806,31 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     return;
   }
 
-  const std::string leading = command_text_.substr(0, first_non_space);
   const std::string raw = command_text_.substr(first_non_space);
   std::vector<CompletionItem> matches;
 
-  if (StartsWithCaseInsensitive(raw, ":open ")) {
-    const std::string arg_prefix = raw.substr(6);
-    if (StartsWithCaseInsensitive("-t", arg_prefix)) {
-      matches.push_back({"-t", "open in a new tab"});
+  const size_t first_space = raw.find_first_of(" \t");
+  const std::string typed_command = first_space == std::string::npos ? raw : raw.substr(0, first_space);
+  const std::string after_command = first_space == std::string::npos ? "" : raw.substr(first_space + 1);
+
+  if (first_space == std::string::npos) {
+    for (const CompletionItem& item : CommandList()) {
+      if (StartsWithCaseInsensitive(item.name, typed_command)) {
+        matches.push_back(item);
+      }
     }
-  } else if (StartsWithCaseInsensitive(":open", raw)) {
-    matches.push_back({":open", "open URL/search in current tab"});
+  } else if (StartsWithCaseInsensitive(typed_command, ":open") && IsTokenBoundary(typed_command, 5)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
+    if (completing_new_arg || StartsWithCaseInsensitive(arg_prefix, "-")) {
+      for (const CompletionItem& item : OpenArgList()) {
+        if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
+          matches.push_back(item);
+        }
+      }
+    }
   }
 
   if (matches.empty()) {
@@ -800,7 +840,7 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   command_autocomplete_.active = true;
   command_autocomplete_.selection = -1;
   command_autocomplete_.prefix = command_text_;
-  command_autocomplete_.token_start = leading.size();
+  command_autocomplete_.token_start = first_non_space;
   command_autocomplete_.matches = std::move(matches);
 }
 
@@ -811,7 +851,11 @@ void BrowserWindow::FillCommandAutocomplete(const std::string& name) {
 
   std::string completed;
   if (!name.empty() && name[0] == ':') {
-    completed = name + " ";
+    const size_t first_non_space = command_autocomplete_.prefix.find_first_not_of(" \t");
+    const std::string leading = first_non_space == std::string::npos
+                                    ? ""
+                                    : command_autocomplete_.prefix.substr(0, first_non_space);
+    completed = leading + name + " ";
   } else {
     const size_t last_space = command_autocomplete_.prefix.find_last_of(" \t");
     if (last_space != std::string::npos) {
@@ -824,6 +868,18 @@ void BrowserWindow::FillCommandAutocomplete(const std::string& name) {
   command_text_ = completed;
   command_vim_.cursor = command_text_.size();
   vim::Clamp(command_vim_, command_text_);
+}
+
+int BrowserWindow::CommandAutocompleteVisibleRows() const {
+  if (!command_autocomplete_.active || command_autocomplete_.matches.empty()) {
+    return 0;
+  }
+  return std::min(kCommandAutocompleteMaxVisible,
+                  static_cast<int>(command_autocomplete_.matches.size()));
+}
+
+int BrowserWindow::CommandAutocompleteHeight() const {
+  return CommandAutocompleteVisibleRows() * kCommandAutocompleteRowHeight;
 }
 
 bool BrowserWindow::CycleCommandAutocomplete(int direction) {
@@ -847,6 +903,7 @@ bool BrowserWindow::CycleCommandAutocomplete(int direction) {
   FillCommandAutocomplete(
       command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)].name);
   SetCommandText(command_text_);
+  Layout();
   return true;
 }
 
@@ -873,9 +930,11 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       } else {
         ClearCommandAutocomplete();
       }
+      Layout();
     }
     if (result.mode_changed) {
       ClearCommandAutocomplete();
+      Layout();
       UpdateModeIndicator();
     }
   };
@@ -958,6 +1017,17 @@ void BrowserWindow::UpdateCommandView() {
     dict->SetString("text", command_text_);
     dict->SetInt("cursor", static_cast<int>(vim::CursorDisplayOffset(command_vim_, command_text_)));
     dict->SetString("mode", command_vim_.mode == vim::Mode::kNormal ? "normal" : "insert");
+    dict->SetInt("selection", command_autocomplete_.selection);
+    CefRefPtr<CefListValue> completions = CefListValue::Create();
+    if (command_autocomplete_.active) {
+      for (size_t i = 0; i < command_autocomplete_.matches.size(); ++i) {
+        CefRefPtr<CefDictionaryValue> item = CefDictionaryValue::Create();
+        item->SetString("name", command_autocomplete_.matches[i].name);
+        item->SetString("description", command_autocomplete_.matches[i].description);
+        completions->SetDictionary(i, item);
+      }
+    }
+    dict->SetList("completions", completions);
     CefRefPtr<CefValue> value = CefValue::Create();
     value->SetDictionary(dict);
     const std::string json = CefWriteJSON(value, JSON_WRITER_DEFAULT).ToString();
@@ -974,7 +1044,7 @@ void BrowserWindow::Layout() {
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
-  const int command_total_height = kCommandHeight + 1;
+  const int command_total_height = kCommandHeight + 1 + CommandAutocompleteHeight();
   const int main_height = height;
   if (command_overlay_) {
     command_overlay_->SetVisible(mode_ != Mode::kNormal);
@@ -1003,8 +1073,8 @@ void BrowserWindow::Layout() {
   content_inner_panel_->SetBounds(CefRect(0, 0, content_width, main_height));
   command_panel_->SetSize(CefSize(width, command_total_height));
   command_separator_panel_->SetSize(CefSize(width, 1));
-  command_content_panel_->SetSize(CefSize(width, kCommandHeight));
-  command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
+  command_content_panel_->SetSize(CefSize(width, command_total_height));
+  command_separator_panel_->SetBounds(CefRect(0, CommandAutocompleteHeight(), width, 1));
   command_content_panel_->SetBounds(CefRect(0, 0, width, command_total_height));
   if (command_overlay_) {
     command_overlay_->SetBounds(CefRect(0, std::max(0, height - command_total_height),
@@ -1338,6 +1408,10 @@ std::string BrowserWindow::CommandHtml() const {
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
          "background:#00050f;color:#ffffff;font:13px monospace;}"
+         ".autocomplete{background:#030814;color:#ffffff;font:12px monospace;overflow:hidden;}"
+         ".ac-row{height:22px;line-height:22px;white-space:pre;padding:0 8px;background:#030814;}"
+         ".ac-row.selected{background:#0f193c;}"
+         ".ac-marker{color:#48cae4}.ac-name{color:#ffffff}.ac-desc{color:#8d96a8}"
          ".top-border{height:1px;background:#1c94e5;width:100%;}"
          ".line{position:relative;height:28px;line-height:28px;padding-left:10px;"
          "white-space:pre;overflow:hidden;background:#00050f;}"
@@ -1351,13 +1425,15 @@ std::string BrowserWindow::CommandHtml() const {
          "pointer-events:none;}"
          ".cursor.bar{width:2px;z-index:3}.cursor.block{width:8px;z-index:1}"
          "::selection{background:#4f5258;color:#ffffff}"
-         "</style></head><body><div class=\"top-border\"></div><div class=\"line\"><div id=\"cursor\" "
+         "</style></head><body><div id=\"autocomplete\" class=\"autocomplete\"></div>"
+         "<div class=\"top-border\"></div><div class=\"line\"><div id=\"cursor\" "
          "class=\"cursor bar\"></div><span id=\"cells\" class=\"cells\"></span>"
          "</div><script>"
          "function esc(s){return String(s).replace(/[&<>\"']/g,function(c){return "
          "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
+         "function pad(s,n){s=String(s);return s.length>=n?s:s+Array(n-s.length+1).join(' ')}"
          "window.vimbrowserSetCommand=function(s){"
-         "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
+         "var cells=document.getElementById('cells'),cur=document.getElementById('cursor'),ac=document.getElementById('autocomplete');"
          "var valid={':open':{'-t':true}};"
          "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
          "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
@@ -1371,7 +1447,14 @@ std::string BrowserWindow::CommandHtml() const {
          "if(normal&&i===cursor)cls+=' under-cursor';html+='<span class=\"'+cls+'\">'+esc(text[i])+'</span>'}"
          "if(cursor>=text.length)html+='<span class=\"cell eof\"></span>';"
          "cells.innerHTML=html;cur.className='cursor '+(normal?'block':'bar');"
-         "cur.style.left=(10+cursor*8)+'px';};"
+         "cur.style.left=(10+cursor*8)+'px';"
+         "var ms=s.completions||[],sel=(s.selection==null?-1:s.selection),ah='';"
+         "if(ms.length){var max=0;for(var a=0;a<ms.length;a++)max=Math.max(max,String(ms[a].name||'').length);"
+         "var visible=Math.min(ms.length,8),start=0;if(ms.length>visible&&sel>=0){start=Math.max(0,Math.min(sel-Math.floor(visible/2),ms.length-visible))}"
+         "for(var r=0;r<visible;r++){var idx=start+r,it=ms[idx]||{},selected=idx===sel;"
+         "var marker=selected?'▸ ':'  ';var desc=it.description||it.desc||'';"
+         "ah+='<div class=\"ac-row '+(selected?'selected':'')+'\"><span class=\"ac-marker\">'+marker+'</span><span class=\"ac-name\">'+esc(pad(it.name||'',max+1))+'</span><span class=\"ac-desc\">'+esc(desc)+'</span></div>'}"
+         "}ac.innerHTML=ah;};"
          "window.vimbrowserSetCommand({text:'',cursor:0,mode:'insert'});"
          "</script></body></html>";
 }
