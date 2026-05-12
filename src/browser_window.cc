@@ -305,6 +305,9 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
       tab.url = url;
+      if (url != "about:blank") {
+        last_tab_close_placeholder_ = false;
+      }
       RefreshSidebar();
       return;
     }
@@ -754,6 +757,7 @@ cef_runtime_style_t BrowserWindow::GetBrowserRuntimeStyle() {
 }
 
 void BrowserWindow::AddTab(std::string url, bool activate) {
+  last_tab_close_placeholder_ = false;
   CefBrowserSettings browser_settings;
   browser_settings.background_color = theme::kAppBg;
 
@@ -847,6 +851,7 @@ void BrowserWindow::CloseActiveTab() {
   if (tabs_.size() == 1) {
     if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
       tab->url = "about:blank";
+      last_tab_close_placeholder_ = true;
       tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
       RefreshSidebar();
     }
@@ -860,6 +865,7 @@ void BrowserWindow::CloseActiveTab() {
     tabs_[closing].client->browser()->GetHost()->CloseBrowser(true);
   }
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
+  last_tab_close_placeholder_ = false;
   active_index_ = std::min(closing, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
   RefreshSidebar();
@@ -872,6 +878,15 @@ void BrowserWindow::UndoCloseTab() {
   }
   const std::string url = closed_tab_urls_.back();
   closed_tab_urls_.pop_back();
+  if (last_tab_close_placeholder_ && tabs_.size() == 1 &&
+      active_index_ == 0 && tabs_[0].client && tabs_[0].client->browser()) {
+    last_tab_close_placeholder_ = false;
+    tabs_[0].url = url;
+    tabs_[0].client->browser()->GetMainFrame()->LoadURL(url);
+    RefreshSidebar();
+    Layout();
+    return;
+  }
   AddTab(url, true);
 }
 
@@ -1016,6 +1031,7 @@ void BrowserWindow::CommitCommand() {
   if (open_in_new_tab) {
     AddTab(url, true);
   } else if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
+    last_tab_close_placeholder_ = false;
     tab->url = url;
     tab->client->browser()->GetMainFrame()->LoadURL(url);
     RefreshSidebar();
@@ -1080,6 +1096,7 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
   if (new_tab) {
     AddTab(url, true);
   } else if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
+    last_tab_close_placeholder_ = false;
     if (active_index_ < tabs_.size()) {
       tabs_[active_index_].url = url;
     }

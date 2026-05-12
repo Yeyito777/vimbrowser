@@ -145,6 +145,7 @@ class BrowserWindow final : public CefWindowDelegate,
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
+  bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
   size_t active_index_ = 0;
 
