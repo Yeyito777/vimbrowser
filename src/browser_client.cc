@@ -26,7 +26,14 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   devtools_registration_ = nullptr;
   browser_ = nullptr;
-  CefQuitMessageLoop();
+}
+
+void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                TransitionType transition_type) {
+  if (owner_ && frame && frame->IsMain()) {
+    owner_->OnClientLoadStart(this, frame->GetURL().ToString());
+  }
 }
 
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,

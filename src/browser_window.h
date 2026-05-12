@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
+  void OnClientLoadStart(BrowserClient* client, const std::string& url);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
@@ -80,6 +82,15 @@ class BrowserWindow final : public CefWindowDelegate,
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
   void ActivateRelative(int delta);
+  void ActivateFirstTab();
+  void ActivateLastTab();
+  void MoveActiveTab(int delta);
+  void CloneActiveTab();
+  void CloseActiveTab();
+  void UndoCloseTab();
+  std::string ActiveTabUrl() const;
+  std::string ActiveTabTitle() const;
+  CefRefPtr<CefBrowser> ActiveBrowser() const;
   void BeginCommand(Mode mode);
   void BeginCommandText(std::string text);
   void CommitCommand();
@@ -100,6 +111,17 @@ class BrowserWindow final : public CefWindowDelegate,
   void ToggleSidebar();
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
+  bool HandleWebsiteCommandKey(const CefKeyEvent& event);
+  void ResetWebsitePendingKeys();
+  void ScrollActivePageBy(int dy);
+  void ScrollActivePageToTop();
+  void ScrollActivePageToBottom();
+  void OpenClipboard(bool new_tab);
+  void ZoomActivePage(cef_zoom_command_t command);
+  void YankActiveUrl();
+  void YankActiveTitle();
+  void YankActiveMarkdown();
+  void YankActiveDom();
   void RestyleView(CefRefPtr<CefView> view);
   void UpdateCommandView();
   void UpdateModeIndicator();
@@ -113,6 +135,8 @@ class BrowserWindow final : public CefWindowDelegate,
 
   std::string initial_url_;
   std::string command_text_;
+  std::string website_pending_keys_;
+  std::vector<std::string> closed_tab_urls_;
   vim::LineEditState command_vim_;
   CommandAutocompleteState command_autocomplete_;
   Mode mode_ = Mode::kNormal;

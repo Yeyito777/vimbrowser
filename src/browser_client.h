@@ -29,6 +29,9 @@ class BrowserClient final : public CefClient,
                    ErrorCode error_code,
                    const CefString& error_text,
                    const CefString& failed_url) override;
+  void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   TransitionType transition_type) override;
 
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,

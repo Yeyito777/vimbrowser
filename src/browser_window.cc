@@ -1,14 +1,17 @@
 #include "browser_window.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cctype>
 #include <iomanip>
 #include <sstream>
 #include <utility>
 
 #include "config.h"
+#include "include/cef_app.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
+#include "include/cef_navigation_entry.h"
 #include "include/cef_parser.h"
 #include "include/cef_values.h"
 #include "include/views/cef_button.h"
@@ -50,6 +53,7 @@ constexpr int kCommandCursorBlockWidth = 8;
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
+      {":tab-focus", "focus tab by number or title"},
   };
   return commands;
 }
@@ -243,6 +247,47 @@ int TextColumns(const std::string& value) {
   return static_cast<int>(value.size());
 }
 
+std::string ShellRead(const char* command) {
+  std::string output;
+  FILE* pipe = popen(command, "r");
+  if (!pipe) {
+    return output;
+  }
+  char buffer[4096];
+  while (fgets(buffer, sizeof(buffer), pipe)) {
+    output += buffer;
+  }
+  pclose(pipe);
+  return output;
+}
+
+bool ShellWrite(const char* command, const std::string& text) {
+  FILE* pipe = popen(command, "w");
+  if (!pipe) {
+    return false;
+  }
+  if (!text.empty()) {
+    fwrite(text.data(), 1, text.size(), pipe);
+  }
+  return pclose(pipe) == 0;
+}
+
+std::string ReadClipboardText() {
+  return ShellRead("(xclip -selection clipboard -o 2>/dev/null || "
+                   "xsel -b -o 2>/dev/null || "
+                   "wl-paste -n 2>/dev/null) | head -c 1048576");
+}
+
+void WriteClipboardText(const std::string& text) {
+  if (ShellWrite("xclip -selection clipboard -i 2>/dev/null", text)) {
+    return;
+  }
+  if (ShellWrite("xsel -b -i 2>/dev/null", text)) {
+    return;
+  }
+  ShellWrite("wl-copy 2>/dev/null", text);
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::string initial_url)
@@ -254,6 +299,16 @@ void BrowserWindow::Create() {
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
+}
+
+void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
+  for (Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      tab.url = url;
+      RefreshSidebar();
+      return;
+    }
+  }
 }
 
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
@@ -457,6 +512,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   main_panel_ = nullptr;
   root_panel_ = nullptr;
   window_ = nullptr;
+  CefQuitMessageLoop();
 }
 
 void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
@@ -539,6 +595,10 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 
   if (PlainKeyChar(event) == ':') {
     BeginCommandText(":");
+    return true;
+  }
+
+  if (HandleWebsiteCommandKey(event)) {
     return true;
   }
 
@@ -743,6 +803,117 @@ void BrowserWindow::ActivateRelative(int delta) {
   ActivateTab(static_cast<size_t>(next));
 }
 
+void BrowserWindow::ActivateFirstTab() {
+  ActivateTab(0);
+}
+
+void BrowserWindow::ActivateLastTab() {
+  if (!tabs_.empty()) {
+    ActivateTab(tabs_.size() - 1);
+  }
+}
+
+void BrowserWindow::MoveActiveTab(int delta) {
+  if (tabs_.size() < 2) {
+    return;
+  }
+  const int count = static_cast<int>(tabs_.size());
+  const int current = static_cast<int>(active_index_);
+  const int next = (current + delta + count) % count;
+  std::swap(tabs_[active_index_], tabs_[static_cast<size_t>(next)]);
+  active_index_ = static_cast<size_t>(next);
+  RefreshSidebar();
+  Layout();
+}
+
+void BrowserWindow::CloneActiveTab() {
+  const std::string url = ActiveTabUrl();
+  if (!url.empty()) {
+    AddTab(url, true);
+  }
+}
+
+void BrowserWindow::CloseActiveTab() {
+  if (tabs_.empty()) {
+    return;
+  }
+
+  const size_t closing = active_index_;
+  const std::string url = ActiveTabUrl();
+  if (!url.empty()) {
+    closed_tab_urls_.push_back(url);
+  }
+
+  if (tabs_.size() == 1) {
+    if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
+      tab->url = "about:blank";
+      tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
+      RefreshSidebar();
+    }
+    return;
+  }
+
+  if (tabs_[closing].view) {
+    content_inner_panel_->RemoveChildView(tabs_[closing].view);
+  }
+  if (tabs_[closing].client && tabs_[closing].client->browser()) {
+    tabs_[closing].client->browser()->GetHost()->CloseBrowser(true);
+  }
+  tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
+  active_index_ = std::min(closing, tabs_.size() - 1);
+  tabs_[active_index_].view->SetVisible(true);
+  RefreshSidebar();
+  Layout();
+}
+
+void BrowserWindow::UndoCloseTab() {
+  if (closed_tab_urls_.empty()) {
+    return;
+  }
+  const std::string url = closed_tab_urls_.back();
+  closed_tab_urls_.pop_back();
+  AddTab(url, true);
+}
+
+CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {
+  if (tabs_.empty() || active_index_ >= tabs_.size()) {
+    return nullptr;
+  }
+  const Tab& tab = tabs_[active_index_];
+  if (!tab.client) {
+    return nullptr;
+  }
+  return tab.client->browser();
+}
+
+std::string BrowserWindow::ActiveTabUrl() const {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (browser && browser->GetMainFrame()) {
+    const std::string url = browser->GetMainFrame()->GetURL().ToString();
+    if (!url.empty()) {
+      return url;
+    }
+  }
+  if (!tabs_.empty() && active_index_ < tabs_.size()) {
+    return tabs_[active_index_].url;
+  }
+  return "";
+}
+
+std::string BrowserWindow::ActiveTabTitle() const {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (browser && browser->GetHost()) {
+    CefRefPtr<CefNavigationEntry> entry = browser->GetHost()->GetVisibleNavigationEntry();
+    if (entry) {
+      const std::string title = entry->GetTitle().ToString();
+      if (!title.empty()) {
+        return title;
+      }
+    }
+  }
+  return ActiveTabUrl();
+}
+
 void BrowserWindow::BeginCommand(Mode mode) {
   BeginCommandText(mode == Mode::kCommandOpenNext ? ":open tab " : ":open ");
   mode_ = mode;
@@ -769,6 +940,37 @@ void BrowserWindow::BeginCommandText(std::string text) {
 void BrowserWindow::CommitCommand() {
   std::string text = Trim(command_text_);
   bool open_in_new_tab = mode_ == Mode::kCommandOpenNext;
+
+  if (StartsWithCaseInsensitive(text, ":tab-focus")) {
+    const size_t after_command = 10;
+    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+      text.erase(0, after_command);
+      text = Trim(text);
+      CancelCommand();
+      if (text.empty()) {
+        return;
+      }
+      const bool all_digits = std::all_of(text.begin(), text.end(), [](unsigned char c) {
+        return std::isdigit(c);
+      });
+      if (all_digits) {
+        const int index = std::stoi(text);
+        if (index > 0) {
+          ActivateTab(static_cast<size_t>(index - 1));
+        }
+        return;
+      }
+      const std::string needle = text;
+      for (size_t i = 0; i < tabs_.size(); ++i) {
+        const std::string haystack = tabs_[i].url;
+        if (haystack.find(needle) != std::string::npos) {
+          ActivateTab(i);
+          return;
+        }
+      }
+      return;
+    }
+  }
 
   if (StartsWithCaseInsensitive(text, ":open")) {
     const size_t after_command = 5;
@@ -839,6 +1041,84 @@ void BrowserWindow::CancelCommand() {
   Layout();
 }
 
+void BrowserWindow::ScrollActivePageBy(int dy) {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  browser->GetMainFrame()->ExecuteJavaScript(
+      "window.scrollBy({left:0,top:" + std::to_string(dy) + ",behavior:'auto'});",
+      browser->GetMainFrame()->GetURL(), 0);
+}
+
+void BrowserWindow::ScrollActivePageToTop() {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  browser->GetMainFrame()->ExecuteJavaScript(
+      "window.scrollTo({left:0,top:0,behavior:'auto'});",
+      browser->GetMainFrame()->GetURL(), 0);
+}
+
+void BrowserWindow::ScrollActivePageToBottom() {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  browser->GetMainFrame()->ExecuteJavaScript(
+      "window.scrollTo({left:0,top:document.scrollingElement?document.scrollingElement.scrollHeight:document.body.scrollHeight,behavior:'auto'});",
+      browser->GetMainFrame()->GetURL(), 0);
+}
+
+void BrowserWindow::OpenClipboard(bool new_tab) {
+  std::string text = Trim(ReadClipboardText());
+  if (text.empty()) {
+    return;
+  }
+  const std::string url = ResolveUrlOrSearch(text);
+  if (new_tab) {
+    AddTab(url, true);
+  } else if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
+    if (active_index_ < tabs_.size()) {
+      tabs_[active_index_].url = url;
+    }
+    browser->GetMainFrame()->LoadURL(url);
+    RefreshSidebar();
+  }
+}
+
+void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (browser && browser->GetHost()) {
+    browser->GetHost()->Zoom(command);
+  }
+}
+
+void BrowserWindow::YankActiveUrl() {
+  WriteClipboardText(ActiveTabUrl());
+}
+
+void BrowserWindow::YankActiveTitle() {
+  WriteClipboardText(ActiveTabTitle());
+}
+
+void BrowserWindow::YankActiveMarkdown() {
+  WriteClipboardText("[" + ActiveTabTitle() + "](" + ActiveTabUrl() + ")");
+}
+
+void BrowserWindow::YankActiveDom() {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  browser->GetMainFrame()->ExecuteJavaScript(
+      "(()=>{const text=document.documentElement?document.documentElement.outerHTML:(document.body?document.body.outerHTML:'');"
+      "if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{});return;}"
+      "const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-10000px';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();})()",
+      browser->GetMainFrame()->GetURL(), 0);
+}
+
 void BrowserWindow::ClearCommandAutocomplete() {
   command_autocomplete_ = CommandAutocompleteState{};
   UpdateAutocompleteView();
@@ -887,6 +1167,22 @@ void BrowserWindow::UpdateCommandAutocomplete() {
       for (const CompletionItem& item : OpenArgList()) {
         if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
+        }
+      }
+    }
+  } else if (StartsWithCaseInsensitive(typed_command, ":tab-focus") &&
+             IsTokenBoundary(typed_command, 10)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
+    if (completing_new_arg || !arg_prefix.empty()) {
+      for (size_t i = 0; i < tabs_.size(); ++i) {
+        const std::string name = std::to_string(i + 1);
+        const std::string description = DisplayUrl(tabs_[i].url);
+        if (completing_new_arg || StartsWithCaseInsensitive(name, arg_prefix) ||
+            StartsWithCaseInsensitive(description, arg_prefix)) {
+          matches.push_back({name, description});
         }
       }
     }
@@ -1172,6 +1468,7 @@ void BrowserWindow::Layout() {
   RestyleView(command_panel_);
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
+  RestyleView(autocomplete_panel_);
   RestyleView(mode_indicator_panel_);
   RestyleView(mode_indicator_label_);
   main_panel_->SetSize(CefSize(width, main_height));
@@ -1250,6 +1547,7 @@ void BrowserWindow::RefreshSidebar() {
 }
 
 void BrowserWindow::SetFocusArea(FocusArea area) {
+  ResetWebsitePendingKeys();
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
   }
@@ -1318,6 +1616,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
 
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
+      ResetWebsitePendingKeys();
       if ((event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
           website_mode_ == vim::Mode::kInsert) {
         website_mode_ = vim::Mode::kWebsiteNormal;
@@ -1337,6 +1636,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     if (website_mode_ == vim::Mode::kWebsiteNormal) {
       if (PlainKeyChar(event) == ':') {
         BeginCommandText(":");
+        return true;
+      }
+
+      if (HandleWebsiteCommandKey(event)) {
         return true;
       }
 
@@ -1364,6 +1667,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     if (website_mode_ == vim::Mode::kNormal || website_mode_ == vim::Mode::kVisual) {
       if (website_mode_ == vim::Mode::kNormal && PlainKeyChar(event) == ':') {
         BeginCommandText(":");
+        return true;
+      }
+
+      if (website_mode_ == vim::Mode::kNormal && HandleWebsiteCommandKey(event)) {
         return true;
       }
 
@@ -1400,6 +1707,98 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     return IsPlainPrintableKey(event);
   }
 
+  return false;
+}
+
+void BrowserWindow::ResetWebsitePendingKeys() {
+  website_pending_keys_.clear();
+}
+
+bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event)) {
+    return false;
+  }
+
+  const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+  const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+  const char key = PlainKeyChar(event);
+
+  if (ctrl && event.windows_key_code >= '1' && event.windows_key_code <= '9') {
+    ActivateTab(static_cast<size_t>(event.windows_key_code - '1'));
+    ResetWebsitePendingKeys();
+    return true;
+  }
+
+  if (ctrl && !shift) {
+    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(140); return true; }
+    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-140); return true; }
+    if (IsCtrlKey(event, 'D')) { ScrollActivePageBy(560); return true; }
+    if (IsCtrlKey(event, 'U')) { ScrollActivePageBy(-560); return true; }
+    if (IsCtrlKey(event, 'F')) { ScrollActivePageBy(1120); return true; }
+    if (IsCtrlKey(event, 'B')) { ScrollActivePageBy(-1120); return true; }
+  }
+
+  if (ctrl && shift && IsCtrlKey(event, 'Y')) {
+    YankActiveDom();
+    ResetWebsitePendingKeys();
+    return true;
+  }
+
+  if (!key) {
+    ResetWebsitePendingKeys();
+    return false;
+  }
+
+  if (website_pending_keys_ == "g") {
+    ResetWebsitePendingKeys();
+    if (key == 'g') { ScrollActivePageToTop(); return true; }
+    if (key == '0') { ActivateFirstTab(); return true; }
+    if (key == '$') { ActivateLastTab(); return true; }
+    return true;
+  }
+
+  if (website_pending_keys_ == "y") {
+    ResetWebsitePendingKeys();
+    if (key == 'y') { YankActiveUrl(); return true; }
+    if (key == 't') { YankActiveTitle(); return true; }
+    if (key == 'm') { YankActiveMarkdown(); return true; }
+    return true;
+  }
+
+  switch (key) {
+    case 'j': ScrollActivePageBy(280); return true;
+    case 'k': ScrollActivePageBy(-280); return true;
+    case 'G': ScrollActivePageToBottom(); return true;
+    case 'H':
+      if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) browser->GoBack();
+      return true;
+    case 'L':
+      if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoForward()) browser->GoForward();
+      return true;
+    case 'r':
+      if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->Reload();
+      return true;
+    case 'R':
+      if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->ReloadIgnoreCache();
+      return true;
+    case 'p': OpenClipboard(false); return true;
+    case 'P': OpenClipboard(true); return true;
+    case 'J': ActivateRelative(1); return true;
+    case 'K': ActivateRelative(-1); return true;
+    case 'd': CloseActiveTab(); return true;
+    case 'u': UndoCloseTab(); return true;
+    case 'e': MoveActiveTab(-1); return true;
+    case 'E': MoveActiveTab(1); return true;
+    case 'c': CloneActiveTab(); return true;
+    case 't': BeginCommandText(":tab-focus "); return true;
+    case '=': ZoomActivePage(CEF_ZOOM_COMMAND_IN); return true;
+    case '-': ZoomActivePage(CEF_ZOOM_COMMAND_OUT); return true;
+    case ')': ZoomActivePage(CEF_ZOOM_COMMAND_RESET); return true;
+    case 'g': website_pending_keys_ = "g"; return true;
+    case 'y': website_pending_keys_ = "y"; return true;
+  }
+
+  ResetWebsitePendingKeys();
   return false;
 }
 
@@ -1562,7 +1961,7 @@ std::string BrowserWindow::CommandHtml() const {
          "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
          "window.vimbrowserSetCommand=function(s){"
          "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
-         "var valid={':open':{'tab':true}};"
+         "var valid={':open':{'tab':true},':tab-focus':{}};"
          "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
          "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
          "while((wm=re.exec(full))!==null)words.push({w:wm[0],e:wm.index+wm[0].length});"
