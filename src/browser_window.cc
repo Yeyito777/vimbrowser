@@ -19,7 +19,7 @@ namespace {
 
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
-constexpr int kCommandAutocompleteRowHeight = 22;
+constexpr int kCommandAutocompleteRowHeight = 28;
 constexpr int kCommandAutocompleteMaxVisible = 8;
 constexpr int kCommandAutocompleteHPadding = 8;
 constexpr int kRootPanelId = 100;
@@ -1584,8 +1584,8 @@ std::string BrowserWindow::AutocompleteHtml() const {
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#030814;color:#ffffff;font:12px monospace;}"
-         ".row{height:22px;line-height:22px;white-space:pre;padding:0 8px;"
+         "background:#030814;color:#ffffff;font:13px monospace;}"
+         ".row{height:28px;line-height:28px;white-space:pre;padding:0 8px;"
          "background:#030814;color:#ffffff;}"
          ".row.selected{background:#0f193c;}"
          ".marker{color:#48cae4}.name{color:#ffffff}.desc{color:#8d96a8}"
