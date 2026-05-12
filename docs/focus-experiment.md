@@ -81,9 +81,10 @@ Suggested future web-mode enum, separate from focus:
 
 ```cpp
 enum class WebMode {
-  kNone,      // current state: no native normal/insert implementation in webview
-  kNormal,    // future: vim navigation/hints inside page
-  kInsert,    // future: page editing/forms get keys directly
+  kWebsiteNormal, // default: qutebrowser-like page mode for hints/scrolling
+  kNormal,        // regular Vim normal mode; future operators/text objects
+  kInsert,        // page receives regular typing/input
+  kVisual,        // future visual selection/operator mode
 };
 ```
 
@@ -106,8 +107,16 @@ Initial experimental behavior:
   - After close, focus returns to the previous focus area.
   - Top border/outline uses focused accent color while focused.
 - `kWebView`:
-  - Currently no native vimbrowser normal/insert mode behavior in page content.
-  - Page receives ordinary web input/shortcuts through CEF.
+  - Has its own web-mode state machine.
+  - Default mode is website-normal.
+  - Website-normal is the future home for hints, scrolling, and page commands.
+  - `i` / `a` in website-normal enter insert mode.
+  - Escape in insert mode enters regular Vim normal mode.
+  - Escape in regular Vim normal or visual mode returns to website-normal.
+  - Regular Vim normal and visual modes are skeleton states for now: they swallow
+    plain printable keys but do not perform edits/operators yet.
+  - Insert mode lets the page receive ordinary typing/input. We do not auto-enter
+    insert mode when clicking editable fields in this lightweight pass.
   - The web view does not get an explicit focus outline.
   - Sidebar border becomes unfocused gray, but sidebar text and active marker do
     not dim solely because focus moved elsewhere.
@@ -182,8 +191,10 @@ Then route keys like Exocortex:
 3. If `focus_area_ == kTabSidebar`:
    - route sidebar/tab keys only.
 4. If `focus_area_ == kWebView`:
-   - pass keys to CEF page for now, because page normal/insert modes are not
-     implemented yet.
+   - route through the web-mode state machine first.
+   - insert mode passes normal input through to CEF.
+   - website-normal/regular-normal/visual currently swallow plain printable keys
+     unless a future binding claims them.
 
 This means the current normal-mode tab keybinds should stop being page-global.
 They should only work when `focus_area_ == kTabSidebar`.
@@ -206,6 +217,12 @@ Remaining notes/questions after these answers:
   sidebar returns focus to the web view.
 - The current experimental code uses focus-cycle behavior for both `Ctrl+j` and
   `Ctrl+k` because there are only two non-command focus targets so far.
+- Website-view mode skeleton:
+  - startup/default: website-normal
+  - website-normal `i`/`a`: insert
+  - insert `Escape`: regular Vim normal
+  - regular Vim normal/visual `Escape`: website-normal
+  - visual/operators are intentionally only wired as future enum states for now.
 
 Original questions:
 

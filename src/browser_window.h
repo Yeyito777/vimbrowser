@@ -58,6 +58,13 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandLine,
   };
 
+  enum class WebsiteMode {
+    kWebsiteNormal,
+    kNormal,
+    kInsert,
+    kVisual,
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
@@ -72,6 +79,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void SetFocusArea(FocusArea area);
   void ToggleSidebar();
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
+  bool HandleWebsiteModeKey(const CefKeyEvent& event);
   void RestyleView(CefRefPtr<CefView> view);
   void RestyleCommandText();
   std::string SidebarHtml() const;
@@ -83,6 +91,7 @@ class BrowserWindow final : public CefWindowDelegate,
   Mode mode_ = Mode::kNormal;
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
+  WebsiteMode website_mode_ = WebsiteMode::kWebsiteNormal;
   bool sidebar_visible_ = true;
   std::vector<Tab> tabs_;
   size_t active_index_ = 0;

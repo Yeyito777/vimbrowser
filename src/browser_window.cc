@@ -46,6 +46,22 @@ bool IsPlain(const CefKeyEvent& event) {
          !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
 }
 
+bool IsPlainPrintableKey(const CefKeyEvent& event) {
+  const char16_t c = event.character ? event.character : event.unmodified_character;
+  return IsPlain(event) && IsPrintableAscii(c);
+}
+
+bool IsPlainLetterKey(const CefKeyEvent& event, char key) {
+  if (!IsPlain(event)) {
+    return false;
+  }
+  const char lower = static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
+  const char upper = static_cast<char>(std::toupper(static_cast<unsigned char>(key)));
+  const char16_t c = event.character ? event.character : event.unmodified_character;
+  return event.windows_key_code == upper || event.windows_key_code == lower ||
+         c == upper || c == lower;
+}
+
 bool IsEnterKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x0D || event.native_key_code == 36;
 }
@@ -169,6 +185,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->CenterWindow(CefSize(1200, 800));
   window_->Show();
   Layout();
+  SetFocusArea(FocusArea::kWebView);
 }
 
 void BrowserWindow::BuildChrome() {
@@ -299,12 +316,16 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return HandleCommandModeKey(event);
   }
 
-  if (!IsRawKeyDown(event)) {
-    return false;
-  }
-
   if (HandleGlobalFocusKey(event)) {
     return true;
+  }
+
+  if (focus_area_ == FocusArea::kWebView) {
+    return HandleWebsiteModeKey(event);
+  }
+
+  if (!IsRawKeyDown(event)) {
+    return false;
   }
 
   return HandleNormalModeKey(event);
@@ -315,12 +336,16 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
     return HandleCommandModeKey(event);
   }
 
-  if (!IsRawKeyDown(event)) {
-    return false;
-  }
-
   if (HandleGlobalFocusKey(event)) {
     return true;
+  }
+
+  if (focus_area_ == FocusArea::kWebView) {
+    return HandleWebsiteModeKey(event);
+  }
+
+  if (!IsRawKeyDown(event)) {
+    return false;
   }
 
   if (event.focus_on_editable_field) {
@@ -518,7 +543,9 @@ void BrowserWindow::ActivateTab(size_t index) {
 
   active_index_ = index;
   tabs_[active_index_].view->SetVisible(true);
-  tabs_[active_index_].view->RequestFocus();
+  if (focus_area_ == FocusArea::kWebView) {
+    tabs_[active_index_].view->RequestFocus();
+  }
   RefreshSidebar();
   Layout();
 }
@@ -753,6 +780,16 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     return false;
   }
 
+  const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+  const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+
+  if (ctrl && shift && event.windows_key_code == 'I') {
+    if (Tab* tab = ActiveTab(); tab && tab->client) {
+      tab->client->ShowDevTools();
+    }
+    return true;
+  }
+
   if (IsCtrlKey(event, 'M')) {
     ToggleSidebar();
     return true;
@@ -766,6 +803,66 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     SetFocusArea(focus_area_ == FocusArea::kTabSidebar ? FocusArea::kWebView
                                                        : FocusArea::kTabSidebar);
     return true;
+  }
+
+  return false;
+}
+
+bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
+  if (focus_area_ != FocusArea::kWebView) {
+    return false;
+  }
+
+  if (IsRawKeyDown(event)) {
+    if (IsEscapeKey(event)) {
+      if (website_mode_ == WebsiteMode::kInsert) {
+        website_mode_ = WebsiteMode::kNormal;
+      } else if (website_mode_ == WebsiteMode::kNormal ||
+                 website_mode_ == WebsiteMode::kVisual) {
+        website_mode_ = WebsiteMode::kWebsiteNormal;
+      }
+      return true;
+    }
+
+    if (website_mode_ == WebsiteMode::kWebsiteNormal) {
+      if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
+        website_mode_ = WebsiteMode::kInsert;
+        return true;
+      }
+
+      // Website-normal is the future home for hinting, page scrolling, and
+      // qutebrowser-like page commands. Until those bindings exist, keep plain
+      // printable keys out of the page. Use insert mode for page text input.
+      if (IsPlainPrintableKey(event)) {
+        return true;
+      }
+      return false;
+    }
+
+    if (website_mode_ == WebsiteMode::kNormal || website_mode_ == WebsiteMode::kVisual) {
+      // Regular Vim normal/visual modes are skeleton states for future operators,
+      // text objects, and selections. For now they intentionally swallow plain
+      // printable keys and perform no page action.
+      if (IsPlainPrintableKey(event)) {
+        return true;
+      }
+      return false;
+    }
+
+    // Insert mode lets the page handle normal input. Escape was handled above.
+    return false;
+  }
+
+  if (IsCharEvent(event)) {
+    if (website_mode_ == WebsiteMode::kInsert) {
+      return false;
+    }
+    if (website_mode_ == WebsiteMode::kWebsiteNormal &&
+        (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a'))) {
+      website_mode_ = WebsiteMode::kInsert;
+      return true;
+    }
+    return IsPlainPrintableKey(event);
   }
 
   return false;

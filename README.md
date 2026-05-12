@@ -61,10 +61,16 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - URL/search startup argument
 - persistent cache under `~/.cache/vimbrowser/cef` by default
 - `Ctrl+Shift+I` opens DevTools
-- normal mode by default
-- `o` opens the command line to navigate the current tab
-- `O` opens the command line to open a new tab
-- `Shift+j` / `Shift+k` switch tabs
+- web view focused by default in website-normal mode
+- `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar
+- `Ctrl+m` toggles the tab sidebar
+- when the tab sidebar is focused, `o` opens the command line to navigate the
+  current tab
+- when the tab sidebar is focused, `O` opens the command line to open a new tab
+- when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
+- in website-normal mode, `i` / `a` enter insert mode
+- `Escape` from insert mode enters regular Vim normal mode; `Escape` again
+  returns to website-normal mode
 - left qutebrowser-style tab sidebar
 - bottom qutebrowser-style command line while command mode is active
 
