@@ -134,6 +134,10 @@ bool IsBackspaceKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x08 || event.native_key_code == 22;
 }
 
+bool IsTabKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x09 || event.native_key_code == 23;
+}
+
 bool IsCtrlKey(const CefKeyEvent& event, char key) {
   if (!(event.modifiers & EVENTFLAG_CONTROL_DOWN)) {
     return false;
@@ -181,6 +185,30 @@ std::string DataUrl(const std::string& html) {
     }
   }
   return out.str();
+}
+
+std::string Trim(std::string value) {
+  auto is_space = [](unsigned char c) { return std::isspace(c); };
+  value.erase(value.begin(), std::find_if(value.begin(), value.end(),
+                                          [&](char c) { return !is_space(c); }));
+  value.erase(std::find_if(value.rbegin(), value.rend(),
+                           [&](char c) { return !is_space(c); })
+                  .base(),
+              value.end());
+  return value;
+}
+
+bool StartsWithCaseInsensitive(const std::string& value, const std::string& prefix) {
+  if (value.size() < prefix.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < prefix.size(); ++i) {
+    if (std::tolower(static_cast<unsigned char>(value[i])) !=
+        std::tolower(static_cast<unsigned char>(prefix[i]))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -653,9 +681,9 @@ void BrowserWindow::BeginCommand(Mode mode) {
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
   mode_ = mode;
-  command_text_ = mode == Mode::kCommandOpenNext ? "open -t " : "open ";
-  vim::Reset(command_vim_, command_text_.size(), command_text_.size(),
-             vim::Mode::kInsert);
+  command_text_ = mode == Mode::kCommandOpenNext ? ":open -t " : ":open ";
+  vim::Reset(command_vim_, command_text_.size(), 0, vim::Mode::kInsert);
+  ClearCommandAutocomplete();
   command_overlay_->SetVisible(true);
   Layout();
   SetCommandText(command_text_);
@@ -666,11 +694,38 @@ void BrowserWindow::BeginCommand(Mode mode) {
 }
 
 void BrowserWindow::CommitCommand() {
-  std::string text = command_text_;
-  const Mode command_mode = mode_;
-  const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
-  if (text.rfind(prefix, 0) == 0) {
-    text.erase(0, prefix.size());
+  std::string text = Trim(command_text_);
+  bool open_in_new_tab = mode_ == Mode::kCommandOpenNext;
+
+  if (StartsWithCaseInsensitive(text, ":open")) {
+    const size_t after_command = 5;
+    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+      text.erase(0, after_command);
+      text = Trim(text);
+      if (StartsWithCaseInsensitive(text, "-t") &&
+          (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2])))) {
+        open_in_new_tab = true;
+        text.erase(0, 2);
+        text = Trim(text);
+      } else {
+        open_in_new_tab = false;
+      }
+    }
+  } else if (StartsWithCaseInsensitive(text, "open")) {
+    // Backward compatibility for command lines created before colon commands.
+    const size_t after_command = 4;
+    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+      text.erase(0, after_command);
+      text = Trim(text);
+      if (StartsWithCaseInsensitive(text, "-t") &&
+          (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2])))) {
+        open_in_new_tab = true;
+        text.erase(0, 2);
+        text = Trim(text);
+      } else {
+        open_in_new_tab = false;
+      }
+    }
   }
 
   CancelCommand();
@@ -679,7 +734,7 @@ void BrowserWindow::CommitCommand() {
   }
 
   const std::string url = ResolveUrlOrSearch(text);
-  if (command_mode == Mode::kCommandOpenNext) {
+  if (open_in_new_tab) {
     AddTab(url, true);
   } else if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
     tab->url = url;
@@ -690,6 +745,7 @@ void BrowserWindow::CommitCommand() {
 
 void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
+  ClearCommandAutocomplete();
   vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
   SetCommandText("");
   command_overlay_->SetVisible(false);
@@ -704,6 +760,94 @@ void BrowserWindow::CancelCommand() {
     }
   }
   Layout();
+}
+
+void BrowserWindow::ClearCommandAutocomplete() {
+  command_autocomplete_ = CommandAutocompleteState{};
+}
+
+void BrowserWindow::UpdateCommandAutocomplete() {
+  ClearCommandAutocomplete();
+  if (command_text_.find('\n') != std::string::npos) {
+    return;
+  }
+  if (command_vim_.cursor != command_text_.size()) {
+    return;
+  }
+
+  const size_t first_non_space = command_text_.find_first_not_of(" \t");
+  if (first_non_space == std::string::npos || command_text_[first_non_space] != ':') {
+    return;
+  }
+
+  const std::string leading = command_text_.substr(0, first_non_space);
+  const std::string raw = command_text_.substr(first_non_space);
+  std::vector<CompletionItem> matches;
+
+  if (StartsWithCaseInsensitive(raw, ":open ")) {
+    const std::string arg_prefix = raw.substr(6);
+    if (StartsWithCaseInsensitive("-t", arg_prefix)) {
+      matches.push_back({"-t", "open in a new tab"});
+    }
+  } else if (StartsWithCaseInsensitive(":open", raw)) {
+    matches.push_back({":open", "open URL/search in current tab"});
+  }
+
+  if (matches.empty()) {
+    return;
+  }
+
+  command_autocomplete_.active = true;
+  command_autocomplete_.selection = -1;
+  command_autocomplete_.prefix = command_text_;
+  command_autocomplete_.token_start = leading.size();
+  command_autocomplete_.matches = std::move(matches);
+}
+
+void BrowserWindow::FillCommandAutocomplete(const std::string& name) {
+  if (!command_autocomplete_.active) {
+    return;
+  }
+
+  std::string completed;
+  if (!name.empty() && name[0] == ':') {
+    completed = name + " ";
+  } else {
+    const size_t last_space = command_autocomplete_.prefix.find_last_of(" \t");
+    if (last_space != std::string::npos) {
+      completed = command_autocomplete_.prefix.substr(0, last_space + 1) + name + " ";
+    } else {
+      completed = name + " ";
+    }
+  }
+
+  command_text_ = completed;
+  command_vim_.cursor = command_text_.size();
+  vim::Clamp(command_vim_, command_text_);
+}
+
+bool BrowserWindow::CycleCommandAutocomplete(int direction) {
+  if (!command_autocomplete_.active) {
+    UpdateCommandAutocomplete();
+  }
+  if (!command_autocomplete_.active || command_autocomplete_.matches.empty()) {
+    return false;
+  }
+
+  const int size = static_cast<int>(command_autocomplete_.matches.size());
+  if (direction > 0) {
+    command_autocomplete_.selection = command_autocomplete_.selection < 0
+                                          ? 0
+                                          : (command_autocomplete_.selection + 1) % size;
+  } else {
+    command_autocomplete_.selection = command_autocomplete_.selection <= 0
+                                          ? size - 1
+                                          : command_autocomplete_.selection - 1;
+  }
+  FillCommandAutocomplete(
+      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)].name);
+  SetCommandText(command_text_);
+  return true;
 }
 
 bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
@@ -723,7 +867,15 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     if (result.text_changed || result.cursor_changed || result.mode_changed || result.pending) {
       SetCommandText(command_text_);
     }
+    if (result.text_changed || result.cursor_changed) {
+      if (command_vim_.mode == vim::Mode::kInsert) {
+        UpdateCommandAutocomplete();
+      } else {
+        ClearCommandAutocomplete();
+      }
+    }
     if (result.mode_changed) {
+      ClearCommandAutocomplete();
       UpdateModeIndicator();
     }
   };
@@ -755,6 +907,13 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     }
     if (IsBackspaceKey(event)) {
       return process_key({vim::KeyType::kBackspace}, false);
+    }
+    if (IsTabKey(event)) {
+      if (command_vim_.mode == vim::Mode::kInsert && CycleCommandAutocomplete(
+              (event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1 : 1)) {
+        return true;
+      }
+      return true;
     }
 
     const char key = PlainKeyChar(event);
@@ -797,7 +956,6 @@ void BrowserWindow::UpdateCommandView() {
     CefRefPtr<CefFrame> frame = command_client_->browser()->GetMainFrame();
     CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
     dict->SetString("text", command_text_);
-    dict->SetString("prefix", mode_ == Mode::kCommandOpenNext ? "open -t " : "open ");
     dict->SetInt("cursor", static_cast<int>(vim::CursorDisplayOffset(command_vim_, command_text_)));
     dict->SetString("mode", command_vim_.mode == vim::Mode::kNormal ? "normal" : "insert");
     CefRefPtr<CefValue> value = CefValue::Create();
@@ -1187,7 +1345,7 @@ std::string BrowserWindow::CommandHtml() const {
          "justify-content:start;align-items:center;position:relative;z-index:2;}"
          ".cell{width:8px;height:28px;line-height:28px;text-align:center;"
          "position:relative;}"
-         ".prefix{color:#aed6fe}.text{color:#ffffff}.eof{color:#ffffff}"
+         ".command{color:#aed6fe}.text{color:#ffffff}.eof{color:#ffffff}"
          ".under-cursor{color:#00050f}"
          ".cursor{position:absolute;top:5px;height:18px;background:#48cae4;"
          "pointer-events:none;}"
@@ -1200,13 +1358,21 @@ std::string BrowserWindow::CommandHtml() const {
          "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
          "window.vimbrowserSetCommand=function(s){"
          "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
-         "var html='',text=s.text||'',prefix=s.prefix||'',cursor=s.cursor||0,normal=s.mode==='normal';"
-         "for(var i=0;i<text.length;i++){var cls='cell '+(i<prefix.length?'prefix':'text');"
+         "var valid={':open':{'-t':true}};"
+         "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
+         "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
+         "while((wm=re.exec(full))!==null)words.push({w:wm[0],e:wm.index+wm[0].length});"
+         "if(!words.length||!valid[words[0].w])return out;var end=words[0].e,key=words[0].w;"
+         "for(var j=1;j<words.length;j++){if(valid[key]&&valid[key][words[j].w]){end=words[j].e;key+=' '+words[j].w}else break}"
+         "out.push({s:start,e:start+end});return out}"
+         "function inSpan(xs,i){for(var k=0;k<xs.length;k++)if(i>=xs[k].s&&i<xs[k].e)return true;return false}"
+         "var html='',text=s.text||'',cursor=s.cursor||0,normal=s.mode==='normal',hs=spans(text);"
+         "for(var i=0;i<text.length;i++){var cls='cell '+(inSpan(hs,i)?'command':'text');"
          "if(normal&&i===cursor)cls+=' under-cursor';html+='<span class=\"'+cls+'\">'+esc(text[i])+'</span>'}"
          "if(cursor>=text.length)html+='<span class=\"cell eof\"></span>';"
          "cells.innerHTML=html;cur.className='cursor '+(normal?'block':'bar');"
          "cur.style.left=(10+cursor*8)+'px';};"
-         "window.vimbrowserSetCommand({text:'',prefix:'open ',cursor:0,mode:'insert'});"
+         "window.vimbrowserSetCommand({text:'',cursor:0,mode:'insert'});"
          "</script></body></html>";
 }
 

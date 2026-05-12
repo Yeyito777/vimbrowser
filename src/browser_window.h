@@ -63,6 +63,19 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandLine,
   };
 
+  struct CompletionItem {
+    std::string name;
+    std::string description;
+  };
+
+  struct CommandAutocompleteState {
+    bool active = false;
+    int selection = -1;
+    std::string prefix;
+    size_t token_start = 0;
+    std::vector<CompletionItem> matches;
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
@@ -71,6 +84,10 @@ class BrowserWindow final : public CefWindowDelegate,
   void CommitCommand();
   void CancelCommand();
   bool HandleCommandModeKey(const CefKeyEvent& event);
+  void ClearCommandAutocomplete();
+  void UpdateCommandAutocomplete();
+  bool CycleCommandAutocomplete(int direction);
+  void FillCommandAutocomplete(const std::string& name);
   void SetCommandText(std::string text);
   void Layout();
   void RefreshSidebar();
@@ -91,6 +108,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string initial_url_;
   std::string command_text_;
   vim::LineEditState command_vim_;
+  CommandAutocompleteState command_autocomplete_;
   Mode mode_ = Mode::kNormal;
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
