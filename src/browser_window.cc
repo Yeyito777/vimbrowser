@@ -673,6 +673,10 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return true;
     }
     if (IsEscapeKey(event)) {
+      if (event.modifiers & EVENTFLAG_SHIFT_DOWN) {
+        CancelCommand();
+        return true;
+      }
       if (command_vim_.mode == vim::Mode::kInsert) {
         vim::LeaveInsert(command_vim_, command_text_);
         SetCommandText(command_text_);
@@ -964,6 +968,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
 
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
+      if ((event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+          website_mode_ == vim::Mode::kInsert) {
+        website_mode_ = vim::Mode::kWebsiteNormal;
+        UpdateModeIndicator();
+        return true;
+      }
       if (website_mode_ == vim::Mode::kInsert) {
         website_mode_ = vim::Mode::kNormal;
       } else if (website_mode_ == vim::Mode::kNormal ||
