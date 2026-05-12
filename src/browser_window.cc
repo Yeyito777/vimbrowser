@@ -537,6 +537,11 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     return false;
   }
 
+  if (PlainKeyChar(event) == ':') {
+    BeginCommandText(":");
+    return true;
+  }
+
   if (IsPlain(event) && event.windows_key_code == 'O') {
     if (focus_area_ != FocusArea::kTabSidebar) {
       return false;
@@ -739,13 +744,19 @@ void BrowserWindow::ActivateRelative(int delta) {
 }
 
 void BrowserWindow::BeginCommand(Mode mode) {
+  BeginCommandText(mode == Mode::kCommandOpenNext ? ":open tab " : ":open ");
+  mode_ = mode;
+}
+
+void BrowserWindow::BeginCommandText(std::string text) {
   previous_focus_area_ = focus_area_ == FocusArea::kCommandLine ? previous_focus_area_
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
-  mode_ = mode;
-  command_text_ = mode == Mode::kCommandOpenNext ? ":open tab " : ":open ";
+  mode_ = Mode::kCommandOpenCurrent;
+  command_text_ = std::move(text);
   vim::Reset(command_vim_, command_text_.size(), 0, vim::Mode::kInsert);
   ClearCommandAutocomplete();
+  UpdateCommandAutocomplete();
   command_overlay_->SetVisible(true);
   Layout();
   SetCommandText(command_text_);
@@ -1324,6 +1335,11 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     }
 
     if (website_mode_ == vim::Mode::kWebsiteNormal) {
+      if (PlainKeyChar(event) == ':') {
+        BeginCommandText(":");
+        return true;
+      }
+
       if (IsPlain(event) && event.windows_key_code == 'O') {
         BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
                                                             : Mode::kCommandOpenCurrent);
@@ -1346,6 +1362,11 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     }
 
     if (website_mode_ == vim::Mode::kNormal || website_mode_ == vim::Mode::kVisual) {
+      if (website_mode_ == vim::Mode::kNormal && PlainKeyChar(event) == ':') {
+        BeginCommandText(":");
+        return true;
+      }
+
       if (website_mode_ == vim::Mode::kNormal && IsPlain(event) &&
           event.windows_key_code == 'O') {
         BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext

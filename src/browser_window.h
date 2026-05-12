@@ -81,6 +81,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void ActivateTab(size_t index);
   void ActivateRelative(int delta);
   void BeginCommand(Mode mode);
+  void BeginCommandText(std::string text);
   void CommitCommand();
   void CancelCommand();
   bool HandleCommandModeKey(const CefKeyEvent& event);
