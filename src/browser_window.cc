@@ -9,6 +9,8 @@
 #include "config.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
+#include "include/cef_parser.h"
+#include "include/cef_values.h"
 #include "include/views/cef_button.h"
 #include "theme.h"
 
@@ -788,7 +790,17 @@ void BrowserWindow::SetCommandText(std::string text) {
 
 void BrowserWindow::UpdateCommandView() {
   if (command_client_ && command_client_->browser()) {
-    command_client_->browser()->GetMainFrame()->LoadURL(DataUrl(CommandHtml()));
+    CefRefPtr<CefFrame> frame = command_client_->browser()->GetMainFrame();
+    CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
+    dict->SetString("text", command_text_);
+    dict->SetString("prefix", mode_ == Mode::kCommandOpenNext ? "open -t " : "open ");
+    dict->SetInt("cursor", static_cast<int>(vim::CursorDisplayOffset(command_vim_, command_text_)));
+    dict->SetString("mode", command_vim_.mode == vim::Mode::kNormal ? "normal" : "insert");
+    CefRefPtr<CefValue> value = CefValue::Create();
+    value->SetDictionary(dict);
+    const std::string json = CefWriteJSON(value, JSON_WRITER_DEFAULT).ToString();
+    frame->ExecuteJavaScript("window.vimbrowserSetCommand && window.vimbrowserSetCommand(" + json + ");",
+                             frame->GetURL(), 0);
   }
 }
 
@@ -1154,37 +1166,6 @@ std::string BrowserWindow::SidebarHtml() const {
 }
 
 std::string BrowserWindow::CommandHtml() const {
-  const std::string prefix = mode_ == Mode::kCommandOpenNext ? "open -t " : "open ";
-  const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
-  const bool normal_cursor = mode_ != Mode::kNormal &&
-                             command_vim_.mode == vim::Mode::kNormal;
-  const bool insert_cursor = mode_ != Mode::kNormal &&
-                             command_vim_.mode == vim::Mode::kInsert;
-
-  std::string cells_html;
-  for (size_t i = 0; i < command_text_.size(); ++i) {
-    std::string classes = i < prefix.size() ? "cell prefix" : "cell text";
-    if (normal_cursor && i == cursor) {
-      classes += " under-cursor";
-    }
-    cells_html += "<span class=\"" + classes + "\">" +
-                  HtmlEscape(command_text_.substr(i, 1)) + "</span>";
-  }
-  if (cursor >= command_text_.size()) {
-    cells_html += "<span class=\"cell eof\"></span>";
-  }
-
-  const int cursor_left = kCommandTextInsetX +
-                          static_cast<int>(cursor) * kCommandCharWidth;
-  std::string cursor_html;
-  if (insert_cursor) {
-    cursor_html = "<div class=\"cursor bar\" style=\"left:" +
-                  std::to_string(cursor_left) + "px\"></div>";
-  } else if (normal_cursor) {
-    cursor_html = "<div class=\"cursor block\" style=\"left:" +
-                  std::to_string(cursor_left) + "px\"></div>";
-  }
-
   return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
          "*{box-sizing:border-box;border-radius:0!important}"
          "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
@@ -1201,9 +1182,21 @@ std::string BrowserWindow::CommandHtml() const {
          "pointer-events:none;}"
          ".cursor.bar{width:2px;z-index:3}.cursor.block{width:8px;z-index:1}"
          "::selection{background:#4f5258;color:#ffffff}"
-         "</style></head><body><div class=\"line\">" +
-         cursor_html + "<span class=\"cells\">" + cells_html +
-         "</span></div></body></html>";
+         "</style></head><body><div class=\"line\"><div id=\"cursor\" "
+         "class=\"cursor bar\"></div><span id=\"cells\" class=\"cells\"></span>"
+         "</div><script>"
+         "function esc(s){return String(s).replace(/[&<>\"']/g,function(c){return "
+         "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
+         "window.vimbrowserSetCommand=function(s){"
+         "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
+         "var html='',text=s.text||'',prefix=s.prefix||'',cursor=s.cursor||0,normal=s.mode==='normal';"
+         "for(var i=0;i<text.length;i++){var cls='cell '+(i<prefix.length?'prefix':'text');"
+         "if(normal&&i===cursor)cls+=' under-cursor';html+='<span class=\"'+cls+'\">'+esc(text[i])+'</span>'}"
+         "if(cursor>=text.length)html+='<span class=\"cell eof\"></span>';"
+         "cells.innerHTML=html;cur.className='cursor '+(normal?'block':'bar');"
+         "cur.style.left=(10+cursor*8)+'px';};"
+         "window.vimbrowserSetCommand({text:'',prefix:'open ',cursor:0,mode:'insert'});"
+         "</script></body></html>";
 }
 
 Tab* BrowserWindow::ActiveTab() {
