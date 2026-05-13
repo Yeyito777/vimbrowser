@@ -1,0 +1,5 @@
+/src/
+/depot_tools/
+/.gclient_entries
+/.gcs_entries
+/.gclient_previous_sync_commits

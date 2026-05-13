@@ -17,9 +17,48 @@ make build
 make install
 ```
 
-The first build downloads the Linux x86_64 CEF **minimal** binary/source
+The legacy quick build downloads the Linux x86_64 CEF **minimal** binary/source
 distribution into `third_party/cef/` and builds only the small C++ shell plus the
 CEF wrapper library.
+
+For the real vimbrowser backend, use the source Chromium/CEF checkout under
+`third_party/chromium/`:
+
+```bash
+make bootstrap-chromium
+make build-chromium-cef
+make source-distrib
+make build-source
+make install-source
+```
+
+That checkout is pinned to Chromium `147.0.7727.118` / CEF
+`d58e84d17dd3f646c906ac633156cd0ec46638e9` and applies
+`patches/chromium/element-shader.patch`, which bakes the element shader into
+native Blink style resolution and native scrollbar paint paths. There is no
+JS/CSS shader injection path in vimbrowser.
+
+After Chromium/CEF builds, `make source-distrib` creates a minimal CEF binary
+distribution from the patched source tree, and `make build-source` points
+vimbrowser at the newest generated source distribution automatically. The manual
+equivalent is:
+
+```bash
+cd third_party/chromium/src
+PATH=$PWD/../depot_tools:$PATH autoninja -C out/Release_GN_x64 chrome_sandbox
+cd cef/tools
+./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
+
+cd ../../../../
+CEF_ROOT=$PWD/third_party/chromium/src/cef/binary_distrib/<generated-cef-binary-dir> make build-source install-source
+```
+
+The current source-backend build is intentionally native/hardcore: CEF's patch
+stack is applied first, then the vimbrowser patch modifies Chromium/Blink C++
+directly. Shadered page colors are computed before layout/paint in
+`StyleResolver::ResolveStyle()`, and native scrollbar painting is hooked in
+`ui/native_theme`. Nothing is applied by page JavaScript, injected CSS, or a
+post-load browser callback.
 
 Run:
 
@@ -33,8 +72,8 @@ or directly:
 ./build/Release/vimbrowser --disable-gpu https://example.com
 ```
 
-`~/.local/bin/vimbrowser` is a tiny launcher script that `cd`s into
-`build/Release` before execing the binary. CEF needs that runtime directory for
+`~/.local/bin/vimbrowser` is a tiny launcher script that `cd`s into the chosen
+build directory's `Release/` directory before execing the binary. CEF needs that runtime directory for
 `icudtl.dat`, pak files, locales, and shared libraries.
 
 ## DevTools / CDP

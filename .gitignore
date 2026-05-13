@@ -1,4 +1,5 @@
 /build/
+/build-source/
 /third_party/cef/
 /third_party/downloads/
 /third_party/.cef-extract.*/
@@ -11,3 +12,7 @@ compile_commands.json
 CMakeUserPresets.json
 core
 core.*
+/third_party/chromium/src/
+/third_party/chromium/depot_tools/
+/third_party/chromium/.cipd/
+/third_party/chromium/.gclient_entries
