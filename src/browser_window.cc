@@ -43,11 +43,10 @@ constexpr int kSidebarMarkerBaseId = 3000;
 constexpr int kSidebarLabelBaseId = 4000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
-constexpr int kSidebarMarkerWidth = 26;
+constexpr int kSidebarMarkerWidth = 14;
+constexpr int kCommandCursorBarWidth = 2;
 constexpr int kCommandCursorTop = 5;
 constexpr int kCommandCursorHeight = 18;
-constexpr int kCommandCursorBarWidth = 2;
-constexpr int kCommandCursorBlockWidth = 8;
 // Experimental chrome-level mode indicator. Flip to false to disable without
 // touching the mode/focus state machines.
 constexpr bool kModeIndicatorEnabled = true;
@@ -421,11 +420,13 @@ void BrowserWindow::BuildChrome() {
   command_cursor_panel_ = CefPanel::CreatePanel(nullptr);
   command_cursor_panel_->SetID(kCommandCursorPanelId);
   command_cursor_panel_->SetBackgroundColor(theme::kVimNormal);
+  command_cursor_panel_->SetVisible(false);
   command_content_panel_->AddChildView(command_cursor_panel_);
 
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
   StyleTextfield(command_field_, theme::kText, theme::kTransparent);
+  command_field_->SetFocusable(true);
   command_field_->SetAccessibleName("vimbrowser command line");
   command_content_panel_->AddChildView(command_field_);
 
@@ -509,7 +510,15 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
   if (mode_ != Mode::kNormal) {
-    return HandleCommandModeKey(event);
+    if (suppress_next_window_command_key_event_) {
+      suppress_next_window_command_key_event_ = false;
+      return true;
+    }
+    const bool handled = HandleCommandModeKey(event);
+    if (handled && IsRawKeyDown(event)) {
+      suppress_next_textfield_command_key_event_ = true;
+    }
+    return handled;
   }
 
   if (HandleGlobalFocusKey(event)) {
@@ -529,7 +538,15 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
   if (mode_ != Mode::kNormal) {
-    return HandleCommandModeKey(event);
+    if (suppress_next_window_command_key_event_) {
+      suppress_next_window_command_key_event_ = false;
+      return true;
+    }
+    const bool handled = HandleCommandModeKey(event);
+    if (handled && IsRawKeyDown(event)) {
+      suppress_next_textfield_command_key_event_ = true;
+    }
+    return handled;
   }
 
   if (HandleGlobalFocusKey(event)) {
@@ -634,6 +651,19 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                                const CefKeyEvent& event) {
+  if ((textfield == command_field_ || textfield->GetID() == kCommandFieldId) &&
+      mode_ != Mode::kNormal) {
+    if (suppress_next_textfield_command_key_event_) {
+      suppress_next_textfield_command_key_event_ = false;
+      return true;
+    }
+    const bool handled = HandleCommandModeKey(event);
+    if (handled && IsRawKeyDown(event)) {
+      suppress_next_window_command_key_event_ = true;
+    }
+    return handled;
+  }
+
   if (!IsRawKeyDown(event) || mode_ == Mode::kNormal) {
     return false;
   }
@@ -691,7 +721,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarWidth - 1, 1);
   }
   if (id == kCommandCursorPanelId) {
-    return CefSize(kCommandCursorBlockWidth, kCommandCursorHeight);
+    return CefSize(kCommandCursorBarWidth, kCommandCursorHeight);
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
@@ -993,10 +1023,10 @@ void BrowserWindow::BeginCommandText(std::string text) {
   command_overlay_->SetVisible(true);
   Layout();
   SetCommandText(command_text_);
-  UpdateModeIndicator();
-  if (Tab* tab = ActiveTab(); tab) {
-    tab->view->RequestFocus();
+  if (command_field_) {
+    command_field_->RequestFocus();
   }
+  UpdateModeIndicator();
 }
 
 void BrowserWindow::CommitCommand() {
@@ -1391,9 +1421,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return process_key({vim::KeyType::kEnter}, false);
     }
     if (IsEscapeKey(event)) {
-      return process_key({vim::KeyType::kEscape, 0,
-                          static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
-                         false);
+      const bool shifted = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+      return process_key({vim::KeyType::kEscape, 0, shifted}, false);
     }
     if (IsBackspaceKey(event)) {
       return process_key({vim::KeyType::kBackspace}, false);
@@ -1475,23 +1504,22 @@ void BrowserWindow::RebuildCommandCells() {
   command_field_->SetText(command_text_);
   command_field_->SetBackgroundColor(theme::kTransparent);
   command_field_->SetTextColor(theme::kText);
-  command_field_->SetSelectionTextColor(theme::kText);
-  command_field_->SetSelectionBackgroundColor(theme::kTransparent);
-  command_field_->ClearSelection();
+  command_field_->SetSelectionTextColor(theme::kAppBg);
+  command_field_->SetSelectionBackgroundColor(theme::kVimNormal);
   if (command_end > 0) {
     command_field_->ApplyTextColor(theme::kCommand,
                                    CefRange(0, static_cast<uint32_t>(command_end)));
   }
-  if (normal && cursor < command_text_.size()) {
-    command_field_->ApplyTextColor(theme::kAppBg,
-                                   CefRange(static_cast<uint32_t>(cursor),
-                                            static_cast<uint32_t>(cursor + 1)));
-  }
 
   const int cursor_x = kCommandTextInsetX + static_cast<int>(cursor) * kCommandCharWidth;
   if (normal) {
+    if (cursor < command_text_.size()) {
+      command_field_->ApplyTextColor(theme::kAppBg,
+                                     CefRange(static_cast<uint32_t>(cursor),
+                                              static_cast<uint32_t>(cursor + 1)));
+    }
     command_cursor_panel_->SetBounds(CefRect(cursor_x, kCommandCursorTop,
-                                             kCommandCursorBlockWidth,
+                                             kCommandCharWidth,
                                              kCommandCursorHeight));
   } else {
     command_cursor_panel_->SetBounds(CefRect(cursor_x, kCommandCursorTop,
@@ -1650,10 +1678,11 @@ void BrowserWindow::Layout() {
   if (command_cursor_panel_) {
     const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
     const bool normal = command_vim_.mode == vim::Mode::kNormal;
+    command_cursor_panel_->SetVisible(mode_ != Mode::kNormal);
     command_cursor_panel_->SetBounds(
         CefRect(kCommandTextInsetX + static_cast<int>(cursor) * kCommandCharWidth,
                 kCommandCursorTop,
-                normal ? kCommandCursorBlockWidth : kCommandCursorBarWidth,
+                normal ? kCommandCharWidth : kCommandCursorBarWidth,
                 kCommandCursorHeight));
   }
   for (size_t i = 0; i < autocomplete_rows_.size(); ++i) {
