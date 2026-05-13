@@ -37,10 +37,17 @@ constexpr int kModeIndicatorFieldId = 112;
 constexpr int kCommandAutocompletePanelId = 113;
 constexpr int kCommandFieldId = 114;
 constexpr int kSidebarSpacerId = 115;
+constexpr int kCommandCursorPanelId = 116;
 constexpr int kSidebarRowBaseId = 2000;
+constexpr int kSidebarMarkerBaseId = 3000;
+constexpr int kSidebarLabelBaseId = 4000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
-constexpr int kSidebarTextfieldCornerClip = 10;
+constexpr int kSidebarMarkerWidth = 26;
+constexpr int kCommandCursorTop = 5;
+constexpr int kCommandCursorHeight = 18;
+constexpr int kCommandCursorBarWidth = 2;
+constexpr int kCommandCursorBlockWidth = 8;
 // Experimental chrome-level mode indicator. Flip to false to disable without
 // touching the mode/focus state machines.
 constexpr bool kModeIndicatorEnabled = true;
@@ -411,9 +418,14 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_->SetBackgroundColor(theme::kAppBg);
   command_panel_->AddChildView(command_content_panel_);
 
+  command_cursor_panel_ = CefPanel::CreatePanel(nullptr);
+  command_cursor_panel_->SetID(kCommandCursorPanelId);
+  command_cursor_panel_->SetBackgroundColor(theme::kVimNormal);
+  command_content_panel_->AddChildView(command_cursor_panel_);
+
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
-  StyleTextfield(command_field_, theme::kText, theme::kAppBg);
+  StyleTextfield(command_field_, theme::kText, theme::kTransparent);
   command_field_->SetAccessibleName("vimbrowser command line");
   command_content_panel_->AddChildView(command_field_);
 
@@ -462,6 +474,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   mode_indicator_panel_ = nullptr;
   autocomplete_rows_.clear();
   autocomplete_panel_ = nullptr;
+  command_cursor_panel_ = nullptr;
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
@@ -668,8 +681,17 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
   }
+  if (InIdRange(id, kSidebarMarkerBaseId, 1000)) {
+    return CefSize(kSidebarMarkerWidth, kSidebarRowHeight);
+  }
+  if (InIdRange(id, kSidebarLabelBaseId, 1000)) {
+    return CefSize(kSidebarWidth - 1 - kSidebarMarkerWidth, kSidebarRowHeight);
+  }
   if (id == kSidebarSpacerId) {
     return CefSize(kSidebarWidth - 1, 1);
+  }
+  if (id == kCommandCursorPanelId) {
+    return CefSize(kCommandCursorBlockWidth, kCommandCursorHeight);
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
@@ -711,7 +733,10 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, 1);
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000) ||
+      InIdRange(id, kSidebarMarkerBaseId, 1000) ||
+      InIdRange(id, kSidebarLabelBaseId, 1000) ||
       id == kSidebarSpacerId ||
+      id == kCommandCursorPanelId ||
       id == kCommandFieldId ||
       InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     return CefSize(1, 1);
@@ -1431,7 +1456,7 @@ void BrowserWindow::UpdateAutocompleteView() {
 }
 
 void BrowserWindow::RebuildCommandCells() {
-  if (!command_field_) {
+  if (!command_field_ || !command_cursor_panel_) {
     return;
   }
 
@@ -1447,40 +1472,36 @@ void BrowserWindow::RebuildCommandCells() {
     command_end = std::min<size_t>(command_text_.size(), 10);
   }
 
-  std::string text = command_text_;
-  size_t color_cursor = cursor;
-  if (normal) {
-    if (text.empty()) {
-      text = " ";
-      color_cursor = 0;
-    } else if (color_cursor >= text.size()) {
-      text.push_back(' ');
-      color_cursor = text.size() - 1;
-    }
-  } else {
-    const size_t insert_at = std::min(cursor, text.size());
-    text.insert(insert_at, "▏");
-    color_cursor = insert_at;
-  }
-
-  command_field_->SetText(text);
-  command_field_->SetBackgroundColor(theme::kAppBg);
+  command_field_->SetText(command_text_);
+  command_field_->SetBackgroundColor(theme::kTransparent);
   command_field_->SetTextColor(theme::kText);
-  command_field_->SetSelectionTextColor(theme::kAppBg);
-  command_field_->SetSelectionBackgroundColor(theme::kVimNormal);
+  command_field_->SetSelectionTextColor(theme::kText);
+  command_field_->SetSelectionBackgroundColor(theme::kTransparent);
+  command_field_->ClearSelection();
   if (command_end > 0) {
     command_field_->ApplyTextColor(theme::kCommand,
                                    CefRange(0, static_cast<uint32_t>(command_end)));
   }
-  if (normal) {
-    command_field_->SelectRange(CefRange(static_cast<uint32_t>(color_cursor),
-                                         static_cast<uint32_t>(color_cursor + 1)));
-  } else {
-    command_field_->ApplyTextColor(theme::kVimNormal,
-                                   CefRange(static_cast<uint32_t>(color_cursor),
-                                            static_cast<uint32_t>(color_cursor + 1)));
-    command_field_->ClearSelection();
+  if (normal && cursor < command_text_.size()) {
+    command_field_->ApplyTextColor(theme::kAppBg,
+                                   CefRange(static_cast<uint32_t>(cursor),
+                                            static_cast<uint32_t>(cursor + 1)));
   }
+
+  const int cursor_x = kCommandTextInsetX + static_cast<int>(cursor) * kCommandCharWidth;
+  if (normal) {
+    command_cursor_panel_->SetBounds(CefRect(cursor_x, kCommandCursorTop,
+                                             kCommandCursorBlockWidth,
+                                             kCommandCursorHeight));
+  } else {
+    command_cursor_panel_->SetBounds(CefRect(cursor_x, kCommandCursorTop,
+                                             kCommandCursorBarWidth,
+                                             kCommandCursorHeight));
+  }
+  command_cursor_panel_->SetBackgroundColor(theme::kVimNormal);
+  command_cursor_panel_->SetVisible(true);
+  command_content_panel_->ReorderChildView(command_cursor_panel_, 0);
+  command_content_panel_->ReorderChildView(command_field_, -1);
 }
 
 void BrowserWindow::RebuildAutocompleteRows() {
@@ -1626,6 +1647,15 @@ void BrowserWindow::Layout() {
                                       std::max(1, width - kCommandTextInsetX),
                                       kCommandHeight));
   }
+  if (command_cursor_panel_) {
+    const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
+    const bool normal = command_vim_.mode == vim::Mode::kNormal;
+    command_cursor_panel_->SetBounds(
+        CefRect(kCommandTextInsetX + static_cast<int>(cursor) * kCommandCharWidth,
+                kCommandCursorTop,
+                normal ? kCommandCursorBlockWidth : kCommandCursorBarWidth,
+                kCommandCursorHeight));
+  }
   for (size_t i = 0; i < autocomplete_rows_.size(); ++i) {
     autocomplete_rows_[i]->SetBounds(CefRect(0, static_cast<int>(i) * kCommandAutocompleteRowHeight,
                                             autocomplete_width, kCommandAutocompleteRowHeight));
@@ -1679,24 +1709,28 @@ void BrowserWindow::RefreshSidebar() {
     CefRefPtr<CefPanel> panel = CefPanel::CreatePanel(nullptr);
     panel->SetID(kSidebarRowBaseId + static_cast<int>(i));
     panel->SetBackgroundColor(row_bg);
+    CefBoxLayoutSettings row_settings = {};
+    row_settings.size = sizeof(row_settings);
+    row_settings.horizontal = true;
+    row_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+    CefRefPtr<CefBoxLayout> row_layout = panel->SetToBoxLayout(row_settings);
 
-    CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
-    row->SetText((active ? "> " : "  ") + text);
-    row->SetID(kSidebarRowBaseId + static_cast<int>(i));
-    StyleTextfield(row, theme::kText,
-                   row_bg,
-                   "monospace, 12px");
-    row->SetSelectionTextColor(theme::kText);
-    row->SetSelectionBackgroundColor(row_bg);
-    if (active) {
-      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
-    }
-    panel->AddChildView(row);
-    row->SetBounds(CefRect(-kSidebarTextfieldCornerClip, 0,
-                           kSidebarWidth - 1 + 2 * kSidebarTextfieldCornerClip,
-                           kSidebarRowHeight));
+    CefRefPtr<CefTextfield> marker = CefTextfield::CreateTextfield(this);
+    marker->SetText(active ? ">" : " ");
+    marker->SetID(kSidebarMarkerBaseId + static_cast<int>(i));
+    StyleTextfield(marker, active ? theme::kVimNormal : theme::kSidebarBg,
+                   row_bg, "monospace, 12px");
+
+    CefRefPtr<CefTextfield> label = CefTextfield::CreateTextfield(this);
+    label->SetText(text);
+    label->SetID(kSidebarLabelBaseId + static_cast<int>(i));
+    StyleTextfield(label, theme::kText, row_bg, "monospace, 12px");
+
+    panel->AddChildView(marker);
+    panel->AddChildView(label);
+    row_layout->SetFlexForView(label, 1);
     sidebar_content_panel_->AddChildView(panel);
-    sidebar_rows_.push_back({panel, row});
+    sidebar_rows_.push_back({panel, marker, label});
   }
 
   sidebar_spacer_ = CefTextfield::CreateTextfield(this);
@@ -1990,8 +2024,8 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
-  } else if (id == kCommandFieldId && command_field_) {
-    StyleTextfield(command_field_, theme::kText, theme::kAppBg);
+  } else if (id == kCommandCursorPanelId) {
+    view->SetBackgroundColor(theme::kVimNormal);
   } else if (id == kCommandSeparatorPanelId) {
     view->SetBackgroundColor(focus_area_ == FocusArea::kCommandLine
                                  ? theme::kBorderFocused

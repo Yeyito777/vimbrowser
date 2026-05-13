@@ -80,7 +80,8 @@ class BrowserWindow final : public CefWindowDelegate,
 
   struct SidebarRowViews {
     CefRefPtr<CefPanel> panel;
-    CefRefPtr<CefTextfield> text;
+    CefRefPtr<CefTextfield> marker;
+    CefRefPtr<CefTextfield> label;
   };
 
   void BuildChrome();
@@ -167,6 +168,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
+  CefRefPtr<CefPanel> command_cursor_panel_;
   CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
   CefRefPtr<CefPanel> autocomplete_panel_;
