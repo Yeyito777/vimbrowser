@@ -36,9 +36,11 @@ constexpr int kModeIndicatorPanelId = 111;
 constexpr int kModeIndicatorFieldId = 112;
 constexpr int kCommandAutocompletePanelId = 113;
 constexpr int kCommandFieldId = 114;
+constexpr int kSidebarSpacerId = 115;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
+constexpr int kSidebarTextfieldCornerClip = 10;
 // Experimental chrome-level mode indicator. Flip to false to disable without
 // touching the mode/focus state machines.
 constexpr bool kModeIndicatorEnabled = true;
@@ -370,6 +372,11 @@ void BrowserWindow::BuildChrome() {
   sidebar_content_panel_ = CefPanel::CreatePanel(nullptr);
   sidebar_content_panel_->SetID(kSidebarContentPanelId);
   sidebar_content_panel_->SetBackgroundColor(theme::kSidebarBg);
+  CefBoxLayoutSettings sidebar_content_settings = {};
+  sidebar_content_settings.size = sizeof(sidebar_content_settings);
+  sidebar_content_settings.horizontal = false;
+  sidebar_content_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  sidebar_content_panel_->SetToBoxLayout(sidebar_content_settings);
   sidebar_panel_->AddChildView(sidebar_content_panel_);
   sidebar_layout->SetFlexForView(sidebar_content_panel_, 1);
 
@@ -463,6 +470,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_separator_panel_ = nullptr;
   sidebar_border_panel_ = nullptr;
   sidebar_rows_.clear();
+  sidebar_spacer_ = nullptr;
   sidebar_content_panel_ = nullptr;
   sidebar_panel_ = nullptr;
   main_panel_ = nullptr;
@@ -660,6 +668,9 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
   }
+  if (id == kSidebarSpacerId) {
+    return CefSize(kSidebarWidth - 1, 1);
+  }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
   }
@@ -700,6 +711,7 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, 1);
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000) ||
+      id == kSidebarSpacerId ||
       id == kCommandFieldId ||
       InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     return CefSize(1, 1);
@@ -1553,6 +1565,7 @@ void BrowserWindow::Layout() {
   RestyleView(main_panel_);
   RestyleView(sidebar_panel_);
   RestyleView(sidebar_content_panel_);
+  RestyleView(sidebar_spacer_);
   RestyleView(sidebar_border_panel_);
   RestyleView(content_panel_);
   RestyleView(content_inner_panel_);
@@ -1608,10 +1621,6 @@ void BrowserWindow::Layout() {
   if (sidebar_content_panel_->GetLayout()) {
     sidebar_content_panel_->Layout();
   }
-  for (size_t i = 0; i < sidebar_rows_.size(); ++i) {
-    sidebar_rows_[i]->SetBounds(CefRect(0, static_cast<int>(i) * kSidebarRowHeight,
-                                        kSidebarWidth - 1, kSidebarRowHeight));
-  }
   if (command_field_) {
     command_field_->SetBounds(CefRect(kCommandTextInsetX, 0,
                                       std::max(1, width - kCommandTextInsetX),
@@ -1641,14 +1650,24 @@ void BrowserWindow::RefreshSidebar() {
   }
 
   for (auto& row : sidebar_rows_) {
-    sidebar_content_panel_->RemoveChildView(row);
+    if (row.panel) {
+      sidebar_content_panel_->RemoveChildView(row.panel);
+    }
   }
   sidebar_rows_.clear();
+  if (sidebar_spacer_) {
+    sidebar_content_panel_->RemoveChildView(sidebar_spacer_);
+    sidebar_spacer_ = nullptr;
+  }
+
+  CefRefPtr<CefBoxLayout> sidebar_content_layout;
+  if (sidebar_content_panel_->GetLayout()) {
+    sidebar_content_layout = sidebar_content_panel_->GetLayout()->AsBoxLayout();
+  }
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text = active ? "> " : "  ";
-    text += std::to_string(i + 1);
+    std::string text = std::to_string(i + 1);
     text += ": ";
     text += DisplayUrl(tabs_[i].url);
     if (text.size() > 160) {
@@ -1656,16 +1675,38 @@ void BrowserWindow::RefreshSidebar() {
       text += "...";
     }
 
+    const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
+    CefRefPtr<CefPanel> panel = CefPanel::CreatePanel(nullptr);
+    panel->SetID(kSidebarRowBaseId + static_cast<int>(i));
+    panel->SetBackgroundColor(row_bg);
+
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
-    row->SetText(text);
+    row->SetText((active ? "> " : "  ") + text);
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
     StyleTextfield(row, theme::kText,
-                   active ? theme::kSidebarSelBg : theme::kSidebarBg,
+                   row_bg,
                    "monospace, 12px");
-    sidebar_content_panel_->AddChildView(row);
-    row->SetBounds(CefRect(0, static_cast<int>(i) * kSidebarRowHeight,
-                           kSidebarWidth - 1, kSidebarRowHeight));
-    sidebar_rows_.push_back(row);
+    row->SetSelectionTextColor(theme::kText);
+    row->SetSelectionBackgroundColor(row_bg);
+    if (active) {
+      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
+    }
+    panel->AddChildView(row);
+    row->SetBounds(CefRect(-kSidebarTextfieldCornerClip, 0,
+                           kSidebarWidth - 1 + 2 * kSidebarTextfieldCornerClip,
+                           kSidebarRowHeight));
+    sidebar_content_panel_->AddChildView(panel);
+    sidebar_rows_.push_back({panel, row});
+  }
+
+  sidebar_spacer_ = CefTextfield::CreateTextfield(this);
+  sidebar_spacer_->SetText("");
+  sidebar_spacer_->SetID(kSidebarSpacerId);
+  StyleTextfield(sidebar_spacer_, theme::kText, theme::kSidebarBg,
+                 "monospace, 12px");
+  sidebar_content_panel_->AddChildView(sidebar_spacer_);
+  if (sidebar_content_layout) {
+    sidebar_content_layout->SetFlexForView(sidebar_spacer_, 1);
   }
 
   sidebar_content_panel_->InvalidateLayout();
@@ -1933,6 +1974,14 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     view->SetBackgroundColor(theme::kSidebarBg);
   } else if (id == kSidebarContentPanelId) {
     view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (InIdRange(id, kSidebarRowBaseId, 1000)) {
+    // RefreshSidebar() applies per-row textfield colors so the active marker can
+    // have its own accent color.
+  } else if (id == kSidebarSpacerId) {
+    if (sidebar_spacer_) {
+      StyleTextfield(sidebar_spacer_, theme::kText, theme::kSidebarBg,
+                     "monospace, 12px");
+    }
   } else if (id == kSidebarBorderPanelId) {
     view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
                                  ? theme::kBorderFocused

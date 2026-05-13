@@ -1,4 +1,4 @@
-From 087146cfb8025d61a33d9d4f1a8305794aab84c2 Mon Sep 17 00:00:00 2001
+From 4deea39af9f70aa5b93ea7f7de73c0cbb701a1bd Mon Sep 17 00:00:00 2001
 From: Yeyito <alinerob31@gmail.com>
 Date: Tue, 12 May 2026 05:12:21 -0500
 Subject: [PATCH] Add vimbrowser native element shader
@@ -9,7 +9,8 @@ Subject: [PATCH] Add vimbrowser native element shader
  ui/native_theme/native_theme.h                |  10 +
  ui/native_theme/native_theme_aura.cc          |  35 ++
  ui/native_theme/native_theme_fluent.cc        |  37 ++
- 5 files changed, 529 insertions(+)
+ ui/views/controls/textfield/textfield.cc      |   9 +-
+ 6 files changed, 536 insertions(+), 2 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 index 996c856818701..3ab01dbcba617 100644
@@ -665,6 +666,26 @@ index 405a660571933..d29b7c6075656 100644
    flags.setColor(extra_params.track_color.value_or(
        color_provider->GetColor(kColorWebNativeControlScrollbarCorner)));
    canvas->drawIRect(RectToSkIRect(rect), flags);
+diff --git a/ui/views/controls/textfield/textfield.cc b/ui/views/controls/textfield/textfield.cc
+index bfb42a86c8895..a113b413770fa 100644
+--- a/ui/views/controls/textfield/textfield.cc
++++ b/ui/views/controls/textfield/textfield.cc
+@@ -3283,8 +3283,13 @@ void Textfield::DropDraggedText(
+ }
+ 
+ float Textfield::GetCornerRadius() {
+-  return LayoutProvider::Get()->GetCornerRadiusMetric(
+-      ShapeContextTokens::kTextfieldRadius, size());
++  // Vimbrowser renders its browser chrome (sidebar rows, command line and
++  // autocomplete) with CEF Views textfields for native text styling. The default
++  // Material textfield radius makes selected sidebar rows look like rounded
++  // pills instead of terminal-like square rows. Use square textfield geometry in
++  // this source-built CEF backend; individual Views can still control color and
++  // borders normally.
++  return 0;
+ }
+ 
+ void Textfield::OnGestureScrollBegin(int drag_start_location_x) {
 -- 
 2.54.0
 

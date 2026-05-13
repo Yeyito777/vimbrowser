@@ -78,6 +78,11 @@ class BrowserWindow final : public CefWindowDelegate,
     std::vector<CompletionItem> matches;
   };
 
+  struct SidebarRowViews {
+    CefRefPtr<CefPanel> panel;
+    CefRefPtr<CefTextfield> text;
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
@@ -155,7 +160,8 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> sidebar_panel_;
   CefRefPtr<CefPanel> sidebar_content_panel_;
   CefRefPtr<CefPanel> sidebar_border_panel_;
-  std::vector<CefRefPtr<CefTextfield>> sidebar_rows_;
+  std::vector<SidebarRowViews> sidebar_rows_;
+  CefRefPtr<CefTextfield> sidebar_spacer_;
   CefRefPtr<CefPanel> content_panel_;
   CefRefPtr<CefPanel> content_inner_panel_;
   CefRefPtr<CefPanel> command_panel_;
