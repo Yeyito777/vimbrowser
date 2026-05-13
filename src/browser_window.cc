@@ -4,8 +4,6 @@
 #include <cstdio>
 #include <cctype>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <utility>
 
 #include "config.h"
@@ -13,8 +11,6 @@
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
 #include "include/cef_navigation_entry.h"
-#include "include/cef_parser.h"
-#include "include/cef_values.h"
 #include "include/views/cef_button.h"
 #include "theme.h"
 
@@ -39,6 +35,10 @@ constexpr int kContentInnerPanelId = 110;
 constexpr int kModeIndicatorPanelId = 111;
 constexpr int kModeIndicatorFieldId = 112;
 constexpr int kCommandAutocompletePanelId = 113;
+constexpr int kCommandFieldId = 114;
+constexpr int kSidebarRowBaseId = 2000;
+constexpr int kAutocompleteRowBaseId = 6000;
+constexpr int kSidebarRowHeight = 24;
 // Experimental chrome-level mode indicator. Flip to false to disable without
 // touching the mode/focus state machines.
 constexpr bool kModeIndicatorEnabled = true;
@@ -46,10 +46,26 @@ constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
 constexpr int kCommandTextInsetX = 10;
 constexpr int kCommandCharWidth = 8;
-constexpr int kCommandCursorTop = 5;
-constexpr int kCommandCursorHeight = 18;
-constexpr int kCommandCursorBarWidth = 2;
-constexpr int kCommandCursorBlockWidth = 8;
+
+bool InIdRange(int id, int base, int count) {
+  return id >= base && id < base + count;
+}
+
+void StyleTextfield(CefRefPtr<CefTextfield> field,
+                    cef_color_t text,
+                    cef_color_t background,
+                    const CefString& font = "monospace, 13px") {
+  if (!field) {
+    return;
+  }
+  field->SetReadOnly(true);
+  field->SetFocusable(false);
+  field->SetFontList(font);
+  field->SetBackgroundColor(background);
+  field->SetTextColor(text);
+  field->SetSelectionTextColor(theme::kText);
+  field->SetSelectionBackgroundColor(theme::kSelectionBg);
+}
 
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
@@ -169,49 +185,6 @@ bool IsCtrlKey(const CefKeyEvent& event, char key) {
          event.character == key || event.character == key + ('a' - 'A') ||
          event.unmodified_character == key ||
          event.unmodified_character == key + ('a' - 'A');
-}
-
-std::string HtmlEscape(const std::string& value) {
-  std::string escaped;
-  escaped.reserve(value.size());
-  for (char c : value) {
-    switch (c) {
-      case '&':
-        escaped += "&amp;";
-        break;
-      case '<':
-        escaped += "&lt;";
-        break;
-      case '>':
-        escaped += "&gt;";
-        break;
-      case '"':
-        escaped += "&quot;";
-        break;
-      default:
-        escaped.push_back(c);
-        break;
-    }
-  }
-  return escaped;
-}
-
-std::string DataUrl(const std::string& html, bool vimbrowser_ui = false) {
-  std::ostringstream out;
-  out << "data:text/html;charset=utf-8";
-  if (vimbrowser_ui) {
-    out << ";vimbrowser-ui=1";
-  }
-  out << ",";
-  out << std::uppercase << std::hex << std::setfill('0');
-  for (unsigned char c : html) {
-    if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-      out << c;
-    } else {
-      out << '%' << std::setw(2) << static_cast<int>(c);
-    }
-  }
-  return out.str();
 }
 
 std::string Trim(std::string value) {
@@ -353,16 +326,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetToFillLayout();
   BuildChrome();
   AddTab(initial_url_, true);
-
-  CefBrowserSettings sidebar_browser_settings;
-  sidebar_browser_settings.background_color = theme::kSidebarBg;
-  sidebar_client_ = new BrowserClient(this);
-  sidebar_view_ = CefBrowserView::CreateBrowserView(
-      sidebar_client_, DataUrl(SidebarHtml(), true), sidebar_browser_settings, nullptr,
-      nullptr, this);
-  sidebar_view_->SetPreferAccelerators(true);
-  sidebar_view_->SetVisible(true);
-  sidebar_content_panel_->AddChildView(sidebar_view_);
+  RefreshSidebar();
 
   window_->CenterWindow(CefSize(1200, 800));
   window_->Show();
@@ -406,7 +370,6 @@ void BrowserWindow::BuildChrome() {
   sidebar_content_panel_ = CefPanel::CreatePanel(nullptr);
   sidebar_content_panel_->SetID(kSidebarContentPanelId);
   sidebar_content_panel_->SetBackgroundColor(theme::kSidebarBg);
-  sidebar_content_panel_->SetToFillLayout();
   sidebar_panel_->AddChildView(sidebar_content_panel_);
   sidebar_layout->SetFlexForView(sidebar_content_panel_, 1);
 
@@ -439,17 +402,14 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_ = CefPanel::CreatePanel(this);
   command_content_panel_->SetID(kCommandContentPanelId);
   command_content_panel_->SetBackgroundColor(theme::kAppBg);
-  command_content_panel_->SetToFillLayout();
   command_panel_->AddChildView(command_content_panel_);
 
-  CefBrowserSettings command_browser_settings;
-  command_browser_settings.background_color = theme::kAppBg;
-  command_client_ = new BrowserClient(this);
-  command_view_ = CefBrowserView::CreateBrowserView(
-      command_client_, DataUrl(CommandHtml(), true), command_browser_settings, nullptr,
-      nullptr, this);
-  command_view_->SetPreferAccelerators(true);
-  command_content_panel_->AddChildView(command_view_);
+  command_field_ = CefTextfield::CreateTextfield(this);
+  command_field_->SetID(kCommandFieldId);
+  StyleTextfield(command_field_, theme::kText, theme::kAppBg);
+  command_field_->SetAccessibleName("vimbrowser command line");
+  command_content_panel_->AddChildView(command_field_);
+
   command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
                                             false);
   command_overlay_->SetVisible(false);
@@ -457,15 +417,6 @@ void BrowserWindow::BuildChrome() {
   autocomplete_panel_ = CefPanel::CreatePanel(this);
   autocomplete_panel_->SetID(kCommandAutocompletePanelId);
   autocomplete_panel_->SetBackgroundColor(theme::kSidebarBg);
-  autocomplete_panel_->SetToFillLayout();
-  CefBrowserSettings autocomplete_browser_settings;
-  autocomplete_browser_settings.background_color = theme::kSidebarBg;
-  autocomplete_client_ = new BrowserClient(this);
-  autocomplete_view_ = CefBrowserView::CreateBrowserView(
-      autocomplete_client_, DataUrl(AutocompleteHtml(), true), autocomplete_browser_settings,
-      nullptr, nullptr, this);
-  autocomplete_view_->SetPreferAccelerators(true);
-  autocomplete_panel_->AddChildView(autocomplete_view_);
   autocomplete_overlay_ = window_->AddOverlayView(
       autocomplete_panel_, CEF_DOCKING_MODE_CUSTOM, false);
   autocomplete_overlay_->SetVisible(false);
@@ -502,20 +453,17 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_overlay_ = nullptr;
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
-  autocomplete_view_ = nullptr;
-  autocomplete_client_ = nullptr;
+  autocomplete_rows_.clear();
   autocomplete_panel_ = nullptr;
-  command_view_ = nullptr;
-  command_client_ = nullptr;
+  command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
   content_inner_panel_ = nullptr;
   content_panel_ = nullptr;
   command_separator_panel_ = nullptr;
   sidebar_border_panel_ = nullptr;
+  sidebar_rows_.clear();
   sidebar_content_panel_ = nullptr;
-  sidebar_view_ = nullptr;
-  sidebar_client_ = nullptr;
   sidebar_panel_ = nullptr;
   main_panel_ = nullptr;
   root_panel_ = nullptr;
@@ -641,6 +589,24 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
 }
 
 void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
+  const int id = button ? button->GetID() : 0;
+  if (InIdRange(id, kSidebarRowBaseId, 1000)) {
+    const size_t index = static_cast<size_t>(id - kSidebarRowBaseId);
+    if (index < tabs_.size()) {
+      ActivateTab(index);
+      SetFocusArea(FocusArea::kTabSidebar);
+    }
+    return;
+  }
+  if (InIdRange(id, kAutocompleteRowBaseId, 1000)) {
+    const int index = id - kAutocompleteRowBaseId;
+    if (index >= 0 && index < static_cast<int>(command_autocomplete_.matches.size())) {
+      command_autocomplete_.selection = index;
+      FillCommandAutocomplete(command_autocomplete_.matches[index].name);
+      SetCommandText(command_text_);
+    }
+    return;
+  }
   // The mode indicator is implemented as a CefLabelButton because CEF exposes
   // centering for labels/buttons but not textfields. It is display-only.
 }
@@ -691,6 +657,16 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(std::max(1, CommandAutocompleteWidth()),
                    std::max(1, CommandAutocompleteHeight()));
   }
+  if (InIdRange(id, kSidebarRowBaseId, 1000)) {
+    return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
+  }
+  if (id == kCommandFieldId) {
+    return CefSize(1200, kCommandHeight);
+  }
+  if (InIdRange(id, kAutocompleteRowBaseId, 1000)) {
+    return CefSize(std::max(1, CommandAutocompleteWidth()),
+                   kCommandAutocompleteRowHeight);
+  }
   if (id == kModeIndicatorPanelId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
@@ -721,6 +697,11 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, 1);
   }
   if (id == kCommandAutocompletePanelId) {
+    return CefSize(1, 1);
+  }
+  if (InIdRange(id, kSidebarRowBaseId, 1000) ||
+      id == kCommandFieldId ||
+      InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     return CefSize(1, 1);
   }
   if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId) {
@@ -1079,8 +1060,6 @@ void BrowserWindow::CancelCommand() {
   if (Tab* tab = ActiveTab(); tab) {
     if (focus_area_ == FocusArea::kWebView) {
       tab->view->RequestFocus();
-    } else if (focus_area_ == FocusArea::kTabSidebar && sidebar_view_) {
-      sidebar_view_->RequestFocus();
     }
   }
   Layout();
@@ -1427,29 +1406,7 @@ void BrowserWindow::SetCommandText(std::string text) {
 }
 
 void BrowserWindow::UpdateCommandView() {
-  if (command_client_ && command_client_->browser()) {
-    CefRefPtr<CefFrame> frame = command_client_->browser()->GetMainFrame();
-    CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
-    dict->SetString("text", command_text_);
-    dict->SetInt("cursor", static_cast<int>(vim::CursorDisplayOffset(command_vim_, command_text_)));
-    dict->SetString("mode", command_vim_.mode == vim::Mode::kNormal ? "normal" : "insert");
-    dict->SetInt("selection", command_autocomplete_.selection);
-    CefRefPtr<CefListValue> completions = CefListValue::Create();
-    if (command_autocomplete_.active) {
-      for (size_t i = 0; i < command_autocomplete_.matches.size(); ++i) {
-        CefRefPtr<CefDictionaryValue> item = CefDictionaryValue::Create();
-        item->SetString("name", command_autocomplete_.matches[i].name);
-        item->SetString("description", command_autocomplete_.matches[i].description);
-        completions->SetDictionary(i, item);
-      }
-    }
-    dict->SetList("completions", completions);
-    CefRefPtr<CefValue> value = CefValue::Create();
-    value->SetDictionary(dict);
-    const std::string json = CefWriteJSON(value, JSON_WRITER_DEFAULT).ToString();
-    frame->ExecuteJavaScript("window.vimbrowserSetCommand && window.vimbrowserSetCommand(" + json + ");",
-                             frame->GetURL(), 0);
-  }
+  RebuildCommandCells();
 }
 
 void BrowserWindow::UpdateAutocompleteView() {
@@ -1458,27 +1415,115 @@ void BrowserWindow::UpdateAutocompleteView() {
                                       command_autocomplete_.active &&
                                       !command_autocomplete_.matches.empty());
   }
-  if (autocomplete_client_ && autocomplete_client_->browser()) {
-    CefRefPtr<CefFrame> frame = autocomplete_client_->browser()->GetMainFrame();
-    CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
-    dict->SetInt("selection", command_autocomplete_.selection);
-    CefRefPtr<CefListValue> completions = CefListValue::Create();
-    if (command_autocomplete_.active) {
-      for (size_t i = 0; i < command_autocomplete_.matches.size(); ++i) {
-        CefRefPtr<CefDictionaryValue> item = CefDictionaryValue::Create();
-        item->SetString("name", command_autocomplete_.matches[i].name);
-        item->SetString("description", command_autocomplete_.matches[i].description);
-        completions->SetDictionary(i, item);
-      }
-    }
-    dict->SetList("matches", completions);
-    CefRefPtr<CefValue> value = CefValue::Create();
-    value->SetDictionary(dict);
-    const std::string json = CefWriteJSON(value, JSON_WRITER_DEFAULT).ToString();
-    frame->ExecuteJavaScript(
-        "window.vimbrowserSetAutocomplete && window.vimbrowserSetAutocomplete(" + json + ");",
-        frame->GetURL(), 0);
+  RebuildAutocompleteRows();
+}
+
+void BrowserWindow::RebuildCommandCells() {
+  if (!command_field_) {
+    return;
   }
+
+  const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
+  const bool normal = command_vim_.mode == vim::Mode::kNormal;
+  size_t command_end = 0;
+  if (StartsWithCaseInsensitive(command_text_, ":open")) {
+    command_end = std::min<size_t>(command_text_.size(), 5);
+    if (StartsWithCaseInsensitive(command_text_, ":open tab")) {
+      command_end = std::min<size_t>(command_text_.size(), 9);
+    }
+  } else if (StartsWithCaseInsensitive(command_text_, ":tab-focus")) {
+    command_end = std::min<size_t>(command_text_.size(), 10);
+  }
+
+  std::string text = command_text_;
+  size_t color_cursor = cursor;
+  if (normal) {
+    if (text.empty()) {
+      text = " ";
+      color_cursor = 0;
+    } else if (color_cursor >= text.size()) {
+      text.push_back(' ');
+      color_cursor = text.size() - 1;
+    }
+  } else {
+    const size_t insert_at = std::min(cursor, text.size());
+    text.insert(insert_at, "▏");
+    color_cursor = insert_at;
+  }
+
+  command_field_->SetText(text);
+  command_field_->SetBackgroundColor(theme::kAppBg);
+  command_field_->SetTextColor(theme::kText);
+  command_field_->SetSelectionTextColor(theme::kAppBg);
+  command_field_->SetSelectionBackgroundColor(theme::kVimNormal);
+  if (command_end > 0) {
+    command_field_->ApplyTextColor(theme::kCommand,
+                                   CefRange(0, static_cast<uint32_t>(command_end)));
+  }
+  if (normal) {
+    command_field_->SelectRange(CefRange(static_cast<uint32_t>(color_cursor),
+                                         static_cast<uint32_t>(color_cursor + 1)));
+  } else {
+    command_field_->ApplyTextColor(theme::kVimNormal,
+                                   CefRange(static_cast<uint32_t>(color_cursor),
+                                            static_cast<uint32_t>(color_cursor + 1)));
+    command_field_->ClearSelection();
+  }
+}
+
+void BrowserWindow::RebuildAutocompleteRows() {
+  if (!autocomplete_panel_) {
+    return;
+  }
+
+  for (auto& row : autocomplete_rows_) {
+    autocomplete_panel_->RemoveChildView(row);
+  }
+  autocomplete_rows_.clear();
+
+  if (!command_autocomplete_.active) {
+    return;
+  }
+
+  int visible = CommandAutocompleteVisibleRows();
+  int start = 0;
+  if (static_cast<int>(command_autocomplete_.matches.size()) > visible &&
+      command_autocomplete_.selection >= 0) {
+    start = std::max(0, std::min(command_autocomplete_.selection - visible / 2,
+                                 static_cast<int>(command_autocomplete_.matches.size()) - visible));
+  }
+
+  int max_name = 0;
+  for (const CompletionItem& item : command_autocomplete_.matches) {
+    max_name = std::max(max_name, static_cast<int>(item.name.size()));
+  }
+
+  const int width = std::max(1, CommandAutocompleteWidth());
+  for (int r = 0; r < visible; ++r) {
+    const int index = start + r;
+    if (index < 0 || index >= static_cast<int>(command_autocomplete_.matches.size())) {
+      break;
+    }
+    const CompletionItem& item = command_autocomplete_.matches[index];
+    const bool selected = index == command_autocomplete_.selection;
+    std::string text = selected ? "▸ " : "  ";
+    text += item.name;
+    if (static_cast<int>(item.name.size()) < max_name + 1) {
+      text.append(static_cast<size_t>(max_name + 1 - item.name.size()), ' ');
+    }
+    text += item.description;
+
+    CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
+    row->SetText(text);
+    row->SetID(kAutocompleteRowBaseId + index);
+    StyleTextfield(row, theme::kText,
+                   selected ? theme::kSidebarSelBg : theme::kSidebarBg);
+    autocomplete_panel_->AddChildView(row);
+    row->SetBounds(CefRect(0, r * kCommandAutocompleteRowHeight,
+                           width, kCommandAutocompleteRowHeight));
+    autocomplete_rows_.push_back(row);
+  }
+  autocomplete_panel_->InvalidateLayout();
 }
 
 void BrowserWindow::Layout() {
@@ -1526,9 +1571,9 @@ void BrowserWindow::Layout() {
   content_inner_panel_->SetBounds(CefRect(0, 0, content_width, main_height));
   command_panel_->SetSize(CefSize(width, command_total_height));
   command_separator_panel_->SetSize(CefSize(width, 1));
-  command_content_panel_->SetSize(CefSize(width, command_total_height));
+  command_content_panel_->SetSize(CefSize(width, kCommandHeight));
   command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
-  command_content_panel_->SetBounds(CefRect(0, 0, width, command_total_height));
+  command_content_panel_->SetBounds(CefRect(0, 1, width, kCommandHeight));
   if (command_overlay_) {
     command_overlay_->SetBounds(CefRect(0, std::max(0, height - command_total_height),
                                         width, command_total_height));
@@ -1563,14 +1608,18 @@ void BrowserWindow::Layout() {
   if (sidebar_content_panel_->GetLayout()) {
     sidebar_content_panel_->Layout();
   }
-  if (sidebar_view_) {
-    sidebar_view_->SetSize(CefSize(kSidebarWidth - 1, main_height));
+  for (size_t i = 0; i < sidebar_rows_.size(); ++i) {
+    sidebar_rows_[i]->SetBounds(CefRect(0, static_cast<int>(i) * kSidebarRowHeight,
+                                        kSidebarWidth - 1, kSidebarRowHeight));
   }
-  if (command_view_) {
-    command_view_->SetSize(CefSize(width, command_total_height));
+  if (command_field_) {
+    command_field_->SetBounds(CefRect(kCommandTextInsetX, 0,
+                                      std::max(1, width - kCommandTextInsetX),
+                                      kCommandHeight));
   }
-  if (autocomplete_view_) {
-    autocomplete_view_->SetSize(CefSize(autocomplete_width, std::max(1, autocomplete_height)));
+  for (size_t i = 0; i < autocomplete_rows_.size(); ++i) {
+    autocomplete_rows_[i]->SetBounds(CefRect(0, static_cast<int>(i) * kCommandAutocompleteRowHeight,
+                                            autocomplete_width, kCommandAutocompleteRowHeight));
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();
@@ -1587,9 +1636,39 @@ void BrowserWindow::Layout() {
 }
 
 void BrowserWindow::RefreshSidebar() {
-  if (sidebar_client_ && sidebar_client_->browser()) {
-    sidebar_client_->browser()->GetMainFrame()->LoadURL(DataUrl(SidebarHtml(), true));
+  if (!sidebar_content_panel_) {
+    return;
   }
+
+  for (auto& row : sidebar_rows_) {
+    sidebar_content_panel_->RemoveChildView(row);
+  }
+  sidebar_rows_.clear();
+
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    const bool active = i == active_index_;
+    std::string text = active ? "> " : "  ";
+    text += std::to_string(i + 1);
+    text += ": ";
+    text += DisplayUrl(tabs_[i].url);
+    if (text.size() > 160) {
+      text.resize(157);
+      text += "...";
+    }
+
+    CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
+    row->SetText(text);
+    row->SetID(kSidebarRowBaseId + static_cast<int>(i));
+    StyleTextfield(row, theme::kText,
+                   active ? theme::kSidebarSelBg : theme::kSidebarBg,
+                   "monospace, 12px");
+    sidebar_content_panel_->AddChildView(row);
+    row->SetBounds(CefRect(0, static_cast<int>(i) * kSidebarRowHeight,
+                           kSidebarWidth - 1, kSidebarRowHeight));
+    sidebar_rows_.push_back(row);
+  }
+
+  sidebar_content_panel_->InvalidateLayout();
 }
 
 void BrowserWindow::SetFocusArea(FocusArea area) {
@@ -1601,10 +1680,6 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
   if (focus_area_ == FocusArea::kWebView) {
     if (Tab* tab = ActiveTab(); tab) {
       tab->view->RequestFocus();
-    }
-  } else if (focus_area_ == FocusArea::kTabSidebar) {
-    if (sidebar_view_) {
-      sidebar_view_->RequestFocus();
     }
   }
   RefreshSidebar();
@@ -1866,6 +1941,8 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kCommandFieldId && command_field_) {
+    StyleTextfield(command_field_, theme::kText, theme::kAppBg);
   } else if (id == kCommandSeparatorPanelId) {
     view->SetBackgroundColor(focus_area_ == FocusArea::kCommandLine
                                  ? theme::kBorderFocused
@@ -1946,109 +2023,6 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
       return theme::kVimVisual;
   }
   return theme::kVimNormal;
-}
-
-std::string BrowserWindow::SidebarHtml() const {
-  const std::string text_color = "#ffffff";
-  const std::string marker_color = "#48cae4";
-  std::string rows;
-  for (size_t i = 0; i < tabs_.size(); ++i) {
-    const bool active = i == active_index_;
-    rows += "<div class=\"row";
-    if (active) {
-      rows += " active";
-    }
-    rows += "\">";
-    rows += "<span class=\"marker\">";
-    rows += active ? "&gt;" : "&nbsp;";
-    rows += "</span> ";
-    rows += std::to_string(i + 1);
-    rows += ": ";
-    rows += HtmlEscape(DisplayUrl(tabs_[i].url));
-    rows += "</div>";
-  }
-
-  return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
-         "*{box-sizing:border-box;border-radius:0!important}"
-         "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#030814;color:" + text_color + ";font:12px monospace;}"
-         ".row{height:24px;line-height:24px;white-space:nowrap;overflow:hidden;"
-         "text-overflow:ellipsis;padding:0 6px;background:#030814;color:" + text_color + ";}"
-         ".row.active{background:#0f193c;color:" + text_color + ";}"
-         ".row.active .marker{color:" + marker_color + ";}"
-         ".marker{color:" + marker_color + ";}"
-         "::selection{background:#4f5258;color:#ffffff;}"
-         "</style></head><body>" +
-         rows + "</body></html>";
-}
-
-std::string BrowserWindow::CommandHtml() const {
-  return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
-         "*{box-sizing:border-box;border-radius:0!important}"
-         "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#00050f;color:#ffffff;font:13px monospace;}"
-         ".top-border{height:1px;background:#1c94e5;width:100%;}"
-         ".line{position:relative;height:28px;line-height:28px;padding-left:10px;"
-         "white-space:pre;overflow:hidden;background:#00050f;}"
-         ".cells{display:inline-grid;grid-auto-flow:column;grid-auto-columns:8px;"
-         "justify-content:start;align-items:center;position:relative;z-index:2;}"
-         ".cell{width:8px;height:28px;line-height:28px;text-align:center;"
-         "position:relative;}"
-         ".command{color:#aed6fe}.text{color:#ffffff}.eof{color:#ffffff}"
-         ".under-cursor{color:#00050f}"
-         ".cursor{position:absolute;top:5px;height:18px;background:#48cae4;"
-         "pointer-events:none;}"
-         ".cursor.bar{width:2px;z-index:3}.cursor.block{width:8px;z-index:1}"
-         "::selection{background:#4f5258;color:#ffffff}"
-         "</style></head><body><div class=\"top-border\"></div><div class=\"line\"><div id=\"cursor\" "
-         "class=\"cursor bar\"></div><span id=\"cells\" class=\"cells\"></span>"
-         "</div><script>"
-         "function esc(s){return String(s).replace(/[&<>\"']/g,function(c){return "
-         "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
-         "window.vimbrowserSetCommand=function(s){"
-         "var cells=document.getElementById('cells'),cur=document.getElementById('cursor');"
-         "var valid={':open':{'tab':true},':tab-focus':{}};"
-         "function spans(text){var out=[],m=/^\\s*(\\S+(?:\\s+\\S+)*)/.exec(text);if(!m)return out;"
-         "var start=m[0].indexOf(m[1]),full=m[1],re=/\\S+/g,words=[],wm;"
-         "while((wm=re.exec(full))!==null)words.push({w:wm[0],e:wm.index+wm[0].length});"
-         "if(!words.length||!valid[words[0].w])return out;var end=words[0].e,key=words[0].w;"
-         "for(var j=1;j<words.length;j++){if(valid[key]&&valid[key][words[j].w]){end=words[j].e;key+=' '+words[j].w}else break}"
-         "out.push({s:start,e:start+end});return out}"
-         "function inSpan(xs,i){for(var k=0;k<xs.length;k++)if(i>=xs[k].s&&i<xs[k].e)return true;return false}"
-         "var html='',text=s.text||'',cursor=s.cursor||0,normal=s.mode==='normal',hs=spans(text);"
-         "for(var i=0;i<text.length;i++){var cls='cell '+(inSpan(hs,i)?'command':'text');"
-         "if(normal&&i===cursor)cls+=' under-cursor';html+='<span class=\"'+cls+'\">'+esc(text[i])+'</span>'}"
-         "if(cursor>=text.length)html+='<span class=\"cell eof\"></span>';"
-         "cells.innerHTML=html;cur.className='cursor '+(normal?'block':'bar');"
-         "cur.style.left=(10+cursor*8)+'px';};"
-         "window.vimbrowserSetCommand({text:'',cursor:0,mode:'insert'});"
-         "</script></body></html>";
-}
-
-std::string BrowserWindow::AutocompleteHtml() const {
-  return "<!doctype html><html><head><meta charset=\"utf-8\"><style>"
-         "*{box-sizing:border-box;border-radius:0!important}"
-         "html,body{margin:0;width:100%;height:100%;overflow:hidden;"
-         "background:#030814;color:#ffffff;font:13px monospace;}"
-         ".row{height:28px;line-height:28px;white-space:pre;padding:0 8px;"
-         "background:#030814;color:#ffffff;}"
-         ".row.selected{background:#0f193c;}"
-         ".marker{color:#48cae4}.name{color:#ffffff}.desc{color:#8d96a8}"
-         "::selection{background:#4f5258;color:#ffffff}"
-         "</style></head><body><div id=\"rows\"></div><script>"
-         "function esc(s){return String(s).replace(/[&<>\"']/g,function(c){return "
-         "{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}"
-         "function pad(s,n){s=String(s);return s.length>=n?s:s+Array(n-s.length+1).join(' ')}"
-         "window.vimbrowserSetAutocomplete=function(s){var rows=document.getElementById('rows');"
-         "var ms=s.matches||[],sel=(s.selection==null?-1:s.selection),html='',max=0;"
-         "for(var i=0;i<ms.length;i++)max=Math.max(max,String(ms[i].name||'').length);"
-         "var visible=Math.min(ms.length,8),start=0;if(ms.length>visible&&sel>=0){start=Math.max(0,Math.min(sel-Math.floor(visible/2),ms.length-visible))}"
-         "for(var r=0;r<visible;r++){var idx=start+r,it=ms[idx]||{},selected=idx===sel;"
-         "var marker=selected?'▸ ':'  ',desc=it.description||it.desc||'';"
-         "html+='<div class=\"row '+(selected?'selected':'')+'\"><span class=\"marker\">'+marker+'</span><span class=\"name\">'+esc(pad(it.name||'',max+1))+'</span><span class=\"desc\">'+esc(desc)+'</span></div>'}"
-         "rows.innerHTML=html;};"
-         "window.vimbrowserSetAutocomplete({matches:[],selection:-1});"
-         "</script></body></html>";
 }
 
 Tab* BrowserWindow::ActiveTab() {

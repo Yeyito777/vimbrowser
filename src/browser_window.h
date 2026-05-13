@@ -125,11 +125,10 @@ class BrowserWindow final : public CefWindowDelegate,
   void RestyleView(CefRefPtr<CefView> view);
   void UpdateCommandView();
   void UpdateModeIndicator();
+  void RebuildCommandCells();
+  void RebuildAutocompleteRows();
   std::string ModeIndicatorText() const;
   cef_color_t ModeIndicatorColor() const;
-  std::string SidebarHtml() const;
-  std::string CommandHtml() const;
-  std::string AutocompleteHtml() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
 
@@ -156,19 +155,16 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> sidebar_panel_;
   CefRefPtr<CefPanel> sidebar_content_panel_;
   CefRefPtr<CefPanel> sidebar_border_panel_;
-  CefRefPtr<BrowserClient> sidebar_client_;
-  CefRefPtr<CefBrowserView> sidebar_view_;
+  std::vector<CefRefPtr<CefTextfield>> sidebar_rows_;
   CefRefPtr<CefPanel> content_panel_;
   CefRefPtr<CefPanel> content_inner_panel_;
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
-  CefRefPtr<BrowserClient> command_client_;
-  CefRefPtr<CefBrowserView> command_view_;
+  CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
   CefRefPtr<CefPanel> autocomplete_panel_;
-  CefRefPtr<BrowserClient> autocomplete_client_;
-  CefRefPtr<CefBrowserView> autocomplete_view_;
+  std::vector<CefRefPtr<CefTextfield>> autocomplete_rows_;
   CefRefPtr<CefOverlayController> autocomplete_overlay_;
   CefRefPtr<CefPanel> mode_indicator_panel_;
   CefRefPtr<CefLabelButton> mode_indicator_label_;
