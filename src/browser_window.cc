@@ -1710,6 +1710,9 @@ void BrowserWindow::RefreshSidebar() {
     row->SetText(text);
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
     StyleTextfield(row, theme::kText, row_bg, "monospace, 12px");
+    if (active) {
+      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
+    }
     sidebar_content_panel_->AddChildView(row);
     sidebar_rows_.push_back({row});
   }
