@@ -10,6 +10,7 @@
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
+#include "include/cef_image.h"
 #include "include/cef_navigation_entry.h"
 #include "include/views/cef_button.h"
 #include "theme.h"
@@ -39,8 +40,11 @@ constexpr int kCommandFieldId = 114;
 constexpr int kSidebarSpacerId = 115;
 constexpr int kCommandCursorFieldId = 116;
 constexpr int kSidebarRowBaseId = 2000;
+constexpr int kSidebarMarkerBaseId = 3000;
+constexpr int kSidebarLabelBaseId = 4000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
+constexpr int kSidebarMarkerWidth = 16;
 constexpr int kCommandCursorBarWidth = 2;
 constexpr int kCommandCursorBlockWidth = 8;
 constexpr int kCommandCursorTop = 5;
@@ -55,6 +59,33 @@ constexpr int kCommandCharWidth = 8;
 
 bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
+}
+
+CefRefPtr<CefImage> CreateSidebarMarkerImage() {
+  constexpr int width = 9;
+  constexpr int height = 11;
+  unsigned char pixels[width * height * 4] = {};
+  auto set_pixel = [&](int x, int y) {
+    const int offset = (y * width + x) * 4;
+    pixels[offset + 0] = CefColorGetR(theme::kVimNormal);
+    pixels[offset + 1] = CefColorGetG(theme::kVimNormal);
+    pixels[offset + 2] = CefColorGetB(theme::kVimNormal);
+    pixels[offset + 3] = CefColorGetA(theme::kVimNormal);
+  };
+  const int segments[][4] = {
+      {0, 0, 2, 2}, {2, 2, 2, 2}, {4, 4, 2, 3}, {2, 7, 2, 2}, {0, 9, 2, 2},
+  };
+  for (const auto& segment : segments) {
+    for (int y = segment[1]; y < segment[1] + segment[3]; ++y) {
+      for (int x = segment[0]; x < segment[0] + segment[2]; ++x) {
+        set_pixel(x, y);
+      }
+    }
+  }
+  CefRefPtr<CefImage> image = CefImage::CreateImage();
+  image->AddBitmap(1.0f, width, height, CEF_COLOR_TYPE_RGBA_8888,
+                   CEF_ALPHA_TYPE_POSTMULTIPLIED, pixels, sizeof(pixels));
+  return image;
 }
 
 void StyleTextfield(CefRefPtr<CefTextfield> field,
@@ -680,6 +711,12 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
   }
+  if (InIdRange(id, kSidebarMarkerBaseId, 1000)) {
+    return CefSize(kSidebarMarkerWidth, kSidebarRowHeight);
+  }
+  if (InIdRange(id, kSidebarLabelBaseId, 1000)) {
+    return CefSize(kSidebarWidth - 1 - kSidebarMarkerWidth, kSidebarRowHeight);
+  }
   if (id == kSidebarSpacerId) {
     return CefSize(kSidebarWidth - 1, 1);
   }
@@ -726,6 +763,8 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, 1);
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000) ||
+      InIdRange(id, kSidebarMarkerBaseId, 1000) ||
+      InIdRange(id, kSidebarLabelBaseId, 1000) ||
       id == kSidebarSpacerId ||
       id == kCommandCursorFieldId ||
       id == kCommandFieldId ||
@@ -1696,25 +1735,48 @@ void BrowserWindow::RefreshSidebar() {
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text = active ? "> " : "  ";
-    text += std::to_string(i + 1);
-    text += ": ";
-    text += DisplayUrl(tabs_[i].url);
-    if (text.size() > 160) {
-      text.resize(157);
-      text += "...";
+    std::string label = std::to_string(i + 1);
+    label += ": ";
+    label += DisplayUrl(tabs_[i].url);
+    if (label.size() > 158) {
+      label.resize(155);
+      label += "...";
     }
 
     const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
-    CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
-    row->SetText(text);
+    CefRefPtr<CefPanel> row = CefPanel::CreatePanel(this);
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
-    StyleTextfield(row, theme::kText, row_bg, "monospace, 12px");
+    row->SetBackgroundColor(row_bg);
+    CefBoxLayoutSettings row_settings = {};
+    row_settings.size = sizeof(row_settings);
+    row_settings.horizontal = true;
+    row_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+    CefRefPtr<CefBoxLayout> row_layout = row->SetToBoxLayout(row_settings);
+
+    CefRefPtr<CefLabelButton> marker = CefLabelButton::CreateLabelButton(this, "");
+    marker->SetID(kSidebarMarkerBaseId + static_cast<int>(i));
+    marker->SetFocusable(false);
+    marker->SetInkDropEnabled(false);
+    marker->SetBackgroundColor(row_bg);
+    marker->SetMinimumSize(CefSize(kSidebarMarkerWidth, kSidebarRowHeight));
+    marker->SetMaximumSize(CefSize(kSidebarMarkerWidth, kSidebarRowHeight));
     if (active) {
-      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
+      CefRefPtr<CefImage> marker_image = CreateSidebarMarkerImage();
+      marker->SetImage(CEF_BUTTON_STATE_NORMAL, marker_image);
+      marker->SetImage(CEF_BUTTON_STATE_HOVERED, marker_image);
+      marker->SetImage(CEF_BUTTON_STATE_PRESSED, marker_image);
     }
+    row->AddChildView(marker);
+
+    CefRefPtr<CefTextfield> label_field = CefTextfield::CreateTextfield(this);
+    label_field->SetText(label);
+    label_field->SetID(kSidebarLabelBaseId + static_cast<int>(i));
+    StyleTextfield(label_field, theme::kText, row_bg, "monospace, 12px");
+    row->AddChildView(label_field);
+    row_layout->SetFlexForView(label_field, 1);
+
     sidebar_content_panel_->AddChildView(row);
-    sidebar_rows_.push_back({row});
+    sidebar_rows_.push_back({row, marker, label_field});
   }
 
   sidebar_spacer_ = CefTextfield::CreateTextfield(this);
@@ -1993,7 +2055,18 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
   } else if (id == kSidebarContentPanelId) {
     view->SetBackgroundColor(theme::kSidebarBg);
   } else if (InIdRange(id, kSidebarRowBaseId, 1000)) {
-    // RefreshSidebar() owns per-row colors and the active marker accent.
+    const size_t index = static_cast<size_t>(id - kSidebarRowBaseId);
+    view->SetBackgroundColor(index == active_index_ ? theme::kSidebarSelBg
+                                                    : theme::kSidebarBg);
+  } else if (InIdRange(id, kSidebarMarkerBaseId, 1000)) {
+    const size_t index = static_cast<size_t>(id - kSidebarMarkerBaseId);
+    const bool active = index == active_index_;
+    view->SetBackgroundColor(active ? theme::kSidebarSelBg : theme::kSidebarBg);
+  } else if (InIdRange(id, kSidebarLabelBaseId, 1000)) {
+    const size_t index = static_cast<size_t>(id - kSidebarLabelBaseId);
+    StyleTextfield(view->AsTextfield(), theme::kText,
+                   index == active_index_ ? theme::kSidebarSelBg : theme::kSidebarBg,
+                   "monospace, 12px");
   } else if (id == kSidebarSpacerId) {
     if (sidebar_spacer_) {
       StyleTextfield(sidebar_spacer_, theme::kText, theme::kSidebarBg,

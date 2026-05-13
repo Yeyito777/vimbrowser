@@ -79,7 +79,9 @@ class BrowserWindow final : public CefWindowDelegate,
   };
 
   struct SidebarRowViews {
-    CefRefPtr<CefTextfield> row;
+    CefRefPtr<CefPanel> row;
+    CefRefPtr<CefLabelButton> marker;
+    CefRefPtr<CefTextfield> label;
   };
 
   void BuildChrome();
