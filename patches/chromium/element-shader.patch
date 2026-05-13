@@ -1,18 +1,18 @@
-From a05fa36a5410fc2c44cfee4983fd5cb7a3049134 Mon Sep 17 00:00:00 2001
+From 909385707dd72e04129cc3b01ee849d2d3779960 Mon Sep 17 00:00:00 2001
 From: Yeyito <alinerob31@gmail.com>
 Date: Tue, 12 May 2026 05:12:21 -0500
 Subject: [PATCH] Add vimbrowser native element shader
 
 ---
- .../core/css/resolver/style_resolver.cc       | 408 ++++++++++++++++++
+ .../core/css/resolver/style_resolver.cc       | 427 ++++++++++++++++++
  ui/native_theme/native_theme.cc               |   2 +
  ui/native_theme/native_theme.h                |  10 +
  ui/native_theme/native_theme_aura.cc          |  35 ++
  ui/native_theme/native_theme_fluent.cc        |  37 ++
- 5 files changed, 492 insertions(+)
+ 5 files changed, 511 insertions(+)
 
 diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
-index 996c856818701..e2ed7d6e312ea 100644
+index 996c856818701..48cf4a4c5d4dd 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 @@ -32,6 +32,20 @@
@@ -36,7 +36,7 @@ index 996c856818701..e2ed7d6e312ea 100644
  #include "base/containers/adapters.h"
  #include "base/memory/stack_allocated.h"
  #include "base/types/optional_util.h"
-@@ -150,6 +164,397 @@ bool IsForPseudoElement(const Element& element,
+@@ -150,6 +164,401 @@ bool IsForPseudoElement(const Element& element,
    return element.IsPseudoElement() || style_request.IsPseudoStyleRequest();
  }
  
@@ -93,6 +93,10 @@ index 996c856818701..e2ed7d6e312ea 100644
 +  h = hf;
 +  s = sf;
 +  l = lf;
++}
++
++bool VimbrowserElementShaderDisablesBaseStyleCache() {
++  return true;
 +}
 +
 +void ApplyElementShader(StyleResolverState& state) {
@@ -434,7 +438,7 @@ index 996c856818701..e2ed7d6e312ea 100644
  bool IsPseudoElementWithUAStyle(PseudoId pseudo_id) {
    switch (pseudo_id) {
      case kPseudoIdMarker:
-@@ -1493,6 +1898,9 @@ const ComputedStyle* StyleResolver::ResolveStyle(
+@@ -1493,6 +1902,9 @@ const ComputedStyle* StyleResolver::ResolveStyle(
  
    state.LoadPendingResources();
  
@@ -444,6 +448,28 @@ index 996c856818701..e2ed7d6e312ea 100644
    // Now return the style.
    return state.TakeStyle();
  }
+@@ -1943,6 +2355,21 @@ void StyleResolver::ApplyBaseStyle(
+     StyleCascade& cascade) {
+   DCHECK(style_request.pseudo_id != kPseudoIdFirstLineInherited);
+ 
++  // Vimbrowser's element shader rewrites computed colors as part of style
++  // resolution. Chromium's base-computed-style and incremental-inline-style
++  // caches clone previously-computed styles and then DCHECK that they match an
++  // unmodified no-cache recomputation. That invariant no longer holds once the
++  // cached style has shadered colors, and interactive internal UI (the command
++  // line updates cursor/text via inline style) can crash here. Use the canonical
++  // no-cache path so every resolved style passes through one deterministic
++  // shader transform instead of mixing shadered cached styles with unshadered
++  // recomputations.
++  if (VimbrowserElementShaderDisablesBaseStyleCache()) {
++    ApplyBaseStyleNoCache(element, style_recalc_context, style_request, state,
++                          cascade);
++    return;
++  }
++
+   if (state.CanTriggerAnimations() && CanReuseBaseComputedStyle(state)) {
+     const ComputedStyle* animation_base_computed_style =
+         CachedAnimationBaseComputedStyle(state);
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
 index 013d69b0e3c54..b79306c0eaf4c 100644
 --- a/ui/native_theme/native_theme.cc
