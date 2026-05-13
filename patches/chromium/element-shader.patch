@@ -1,21 +1,21 @@
-From 909385707dd72e04129cc3b01ee849d2d3779960 Mon Sep 17 00:00:00 2001
+From 087146cfb8025d61a33d9d4f1a8305794aab84c2 Mon Sep 17 00:00:00 2001
 From: Yeyito <alinerob31@gmail.com>
 Date: Tue, 12 May 2026 05:12:21 -0500
 Subject: [PATCH] Add vimbrowser native element shader
 
 ---
- .../core/css/resolver/style_resolver.cc       | 427 ++++++++++++++++++
+ .../core/css/resolver/style_resolver.cc       | 445 ++++++++++++++++++
  ui/native_theme/native_theme.cc               |   2 +
  ui/native_theme/native_theme.h                |  10 +
  ui/native_theme/native_theme_aura.cc          |  35 ++
  ui/native_theme/native_theme_fluent.cc        |  37 ++
- 5 files changed, 511 insertions(+)
+ 5 files changed, 529 insertions(+)
 
 diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
-index 996c856818701..48cf4a4c5d4dd 100644
+index 996c856818701..3ab01dbcba617 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
-@@ -32,6 +32,20 @@
+@@ -32,6 +32,21 @@
  
  #include <optional>
  
@@ -31,12 +31,13 @@ index 996c856818701..48cf4a4c5d4dd 100644
 +#include "third_party/blink/renderer/core/style/style_generated_image.h"
 +#include "third_party/blink/renderer/platform/geometry/length_size.h"
 +#include "third_party/blink/renderer/platform/graphics/color.h"
++#include "third_party/blink/renderer/platform/weborigin/kurl.h"
 +#include "ui/gfx/color_conversions.h"
 +
  #include "base/containers/adapters.h"
  #include "base/memory/stack_allocated.h"
  #include "base/types/optional_util.h"
-@@ -150,6 +164,401 @@ bool IsForPseudoElement(const Element& element,
+@@ -150,6 +165,418 @@ bool IsForPseudoElement(const Element& element,
    return element.IsPseudoElement() || style_request.IsPseudoStyleRequest();
  }
  
@@ -99,7 +100,24 @@ index 996c856818701..48cf4a4c5d4dd 100644
 +  return true;
 +}
 +
++bool IsVimbrowserInternalPage(const Document& document) {
++  const KURL& url = document.Url();
++  if (!url.ProtocolIsData()) {
++    return false;
++  }
++
++  // Vimbrowser's own chrome (command line, autocomplete, sidebar) is rendered
++  // as small data: documents and already uses the intended dark/accent palette.
++  // Do not run the page-content shader over those documents or the accent line
++  // and command cursor get intentionally darkened like web-page content.
++  return url.GetString().find("vimbrowser-ui=1") != String::npos;
++}
++
 +void ApplyElementShader(StyleResolverState& state) {
++  if (IsVimbrowserInternalPage(state.GetDocument())) {
++    return;
++  }
++
 +  ComputedStyleBuilder& builder = state.StyleBuilder();
 +
 +  // Handle ::selection pseudo-element — custom highlight color
@@ -438,7 +456,7 @@ index 996c856818701..48cf4a4c5d4dd 100644
  bool IsPseudoElementWithUAStyle(PseudoId pseudo_id) {
    switch (pseudo_id) {
      case kPseudoIdMarker:
-@@ -1493,6 +1902,9 @@ const ComputedStyle* StyleResolver::ResolveStyle(
+@@ -1493,6 +1920,9 @@ const ComputedStyle* StyleResolver::ResolveStyle(
  
    state.LoadPendingResources();
  
@@ -448,7 +466,7 @@ index 996c856818701..48cf4a4c5d4dd 100644
    // Now return the style.
    return state.TakeStyle();
  }
-@@ -1943,6 +2355,21 @@ void StyleResolver::ApplyBaseStyle(
+@@ -1943,6 +2373,21 @@ void StyleResolver::ApplyBaseStyle(
      StyleCascade& cascade) {
    DCHECK(style_request.pseudo_id != kPseudoIdFirstLineInherited);
  

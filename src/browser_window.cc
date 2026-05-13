@@ -196,9 +196,13 @@ std::string HtmlEscape(const std::string& value) {
   return escaped;
 }
 
-std::string DataUrl(const std::string& html) {
+std::string DataUrl(const std::string& html, bool vimbrowser_ui = false) {
   std::ostringstream out;
-  out << "data:text/html;charset=utf-8,";
+  out << "data:text/html;charset=utf-8";
+  if (vimbrowser_ui) {
+    out << ";vimbrowser-ui=1";
+  }
+  out << ",";
   out << std::uppercase << std::hex << std::setfill('0');
   for (unsigned char c : html) {
     if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
@@ -354,7 +358,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   sidebar_browser_settings.background_color = theme::kSidebarBg;
   sidebar_client_ = new BrowserClient(this);
   sidebar_view_ = CefBrowserView::CreateBrowserView(
-      sidebar_client_, DataUrl(SidebarHtml()), sidebar_browser_settings, nullptr,
+      sidebar_client_, DataUrl(SidebarHtml(), true), sidebar_browser_settings, nullptr,
       nullptr, this);
   sidebar_view_->SetPreferAccelerators(true);
   sidebar_view_->SetVisible(true);
@@ -442,7 +446,7 @@ void BrowserWindow::BuildChrome() {
   command_browser_settings.background_color = theme::kAppBg;
   command_client_ = new BrowserClient(this);
   command_view_ = CefBrowserView::CreateBrowserView(
-      command_client_, DataUrl(CommandHtml()), command_browser_settings, nullptr,
+      command_client_, DataUrl(CommandHtml(), true), command_browser_settings, nullptr,
       nullptr, this);
   command_view_->SetPreferAccelerators(true);
   command_content_panel_->AddChildView(command_view_);
@@ -458,7 +462,7 @@ void BrowserWindow::BuildChrome() {
   autocomplete_browser_settings.background_color = theme::kSidebarBg;
   autocomplete_client_ = new BrowserClient(this);
   autocomplete_view_ = CefBrowserView::CreateBrowserView(
-      autocomplete_client_, DataUrl(AutocompleteHtml()), autocomplete_browser_settings,
+      autocomplete_client_, DataUrl(AutocompleteHtml(), true), autocomplete_browser_settings,
       nullptr, nullptr, this);
   autocomplete_view_->SetPreferAccelerators(true);
   autocomplete_panel_->AddChildView(autocomplete_view_);
@@ -1584,7 +1588,7 @@ void BrowserWindow::Layout() {
 
 void BrowserWindow::RefreshSidebar() {
   if (sidebar_client_ && sidebar_client_->browser()) {
-    sidebar_client_->browser()->GetMainFrame()->LoadURL(DataUrl(SidebarHtml()));
+    sidebar_client_->browser()->GetMainFrame()->LoadURL(DataUrl(SidebarHtml(), true));
   }
 }
 
