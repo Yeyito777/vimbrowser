@@ -79,9 +79,7 @@ class BrowserWindow final : public CefWindowDelegate,
   };
 
   struct SidebarRowViews {
-    CefRefPtr<CefPanel> panel;
-    CefRefPtr<CefTextfield> marker;
-    CefRefPtr<CefTextfield> label;
+    CefRefPtr<CefTextfield> row;
   };
 
   void BuildChrome();
@@ -149,8 +147,6 @@ class BrowserWindow final : public CefWindowDelegate,
   FocusArea previous_focus_area_ = FocusArea::kWebView;
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
   bool suppress_next_char_event_ = false;
-  bool suppress_next_window_command_key_event_ = false;
-  bool suppress_next_textfield_command_key_event_ = false;
   bool sidebar_visible_ = true;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
@@ -170,7 +166,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
-  CefRefPtr<CefPanel> command_cursor_panel_;
+  CefRefPtr<CefTextfield> command_cursor_field_;
   CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
   CefRefPtr<CefPanel> autocomplete_panel_;
