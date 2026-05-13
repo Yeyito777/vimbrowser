@@ -1,4 +1,4 @@
-From 4deea39af9f70aa5b93ea7f7de73c0cbb701a1bd Mon Sep 17 00:00:00 2001
+From 9c113b332569cbab605a4d7afd84b20f4ee014cd Mon Sep 17 00:00:00 2001
 From: Yeyito <alinerob31@gmail.com>
 Date: Tue, 12 May 2026 05:12:21 -0500
 Subject: [PATCH] Add vimbrowser native element shader
@@ -9,8 +9,9 @@ Subject: [PATCH] Add vimbrowser native element shader
  ui/native_theme/native_theme.h                |  10 +
  ui/native_theme/native_theme_aura.cc          |  35 ++
  ui/native_theme/native_theme_fluent.cc        |  37 ++
- ui/views/controls/textfield/textfield.cc      |   9 +-
- 6 files changed, 536 insertions(+), 2 deletions(-)
+ ui/views/controls/textfield/textfield.cc      |  27 +-
+ ui/views/controls/textfield/textfield.h       |  13 +
+ 7 files changed, 567 insertions(+), 2 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 index 996c856818701..3ab01dbcba617 100644
@@ -667,10 +668,67 @@ index 405a660571933..d29b7c6075656 100644
        color_provider->GetColor(kColorWebNativeControlScrollbarCorner)));
    canvas->drawIRect(RectToSkIRect(rect), flags);
 diff --git a/ui/views/controls/textfield/textfield.cc b/ui/views/controls/textfield/textfield.cc
-index bfb42a86c8895..a113b413770fa 100644
+index bfb42a86c8895..f15c49797c3f0 100644
 --- a/ui/views/controls/textfield/textfield.cc
 +++ b/ui/views/controls/textfield/textfield.cc
-@@ -3283,8 +3283,13 @@ void Textfield::DropDraggedText(
+@@ -363,6 +363,7 @@ void Textfield::SetText(std::u16string_view new_text) {
+ void Textfield::SetTextWithoutCaretBoundsChangeNotification(
+     std::u16string_view text,
+     size_t cursor_position) {
++  applied_color_ranges_.clear();
+   model_->SetText(text, cursor_position);
+   UpdateAfterChange(TextChangeType::kInternal, false, false);
+ }
+@@ -378,6 +379,7 @@ void Textfield::AppendText(const std::u16string& new_text) {
+   if (new_text.empty()) {
+     return;
+   }
++  applied_color_ranges_.clear();
+   model_->Append(new_text);
+   UpdateAfterChange(TextChangeType::kInternal, false);
+ }
+@@ -386,6 +388,7 @@ void Textfield::InsertOrReplaceText(const std::u16string& new_text) {
+   if (new_text.empty()) {
+     return;
+   }
++  applied_color_ranges_.clear();
+   model_->InsertText(new_text);
+   UpdateAfterChange(TextChangeType::kUserTriggered, true);
+ }
+@@ -589,6 +592,7 @@ size_t Textfield::GetCursorPosition() const {
+ 
+ void Textfield::SetColor(SkColor value) {
+   GetRenderText()->SetColor(value);
++  ReapplyAppliedColors();
+   cursor_view_->layer()->SetColor(value);
+   OnPropertyChanged(
+       ui::metadata::MakeUniquePropertyKey(&model_, kTextfieldTextColor),
+@@ -596,10 +600,24 @@ void Textfield::SetColor(SkColor value) {
+ }
+ 
+ void Textfield::ApplyColor(SkColor value, const gfx::Range& range) {
++  if (!range.IsValid() || range.is_empty() || range.GetMax() > GetText().size()) {
++    return;
++  }
++  applied_color_ranges_.push_back({value, range});
+   GetRenderText()->ApplyColor(value, range);
+   SchedulePaint();
+ }
+ 
++void Textfield::ReapplyAppliedColors() {
++  const size_t text_length = GetText().size();
++  for (const auto& applied_color : applied_color_ranges_) {
++    if (applied_color.range.IsValid() && !applied_color.range.is_empty() &&
++        applied_color.range.GetMax() <= text_length) {
++      GetRenderText()->ApplyColor(applied_color.color, applied_color.range);
++    }
++  }
++}
++
+ void Textfield::SetStyle(gfx::TextStyle style, bool value) {
+   GetRenderText()->SetStyle(style, value);
+   SchedulePaint();
+@@ -3283,8 +3301,13 @@ void Textfield::DropDraggedText(
  }
  
  float Textfield::GetCornerRadius() {
@@ -686,6 +744,44 @@ index bfb42a86c8895..a113b413770fa 100644
  }
  
  void Textfield::OnGestureScrollBegin(int drag_start_location_x) {
+diff --git a/ui/views/controls/textfield/textfield.h b/ui/views/controls/textfield/textfield.h
+index fa77116e4aff2..c4db5571243a7 100644
+--- a/ui/views/controls/textfield/textfield.h
++++ b/ui/views/controls/textfield/textfield.h
+@@ -594,6 +594,11 @@ class VIEWS_EXPORT Textfield : public View,
+ 
+   enum class TextChangeType { kNone, kInternal, kUserTriggered };
+ 
++  struct AppliedColorRange {
++    SkColor color;
++    gfx::Range range;
++  };
++
+   // View overrides:
+   // Declared final since overriding by subclasses would interfere with the
+   // accounting related to the scheduled text edit command. Subclasses should
+@@ -655,6 +660,13 @@ class VIEWS_EXPORT Textfield : public View,
+ 
+   void PaintTextAndCursor(gfx::Canvas* canvas);
+ 
++  // Re-applies logical color ranges after calls that reset the RenderText base
++  // color (for example theme changes). RenderText intentionally clears ranged
++  // colors when SetColor() is called; Textfield keeps the caller's ranges so
++  // display-only styled textfields can survive those resets without changing
++  // layout or falling back to separate views.
++  void ReapplyAppliedColors();
++
+   // Helper function to call MoveCursorTo on the TextfieldModel.
+   void MoveCursorTo(const gfx::Point& point, bool select);
+ 
+@@ -794,6 +806,7 @@ class VIEWS_EXPORT Textfield : public View,
+   std::optional<SkColor> background_color_;
+   std::optional<SkColor> selection_text_color_;
+   std::optional<SkColor> selection_background_color_;
++  std::vector<AppliedColorRange> applied_color_ranges_;
+ 
+   // Text to display when empty.
+   std::u16string placeholder_text_;
 -- 
 2.54.0
 
