@@ -1,10 +1,10 @@
-.PHONY: bootstrap bootstrap-chromium build-chromium-cef source-distrib configure configure-source build build-source install-wrapper install install-source run clean status
+.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
 JOBS ?= 12
 INSTALL_BIN ?= $(HOME)/.local/bin/vimbrowser
-SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/third_party/chromium/src/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
+SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
 CMAKE_ARGS ?=
 ifneq ($(CEF_ROOT),)
 CMAKE_ARGS += -DCEF_ROOT=$(CEF_ROOT)
@@ -19,9 +19,16 @@ bootstrap-chromium:
 build-chromium-cef:
 	./scripts/build-chromium-cef.sh
 
+sync-source-distrib:
+	./scripts/sync-chromium-cef-distrib.sh
+
+backend-dev: build-chromium-cef sync-source-distrib configure-source
+	cmake --build $(SOURCE_BUILD_DIR) -j$(JOBS)
+	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
+
 source-distrib:
-	cd third_party/chromium/src && PATH="$(CURDIR)/third_party/chromium/depot_tools:$$PATH" autoninja -C out/Release_GN_x64 chrome_sandbox
-	cd third_party/chromium/src/cef/tools && ./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
+	cd backend/chromium && PATH="$(CURDIR)/backend/depot_tools:$$PATH" autoninja -C out/Release_GN_x64 chrome_sandbox
+	cd backend/chromium/cef/tools && ./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
 
 configure-source:
 	@test -n "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" || { echo 'No source-built CEF distribution found; run make build-chromium-cef source-distrib, or set CEF_ROOT'; exit 1; }
@@ -54,6 +61,18 @@ install: build install-wrapper
 
 install-source: build-source
 	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
+
+vite-install:
+	npm --prefix frontend install
+
+vite-dev:
+	npm --prefix frontend run dev
+
+vite-build:
+	npm --prefix frontend run build
+
+vite-preview:
+	npm --prefix frontend run preview
 
 run: build
 	$(abspath $(BUILD_DIR))/Release/vimbrowser --disable-gpu https://example.com

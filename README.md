@@ -21,8 +21,8 @@ The legacy quick build downloads the Linux x86_64 CEF **minimal** binary/source
 distribution into `third_party/cef/` and builds only the small C++ shell plus the
 CEF wrapper library.
 
-For the real vimbrowser backend, use the source Chromium/CEF checkout under
-`third_party/chromium/`:
+For the real vimbrowser backend, use the source Chromium/CEF tree under
+`backend/chromium/`:
 
 ```bash
 make bootstrap-chromium
@@ -32,11 +32,37 @@ make build-source
 make install-source
 ```
 
-That checkout is pinned to Chromium `147.0.7727.118` / CEF
-`d58e84d17dd3f646c906ac633156cd0ec46638e9` and applies
-`patches/chromium/element-shader.patch`, which bakes the element shader into
-native Blink style resolution and native scrollbar paint paths. There is no
-JS/CSS shader injection path in vimbrowser.
+After that first full source distribution exists, use the fast backend edit loop:
+
+```bash
+make backend-dev
+```
+
+`backend-dev` keeps Chromium's incremental build cache in
+`backend/chromium/out/Release_GN_x64`, rebuilds `libcef`, syncs the changed
+runtime artifacts into the existing CEF binary distribution, rebuilds the small
+vimbrowser shell, and reinstalls `~/.local/bin/vimbrowser`. Do not delete
+`backend/chromium/out/Release_GN_x64` unless you intentionally want to pay for a
+full Chromium rebuild again. Use `make source-distrib` only for a fresh package
+or major CEF distribution layout/API changes.
+
+For fast visual mockups that do not need a C++/Chromium rebuild, there is also a
+small Vite lab under `frontend/`:
+
+```bash
+make vite-install
+make vite-dev
+vimbrowser http://127.0.0.1:5173
+```
+
+This is only an iteration aid for chrome layout/colors. The production browser
+chrome remains native C++/CEF Views and Chromium backend code.
+
+That backend is pinned to Chromium `147.0.7727.118` / CEF
+`d58e84d17dd3f646c906ac633156cd0ec46638e9`. Chromium and CEF source now live
+directly in the main vimbrowser git repository under `backend/chromium/` with
+their nested upstream `.git` history removed. Edit Chromium files directly and
+commit them normally; there is no exported Chromium patch file or submodule.
 
 After Chromium/CEF builds, `make source-distrib` creates a minimal CEF binary
 distribution from the patched source tree, and `make build-source` points
@@ -44,18 +70,18 @@ vimbrowser at the newest generated source distribution automatically. The manual
 equivalent is:
 
 ```bash
-cd third_party/chromium/src
+cd backend/chromium
 PATH=$PWD/../depot_tools:$PATH autoninja -C out/Release_GN_x64 chrome_sandbox
 cd cef/tools
 ./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
 
-cd ../../../../
-CEF_ROOT=$PWD/third_party/chromium/src/cef/binary_distrib/<generated-cef-binary-dir> make build-source install-source
+cd ../../../
+CEF_ROOT=$PWD/backend/chromium/cef/binary_distrib/<generated-cef-binary-dir> make build-source install-source
 ```
 
 The current source-backend build is intentionally native/hardcore: CEF's patch
-stack is applied first, then the vimbrowser patch modifies Chromium/Blink C++
-directly. Shadered page colors are computed before layout/paint in
+stack has already been folded into `backend/chromium`, then vimbrowser modifies
+Chromium/Blink C++ directly. Shadered page colors are computed before layout/paint in
 `StyleResolver::ResolveStyle()`, and native scrollbar painting is hooked in
 `ui/native_theme`. Nothing is applied by page JavaScript, injected CSS, or a
 post-load browser callback.

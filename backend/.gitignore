@@ -1,0 +1,6 @@
+/depot_tools/
+/chromium/out*/
+/chromium/cef/binary_distrib/
+/chromium/.gclient_entries
+/chromium/.gcs_entries
+/chromium/.gclient_previous_sync_commits

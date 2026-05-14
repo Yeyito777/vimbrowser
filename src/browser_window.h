@@ -166,9 +166,9 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
-  CefRefPtr<CefTextfield> command_cursor_field_;
   CefRefPtr<CefTextfield> command_field_;
   CefRefPtr<CefOverlayController> command_overlay_;
+  CefRefPtr<CefOverlayController> command_separator_overlay_;
   CefRefPtr<CefPanel> autocomplete_panel_;
   std::vector<CefRefPtr<CefTextfield>> autocomplete_rows_;
   CefRefPtr<CefOverlayController> autocomplete_overlay_;
