@@ -1,0 +1,86 @@
+// Copyright 2024 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import * as i18n from '../../../core/i18n/i18n.js';
+import * as AiAssistanceModel from '../../../models/ai_assistance/ai_assistance.js';
+import {initializePersistenceImplForTests, setupAutomaticFileSystem} from '../../../testing/AiAssistanceHelpers.js';
+import {renderElementIntoDOM} from '../../../testing/DOMHelpers.js';
+import {describeWithEnvironment} from '../../../testing/EnvironmentHelpers.js';
+import * as AiAssistancePanel from '../ai_assistance.js';
+
+describeWithEnvironment('ChatView', () => {
+  function getProp(options: Partial<AiAssistancePanel.Props>): AiAssistancePanel.Props {
+    const noop = () => {};
+    const messages = options.messages ?? [];
+    const context = sinon.createStubInstance(AiAssistanceModel.StylingAgent.NodeContext);
+    context.getTitle.returns('');
+    return {
+      onTextSubmit: noop,
+      onInspectElementClick: noop,
+      onFeedbackSubmit: noop,
+      onCancelClick: noop,
+      onContextClick: noop,
+      onCopyResponseClick: noop,
+      onNewConversation: noop,
+      onContextRemoved: noop,
+      onContextAdd: noop,
+      changeManager: new AiAssistanceModel.ChangeManager.ChangeManager(),
+      inspectElementToggled: false,
+      conversationType: AiAssistanceModel.AiHistoryStorage.ConversationType.STYLING,
+      messages,
+      context,
+      isContextSelected: true,
+      isLoading: false,
+      canShowFeedbackForm: false,
+      userInfo: {},
+      blockedByCrossOrigin: false,
+      isReadOnly: false,
+      isTextInputDisabled: false,
+      emptyStateSuggestions: [],
+      inputPlaceholder: i18n.i18n.lockedString('input placeholder'),
+      disclaimerText: i18n.i18n.lockedString('disclaimer text'),
+      markdownRenderer: new AiAssistancePanel.MarkdownRendererWithCodeBlock(),
+      walkthrough: {
+        onToggle: () => {},
+        onOpen: () => {},
+        isInlined: false,
+        isExpanded: false,
+        activeMessage: null,
+      },
+      ...options,
+    };
+  }
+
+  describe('SideEffects', () => {
+    it('should show SideEffects when the step contains "sideEffect" object', async () => {
+      initializePersistenceImplForTests();
+      setupAutomaticFileSystem();
+
+      const props = getProp({
+        messages: [
+          {
+            entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.MODEL,
+            parts: [
+              {
+                type: 'step',
+                step: {
+                  isLoading: false,
+                  title: 'Updating element styles',
+                  thought: 'Updating element styles',
+                  code: '$0.style.background = "blue";',
+                  requestApproval: {
+                    description: null,
+                    onAnswer: () => {},
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const chat = new AiAssistancePanel.ChatView(props);
+      renderElementIntoDOM(chat);
+    });
+  });
+});

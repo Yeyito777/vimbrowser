@@ -1,0 +1,229 @@
+// Copyright 2024 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import * as Host from '../../../core/host/host.js';
+import * as Platform from '../../../core/platform/platform.js';
+import * as SDK from '../../../core/sdk/sdk.js';
+import type * as Protocol from '../../../generated/protocol.js';
+import {mockAidaClient} from '../../../testing/AiAssistanceHelpers.js';
+import {updateHostConfig} from '../../../testing/EnvironmentHelpers.js';
+import {describeWithMockConnection} from '../../../testing/MockConnection.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as Logs from '../../logs/logs.js';
+import * as NetworkTimeCalculator from '../../network_time_calculator/network_time_calculator.js';
+import * as TextUtils from '../../text_utils/text_utils.js';
+import {AiAgent, NetworkAgent} from '../ai_assistance.js';
+
+const {urlString} = Platform.DevToolsPath;
+
+describeWithMockConnection('NetworkAgent', () => {
+  function mockHostConfig(modelId?: string, temperature?: number) {
+    updateHostConfig({
+      devToolsAiAssistanceNetworkAgent: {
+        modelId,
+        temperature,
+      },
+    });
+  }
+
+  afterEach(async () => {
+    await RenderCoordinator.done();
+  });
+
+  describe('buildRequest', () => {
+    it('builds a request with a model id', async () => {
+      mockHostConfig('test model');
+      const agent = new NetworkAgent.NetworkAgent({
+        aidaClient: {} as Host.AidaClient.AidaClient,
+      });
+      assert.strictEqual(
+          agent.buildRequest({text: 'test input'}, Host.AidaClient.Role.USER).options?.model_id,
+          'test model',
+      );
+    });
+
+    it('builds a request with a temperature', async () => {
+      mockHostConfig('test model', 1);
+      const agent = new NetworkAgent.NetworkAgent({
+        aidaClient: {} as Host.AidaClient.AidaClient,
+      });
+      assert.strictEqual(
+          agent.buildRequest({text: 'test input'}, Host.AidaClient.Role.USER).options?.temperature,
+          1,
+      );
+    });
+  });
+  describe('run', () => {
+    const exampleResponse = JSON.stringify({request: 'body'});
+
+    let selectedNetworkRequest: SDK.NetworkRequest.NetworkRequest;
+    let calculator: NetworkTimeCalculator.NetworkTransferTimeCalculator;
+    const timingInfo: Protocol.Network.ResourceTiming = {
+      requestTime: 500,
+      proxyStart: 0,
+      proxyEnd: 0,
+      dnsStart: 0,
+      dnsEnd: 0,
+      connectStart: 0,
+      connectEnd: 0,
+      sslStart: 0,
+      sslEnd: 0,
+      sendStart: 800,
+      sendEnd: 900,
+      pushStart: 0,
+      pushEnd: 0,
+      receiveHeadersStart: 1000,
+      receiveHeadersEnd: 0,
+    } as unknown as Protocol.Network.ResourceTiming;
+
+    beforeEach(() => {
+      selectedNetworkRequest = SDK.NetworkRequest.NetworkRequest.create(
+          'requestId' as Protocol.Network.RequestId, urlString`https://www.example.com`, urlString``, null, null, null);
+      selectedNetworkRequest.statusCode = 200;
+      selectedNetworkRequest.setRequestHeaders([{name: 'content-type', value: 'bar1'}]);
+      selectedNetworkRequest.responseHeaders =
+          [{name: 'content-type', value: 'bar2'}, {name: 'x-forwarded-for', value: 'bar3'}];
+      selectedNetworkRequest.timing = timingInfo;
+      selectedNetworkRequest.requestContentData = () => {
+        return Promise.resolve(
+            new TextUtils.ContentData.ContentData(exampleResponse, false, 'application/json', 'utf-8'));
+      };
+      const initiatorNetworkRequest = SDK.NetworkRequest.NetworkRequest.create(
+          'requestId' as Protocol.Network.RequestId, urlString`https://www.initiator.com`, urlString``, null, null,
+          null);
+      const initiatedNetworkRequest1 = SDK.NetworkRequest.NetworkRequest.create(
+          'requestId' as Protocol.Network.RequestId, urlString`https://www.example.com/1`, urlString``, null, null,
+          null);
+      const initiatedNetworkRequest2 = SDK.NetworkRequest.NetworkRequest.create(
+          'requestId' as Protocol.Network.RequestId, urlString`https://www.example.com/2`, urlString``, null, null,
+          null);
+
+      sinon.stub(Logs.NetworkLog.NetworkLog.instance(), 'initiatorGraphForRequest')
+          .withArgs(selectedNetworkRequest)
+          .returns({
+            initiators: new Set([selectedNetworkRequest, initiatorNetworkRequest]),
+            initiated: new Map([
+              [selectedNetworkRequest, initiatorNetworkRequest],
+              [initiatedNetworkRequest1, selectedNetworkRequest],
+              [initiatedNetworkRequest2, selectedNetworkRequest],
+            ]),
+          })
+          .withArgs(initiatedNetworkRequest1)
+          .returns({
+            initiators: new Set([]),
+            initiated: new Map([
+              [initiatedNetworkRequest1, selectedNetworkRequest],
+            ]),
+          })
+          .withArgs(initiatedNetworkRequest2)
+          .returns({
+            initiators: new Set([]),
+            initiated: new Map([
+              [initiatedNetworkRequest2, selectedNetworkRequest],
+            ]),
+          });
+
+      calculator = new NetworkTimeCalculator.NetworkTransferTimeCalculator();
+      calculator.updateBoundaries(selectedNetworkRequest);
+    });
+
+    it('generates an answer', async () => {
+      const agent = new NetworkAgent.NetworkAgent({
+        aidaClient: mockAidaClient([[{
+          explanation: 'This is the answer',
+          metadata: {
+            rpcGlobalId: 123,
+          },
+        }]]),
+      });
+
+      const responses = await Array.fromAsync(
+          agent.run('test', {selected: new NetworkAgent.RequestContext(selectedNetworkRequest, calculator)}));
+      assert.deepEqual(responses, [
+        {
+          type: AiAgent.ResponseType.CONTEXT,
+          title: 'Analyzing network data',
+          details: [
+            {
+              title: 'Request',
+              text: 'Request URL: https://www.example.com\n\nRequest headers:\ncontent-type: bar1',
+            },
+            {
+              title: 'Response',
+              text: `Response headers:\ncontent-type: bar2\nx-forwarded-for: bar3\n\nResponse body:\n${
+                  exampleResponse}\n\nResponse status: 200 \nNetwork request status: pending\n`
+            },
+            {
+              title: 'Timing',
+              text:
+                  'Queued at (timestamp): 0 s\nStarted at (timestamp): 501 s\nQueueing (duration): 501 s\nConnection start (stalled) (duration): 800 ms\nRequest sent (duration): 100 ms\nDuration (duration): 501 s',
+            },
+            {
+              title: 'Request initiator chain',
+              text: `- URL: <redacted cross-origin initiator URL>
+\t- URL: https://www.example.com
+\t\t- URL: https://www.example.com/1
+\t\t- URL: https://www.example.com/2`,
+            },
+          ],
+        },
+        {
+          type: AiAgent.ResponseType.QUERYING,
+        },
+        {
+          type: AiAgent.ResponseType.ANSWER,
+          text: 'This is the answer',
+          complete: true,
+          suggestions: undefined,
+          rpcId: 123,
+        },
+      ]);
+
+      const historicalCtx = agent.buildRequest({text: ''}, Host.AidaClient.Role.USER).historical_contexts;
+      assert.deepEqual(historicalCtx, [
+        {
+          role: 1,
+          parts: [{
+            text: `# Selected network request \nRequest: https://www.example.com
+
+Request headers:
+content-type: bar1
+
+Response headers:
+content-type: bar2
+x-forwarded-for: bar3
+
+Response body:
+${exampleResponse}
+
+Response status: 200 
+Network request status: pending
+
+Request timing:
+Queued at (timestamp): 0 s
+Started at (timestamp): 501 s
+Queueing (duration): 501 s
+Connection start (stalled) (duration): 800 ms
+Request sent (duration): 100 ms
+Duration (duration): 501 s
+
+Request initiator chain:
+- URL: <redacted cross-origin initiator URL>
+\t- URL: https://www.example.com
+\t\t- URL: https://www.example.com/1
+\t\t- URL: https://www.example.com/2
+
+# User request
+
+test`,
+          }],
+        },
+        {
+          role: 2,
+          parts: [{text: 'This is the answer'}],
+        },
+      ]);
+    });
+  });
+});
