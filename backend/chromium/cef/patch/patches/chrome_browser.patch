@@ -1,0 +1,40 @@
+diff --git chrome/browser/BUILD.gn chrome/browser/BUILD.gn
+index 969c2af4439e4a534ad935dd09c0324a12e81829..6c3253a88b20f7943d23fc3b5b784fe96a5ebbe5 100644
+--- chrome/browser/BUILD.gn
++++ chrome/browser/BUILD.gn
+@@ -11,6 +11,7 @@ import("//build/config/compiler/pgo/pgo.gni")
+ import("//build/config/features.gni")
+ import("//build/config/python.gni")
+ import("//build/config/ui.gni")
++import("//cef/libcef/features/features.gni")
+ import("//chrome/browser/buildflags.gni")
+ import("//chrome/browser/downgrade/buildflags.gni")
+ import("//chrome/common/features.gni")
+@@ -328,8 +329,6 @@ static_library("browser") {
+     "data_sharing/data_sharing_navigation_utils.cc",
+     "data_sharing/data_sharing_navigation_utils.h",
+     "data_sharing/data_sharing_service_factory.cc",
+-    "data_sharing/migration/migratable_sync_service_coordinator_factory.cc",
+-    "data_sharing/migration/migratable_sync_service_coordinator_factory.h",
+     "data_sharing/personal_collaboration_data/personal_collaboration_data_service_factory.cc",
+     "data_sharing/personal_collaboration_data/personal_collaboration_data_service_factory.h",
+     "defaults.cc",
+@@ -1623,6 +1622,7 @@ static_library("browser") {
+     "//build/config/compiler:compiler_buildflags",
+     "//build/config/linux/dbus:buildflags",
+     "//cc",
++    "//cef/libcef/features:buildflags",
+     "//chrome:extra_resources",
+     "//chrome:resources",
+     "//chrome:strings",
+@@ -2511,6 +2511,10 @@ static_library("browser") {
+     sources += [ "net/net_error_diagnostics_dialog_stub.cc" ]
+   }
+ 
++  if (enable_cef) {
++    configs += [ "//cef/libcef/features:config" ]
++  }
++
+   if (is_android) {
+     sources += [
+       "accessibility/accessibility_prefs/android/accessibility_prefs_controller.cc",

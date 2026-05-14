@@ -1,0 +1,101 @@
+diff --git chrome/browser/ui/views/frame/browser_native_widget_mac.h chrome/browser/ui/views/frame/browser_native_widget_mac.h
+index 1423d061aa00c5e8c58bceb09f36d517821f8d06..dd7e20ed4850153fe5e1cc2d69acfd5299bc2693 100644
+--- chrome/browser/ui/views/frame/browser_native_widget_mac.h
++++ chrome/browser/ui/views/frame/browser_native_widget_mac.h
+@@ -11,6 +11,7 @@
+ #include "ui/base/mojom/window_show_state.mojom-forward.h"
+ #include "ui/views/widget/native_widget_mac.h"
+ 
++class Browser;
+ class BrowserWidget;
+ class BrowserView;
+ @class BrowserWindowTouchBarController;
+@@ -57,6 +58,21 @@ class BrowserNativeWidgetMac : public views::NativeWidgetMac,
+   bool ShouldUseInitialVisibleOnAllWorkspaces() const override;
+   void AnnounceTextInInProcessWindow(const std::u16string& text) override;
+ 
++  static void ValidateUserInterfaceItem(
++      Browser* browser,
++      int32_t command,
++      remote_cocoa::mojom::ValidateUserInterfaceItemResult* result);
++  static bool WillExecuteCommand(
++      Browser* browser,
++      int32_t command,
++      WindowOpenDisposition window_open_disposition,
++      bool is_before_first_responder);
++  static bool ExecuteCommand(
++      Browser* browser,
++      int32_t command,
++      WindowOpenDisposition window_open_disposition,
++      bool is_before_first_responder);
++
+  protected:
+   ~BrowserNativeWidgetMac() override;
+ 
+diff --git chrome/browser/ui/views/frame/browser_native_widget_mac.mm chrome/browser/ui/views/frame/browser_native_widget_mac.mm
+index fc79b13d4d4c27fd35fb561ad9e5c2942e5d9e69..8c248eeb21e086b72f49cdd823c8e5e9be81c9c4 100644
+--- chrome/browser/ui/views/frame/browser_native_widget_mac.mm
++++ chrome/browser/ui/views/frame/browser_native_widget_mac.mm
+@@ -214,7 +214,15 @@ void BrowserNativeWidgetMac::OnWidgetDestroyed(views::Widget* widget) {
+ void BrowserNativeWidgetMac::ValidateUserInterfaceItem(
+     int32_t tag,
+     remote_cocoa::mojom::ValidateUserInterfaceItemResult* result) {
+-  Browser* const browser = browser_view_ ? browser_view_->browser() : nullptr;
++  return ValidateUserInterfaceItem(
++      browser_view_ ? browser_view_->browser() : nullptr, tag, result);
++}
++
++// static
++void BrowserNativeWidgetMac::ValidateUserInterfaceItem(
++    Browser* browser,
++    int32_t tag,
++    remote_cocoa::mojom::ValidateUserInterfaceItemResult* result) {
+   if (!browser || !chrome::SupportsCommand(browser, tag)) {
+     result->enable = false;
+     return;
+@@ -410,9 +418,16 @@ bool BrowserNativeWidgetMac::WillExecuteCommand(
+   if (!browser_view_) {
+     return false;
+   }
++  return WillExecuteCommand(browser_view_->browser(), command,
++                            window_open_disposition, is_before_first_responder);
++}
+ 
+-  Browser* const browser = browser_view_->browser();
+-
++// static
++bool BrowserNativeWidgetMac::WillExecuteCommand(
++    Browser* browser,
++    int32_t command,
++    WindowOpenDisposition window_open_disposition,
++    bool is_before_first_responder) {
+   if (is_before_first_responder) {
+     // The specification for this private extensions API is incredibly vague.
+     // For now, we avoid triggering chrome commands prior to giving the
+@@ -444,12 +459,23 @@ bool BrowserNativeWidgetMac::ExecuteCommand(
+     int32_t command,
+     WindowOpenDisposition window_open_disposition,
+     bool is_before_first_responder) {
+-  if (!WillExecuteCommand(command, window_open_disposition,
+-                          is_before_first_responder)) {
++  if (!browser_view_) {
+     return false;
+   }
++  return ExecuteCommand(browser_view_->browser(), command,
++                        window_open_disposition, is_before_first_responder);
++}
+ 
+-  Browser* browser = browser_view_->browser();
++// static
++bool BrowserNativeWidgetMac::ExecuteCommand(
++    Browser* browser,
++    int32_t command,
++    WindowOpenDisposition window_open_disposition,
++    bool is_before_first_responder) {
++  if (!WillExecuteCommand(browser, command, window_open_disposition,
++                          is_before_first_responder)) {
++    return false;
++  }
+ 
+   if (command == IDC_TOGGLE_VERTICAL_TABS) {
+     if (auto* controller =

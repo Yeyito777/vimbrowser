@@ -1,0 +1,266 @@
+# Claude Code Tools for CEF Development
+
+This directory contains tools and instructions for using Claude Code to assist with CEF (Chromium Embedded Framework) development.
+
+***
+[TOC]
+***
+
+## Quick Navigation
+
+**Are you updating CEF to a new Chromium version?**
+
+→ See [CHROMIUM_UPDATE.md](CHROMIUM_UPDATE.md) for the complete workflow:
+
+- Fixing patches that fail to apply
+- Fixing build errors from API changes
+- Using analyzer scripts and verification tools
+
+**Are you developing a CEF application using a binary distribution?**
+
+→ See [CLIENT_DEVELOPMENT.md](CLIENT_DEVELOPMENT.md) for implementing features:
+
+- Adding custom URL schemes
+- JavaScript-to-C++ communication
+- Network request interception
+- Popup window customization
+
+**Are you writing or debugging CEF unit tests?**
+
+→ See [CLAUDE_TEST_INSTRUCTIONS.md](CLAUDE_TEST_INSTRUCTIONS.md) for working with ceftests:
+
+- Running existing unit tests
+- Creating new tests for CEF features
+- Debugging test failures and flakiness
+- Using TestHandler, RoutingTestHandler, and TestServer
+
+**Are you developing libcef internals (CEF implementation code)?**
+
+→ See [CLAUDE_LIBCEF_INSTRUCTIONS.md](CLAUDE_LIBCEF_INSTRUCTIONS.md) for libcef development patterns:
+
+- Adding new CEF APIs with proper versioning
+- Implementing WebContentsDelegate callbacks
+- Working with Chrome and Alloy browser styles
+- Finding and fixing NOTIMPLEMENTED() stubs
+
+**Are you syncing CEF base headers with Chromium?**
+
+→ See [CLAUDE_BASE_SYNC_INSTRUCTIONS.md](CLAUDE_BASE_SYNC_INSTRUCTIONS.md) for synchronizing `cef/include/base/` headers:
+
+- CEF-specific modifications (namespaces, includes, platform macros)
+- Files to sync vs files to preserve
+- Handling C++23 reverts
+- Step-by-step sync process
+
+**Are you cherry-picking commits from upstream CEF?**
+
+→ See [CLAUDE_CHERRY_PICK_INSTRUCTIONS.md](CLAUDE_CHERRY_PICK_INSTRUCTIONS.md) for cherry-picking commits that include patch files:
+
+- Extracting and applying source file changes from patches
+- Resaving patches with correct index hashes
+- Handling multiple patch files per commit
+- Recovery when things go wrong
+
+**Are you applying a Chromium commit to CEF as a patch?**
+
+→ See [CLAUDE_SRC_PATCH_INSTRUCTIONS.md](CLAUDE_SRC_PATCH_INSTRUCTIONS.md) for creating or updating CEF patches from Chromium commits:
+
+- Creating new patch files and adding to patch.cfg
+- Adding changes to existing patch files
+- Handling version differences between Chromium versions
+- Verifying patches can be reverted and reapplied
+
+## Files in This Directory
+
+### Documentation
+
+- **[CHROMIUM_UPDATE.md](CHROMIUM_UPDATE.md)** - Complete guide for updating CEF to new Chromium versions
+- **[CLAUDE.md.in](CLAUDE.md.in)** - Template for root CLAUDE.md (copied by setup_claude.py)
+- **[CLAUDE_BASE_SYNC_INSTRUCTIONS.md](CLAUDE_BASE_SYNC_INSTRUCTIONS.md)** - Instructions for syncing CEF base headers with Chromium
+- **[CLAUDE_BUILD_INSTRUCTIONS.md](CLAUDE_BUILD_INSTRUCTIONS.md)** - Detailed instructions for Claude agents fixing build errors
+- **[CLAUDE_CHERRY_PICK_INSTRUCTIONS.md](CLAUDE_CHERRY_PICK_INSTRUCTIONS.md)** - Instructions for cherry-picking commits from upstream CEF that include patch files
+- **[CLAUDE_CLIENT_INSTRUCTIONS.md](CLAUDE_CLIENT_INSTRUCTIONS.md)** - Detailed instructions for Claude agents implementing features in CEF applications
+- **[CLAUDE_LIBCEF_INSTRUCTIONS.md](CLAUDE_LIBCEF_INSTRUCTIONS.md)** - Detailed instructions for Claude agents developing libcef internals (API versioning, WebContentsDelegate)
+- **[CLAUDE_PATCH_INSTRUCTIONS.md](CLAUDE_PATCH_INSTRUCTIONS.md)** - Detailed instructions for Claude agents fixing patch failures
+- **[CLAUDE_SRC_PATCH_INSTRUCTIONS.md](CLAUDE_SRC_PATCH_INSTRUCTIONS.md)** - Instructions for applying Chromium commits to CEF as new or existing patches
+- **[CLAUDE_TEST_INSTRUCTIONS.md](CLAUDE_TEST_INSTRUCTIONS.md)** - Detailed instructions for Claude agents creating and running CEF unit tests
+- **[CLAUDE_WIKI_INSTRUCTIONS.md](CLAUDE_WIKI_INSTRUCTIONS.md)** - Bitbucket wiki formatting guidelines for Claude agents
+- **[CLIENT_DEVELOPMENT.md](CLIENT_DEVELOPMENT.md)** - Complete guide for CEF client application development
+- **[README.md](README.md)** - This file
+
+### Python Tools
+
+- **[analyze_build_output.py](analyze_build_output.py)** - Analyze and format ninja build output with error index
+- **[analyze_patch_output.py](analyze_patch_output.py)** - Analyze and format `patch_updater.py` output with file movement detection
+- **[patch_utils.py](patch_utils.py)** - Shared utilities for patch analysis tools (file movement detection)
+- **[verify_patch.py](verify_patch.py)** - Verify that regenerated patches include all changes from reject files
+- **[format_wiki.py](format_wiki.py)** - Apply Bitbucket wiki formatting guidelines to markdown files (supports wildcards; also integrated into `../fix_style.py`)
+
+### Test Files
+
+- **[analyze_build_output_test.py](analyze_build_output_test.py)** - Unit tests for analyze_build_output.py
+- **[analyze_patch_output_test.py](analyze_patch_output_test.py)** - Unit tests for analyze_patch_output.py
+- **[patch_utils_test.py](patch_utils_test.py)** - Unit tests for patch_utils.py
+- **[verify_patch_test.py](verify_patch_test.py)** - Unit tests for verify_patch.py
+- **[format_wiki_test.py](format_wiki_test.py)** - Unit tests for format_wiki.py
+
+## Common Setup
+
+For Chromium update workflows, run the setup script:
+
+```bash
+cd chromium/src/cef/tools
+python3 setup_claude.py
+```
+
+This copies `CLAUDE.md.in` to the project root as `chromium/src/CLAUDE.md`, enabling Claude Code to understand the Chromium/CEF codebase structure.
+
+## Formatting Files
+
+The `fix_style.py` tool in `//cef/tools/` formats C/C++, Python, and Markdown files:
+
+```bash
+# From chromium/src/cef/tools directory:
+
+# Format single markdown file
+python3 fix_style.py claude/CLAUDE_TEST_INSTRUCTIONS.md
+
+# Format all CLAUDE instruction files
+python3 fix_style.py claude/CLAUDE_*.md
+
+# Format all markdown files in claude directory
+python3 fix_style.py claude/*.md
+
+# Format all staged files (including markdown)
+python3 fix_style.py staged
+```
+
+The markdown formatter applies [Bitbucket wiki formatting guidelines](CLAUDE_WIKI_INSTRUCTIONS.md) (blank lines before lists, 4-space indentation, etc.).
+
+## Tips for Working with Claude Code
+
+These tips apply to both Chromium updates and client development:
+
+### 1. Provide Context
+
+Always include relevant version numbers or distribution details:
+
+**For Chromium updates:**
+```
+Old version: 139.0.7258.0
+New version: 140.0.7339.0
+```
+
+**For client development:**
+```
+CEF binary distribution: cef_binary_142.0.10+g29548e2+chromium-142.0.7444.135_macosarm64
+```
+
+### 2. Attach Relevant Files
+
+Use `@filename` to attach files Claude should read:
+
+- `@cef/tools/claude/patch_analysis.txt` - Analyzed patch output
+- `@cef/tools/claude/build_analysis.txt` - Analyzed build output
+- `@cef/tools/claude/CLAUDE_CHERRY_PICK_INSTRUCTIONS.md` - Cherry-picking upstream commits
+- `@cef/tools/claude/CLAUDE_CLIENT_INSTRUCTIONS.md` - Client development guide
+- `@cef/tools/claude/CLAUDE_SRC_PATCH_INSTRUCTIONS.md` - Applying Chromium commits as patches
+- `@cef/tools/claude/CLAUDE_TEST_INSTRUCTIONS.md` - CEF unit testing guide
+
+**Tip:** In large directory structures like `chromium/src`, the `@` syntax can be slow. Use `//` syntax for workspace-relative paths instead (e.g., `//cef/tools/claude/patch_analysis.txt`).
+
+### 3. Let Claude Work Systematically
+
+Don't interrupt mid-stream unless necessary. Claude will:
+
+- Create TODO lists
+- Work through items one by one
+- Report progress regularly
+- Ask for help when stuck
+
+### 4. Use Incremental Prompts
+
+For large tasks, you can guide Claude incrementally:
+
+**For Chromium updates:**
+```
+1. "Start fixing patches using @CLAUDE_PATCH_INSTRUCTIONS.md"
+2. [Claude works for a while]
+3. "Good progress. Continue with the remaining patches."
+4. [Claude finishes]
+5. "Now let's fix build errors using @CLAUDE_BUILD_INSTRUCTIONS.md"
+```
+
+**For unit testing:**
+```
+1. "Create tests for the new feature using @CLAUDE_TEST_INSTRUCTIONS.md"
+2. [Claude creates tests]
+3. "Run the tests and fix any failures"
+4. [Claude debugs and fixes]
+5. "Good, now verify they work in both Chrome and Alloy styles"
+```
+
+### 5. Ask for Summaries
+
+After a session:
+```
+Please summarize all the changes you made, organized by category.
+```
+
+Claude can provide a detailed summary for documentation or commit messages.
+
+### 6. Use the Analyzers Proactively
+
+For Chromium updates, run the analyzers yourself first to understand the scope:
+
+**For patches:**
+```bash
+# From chromium/src/cef/tools/claude directory:
+python3 analyze_patch_output.py patch_output.txt \
+  --old-version 139.0.7258.0 \
+  --new-version 140.0.7339.0 \
+  --no-color > patch_analysis.txt
+```
+
+**For build errors:**
+```bash
+# From chromium/src/cef/tools/claude directory:
+python3 analyze_build_output.py build_output.txt \
+  --old-version 139.0.7258.0 \
+  --new-version 140.0.7339.0 \
+  --no-color > build_analysis.txt
+```
+
+Then share the analysis files with Claude.
+
+## Getting Help
+
+### For Issues with Tools
+
+- Check the guide files and instruction files listed above for usage examples
+- Check analyzer script help: `python3 analyze_patch_output.py --help`
+
+### For Issues with CEF
+
+- CEF wiki: https://github.com/chromiumembedded/cef/blob/master/docs/README.md
+- CEF forums: https://magpcss.org/ceforum/
+- CEF issue tracker: https://github.com/chromiumembedded/cef/issues
+
+### For Issues with Claude Code
+
+- Claude Code documentation: https://docs.claude.com/claude-code
+- Improve prompts with more context and specific examples
+- Break large tasks into smaller, more manageable pieces
+
+## Contributing
+
+If you improve these tools or instructions:
+
+1. Test with a real Chromium update, client development task, or unit testing workflow
+2. Document what you changed and why
+3. Update the appropriate guide ([CHROMIUM_UPDATE.md](CHROMIUM_UPDATE.md), [CLIENT_DEVELOPMENT.md](CLIENT_DEVELOPMENT.md), or [CLAUDE_TEST_INSTRUCTIONS.md](CLAUDE_TEST_INSTRUCTIONS.md))
+4. Share improvements with the CEF community
+
+## License
+
+These tools are part of the CEF project and follow the same license as CEF (BSD license).

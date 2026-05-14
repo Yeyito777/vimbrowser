@@ -1,0 +1,54 @@
+diff --git net/base/load_flags_list.h net/base/load_flags_list.h
+index c10df92f30b1292a8243f376025e81afcefba78d..17abc3e15b985a13308014488728fcb0af188f18 100644
+--- net/base/load_flags_list.h
++++ net/base/load_flags_list.h
+@@ -123,4 +123,7 @@ LOAD_FLAG(SHOULD_BYPASS_HSTS, 1 << 18)
+ // compromised renderer concern is acceptable.
+ LOAD_FLAG(IS_MAIN_FRAME_ORIGIN_RECENTLY_ACCESSED, 1 << 19)
+ 
++// This load will not send any cookies. For CEF usage.
++LOAD_FLAG(DO_NOT_SEND_COOKIES, 1 << 20)
++
+ // See note at top of file about why adding LoadFlags is often a bad idea.
+diff --git net/url_request/url_request_http_job.cc net/url_request/url_request_http_job.cc
+index 20b453de4b1c38dcbd38004802112d6fb37b6e92..baffde8a87a8aad66d5759094d3b559675f4642d 100644
+--- net/url_request/url_request_http_job.cc
++++ net/url_request/url_request_http_job.cc
+@@ -2097,7 +2097,8 @@ bool URLRequestHttpJob::ShouldAddCookieHeader() const {
+   // Read cookies whenever allow_credentials() is true, even if the PrivacyMode
+   // is being overridden by NetworkDelegate and will eventually block them, as
+   // blocked cookies still need to be logged in that case.
+-  return request_->context()->cookie_store() && request_->allow_credentials();
++  return request_->context()->cookie_store() && request_->allow_credentials() &&
++         !(request_info_.load_flags & LOAD_DO_NOT_SEND_COOKIES);
+ }
+ 
+ bool URLRequestHttpJob::ShouldRecordPartitionedCookieUsage() const {
+diff --git services/network/cors/cors_url_loader_factory.cc services/network/cors/cors_url_loader_factory.cc
+index f93785a6d1232611f2a2b839795b803e051236e1..1110f80c30fea2188bf5b12057a73de528a54cd3 100644
+--- services/network/cors/cors_url_loader_factory.cc
++++ services/network/cors/cors_url_loader_factory.cc
+@@ -653,7 +653,8 @@ bool CorsURLLoaderFactory::IsValidRequest(
+           net::LOAD_DISABLE_CACHE | net::LOAD_PREFETCH |
+           net::LOAD_IGNORE_LIMITS | net::LOAD_DO_NOT_USE_EMBEDDED_IDENTITY |
+           net::LOAD_SUPPORT_ASYNC_REVALIDATION |
+-          net::LOAD_RESTRICTED_PREFETCH_FOR_MAIN_FRAME)) {
++          net::LOAD_RESTRICTED_PREFETCH_FOR_MAIN_FRAME |
++          net::LOAD_DO_NOT_SEND_COOKIES | net::LOAD_DO_NOT_SAVE_COOKIES)) {
+       mojo::ReportBadMessage(
+           "CorsURLLoaderFactory: Untrusted caller using restricted load flag");
+       return false;
+diff --git services/network/public/cpp/resource_request.cc services/network/public/cpp/resource_request.cc
+index f23e677790e757c664a80ff6d56cc85fe6bdd7c5..3942cbe88df127e05d1752c08bc2a0641dd22eb5 100644
+--- services/network/public/cpp/resource_request.cc
++++ services/network/public/cpp/resource_request.cc
+@@ -391,7 +391,8 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+ }
+ 
+ bool ResourceRequest::SendsCookies() const {
+-  return credentials_mode == network::mojom::CredentialsMode::kInclude;
++  return credentials_mode == network::mojom::CredentialsMode::kInclude &&
++         !(load_flags & net::LOAD_DO_NOT_SEND_COOKIES);
+ }
+ 
+ bool ResourceRequest::SavesCookies() const {

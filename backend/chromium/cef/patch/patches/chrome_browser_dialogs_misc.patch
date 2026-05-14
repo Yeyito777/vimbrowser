@@ -1,0 +1,36 @@
+diff --git chrome/browser/ui/extensions/extension_dialog_utils_views.cc chrome/browser/ui/extensions/extension_dialog_utils_views.cc
+index 08ce628533c966d3fd72d61c7a2dd6aebc6753c5..376ab7701e2b3a7052665ee3d7ed63027ea2619b 100644
+--- chrome/browser/ui/extensions/extension_dialog_utils_views.cc
++++ chrome/browser/ui/extensions/extension_dialog_utils_views.cc
+@@ -88,10 +88,9 @@ void ShowDialog(Browser* browser,
+                 std::unique_ptr<ui::DialogModel> dialog_model) {
+   ToolbarButtonProvider* toolbar_button_provider =
+       BrowserView::GetBrowserViewForBrowser(browser)->toolbar_button_provider();
+-  CHECK(toolbar_button_provider);
+ 
+-  views::View* const anchor_view =
+-      toolbar_button_provider->GetDefaultExtensionDialogAnchorView();
++  views::View* const anchor_view = toolbar_button_provider ?
++      toolbar_button_provider->GetDefaultExtensionDialogAnchorView() : nullptr;
+   auto bubble = std::make_unique<views::BubbleDialogModelHost>(
+       std::move(dialog_model), std::move(anchor_view),
+       views::BubbleBorder::TOP_RIGHT);
+diff --git chrome/browser/ui/views/certificate_selector.cc chrome/browser/ui/views/certificate_selector.cc
+index fd0640557b4566d2a2c9f0a4d0c4b1ea92c079d8..45ca0218d039018b5108b861d0ddf367122fddab 100644
+--- chrome/browser/ui/views/certificate_selector.cc
++++ chrome/browser/ui/views/certificate_selector.cc
+@@ -335,8 +335,13 @@ void CertificateSelector::ViewCertButtonPressed() {
+   if (!cert) {
+     return;
+   }
++  auto native_window = web_contents_->GetTopLevelNativeWindow();
++  if (!native_window) {
++    // Not supported with CEF windowless rendering.
++    return;
++  }
+   ShowCertificateViewerForClientAuth(web_contents_,
+-                                     web_contents_->GetTopLevelNativeWindow(),
++                                     native_window,
+                                      cert->certificate());
+ }
+ 

@@ -1,0 +1,32 @@
+# LOB (large objects/binaries) ignores are listed below.
+# start_lob_ignore
+# keep-sorted start
+*.PNG
+*.ai
+*.bin
+*.bmp
+*.brd
+*.bz2
+*.config
+*.crx
+*.dia
+*.gif
+*.graffle
+*.ico
+*.jpeg
+*.jpg
+*.mp4
+*.msi
+*.pdf
+*.png
+*.svg
+*.swf
+*.tar.gz
+*.tiff
+*.webp
+*.xcf
+*.xlsx
+*.zip
+*_trace
+# keep-sorted end
+# end_lob_ignore

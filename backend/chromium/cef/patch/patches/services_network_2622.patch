@@ -1,0 +1,184 @@
+diff --git net/cookies/cookie_monster.cc net/cookies/cookie_monster.cc
+index 37cb71e831bf03424ef4c9609cb16f463d181ab4..4499997114d3e5257c8bac87822fa4b18fb87f79 100644
+--- net/cookies/cookie_monster.cc
++++ net/cookies/cookie_monster.cc
+@@ -55,6 +55,7 @@
+ #include <set>
+ #include <string_view>
+ #include <tuple>
++#include <unordered_set>
+ #include <utility>
+ #include <vector>
+ 
+@@ -678,6 +679,50 @@ void CookieMonster::SetCookieableSchemes(
+   MaybeRunCookieCallback(std::move(callback), true);
+ }
+ 
++void CookieMonster::AddCookieableSchemes(
++    const std::vector<std::string>& schemes,
++    SetCookieableSchemesCallback callback) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
++  // Calls to this method will have no effect if made after a WebView or
++  // CookieManager instance has been created.
++  if (initialized_) {
++    MaybeRunCookieCallback(std::move(callback), false);
++    return;
++  }
++
++  for (const auto& element : schemes) {
++    if (std::find(cookieable_schemes_.begin(), cookieable_schemes_.end(),
++                  element) == cookieable_schemes_.end()) {
++      cookieable_schemes_.push_back(element);
++    }
++  }
++  MaybeRunCookieCallback(std::move(callback), true);
++}
++
++void CookieMonster::RemoveCookieableSchemes(
++    const std::vector<std::string>& schemes,
++    SetCookieableSchemesCallback callback) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
++  // Calls to this method will have no effect if made after a WebView or
++  // CookieManager instance has been created.
++  if (initialized_) {
++    MaybeRunCookieCallback(std::move(callback), false);
++    return;
++  }
++
++  if (!schemes.empty()) {
++    std::unordered_set<std::string> set(schemes.begin(), schemes.end());
++    auto it = std::remove_if(
++        cookieable_schemes_.begin(),
++        cookieable_schemes_.end(),
++        [&](const auto& s) { return set.count(s); });
++    cookieable_schemes_.erase(it, cookieable_schemes_.end());
++  }
++  MaybeRunCookieCallback(std::move(callback), true);
++}
++
+ // This function must be called before the CookieMonster is used.
+ void CookieMonster::SetPersistSessionCookies(bool persist_session_cookies) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+diff --git net/cookies/cookie_monster.h net/cookies/cookie_monster.h
+index 15920d7a08edfd9839eeb6fa7847014cfa16117c..04ed5d84755372df637013c9e89e1445bbc56de6 100644
+--- net/cookies/cookie_monster.h
++++ net/cookies/cookie_monster.h
+@@ -239,6 +239,10 @@ class NET_EXPORT CookieMonster : public CookieStore {
+   CookieChangeDispatcher& GetChangeDispatcher() override;
+   void SetCookieableSchemes(std::vector<std::string> schemes,
+                             SetCookieableSchemesCallback callback) override;
++  void AddCookieableSchemes(const std::vector<std::string>& schemes,
++                            SetCookieableSchemesCallback callback) override;
++  void RemoveCookieableSchemes(const std::vector<std::string>& schemes,
++                               SetCookieableSchemesCallback callback) override;
+   std::optional<bool> SiteHasCookieInOtherPartition(
+       const net::SchemefulSite& site,
+       const CookiePartitionKey& partition_key) const override;
+diff --git net/cookies/cookie_store.h net/cookies/cookie_store.h
+index 441765abb8cd8f213fca52ac8d562ad9b15d621e..1c927eb59cc2aff8a7ee328fe130ef4c094f4b56 100644
+--- net/cookies/cookie_store.h
++++ net/cookies/cookie_store.h
+@@ -171,6 +171,17 @@ class NET_EXPORT CookieStore {
+   // Transfer ownership of a CookieAccessDelegate.
+   void SetCookieAccessDelegate(std::unique_ptr<CookieAccessDelegate> delegate);
+ 
++  // Adds to the list of cookieable schemes. Does nothing if called after first
++  // use of the instance (i.e. after the instance initialization process).
++  virtual void AddCookieableSchemes(const std::vector<std::string>& schemes,
++                                    SetCookieableSchemesCallback callback) = 0;
++
++  // Removes from the list of cookieable schemes. Does nothing if called after
++  // first use of the instance (i.e. after the instance initialization process).
++  virtual void RemoveCookieableSchemes(
++      const std::vector<std::string>& schemes,
++      SetCookieableSchemesCallback callback) = 0;
++
+   // This may be null if no delegate has been set yet, or the delegate has been
+   // reset to null.
+   const CookieAccessDelegate* cookie_access_delegate() const {
+diff --git services/network/cookie_manager.cc services/network/cookie_manager.cc
+index 3ecc53285b872e1eab24e6ef8ab522063d2c4ed1..e6a14a3f4a41e0353b2b490a24c9a0e3247d74fd 100644
+--- services/network/cookie_manager.cc
++++ services/network/cookie_manager.cc
+@@ -348,13 +348,13 @@ void CookieManager::AllowFileSchemeCookies(
+     AllowFileSchemeCookiesCallback callback) {
+   OnSettingsWillChange();
+ 
+-  std::vector<std::string> cookieable_schemes =
+-      net::CookieMonster::GetDefaultCookieableSchemes();
+   if (allow) {
+-    cookieable_schemes.emplace_back(url::kFileScheme);
++    cookie_store_->AddCookieableSchemes({url::kFileScheme},
++                                        std::move(callback));
++  } else {
++    cookie_store_->RemoveCookieableSchemes({url::kFileScheme},
++                                           std::move(callback));
+   }
+-  cookie_store_->SetCookieableSchemes(std::move(cookieable_schemes),
+-                                      std::move(callback));
+ }
+ 
+ void CookieManager::SetForceKeepSessionState() {
+diff --git services/network/network_context.cc services/network/network_context.cc
+index 3b928d610abb810ed0db57c316bce7f816940dfa..079644bc31a8b42e158db7e2e3cf492fa3f51ee6 100644
+--- services/network/network_context.cc
++++ services/network/network_context.cc
+@@ -2935,22 +2935,26 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+             pref_service.get(), network_service_->network_quality_estimator());
+   }
+ 
+-  if (session_cleanup_cookie_store) {
+-    // If the pref service was registered and initialized use it.
+-    // If not, use nullptr to indicate prefs aren't available.
+-    std::unique_ptr<net::CookieMonster> cookie_store =
+-        std::make_unique<net::CookieMonster>(
+-            session_cleanup_cookie_store.get(), net_log,
+-            pref_service
+-                ? std::make_unique<KnownLegacyScopeDomainsPrefDelegate>(
+-                      pref_service.get())
+-                : nullptr);
+-    if (params_->persist_session_cookies) {
+-      cookie_store->SetPersistSessionCookies(true);
+-    }
+-
+-    builder.SetCookieStore(std::move(cookie_store));
+-  }
++  // If the pref service was registered and initialized use it.
++  // If not, use nullptr to indicate prefs aren't available.
++  std::unique_ptr<net::CookieMonster> cookie_store =
++      std::make_unique<net::CookieMonster>(
++          session_cleanup_cookie_store.get(), net_log,
++          pref_service
++              ? std::make_unique<KnownLegacyScopeDomainsPrefDelegate>(
++                    pref_service.get())
++              : nullptr);
++  if (session_cleanup_cookie_store && params_->persist_session_cookies) {
++    cookie_store->SetPersistSessionCookies(true);
++  }
++
++  if (params_->cookieable_schemes.has_value()) {
++    cookie_store->SetCookieableSchemes(
++        *params_->cookieable_schemes,
++        net::CookieStore::SetCookieableSchemesCallback());
++  }
++
++  builder.SetCookieStore(std::move(cookie_store));
+ 
+   base::FilePath transport_security_persister_file_name;
+   if (GetFullDataFilePath(params_->file_paths,
+diff --git services/network/public/mojom/network_context.mojom services/network/public/mojom/network_context.mojom
+index 4faa19ffd7ff87c975e494a60f4fd3cb66f1b7b4..5cc27a142050cfb629f06dfec2d9f0805da102c5 100644
+--- services/network/public/mojom/network_context.mojom
++++ services/network/public/mojom/network_context.mojom
+@@ -377,6 +377,9 @@ struct NetworkContextParams {
+   // cookies. Otherwise it should be false.
+   bool persist_session_cookies = false;
+ 
++  // Schemes that will be passed to CookieMonster::SetCookieableSchemes.
++  array<string>? cookieable_schemes;
++
+   // True if an HTTP cache should be used.
+   bool http_cache_enabled = true;
+   // Maximum size of the HTTP cache. 0 means to use the default size.

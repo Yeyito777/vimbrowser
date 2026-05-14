@@ -1,0 +1,13 @@
+diff --git components/content_settings/renderer/content_settings_agent_impl.cc components/content_settings/renderer/content_settings_agent_impl.cc
+index 4c1b6f39d1a059e26b610097c8b91ef85c3bcc13..707fb25732498eeb2055e5b32e297f151a0ebaa0 100644
+--- components/content_settings/renderer/content_settings_agent_impl.cc
++++ components/content_settings/renderer/content_settings_agent_impl.cc
+@@ -142,7 +142,7 @@ ContentSetting GetContentSettingFromRules(
+       return rule.GetContentSetting();
+     }
+   }
+-  NOTREACHED();
++  return CONTENT_SETTING_DEFAULT;
+ }
+ }  // namespace
+ 

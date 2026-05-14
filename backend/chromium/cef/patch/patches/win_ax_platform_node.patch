@@ -1,0 +1,15 @@
+diff --git ui/accessibility/platform/ax_platform_node_win.cc ui/accessibility/platform/ax_platform_node_win.cc
+index 3685384dfe7a25cd63709e0ce9fe2c444b23764e..0798396055c4e46921caaee535e49e697e2f6e4a 100644
+--- ui/accessibility/platform/ax_platform_node_win.cc
++++ ui/accessibility/platform/ax_platform_node_win.cc
+@@ -1643,6 +1643,10 @@ IFACEMETHODIMP AXPlatformNodeWin::accLocation(LONG* physical_pixel_left,
+       var_id, physical_pixel_left, physical_pixel_top, width, height, target);
+   AXPlatform::GetInstance().OnMinimalPropertiesUsed();
+ 
++  if (!target || target->IsDestroyed()) {
++    return S_FALSE;
++  }
++
+   gfx::Rect bounds = target->GetDelegate()->GetBoundsRect(
+       AXCoordinateSystem::kScreenPhysicalPixels,
+       AXClippingBehavior::kUnclipped);

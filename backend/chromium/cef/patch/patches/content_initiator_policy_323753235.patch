@@ -1,0 +1,12 @@
+diff --git content/browser/renderer_host/navigation_policy_container_builder.cc content/browser/renderer_host/navigation_policy_container_builder.cc
+index 4e7465dc43eccdd533992ab433322e009141b506..be8d57aa479a5785d5c395e36b440c756d15dd83 100644
+--- content/browser/renderer_host/navigation_policy_container_builder.cc
++++ content/browser/renderer_host/navigation_policy_container_builder.cc
+@@ -45,7 +45,6 @@ std::unique_ptr<PolicyContainerPolicies> GetInitiatorPolicies(
+       RenderFrameHostImpl::GetPolicyContainerHost(
+           frame_token, initiator_process_id, storage_partition);
+ 
+-  DCHECK(initiator_policy_container_host);
+   if (!initiator_policy_container_host) {
+     // Guard against wrong tokens being passed accidentally.
+     return nullptr;
