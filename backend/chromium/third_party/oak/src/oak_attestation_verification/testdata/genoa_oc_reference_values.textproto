@@ -1,0 +1,89 @@
+# proto-file: third_party/oak/proto/attestation/reference_value.proto
+# proto-message: oak.attestation.v1.ReferenceValues
+#
+# Digest-based reference values matching an Oak Containers chain running
+# on an AMD Genoa machine.
+oak_containers {
+  root_layer {
+    amd_sev {
+      stage0 {
+        digests {
+          digests {
+            sha2_384: "\305w)\001\213\no\271\r\301{\2618\260\2525\344@\020\004(?\364\242\302M79\3777P\365#\2047\016w\267\003(b\240\214D\n\233\304\334"
+          }
+        }
+      }
+      genoa {
+        minimum {
+          boot_loader: 10
+          snp: 25
+          microcode: 84
+        }
+      }
+    }
+  }
+  kernel_layer {
+    kernel {
+      digests {
+        image {
+          digests {
+            sha2_256: "\371\320XBG\264l\3024\250b\252\214\320\207e\263\204\005\002\"S\247\213\232\361\211\304\316\333\344G"
+          }
+        }
+        setup_data {
+          digests {
+            sha2_256: "u\360\221\332\211\316\201\351\336\3137\214;r\251H\256\325\211&\022%k:n\203\005\355\003N\303\232"
+          }
+        }
+      }
+    }
+    init_ram_fs {
+      digests {
+        digests {
+          sha2_256: "\262\265\355\240\227\302\341Y\210\37587\024T2\343y!$\333\340Xn\335\226\036\375\244\227\'C\221"
+        }
+      }
+    }
+    memory_map {
+      digests {
+        digests {
+          sha2_256: "\021\0207 \252\271\364\357\364\266\213us\266\226\2169G\345\327U*\316|\353\254\333\333D\213h\376"
+        }
+      }
+    }
+    acpi {
+      digests {
+        digests {
+          sha2_256: "\031J\375\336\026\231\3035\375\324\355\231\3756\331P\0020\373\332\n\261Om\225\3745\322\031\335\363."
+        }
+      }
+    }
+    kernel_cmd_line_text {
+      string_literals {
+        value: " console=ttyS0 panic=-1 brd.rd_nr=1 brd.rd_size=10485760 brd.max_part=1 ip=10.0.2.15:::255.255.255.0::enp0s1:off quiet -- --launcher-addr=vsock://2:4275719511"
+      }
+    }
+  }
+  system_layer {
+    system_image {
+      digests {
+        digests {
+          sha2_256: "=]b\030\320\014\222J/E\002]\010&)\320\"L\213/\313\246$\330\234F\246\034s\244\016\256"
+        }
+      }
+    }
+  }
+  container_layer {
+    binary {
+      digests {
+        digests {
+          sha2_256: "\260\2008\206\246\340\226\277\034\236\254\252w\335\025\024\023M.\210\247sJ\371\272-\277e\010\204\370\231"
+        }
+      }
+    }
+    configuration {
+      skip {
+      }
+    }
+  }
+}

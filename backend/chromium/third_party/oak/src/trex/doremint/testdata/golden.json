@@ -1,0 +1,24 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicateType": "https://project-oak.github.io/oak/tr/endorsement/v1",
+  "subject": [
+    {
+      "name": "app",
+      "digest": {
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    }
+  ],
+  "predicate": {
+    "issuedOn": "2025-01-01T00:00:00Z",
+    "validity": {
+      "notBefore": "2025-01-01T00:00:00Z",
+      "notAfter": "2025-01-02T00:00:00Z"
+    },
+    "claims": [
+      {
+        "type": "https://github.com/project-oak/oak/blob/main/docs/tr/claim/52637.md"
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+# proto-file: third_party/oak/proto/attestation/reference_value.proto
+# proto-message: oak.attestation.v1.ReferenceValues
+#
+# Digest-based reference values for CB running on an AMD Milan machine.
+#
+cb {
+  root_layer {
+    amd_sev {
+      stage0 {
+        skip {
+        }
+      }
+      milan {
+        minimum {
+          boot_loader: 4
+          tee: 0
+          snp: 24
+          microcode: 219
+        }
+      }
+    }
+  }
+  layers {
+    event {
+      digests {
+        digests {
+          sha2_256: "\227\242\240\224\340M\235m\327\234\n\215\345C\0161\177c\223\301 k\334dq\232\306\336ZD/!"
+        }
+      }
+    }
+  }
+  layers {
+    event {
+      digests {
+        digests {
+          sha2_256: "\246Lx\374\314\034Q~\3666K\351\242\"\355h\201\355{\215\234R \243\223\010\247\376\302$8z"
+        }
+      }
+    }
+  }
+  layers {
+    event {
+      digests {
+        digests {
+          sha2_256: "5;\303\020nC\255\254\223\362(\244H\307\"\366\024\231\225\356\244\336\371\217\356z\2062\020+\351\207"
+        }
+      }
+    }
+  }
+  layers {
+    event {
+      digests {
+        digests {
+          sha2_256: "5;\303\020nC\255\254\223\362(\244H\307\"\366\024\231\225\356\244\336\371\217\356z\2062\020+\351\207"
+        }
+      }
+    }
+  }
+}
+

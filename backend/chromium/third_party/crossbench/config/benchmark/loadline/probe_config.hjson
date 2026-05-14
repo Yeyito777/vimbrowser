@@ -1,0 +1,16 @@
+{
+  "probes": {
+    // Uncomment the following line to record a WPR archive.
+    // wpr: {},
+    "trace_processor": {
+      "queries": [
+        "loadline/benchmark_score"
+        "loadline/breakdown"
+      ]
+      "batch": false
+    }
+    "perfetto": {
+      "textproto": "perfetto_basic.txtpb"
+    }
+  }
+}

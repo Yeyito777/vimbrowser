@@ -1,0 +1,16 @@
+{
+  "probes": {
+    "trace_processor": {
+      "queries": [
+        "loadline2/benchmark_score"
+        "loadline2/breakdown"
+      ]
+      "metric_definitions": [
+        "./metrics.textproto"
+      ]
+    }
+    "perfetto": {
+      "textproto": "perfetto_basic.txtpb"
+    }
+  }
+}
