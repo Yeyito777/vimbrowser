@@ -1,0 +1,13 @@
+[submodule "third_party/crossbench"]
+	path = third_party/crossbench
+	url = https://chromium.googlesource.com/crossbench
+[submodule "third_party/hjson_js"]
+	path = third_party/hjson_js
+	url = https://chromium.googlesource.com/external/github.com/hjson/hjson-js
+[submodule "third_party/webpagereplay"]
+	path = third_party/webpagereplay
+	url = https://chromium.googlesource.com/webpagereplay
+	gclient-condition = not build_with_chromium
+[submodule "third_party/perfetto"]
+	path = third_party/perfetto
+	url = https://chromium.googlesource.com/external/github.com/google/perfetto

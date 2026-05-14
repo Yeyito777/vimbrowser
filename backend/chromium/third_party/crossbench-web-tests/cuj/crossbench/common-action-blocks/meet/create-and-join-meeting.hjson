@@ -1,0 +1,243 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  actions: [
+    {
+      action: meet_create
+      bots: {
+        num_of_bots: $[NUM_BOTS]
+        ttl_secs: $[TTL_SECS]
+      }
+      timeout: 30s
+    }
+    {
+      action: js
+      script: performance.mark("meet-created")
+    }
+    {
+      action: wait_for_ready_state
+      ready_state: complete
+    }
+    // Dismiss the "Receive desktop notifications from Meet" popup.
+    {
+      action: click
+      position: {
+        selector: xpath///span[contains(text(), 'Not now')]
+        required: false
+        wait: true
+      }
+      timeout: 5s
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='More options']"
+        required: true
+        scroll_into_view: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    // Wait for menu animation to finish
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: xpath///span[contains(text(), 'Settings')]
+        required: true
+        scroll_into_view: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: button[aria-label='Video']
+    }
+    // Wait for the settings window animation to finish
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: button[aria-label='Video']
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='Send resolution (maximum)'][aria-haspopup='listbox']"
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: "[aria-label='Send resolution (maximum)'][aria-haspopup='listbox'][aria-expanded='true']"
+      attempts: 3
+      timeout: 5s
+    }
+    // Wait for the dropdown combobox to finish the animation.
+    // TODO: Remove after click action supports waiting for stable position.
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='Send resolution (maximum)'] [role='option'][aria-label='High definition (720p)']"
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: "[aria-label='Send resolution (maximum)'] span[aria-label='High definition (720p)']"
+    }
+    // Wait for the dropdown combobox to finish the animation.
+    // TODO: Remove after click action supports waiting for stable position.
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='Receive resolution (maximum)'][aria-haspopup='listbox']"
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: "[aria-label='Receive resolution (maximum)'][aria-haspopup='listbox'][aria-expanded='true']"
+      attempts: 1
+      timeout: 5s
+    }
+    // Wait for the dropdown combobox to finish the animation.
+    // TODO: Remove after click action supports waiting for stable position.
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='Receive resolution (maximum)'] [role='option'][aria-label='Full high definition (1080p)']"
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: "[aria-label='Receive resolution (maximum)'] span[aria-label='Full high definition (1080p)']"
+    }
+    {
+      action: click
+      position: {
+        selector: button[aria-label='Close dialog']
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    // Wait for animations to finish
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: button[aria-label='More options']
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    // Wait for animations to finish
+    {
+      action: wait
+      duration: 1s
+    }
+    {
+      action: click
+      position: {
+        selector: xpath///span[contains(text(), 'Backgrounds and effects')]
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    // Wait for animations to finish
+    {
+      action: wait
+      duration: 1s
+    }
+    // The background blur might already be enabled. Only click if it is not enabled.
+    {
+      action: click
+      position: {
+        selector: xpath///*[@aria-label='Blur your background' and @aria-pressed!='$[BACKGROUND_BLUR]']
+        required: false
+        wait: true
+      }
+      timeout: 2s
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    // Verify that background blurring is in the correct state.
+    {
+      action: wait_for_element
+      selector: xpath///*[@aria-label='Blur your background' and @aria-pressed='$[BACKGROUND_BLUR]']
+    }
+    {
+      action: click
+      position: {
+        selector: "[aria-label='Close']"
+        required: true
+        wait: true
+      }
+    }
+    {
+      action: click
+      position: {
+        selector: xpath///span[contains(text(), 'Ask to join')]
+        required: true
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: xpath///body[not(//span[contains(text(), 'Ask to join')])]
+      attempts: 3
+      timeout: 10s
+    }
+    // There might be a popup that should be dismissed
+    {
+      action: click
+      position: {
+        selector: xpath///span[contains(text(), 'Got it')]
+        required: false
+        wait: true
+      }
+      timeout: 10s
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    $[...POST_CREATION_ACTIONS]
+    // With the flag --use-fake-ui-for-media-stream, the camera should
+    // start by itself.
+    {
+      action: wait_for_element
+      // At least self video and one bot should be visible before continuing.
+      expected_count: 2
+      or_more: true
+      selector: video:not([data-meet-pip-feed]):not([style*='display: none'])
+    }
+    {
+      action: js
+      script:
+        '''
+        performance.mark("camera-start");
+        performance.measure("camera-ready", "meet-created", "camera-start");
+        '''
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Typing Tracker</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        .stats {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            font-size: 16px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stats">
+        Characters: <span id="charCount">0</span> | WPM: <span id="wpm">0</span>
+    </div>
+
+    <textarea id="inputArea" placeholder="Start typing..." autofocus></textarea>
+
+    <script>
+        const inputArea = document.getElementById('inputArea');
+        const charCountFn = document.getElementById('charCount');
+        const wpmFn = document.getElementById('wpm');
+
+        let startTime = null;
+
+        inputArea.addEventListener('input', () => {
+            const length = inputArea.value.length;
+            charCountFn.innerText = length;
+
+            if (!startTime && length > 0) {
+                startTime = new Date();
+                setInterval(calculateWPM, 1000);
+            }
+        });
+
+        function calculateWPM() {
+            if (!startTime) return;
+
+            const length = inputArea.value.length;
+            const timeInMinutes = (new Date() - startTime) / 60000;
+
+            const wpm = Math.round((length / 5) / timeInMinutes);
+            wpmFn.innerText = (timeInMinutes > 0) ? wpm : 0;
+        }
+    </script>
+
+</body>
+</html>

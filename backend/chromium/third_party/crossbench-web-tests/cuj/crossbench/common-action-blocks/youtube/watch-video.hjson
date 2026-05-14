@@ -1,0 +1,137 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  pages: {
+    Youtube: {
+      login: google
+      blocks: {
+        page-load: {
+          template: ../basic/page-load.hjson
+          args: {
+            READY_STATE: complete
+            PAGE_LOAD_TIMEOUT: 2m
+            TARGET: _self
+          }
+          unbound_args: [
+            PAGE_URL
+          ]
+        }
+        before-watch: [
+          // Sometimes sign-in doesn't propagate to youtube and a click of the sign in button is required.
+          {
+            action: click
+            pos: {
+              selector: "[aria-label='Sign in']"
+              required: false
+              wait: true
+              scroll_into_view: true
+            }
+            timeout: 3s
+            source: touch
+          }
+          {
+            action: wait_for_element
+            selector: video
+            timeout: 2m
+          }
+          {
+            action: wait_for_condition
+            condition: return document.querySelector('video').currentTime > 0.5
+            timeout: 60s
+          }
+          {
+            action: js
+            script:
+              '''
+              const video = document.querySelector("video")
+              video.pause()
+              video.currentTime = 0
+              '''
+          }
+          {
+            action: click
+            pos: {
+              selector: "[aria-label='Settings']"
+              required: true
+              wait: true
+            }
+            source: touch
+            verify: xpath///div[@class='ytp-menuitem']//div[@class='ytp-menuitem-label' and text() = 'Quality']
+          }
+          // Wait for the element to finish animating.
+          {
+            action: wait
+            duration: 0.5s
+          }
+          {
+            action: click
+            pos: {
+              selector: xpath///div[@class='ytp-menuitem']//div[@class='ytp-menuitem-label' and text() = 'Quality']
+              required: true
+              wait: true
+              scroll_into_view: true
+            }
+            source: touch
+            verify: xpath///div[@class='ytp-panel ytp-quality-menu']//span[text() = '$[RESOLUTION_TEXT]']
+          }
+          // Wait for the element to finish animating.
+          {
+            action: wait
+            duration: 0.5s
+          }
+          {
+            action: click
+            pos: {
+              selector: xpath///div[@class='ytp-panel ytp-quality-menu']//span[text() = '$[RESOLUTION_TEXT]']
+              required: true
+              wait: true
+              scroll_into_view: true
+            }
+            source: touch
+          }
+          {
+            action: text_input
+            text: $[CHANGE_SCREEN_INPUT]
+            duration: 0.5s
+            source: keyboard
+          }
+        ]
+        watch-video: [
+          {
+            action: js
+            script: document.querySelector("video").play()
+          }
+          {
+            action: js
+            script: performance.mark('video-started')
+          }
+          {
+            action: wait_for_condition
+            condition: return document.querySelector('video').currentTime > 0.5
+            timeout: 60s
+          }
+        ]
+        during-playback-watch: $[DURING_PLAYBACK_BLOCK]
+        after-playback: [
+          {
+            action: wait
+            duration: $[PLAYBACK_DURATION]
+          }
+          {
+            // Switch back to the youtube tab
+            action: switch_tab
+            tab_index: 0
+          }
+          {
+            action: js
+            path: ../../../common-action-blocks/video-streaming/scripts/streaming-stats.js
+            replacements: {
+              PLAYBACK_DURATION: $[PLAYBACK_DURATION]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

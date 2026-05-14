@@ -1,0 +1,54 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+query {
+  id: "heap_activity"
+  table {
+    table_name: "heap_activity"
+    module_name: "sql_packages.queries.heap_activity"
+    column_names: "count"
+    column_names: "activity_thread_activity_count"
+    column_names: "bytes"
+    column_names: "retained_count"
+    column_names: "retained_bytes"
+    column_names: "retained_native_bytes"
+  }
+}
+
+# The count of Activity instances.
+metric_spec: {
+  id: "cuj.common-metrics.heap_activity_count"
+  value: "count"
+  query: {
+    inner_query_id: "heap_activity"
+  }
+}
+
+# The count of activities that are referenced by a android.app.ActivityThread
+# ActivityClientRecord. Activities that are not references are probably
+# destroyed and are likley leaked.
+metric_spec: {
+  id: "cuj.common-metrics.heap_activity_thread_activity_count"
+  value: "activity_thread_activity_count"
+  query: {
+    inner_query_id: "heap_activity"
+  }
+}
+
+# The number of objects dominated by Activity instances.
+metric_spec: {
+  id: "cuj.common-metrics.heap_activity_retained_count"
+  value: "retained_count"
+  query: {
+    inner_query_id: "heap_activity"
+  }
+}
+
+# The size of objects dominated by Activity instances.
+metric_spec: {
+  id: "cuj.common-metrics.heap_activity_retained_bytes"
+  value: "retained_bytes"
+  query: {
+    inner_query_id: "heap_activity"
+  }
+}

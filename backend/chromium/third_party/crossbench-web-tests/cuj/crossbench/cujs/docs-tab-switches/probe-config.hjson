@@ -1,0 +1,33 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../probe-config.hjson
+  args: {
+    TRACE_PROCESSOR_QUERIES: [
+      {
+        name: GPU Context Cleanup Duration
+        sql:
+          '''
+            INCLUDE PERFETTO MODULE
+                sql_packages.cujs.docs_tab_switches.gpu_context_cleanup_durations;
+            SELECT * FROM gpu_context_cleanup_durations_output;
+          '''
+      }
+      {
+        name: Tab Switch Latency
+        sql:
+          '''
+            INCLUDE PERFETTO MODULE
+                sql_packages.cujs.docs_tab_switches.tab_switch_latency;
+            SELECT * FROM tab_switch_latency_output;
+          '''
+      }
+    ]
+    METRIC_DEFINITIONS: [
+      ./metrics.textproto
+    ]
+    TRACE_CONFIG: ../../trace-config/extra-detailed-trace-config.pbtxt
+    ADDITIONAL_PROBES: []
+  }
+}

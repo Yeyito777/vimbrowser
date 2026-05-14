@@ -1,0 +1,130 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: {
+    pages: {
+      clicks: [
+        $[...SETUP_ACTIONS]
+        {
+          action: get
+          url: http://localhost:8000/index.html
+        }
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        $[...CLICK_10_TIMES]
+        {
+          action: js
+          path: ./scripts/validate-clicks.js
+          replacements: {
+            EXPECTED_NUM_CLICKS: 100
+          }
+        }
+      ]
+    }
+  }
+  args: {
+    CLICK_10_TIMES: [
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+      {
+        action: click
+        selector: button
+        source: $[CLICK_INPUT_SOURCE]
+      }
+      {
+        action: wait
+        duration: 500ms
+      }
+    ]
+  }
+  unbound_args: [
+    SETUP_ACTIONS
+  ]
+}

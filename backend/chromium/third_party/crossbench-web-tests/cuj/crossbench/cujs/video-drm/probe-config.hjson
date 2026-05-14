@@ -1,0 +1,23 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../probe-config.hjson
+  args: {
+    TRACE_PROCESSOR_QUERIES: [
+      {
+        name: Video Seek Metrics
+        sql:
+          '''
+            INCLUDE PERFETTO MODULE sql_packages.cujs.video.seek;
+            SELECT * FROM video_seek_output;
+          '''
+      }
+    ]
+    METRIC_DEFINITIONS: [
+      ./metrics.textproto
+    ]
+    TRACE_CONFIG: ../../trace-config/detailed-trace-config.pbtxt
+    ADDITIONAL_PROBES: []
+  }
+}

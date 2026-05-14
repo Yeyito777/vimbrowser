@@ -1,0 +1,9 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/play_drm.hjson
+  args: {
+    FILE_NAME: tulip_480p_vp9_cencv3_ctr_20250716.mpd
+  }
+}

@@ -1,0 +1,110 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// copy-doc-from-drive
+//
+// Copy a document that can be found in a Google Drive folder. Use the Google
+// Drive UI to copy and open the doc.
+//
+// args:
+//  CLICK_INPUT_SOURCE: "js" | "touch" | "mouse"
+//  DRIVE_FOLDER_URL: A URL to a drive folder containing the file.
+//  DOC_NAME: The name of the document
+//  DOC_APP: The root path of the URL after docs.google.com/ e.g. spreadsheets
+//
+{
+  actions: [
+    {
+      action: get
+      url: $[DRIVE_FOLDER_URL]
+      ready_state: complete
+    }
+    // Close the details pane if it exists.
+    {
+      action: click
+      pos: {
+        selector: '''[aria-label="Details Pane"] [data-label="default"] button[aria-label="Hide Details"]'''
+        required: false
+        wait: true
+      }
+      verify: '''[role="menuitem"] [aria-label="Make a copy"]:not([data-tooltip])'''
+      source: $[CLICK_INPUT_SOURCE]
+      timeout: 15s
+      attempts: 1
+    }
+    // Wait animation/relayout from closing details.
+    {
+      action: wait
+      duration: 1s
+    }
+    // Click on '...' for more actions on the document to be copied.
+    {
+      action: click
+      pos: {
+        selector: xpath///tr[//div[starts-with(@aria-label, "$[DOC_NAME]")]]//button[@aria-label="More actions (Alt+A)"]
+        required: true
+        scroll_into_view: true
+        wait: true
+      }
+      verify: '''[role="menuitem"] [aria-label="Make a copy"]:not([data-tooltip])'''
+      source: $[CLICK_INPUT_SOURCE]
+      timeout: 10s
+      attempts: 3
+    }
+    // Wait for context menu animation.
+    {
+      action: wait
+      duration: 1s
+    }
+    // Click on "Make a copy" in the more-actions context menu.
+    {
+      action: click
+      pos: {
+        selector: '''[role="menuitem"] [aria-label="Make a copy"]:not([data-tooltip])'''
+        required: true
+        scroll_into_view: true
+        wait: true
+      }
+      verify: xpath///*[@aria-live="assertive"]//span[starts-with(text(), "Creating ")]
+      source: $[CLICK_INPUT_SOURCE]
+      timeout: 10s
+      attempts: 3
+    }
+    // Wait for the status bar to change to 'Created "..." show location', and
+    // click the show location link.
+    {
+      action: click
+      pos: {
+        selector: '''[aria-live="assertive"] button[data-target="locate"]'''
+        required: true
+        wait: true
+      }
+      verify: xpath///*[@aria-selected="true"]//*[starts-with(@aria-label, "Copy of $[DOC_NAME]")]
+      source: $[CLICK_INPUT_SOURCE]
+      timeout: 120s
+    }
+    // Press enter to open the doc in a new tab.
+    {
+      action: text_input
+      source: keyboard
+      keyevent: KEYCODE_ENTER
+      duration: 100ms
+    }
+    // Wait for the tab to open before we try to switch to it.
+    {
+      action: wait
+      duration: 3s
+    }
+    {
+      action: switch_tab
+      url: docs.google.com/$[DOC_APP]
+      timeout: 15s
+    }
+    {
+      action: wait_for_ready_state
+      ready_state: complete
+      timeout: 45s
+    }
+  ]
+}

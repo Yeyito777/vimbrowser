@@ -1,0 +1,35 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  args: {
+    SCROLL_DISTANCE: 256
+    SCROLL_DURATION: 0.5s
+    SCROLL_SOURCE: touch
+  }
+  template: {
+    args: {
+      SCROLL_ENTIRE_PAGE: ../../../common-action-blocks/basic/scroll-entire-page.hjson
+    }
+    unbound_args: [
+      SCROLL_SOURCE
+      SCROLL_DURATION
+      SCROLL_DISTANCE
+    ]
+    template: [
+      {
+        action: get
+        url: https://html.spec.whatwg.org/
+        target: _new_window
+        ready_state: complete
+        timeout: 2m
+      }
+      $[...SCROLL_ENTIRE_PAGE]
+      $[...SCROLL_ENTIRE_PAGE]
+      $[...SCROLL_ENTIRE_PAGE]
+      $[...SCROLL_ENTIRE_PAGE]
+      $[...SCROLL_ENTIRE_PAGE]
+      $[...SCROLL_ENTIRE_PAGE]
+    ]
+  }
+}

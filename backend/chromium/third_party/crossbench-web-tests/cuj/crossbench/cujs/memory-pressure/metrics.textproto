@@ -1,0 +1,102 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+query {
+  id: "tab_timing_query"
+  table {
+    table_name: "tab_timing_by_iteration"
+    module_name: "sql_packages.cujs.memory_pressure.tab_timing"
+    column_names: "it_id"
+    column_names: "tab_index"
+    column_names: "page_load_duration_ms"
+    column_names: "allocation_duration_ms"
+  }
+}
+
+metric_spec: {
+  id: "cuj.memory-pressure.page_load_duration"
+  dimensions: "it_id"
+  value: "page_load_duration_ms"
+  query {
+    inner_query_id: "tab_timing_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.memory-pressure.allocation_duration"
+  dimensions: "it_id"
+  value: "allocation_duration_ms"
+  query {
+    inner_query_id: "tab_timing_query"
+  }
+}
+
+metric_spec: {
+  id: "no-crosbolt.cuj.memory-pressure.page_load_duration_by_tab"
+  dimensions: "it_id"
+  dimensions: "tab_index"
+  value: "page_load_duration_ms"
+  query {
+    inner_query_id: "tab_timing_query"
+  }
+}
+
+metric_spec: {
+  id: "no-crosbolt.cuj.memory-pressure.allocation_duration_by_tab"
+  dimensions: "it_id"
+  dimensions: "tab_index"
+  value: "allocation_duration_ms"
+  query {
+    inner_query_id: "tab_timing_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.memory-pressure.tabs_alive"
+  dimensions: "it_id"
+  dimensions: "tab_index"
+  dimensions: "pid"
+  dimensions: "process_name"
+  value: "tabs_alive"
+  query {
+    table {
+      table_name: "tabs_alive_by_iteration"
+      module_name: "sql_packages.cujs.memory_pressure.tabs_alive"
+      column_names: "it_id"
+      column_names: "tab_index"
+      column_names: "pid"
+      column_names: "process_name"
+      column_names: "tabs_alive"
+    }
+  }
+}
+
+query {
+  id: "avg_tabs_alive_after_first_kill"
+  table {
+    table_name: "avg_tabs_alive_after_first_kill"
+    module_name: "sql_packages.cujs.memory_pressure.tabs_alive"
+    column_names: "it_id"
+    column_names: "first_kill_tab_index"
+    column_names: "average_tabs_alive_after_kill"
+  }
+}
+
+metric_spec: {
+  id: "cuj.memory-pressure.average_tabs_alive_after_first_kill"
+  dimensions: "it_id"
+  value: "average_tabs_alive_after_kill"
+  query {
+    inner_query_id: "avg_tabs_alive_after_first_kill"
+  }
+}
+
+metric_spec: {
+  id: "cuj.memory-pressure.tabs_alive_after_first_kill"
+  dimensions: "it_id"
+  value: "first_kill_tab_index"
+  query {
+    inner_query_id: "avg_tabs_alive_after_first_kill"
+  }
+}

@@ -1,0 +1,27 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+[
+  {
+    action: get
+    url: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/common-action-blocks/background-load/cpu-load/cpu-load.html?scale=1
+    ready_state: complete
+    target: _new_window
+  }
+  // Open a new tab in the same window so the CPU workload is guaranteed to be
+  // in the background and not visible
+  {
+    action: get
+    // about:blank when launched via WebDriver doesn't change priority of the
+    // hidden tab. Using a real page works.
+    url: example.com
+    ready_state: complete
+    // NB: _new_tab will open a tab in the original window, but _blank opens it
+    // in the current window, hiding the load CPU tab.
+    target: _blank
+  }
+  {
+    action: switch_tab
+    tab_index: 0
+  }
+]

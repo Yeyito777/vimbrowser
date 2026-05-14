@@ -1,0 +1,64 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  // Google One Storage Management, confirm delete and navigate back.
+  actions: [
+    {
+      // Wait for UI elements within the dialog to become interactive.
+      action: wait
+      duration: 5s
+    }
+    {
+      // Click the "I understand that deleted items can't be recovered" checkbox.
+      action: click
+      position: {
+        required: false
+        selector: "[aria-modal='true'][aria-label='Confirmation dialog to delete selected items'] input[type='checkbox']"
+        wait: true
+        scroll_into_view: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: xpath///*[@aria-modal='true'][@aria-label='Confirmation dialog to delete selected items']//button[not(@disabled)]//span[text()='Permanently delete']
+      timeout: 10s
+    }
+    {
+      // Click the "Permanently delete" button.
+      action: click
+      position: {
+        required: false
+        selector: xpath///*[@aria-modal='true'][@aria-label='Confirmation dialog to delete selected items']//button[not(@disabled)]//span[text()='Permanently delete']
+        wait: true
+        scroll_into_view: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      timeout: 10s
+    }
+    {
+      action: click
+      position: {
+        required: false
+        selector: xpath///*[@aria-modal='true'][@aria-label='Confirmation dialog to delete selected items']//button[not(@disabled)]//span[text()='Not now']
+        wait: true
+        scroll_into_view: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+    }
+    {
+      action: wait_for_element
+      selector: body:not(:has([aria-modal='true']))
+      timeout: 15s
+    }
+    {
+      // Click the go back arrow at the top to return to the Google One Storage Manager page.
+      action: click
+      position: {
+        required: false
+        selector: xpath///header[.//span[contains(text(), 'Items from Google Drive')]]//*[contains(@aria-label, 'Go back')]
+        wait: true
+      }
+      source: $[CLICK_INPUT_SOURCE]
+      verify: xpath///header[.//span[contains(text(), 'Google One Storage Manager')]]//*[contains(@aria-label, 'Go back')]
+    }
+  ]
+}

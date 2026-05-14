@@ -1,0 +1,95 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+query {
+  id: "gpu_context_cleanup_durations_output"
+  table {
+    table_name: "gpu_context_cleanup_durations_output"
+    module_name: "sql_packages.cujs.docs_tab_switches.gpu_context_cleanup_durations"
+    column_names: "max_dur"
+    column_names: "p90_dur"
+    column_names: "p50_dur"
+    column_names: "count"
+  }
+}
+
+metric_spec: {
+  id: "cuj.docs_tab_switches.gpu_context_cleanup_durations.max"
+  value: "max_dur"
+  query: {
+    inner_query_id: "gpu_context_cleanup_durations_output"
+  }
+}
+
+metric_spec: {
+  id: "cuj.docs_tab_switches.gpu_context_cleanup_durations.p90"
+  value: "p90_dur"
+  query: {
+    inner_query_id: "gpu_context_cleanup_durations_output"
+  }
+}
+
+metric_spec: {
+  id: "cuj.docs_tab_switches.gpu_context_cleanup_durations.p50"
+  value: "p50_dur"
+  query: {
+    inner_query_id: "gpu_context_cleanup_durations_output"
+  }
+}
+
+metric_spec: {
+  id: "cuj.docs_tab_switches.gpu_context_cleanup_durations.count"
+  value: "count"
+  query: {
+    inner_query_id: "gpu_context_cleanup_durations_output"
+  }
+}
+
+query {
+  id: "tab_switch_latency_output"
+  table {
+    table_name: "tab_switch_latency_output"
+    module_name: "sql_packages.cujs.docs_tab_switches.tab_switch_latency"
+    column_names: "avg_dur"
+    column_names: "max_dur"
+    column_names: "p90_dur"
+    column_names: "p50_dur"
+    column_names: "count"
+  }
+}
+
+metric_spec: {
+  id: "cuj.docs_tab_switches.tab_switch_latency.avg"
+  value: "avg_dur"
+  query: {
+    inner_query_id: "tab_switch_latency_output"
+  }
+}
+metric_spec: {
+  id: "cuj.docs_tab_switches.tab_switch_latency.max"
+  value: "max_dur"
+  query: {
+    inner_query_id: "tab_switch_latency_output"
+  }
+}
+metric_spec: {
+  id: "cuj.docs_tab_switches.tab_switch_latency.p90"
+  value: "p90_dur"
+  query: {
+    inner_query_id: "tab_switch_latency_output"
+  }
+}
+metric_spec: {
+  id: "cuj.docs_tab_switches.tab_switch_latency.p50"
+  value: "p50_dur"
+  query: {
+    inner_query_id: "tab_switch_latency_output"
+  }
+}
+metric_spec: {
+  id: "cuj.docs_tab_switches.tab_switch_latency.count"
+  value: "count"
+  query: {
+    inner_query_id: "tab_switch_latency_output"
+  }
+}

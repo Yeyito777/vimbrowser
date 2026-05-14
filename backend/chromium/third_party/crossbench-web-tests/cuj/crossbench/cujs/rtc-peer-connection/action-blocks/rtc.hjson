@@ -1,0 +1,45 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  pages: {
+    VideoCUJ: {
+      actions: [
+        {
+          action: get
+          url: https://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/loopback_peerconnection.html
+          ready_state: complete
+        }
+        {
+          action: js
+          path: ./script/peer_connection.js
+          replacements: {
+            CODEC_PROFILE: $[CODEC_PROFILE]
+            RTC_STREAM_WIDTH: $[RTC_STREAM_WIDTH]
+            RTC_STREAM_HEIGHT: $[RTC_STREAM_HEIGHT]
+            SVC_MODE: $[SVC_MODE]
+            SIMULCASTS: $[SIMULCASTS]
+            DISPLAY_MEDIA_TYPE: $[DISPLAY_MEDIA_TYPE]
+          }
+        }
+        // Wait 5 seconds for the video to properly play before detecting playback statistics.
+        {
+          action: wait
+          duration: 5s
+        }
+        {
+          action: js
+          path: ./script/verify_success.js
+          replacements: {
+            VERIFY_HW_ENCODE: $[VERIFY_HW_ENCODE]
+            VERIFY_HW_DECODE: $[VERIFY_HW_DECODE]
+          }
+        }
+        {
+          action: js
+          path: ./script/collect_perf.js
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+metric_spec: {
+  id: "cuj.video.dropped_frames_percent"
+  value: "dropped_frames_percent"
+  query {
+    table {
+      table_name: "dropped_frames"
+      module_name: "sql_packages.cujs.video.dropped_frames"
+      column_names: "dropped_frames_percent"
+    }
+  }
+}
+
+metric_spec: {
+  id: "cuj.video.dropped_frames_count"
+  value: "dropped_frames_count"
+  query {
+    table {
+      table_name: "dropped_frames"
+      module_name: "sql_packages.cujs.video.dropped_frames"
+      column_names: "dropped_frames_count"
+    }
+  }
+}

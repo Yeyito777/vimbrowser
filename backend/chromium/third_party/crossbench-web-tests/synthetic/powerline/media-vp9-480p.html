@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Powerline video playback test (VP9 - 480p)</title></head>
+    <body>
+        <p>Tests playback of a single video encoded in the VP9 format at 480p.</p>
+        <pre>ffmpeg -i car-ad-orig.mp4 -an -vf scale=-2:480 -c:v libvpx-vp9 adv-motor-480p.webm</pre>
+        <video muted playsinline controls autoplay loop>
+            <source src="./adv-motor-480p.webm" type="video/webm" />
+        </video>
+    </body>
+</html>

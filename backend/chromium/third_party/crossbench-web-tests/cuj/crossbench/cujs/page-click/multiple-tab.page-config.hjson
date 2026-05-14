@@ -1,0 +1,24 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/page-click-template.hjson
+  args: {
+    // The multiple-tab variant loads the page using:
+    // 1. opening "about:blank" in a new tab.
+    // 2. injecting new document script to observe the LCP event since script
+    //    injection works on the current tab.
+    PAGE_LOAD_SETUP: [
+      {
+        action: get
+        url: about:blank
+        target: _new_tab
+      }
+      {
+        action: inject_new_document_script
+        script_path: ./scripts/register-lcp-observer.js
+      }
+    ]
+    GLOBAL_SETUP: []
+  }
+}

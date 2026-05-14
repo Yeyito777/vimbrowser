@@ -1,0 +1,80 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  args: {
+    WAIT_FOR_READY_AND_PAINT: [
+      {
+        action: wait_for_condition
+        condition: return globalThis.largestContentfulPaint === true;
+        timeout: 20s
+      }
+    ]
+  }
+  unbound_args: [
+    PAGE_URL
+    CLICK_SELECTOR
+    VERIFY_SELECTOR
+    PAGE_LOAD_SETUP
+  ]
+  template: {
+    page-load: [
+      $[...PAGE_LOAD_SETUP]
+      {
+        action: js
+        script:
+          '''
+          performance.mark("page-load", {
+          detail: {
+              url: "$[PAGE_URL]"
+          }
+          });
+          '''
+      }
+      {
+        action: get
+        url: $[PAGE_URL]
+        ready_state: complete
+        target: _self
+        timeout: 1m
+      }
+
+       // Wait for the page to be both painted and fully loaded.
+      $[...WAIT_FOR_READY_AND_PAINT]
+      {
+        action: js
+        script:
+          '''
+          performance.mark("page-loaded", {
+          detail: {
+              url: "$[PAGE_URL]"
+          }
+          });
+          '''
+      }
+    ]
+    click-link: [
+      {
+        action: js
+        script: performance.mark("click-link-on-page")
+      }
+      {
+        action: click
+        position: {
+          selector: $[CLICK_SELECTOR]
+          scroll_into_view: true
+        }
+        // Generate a mouse event for getting input events in the trace.
+        verify: $[VERIFY_SELECTOR]
+        source: mouse
+      }
+
+      // Wait for the page to be both painted and fully loaded.
+      $[...WAIT_FOR_READY_AND_PAINT]
+      {
+        action: js
+        script: performance.mark("click-link-on-page-loaded")
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+query {
+  id: "heap_view"
+  table {
+    table_name: "heap_view"
+    module_name: "sql_packages.queries.heap_view"
+    column_names: "count"
+    column_names: "attached_count"
+  }
+}
+
+# The number of instances of Android.view.View.
+metric_spec: {
+  id: "cuj.common-metrics.heap_view_count"
+  value: "count"
+  query: {
+    inner_query_id: "heap_view"
+  }
+}
+
+# The number of views that are attached to a view hierarchy.
+metric_spec: {
+  id: "cuj.common-metrics.heap_attached_view_count"
+  value: "attached_count"
+  query: {
+    inner_query_id: "heap_view"
+  }
+}

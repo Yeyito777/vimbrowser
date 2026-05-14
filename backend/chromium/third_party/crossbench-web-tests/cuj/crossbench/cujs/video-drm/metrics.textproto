@@ -1,0 +1,29 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+query {
+  id: "video_seek_output_query"
+  table {
+    table_name: "video_seek_output"
+    module_name: "sql_packages.cujs.video.seek"
+    column_names: "avg_seek_time_s"
+    column_names: "seek_completion_percentage"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video-seek.avg_seek_time_s"
+  value: "avg_seek_time_s"
+  query {
+    inner_query_id: "video_seek_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video-seek.seek_completion_percentage"
+  value: "seek_completion_percentage"
+  query {
+    inner_query_id: "video_seek_output_query"
+  }
+}

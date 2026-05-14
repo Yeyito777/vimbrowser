@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Powerline video playback test (H264 - 1080p)</title></head>
+    <body>
+        <p>Tests playback of a single video encoded in the H264 format, with AAC audio, at 480p.</p>
+        <pre>ffmpeg -i A_video_of_202511191753.mp4 -vf scale=-2:480 -c:v libx264 -vf scale=-2:480 -c:a aac con-corgi-480p.mp4</pre>
+        <video muted playsinline controls autoplay loop>
+            <source src="./con-corgi-480p.mp4" type="video/mp4" />
+        </video>
+    </body>
+</html>

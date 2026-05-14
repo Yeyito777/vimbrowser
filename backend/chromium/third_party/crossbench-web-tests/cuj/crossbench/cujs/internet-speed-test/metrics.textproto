@@ -1,0 +1,38 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+query {
+  id: "internet_speed_test_output_query"
+  table {
+    table_name: "internet_speed_test_output"
+    module_name: "sql_packages.cujs.internet_speed_test.output"
+    column_names: "download"
+    column_names: "upload"
+    column_names: "latency"
+  }
+}
+
+metric_spec: {
+  id: "cuj.internet-speed-test.download"
+  value: "download"
+  query {
+    inner_query_id: "internet_speed_test_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.internet-speed-test.upload"
+  value: "upload"
+  query {
+    inner_query_id: "internet_speed_test_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.internet-speed-test.latency"
+  value: "latency"
+  query {
+    inner_query_id: "internet_speed_test_output_query"
+  }
+}

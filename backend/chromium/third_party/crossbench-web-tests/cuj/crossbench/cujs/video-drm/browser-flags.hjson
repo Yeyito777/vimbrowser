@@ -1,0 +1,9 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../browser-flags/video/video-base.hjson
+  args: {
+    VIDEO_CHROME_FLAGS: --use-fake-ui-for-media-stream --allow-ra-in-dev-mode --unsafely-allow-protected-media-identifier-for-domain="storage.googleapis.com" --unsafely-treat-insecure-origin-as-secure="https://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video"
+  }
+}

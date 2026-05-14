@@ -1,0 +1,30 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+query: {
+  id: "javaless_renderer_startup"
+  table: {
+    table_name: "javaless_renderer_startup_output"
+    module_name: "sql_packages.cujs.open_close.javaless_renderer_startup"
+    column_names: "total_startup_ms"
+    column_names: "chrome_browser_ms"
+    column_names: "zygote_fork_ms"
+    column_names: "android_init_ms"
+    column_names: "chrome_init_ms"
+  }
+}
+
+metric_template_spec: {
+  id_prefix: "javaless_renderer_startup"
+  query: {
+    inner_query {
+      inner_query_id: "javaless_renderer_startup"
+    }
+  }
+  value_columns: "total_startup_ms"
+  value_columns: "chrome_browser_ms"
+  value_columns: "zygote_fork_ms"
+  value_columns: "android_init_ms"
+  value_columns: "chrome_init_ms"
+}

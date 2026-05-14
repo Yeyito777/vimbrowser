@@ -1,0 +1,128 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  args: {
+    CLICK_INPUT_SOURCE: touch
+  }
+  template: {
+    pages: {
+      Drive-Cleanup: {
+        login: google
+        blocks: {
+          page-load: {
+            actions: [
+              {
+                // Google One storage management page.
+                action: get
+                url: https://one.google.com/storage
+                ready_state: complete
+              }
+              {
+                // Click on the "Clean up space" button.
+                action: click
+                position: {
+                  selector: a[aria-label='Clean up space']
+                  wait: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: xpath///span[@role='heading'][@aria-level='1'][text()='Google One Storage Manager']
+              }
+            ]
+          }
+          // Delete the first 32 Large Drive files.
+          large-drive-files: {
+            actions: [
+              {
+                // Click the review link in the "Large Drive files" card.
+                action: click
+                position: {
+                  required: false
+                  selector: a[aria-label='review and clean up Large Drive files']
+                  wait: true
+                  scroll_into_view: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: xpath///span[@role='heading'][@aria-level='1'][text()='Items from Google Drive']
+                timeout: 5s
+              }
+              {
+                // Click the checkbox next to "Showing (32)" to select all 32.
+                action: click
+                position: {
+                  required: false
+                  selector: input[aria-label='Select all items']
+                  wait: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: "[data-is-touch-wrapper='true'] button[aria-label='Delete']:not([disabled])"
+                timeout: 5s
+              }
+              {
+                // Click the Delete button.
+                action: click
+                position: {
+                  required: false
+                  selector: "[data-is-touch-wrapper='true'] button[aria-label='Delete']"
+                  wait: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: "[aria-modal='true'][aria-label='Confirmation dialog to delete selected items']"
+              }
+            ]
+          }
+          confirm-delete-large-files: ./action-blocks/confirm-delete.hjson
+          // Delete all files in the trah bin.
+          files-in-trash: {
+            actions: [
+              {
+                // Click the review link in the "Large Drive files" card.
+                action: click
+                position: {
+                  required: false
+                  selector: a[aria-label='review and clean up Large Drive files']
+                  wait: true
+                  scroll_into_view: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: xpath///span[@role='heading'][@aria-level='1'][text()='Items from Google Drive']
+                timeout: 5s
+              }
+              {
+                // Select the tab "Files in Trash"
+                action: click
+                position: {
+                  required: false
+                  selector: a[aria-label='Files in Trash']
+                  wait: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: button[aria-label='Delete all']
+                timeout: 5s
+              }
+              {
+                // Wait until the UI settles.
+                action: wait_for_condition
+                condition: return Array.from(document.querySelectorAll("trans-layer")).length === 0
+                timeout: 10s
+              }
+              {
+                // Click the "Delete all" button.
+                action: click
+                position: {
+                  required: false
+                  selector: button[aria-label='Delete all']:not([disabled])
+                  wait: true
+                }
+                source: $[CLICK_INPUT_SOURCE]
+                verify: "[aria-modal='true'][aria-label='Confirmation dialog to delete selected items']"
+                timeout: 10s
+              }
+            ]
+          }
+          confirm-delete-file-in-trash: ./action-blocks/confirm-delete.hjson
+        }
+      }
+    }
+  }
+}

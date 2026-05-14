@@ -1,0 +1,1 @@
+All youtube CUJs require a test account with youtube premium. To add youtube premium to your test account, follow the instructions at go/ypc-inspector-user-instruction.

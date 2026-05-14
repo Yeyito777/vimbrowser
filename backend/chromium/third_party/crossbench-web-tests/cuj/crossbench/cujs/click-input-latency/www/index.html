@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Click Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #clickBtn {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #clickBtn:hover {
+            background-color: #0056b3;
+        }
+
+        #clickBtn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Clicks: <span id="count">0</span></h1>
+
+    <button id="clickBtn">Click Me</button>
+
+    <script>
+        // JavaScript logic
+        let count = 0;
+        const button = document.getElementById('clickBtn');
+        const display = document.getElementById('count');
+
+        button.addEventListener('click', function() {
+            count++;
+            display.textContent = count;
+        });
+    </script>
+
+</body>
+</html>

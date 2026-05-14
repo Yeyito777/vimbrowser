@@ -1,0 +1,105 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  "pages-$[INDEX_PREFIX]0": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]0
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]1": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]1
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]2": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]2
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]3": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]3
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]4": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]4
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]5": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]5
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]6": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]6
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]7": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]7
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]8": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]8
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+  "pages-$[INDEX_PREFIX]9": {
+    template: ./open-tab.hjson
+    args: {
+      TAB_INDEX: $[INDEX_PREFIX]9
+    }
+    unbound_args: [
+      MEMORY_GB
+      INDEX_PREFIX
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/page-click-template.hjson
+  args: {
+    GLOBAL_SETUP: [
+      {
+        action: inject_new_document_script
+        script_path: ./scripts/register-lcp-observer.js
+      }
+    ]
+    PAGE_LOAD_SETUP: []
+  }
+}

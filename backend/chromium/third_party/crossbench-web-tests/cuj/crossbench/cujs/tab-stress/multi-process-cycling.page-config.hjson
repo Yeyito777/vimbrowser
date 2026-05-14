@@ -1,0 +1,30 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/100-tabs-template.hjson
+  args: {
+    READY_STATE: complete
+    TAB_TARGET: _new_tab
+    PAGE_URL0: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=0
+    PAGE_URL1: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=10
+    PAGE_URL2: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=20
+    PAGE_URL3: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=30
+    PAGE_URL4: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=40
+    PAGE_URL5: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=50
+    PAGE_URL6: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=60
+    PAGE_URL7: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=70
+    PAGE_URL8: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=80
+    PAGE_URL9: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/cujs/tab-stress/multiprocess/frame-container/?count=11&cycle_id=90
+    SWITCH_RE0: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=0
+    SWITCH_RE1: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=10
+    SWITCH_RE2: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=20
+    SWITCH_RE3: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=30
+    SWITCH_RE4: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=40
+    SWITCH_RE5: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=50
+    SWITCH_RE6: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=60
+    SWITCH_RE7: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=70
+    SWITCH_RE8: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=80
+    SWITCH_RE9: tab-stress/multiprocess/frame-container/\?count=11\&cycle_id=90
+  }
+}

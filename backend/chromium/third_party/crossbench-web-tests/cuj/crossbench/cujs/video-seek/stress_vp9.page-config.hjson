@@ -1,0 +1,10 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/seek.hjson
+  args: {
+    FILE_NAME: 720_vp9_20190626.webm
+    NUM_SEEK: 1000
+  }
+}

@@ -1,0 +1,207 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  setup: {
+    actions: [
+      {
+        action: close_all_tabs
+      }
+    ]
+  }
+  pages: {
+    page-load-and-scroll-1: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.0
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-2: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.w81675dexz3n
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-3: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.zi3r4yao0ofs
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-4: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.v5rndlsc3iop
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-5: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.j21po2z49i16#heading=h.fo3gai9e2id4
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-6: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.ktpqw7f3oh81
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-7: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.yb6h5dja0rl
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-8: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.srrx0iey4hp1
+          TARGET: _new_tab
+        }
+      }
+    }
+    page-load-and-scroll-9: {
+      blocks: {
+        template: ./action-blocks/page-load-and-scroll.hjson
+        args: {
+          PAGE_URL: https://docs.google.com/document/d/1wWSDl_pLR1lnzJZfnO_nf1n2APDuL_vRLkAdBRqAhKs/edit?resourcekey=0-5Ore0F_jsAaMz11pXwu4Qg&tab=t.yciu555k4bmd
+          TARGET: _new_tab
+        }
+      }
+    }
+    switch-tabs: {
+      blocks: {
+        switch-tab-1: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 1
+          }
+        }
+        switch-tab-2: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 2
+          }
+        }
+        switch-tab-3: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 3
+          }
+        }
+        switch-tab-4: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 4
+          }
+        }
+        switch-tab-5: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 5
+          }
+        }
+        switch-tab-6: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 6
+          }
+        }
+        switch-tab-7: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 7
+          }
+        }
+        switch-tab-8: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 8
+          }
+        }
+        switch-tab-9: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 9
+          }
+        }
+        switch-tab-10: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 1
+          }
+        }
+        switch-tab-11: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 2
+          }
+        }
+        switch-tab-12: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 3
+          }
+        }
+        switch-tab-13: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 4
+          }
+        }
+        switch-tab-14: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 5
+          }
+        }
+        switch-tab-15: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 6
+          }
+        }
+        switch-tab-16: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 7
+          }
+        }
+        switch-tab-17: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 8
+          }
+        }
+        switch-tab-18: {
+          template: ./action-blocks/switch-tab.hjson
+          args: {
+            TAB_INDEX: 9
+          }
+        }
+      }
+    }
+  }
+}

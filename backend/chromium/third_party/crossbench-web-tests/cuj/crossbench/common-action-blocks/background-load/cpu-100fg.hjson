@@ -1,0 +1,19 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+[
+  // The load tab is foreground on a window, so it will be foreground priority.
+  // NB: Foreground does not mean focused, it means the work is put in the
+  // foreground cpu cgroup, which means visible. The focused tab or app will be
+  // in the top-app cpu cgroup.
+  {
+    action: get
+    url: https://chromium-workloads.web.app/web-tests/main/cuj/crossbench/common-action-blocks/background-load/cpu-load/cpu-load.html?scale=1
+    ready_state: complete
+    target: _new_window
+  }
+  {
+    action: switch_tab
+    tab_index: 0
+  }
+]

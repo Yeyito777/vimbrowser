@@ -1,0 +1,32 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  pages: {
+    Meet-Camera: {
+      login: google
+      blocks: {
+        meet-setup: {
+          args: {
+            CLICK_INPUT_SOURCE: touch
+            TTL_SECS: 240
+            POST_CREATION_ACTIONS: []
+          }
+          unbound_args: [
+            NUM_BOTS
+            BACKGROUND_BLUR
+          ]
+          template: ../../../common-action-blocks/meet/create-and-join-meeting.hjson
+        }
+        wait: {
+          actions: [
+            {
+              action: wait
+              duration: 60s
+            }
+          ]
+        }
+      }
+    }
+  }
+}

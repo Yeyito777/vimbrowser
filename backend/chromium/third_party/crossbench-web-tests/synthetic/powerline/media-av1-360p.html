@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Powerline video playback test (AV1 - 360p)</title></head>
+    <body>
+        <p>Tests playback of a single video encoded in the AV1 format.</p>
+        <pre>ffmpeg -i Scene_two_haute_202511191748.mp4 -an -c:v libaom-av1 -vf scale=-2:360 -minrate 250k -b:v 1000k -maxrate 2500k -movflags +faststart adv-fashion-360p.mp4</pre>
+        <video muted playsinline controls autoplay loop>
+            <source src="./adv-fashion-360p.mp4" />
+        </video>
+    </body>
+</html>

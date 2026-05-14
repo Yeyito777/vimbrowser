@@ -1,0 +1,30 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+[
+  {
+    action: js
+    script: performance.mark("page-load~$[TAB_INDEX]", {});
+  }
+  {
+    action: get
+    url: data:text/plain,Running test for $[MEMORY_GB]GiB device
+    ready_state: complete
+    timeout: 3m
+    target: _new_tab
+  }
+  {
+    action: js
+    path: ./scripts/alloc.js
+    replacements: {
+      MEMORY_GB: $[MEMORY_GB]
+      TAB_INDEX: $[TAB_INDEX]
+    }
+  }
+  // We wait here to throttle allocation of memory. Going as fast
+  // as possible can cause instability.
+  {
+    action: wait
+    duration: 2s
+  }
+]

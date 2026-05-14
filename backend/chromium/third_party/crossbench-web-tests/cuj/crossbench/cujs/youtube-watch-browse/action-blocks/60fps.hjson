@@ -1,0 +1,13 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  args: {
+    PAGE_URL: https://www.youtube.com/watch?v=LXb3EKWsInQ
+  }
+  unbound_args: [
+    CHANGE_SCREEN_INPUT
+    RESOLUTION_TEXT
+  ]
+  template: ./youtube-watch-browse.hjson
+}

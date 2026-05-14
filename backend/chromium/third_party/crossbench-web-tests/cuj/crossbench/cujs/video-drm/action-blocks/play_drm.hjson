@@ -1,0 +1,42 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  pages: {
+    VideoCUJ: {
+      actions: [
+        {
+          action: get
+          url: chrome://media-internals
+          ready_state: complete
+        }
+        {
+          action: js
+          path: ./scripts/check_l1_status.js
+        }
+        {
+          action: get
+          url: https://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/shaka_drm_20250716.html
+          ready_state: complete
+        }
+        {
+          action: js
+          path: ./scripts/play_drm.js
+          timeout: 100s
+          replacements: {
+            FILE_NAME: $[FILE_NAME]
+          }
+        }
+        {
+          action: get
+          url: chrome://media-internals
+          ready_state: complete
+        }
+        {
+          action: js
+          path: ./scripts/check_l1_status.js
+        }
+      ]
+    }
+  }
+}

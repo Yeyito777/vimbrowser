@@ -1,0 +1,9 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./action-blocks/with-background-cpu.hjson
+  args: {
+    CLICK_INPUT_SOURCE: mouse
+  }
+}

@@ -1,0 +1,23 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  actions: [
+    {
+      action: js
+      script: performance.mark('navigate_to_tab')
+    }
+    {
+      action: switch_tab
+      tab_index: $[TAB_INDEX]
+    }
+    {
+      action: js
+      script: performance.mark('navigate_to_tab_done')
+    }
+    {
+      action: wait
+      duration: 500ms
+    }
+  ]
+}

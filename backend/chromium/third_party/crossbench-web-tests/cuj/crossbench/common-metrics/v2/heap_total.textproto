@@ -1,0 +1,54 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+query {
+  id: "heap_total"
+  table {
+    table_name: "heap_total"
+    module_name: "sql_packages.queries.heap_total"
+    column_names: "count"
+    column_names: "bytes"
+    column_names: "reachable_count"
+    column_names: "reachable_bytes"
+  }
+}
+
+# The total number of objects on the heap, including unreachable objects that
+# will be cleaned next GC.
+metric_spec: {
+  id: "cuj.common-metrics.heap_total_count"
+  value: "count"
+  query: {
+    inner_query_id: "heap_total"
+  }
+}
+
+# The total size of objects on the heap, including unreachable objects that will
+# be cleaned next GC.
+metric_spec: {
+  id: "cuj.common-metrics.heap_total_bytes"
+  value: "bytes"
+  query: {
+    inner_query_id: "heap_total"
+  }
+}
+
+# The total number of objects on the heap, includes only obejcts reachable from
+# a GC root.
+metric_spec: {
+  id: "cuj.common-metrics.heap_total_reachable_count"
+  value: "reachable_count"
+  query: {
+    inner_query_id: "heap_total"
+  }
+}
+
+# The total size of objects on the heap, includes only obejcts reachable from a
+# GC root.
+metric_spec: {
+  id: "cuj.common-metrics.heap_total_reachable_bytes"
+  value: "reachable_bytes"
+  query: {
+    inner_query_id: "heap_total"
+  }
+}

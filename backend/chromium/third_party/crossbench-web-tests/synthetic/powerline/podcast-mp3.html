@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Powerline background audio test (MP3)</title></head>
+    <body>
+        <p>The audio is playing (but muted).</p>
+        <video id="audio" muted playsinline controls autoplay loop>
+            <source src="./podcast.mp3" type="audio/mpeg" />
+        </video>
+        <button id="unmuteButton">Click to unmmute</button>
+
+        <script>
+        document.getElementById("unmuteButton").addEventListener('click', function() {
+            document.getElementById("audio").muted = false;
+        });
+        </script>
+    </body>
+</html>

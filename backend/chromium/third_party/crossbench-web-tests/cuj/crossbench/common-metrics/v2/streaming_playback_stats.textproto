@@ -1,0 +1,55 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+query {
+  id: "video_streaming_stats"
+  table {
+    table_name: "streaming_stats_output"
+    module_name: "sql_packages.video_streaming.streaming_playback_stats"
+    column_names: "playback_duration"
+    column_names: "playback_resolution_width"
+    column_names: "playback_resolution_height"
+    column_names: "playback_total_frames"
+    column_names: "playback_dropped_frames"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video_streaming.playback_duration"
+  value: "playback_duration"
+  query: {
+    inner_query_id: "video_streaming_stats"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video_streaming.playback_total_frames"
+  value: "playback_total_frames"
+  query: {
+    inner_query_id: "video_streaming_stats"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video_streaming.playback_dropped_frames"
+  value: "playback_dropped_frames"
+  query: {
+    inner_query_id: "video_streaming_stats"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video_streaming.playback_resolution_width"
+  value: "playback_resolution_width"
+  query: {
+    inner_query_id: "video_streaming_stats"
+  }
+}
+
+metric_spec: {
+  id: "cuj.video_streaming.playback_resolution_height"
+  value: "playback_resolution_height"
+  query: {
+    inner_query_id: "video_streaming_stats"
+  }
+}

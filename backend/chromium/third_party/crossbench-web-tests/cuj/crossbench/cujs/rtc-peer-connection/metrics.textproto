@@ -1,0 +1,47 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+query {
+  id: "rtc_peer_connection_output_query"
+  table {
+    table_name: "rtc_peer_connection_output"
+    module_name: "sql_packages.cujs.video.rtc"
+    column_names: "fps"
+    column_names: "encode_time_ms"
+    column_names: "decode_time_ms"
+    column_names: "dropped_frames_ratio"
+  }
+}
+
+metric_spec: {
+  id: "cuj.rtc-peer-connection.fps"
+  value: "fps"
+  query {
+    inner_query_id: "rtc_peer_connection_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.rtc-peer-connection.encode_time_ms"
+  value: "encode_time_ms"
+  query {
+    inner_query_id: "rtc_peer_connection_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.rtc-peer-connection.decode_time_ms"
+  value: "decode_time_ms"
+  query {
+    inner_query_id: "rtc_peer_connection_output_query"
+  }
+}
+
+metric_spec: {
+  id: "cuj.rtc-peer-connection.dropped_frames_ratio"
+  value: "dropped_frames_ratio"
+  query {
+    inner_query_id: "rtc_peer_connection_output_query"
+  }
+}

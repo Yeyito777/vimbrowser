@@ -1,0 +1,27 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../probe-config.hjson
+  args: {
+    TRACE_PROCESSOR_QUERIES: [
+      {
+        name: video_dropped_frames
+        sql:
+          '''
+            INCLUDE PERFETTO MODULE sql_packages.cujs.video.dropped_frames;
+            SELECT * FROM dropped_frames;
+          '''
+      }
+    ]
+    METRIC_DEFINITIONS: [
+      ../../common-metrics/v2/video_dropped_frames.textproto
+    ]
+    TRACE_CONFIG: ../../trace-config/detailed-trace-config.pbtxt
+    ADDITIONAL_PROBES: [
+      {
+        name: video_acceleration
+      }
+    ]
+  }
+}

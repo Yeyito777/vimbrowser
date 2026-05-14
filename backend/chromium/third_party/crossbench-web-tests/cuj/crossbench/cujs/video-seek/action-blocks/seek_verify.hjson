@@ -1,0 +1,43 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  pages: {
+    VideoCUJ: {
+      actions: [
+        {
+          action: get
+          url: https://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/video_20250716.html
+          ready_state: complete
+        }
+        {
+          action: js
+          script: playOnLoop("$[FILE_NAME]", false)
+        }
+        {
+          action: wait_for_element
+          selector: .videotile
+          timeout: 10s
+        }
+        // We need to wait to ensure video is loaded properly. Otherwise we may encounter error
+        // from attempting to seek before video can return valid duration.
+        {
+          action: wait
+          duration: 3s
+        }
+        {
+          action: js
+          timeout: 1000
+          path: ./scripts/seek.js
+          replacements: {
+            NUM_SEEK: $[NUM_SEEK]
+          }
+        }
+        {
+          action: js
+          script: if(globalThis.seekCount+1 !== $[NUM_SEEK]) { throw new Error(`Not all seeks are performed. Expect: ${$[NUM_SEEK]}, Got: ${globalThis.seekCount}}.`) }
+        }
+      ]
+    }
+  }
+}

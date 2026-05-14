@@ -1,0 +1,11 @@
+*.wprgo
+*.gstmp
+__pycache__
+.vscode
+cuj/crossbench/runner/results
+.venv
+venv
+.gemini
+
+# Directories added by gclient sync and the GN build
+/third_party/node

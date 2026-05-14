@@ -1,0 +1,47 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: {
+    pages: {
+      clicks: [
+        $[...SETUP_ACTIONS]
+        {
+          action: get
+          url: http://localhost:8000/index.html
+        }
+        {
+          action: wait
+          duration: 1s
+        }
+        $[...TYPE_ONE_SENTENCE]
+        $[...TYPE_ONE_SENTENCE]
+        $[...TYPE_ONE_SENTENCE]
+        $[...TYPE_ONE_SENTENCE]
+        $[...TYPE_ONE_SENTENCE]
+        {
+          action: js
+          path: ./scripts/validate-typing.js
+          replacements: {
+            // Each sentence is exactly 100 characters long.
+            EXPECTED_CHARACTERS: 500
+          }
+        }
+      ]
+    }
+  }
+  args: {
+    TYPE_ONE_SENTENCE: [
+      {
+        action: text_input
+        duration: $[BASE_TYPING_DURATION]
+        text: To test the accuracy of this counter, I am typing exactly one hundred characters into this text box.
+        source: keyboard
+      }
+    ]
+  }
+  unbound_args: [
+    SETUP_ACTIONS
+    BASE_TYPING_DURATION
+  ]
+}

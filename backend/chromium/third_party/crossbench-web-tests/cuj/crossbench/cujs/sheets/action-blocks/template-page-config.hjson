@@ -1,0 +1,19 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../../common-action-blocks/workspace/google-workspace-from-drive-template.hjson
+  args: {
+    DRIVE_FOLDER_URL: https://drive.google.com/corp/drive/folders/1LPPeFRCOtfnBltyg931mSOjVt9-DzL_B
+    DOC_NAME: tbs-pssd-compendium-salary-disclosed-2023-en-utf-8-2024-05-31
+    DOC_APP: spreadsheets
+    COMMENT_TEXT: Ontario sure has a lot of public employees!
+    CLICK_INPUT_SOURCE: touch
+    SCROLL_SELECTOR: "[class='goog-inline-block grid4-inner-container']"
+    SCROLL_END_DISTANCE_SELECTOR: div[class="native-scrollbar native-scrollbar-ltr native-scrollbar-y"]
+    ARIA_DISABLED: ""
+  }
+  unbound_args: [
+    SETUP_ACTIONS
+  ]
+}

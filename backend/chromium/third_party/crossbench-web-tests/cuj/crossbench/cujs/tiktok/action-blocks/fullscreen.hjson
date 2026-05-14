@@ -1,0 +1,37 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ./base-template.hjson
+  args: {
+    SCREEN_SETTINGS: [
+      {
+        action: click
+        source: touch
+        pos: {
+          selector: "[data-e2e='more-menu-icon']"
+          wait: true
+        }
+        verify: "[data-e2e='more-menu-popover_full-screen']"
+      }
+      // Wait for menu animation to finish
+      {
+        action: wait
+        duration: 1s
+      }
+      {
+        action: click
+        source: touch
+        pos: {
+          selector: "[data-e2e='more-menu-popover_full-screen']"
+          wait: true
+        }
+        verify: ":fullscreen"
+      }
+    ]
+  }
+  unbound_args: [
+    PAGE_URL
+    PLAYBACK_DURATION
+  ]
+}

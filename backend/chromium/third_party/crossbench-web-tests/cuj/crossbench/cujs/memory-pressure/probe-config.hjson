@@ -1,0 +1,39 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  template: ../../probe-config.hjson
+  args: {
+    TRACE_PROCESSOR_QUERIES: [
+      {
+        name: tab_timing
+        sql:
+          '''
+            include PERFETTO MODULE sql_packages.cujs.memory_pressure.tab_timing;
+            SELECT * FROM tab_timing_by_iteration;
+          '''
+      }
+      {
+        name: tabs_alive
+        sql:
+          '''
+            include PERFETTO MODULE sql_packages.cujs.memory_pressure.tabs_alive;
+            SELECT * FROM tabs_alive_by_iteration;
+          '''
+      }
+      {
+        name: average_tabs_alive_after_first_kill
+        sql:
+          '''
+            include PERFETTO MODULE sql_packages.cujs.memory_pressure.tabs_alive;
+            SELECT * FROM avg_tabs_alive_after_first_kill;
+          '''
+      }
+    ]
+    TRACE_CONFIG: ../../trace-config/long-running-trace-config.pbtxt
+    METRIC_DEFINITIONS: [
+      ./metrics.textproto
+    ]
+    ADDITIONAL_PROBES: []
+  }
+}
