@@ -1918,7 +1918,7 @@ void BrowserWindow::RefreshSidebar() {
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text = active ? "> " : "  ";
+    std::string text;
     text += std::to_string(i + 1);
     text += ": ";
     text += DisplayUrl(tabs_[i].url);
@@ -1932,9 +1932,6 @@ void BrowserWindow::RefreshSidebar() {
     row->SetText(text);
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
     StyleTextfield(row, theme::kText, row_bg, "monospace, 12px");
-    if (active) {
-      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
-    }
     sidebar_content_panel_->AddChildView(row);
     sidebar_rows_.push_back({row});
   }
