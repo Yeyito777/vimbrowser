@@ -11,17 +11,20 @@
 #include "cef/libcef/browser/native/menu_runner_views_aura.h"
 #include "cef/libcef/browser/views/view_util.h"
 #include "cef/libcef/common/api_version_util.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_aura.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
+#include "third_party/blink/public/common/input/web_gesture_event.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/blink/web_input_event.h"
+#include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/views/widget/widget.h"
 
 namespace {
 constexpr base::TimeDelta kSmoothScrollTick = base::Milliseconds(16);
-constexpr double kSmoothScrollFactor = 0.66;
+constexpr double kSmoothScrollFactor = 0.3;
 }  // namespace
 
 CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
@@ -108,59 +111,128 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
     int deltaX,
     int deltaY) {
   smooth_scroll_event_ = event;
-  smooth_scroll_dx_ += deltaX;
-  smooth_scroll_dy_ += deltaY;
+  // CEF wheel deltas have the opposite sign from the qutebrowser smooth
+  // scroller's content-space deltas: a negative wheel Y scrolls page content
+  // down. Store the same content-space direction qutebrowser stores in m_dy.
+  const int content_dx = -deltaX;
+  const int content_dy = -deltaY;
+  smooth_scroll_dx_ += content_dx;
+  smooth_scroll_dy_ += content_dy;
   smooth_scroll_factor_ = kSmoothScrollFactor;
 
-  if (!smooth_scroll_timer_.IsRunning()) {
+  if (!smooth_scroll_scrolling_) {
+    smooth_scroll_subpixel_x_ = 0.0;
+    smooth_scroll_subpixel_y_ = 0.0;
+    SendGestureScrollBegin(static_cast<float>(-content_dx),
+                           static_cast<float>(-content_dy));
+    smooth_scroll_scrolling_ = true;
+    smooth_scroll_last_tick_ = base::TimeTicks::Now();
     smooth_scroll_timer_.Start(
         FROM_HERE, kSmoothScrollTick, this,
         &CefBrowserPlatformDelegateNativeAura::TickSmoothScroll);
+    TickSmoothScroll();
   }
 }
 
-void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEventNow(
-    const CefMouseEvent& event,
-    int deltaX,
-    int deltaY) {
-  auto view = GetHostView();
+gfx::PointF CefBrowserPlatformDelegateNativeAura::SmoothScrollPosition() const {
+  if (smooth_scroll_event_.x >= 0 && smooth_scroll_event_.y >= 0) {
+    return gfx::PointF(static_cast<float>(smooth_scroll_event_.x),
+                       static_cast<float>(smooth_scroll_event_.y));
+  }
+  auto* view = GetHostView();
   if (!view) {
+    return gfx::PointF();
+  }
+  const gfx::Rect bounds = view->GetViewBounds();
+  return gfx::PointF(bounds.width() / 2.0f, bounds.height() / 2.0f);
+}
+
+void CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
+    float deltaXHint,
+    float deltaYHint) {
+  auto* view = GetHostView();
+  if (!view || !view->host()) {
     return;
   }
 
-  ui::MouseWheelEvent ui_event = TranslateUiWheelEvent(event, deltaX, deltaY);
-  view->OnMouseEvent(&ui_event);
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollBegin,
+                               blink::WebInputEvent::kNoModifiers,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  event.data.scroll_begin.delta_x_hint = deltaXHint;
+  event.data.scroll_begin.delta_y_hint = deltaYHint;
+  event.data.scroll_begin.target_viewport = true;
+  view->host()->ForwardGestureEvent(event);
+}
+
+void CefBrowserPlatformDelegateNativeAura::SendGestureScrollUpdate(int stepX,
+                                                                   int stepY) {
+  auto* view = GetHostView();
+  if (!view || !view->host()) {
+    return;
+  }
+
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollUpdate,
+                               blink::WebInputEvent::kNoModifiers,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  event.data.scroll_update.delta_x = static_cast<float>(-stepX);
+  event.data.scroll_update.delta_y = static_cast<float>(-stepY);
+  view->host()->ForwardGestureEvent(event);
+}
+
+void CefBrowserPlatformDelegateNativeAura::SendGestureScrollEnd() {
+  auto* view = GetHostView();
+  if (!view || !view->host()) {
+    return;
+  }
+
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollEnd,
+                               blink::WebInputEvent::kNoModifiers,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  view->host()->ForwardGestureEvent(event);
 }
 
 void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll() {
-  int step_x = static_cast<int>(std::trunc(smooth_scroll_dx_ *
-                                           smooth_scroll_factor_));
-  int step_y = static_cast<int>(std::trunc(smooth_scroll_dy_ *
-                                           smooth_scroll_factor_));
+  const base::TimeTicks now = base::TimeTicks::Now();
+  const base::TimeDelta elapsed = now - smooth_scroll_last_tick_;
+  smooth_scroll_last_tick_ = now;
+  const double dt = std::max(1.0, elapsed.InMillisecondsF());
+  const double effective_factor =
+      1.0 - std::pow(1.0 - smooth_scroll_factor_, dt / 16.0);
 
-  // Match qutebrowser's scroll.js: while at least one pixel remains, keep a
-  // minimum +/-1px step so we don't hang forever on fractional tails; once the
-  // remaining distance is below 1px, stop instead of over-smoothing it.
-  if (step_x == 0 && std::abs(smooth_scroll_dx_) >= 1.0) {
-    step_x = smooth_scroll_dx_ > 0.0 ? 1 : -1;
-  }
-  if (step_y == 0 && std::abs(smooth_scroll_dy_) >= 1.0) {
-    step_y = smooth_scroll_dy_ > 0.0 ? 1 : -1;
-  }
+  const double frac_step_x = smooth_scroll_dx_ * effective_factor;
+  const double frac_step_y = smooth_scroll_dy_ * effective_factor;
 
-  if (step_x == 0 && step_y == 0) {
-    smooth_scroll_timer_.Stop();
-    smooth_scroll_dx_ = 0.0;
-    smooth_scroll_dy_ = 0.0;
-    return;
-  }
+  smooth_scroll_subpixel_x_ += frac_step_x;
+  smooth_scroll_subpixel_y_ += frac_step_y;
+
+  const int step_x = static_cast<int>(smooth_scroll_subpixel_x_);
+  const int step_y = static_cast<int>(smooth_scroll_subpixel_y_);
+
+  smooth_scroll_subpixel_x_ -= step_x;
+  smooth_scroll_subpixel_y_ -= step_y;
+  smooth_scroll_dx_ -= frac_step_x;
+  smooth_scroll_dy_ -= frac_step_y;
 
   if (step_x != 0 || step_y != 0) {
-    SendMouseWheelEventNow(smooth_scroll_event_, step_x, step_y);
+    SendGestureScrollUpdate(step_x, step_y);
   }
 
-  smooth_scroll_dx_ -= step_x;
-  smooth_scroll_dy_ -= step_y;
+  if (std::abs(smooth_scroll_dx_) < 0.01 &&
+      std::abs(smooth_scroll_dy_) < 0.01) {
+    smooth_scroll_timer_.Stop();
+    SendGestureScrollEnd();
+    smooth_scroll_scrolling_ = false;
+    smooth_scroll_dx_ = 0.0;
+    smooth_scroll_dy_ = 0.0;
+    smooth_scroll_subpixel_x_ = 0.0;
+    smooth_scroll_subpixel_y_ = 0.0;
+  }
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendTouchEvent(

@@ -99,16 +99,21 @@ class CefBrowserPlatformDelegateNativeAura
   void WidgetDeleted();
 
   content::RenderWidgetHostViewAura* GetHostView() const;
-  void SendMouseWheelEventNow(const CefMouseEvent& event,
-                              int deltaX,
-                              int deltaY);
+  gfx::PointF SmoothScrollPosition() const;
+  void SendGestureScrollBegin(float deltaXHint, float deltaYHint);
+  void SendGestureScrollUpdate(int stepX, int stepY);
+  void SendGestureScrollEnd();
   void TickSmoothScroll();
 
   CefMouseEvent smooth_scroll_event_ = {};
   base::RepeatingTimer smooth_scroll_timer_;
   double smooth_scroll_dx_ = 0.0;
   double smooth_scroll_dy_ = 0.0;
-  double smooth_scroll_factor_ = 0.66;
+  double smooth_scroll_subpixel_x_ = 0.0;
+  double smooth_scroll_subpixel_y_ = 0.0;
+  double smooth_scroll_factor_ = 0.3;
+  base::TimeTicks smooth_scroll_last_tick_;
+  bool smooth_scroll_scrolling_ = false;
 
   base::WeakPtrFactory<CefBrowserPlatformDelegateNativeAura> weak_ptr_factory_{
       this};
