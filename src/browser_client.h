@@ -49,9 +49,9 @@ class BrowserClient final : public CefClient,
   void SetFpsTrackingEnabled(bool enabled);
   double current_fps() const { return current_fps_; }
   bool fps_has_sample() const { return fps_has_sample_; }
+  void StartFpsTraceSample();
 
  private:
-  void StartFpsTraceSample();
   void FinishFpsTraceSample();
 
   BrowserWindow* owner_ = nullptr;

@@ -16,6 +16,9 @@ namespace {
 constexpr const char* kFpsTracingCategories =
     "devtools.timeline,disabled-by-default-devtools.timeline.frame,cc,benchmark";
 
+vimbrowser::BrowserClient* g_fps_trace_owner = nullptr;
+vimbrowser::BrowserClient* g_pending_fps_trace_owner = nullptr;
+
 enum class FrameTraceEvent {
   kNone,
   kDraw,
@@ -56,6 +59,18 @@ int BestFrameCount(int draw_frames, int begin_frames, int animation_frames) {
 }  // namespace
 
 namespace vimbrowser {
+
+namespace {
+
+void StartPendingFpsTraceOwner() {
+  BrowserClient* pending = g_pending_fps_trace_owner;
+  g_pending_fps_trace_owner = nullptr;
+  if (pending) {
+    pending->StartFpsTraceSample();
+  }
+}
+
+}  // namespace
 
 BrowserClient::BrowserClient(BrowserWindow* owner) : owner_(owner) {}
 
@@ -127,10 +142,11 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
                                       const void* message,
                                       size_t message_size) {
-  if (fps_tracking_enabled_ && message && message_size > 0) {
+  if (message && message_size > 0) {
     CefRefPtr<CefValue> value = CefParseJSON(message, message_size, JSON_PARSER_RFC);
     CefRefPtr<CefDictionaryValue> root = value ? value->GetDictionary() : nullptr;
-    if (root && root->GetString("method").ToString() == "Tracing.dataCollected") {
+    const std::string method = root ? root->GetString("method").ToString() : "";
+    if (fps_tracking_enabled_ && method == "Tracing.dataCollected") {
       CefRefPtr<CefDictionaryValue> params = root->GetDictionary("params");
       CefRefPtr<CefListValue> events = params ? params->GetList("value") : nullptr;
       if (events) {
@@ -165,10 +181,15 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
           owner_->OnClientFpsUpdated(this);
         }
       }
-    } else if (root && root->GetString("method").ToString() == "Tracing.tracingComplete") {
+    } else if (method == "Tracing.tracingComplete") {
       fps_tracing_active_ = false;
       fps_tracing_finishing_ = false;
-      if (fps_tracking_enabled_) {
+      if (g_pending_fps_trace_owner && g_pending_fps_trace_owner != this) {
+        if (g_fps_trace_owner == this) {
+          g_fps_trace_owner = nullptr;
+        }
+        StartPendingFpsTraceOwner();
+      } else if (fps_tracking_enabled_) {
         const auto now = std::chrono::steady_clock::now();
         const double elapsed =
             std::chrono::duration<double>(now - fps_sample_start_).count();
@@ -219,11 +240,22 @@ void BrowserClient::SetFpsTrackingEnabled(bool enabled) {
   }
 
   if (enabled) {
-    StartFpsTraceSample();
+    if (g_fps_trace_owner && g_fps_trace_owner != this) {
+      g_pending_fps_trace_owner = this;
+      g_fps_trace_owner->SetFpsTrackingEnabled(false);
+    } else {
+      StartFpsTraceSample();
+    }
   } else {
+    if (g_pending_fps_trace_owner == this) {
+      g_pending_fps_trace_owner = nullptr;
+    }
     if (fps_tracing_active_ && !fps_tracing_finishing_) {
       fps_tracing_finishing_ = true;
       browser_->GetHost()->ExecuteDevToolsMethod(0, "Tracing.end", nullptr);
+    } else if (g_fps_trace_owner == this) {
+      g_fps_trace_owner = nullptr;
+      StartPendingFpsTraceOwner();
     }
   }
 }
@@ -233,6 +265,12 @@ void BrowserClient::StartFpsTraceSample() {
       !browser_->GetHost()) {
     return;
   }
+  if (g_fps_trace_owner && g_fps_trace_owner != this) {
+    g_pending_fps_trace_owner = this;
+    g_fps_trace_owner->SetFpsTrackingEnabled(false);
+    return;
+  }
+  g_fps_trace_owner = this;
 
   fps_draw_frame_count_ = 0;
   fps_begin_frame_count_ = 0;
