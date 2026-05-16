@@ -219,7 +219,9 @@ bool IsEscapeKey(const CefKeyEvent& event) {
 }
 
 bool IsBackspaceKey(const CefKeyEvent& event) {
-  return event.windows_key_code == 0x08 || event.native_key_code == 22;
+  return event.windows_key_code == 0x08 || event.windows_key_code == 0xFF08 ||
+         event.native_key_code == 22 || event.character == 0x08 ||
+         event.unmodified_character == 0x08;
 }
 
 bool IsTabKey(const CefKeyEvent& event) {
@@ -780,6 +782,31 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 }
 
 void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
+  if (textfield != command_field_ || mode_ == Mode::kNormal) {
+    return;
+  }
+
+  // Some native textfield editing commands (notably Backspace on X11) are
+  // consumed by Chromium's Views textfield before/without surfacing as a normal
+  // CEF key event. Keep vimbrowser's command model in lock-step with the native
+  // widget, otherwise the deleted glyph can reappear when the next modeled key is
+  // inserted from stale command_text_.
+  const std::string text = textfield->GetText().ToString();
+  const size_t cursor = std::min(textfield->GetCursorPosition(), text.size());
+  if (text == command_text_ && cursor == command_vim_.cursor) {
+    return;
+  }
+
+  command_text_ = text;
+  command_vim_.cursor = cursor;
+  vim::Clamp(command_vim_, command_text_);
+  if (command_vim_.mode == vim::Mode::kInsert) {
+    UpdateCommandAutocomplete();
+  } else {
+    ClearCommandAutocomplete();
+  }
+  Layout();
+  SetCommandText(command_text_);
 }
 
 void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
@@ -1718,7 +1745,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return true;
   };
 
-  if (IsRawKeyDown(event)) {
+  const bool key_down = IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN;
+  if (key_down) {
     if (IsEnterKey(event)) {
       return process_key({vim::KeyType::kEnter}, false);
     }
@@ -1727,14 +1755,21 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return process_key({vim::KeyType::kEscape, 0, shifted}, false);
     }
     if (IsBackspaceKey(event)) {
-      return process_key({vim::KeyType::kBackspace}, false);
+      return process_key({vim::KeyType::kBackspace}, true);
     }
+  }
+
+  if (IsRawKeyDown(event)) {
     const char key = PlainKeyChar(event);
     if (key) {
       return process_key({vim::KeyType::kChar, key,
                           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
                          true);
     }
+    return true;
+  }
+
+  if (key_down) {
     return true;
   }
 
@@ -1747,6 +1782,9 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
     const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
     const char16_t c = event.character ? event.character : event.unmodified_character;
+    if (IsBackspaceKey(event)) {
+      return process_key({vim::KeyType::kBackspace}, false);
+    }
     if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
       return process_key({vim::KeyType::kChar, static_cast<char>(c),
                           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
