@@ -1957,6 +1957,7 @@ void BrowserWindow::RefreshSidebar() {
     const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
     row->SetText(text);
+    row->SelectRange(CefRange(0, 0));
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
     StyleTextfield(row, theme::kText, row_bg, "monospace, 12px");
     sidebar_content_panel_->AddChildView(row);
