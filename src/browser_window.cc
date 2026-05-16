@@ -1894,6 +1894,11 @@ void BrowserWindow::Layout() {
   if (sidebar_content_panel_->GetLayout()) {
     sidebar_content_panel_->Layout();
   }
+  sidebar_border_panel_->SetSize(CefSize(1, main_height));
+  sidebar_border_panel_->SetBounds(CefRect(kSidebarWidth - 1, 0, 1, main_height));
+  sidebar_border_panel_->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
+                                                ? theme::kAccent
+                                                : theme::kBorderUnfocused);
   if (command_field_) {
     command_field_->SetBounds(CefRect(kCommandTextInsetX, 0,
                                       std::max(1, width - kCommandTextInsetX),
@@ -2248,7 +2253,7 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     }
   } else if (id == kSidebarBorderPanelId) {
     view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
-                                 ? theme::kBorderFocused
+                                 ? theme::kAccent
                                  : theme::kBorderUnfocused);
   } else if (id == kCommandPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
