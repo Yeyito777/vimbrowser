@@ -1918,7 +1918,7 @@ void BrowserWindow::RefreshSidebar() {
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text;
+    std::string text = active ? "▸ " : "  ";
     text += std::to_string(i + 1);
     text += ": ";
     text += DisplayUrl(tabs_[i].url);
