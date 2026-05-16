@@ -94,8 +94,17 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
+      {":showmode", "toggle top-right vim mode display"},
   };
   return commands;
+}
+
+const std::vector<CompletionItem>& ShowmodeArgList() {
+  static const std::vector<CompletionItem> args = {
+      {"off", "hide top-right vim mode display"},
+      {"on", "show top-right vim mode display"},
+  };
+  return args;
 }
 
 const std::vector<CompletionItem>& OpenArgList() {
@@ -107,7 +116,7 @@ const std::vector<CompletionItem>& OpenArgList() {
 }
 
 bool CommandTakesArguments(const std::string& command) {
-  return command == ":open";
+  return command == ":open" || command == ":showmode";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -1064,21 +1073,20 @@ void BrowserWindow::CommitCommand() {
       return;
     };
 
-    if (command == ":set") {
+    if (command == ":showmode") {
       std::vector<std::string> argv = SplitArgs(args);
       for (std::string& arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
-      if (argv.size() == 1 && argv[0] == "showmode") {
+      if (argv.empty()) {
         const bool visible = !show_mode_indicator_;
         CancelCommand();
         SetShowModeIndicator(visible);
         return;
       }
-      if (argv.size() == 2 && argv[0] == "showmode" &&
-          (argv[1] == "on" || argv[1] == "off")) {
-        const bool visible = argv[1] == "on";
+      if (argv.size() == 1 && (argv[0] == "on" || argv[0] == "off")) {
+        const bool visible = argv[0] == "on";
         CancelCommand();
         SetShowModeIndicator(visible);
         return;
@@ -1385,6 +1393,23 @@ void BrowserWindow::UpdateCommandAutocomplete() {
                                     (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
     if (!already_has_tab_arg && (completing_new_arg || !arg_prefix.empty())) {
       for (const CompletionItem& item : OpenArgList()) {
+        if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
+          matches.push_back(item);
+        }
+      }
+    }
+  } else if (StartsWithCaseInsensitive(typed_command, ":showmode") &&
+             IsTokenBoundary(typed_command, 9)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos
+                                       ? after_command
+                                       : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() &&
+                                     std::isspace(static_cast<unsigned char>(
+                                         after_command.back())));
+    if (completing_new_arg || !arg_prefix.empty()) {
+      for (const CompletionItem& item : ShowmodeArgList()) {
         if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
         }
