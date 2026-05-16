@@ -23,7 +23,11 @@
 #include "ui/views/widget/widget.h"
 
 namespace {
-constexpr base::TimeDelta kSmoothScrollTick = base::Milliseconds(16);
+// Drive synthetic smooth-scroll gestures at high-refresh cadence. The easing is
+// still qutebrowser-identical in time because TickSmoothScroll computes the
+// effective decay factor from elapsed dt/16ms; this only removes the old 60Hz
+// update cap so 120/144/165Hz displays can receive enough scroll updates.
+constexpr base::TimeDelta kSmoothScrollTick = base::Milliseconds(6);
 constexpr double kSmoothScrollFactor = 0.3;
 }  // namespace
 
