@@ -21,7 +21,7 @@
 
 namespace {
 constexpr base::TimeDelta kSmoothScrollTick = base::Milliseconds(16);
-constexpr double kSmoothScrollFactor = 0.3;
+constexpr double kSmoothScrollFactor = 0.66;
 }  // namespace
 
 CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
