@@ -16,12 +16,14 @@ struct Config {
   bool explicit_cache_path = false;
   bool explicit_remote_debugging_port = false;
   bool show_mode_indicator = true;
+  bool show_fps_indicator = false;
 };
 
 struct AppState {
   std::vector<std::string> tabs;
   size_t active_index = 0;
   bool show_mode_indicator = true;
+  bool show_fps_indicator = false;
 };
 
 Config ParseConfig(int argc, char* argv[]);

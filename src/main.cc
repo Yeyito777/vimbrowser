@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
   CefRefPtr<vimbrowser::App> app(new vimbrowser::App(config.initial_urls,
                                                      config.active_index,
                                                      config.show_mode_indicator,
+                                                     config.show_fps_indicator,
                                                      config.state_path,
                                                      config.disable_gpu));
 

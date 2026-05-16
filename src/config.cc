@@ -141,6 +141,10 @@ AppState ReadAppState(const std::string& state_path) {
       const std::string value = ToLowerAscii(std::string(line.substr(9)));
       state.show_mode_indicator = value == "1" || value == "true" ||
                                   value == "on" || value == "yes";
+    } else if (StartsWith(line, "showfps=")) {
+      const std::string value = ToLowerAscii(std::string(line.substr(8)));
+      state.show_fps_indicator = value == "1" || value == "true" ||
+                                 value == "on" || value == "yes";
     }
   }
 
@@ -168,6 +172,7 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
       return;
     }
     file << "showmode=" << (state.show_mode_indicator ? "on" : "off") << '\n';
+    file << "showfps=" << (state.show_fps_indicator ? "on" : "off") << '\n';
     file << "active=" << state.active_index << '\n';
     for (const std::string& tab : state.tabs) {
       if (!tab.empty()) {
@@ -216,6 +221,7 @@ Config ParseConfig(int argc, char* argv[]) {
   config.state_path = DefaultStatePath();
   const AppState state = ReadAppState(config.state_path);
   config.show_mode_indicator = state.show_mode_indicator;
+  config.show_fps_indicator = state.show_fps_indicator;
   bool is_subprocess = false;
 
   for (int i = 1; i < argc; ++i) {

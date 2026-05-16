@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <utility>
@@ -38,6 +39,8 @@ constexpr int kModeIndicatorFieldId = 112;
 constexpr int kCommandAutocompletePanelId = 113;
 constexpr int kCommandFieldId = 114;
 constexpr int kSidebarSpacerId = 115;
+constexpr int kFpsIndicatorPanelId = 116;
+constexpr int kFpsIndicatorFieldId = 117;
 constexpr int kAcceleratorCommandTab = 5000;
 constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kSidebarRowBaseId = 2000;
@@ -97,14 +100,15 @@ const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
       {":showmode", "toggle top-right vim mode display"},
+      {":showfps", "toggle current page fps display"},
   };
   return commands;
 }
 
 const std::vector<CompletionItem>& ShowmodeArgList() {
   static const std::vector<CompletionItem> args = {
-      {"off", "hide top-right vim mode display"},
-      {"on", "show top-right vim mode display"},
+      {"off", "hide indicator"},
+      {"on", "show indicator"},
   };
   return args;
 }
@@ -118,7 +122,7 @@ const std::vector<CompletionItem>& OpenArgList() {
 }
 
 bool CommandTakesArguments(const std::string& command) {
-  return command == ":open" || command == ":showmode";
+  return command == ":open" || command == ":showmode" || command == ":showfps";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -338,11 +342,13 @@ void WriteClipboardText(const std::string& text) {
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              size_t active_index,
                              bool show_mode_indicator,
+                             bool show_fps_indicator,
                              std::string state_path)
     : initial_urls_(std::move(initial_urls)),
       state_path_(std::move(state_path)),
       initial_active_index_(active_index),
-      show_mode_indicator_(show_mode_indicator) {
+      show_mode_indicator_(show_mode_indicator),
+      show_fps_indicator_(show_fps_indicator) {
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
@@ -356,7 +362,14 @@ void BrowserWindow::Create() {
 }
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
+  UpdateActiveFpsTracking();
   RefreshSidebar();
+}
+
+void BrowserWindow::OnClientFpsUpdated(BrowserClient* client) {
+  if (Tab* tab = ActiveTab(); tab && tab->client.get() == client) {
+    UpdateFpsIndicator();
+  }
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
@@ -543,16 +556,46 @@ void BrowserWindow::BuildChrome() {
     mode_indicator_overlay_ = window_->AddOverlayView(
         mode_indicator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
     mode_indicator_overlay_->SetVisible(true);
+
+    fps_indicator_panel_ = CefPanel::CreatePanel(this);
+    fps_indicator_panel_->SetID(kFpsIndicatorPanelId);
+    fps_indicator_panel_->SetBackgroundColor(theme::kUserBg);
+    fps_indicator_panel_->SetToFillLayout();
+
+    fps_indicator_label_ = CefLabelButton::CreateLabelButton(this, "");
+    fps_indicator_label_->SetID(kFpsIndicatorFieldId);
+    fps_indicator_label_->SetFontList("monospace, 12px");
+    fps_indicator_label_->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+    fps_indicator_label_->SetFocusable(false);
+    fps_indicator_label_->SetInkDropEnabled(false);
+    fps_indicator_label_->SetBackgroundColor(theme::kUserBg);
+    fps_indicator_label_->SetEnabledTextColors(theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+    fps_indicator_panel_->AddChildView(fps_indicator_label_);
+
+    fps_indicator_overlay_ = window_->AddOverlayView(
+        fps_indicator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+    fps_indicator_overlay_->SetVisible(show_fps_indicator_);
   }
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   SaveState();
+  for (Tab& tab : tabs_) {
+    if (tab.client) {
+      tab.client->SetFpsTrackingEnabled(false);
+    }
+  }
   tabs_.clear();
+  fps_indicator_overlay_ = nullptr;
   mode_indicator_overlay_ = nullptr;
   autocomplete_overlay_ = nullptr;
   command_separator_overlay_ = nullptr;
   command_overlay_ = nullptr;
+  fps_indicator_label_ = nullptr;
+  fps_indicator_panel_ = nullptr;
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
   autocomplete_rows_.clear();
@@ -775,10 +818,10 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(std::max(1, CommandAutocompleteWidth()),
                    kCommandAutocompleteRowHeight);
   }
-  if (id == kModeIndicatorPanelId) {
+  if (id == kModeIndicatorPanelId || id == kFpsIndicatorPanelId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
-  if (id == kModeIndicatorFieldId) {
+  if (id == kModeIndicatorFieldId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
   return CefSize(1200, 800);
@@ -813,7 +856,8 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
       InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     return CefSize(1, 1);
   }
-  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId) {
+  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId ||
+      id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
   return CefSize();
@@ -833,7 +877,8 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   if (id == kCommandAutocompletePanelId) {
     return CefSize(0, 0);
   }
-  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId) {
+  if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId ||
+      id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
   return CefSize();
@@ -887,6 +932,7 @@ void BrowserWindow::ActivateTab(size_t index) {
 
   active_index_ = index;
   tabs_[active_index_].view->SetVisible(true);
+  UpdateActiveFpsTracking();
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
@@ -954,6 +1000,7 @@ void BrowserWindow::CloseActiveTab() {
       tab->url = "about:blank";
       last_tab_close_placeholder_ = true;
       tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
+      UpdateActiveFpsTracking();
       SaveState();
       RefreshSidebar();
     }
@@ -963,6 +1010,9 @@ void BrowserWindow::CloseActiveTab() {
   if (tabs_[closing].view) {
     tabs_[closing].view->SetVisible(false);
   }
+  if (tabs_[closing].client) {
+    tabs_[closing].client->SetFpsTrackingEnabled(false);
+  }
 
   Tab closed_tab = tabs_[closing];
 
@@ -970,6 +1020,7 @@ void BrowserWindow::CloseActiveTab() {
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
   active_index_ = std::min(next_index, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
+  UpdateActiveFpsTracking();
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
@@ -1116,6 +1167,29 @@ void BrowserWindow::CommitCommand() {
         const bool visible = argv[0] == "on";
         CancelCommand();
         SetShowModeIndicator(visible);
+        return;
+      }
+
+      CancelCommand();
+      return;
+    }
+
+    if (command == ":showfps") {
+      std::vector<std::string> argv = SplitArgs(args);
+      for (std::string& arg : argv) {
+        arg = ToLowerAscii(arg);
+      }
+
+      if (argv.empty()) {
+        const bool visible = !show_fps_indicator_;
+        CancelCommand();
+        SetShowFpsIndicator(visible);
+        return;
+      }
+      if (argv.size() == 1 && (argv[0] == "on" || argv[0] == "off")) {
+        const bool visible = argv[0] == "on";
+        CancelCommand();
+        SetShowFpsIndicator(visible);
         return;
       }
 
@@ -1441,8 +1515,10 @@ void BrowserWindow::UpdateCommandAutocomplete() {
         }
       }
     }
-  } else if (StartsWithCaseInsensitive(typed_command, ":showmode") &&
-             IsTokenBoundary(typed_command, 9)) {
+  } else if ((StartsWithCaseInsensitive(typed_command, ":showmode") &&
+              IsTokenBoundary(typed_command, 9)) ||
+             (StartsWithCaseInsensitive(typed_command, ":showfps") &&
+              IsTokenBoundary(typed_command, 8))) {
     const size_t arg_start = after_command.find_last_of(" \t");
     const std::string arg_prefix = arg_start == std::string::npos
                                        ? after_command
@@ -1860,6 +1936,8 @@ void BrowserWindow::Layout() {
   RestyleView(autocomplete_panel_);
   RestyleView(mode_indicator_panel_);
   RestyleView(mode_indicator_label_);
+  RestyleView(fps_indicator_panel_);
+  RestyleView(fps_indicator_label_);
   main_panel_->SetSize(CefSize(width, main_height));
   sidebar_panel_->SetSize(CefSize(sidebar_visible_ ? kSidebarWidth : 0, main_height));
   sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
@@ -1896,6 +1974,17 @@ void BrowserWindow::Layout() {
     mode_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
                                              kModeIndicatorHeight));
     UpdateModeIndicator();
+  }
+  if (fps_indicator_overlay_ && fps_indicator_panel_ && fps_indicator_label_) {
+    fps_indicator_overlay_->SetVisible(show_fps_indicator_);
+    fps_indicator_overlay_->SetBounds(
+        CefRect(std::max(0, width - kModeIndicatorWidth), kModeIndicatorHeight,
+                kModeIndicatorWidth, kModeIndicatorHeight));
+    fps_indicator_panel_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    fps_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    fps_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
+                                            kModeIndicatorHeight));
+    UpdateFpsIndicator();
   }
 
   if (root_panel_->GetLayout()) {
@@ -1937,6 +2026,9 @@ void BrowserWindow::Layout() {
   }
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
+  }
+  if (fps_indicator_panel_ && fps_indicator_panel_->GetLayout()) {
+    fps_indicator_panel_->Layout();
   }
   if (autocomplete_panel_ && autocomplete_panel_->GetLayout()) {
     autocomplete_panel_->Layout();
@@ -2297,6 +2389,16 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
     mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
     UpdateModeIndicator();
+  } else if (id == kFpsIndicatorPanelId) {
+    view->SetBackgroundColor(theme::kUserBg);
+  } else if (id == kFpsIndicatorFieldId && fps_indicator_label_) {
+    fps_indicator_label_->SetEnabledTextColors(theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+    fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+    fps_indicator_label_->SetBackgroundColor(theme::kUserBg);
+    fps_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+    UpdateFpsIndicator();
   }
 }
 
@@ -2328,10 +2430,53 @@ void BrowserWindow::SetShowModeIndicator(bool visible) {
   Layout();
 }
 
+void BrowserWindow::UpdateFpsIndicator() {
+  if (!kModeIndicatorEnabled || !fps_indicator_label_) {
+    return;
+  }
+  if (fps_indicator_overlay_) {
+    fps_indicator_overlay_->SetVisible(show_fps_indicator_);
+  }
+  if (!show_fps_indicator_) {
+    return;
+  }
+
+  double fps = 0.0;
+  if (Tab* tab = ActiveTab(); tab && tab->client) {
+    fps = tab->client->current_fps();
+  }
+  const std::string text = "fps " + std::to_string(static_cast<int>(std::round(fps)));
+  fps_indicator_label_->SetText(text);
+  fps_indicator_label_->SetEnabledTextColors(theme::kText);
+  fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+  fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+  fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+  fps_indicator_label_->SetBackgroundColor(theme::kUserBg);
+  fps_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
+void BrowserWindow::SetShowFpsIndicator(bool visible) {
+  show_fps_indicator_ = visible;
+  SaveState();
+  UpdateActiveFpsTracking();
+  UpdateFpsIndicator();
+  Layout();
+}
+
+void BrowserWindow::UpdateActiveFpsTracking() {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].client) {
+      tabs_[i].client->SetFpsTrackingEnabled(show_fps_indicator_ && i == active_index_);
+    }
+  }
+  UpdateFpsIndicator();
+}
+
 void BrowserWindow::SaveState() const {
   AppState state;
   state.active_index = active_index_;
   state.show_mode_indicator = show_mode_indicator_;
+  state.show_fps_indicator = show_fps_indicator_;
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {
       state.tabs.push_back(tab.url);

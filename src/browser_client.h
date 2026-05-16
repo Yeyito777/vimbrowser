@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "include/cef_client.h"
 #include "include/cef_devtools_message_observer.h"
 #include "include/cef_life_span_handler.h"
@@ -44,11 +46,22 @@ class BrowserClient final : public CefClient,
 
   CefRefPtr<CefBrowser> browser() const { return browser_; }
   void ShowDevTools();
+  void SetFpsTrackingEnabled(bool enabled);
+  double current_fps() const { return current_fps_; }
 
  private:
+  void StartFpsTraceSample();
+  void FinishFpsTraceSample();
+
   BrowserWindow* owner_ = nullptr;
   CefRefPtr<CefBrowser> browser_;
   CefRefPtr<CefRegistration> devtools_registration_;
+  bool fps_tracking_enabled_ = false;
+  bool fps_tracing_active_ = false;
+  bool fps_tracing_finishing_ = false;
+  int fps_frame_count_ = 0;
+  double current_fps_ = 0.0;
+  std::chrono::steady_clock::time_point fps_sample_start_;
 
   IMPLEMENT_REFCOUNTING(BrowserClient);
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);

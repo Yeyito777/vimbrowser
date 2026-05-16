@@ -13,6 +13,7 @@ class App final : public CefApp, public CefBrowserProcessHandler {
   App(std::vector<std::string> initial_urls,
       size_t active_index,
       bool show_mode_indicator,
+      bool show_fps_indicator,
       std::string state_path,
       bool disable_gpu);
 
@@ -29,6 +30,7 @@ class App final : public CefApp, public CefBrowserProcessHandler {
   std::vector<std::string> initial_urls_;
   size_t active_index_;
   bool show_mode_indicator_;
+  bool show_fps_indicator_;
   std::string state_path_;
   bool disable_gpu_;
 

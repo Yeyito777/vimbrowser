@@ -33,11 +33,13 @@ class BrowserWindow final : public CefWindowDelegate,
   BrowserWindow(std::vector<std::string> initial_urls,
                 size_t active_index,
                 bool show_mode_indicator,
+                bool show_fps_indicator,
                 std::string state_path);
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
+  void OnClientFpsUpdated(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
@@ -134,6 +136,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateCommandView();
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
+  void UpdateFpsIndicator();
+  void SetShowFpsIndicator(bool visible);
+  void UpdateActiveFpsTracking();
   void SaveState() const;
   void RebuildCommandCells();
   void RebuildAutocompleteRows();
@@ -157,6 +162,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
   bool show_mode_indicator_ = true;
+  bool show_fps_indicator_ = false;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
   std::vector<Tab> closed_tabs_;
@@ -184,6 +190,9 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> mode_indicator_panel_;
   CefRefPtr<CefLabelButton> mode_indicator_label_;
   CefRefPtr<CefOverlayController> mode_indicator_overlay_;
+  CefRefPtr<CefPanel> fps_indicator_panel_;
+  CefRefPtr<CefLabelButton> fps_indicator_label_;
+  CefRefPtr<CefOverlayController> fps_indicator_overlay_;
 
   IMPLEMENT_REFCOUNTING(BrowserWindow);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
