@@ -54,6 +54,10 @@ double CefBrowserPlatformDelegateChrome::GetCurrentFps() const {
   return native_delegate_->GetCurrentFps();
 }
 
+double CefBrowserPlatformDelegateChrome::GetCompositorRefreshRate() const {
+  return native_delegate_->GetCompositorRefreshRate();
+}
+
 CefWindowHandle CefBrowserPlatformDelegateChrome::GetHostWindowHandle() const {
   return view_util::GetWindowHandle(GetNativeWindow());
 }

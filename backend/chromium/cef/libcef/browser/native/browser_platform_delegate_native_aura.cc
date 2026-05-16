@@ -89,6 +89,10 @@ double CefBrowserPlatformDelegateNativeAura::GetCurrentFps() const {
   return fps_current_;
 }
 
+double CefBrowserPlatformDelegateNativeAura::GetCompositorRefreshRate() const {
+  return fps_observed_compositor_ ? fps_observed_compositor_->refresh_rate() : 0.0;
+}
+
 void CefBrowserPlatformDelegateNativeAura::OnCompositingStarted(
     ui::Compositor* compositor,
     base::TimeTicks start_time) {

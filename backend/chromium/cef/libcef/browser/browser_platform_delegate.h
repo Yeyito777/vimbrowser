@@ -139,6 +139,7 @@ class CefBrowserPlatformDelegate {
   // compositor frame submission directly.
   virtual bool HasFpsSample() const;
   virtual double GetCurrentFps() const;
+  virtual double GetCompositorRefreshRate() const;
 
   // Called after the owning BrowserHost is created. Will only be
   // called a single time per instance. Do not send any client notifications

@@ -32,6 +32,7 @@ class CefBrowserPlatformDelegateViews
   void RenderViewReady() override;
   bool HasFpsSample() const override;
   double GetCurrentFps() const override;
+  double GetCompositorRefreshRate() const override;
   bool CreateHostWindow() override;
   void CloseHostWindow() override;
   CefWindowHandle GetHostWindowHandle() const override;

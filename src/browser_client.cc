@@ -7,6 +7,7 @@
 
 extern "C" bool vimbrowser_browser_has_fps_sample(int browser_id);
 extern "C" double vimbrowser_get_browser_fps(int browser_id);
+extern "C" double vimbrowser_get_browser_refresh_rate(int browser_id);
 
 namespace vimbrowser {
 
@@ -90,6 +91,11 @@ double BrowserClient::current_fps() const {
 
 bool BrowserClient::fps_has_sample() const {
   return browser_ && vimbrowser_browser_has_fps_sample(browser_->GetIdentifier());
+}
+
+double BrowserClient::compositor_refresh_rate() const {
+  return browser_ ? vimbrowser_get_browser_refresh_rate(browser_->GetIdentifier())
+                  : 0.0;
 }
 
 }  // namespace vimbrowser

@@ -100,6 +100,10 @@ double CefBrowserPlatformDelegateViews::GetCurrentFps() const {
   return native_delegate_->GetCurrentFps();
 }
 
+double CefBrowserPlatformDelegateViews::GetCompositorRefreshRate() const {
+  return native_delegate_->GetCompositorRefreshRate();
+}
+
 bool CefBrowserPlatformDelegateViews::CreateHostWindow() {
   // Nothing to do here.
   return true;

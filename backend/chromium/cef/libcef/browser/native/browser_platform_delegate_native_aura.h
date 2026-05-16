@@ -41,6 +41,7 @@ class CefBrowserPlatformDelegateNativeAura
   void RenderViewReady() override;
   bool HasFpsSample() const override;
   double GetCurrentFps() const override;
+  double GetCompositorRefreshRate() const override;
   void SendKeyEvent(const CefKeyEvent& event) override;
   void SendMouseClickEvent(const CefMouseEvent& event,
                            CefBrowserHost::MouseButtonType type,

@@ -2534,6 +2534,12 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     return "--";
   }
+  if (command == "refresh") {
+    if (Tab* tab = ActiveTab(); tab && tab->client) {
+      return std::to_string(tab->client->compositor_refresh_rate()) + "\n";
+    }
+    return "0\n";
+  }
   if (command == "url") {
     return ActiveTabUrl();
   }
@@ -2589,7 +2595,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return IpcStatusJson();
   }
   if (command == "help") {
-    return "commands: status, fps, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
+    return "commands: status, fps, refresh, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
   }
   return "ERR unknown command\n";
 }
@@ -2597,6 +2603,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
 std::string BrowserWindow::IpcStatusJson() const {
   bool fps_has_sample = false;
   double fps = 0.0;
+  double refresh_rate = 0.0;
   std::string url;
   std::string title;
   if (!tabs_.empty() && active_index_ < tabs_.size()) {
@@ -2605,6 +2612,7 @@ std::string BrowserWindow::IpcStatusJson() const {
     if (tab.client) {
       fps_has_sample = tab.client->fps_has_sample();
       fps = tab.client->current_fps();
+      refresh_rate = tab.client->compositor_refresh_rate();
     }
     if (CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
         browser && browser->GetHost()) {
@@ -2625,6 +2633,7 @@ std::string BrowserWindow::IpcStatusJson() const {
       << "\"showfps\":" << (show_fps_indicator_ ? "true" : "false") << ","
       << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","
       << "\"fps\":" << (fps_has_sample ? std::to_string(static_cast<int>(std::round(fps))) : "null")
+      << ",\"refresh_rate\":" << refresh_rate
       << "}";
   return out.str();
 }

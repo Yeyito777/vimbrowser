@@ -40,6 +40,7 @@ class BrowserClient final : public CefClient,
   void ShowDevTools();
   double current_fps() const;
   bool fps_has_sample() const;
+  double compositor_refresh_rate() const;
 
  private:
   BrowserWindow* owner_ = nullptr;

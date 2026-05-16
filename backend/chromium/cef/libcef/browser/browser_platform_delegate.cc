@@ -147,6 +147,10 @@ double CefBrowserPlatformDelegate::GetCurrentFps() const {
   return 0.0;
 }
 
+double CefBrowserPlatformDelegate::GetCompositorRefreshRate() const {
+  return 0.0;
+}
+
 void CefBrowserPlatformDelegate::BrowserCreated(CefBrowserHostBase* browser) {
   // We should have an associated WebContents at this point.
   DCHECK(web_contents_);
@@ -182,6 +186,15 @@ extern "C" CEF_EXPORT double vimbrowser_get_browser_fps(int browser_id) {
     return 0.0;
   }
   return browser->platform_delegate()->GetCurrentFps();
+}
+
+extern "C" CEF_EXPORT double vimbrowser_get_browser_refresh_rate(
+    int browser_id) {
+  auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
+  if (!browser || !browser->platform_delegate()) {
+    return 0.0;
+  }
+  return browser->platform_delegate()->GetCompositorRefreshRate();
 }
 
 bool CefBrowserPlatformDelegate::CreateHostWindow() {
