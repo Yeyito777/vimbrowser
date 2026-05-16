@@ -25,6 +25,8 @@ class CefBrowserPlatformDelegateChrome
   void WebContentsDestroyed(content::WebContents* web_contents) override;
   void BrowserCreated(CefBrowserHostBase* browser) override;
   void BrowserDestroyed(CefBrowserHostBase* browser) override;
+  bool HasFpsSample() const override;
+  double GetCurrentFps() const override;
   CefWindowHandle GetHostWindowHandle() const override;
   web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost()
       const override;

@@ -46,6 +46,14 @@ void CefBrowserPlatformDelegateChrome::BrowserDestroyed(
   native_delegate_->BrowserDestroyed(browser);
 }
 
+bool CefBrowserPlatformDelegateChrome::HasFpsSample() const {
+  return native_delegate_->HasFpsSample();
+}
+
+double CefBrowserPlatformDelegateChrome::GetCurrentFps() const {
+  return native_delegate_->GetCurrentFps();
+}
+
 CefWindowHandle CefBrowserPlatformDelegateChrome::GetHostWindowHandle() const {
   return view_util::GetWindowHandle(GetNativeWindow());
 }

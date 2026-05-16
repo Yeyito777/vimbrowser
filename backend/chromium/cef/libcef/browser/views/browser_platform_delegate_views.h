@@ -29,6 +29,9 @@ class CefBrowserPlatformDelegateViews
   void NotifyBrowserCreated() override;
   void NotifyBrowserDestroyed() override;
   void BrowserDestroyed(CefBrowserHostBase* browser) override;
+  void RenderViewReady() override;
+  bool HasFpsSample() const override;
+  double GetCurrentFps() const override;
   bool CreateHostWindow() override;
   void CloseHostWindow() override;
   CefWindowHandle GetHostWindowHandle() const override;

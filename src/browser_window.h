@@ -41,7 +41,6 @@ class BrowserWindow final : public CefWindowDelegate,
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
-  void OnClientFpsUpdated(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   std::string HandleIpcCommand(const std::string& command);
 
@@ -141,7 +140,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void SetShowModeIndicator(bool visible);
   void UpdateFpsIndicator();
   void SetShowFpsIndicator(bool visible);
-  void UpdateActiveFpsTracking();
+  void ScheduleFpsIndicatorUpdate();
+  void OnFpsIndicatorUpdateTimer();
   std::string IpcStatusJson() const;
   void SaveState() const;
   void RebuildCommandCells();
@@ -167,6 +167,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool sidebar_visible_ = true;
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
+  bool fps_update_scheduled_ = false;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
   std::vector<Tab> closed_tabs_;

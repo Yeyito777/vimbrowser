@@ -16,6 +16,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "third_party/blink/public/common/input/web_gesture_event.h"
+#include "ui/compositor/compositor.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/blink/web_input_event.h"
 #include "ui/gfx/geometry/point_f.h"
@@ -23,11 +24,6 @@
 #include "ui/views/widget/widget.h"
 
 namespace {
-// Drive synthetic smooth-scroll gestures at high-refresh cadence. The easing is
-// still qutebrowser-identical in time because TickSmoothScroll computes the
-// effective decay factor from elapsed dt/16ms; this only removes the old 60Hz
-// update cap so 120/144/165Hz displays can receive enough scroll updates.
-constexpr base::TimeDelta kSmoothScrollTick = base::Milliseconds(6);
 constexpr double kSmoothScrollFactor = 0.3;
 }  // namespace
 
@@ -35,6 +31,18 @@ CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
     const CefWindowInfo& window_info,
     SkColor background_color)
     : CefBrowserPlatformDelegateNative(window_info, background_color) {}
+
+CefBrowserPlatformDelegateNativeAura::~CefBrowserPlatformDelegateNativeAura() {
+  StopSmoothScrollAnimation();
+  RemoveFpsObserver();
+}
+
+void CefBrowserPlatformDelegateNativeAura::WebContentsDestroyed(
+    content::WebContents* web_contents) {
+  StopSmoothScrollAnimation();
+  RemoveFpsObserver();
+  CefBrowserPlatformDelegateNative::WebContentsDestroyed(web_contents);
+}
 
 void CefBrowserPlatformDelegateNativeAura::InstallRootWindowBoundsCallback() {
   auto* host_view = GetHostView();
@@ -70,6 +78,40 @@ void CefBrowserPlatformDelegateNativeAura::RenderViewReady() {
 
   // The RWHV should now exist for Alloy style browsers.
   InstallRootWindowBoundsCallback();
+  InstallFpsObserver();
+}
+
+bool CefBrowserPlatformDelegateNativeAura::HasFpsSample() const {
+  return fps_has_sample_;
+}
+
+double CefBrowserPlatformDelegateNativeAura::GetCurrentFps() const {
+  return fps_current_;
+}
+
+void CefBrowserPlatformDelegateNativeAura::OnCompositingStarted(
+    ui::Compositor* compositor,
+    base::TimeTicks start_time) {
+  if (compositor == fps_observed_compositor_) {
+    RecordFrameSubmission(start_time.is_null() ? base::TimeTicks::Now()
+                                               : start_time);
+  }
+}
+
+void CefBrowserPlatformDelegateNativeAura::OnAnimationStep(
+    base::TimeTicks timestamp) {
+  TickSmoothScroll(timestamp.is_null() ? base::TimeTicks::Now() : timestamp);
+}
+
+void CefBrowserPlatformDelegateNativeAura::OnCompositingShuttingDown(
+    ui::Compositor* compositor) {
+  if (compositor == fps_observed_compositor_) {
+    fps_observed_compositor_ = nullptr;
+  }
+  if (compositor == smooth_scroll_compositor_) {
+    smooth_scroll_compositor_ = nullptr;
+    smooth_scroll_scrolling_ = false;
+  }
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendKeyEvent(
@@ -131,10 +173,8 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
                            static_cast<float>(-content_dy));
     smooth_scroll_scrolling_ = true;
     smooth_scroll_last_tick_ = base::TimeTicks::Now();
-    smooth_scroll_timer_.Start(
-        FROM_HERE, kSmoothScrollTick, this,
-        &CefBrowserPlatformDelegateNativeAura::TickSmoothScroll);
-    TickSmoothScroll();
+    StartSmoothScrollAnimation();
+    TickSmoothScroll(smooth_scroll_last_tick_);
   }
 }
 
@@ -149,6 +189,38 @@ gfx::PointF CefBrowserPlatformDelegateNativeAura::SmoothScrollPosition() const {
   }
   const gfx::Rect bounds = view->GetViewBounds();
   return gfx::PointF(bounds.width() / 2.0f, bounds.height() / 2.0f);
+}
+
+void CefBrowserPlatformDelegateNativeAura::StartSmoothScrollAnimation() {
+  auto* view = GetHostView();
+  ui::Compositor* compositor = view ? view->GetCompositor() : nullptr;
+  if (!compositor) {
+    return;
+  }
+
+  if (smooth_scroll_compositor_ && smooth_scroll_compositor_ != compositor &&
+      smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->RemoveAnimationObserver(this);
+  }
+  smooth_scroll_compositor_ = compositor;
+  if (!smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->AddAnimationObserver(this);
+  }
+
+  // A new smooth scroll is a new interactive measurement window. Do not dilute
+  // it with idle compositor samples gathered before the keypress/IPC command.
+  fps_frame_count_ = 0;
+  fps_current_ = 0.0;
+  fps_has_sample_ = false;
+  fps_sample_start_ = base::TimeTicks::Now();
+}
+
+void CefBrowserPlatformDelegateNativeAura::StopSmoothScrollAnimation() {
+  if (smooth_scroll_compositor_ &&
+      smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->RemoveAnimationObserver(this);
+  }
+  smooth_scroll_compositor_ = nullptr;
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
@@ -201,8 +273,11 @@ void CefBrowserPlatformDelegateNativeAura::SendGestureScrollEnd() {
   view->host()->ForwardGestureEvent(event);
 }
 
-void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll() {
-  const base::TimeTicks now = base::TimeTicks::Now();
+void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll(base::TimeTicks now) {
+  if (!smooth_scroll_scrolling_) {
+    StopSmoothScrollAnimation();
+    return;
+  }
   const base::TimeDelta elapsed = now - smooth_scroll_last_tick_;
   smooth_scroll_last_tick_ = now;
   const double dt = std::max(1.0, elapsed.InMillisecondsF());
@@ -225,11 +300,18 @@ void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll() {
 
   if (step_x != 0 || step_y != 0) {
     SendGestureScrollUpdate(step_x, step_y);
+    // The synthetic gesture update is the frame-driving unit for our
+    // qutebrowser-style compositor scroll path. Count it directly instead of
+    // opening a DevTools trace and mining DrawFrame/BeginFrame events. This is
+    // intentionally local and cheap, and it reflects the cadence at which the
+    // backend is feeding Chromium's compositor/input pipeline during smooth
+    // scrolling.
+    RecordFrameSubmission(now);
   }
 
   if (std::abs(smooth_scroll_dx_) < 0.01 &&
       std::abs(smooth_scroll_dy_) < 0.01) {
-    smooth_scroll_timer_.Stop();
+    StopSmoothScrollAnimation();
     SendGestureScrollEnd();
     smooth_scroll_scrolling_ = false;
     smooth_scroll_dx_ = 0.0;
@@ -470,4 +552,45 @@ CefBrowserPlatformDelegateNativeAura::GetHostView() const {
   }
   return static_cast<content::RenderWidgetHostViewAura*>(
       web_contents_->GetRenderWidgetHostView());
+}
+
+void CefBrowserPlatformDelegateNativeAura::InstallFpsObserver() {
+  auto* view = GetHostView();
+  ui::Compositor* compositor = view ? view->GetCompositor() : nullptr;
+  if (!compositor || compositor == fps_observed_compositor_) {
+    return;
+  }
+
+  RemoveFpsObserver();
+
+  fps_observed_compositor_ = compositor;
+  fps_frame_count_ = 0;
+  fps_current_ = 0.0;
+  fps_has_sample_ = false;
+  fps_sample_start_ = base::TimeTicks::Now();
+  compositor->AddObserver(this);
+  // Local browser-compositor callbacks: no DevTools tracing session, JSON
+  // parsing, global trace buffer, or renderer round-trip.
+}
+
+void CefBrowserPlatformDelegateNativeAura::RemoveFpsObserver() {
+  if (fps_observed_compositor_) {
+    fps_observed_compositor_->RemoveObserver(this);
+    fps_observed_compositor_ = nullptr;
+  }
+}
+
+void CefBrowserPlatformDelegateNativeAura::RecordFrameSubmission(
+    base::TimeTicks now) {
+  if (fps_sample_start_.is_null()) {
+    fps_sample_start_ = now;
+  }
+  ++fps_frame_count_;
+  const base::TimeDelta elapsed = now - fps_sample_start_;
+  if (elapsed >= base::Seconds(1)) {
+    fps_current_ = fps_frame_count_ / elapsed.InSecondsF();
+    fps_frame_count_ = 0;
+    fps_sample_start_ = now;
+    fps_has_sample_ = true;
+  }
 }

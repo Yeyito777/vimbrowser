@@ -19,10 +19,7 @@ CefBrowserPlatformDelegateChromeChildWindow::
                                             browser_view) {}
 
 void CefBrowserPlatformDelegateChromeChildWindow::RenderViewReady() {
-#if defined(USE_AURA)
-  static_cast<CefBrowserPlatformDelegateNativeAura*>(native_delegate_.get())
-      ->InstallRootWindowBoundsCallback();
-#endif
+  native_delegate_->RenderViewReady();
 }
 
 void CefBrowserPlatformDelegateChromeChildWindow::CloseHostWindow() {

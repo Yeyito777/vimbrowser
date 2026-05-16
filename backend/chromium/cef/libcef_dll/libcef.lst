@@ -4,6 +4,8 @@
 
 {
   /* Only export necessary symbols from libcef.so. */
-  global: cef_*;
+  global:
+    cef_*;
+    vimbrowser_*;
   local: *;
 };

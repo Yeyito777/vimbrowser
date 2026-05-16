@@ -87,6 +87,19 @@ void CefBrowserPlatformDelegateViews::BrowserDestroyed(
   native_delegate_->BrowserDestroyed(browser);
 }
 
+void CefBrowserPlatformDelegateViews::RenderViewReady() {
+  CefBrowserPlatformDelegateAlloy::RenderViewReady();
+  native_delegate_->RenderViewReady();
+}
+
+bool CefBrowserPlatformDelegateViews::HasFpsSample() const {
+  return native_delegate_->HasFpsSample();
+}
+
+double CefBrowserPlatformDelegateViews::GetCurrentFps() const {
+  return native_delegate_->GetCurrentFps();
+}
+
 bool CefBrowserPlatformDelegateViews::CreateHostWindow() {
   // Nothing to do here.
   return true;

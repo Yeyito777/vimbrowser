@@ -7,6 +7,7 @@
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/notimplemented.h"
+#include "cef/include/internal/cef_export.h"
 #include "cef/include/views/cef_window.h"
 #include "cef/include/views/cef_window_delegate.h"
 #include "cef/libcef/browser/browser_host_base.h"
@@ -138,6 +139,14 @@ void CefBrowserPlatformDelegate::RenderViewCreated(
 
 void CefBrowserPlatformDelegate::RenderViewReady() {}
 
+bool CefBrowserPlatformDelegate::HasFpsSample() const {
+  return false;
+}
+
+double CefBrowserPlatformDelegate::GetCurrentFps() const {
+  return 0.0;
+}
+
 void CefBrowserPlatformDelegate::BrowserCreated(CefBrowserHostBase* browser) {
   // We should have an associated WebContents at this point.
   DCHECK(web_contents_);
@@ -157,6 +166,22 @@ void CefBrowserPlatformDelegate::BrowserDestroyed(CefBrowserHostBase* browser) {
 
   DCHECK(browser_ && browser_ == browser);
   browser_ = nullptr;
+}
+
+extern "C" CEF_EXPORT bool vimbrowser_browser_has_fps_sample(int browser_id) {
+  auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
+  if (!browser || !browser->platform_delegate()) {
+    return false;
+  }
+  return browser->platform_delegate()->HasFpsSample();
+}
+
+extern "C" CEF_EXPORT double vimbrowser_get_browser_fps(int browser_id) {
+  auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
+  if (!browser || !browser->platform_delegate()) {
+    return 0.0;
+  }
+  return browser->platform_delegate()->GetCurrentFps();
 }
 
 bool CefBrowserPlatformDelegate::CreateHostWindow() {

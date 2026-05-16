@@ -134,6 +134,12 @@ class CefBrowserPlatformDelegate {
   // See WebContentsObserver documentation.
   virtual void RenderViewReady();
 
+  // Lightweight compositor frame-rate counters used by vimbrowser chrome. These
+  // default to no data and are overridden by platform delegates that can observe
+  // compositor frame submission directly.
+  virtual bool HasFpsSample() const;
+  virtual double GetCurrentFps() const;
+
   // Called after the owning BrowserHost is created. Will only be
   // called a single time per instance. Do not send any client notifications
   // from this method.

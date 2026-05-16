@@ -11,11 +11,13 @@
 #include <utility>
 
 #include "config.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
 #include "include/cef_navigation_entry.h"
 #include "include/views/cef_button.h"
+#include "include/wrapper/cef_closure_task.h"
 #include "ipc_server.h"
 #include "theme.h"
 
@@ -400,14 +402,7 @@ void BrowserWindow::Create() {
 }
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
-  UpdateActiveFpsTracking();
   RefreshSidebar();
-}
-
-void BrowserWindow::OnClientFpsUpdated(BrowserClient* client) {
-  if (Tab* tab = ActiveTab(); tab && tab->client.get() == client) {
-    UpdateFpsIndicator();
-  }
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
@@ -470,6 +465,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->Show();
   Layout();
   SetFocusArea(FocusArea::kWebView);
+  ScheduleFpsIndicatorUpdate();
 }
 
 void BrowserWindow::BuildChrome() {
@@ -626,11 +622,6 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   if (ipc_server_) {
     ipc_server_->Stop();
     ipc_server_.reset();
-  }
-  for (Tab& tab : tabs_) {
-    if (tab.client) {
-      tab.client->SetFpsTrackingEnabled(false);
-    }
   }
   tabs_.clear();
   fps_indicator_overlay_ = nullptr;
@@ -976,7 +967,7 @@ void BrowserWindow::ActivateTab(size_t index) {
 
   active_index_ = index;
   tabs_[active_index_].view->SetVisible(true);
-  UpdateActiveFpsTracking();
+  UpdateFpsIndicator();
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
@@ -1044,7 +1035,7 @@ void BrowserWindow::CloseActiveTab() {
       tab->url = "about:blank";
       last_tab_close_placeholder_ = true;
       tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
-      UpdateActiveFpsTracking();
+      UpdateFpsIndicator();
       SaveState();
       RefreshSidebar();
     }
@@ -1054,17 +1045,13 @@ void BrowserWindow::CloseActiveTab() {
   if (tabs_[closing].view) {
     tabs_[closing].view->SetVisible(false);
   }
-  if (tabs_[closing].client) {
-    tabs_[closing].client->SetFpsTrackingEnabled(false);
-  }
-
   Tab closed_tab = tabs_[closing];
 
   const size_t next_index = closing == 0 ? 0 : closing - 1;
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
   active_index_ = std::min(next_index, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
-  UpdateActiveFpsTracking();
+  UpdateFpsIndicator();
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
@@ -2503,6 +2490,27 @@ void BrowserWindow::UpdateFpsIndicator() {
   fps_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
 }
 
+void BrowserWindow::ScheduleFpsIndicatorUpdate() {
+  if (fps_update_scheduled_ || !window_) {
+    return;
+  }
+  fps_update_scheduled_ = true;
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::OnFpsIndicatorUpdateTimer,
+                                    self),
+                     500);
+}
+
+void BrowserWindow::OnFpsIndicatorUpdateTimer() {
+  fps_update_scheduled_ = false;
+  if (!window_) {
+    return;
+  }
+  UpdateFpsIndicator();
+  ScheduleFpsIndicatorUpdate();
+}
+
 void BrowserWindow::SetShowFpsIndicator(bool visible) {
   show_fps_indicator_ = visible;
   SaveState();
@@ -2584,18 +2592,6 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return "commands: status, fps, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
   }
   return "ERR unknown command\n";
-}
-
-void BrowserWindow::UpdateActiveFpsTracking() {
-  for (size_t i = 0; i < tabs_.size(); ++i) {
-    if (tabs_[i].client) {
-      // Keep the active tab's backend FPS sampler warm even when the overlay is
-      // hidden. Toggling :showfps should reveal the current reading immediately
-      // instead of starting from "fps 0".
-      tabs_[i].client->SetFpsTrackingEnabled(i == active_index_);
-    }
-  }
-  UpdateFpsIndicator();
 }
 
 std::string BrowserWindow::IpcStatusJson() const {
