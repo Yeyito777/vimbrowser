@@ -233,6 +233,27 @@ std::string ToLowerAscii(std::string value) {
   return value;
 }
 
+std::vector<std::string> SplitArgs(const std::string& value) {
+  std::vector<std::string> args;
+  size_t pos = 0;
+  while (pos < value.size()) {
+    while (pos < value.size() &&
+           std::isspace(static_cast<unsigned char>(value[pos]))) {
+      ++pos;
+    }
+    if (pos >= value.size()) {
+      break;
+    }
+    const size_t start = pos;
+    while (pos < value.size() &&
+           !std::isspace(static_cast<unsigned char>(value[pos]))) {
+      ++pos;
+    }
+    args.push_back(value.substr(start, pos - start));
+  }
+  return args;
+}
+
 bool StartsWithCaseInsensitive(const std::string& value, const std::string& prefix) {
   if (value.size() < prefix.size()) {
     return false;
@@ -1043,6 +1064,30 @@ void BrowserWindow::CommitCommand() {
       return;
     };
 
+    if (command == ":set") {
+      std::vector<std::string> argv = SplitArgs(args);
+      for (std::string& arg : argv) {
+        arg = ToLowerAscii(arg);
+      }
+
+      if (argv.size() == 1 && argv[0] == "showmode") {
+        const bool visible = !show_mode_indicator_;
+        CancelCommand();
+        SetShowModeIndicator(visible);
+        return;
+      }
+      if (argv.size() == 2 && argv[0] == "showmode" &&
+          (argv[1] == "on" || argv[1] == "off")) {
+        const bool visible = argv[1] == "on";
+        CancelCommand();
+        SetShowModeIndicator(visible);
+        return;
+      }
+
+      CancelCommand();
+      return;
+    }
+
     if (command != ":open" && command != ":tab-focus") {
       if (!args.empty()) {
         CancelCommand();
@@ -1774,7 +1819,7 @@ void BrowserWindow::Layout() {
                 autocomplete_width, std::max(1, autocomplete_height)));
   }
   if (mode_indicator_overlay_ && mode_indicator_panel_ && mode_indicator_label_) {
-    mode_indicator_overlay_->SetVisible(true);
+    mode_indicator_overlay_->SetVisible(show_mode_indicator_);
     mode_indicator_overlay_->SetBounds(
         CefRect(std::max(0, width - kModeIndicatorWidth), 0,
                 kModeIndicatorWidth, kModeIndicatorHeight));
@@ -2188,6 +2233,12 @@ void BrowserWindow::UpdateModeIndicator() {
   if (!kModeIndicatorEnabled || !mode_indicator_label_) {
     return;
   }
+  if (mode_indicator_overlay_) {
+    mode_indicator_overlay_->SetVisible(show_mode_indicator_);
+  }
+  if (!show_mode_indicator_) {
+    return;
+  }
 
   const std::string text = ModeIndicatorText();
   mode_indicator_label_->SetText(text);
@@ -2197,6 +2248,12 @@ void BrowserWindow::UpdateModeIndicator() {
   mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
   mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
   mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
+void BrowserWindow::SetShowModeIndicator(bool visible) {
+  show_mode_indicator_ = visible;
+  UpdateModeIndicator();
+  Layout();
 }
 
 std::string BrowserWindow::ModeIndicatorText() const {
