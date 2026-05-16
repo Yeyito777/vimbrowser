@@ -16,13 +16,41 @@ namespace {
 constexpr const char* kFpsTracingCategories =
     "devtools.timeline,disabled-by-default-devtools.timeline.frame,cc,benchmark";
 
-bool IsFrameTraceEvent(CefRefPtr<CefDictionaryValue> event) {
+enum class FrameTraceEvent {
+  kNone,
+  kDraw,
+  kBegin,
+  kAnimation,
+};
+
+FrameTraceEvent ClassifyFrameTraceEvent(CefRefPtr<CefDictionaryValue> event) {
   if (!event) {
-    return false;
+    return FrameTraceEvent::kNone;
   }
-  // Chromium's tracing backend emits one DrawFrame event per presented page
-  // frame for the target. This is backend/compositor telemetry, not page JS.
-  return event->GetString("name").ToString() == "DrawFrame";
+  const std::string name = event->GetString("name").ToString();
+  // Prefer the compositor presentation-level event. Keep broader backend
+  // fallbacks because not every page/process path emits DrawFrame every sample
+  // in CEF, especially around load/idle transitions.
+  if (name == "DrawFrame") {
+    return FrameTraceEvent::kDraw;
+  }
+  if (name == "BeginFrame") {
+    return FrameTraceEvent::kBegin;
+  }
+  if (name == "AnimationFrame::Render" || name == "FireAnimationFrame") {
+    return FrameTraceEvent::kAnimation;
+  }
+  return FrameTraceEvent::kNone;
+}
+
+int BestFrameCount(int draw_frames, int begin_frames, int animation_frames) {
+  if (draw_frames > 0) {
+    return draw_frames;
+  }
+  if (begin_frames > 0) {
+    return begin_frames;
+  }
+  return animation_frames;
 }
 
 }  // namespace
@@ -107,8 +135,18 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefListValue> events = params ? params->GetList("value") : nullptr;
       if (events) {
         for (size_t i = 0; i < events->GetSize(); ++i) {
-          if (IsFrameTraceEvent(events->GetDictionary(i))) {
-            ++fps_frame_count_;
+          switch (ClassifyFrameTraceEvent(events->GetDictionary(i))) {
+            case FrameTraceEvent::kDraw:
+              ++fps_draw_frame_count_;
+              break;
+            case FrameTraceEvent::kBegin:
+              ++fps_begin_frame_count_;
+              break;
+            case FrameTraceEvent::kAnimation:
+              ++fps_animation_frame_count_;
+              break;
+            case FrameTraceEvent::kNone:
+              break;
           }
         }
       }
@@ -117,7 +155,12 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
       const double elapsed =
           std::chrono::duration<double>(now - fps_sample_start_).count();
       if (elapsed >= 1.0) {
-        current_fps_ = std::round(static_cast<double>(fps_frame_count_) / elapsed);
+        current_fps_ = std::round(
+            static_cast<double>(BestFrameCount(fps_draw_frame_count_,
+                                               fps_begin_frame_count_,
+                                               fps_animation_frame_count_)) /
+            elapsed);
+        fps_has_sample_ = true;
         if (owner_) {
           owner_->OnClientFpsUpdated(this);
         }
@@ -130,7 +173,12 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
         const double elapsed =
             std::chrono::duration<double>(now - fps_sample_start_).count();
         if (elapsed > 0.0) {
-          current_fps_ = std::round(static_cast<double>(fps_frame_count_) / elapsed);
+          current_fps_ = std::round(
+              static_cast<double>(BestFrameCount(fps_draw_frame_count_,
+                                                 fps_begin_frame_count_,
+                                                 fps_animation_frame_count_)) /
+              elapsed);
+          fps_has_sample_ = true;
           if (owner_) {
             owner_->OnClientFpsUpdated(this);
           }
@@ -159,8 +207,11 @@ void BrowserClient::SetFpsTrackingEnabled(bool enabled) {
   }
 
   fps_tracking_enabled_ = enabled;
-  fps_frame_count_ = 0;
+  fps_draw_frame_count_ = 0;
+  fps_begin_frame_count_ = 0;
+  fps_animation_frame_count_ = 0;
   current_fps_ = 0.0;
+  fps_has_sample_ = false;
   fps_sample_start_ = std::chrono::steady_clock::now();
 
   if (!browser_ || !browser_->GetHost()) {
@@ -183,7 +234,9 @@ void BrowserClient::StartFpsTraceSample() {
     return;
   }
 
-  fps_frame_count_ = 0;
+  fps_draw_frame_count_ = 0;
+  fps_begin_frame_count_ = 0;
+  fps_animation_frame_count_ = 0;
   fps_sample_start_ = std::chrono::steady_clock::now();
   fps_tracing_active_ = true;
   fps_tracing_finishing_ = false;

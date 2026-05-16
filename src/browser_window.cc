@@ -2441,11 +2441,15 @@ void BrowserWindow::UpdateFpsIndicator() {
     return;
   }
 
+  bool has_sample = false;
   double fps = 0.0;
   if (Tab* tab = ActiveTab(); tab && tab->client) {
+    has_sample = tab->client->fps_has_sample();
     fps = tab->client->current_fps();
   }
-  const std::string text = "fps " + std::to_string(static_cast<int>(std::round(fps)));
+  const std::string text = has_sample
+                               ? "fps " + std::to_string(static_cast<int>(std::round(fps)))
+                               : "fps --";
   fps_indicator_label_->SetText(text);
   fps_indicator_label_->SetEnabledTextColors(theme::kText);
   fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);

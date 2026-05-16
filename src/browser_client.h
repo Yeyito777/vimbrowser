@@ -48,6 +48,7 @@ class BrowserClient final : public CefClient,
   void ShowDevTools();
   void SetFpsTrackingEnabled(bool enabled);
   double current_fps() const { return current_fps_; }
+  bool fps_has_sample() const { return fps_has_sample_; }
 
  private:
   void StartFpsTraceSample();
@@ -59,7 +60,10 @@ class BrowserClient final : public CefClient,
   bool fps_tracking_enabled_ = false;
   bool fps_tracing_active_ = false;
   bool fps_tracing_finishing_ = false;
-  int fps_frame_count_ = 0;
+  int fps_draw_frame_count_ = 0;
+  int fps_begin_frame_count_ = 0;
+  int fps_animation_frame_count_ = 0;
+  bool fps_has_sample_ = false;
   double current_fps_ = 0.0;
   std::chrono::steady_clock::time_point fps_sample_start_;
 
