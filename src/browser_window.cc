@@ -782,28 +782,14 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 }
 
 void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
-  if (textfield != command_field_ || mode_ == Mode::kNormal) {
+  if ((textfield != command_field_ &&
+       (!textfield || textfield->GetID() != kCommandFieldId)) ||
+      mode_ == Mode::kNormal) {
     return;
   }
 
-  // Some native textfield editing commands (notably Backspace on X11) are
-  // consumed by Chromium's Views textfield before/without surfacing as a normal
-  // CEF key event. Keep vimbrowser's command model in lock-step with the native
-  // widget, otherwise the deleted glyph can reappear when the next modeled key is
-  // inserted from stale command_text_.
-  const std::string text = textfield->GetText().ToString();
-  const size_t cursor = std::min(textfield->GetCursorPosition(), text.size());
-  if (text == command_text_ && cursor == command_vim_.cursor) {
+  if (!SyncCommandTextFromField()) {
     return;
-  }
-
-  command_text_ = text;
-  command_vim_.cursor = cursor;
-  vim::Clamp(command_vim_, command_text_);
-  if (command_vim_.mode == vim::Mode::kInsert) {
-    UpdateCommandAutocomplete();
-  } else {
-    ClearCommandAutocomplete();
   }
   Layout();
   SetCommandText(command_text_);
@@ -1694,6 +1680,11 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return false;
   }
 
+  // Some platform textfield edit commands are applied natively without reaching
+  // our key model. Synchronize before handling the next modeled key so stale
+  // command_text_ never resurrects text that the user already deleted.
+  SyncCommandTextFromField();
+
   if (IsTabKey(event)) {
     if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
         command_vim_.mode == vim::Mode::kInsert) {
@@ -1801,6 +1792,28 @@ void BrowserWindow::SetCommandText(std::string text) {
   vim::Clamp(command_vim_, command_text_);
   UpdateCommandView();
   UpdateAutocompleteView();
+}
+
+bool BrowserWindow::SyncCommandTextFromField() {
+  if (!command_field_) {
+    return false;
+  }
+
+  const std::string text = command_field_->GetText().ToString();
+  const size_t cursor = std::min(command_field_->GetCursorPosition(), text.size());
+  if (text == command_text_ && cursor == command_vim_.cursor) {
+    return false;
+  }
+
+  command_text_ = text;
+  command_vim_.cursor = cursor;
+  vim::Clamp(command_vim_, command_text_);
+  if (command_vim_.mode == vim::Mode::kInsert) {
+    UpdateCommandAutocomplete();
+  } else {
+    ClearCommandAutocomplete();
+  }
+  return true;
 }
 
 void BrowserWindow::UpdateCommandView() {

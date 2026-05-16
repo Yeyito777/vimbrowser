@@ -116,6 +116,7 @@ class BrowserWindow final : public CefWindowDelegate,
   int CommandAutocompleteHeight() const;
   int CommandAutocompleteWidth() const;
   void SetCommandText(std::string text);
+  bool SyncCommandTextFromField();
   void UpdateAutocompleteView();
   void Layout();
   void RefreshSidebar();
