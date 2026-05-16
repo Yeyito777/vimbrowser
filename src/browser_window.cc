@@ -50,7 +50,8 @@ constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
 constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
-constexpr int kArrowScrollPx = 40;
+constexpr int kLineScrollPx = 280;
+constexpr int kSmallScrollPx = 140;
 
 bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
@@ -1159,11 +1160,11 @@ void BrowserWindow::CommitCommand() {
         return;
       }
       if (command == ":scroll-bottom") { finish([&] { ScrollActivePageToBottom(); }); return; }
-      if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(kArrowScrollPx); }); return; }
+      if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(kLineScrollPx); }); return; }
       if (command == ":scroll-page-down") { finish([&] { ScrollActivePageBy(1120); }); return; }
       if (command == ":scroll-page-up") { finish([&] { ScrollActivePageBy(-1120); }); return; }
       if (command == ":scroll-top") { finish([&] { ScrollActivePageToTop(); }); return; }
-      if (command == ":scroll-up") { finish([&] { ScrollActivePageBy(-kArrowScrollPx); }); return; }
+      if (command == ":scroll-up") { finish([&] { ScrollActivePageBy(-kLineScrollPx); }); return; }
       if (command == ":tab-clone") { finish([&] { CloneActiveTab(); }); return; }
       if (command == ":tab-close") { finish([&] { CloseActiveTab(); }); return; }
       if (command == ":tab-first") { finish([&] { ActivateFirstTab(); }); return; }
@@ -2177,8 +2178,8 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   if (ctrl && !shift) {
-    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(kArrowScrollPx); return true; }
-    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-kArrowScrollPx); return true; }
+    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(kSmallScrollPx); return true; }
+    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-kSmallScrollPx); return true; }
     if (IsCtrlKey(event, 'D')) { ScrollActivePageBy(560); return true; }
     if (IsCtrlKey(event, 'U')) { ScrollActivePageBy(-560); return true; }
     if (IsCtrlKey(event, 'F')) { ScrollActivePageBy(1120); return true; }
@@ -2213,8 +2214,8 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   switch (key) {
-    case 'j': ScrollActivePageBy(kArrowScrollPx); return true;
-    case 'k': ScrollActivePageBy(-kArrowScrollPx); return true;
+    case 'j': ScrollActivePageBy(kLineScrollPx); return true;
+    case 'k': ScrollActivePageBy(-kLineScrollPx); return true;
     case 'G': ScrollActivePageToBottom(); return true;
     case 'H':
       if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) browser->GoBack();

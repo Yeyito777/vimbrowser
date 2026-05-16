@@ -108,10 +108,7 @@ class CefBrowserPlatformDelegateNativeAura
   base::RepeatingTimer smooth_scroll_timer_;
   double smooth_scroll_dx_ = 0.0;
   double smooth_scroll_dy_ = 0.0;
-  double smooth_scroll_subpixel_x_ = 0.0;
-  double smooth_scroll_subpixel_y_ = 0.0;
   double smooth_scroll_factor_ = 0.3;
-  base::TimeTicks smooth_scroll_last_tick_;
 
   base::WeakPtrFactory<CefBrowserPlatformDelegateNativeAura> weak_ptr_factory_{
       this};

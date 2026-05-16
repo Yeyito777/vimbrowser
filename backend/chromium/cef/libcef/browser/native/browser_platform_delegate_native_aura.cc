@@ -113,10 +113,6 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
   smooth_scroll_factor_ = kSmoothScrollFactor;
 
   if (!smooth_scroll_timer_.IsRunning()) {
-    smooth_scroll_subpixel_x_ = 0.0;
-    smooth_scroll_subpixel_y_ = 0.0;
-    smooth_scroll_last_tick_ = base::TimeTicks::Now();
-    TickSmoothScroll();
     smooth_scroll_timer_.Start(
         FROM_HERE, kSmoothScrollTick, this,
         &CefBrowserPlatformDelegateNativeAura::TickSmoothScroll);
@@ -137,39 +133,34 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEventNow(
 }
 
 void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll() {
-  const base::TimeTicks now = base::TimeTicks::Now();
-  const base::TimeDelta elapsed = now - smooth_scroll_last_tick_;
-  smooth_scroll_last_tick_ = now;
-  const double elapsed_ms = std::max(1.0, elapsed.InMillisecondsF());
-  const double effective_factor =
-      1.0 - std::pow(1.0 - smooth_scroll_factor_, elapsed_ms / 16.0);
+  int step_x = static_cast<int>(std::trunc(smooth_scroll_dx_ *
+                                           smooth_scroll_factor_));
+  int step_y = static_cast<int>(std::trunc(smooth_scroll_dy_ *
+                                           smooth_scroll_factor_));
 
-  const double frac_step_x = smooth_scroll_dx_ * effective_factor;
-  const double frac_step_y = smooth_scroll_dy_ * effective_factor;
+  // Match qutebrowser's scroll.js: while at least one pixel remains, keep a
+  // minimum +/-1px step so we don't hang forever on fractional tails; once the
+  // remaining distance is below 1px, stop instead of over-smoothing it.
+  if (step_x == 0 && std::abs(smooth_scroll_dx_) >= 1.0) {
+    step_x = smooth_scroll_dx_ > 0.0 ? 1 : -1;
+  }
+  if (step_y == 0 && std::abs(smooth_scroll_dy_) >= 1.0) {
+    step_y = smooth_scroll_dy_ > 0.0 ? 1 : -1;
+  }
 
-  smooth_scroll_subpixel_x_ += frac_step_x;
-  smooth_scroll_subpixel_y_ += frac_step_y;
-
-  const int step_x = static_cast<int>(smooth_scroll_subpixel_x_);
-  const int step_y = static_cast<int>(smooth_scroll_subpixel_y_);
-
-  smooth_scroll_subpixel_x_ -= step_x;
-  smooth_scroll_subpixel_y_ -= step_y;
-  smooth_scroll_dx_ -= frac_step_x;
-  smooth_scroll_dy_ -= frac_step_y;
+  if (step_x == 0 && step_y == 0) {
+    smooth_scroll_timer_.Stop();
+    smooth_scroll_dx_ = 0.0;
+    smooth_scroll_dy_ = 0.0;
+    return;
+  }
 
   if (step_x != 0 || step_y != 0) {
     SendMouseWheelEventNow(smooth_scroll_event_, step_x, step_y);
   }
 
-  if (std::abs(smooth_scroll_dx_) < 0.01 &&
-      std::abs(smooth_scroll_dy_) < 0.01) {
-    smooth_scroll_timer_.Stop();
-    smooth_scroll_dx_ = 0.0;
-    smooth_scroll_dy_ = 0.0;
-    smooth_scroll_subpixel_x_ = 0.0;
-    smooth_scroll_subpixel_y_ = 0.0;
-  }
+  smooth_scroll_dx_ -= step_x;
+  smooth_scroll_dy_ -= step_y;
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendTouchEvent(
