@@ -1671,7 +1671,7 @@ void BrowserWindow::RebuildAutocompleteRows() {
     }
     const CompletionItem& item = command_autocomplete_.matches[index];
     const bool selected = index == command_autocomplete_.selection;
-    std::string text = selected ? "> " : "  ";
+    std::string text = "  ";
     const size_t name_start = text.size();
     text += item.name;
     const size_t name_end = text.size();
@@ -1694,9 +1694,6 @@ void BrowserWindow::RebuildAutocompleteRows() {
       row->ApplyTextColor(theme::kDim,
                           CefRange(static_cast<uint32_t>(description_start),
                                    static_cast<uint32_t>(text.size())));
-    }
-    if (selected) {
-      row->ApplyTextColor(theme::kVimNormal, CefRange(0, 1));
     }
     autocomplete_panel_->AddChildView(row);
     row->SetBounds(CefRect(kCommandAutocompleteBorder,
