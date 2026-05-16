@@ -2458,7 +2458,6 @@ void BrowserWindow::UpdateFpsIndicator() {
 void BrowserWindow::SetShowFpsIndicator(bool visible) {
   show_fps_indicator_ = visible;
   SaveState();
-  UpdateActiveFpsTracking();
   UpdateFpsIndicator();
   Layout();
 }
@@ -2466,7 +2465,10 @@ void BrowserWindow::SetShowFpsIndicator(bool visible) {
 void BrowserWindow::UpdateActiveFpsTracking() {
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].client) {
-      tabs_[i].client->SetFpsTrackingEnabled(show_fps_indicator_ && i == active_index_);
+      // Keep the active tab's backend FPS sampler warm even when the overlay is
+      // hidden. Toggling :showfps should reveal the current reading immediately
+      // instead of starting from "fps 0".
+      tabs_[i].client->SetFpsTrackingEnabled(i == active_index_);
     }
   }
   UpdateFpsIndicator();
