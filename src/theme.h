@@ -15,6 +15,7 @@ constexpr cef_color_t kAppBg = Rgb(0, 5, 15);             // #00050f
 constexpr cef_color_t kTopbarBg = Rgb(29, 155, 240);      // #1d9bf0
 constexpr cef_color_t kAccent = Rgb(29, 155, 240);        // #1d9bf0
 constexpr cef_color_t kText = Rgb(255, 255, 255);         // #ffffff
+constexpr cef_color_t kDim = Rgb(124, 124, 124);          // #7c7c7c
 constexpr cef_color_t kMuted = Rgb(100, 100, 100);        // #646464
 constexpr cef_color_t kCommand = Rgb(174, 214, 254);      // #aed6fe
 constexpr cef_color_t kVimNormal = Rgb(72, 202, 228);     // #48cae4

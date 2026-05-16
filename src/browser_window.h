@@ -45,6 +45,7 @@ class BrowserWindow final : public CefWindowDelegate,
                         CefRefPtr<CefBrowser> browser) override {}
   bool CanClose(CefRefPtr<CefWindow> window) override;
   bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) override;
+  bool OnAccelerator(CefRefPtr<CefWindow> window, int command_id) override;
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override;
   CefSize GetMinimumSize(CefRefPtr<CefView> view) override;
   CefSize GetMaximumSize(CefRefPtr<CefView> view) override;

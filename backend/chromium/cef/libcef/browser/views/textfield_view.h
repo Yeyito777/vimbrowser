@@ -40,6 +40,9 @@ class CefTextfieldView
   bool HandleKeyEvent(views::Textfield* sender,
                       const ui::KeyEvent& key_event) override;
   void OnAfterUserAction(views::Textfield* sender) override;
+
+  // views::Textfield methods:
+  bool SkipDefaultKeyEventProcessing(const ui::KeyEvent& event) override;
 };
 
 #endif  // CEF_LIBCEF_BROWSER_VIEWS_TEXTFIELD_VIEW_H_

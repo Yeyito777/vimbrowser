@@ -21,7 +21,7 @@ constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
 constexpr int kCommandAutocompleteRowHeight = 24;
 constexpr int kCommandAutocompleteMaxVisible = 10;
-constexpr int kCommandAutocompleteBorder = 1;
+constexpr int kCommandAutocompleteBorder = 0;
 constexpr int kCommandAutocompleteHPadding = 8;
 constexpr int kRootPanelId = 100;
 constexpr int kMainPanelId = 101;
@@ -38,6 +38,8 @@ constexpr int kModeIndicatorFieldId = 112;
 constexpr int kCommandAutocompletePanelId = 113;
 constexpr int kCommandFieldId = 114;
 constexpr int kSidebarSpacerId = 115;
+constexpr int kAcceleratorCommandTab = 5000;
+constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
@@ -46,7 +48,7 @@ constexpr int kSidebarRowHeight = 24;
 constexpr bool kModeIndicatorEnabled = true;
 constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
-constexpr int kCommandTextInsetX = 10;
+constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
 
 bool InIdRange(int id, int base, int count) {
@@ -91,37 +93,7 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
 
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
-      {":back", "go back in the active tab"},
-      {":forward", "go forward in the active tab"},
       {":open", "open URL/search in current tab"},
-      {":open-clipboard", "open clipboard text in current tab"},
-      {":open-clipboard-tab", "open clipboard text in a new tab"},
-      {":reload", "reload active tab"},
-      {":reload-force", "reload active tab ignoring cache"},
-      {":scroll-bottom", "scroll active page to bottom"},
-      {":scroll-down", "scroll active page down"},
-      {":scroll-page-down", "scroll active page down one page"},
-      {":scroll-page-up", "scroll active page up one page"},
-      {":scroll-top", "scroll active page to top"},
-      {":scroll-up", "scroll active page up"},
-      {":tab-clone", "clone active tab"},
-      {":tab-close", "close active tab"},
-      {":tab-focus", "focus tab by number or title"},
-      {":tab-first", "focus first tab"},
-      {":tab-last", "focus last tab"},
-      {":tab-move-left", "move active tab left"},
-      {":tab-move-right", "move active tab right"},
-      {":tab-next", "focus next tab"},
-      {":tab-prev", "focus previous tab"},
-      {":undo", "reopen last closed tab"},
-      {":undo-close-tab", "reopen last closed tab"},
-      {":yank", "copy active URL"},
-      {":yank-dom", "copy active document HTML"},
-      {":yank-markdown", "copy active page as Markdown link"},
-      {":yank-title", "copy active page title"},
-      {":zoom-in", "zoom in"},
-      {":zoom-out", "zoom out"},
-      {":zoom-reset", "reset zoom"},
   };
   return commands;
 }
@@ -135,7 +107,7 @@ const std::vector<CompletionItem>& OpenArgList() {
 }
 
 bool CommandTakesArguments(const std::string& command) {
-  return command == ":open" || command == ":tab-focus";
+  return command == ":open";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -387,6 +359,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
   window_->ThemeChanged();
   window_->SetToFillLayout();
+  window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
+  window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
   BuildChrome();
   AddTab(initial_url_, true);
   RefreshSidebar();
@@ -567,6 +541,9 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  if (mode_ != Mode::kNormal && IsCharEvent(event) && PlainKeyChar(event) == ':') {
+    return true;
+  }
   if (mode_ != Mode::kNormal) {
     return HandleCommandModeKey(event);
   }
@@ -584,6 +561,16 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
   }
 
   return HandleNormalModeKey(event);
+}
+
+bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
+  if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
+    if (command_id == kAcceleratorCommandTab ||
+        command_id == kAcceleratorCommandBacktab) {
+      return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
+    }
+  }
+  return false;
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
@@ -1358,22 +1345,6 @@ void BrowserWindow::UpdateCommandAutocomplete() {
         }
       }
     }
-  } else if (StartsWithCaseInsensitive(typed_command, ":tab-focus") &&
-             IsTokenBoundary(typed_command, 10)) {
-    const size_t arg_start = after_command.find_last_of(" \t");
-    const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
-    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
-                                    (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
-    if (completing_new_arg || !arg_prefix.empty()) {
-      for (size_t i = 0; i < tabs_.size(); ++i) {
-        const std::string name = std::to_string(i + 1);
-        const std::string description = DisplayUrl(tabs_[i].url);
-        if (completing_new_arg || StartsWithCaseInsensitive(name, arg_prefix) ||
-            StartsWithCaseInsensitive(description, arg_prefix)) {
-          matches.push_back({name, description});
-        }
-      }
-    }
   }
 
   if (matches.empty()) {
@@ -1476,6 +1447,14 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return false;
   }
 
+  if (IsTabKey(event)) {
+    if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
+        command_vim_.mode == vim::Mode::kInsert) {
+      CycleCommandAutocomplete((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1 : 1);
+    }
+    return true;
+  }
+
   auto apply_result = [&](const vim::LineEditResult& result) {
     if (result.submit) {
       CommitCommand();
@@ -1530,14 +1509,6 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     if (IsBackspaceKey(event)) {
       return process_key({vim::KeyType::kBackspace}, false);
     }
-    if (IsTabKey(event)) {
-      if (command_vim_.mode == vim::Mode::kInsert && CycleCommandAutocomplete(
-              (event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1 : 1)) {
-        return true;
-      }
-      return true;
-    }
-
     const char key = PlainKeyChar(event);
     if (key) {
       return process_key({vim::KeyType::kChar, key,
@@ -1595,6 +1566,8 @@ void BrowserWindow::RebuildCommandCells() {
   const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
   const bool normal = command_vim_.mode == vim::Mode::kNormal;
   size_t command_end = 0;
+  size_t open_arg_start = 0;
+  size_t open_arg_end = 0;
   const size_t first_non_space = command_text_.find_first_not_of(" \t");
   if (first_non_space != std::string::npos && command_text_[first_non_space] == ':') {
     const size_t command_start = first_non_space;
@@ -1610,6 +1583,26 @@ void BrowserWindow::RebuildCommandCells() {
         break;
       }
     }
+
+    if (typed_command == ":open") {
+      size_t arg_start = command_stop;
+      while (arg_start < command_text_.size() &&
+             std::isspace(static_cast<unsigned char>(command_text_[arg_start]))) {
+        ++arg_start;
+      }
+      if (arg_start < command_text_.size()) {
+        size_t arg_stop = command_text_.find_first_of(" \t", arg_start);
+        if (arg_stop == std::string::npos) {
+          arg_stop = command_text_.size();
+        }
+        const std::string first_arg = ToLowerAscii(
+            command_text_.substr(arg_start, arg_stop - arg_start));
+        if (first_arg == "tab" || first_arg == "-t") {
+          open_arg_start = arg_start;
+          open_arg_end = arg_stop;
+        }
+      }
+    }
   }
 
   command_field_->SetText(command_text_);
@@ -1622,6 +1615,11 @@ void BrowserWindow::RebuildCommandCells() {
     command_field_->ApplyTextColor(theme::kCommand,
                                    CefRange(static_cast<uint32_t>(first_non_space),
                                             static_cast<uint32_t>(command_end)));
+  }
+  if (open_arg_end > open_arg_start) {
+    command_field_->ApplyTextColor(theme::kCommand,
+                                   CefRange(static_cast<uint32_t>(open_arg_start),
+                                            static_cast<uint32_t>(open_arg_end)));
   }
   if (normal) {
     const size_t selection_end = std::min(cursor + 1, command_text_.size());
@@ -1640,7 +1638,7 @@ void BrowserWindow::RebuildAutocompleteRows() {
   if (!autocomplete_panel_) {
     return;
   }
-  autocomplete_panel_->SetBackgroundColor(theme::kAccent);
+  autocomplete_panel_->SetBackgroundColor(theme::kSidebarBg);
 
   for (auto& row : autocomplete_rows_) {
     autocomplete_panel_->RemoveChildView(row);
@@ -1689,11 +1687,11 @@ void BrowserWindow::RebuildAutocompleteRows() {
     row->SetID(kAutocompleteRowBaseId + index);
     StyleTextfield(row, theme::kText,
                    selected ? theme::kSidebarSelBg : theme::kSidebarBg);
-    row->ApplyTextColor(selected ? theme::kVimNormal : theme::kCommand,
+    row->ApplyTextColor(theme::kText,
                         CefRange(static_cast<uint32_t>(name_start),
                                  static_cast<uint32_t>(name_end)));
     if (description_start < text.size()) {
-      row->ApplyTextColor(theme::kText,
+      row->ApplyTextColor(theme::kDim,
                           CefRange(static_cast<uint32_t>(description_start),
                                    static_cast<uint32_t>(text.size())));
     }
@@ -1807,9 +1805,14 @@ void BrowserWindow::Layout() {
                                       std::max(1, width - kCommandTextInsetX),
                                       kCommandHeight));
   }
+  const int autocomplete_row_width = std::max(1, autocomplete_width -
+                                                kCommandAutocompleteBorder * 2);
   for (size_t i = 0; i < autocomplete_rows_.size(); ++i) {
-    autocomplete_rows_[i]->SetBounds(CefRect(0, static_cast<int>(i) * kCommandAutocompleteRowHeight,
-                                            autocomplete_width, kCommandAutocompleteRowHeight));
+    autocomplete_rows_[i]->SetBounds(
+        CefRect(kCommandAutocompleteBorder,
+                kCommandAutocompleteBorder +
+                    static_cast<int>(i) * kCommandAutocompleteRowHeight,
+                autocomplete_row_width, kCommandAutocompleteRowHeight));
   }
   if (content_panel_->GetLayout()) {
     content_panel_->Layout();

@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <string_view>
+#include <unistd.h>
 
 namespace vimbrowser {
 namespace {
@@ -46,6 +47,10 @@ std::string DefaultCachePath() {
   return "/tmp/vimbrowser-cef-cache";
 }
 
+std::string DefaultInstanceCachePath() {
+  return DefaultCachePath() + "/instances/" + std::to_string(getpid());
+}
+
 std::string ValueAfter(std::string_view arg, std::string_view prefix) {
   return std::string(arg.substr(prefix.size()));
 }
@@ -81,23 +86,30 @@ std::string DisplayUrl(std::string url) {
 
 Config ParseConfig(int argc, char* argv[]) {
   Config config;
-  config.cache_path = DefaultCachePath();
+  config.cache_path = DefaultInstanceCachePath();
+  bool is_subprocess = false;
 
   for (int i = 1; i < argc; ++i) {
     std::string_view arg(argv[i]);
-    if (arg == "--disable-gpu") {
+    if (StartsWith(arg, "--type=")) {
+      is_subprocess = true;
+    } else if (arg == "--disable-gpu") {
       config.disable_gpu = true;
     } else if (StartsWith(arg, "--remote-debugging-port=")) {
       config.remote_debugging_port =
           std::stoi(ValueAfter(arg, "--remote-debugging-port="));
+      config.explicit_remote_debugging_port = true;
     } else if (StartsWith(arg, "--cache-path=")) {
       config.cache_path = ValueAfter(arg, "--cache-path=");
+      config.explicit_cache_path = true;
     } else if (!arg.empty() && arg[0] != '-') {
       config.initial_url = ResolveUrlOrSearch(std::string(arg));
     }
   }
 
-  std::filesystem::create_directories(config.cache_path);
+  if (!is_subprocess) {
+    std::filesystem::create_directories(config.cache_path);
+  }
   return config;
 }
 

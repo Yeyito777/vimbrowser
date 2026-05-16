@@ -68,6 +68,14 @@ bool FocusManager::OnKeyEvent(const ui::KeyEvent& event) {
     return true;
   }
 
+  // Vimbrowser uses high-priority CEF window accelerators for command-line Tab
+  // and Shift+Tab completion. Give those explicit accelerators a chance before
+  // the default Views focus traversal consumes Tab.
+  if (accelerator_manager_.HasPriorityHandler(accelerator) &&
+      ProcessAccelerator(accelerator)) {
+    return false;
+  }
+
   if (event.type() == ui::EventType::kKeyPressed) {
     // Intercept Tab related messages for focus traversal.
     // Note that we don't do focus traversal if the root window is not part of
