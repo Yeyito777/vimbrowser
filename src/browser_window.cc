@@ -1,8 +1,8 @@
 #include "browser_window.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <cctype>
+#include <cstdio>
 #include <iostream>
 #include <utility>
 
@@ -50,6 +50,7 @@ constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
 constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
+constexpr int kArrowScrollPx = 40;
 
 bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
@@ -1158,11 +1159,11 @@ void BrowserWindow::CommitCommand() {
         return;
       }
       if (command == ":scroll-bottom") { finish([&] { ScrollActivePageToBottom(); }); return; }
-      if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(280); }); return; }
+      if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(kArrowScrollPx); }); return; }
       if (command == ":scroll-page-down") { finish([&] { ScrollActivePageBy(1120); }); return; }
       if (command == ":scroll-page-up") { finish([&] { ScrollActivePageBy(-1120); }); return; }
       if (command == ":scroll-top") { finish([&] { ScrollActivePageToTop(); }); return; }
-      if (command == ":scroll-up") { finish([&] { ScrollActivePageBy(-280); }); return; }
+      if (command == ":scroll-up") { finish([&] { ScrollActivePageBy(-kArrowScrollPx); }); return; }
       if (command == ":tab-clone") { finish([&] { CloneActiveTab(); }); return; }
       if (command == ":tab-close") { finish([&] { CloseActiveTab(); }); return; }
       if (command == ":tab-first") { finish([&] { ActivateFirstTab(); }); return; }
@@ -1293,12 +1294,24 @@ void BrowserWindow::CancelCommand() {
 
 void BrowserWindow::ScrollActivePageBy(int dy) {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
-  if (!browser || !browser->GetMainFrame()) {
+  if (!browser) {
     return;
   }
-  browser->GetMainFrame()->ExecuteJavaScript(
-      "window.scrollBy({left:0,top:" + std::to_string(dy) + ",behavior:'auto'});",
-      browser->GetMainFrame()->GetURL(), 0);
+
+  CefMouseEvent event;
+  event.modifiers = 0;
+  if (Tab* tab = ActiveTab(); tab && tab->view) {
+    const CefRect bounds = tab->view->GetBounds();
+    event.x = std::max(1, bounds.width / 2);
+    event.y = std::max(1, bounds.height / 2);
+  } else if (window_) {
+    const CefRect bounds = window_->GetBounds();
+    event.x = std::max(1, bounds.width / 2);
+    event.y = std::max(1, bounds.height / 2);
+  }
+
+  // CEF/Chromium wheel deltas use negative Y to scroll page content down.
+  browser->GetHost()->SendMouseWheelEvent(event, 0, -dy);
 }
 
 void BrowserWindow::ScrollActivePageToTop() {
@@ -1317,7 +1330,9 @@ void BrowserWindow::ScrollActivePageToBottom() {
     return;
   }
   browser->GetMainFrame()->ExecuteJavaScript(
-      "window.scrollTo({left:0,top:document.scrollingElement?document.scrollingElement.scrollHeight:document.body.scrollHeight,behavior:'auto'});",
+      "window.scrollTo({left:0,top:document.scrollingElement?"
+      "document.scrollingElement.scrollHeight:document.body.scrollHeight,"
+      "behavior:'auto'});",
       browser->GetMainFrame()->GetURL(), 0);
 }
 
@@ -2162,8 +2177,8 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   if (ctrl && !shift) {
-    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(140); return true; }
-    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-140); return true; }
+    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(kArrowScrollPx); return true; }
+    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-kArrowScrollPx); return true; }
     if (IsCtrlKey(event, 'D')) { ScrollActivePageBy(560); return true; }
     if (IsCtrlKey(event, 'U')) { ScrollActivePageBy(-560); return true; }
     if (IsCtrlKey(event, 'F')) { ScrollActivePageBy(1120); return true; }
@@ -2198,8 +2213,8 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   switch (key) {
-    case 'j': ScrollActivePageBy(280); return true;
-    case 'k': ScrollActivePageBy(-280); return true;
+    case 'j': ScrollActivePageBy(kArrowScrollPx); return true;
+    case 'k': ScrollActivePageBy(-kArrowScrollPx); return true;
     case 'G': ScrollActivePageToBottom(); return true;
     case 'H':
       if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) browser->GoBack();

@@ -9,6 +9,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/timer/timer.h"
 #include "cef/libcef/browser/native/browser_platform_delegate_native.h"
 #include "ui/events/event.h"
 #include "ui/gfx/geometry/rect.h"
@@ -98,6 +99,19 @@ class CefBrowserPlatformDelegateNativeAura
   void WidgetDeleted();
 
   content::RenderWidgetHostViewAura* GetHostView() const;
+  void SendMouseWheelEventNow(const CefMouseEvent& event,
+                              int deltaX,
+                              int deltaY);
+  void TickSmoothScroll();
+
+  CefMouseEvent smooth_scroll_event_ = {};
+  base::RepeatingTimer smooth_scroll_timer_;
+  double smooth_scroll_dx_ = 0.0;
+  double smooth_scroll_dy_ = 0.0;
+  double smooth_scroll_subpixel_x_ = 0.0;
+  double smooth_scroll_subpixel_y_ = 0.0;
+  double smooth_scroll_factor_ = 0.3;
+  base::TimeTicks smooth_scroll_last_tick_;
 
   base::WeakPtrFactory<CefBrowserPlatformDelegateNativeAura> weak_ptr_factory_{
       this};
