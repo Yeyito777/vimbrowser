@@ -50,7 +50,10 @@ int main(int argc, char* argv[]) {
   command_line->InitFromArgv(argc, argv);
 
   vimbrowser::Config config = vimbrowser::ParseConfig(argc, argv);
-  CefRefPtr<vimbrowser::App> app(new vimbrowser::App(config.initial_url,
+  CefRefPtr<vimbrowser::App> app(new vimbrowser::App(config.initial_urls,
+                                                     config.active_index,
+                                                     config.show_mode_indicator,
+                                                     config.state_path,
                                                      config.disable_gpu));
 
   const int sub_process_exit_code = CefExecuteProcess(main_args, app, nullptr);
@@ -80,6 +83,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::cout << "vimbrowser: " << config.initial_url << std::endl;
+  std::cout << "vimbrowser: state " << config.state_path << std::endl;
   if (config.remote_debugging_port > 0) {
     std::cout << "vimbrowser: CDP http://127.0.0.1:"
               << config.remote_debugging_port << std::endl;

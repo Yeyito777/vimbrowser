@@ -333,8 +333,21 @@ void WriteClipboardText(const std::string& text) {
 
 }  // namespace
 
-BrowserWindow::BrowserWindow(std::string initial_url)
-    : initial_url_(std::move(initial_url)) {}
+BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
+                             size_t active_index,
+                             bool show_mode_indicator,
+                             std::string state_path)
+    : initial_urls_(std::move(initial_urls)),
+      state_path_(std::move(state_path)),
+      initial_active_index_(active_index),
+      show_mode_indicator_(show_mode_indicator) {
+  if (initial_urls_.empty()) {
+    initial_urls_.push_back(ResolveUrlOrSearch(""));
+  }
+  if (initial_active_index_ >= initial_urls_.size()) {
+    initial_active_index_ = 0;
+  }
+}
 
 void BrowserWindow::Create() {
   CefWindow::CreateTopLevelWindow(this);
@@ -351,6 +364,7 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
       }
+      SaveState();
       RefreshSidebar();
       return;
     }
@@ -392,7 +406,9 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
   window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
   BuildChrome();
-  AddTab(initial_url_, true);
+  for (size_t i = 0; i < initial_urls_.size(); ++i) {
+    AddTab(initial_urls_[i], i == initial_active_index_);
+  }
   RefreshSidebar();
 
   window_->CenterWindow(CefSize(1200, 800));
@@ -529,6 +545,7 @@ void BrowserWindow::BuildChrome() {
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
+  SaveState();
   tabs_.clear();
   mode_indicator_overlay_ = nullptr;
   autocomplete_overlay_ = nullptr;
@@ -852,6 +869,8 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
 
   if (activate) {
     ActivateTab(tabs_.size() - 1);
+  } else {
+    SaveState();
   }
 }
 
@@ -869,6 +888,7 @@ void BrowserWindow::ActivateTab(size_t index) {
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
+  SaveState();
   RefreshSidebar();
   Layout();
 }
@@ -902,6 +922,7 @@ void BrowserWindow::MoveActiveTab(int delta) {
   const int next = (current + delta + count) % count;
   std::swap(tabs_[active_index_], tabs_[static_cast<size_t>(next)]);
   active_index_ = static_cast<size_t>(next);
+  SaveState();
   RefreshSidebar();
   Layout();
 }
@@ -931,6 +952,7 @@ void BrowserWindow::CloseActiveTab() {
       tab->url = "about:blank";
       last_tab_close_placeholder_ = true;
       tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
+      SaveState();
       RefreshSidebar();
     }
     return;
@@ -949,6 +971,7 @@ void BrowserWindow::CloseActiveTab() {
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
   }
+  SaveState();
   RefreshSidebar();
   Layout();
   closed_tabs_.push_back(closed_tab);
@@ -963,6 +986,7 @@ void BrowserWindow::UndoCloseTab() {
               << " count=" << tabs_.size() << std::endl;
     tab.view->SetVisible(false);
     tabs_.push_back(tab);
+    SaveState();
     RefreshSidebar();
     Layout();
     ActivateTab(tabs_.size() - 1);
@@ -983,6 +1007,7 @@ void BrowserWindow::UndoCloseTab() {
     last_tab_close_placeholder_ = false;
     tabs_[0].url = url;
     tabs_[0].client->browser()->GetMainFrame()->LoadURL(url);
+    SaveState();
     RefreshSidebar();
     Layout();
     return;
@@ -1241,6 +1266,7 @@ void BrowserWindow::CommitCommand() {
     last_tab_close_placeholder_ = false;
     tab->url = url;
     tab->client->browser()->GetMainFrame()->LoadURL(url);
+    SaveState();
     RefreshSidebar();
   }
 }
@@ -1309,6 +1335,7 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
       tabs_[active_index_].url = url;
     }
     browser->GetMainFrame()->LoadURL(url);
+    SaveState();
     RefreshSidebar();
   }
 }
@@ -2274,8 +2301,24 @@ void BrowserWindow::UpdateModeIndicator() {
 
 void BrowserWindow::SetShowModeIndicator(bool visible) {
   show_mode_indicator_ = visible;
+  SaveState();
   UpdateModeIndicator();
   Layout();
+}
+
+void BrowserWindow::SaveState() const {
+  AppState state;
+  state.active_index = active_index_;
+  state.show_mode_indicator = show_mode_indicator_;
+  for (const Tab& tab : tabs_) {
+    if (!tab.url.empty()) {
+      state.tabs.push_back(tab.url);
+    }
+  }
+  if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {
+    state.active_index = state.tabs.size() - 1;
+  }
+  WriteAppState(state_path_, state);
 }
 
 std::string BrowserWindow::ModeIndicatorText() const {

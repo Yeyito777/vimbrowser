@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "include/cef_app.h"
 #include "include/cef_browser_process_handler.h"
@@ -9,7 +10,11 @@ namespace vimbrowser {
 
 class App final : public CefApp, public CefBrowserProcessHandler {
  public:
-  App(std::string initial_url, bool disable_gpu);
+  App(std::vector<std::string> initial_urls,
+      size_t active_index,
+      bool show_mode_indicator,
+      std::string state_path,
+      bool disable_gpu);
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
@@ -21,7 +26,10 @@ class App final : public CefApp, public CefBrowserProcessHandler {
   void OnContextInitialized() override;
 
  private:
-  std::string initial_url_;
+  std::vector<std::string> initial_urls_;
+  size_t active_index_;
+  bool show_mode_indicator_;
+  std::string state_path_;
   bool disable_gpu_;
 
   IMPLEMENT_REFCOUNTING(App);

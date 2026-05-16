@@ -1,7 +1,10 @@
 #include "config.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <string_view>
 #include <unistd.h>
 
@@ -10,6 +13,13 @@ namespace {
 
 bool StartsWith(std::string_view text, std::string_view prefix) {
   return text.substr(0, prefix.size()) == prefix;
+}
+
+std::string ToLowerAscii(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  return value;
 }
 
 bool LooksLikeUrl(std::string_view text) {
@@ -51,11 +61,127 @@ std::string DefaultInstanceCachePath() {
   return DefaultCachePath() + "/instances/" + std::to_string(getpid());
 }
 
+std::string DefaultStateHome() {
+  if (const char* xdg = std::getenv("XDG_STATE_HOME"); xdg && *xdg) {
+    return std::string(xdg);
+  }
+  if (const char* home = std::getenv("HOME"); home && *home) {
+    return std::string(home) + "/.local/state";
+  }
+  return "/tmp";
+}
+
+std::string EscapeStateValue(std::string_view value) {
+  std::string out;
+  for (char c : value) {
+    if (c == '\\') {
+      out += "\\\\";
+    } else if (c == '\n') {
+      out += "\\n";
+    } else if (c == '\r') {
+      out += "\\r";
+    } else {
+      out.push_back(c);
+    }
+  }
+  return out;
+}
+
+std::string UnescapeStateValue(std::string_view value) {
+  std::string out;
+  for (size_t i = 0; i < value.size(); ++i) {
+    if (value[i] != '\\' || i + 1 >= value.size()) {
+      out.push_back(value[i]);
+      continue;
+    }
+    const char escaped = value[++i];
+    if (escaped == 'n') {
+      out.push_back('\n');
+    } else if (escaped == 'r') {
+      out.push_back('\r');
+    } else {
+      out.push_back(escaped);
+    }
+  }
+  return out;
+}
+
 std::string ValueAfter(std::string_view arg, std::string_view prefix) {
   return std::string(arg.substr(prefix.size()));
 }
 
 }  // namespace
+
+std::string DefaultStatePath() {
+  return DefaultStateHome() + "/vimbrowser/state";
+}
+
+AppState ReadAppState(const std::string& state_path) {
+  AppState state;
+  std::ifstream file(state_path);
+  if (!file) {
+    return state;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    if (StartsWith(line, "tab=")) {
+      const std::string tab = UnescapeStateValue(std::string_view(line).substr(4));
+      if (!tab.empty()) {
+        state.tabs.push_back(tab);
+      }
+    } else if (StartsWith(line, "active=")) {
+      const std::string value = line.substr(7);
+      char* end = nullptr;
+      const unsigned long long active = std::strtoull(value.c_str(), &end, 10);
+      if (end != value.c_str()) {
+        state.active_index = static_cast<size_t>(active);
+      }
+    } else if (StartsWith(line, "showmode=")) {
+      const std::string value = ToLowerAscii(std::string(line.substr(9)));
+      state.show_mode_indicator = value == "1" || value == "true" ||
+                                  value == "on" || value == "yes";
+    }
+  }
+
+  if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {
+    state.active_index = state.tabs.size() - 1;
+  }
+  return state;
+}
+
+void WriteAppState(const std::string& state_path, const AppState& state) {
+  if (state_path.empty()) {
+    return;
+  }
+  const std::filesystem::path path(state_path);
+  std::error_code ec;
+  std::filesystem::create_directories(path.parent_path(), ec);
+  if (ec) {
+    return;
+  }
+
+  const std::filesystem::path tmp = path.string() + ".tmp";
+  {
+    std::ofstream file(tmp, std::ios::trunc);
+    if (!file) {
+      return;
+    }
+    file << "showmode=" << (state.show_mode_indicator ? "on" : "off") << '\n';
+    file << "active=" << state.active_index << '\n';
+    for (const std::string& tab : state.tabs) {
+      if (!tab.empty()) {
+        file << "tab=" << EscapeStateValue(tab) << '\n';
+      }
+    }
+  }
+  std::filesystem::rename(tmp, path, ec);
+  if (ec) {
+    std::filesystem::remove(path, ec);
+    ec.clear();
+    std::filesystem::rename(tmp, path, ec);
+  }
+}
 
 std::string ResolveUrlOrSearch(std::string input) {
   if (input.empty()) {
@@ -87,6 +213,9 @@ std::string DisplayUrl(std::string url) {
 Config ParseConfig(int argc, char* argv[]) {
   Config config;
   config.cache_path = DefaultInstanceCachePath();
+  config.state_path = DefaultStatePath();
+  const AppState state = ReadAppState(config.state_path);
+  config.show_mode_indicator = state.show_mode_indicator;
   bool is_subprocess = false;
 
   for (int i = 1; i < argc; ++i) {
@@ -103,12 +232,23 @@ Config ParseConfig(int argc, char* argv[]) {
       config.cache_path = ValueAfter(arg, "--cache-path=");
       config.explicit_cache_path = true;
     } else if (!arg.empty() && arg[0] != '-') {
-      config.initial_url = ResolveUrlOrSearch(std::string(arg));
+      config.initial_urls.push_back(ResolveUrlOrSearch(std::string(arg)));
     }
+  }
+
+  if (!config.initial_urls.empty()) {
+    config.initial_url = config.initial_urls.front();
+  } else if (!state.tabs.empty()) {
+    config.initial_urls = state.tabs;
+    config.active_index = std::min(state.active_index, config.initial_urls.size() - 1);
+    config.initial_url = config.initial_urls[config.active_index];
+  } else {
+    config.initial_urls.push_back(config.initial_url);
   }
 
   if (!is_subprocess) {
     std::filesystem::create_directories(config.cache_path);
+    std::filesystem::create_directories(std::filesystem::path(config.state_path).parent_path());
   }
   return config;
 }

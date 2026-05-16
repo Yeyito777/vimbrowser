@@ -30,7 +30,10 @@ class BrowserWindow final : public CefWindowDelegate,
                             public CefButtonDelegate,
                             public CefTextfieldDelegate {
  public:
-  explicit BrowserWindow(std::string initial_url);
+  BrowserWindow(std::vector<std::string> initial_urls,
+                size_t active_index,
+                bool show_mode_indicator,
+                std::string state_path);
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
@@ -131,6 +134,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateCommandView();
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
+  void SaveState() const;
   void RebuildCommandCells();
   void RebuildAutocompleteRows();
   std::string ModeIndicatorText() const;
@@ -138,7 +142,9 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleNormalModeKey(const CefKeyEvent& event);
   Tab* ActiveTab();
 
-  std::string initial_url_;
+  std::vector<std::string> initial_urls_;
+  std::string state_path_;
+  size_t initial_active_index_ = 0;
   std::string command_text_;
   std::string website_pending_keys_;
   std::vector<std::string> closed_tab_urls_;
