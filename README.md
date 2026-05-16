@@ -58,6 +58,19 @@ vimbrowser http://127.0.0.1:5173
 This is only an iteration aid for chrome layout/colors. The production browser
 chrome remains native C++/CEF Views and Chromium backend code.
 
+The running browser exposes a small local Unix-socket IPC endpoint for scripts
+and diagnostics:
+
+```bash
+scripts/vimbrowser-ipc status
+scripts/vimbrowser-ipc fps
+scripts/vimbrowser-ipc scroll 280
+```
+
+By default the socket lives at `$XDG_STATE_HOME/vimbrowser/ipc.sock` or
+`~/.local/state/vimbrowser/ipc.sock`. Set `VIMBROWSER_IPC=/path/to/ipc.sock` to
+target a separate test instance.
+
 That backend is pinned to Chromium `147.0.7727.118` / CEF
 `d58e84d17dd3f646c906ac633156cd0ec46638e9`. Chromium and CEF source now live
 directly in the main vimbrowser git repository under `backend/chromium/` with

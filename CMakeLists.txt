@@ -27,6 +27,8 @@ add_executable(vimbrowser
   src/browser_window.h
   src/config.cc
   src/config.h
+  src/ipc_server.cc
+  src/ipc_server.h
   src/main.cc
   src/tab.h
   src/theme.h

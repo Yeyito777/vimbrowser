@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "include/views/cef_textfield.h"
 #include "include/views/cef_textfield_delegate.h"
 #include "include/views/cef_window.h"
+#include "ipc_server.h"
 #include "tab.h"
 #include "vim.h"
 
@@ -41,6 +43,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
   void OnClientFpsUpdated(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
+  std::string HandleIpcCommand(const std::string& command);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override;
@@ -139,6 +142,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateFpsIndicator();
   void SetShowFpsIndicator(bool visible);
   void UpdateActiveFpsTracking();
+  std::string IpcStatusJson() const;
   void SaveState() const;
   void RebuildCommandCells();
   void RebuildAutocompleteRows();
@@ -193,6 +197,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> fps_indicator_panel_;
   CefRefPtr<CefLabelButton> fps_indicator_label_;
   CefRefPtr<CefOverlayController> fps_indicator_overlay_;
+  std::unique_ptr<IpcServer> ipc_server_;
 
   IMPLEMENT_REFCOUNTING(BrowserWindow);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);

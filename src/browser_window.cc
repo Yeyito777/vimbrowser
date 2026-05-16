@@ -4,7 +4,10 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <utility>
 
 #include "config.h"
@@ -13,6 +16,7 @@
 #include "include/cef_color_ids.h"
 #include "include/cef_navigation_entry.h"
 #include "include/views/cef_button.h"
+#include "ipc_server.h"
 #include "theme.h"
 
 namespace vimbrowser {
@@ -327,6 +331,40 @@ std::string ReadClipboardText() {
                    "wl-paste -n 2>/dev/null) | head -c 1048576");
 }
 
+std::string JsonEscape(std::string_view text) {
+  std::string out;
+  out.reserve(text.size() + 8);
+  for (unsigned char c : text) {
+    switch (c) {
+      case '"': out += "\\\""; break;
+      case '\\': out += "\\\\"; break;
+      case '\b': out += "\\b"; break;
+      case '\f': out += "\\f"; break;
+      case '\n': out += "\\n"; break;
+      case '\r': out += "\\r"; break;
+      case '\t': out += "\\t"; break;
+      default:
+        if (c < 0x20) {
+          constexpr char kHex[] = "0123456789abcdef";
+          out += "\\u00";
+          out.push_back(kHex[(c >> 4) & 0xf]);
+          out.push_back(kHex[c & 0xf]);
+        } else {
+          out.push_back(static_cast<char>(c));
+        }
+    }
+  }
+  return out;
+}
+
+std::string IpcSocketPathForStatePath(const std::string& state_path) {
+  std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
+  if (dir.empty()) {
+    dir = "/tmp/vimbrowser";
+  }
+  return (dir / "ipc.sock").string();
+}
+
 void WriteClipboardText(const std::string& text) {
   if (ShellWrite("xclip -selection clipboard -i 2>/dev/null", text)) {
     return;
@@ -420,6 +458,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetToFillLayout();
   window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
   window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
+  ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
+  ipc_server_->Start();
   BuildChrome();
   for (size_t i = 0; i < initial_urls_.size(); ++i) {
     AddTab(initial_urls_[i], i == initial_active_index_);
@@ -583,6 +623,10 @@ void BrowserWindow::BuildChrome() {
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   SaveState();
+  if (ipc_server_) {
+    ipc_server_->Stop();
+    ipc_server_.reset();
+  }
   for (Tab& tab : tabs_) {
     if (tab.client) {
       tab.client->SetFpsTrackingEnabled(false);
@@ -2466,6 +2510,82 @@ void BrowserWindow::SetShowFpsIndicator(bool visible) {
   Layout();
 }
 
+std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
+  const std::vector<std::string> argv = SplitArgs(command_line);
+  if (argv.empty()) {
+    return "ERR empty command\n";
+  }
+
+  const std::string command = ToLowerAscii(argv[0]);
+  if (command == "status" || command == "json") {
+    return IpcStatusJson();
+  }
+  if (command == "fps") {
+    if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->fps_has_sample()) {
+      return std::to_string(static_cast<int>(std::round(tab->client->current_fps())));
+    }
+    return "--";
+  }
+  if (command == "url") {
+    return ActiveTabUrl();
+  }
+  if (command == "showfps") {
+    if (argv.size() == 1) {
+      SetShowFpsIndicator(!show_fps_indicator_);
+      return IpcStatusJson();
+    }
+    const std::string arg = ToLowerAscii(argv[1]);
+    if (arg == "on" || arg == "1" || arg == "true") {
+      SetShowFpsIndicator(true);
+      return IpcStatusJson();
+    }
+    if (arg == "off" || arg == "0" || arg == "false") {
+      SetShowFpsIndicator(false);
+      return IpcStatusJson();
+    }
+    return "ERR usage: showfps [on|off]\n";
+  }
+  if (command == "scroll") {
+    if (argv.size() < 2) {
+      return "ERR usage: scroll <dy> [count]\n";
+    }
+    char* end = nullptr;
+    const long dy = std::strtol(argv[1].c_str(), &end, 10);
+    if (end == argv[1].c_str()) {
+      return "ERR invalid dy\n";
+    }
+    int count = 1;
+    if (argv.size() >= 3) {
+      char* count_end = nullptr;
+      count = static_cast<int>(std::strtol(argv[2].c_str(), &count_end, 10));
+      if (count_end == argv[2].c_str()) {
+        return "ERR invalid count\n";
+      }
+    }
+    count = std::clamp(count, 1, 100);
+    for (int i = 0; i < count; ++i) {
+      ScrollActivePageBy(static_cast<int>(dy));
+    }
+    return IpcStatusJson();
+  }
+  if (command == "tab") {
+    if (argv.size() != 2) {
+      return "ERR usage: tab <1-based-index>\n";
+    }
+    char* end = nullptr;
+    const long index = std::strtol(argv[1].c_str(), &end, 10);
+    if (end == argv[1].c_str() || index <= 0) {
+      return "ERR invalid tab index\n";
+    }
+    ActivateTab(static_cast<size_t>(index - 1));
+    return IpcStatusJson();
+  }
+  if (command == "help") {
+    return "commands: status, fps, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
+  }
+  return "ERR unknown command\n";
+}
+
 void BrowserWindow::UpdateActiveFpsTracking() {
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].client) {
@@ -2476,6 +2596,41 @@ void BrowserWindow::UpdateActiveFpsTracking() {
     }
   }
   UpdateFpsIndicator();
+}
+
+std::string BrowserWindow::IpcStatusJson() const {
+  bool fps_has_sample = false;
+  double fps = 0.0;
+  std::string url;
+  std::string title;
+  if (!tabs_.empty() && active_index_ < tabs_.size()) {
+    const Tab& tab = tabs_[active_index_];
+    url = tab.url;
+    if (tab.client) {
+      fps_has_sample = tab.client->fps_has_sample();
+      fps = tab.client->current_fps();
+    }
+    if (CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
+        browser && browser->GetHost()) {
+      CefRefPtr<CefNavigationEntry> entry = browser->GetHost()->GetVisibleNavigationEntry();
+      if (entry) {
+        title = entry->GetTitle().ToString();
+      }
+    }
+  }
+
+  std::ostringstream out;
+  out << "{"
+      << "\"active_index\":" << active_index_ << ","
+      << "\"active_tab\":" << (active_index_ + 1) << ","
+      << "\"tabs\":" << tabs_.size() << ","
+      << "\"url\":\"" << JsonEscape(url) << "\","
+      << "\"title\":\"" << JsonEscape(title) << "\","
+      << "\"showfps\":" << (show_fps_indicator_ ? "true" : "false") << ","
+      << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","
+      << "\"fps\":" << (fps_has_sample ? std::to_string(static_cast<int>(std::round(fps))) : "null")
+      << "}";
+  return out.str();
 }
 
 void BrowserWindow::SaveState() const {
