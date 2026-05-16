@@ -18,7 +18,10 @@ namespace gl {
 
 NativeViewGLSurfaceEGLX11::NativeViewGLSurfaceEGLX11(GLDisplayEGL* display,
                                                      x11::Window window)
-    : NativeViewGLSurfaceEGL(display, static_cast<uint32_t>(window), nullptr) {}
+    : NativeViewGLSurfaceEGL(
+          display,
+          static_cast<uint32_t>(window),
+          std::make_unique<ui::XrandrIntervalOnlyVSyncProvider>()) {}
 
 bool NativeViewGLSurfaceEGLX11::Initialize(GLSurfaceFormat format) {
   if (!NativeViewGLSurfaceEGL::Initialize(format))
