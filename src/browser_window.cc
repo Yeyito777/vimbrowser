@@ -888,7 +888,8 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
   if ((textfield != command_field_ &&
        (!textfield || textfield->GetID() != kCommandFieldId)) ||
-      mode_ == Mode::kNormal) {
+      mode_ == Mode::kNormal || command_vim_.mode != vim::Mode::kInsert ||
+      suppress_next_char_event_) {
     return;
   }
 
@@ -1924,9 +1925,13 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   }
 
   // Some platform textfield edit commands are applied natively without reaching
-  // our key model. Synchronize before handling the next modeled key so stale
-  // command_text_ never resurrects text that the user already deleted.
-  SyncCommandTextFromField();
+  // our key model. Synchronize those insert-mode edits before handling the next
+  // modeled key. In normal mode the vim model is authoritative: the textfield is
+  // only a renderer for text/cursor state, and syncing it can resurrect stale
+  // native contents after commands like dd/D/cw just rewrote command_text_.
+  if (command_vim_.mode == vim::Mode::kInsert && !suppress_next_char_event_) {
+    SyncCommandTextFromField();
+  }
 
   if (IsTabKey(event)) {
     if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
@@ -2007,9 +2012,13 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return true;
   }
 
-  if (IsCharEvent(event)) {
+  if (IsCharEvent(event) || event.type == KEYEVENT_KEYUP) {
     if (suppress_next_char_event_) {
       suppress_next_char_event_ = false;
+      SetCommandText(command_text_);
+      return true;
+    }
+    if (event.type == KEYEVENT_KEYUP) {
       return true;
     }
     const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
@@ -2119,6 +2128,14 @@ void BrowserWindow::RebuildCommandCells() {
     }
   }
 
+  const size_t previous_rendered_length = command_field_->GetText().ToString().size();
+  if (previous_rendered_length > command_text_.size()) {
+    // CEF textfields can leave stale glyphs behind when their contents shrink
+    // after a programmatic vim edit (dd/D/cw/etc). Paint over the old contents
+    // with spaces before installing the real model text so deletions visibly
+    // erase instead of only moving the native caret/selection.
+    command_field_->SetText(std::string(previous_rendered_length, ' '));
+  }
   command_field_->SetText(command_text_);
   StyleCommandField(command_field_);
   if (!command_text_.empty()) {
