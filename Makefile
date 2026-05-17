@@ -4,6 +4,7 @@ BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
 JOBS ?= 12
 INSTALL_BIN ?= $(HOME)/.local/bin/vimbrowser
+WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
 CMAKE_ARGS ?=
 ifneq ($(CEF_ROOT),)
@@ -53,7 +54,7 @@ install-wrapper:
 	  'log_file="$$log_dir/vimbrowser.log"' \
 	  'printf "\\n[%s] vimbrowser %q\\n" "$$(date --iso-8601=seconds)" "$$*" >> "$$log_file"' \
 	  'cd "$(abspath $(BUILD_DIR))/Release"' \
-	  'exec ./vimbrowser "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
+          'exec ./vimbrowser --profile-dir "$(WRAPPER_PROFILE_DIR)" "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
 	chmod +x $(INSTALL_BIN)
 	@echo 'installed $(INSTALL_BIN) -> $(abspath $(BUILD_DIR))/Release/vimbrowser'
 

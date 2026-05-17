@@ -9,11 +9,15 @@ If a script, test, external agent, or future integration needs to observe or con
 - Protocol name: `vimbrowser-ipc`
 - Current protocol version: `1`
 - Transport: Unix-domain stream socket (`AF_UNIX`, `SOCK_STREAM`)
-- Default socket path:
-  - `$XDG_STATE_HOME/vimbrowser/ipc.sock` when `XDG_STATE_HOME` is set
-  - `~/.local/state/vimbrowser/ipc.sock` otherwise
-  - `/tmp/vimbrowser/ipc.sock` only when no home/state directory is available
+- Socket path:
+  - with `--profile-dir DIR`: `DIR/ipc.sock`
+  - without `--profile-dir`: an instance-local runtime path next to the
+    temporary per-process state file
 - Client override: set `VIMBROWSER_IPC=/path/to/ipc.sock`
+- Client profile shortcut: set `VIMBROWSER_PROFILE_DIR=DIR` to connect to
+  `DIR/ipc.sock`. The installed user wrapper defaults to
+  `/home/yeyito/.runtime/vimbrowser-yeyito`, and `scripts/vimbrowser-ipc`
+  auto-detects that socket when it exists.
 - Socket permissions: `0600`
 
 The socket is local-user app IPC. It is not a remote network API and should stay unavailable to other users by default.

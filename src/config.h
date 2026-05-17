@@ -11,11 +11,13 @@ inline constexpr size_t kMaxOpenHistoryEntries = 1000;
 struct Config {
   std::string initial_url = "https://example.com";
   std::vector<std::string> initial_urls;
+  std::string profile_dir;
   std::string cache_path;
   std::string state_path;
   size_t active_index = 0;
   int remote_debugging_port = 0;
   bool disable_gpu = false;
+  bool explicit_profile_dir = false;
   bool explicit_cache_path = false;
   bool explicit_remote_debugging_port = false;
   bool show_mode_indicator = true;

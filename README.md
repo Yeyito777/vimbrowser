@@ -117,8 +117,22 @@ or directly:
 ```
 
 `~/.local/bin/vimbrowser` is a tiny launcher script that `cd`s into the chosen
-build directory's `Release/` directory before execing the binary. CEF needs that runtime directory for
-`icudtl.dat`, pak files, locales, and shared libraries.
+build directory's `Release/` directory before execing the binary. CEF needs
+that runtime directory for `icudtl.dat`, pak files, locales, and shared
+libraries. The installed launcher also passes
+`--profile-dir /home/yeyito/.runtime/vimbrowser-yeyito` so the user's main
+browser profile has durable tabs/state plus Chromium cookies, IndexedDB,
+localStorage, CacheStorage, etc.
+
+Profile semantics:
+
+- without `--profile-dir`, vimbrowser uses per-process instance storage for app
+  state and CEF data; independent ad-hoc instances do not share login/session
+  data by default
+- with `--profile-dir DIR`, vimbrowser stores app state in `DIR/state` and the
+  CEF web profile in `DIR/cef/Default`
+- `--cache-path PATH` remains an advanced CEF-cache override; use
+  `--profile-dir` for normal persistent browser profiles
 
 ## DevTools / CDP
 
@@ -142,7 +156,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - one top-level CEF Views window
 - Alloy runtime style, no Chrome toolbar
 - URL/search startup argument
-- persistent cache under `~/.cache/vimbrowser/cef` by default
+- per-process isolated state/cache by default; persistent profiles require
+  `--profile-dir DIR` or the installed `~/.local/bin/vimbrowser` wrapper
 - `Ctrl+Shift+I` opens DevTools
 - web view focused by default in website-normal mode
 - `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar

@@ -47,28 +47,21 @@ std::string PercentEncode(std::string_view text) {
   return out;
 }
 
-std::string DefaultCachePath() {
-  if (const char* xdg = std::getenv("XDG_CACHE_HOME"); xdg && *xdg) {
-    return std::string(xdg) + "/vimbrowser/cef";
+std::string RuntimeHome() {
+  if (const char* xdg = std::getenv("XDG_RUNTIME_DIR"); xdg && *xdg) {
+    return std::string(xdg);
   }
-  if (const char* home = std::getenv("HOME"); home && *home) {
-    return std::string(home) + "/.cache/vimbrowser/cef";
-  }
-  return "/tmp/vimbrowser-cef-cache";
+  return "/tmp/vimbrowser-" + std::to_string(getuid());
 }
 
 std::string DefaultInstanceCachePath() {
-  return DefaultCachePath() + "/instances/" + std::to_string(getpid());
+  return RuntimeHome() + "/vimbrowser/cef/instances/" +
+         std::to_string(getpid());
 }
 
-std::string DefaultStateHome() {
-  if (const char* xdg = std::getenv("XDG_STATE_HOME"); xdg && *xdg) {
-    return std::string(xdg);
-  }
-  if (const char* home = std::getenv("HOME"); home && *home) {
-    return std::string(home) + "/.local/state";
-  }
-  return "/tmp";
+std::string DefaultInstanceStatePath() {
+  return RuntimeHome() + "/vimbrowser/instances/" + std::to_string(getpid()) +
+         "/state";
 }
 
 std::string EscapeStateValue(std::string_view value) {
@@ -110,10 +103,26 @@ std::string ValueAfter(std::string_view arg, std::string_view prefix) {
   return std::string(arg.substr(prefix.size()));
 }
 
+std::string AbsolutePath(std::string path) {
+  if (path.empty()) {
+    return path;
+  }
+  return std::filesystem::absolute(std::filesystem::path(path))
+      .lexically_normal()
+      .string();
+}
+
+void ApplyProfileDir(Config& config, std::string profile_dir) {
+  config.profile_dir = AbsolutePath(std::move(profile_dir));
+  config.cache_path = config.profile_dir + "/cef";
+  config.state_path = config.profile_dir + "/state";
+  config.explicit_profile_dir = true;
+}
+
 }  // namespace
 
 std::string DefaultStatePath() {
-  return DefaultStateHome() + "/vimbrowser/state";
+  return DefaultInstanceStatePath();
 }
 
 AppState ReadAppState(const std::string& state_path) {
@@ -237,9 +246,6 @@ Config ParseConfig(int argc, char* argv[]) {
   Config config;
   config.cache_path = DefaultInstanceCachePath();
   config.state_path = DefaultStatePath();
-  const AppState state = ReadAppState(config.state_path);
-  config.show_mode_indicator = state.show_mode_indicator;
-  config.show_fps_indicator = state.show_fps_indicator;
   bool is_subprocess = false;
 
   for (int i = 1; i < argc; ++i) {
@@ -252,13 +258,24 @@ Config ParseConfig(int argc, char* argv[]) {
       config.remote_debugging_port =
           std::stoi(ValueAfter(arg, "--remote-debugging-port="));
       config.explicit_remote_debugging_port = true;
+    } else if (StartsWith(arg, "--profile-dir=")) {
+      ApplyProfileDir(config, ValueAfter(arg, "--profile-dir="));
+    } else if (arg == "--profile-dir" && i + 1 < argc) {
+      ApplyProfileDir(config, argv[++i]);
     } else if (StartsWith(arg, "--cache-path=")) {
-      config.cache_path = ValueAfter(arg, "--cache-path=");
+      config.cache_path = AbsolutePath(ValueAfter(arg, "--cache-path="));
+      config.explicit_cache_path = true;
+    } else if (arg == "--cache-path" && i + 1 < argc) {
+      config.cache_path = AbsolutePath(argv[++i]);
       config.explicit_cache_path = true;
     } else if (!arg.empty() && arg[0] != '-') {
       config.initial_urls.push_back(ResolveUrlOrSearch(std::string(arg)));
     }
   }
+
+  const AppState state = ReadAppState(config.state_path);
+  config.show_mode_indicator = state.show_mode_indicator;
+  config.show_fps_indicator = state.show_fps_indicator;
 
   if (!config.initial_urls.empty()) {
     config.initial_url = config.initial_urls.front();

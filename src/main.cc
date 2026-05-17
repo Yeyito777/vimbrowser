@@ -84,7 +84,11 @@ int main(int argc, char* argv[]) {
   }
 
   std::cout << "vimbrowser: " << config.initial_url << std::endl;
+  if (config.explicit_profile_dir) {
+    std::cout << "vimbrowser: profile " << config.profile_dir << std::endl;
+  }
   std::cout << "vimbrowser: state " << config.state_path << std::endl;
+  std::cout << "vimbrowser: cef " << config.cache_path << std::endl;
   if (config.remote_debugging_port > 0) {
     std::cout << "vimbrowser: CDP http://127.0.0.1:"
               << config.remote_debugging_port << std::endl;

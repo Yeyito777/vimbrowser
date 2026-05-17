@@ -12,6 +12,12 @@ from pathlib import Path
 
 
 def default_socket_path() -> Path:
+    profile_dir = os.environ.get("VIMBROWSER_PROFILE_DIR")
+    if profile_dir:
+        return Path(profile_dir) / "ipc.sock"
+    wrapper_profile_socket = Path("/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock")
+    if wrapper_profile_socket.exists():
+        return wrapper_profile_socket
     state_home = os.environ.get("XDG_STATE_HOME")
     if state_home:
         return Path(state_home) / "vimbrowser" / "ipc.sock"
