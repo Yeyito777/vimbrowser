@@ -1009,7 +1009,12 @@ void EnterInsertAtLineEnd(LineEditState& state, const std::string& text) {
 
 void LeaveInsert(LineEditState& state, const std::string& text) {
   ClampInsert(state, text);
-  if (state.cursor == text.size() && state.cursor > state.floor) {
+  // Vim's normal-mode cursor is on a character, while insert-mode cursor is an
+  // insertion point between characters. Leaving insert mode therefore maps the
+  // insertion point to the character on its left whenever one exists. This also
+  // preserves canonical nvim behavior where normal -> i -> normal -> i crawls
+  // left through text.
+  if (state.cursor > state.floor) {
     --state.cursor;
   }
   state.mode = Mode::kNormal;

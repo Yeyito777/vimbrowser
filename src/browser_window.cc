@@ -2128,15 +2128,18 @@ void BrowserWindow::RebuildCommandCells() {
     }
   }
 
-  const size_t previous_rendered_length = command_field_->GetText().ToString().size();
-  if (previous_rendered_length > command_text_.size()) {
+  const std::string rendered_text =
+      normal && command_text_.empty() ? std::string(" ") : command_text_;
+  const size_t previous_rendered_length =
+      command_field_->GetText().ToString().size();
+  if (previous_rendered_length > rendered_text.size()) {
     // CEF textfields can leave stale glyphs behind when their contents shrink
     // after a programmatic vim edit (dd/D/cw/etc). Paint over the old contents
     // with spaces before installing the real model text so deletions visibly
     // erase instead of only moving the native caret/selection.
     command_field_->SetText(std::string(previous_rendered_length, ' '));
   }
-  command_field_->SetText(command_text_);
+  command_field_->SetText(rendered_text);
   StyleCommandField(command_field_);
   if (!command_text_.empty()) {
     command_field_->ApplyTextColor(theme::kText,
@@ -2153,7 +2156,7 @@ void BrowserWindow::RebuildCommandCells() {
                                             static_cast<uint32_t>(open_arg_end)));
   }
   if (normal) {
-    const size_t selection_end = std::min(cursor + 1, command_text_.size());
+    const size_t selection_end = std::min(cursor + 1, rendered_text.size());
     command_field_->SelectRange(
         CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(selection_end)));
   } else {
