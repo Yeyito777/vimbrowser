@@ -1,6 +1,7 @@
 #pragma once
 
 #include "include/cef_client.h"
+#include "include/cef_display_handler.h"
 #include "include/cef_life_span_handler.h"
 #include "include/cef_load_handler.h"
 
@@ -9,6 +10,7 @@ namespace vimbrowser {
 class BrowserWindow;
 
 class BrowserClient final : public CefClient,
+                            public CefDisplayHandler,
                             public CefLifeSpanHandler,
                             public CefLoadHandler,
                             public CefKeyboardHandler {
@@ -16,6 +18,7 @@ class BrowserClient final : public CefClient,
   explicit BrowserClient(BrowserWindow* owner = nullptr);
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+  CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
@@ -30,6 +33,24 @@ class BrowserClient final : public CefClient,
   void OnLoadStart(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefFrame> frame,
                    TransitionType transition_type) override;
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     int popup_id,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     WindowOpenDisposition target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override;
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
+                        const CefString& message,
+                        const CefString& source,
+                        int line) override;
 
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,
@@ -41,6 +62,7 @@ class BrowserClient final : public CefClient,
   double current_fps() const;
   bool fps_has_sample() const;
   double compositor_refresh_rate() const;
+  void SendBrowserCommandKeyEvent(const CefKeyEvent& event);
 
  private:
   BrowserWindow* owner_ = nullptr;

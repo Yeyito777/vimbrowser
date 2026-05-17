@@ -433,6 +433,48 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   }
 }
 
+bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
+                                        const std::string& target_url,
+                                        bool activate) {
+  if (target_url.empty()) {
+    return false;
+  }
+
+  Tab* tab = ActiveTab();
+  if (!tab || tab->client.get() != client) {
+    return false;
+  }
+
+  native_hints_active_ = false;
+  AddTab(target_url, activate);
+  UpdateModeIndicator();
+  return true;
+}
+
+void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
+                                        const std::string& url) {
+  if (url.empty()) {
+    return;
+  }
+
+  Tab* tab = ActiveTab();
+  if (!native_hints_active_ || !tab || tab->client.get() != client) {
+    return;
+  }
+
+  native_hints_active_ = false;
+  AddTab(url, true);
+  UpdateModeIndicator();
+}
+
+void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
+  if (Tab* tab = ActiveTab(); !tab || tab->client.get() != client) {
+    return;
+  }
+  native_hints_active_ = false;
+  UpdateModeIndicator();
+}
+
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_ = window;
   window_->SetTitle("vimbrowser");
@@ -2250,6 +2292,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     return false;
   }
 
+  if (native_hints_active_) {
+    return false;
+  }
+
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
@@ -2276,6 +2322,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
 
       if (HandleWebsiteCommandKey(event)) {
+        return true;
+      }
+
+      if (StartNativeHints(event)) {
         return true;
       }
 
@@ -2307,6 +2357,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
 
       if (website_mode_ == vim::Mode::kNormal && HandleWebsiteCommandKey(event)) {
+        return true;
+      }
+
+      if (website_mode_ == vim::Mode::kNormal && StartNativeHints(event)) {
         return true;
       }
 
@@ -2348,6 +2402,23 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
 
 void BrowserWindow::ResetWebsitePendingKeys() {
   website_pending_keys_.clear();
+}
+
+bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event) || !IsPlain(event) || event.windows_key_code != 'F') {
+    return false;
+  }
+
+  Tab* tab = ActiveTab();
+  if (!tab || !tab->client || !tab->client->browser()) {
+    return false;
+  }
+
+  ResetWebsitePendingKeys();
+  native_hints_active_ = true;
+  UpdateModeIndicator();
+  tab->client->SendBrowserCommandKeyEvent(event);
+  return true;
 }
 
 bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
@@ -2732,6 +2803,9 @@ std::string BrowserWindow::ModeIndicatorText() const {
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";
   }
+  if (native_hints_active_) {
+    return "HINT";
+  }
 
   switch (website_mode_) {
     case vim::Mode::kWebsiteNormal:
@@ -2752,6 +2826,9 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
   }
   if (focus_area_ == FocusArea::kTabSidebar) {
     return theme::kBorderFocused;
+  }
+  if (native_hints_active_) {
+    return theme::kAccent;
   }
 
   switch (website_mode_) {

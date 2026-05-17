@@ -27,6 +27,11 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `p` — open clipboard in current tab
 - [x] `P` — open clipboard in new tab
 
+## Hints
+
+- [x] `f` — native backend link/control hints; activate in current tab
+- [x] `F` / `Shift-f` — native backend link/control hints; open links in a new tab
+
 ## Tab selection / tab control
 
 - [x] `Ctrl-1` — focus tab 1
@@ -71,7 +76,7 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 ## Explicitly not part of this batch
 
 - [ ] shader toggle
-- [ ] hints / all hint-related binds
+- [ ] advanced hint modes beyond basic click/open-in-new-tab hints
 - [ ] `Ctrl-M`
 - [ ] `Ctrl-N`
 - [ ] `ac`

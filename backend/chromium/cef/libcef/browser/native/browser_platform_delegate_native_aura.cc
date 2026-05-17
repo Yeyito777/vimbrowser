@@ -13,8 +13,10 @@
 #include "cef/libcef/common/api_version_util.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_aura.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/web_contents.h"
 #include "third_party/blink/public/common/input/web_gesture_event.h"
 #include "ui/compositor/compositor.h"
 #include "ui/events/blink/blink_event_util.h"
@@ -25,6 +27,8 @@
 
 namespace {
 constexpr double kSmoothScrollFactor = 0.3;
+constexpr int kVimbrowserBrowserCommandWebModifier = 1 << 27;
+constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
 }  // namespace
 
 CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
@@ -127,6 +131,25 @@ void CefBrowserPlatformDelegateNativeAura::SendKeyEvent(
 
   ui::KeyEvent ui_event = TranslateUiKeyEvent(event);
   view->OnKeyEvent(&ui_event);
+}
+
+void CefBrowserPlatformDelegateNativeAura::SendVimbrowserBrowserCommandKeyEvent(
+    const CefKeyEvent& event) {
+  auto* frame = web_contents_ ? web_contents_->GetPrimaryMainFrame() : nullptr;
+  auto* host = frame ? frame->GetRenderWidgetHost() : nullptr;
+  if (!host) {
+    return;
+  }
+
+  input::NativeWebKeyboardEvent web_event = TranslateWebKeyEvent(event);
+  int modifiers =
+      web_event.GetModifiers() | kVimbrowserBrowserCommandWebModifier;
+  if (event.modifiers & EVENTFLAG_SHIFT_DOWN) {
+    modifiers |= kVimbrowserHintNewTabWebModifier;
+  }
+  web_event.SetModifiers(modifiers);
+  web_event.is_browser_shortcut = true;
+  host->ForwardKeyboardEvent(web_event);
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendMouseClickEvent(

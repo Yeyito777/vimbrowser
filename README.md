@@ -152,6 +152,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
 - when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
 - in website-normal mode, `i` / `a` enter insert mode
+- in website-normal/normal web modes, `f` starts native backend hints and `F`
+  (`Shift-f`) opens hinted links in a new tab
 - `Escape` from insert mode enters regular Vim normal mode; `Escape` again
   returns to website-normal mode
 - left qutebrowser-style tab sidebar
@@ -160,8 +162,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   command-normal mode, then `i` / `a` / `h` / `l` / `x` for a minimal shared Vim
   editing skeleton
 
-Next work: hints and broader qutebrowser command compatibility on top of this
-CEF/CDP core.
+Next work: broader qutebrowser command compatibility on top of this CEF/CDP
+core.
 
 ## Design
 

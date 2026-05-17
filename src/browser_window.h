@@ -41,6 +41,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
+  bool OnClientBeforePopup(BrowserClient* client,
+                           const std::string& target_url,
+                           bool activate);
+  void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
+  void OnNativeHintsStopped(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
@@ -133,6 +138,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   bool HandleWebsiteCommandKey(const CefKeyEvent& event);
   void ResetWebsitePendingKeys();
+  bool StartNativeHints(const CefKeyEvent& event);
   void ScrollActivePageBy(int dy);
   void ScrollActivePageToTop();
   void ScrollActivePageToBottom();
@@ -176,6 +182,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
   bool fps_update_scheduled_ = false;
+  bool native_hints_active_ = false;
   bool last_tab_close_placeholder_ = false;
   std::vector<Tab> tabs_;
   std::vector<Tab> closed_tabs_;

@@ -87,6 +87,7 @@ import("//third_party/blink/renderer/core/view_transition/build.gni")
 import("//third_party/blink/renderer/core/workers/build.gni")
 import("//third_party/blink/renderer/core/xml/build.gni")
 import("//third_party/blink/renderer/core/xmlhttprequest/build.gni")
+import("//third_party/blink/renderer/core/yeyito_hints/build.gni")
 import("//third_party/blink/renderer/platform/platform_generated.gni")
 import("//third_party/protobuf/proto_library.gni")
 
@@ -352,6 +353,7 @@ component("core") {
   sources += rebase_path(blink_core_sources_xml, "", "xml")
   sources +=
       rebase_path(blink_core_sources_xmlhttprequest, "", "xmlhttprequest")
+  sources += rebase_path(blink_core_sources_yeyito_hints, "", "yeyito_hints")
   sources += rebase_path(blink_core_sources_speech, "", "speech")
   sources += rebase_path(blink_core_sources_preferences, "", "preferences")
 

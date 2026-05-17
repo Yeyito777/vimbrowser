@@ -42,6 +42,7 @@ class CefBrowserPlatformDelegateNativeAura
   bool HasFpsSample() const override;
   double GetCurrentFps() const override;
   double GetCompositorRefreshRate() const override;
+  void SendVimbrowserBrowserCommandKeyEvent(const CefKeyEvent& event) override;
   void SendKeyEvent(const CefKeyEvent& event) override;
   void SendMouseClickEvent(const CefMouseEvent& event,
                            CefBrowserHost::MouseButtonType type,

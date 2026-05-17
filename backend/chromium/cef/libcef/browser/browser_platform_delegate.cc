@@ -151,6 +151,11 @@ double CefBrowserPlatformDelegate::GetCompositorRefreshRate() const {
   return 0.0;
 }
 
+void CefBrowserPlatformDelegate::SendVimbrowserBrowserCommandKeyEvent(
+    const CefKeyEvent& event) {
+  SendKeyEvent(event);
+}
+
 void CefBrowserPlatformDelegate::BrowserCreated(CefBrowserHostBase* browser) {
   // We should have an associated WebContents at this point.
   DCHECK(web_contents_);
@@ -195,6 +200,16 @@ extern "C" CEF_EXPORT double vimbrowser_get_browser_refresh_rate(
     return 0.0;
   }
   return browser->platform_delegate()->GetCompositorRefreshRate();
+}
+
+extern "C" CEF_EXPORT void vimbrowser_send_browser_command_key_event(
+    int browser_id,
+    const CefKeyEvent* event) {
+  auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
+  if (!browser || !browser->platform_delegate() || !event) {
+    return;
+  }
+  browser->platform_delegate()->SendVimbrowserBrowserCommandKeyEvent(*event);
 }
 
 bool CefBrowserPlatformDelegate::CreateHostWindow() {

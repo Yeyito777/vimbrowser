@@ -140,6 +140,11 @@ class CefBrowserPlatformDelegate {
   virtual bool HasFpsSample() const;
   virtual double GetCurrentFps() const;
   virtual double GetCompositorRefreshRate() const;
+  // Sends a key event directly to the renderer as browser-originated vimbrowser
+  // command input. Blink native hinting uses this to distinguish app hint entry
+  // commands from page text input while keeping hint rendering/activation in the
+  // backend.
+  virtual void SendVimbrowserBrowserCommandKeyEvent(const CefKeyEvent& event);
 
   // Called after the owning BrowserHost is created. Will only be
   // called a single time per instance. Do not send any client notifications
