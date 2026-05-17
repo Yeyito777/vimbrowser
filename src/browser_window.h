@@ -78,6 +78,11 @@ class BrowserWindow final : public CefWindowDelegate,
     kCommandLine,
   };
 
+  enum class CloseFocus {
+    kPreviousTab,
+    kNextTab,
+  };
+
   struct CommandAutocompleteState {
     bool active = false;
     int selection = -1;
@@ -98,7 +103,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void ActivateLastTab();
   void MoveActiveTab(int delta);
   void CloneActiveTab();
-  void CloseActiveTab();
+  void CloseActiveTab(CloseFocus focus_after_close = CloseFocus::kPreviousTab);
   void UndoCloseTab();
   std::string ActiveTabUrl() const;
   std::string ActiveTabTitle() const;

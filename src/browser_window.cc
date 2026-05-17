@@ -1030,7 +1030,7 @@ void BrowserWindow::CloneActiveTab() {
   }
 }
 
-void BrowserWindow::CloseActiveTab() {
+void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
   if (tabs_.empty()) {
     return;
   }
@@ -1060,7 +1060,9 @@ void BrowserWindow::CloseActiveTab() {
   }
   Tab closed_tab = tabs_[closing];
 
-  const size_t next_index = closing == 0 ? 0 : closing - 1;
+  const size_t next_index = focus_after_close == CloseFocus::kNextTab
+                                ? closing
+                                : (closing == 0 ? 0 : closing - 1);
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
   active_index_ = std::min(next_index, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
@@ -2407,7 +2409,8 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
     case 'P': OpenClipboard(true); return true;
     case 'J': ActivateRelative(1); return true;
     case 'K': ActivateRelative(-1); return true;
-    case 'd': CloseActiveTab(); return true;
+    case 'd': CloseActiveTab(CloseFocus::kNextTab); return true;
+    case 'D': CloseActiveTab(CloseFocus::kPreviousTab); return true;
     case 'u': UndoCloseTab(); return true;
     case 'e': MoveActiveTab(-1); return true;
     case 'E': MoveActiveTab(1); return true;
