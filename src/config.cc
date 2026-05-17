@@ -130,6 +130,11 @@ AppState ReadAppState(const std::string& state_path) {
       if (!tab.empty()) {
         state.tabs.push_back(tab);
       }
+    } else if (StartsWith(line, "open_history=")) {
+      const std::string entry = UnescapeStateValue(std::string_view(line).substr(13));
+      if (!entry.empty()) {
+        state.open_history.push_back(entry);
+      }
     } else if (StartsWith(line, "active=")) {
       const std::string value = line.substr(7);
       char* end = nullptr;
@@ -150,6 +155,11 @@ AppState ReadAppState(const std::string& state_path) {
 
   if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {
     state.active_index = state.tabs.size() - 1;
+  }
+  if (state.open_history.size() > kMaxOpenHistoryEntries) {
+    state.open_history.erase(
+        state.open_history.begin(),
+        state.open_history.end() - static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
   }
   return state;
 }
@@ -177,6 +187,14 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     for (const std::string& tab : state.tabs) {
       if (!tab.empty()) {
         file << "tab=" << EscapeStateValue(tab) << '\n';
+      }
+    }
+    const size_t history_start = state.open_history.size() > kMaxOpenHistoryEntries
+                                     ? state.open_history.size() - kMaxOpenHistoryEntries
+                                     : 0;
+    for (size_t i = history_start; i < state.open_history.size(); ++i) {
+      if (!state.open_history[i].empty()) {
+        file << "open_history=" << EscapeStateValue(state.open_history[i]) << '\n';
       }
     }
   }

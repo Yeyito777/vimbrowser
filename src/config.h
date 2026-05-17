@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
 namespace vimbrowser {
+
+inline constexpr size_t kMaxOpenHistoryEntries = 1000;
 
 struct Config {
   std::string initial_url = "https://example.com";
@@ -21,6 +24,7 @@ struct Config {
 
 struct AppState {
   std::vector<std::string> tabs;
+  std::vector<std::string> open_history;
   size_t active_index = 0;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;

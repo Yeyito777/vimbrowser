@@ -122,6 +122,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleCommandModeKey(const CefKeyEvent& event);
   void ClearCommandAutocomplete();
   void UpdateCommandAutocomplete();
+  void AppendOpenHistoryMatches(const std::string& prefix,
+                                std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
   void FillCommandAutocomplete(const std::string& name);
   int CommandAutocompleteVisibleRows() const;
@@ -143,6 +145,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void ScrollActivePageToTop();
   void ScrollActivePageToBottom();
   void OpenClipboard(bool new_tab);
+  void RecordOpenHistory(const std::string& text);
   void ZoomActivePage(cef_zoom_command_t command);
   void YankActiveUrl();
   void YankActiveTitle();
@@ -169,6 +172,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string state_path_;
   size_t initial_active_index_ = 0;
   std::string command_text_;
+  std::vector<std::string> open_history_;
   std::string website_pending_keys_;
   std::vector<std::string> closed_tab_urls_;
   vim::LineEditState command_vim_;

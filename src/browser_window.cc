@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 #include <utility>
 
 #include "config.h"
@@ -299,6 +300,20 @@ bool IsWhitespaceOnly(const std::string& value) {
   });
 }
 
+bool IsOpenTabArg(const std::string& value) {
+  const std::string lower = ToLowerAscii(value);
+  return lower == "tab" || lower == "-t";
+}
+
+bool ArgsContainOpenTabArg(const std::string& value) {
+  for (std::string arg : SplitArgs(value)) {
+    if (IsOpenTabArg(arg)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool IsTokenBoundary(const std::string& value, size_t pos) {
   return pos >= value.size() || std::isspace(static_cast<unsigned char>(value[pos]));
 }
@@ -403,6 +418,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator) {
+  open_history_ = ReadAppState(state_path_).open_history;
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
@@ -1437,8 +1453,10 @@ void BrowserWindow::CommitCommand() {
 
   const std::string url = ResolveUrlOrSearch(text);
   if (open_in_new_tab) {
+    RecordOpenHistory(text);
     AddTab(url, true);
   } else if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
+    RecordOpenHistory(text);
     last_tab_close_placeholder_ = false;
     tab->url = url;
     tab->client->browser()->GetMainFrame()->LoadURL(url);
@@ -1530,6 +1548,27 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
   }
 }
 
+void BrowserWindow::RecordOpenHistory(const std::string& text) {
+  std::string entry = Trim(text);
+  if (entry.empty()) {
+    return;
+  }
+
+  const std::string folded = ToLowerAscii(entry);
+  open_history_.erase(
+      std::remove_if(open_history_.begin(), open_history_.end(),
+                     [&](const std::string& existing) {
+                       return ToLowerAscii(existing) == folded;
+                     }),
+      open_history_.end());
+  open_history_.push_back(std::move(entry));
+  if (open_history_.size() > kMaxOpenHistoryEntries) {
+    open_history_.erase(
+        open_history_.begin(),
+        open_history_.end() - static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+  }
+}
+
 void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
   if (browser && browser->GetHost()) {
@@ -1569,6 +1608,52 @@ void BrowserWindow::ClearCommandAutocomplete() {
   }
 }
 
+void BrowserWindow::AppendOpenHistoryMatches(
+    const std::string& prefix,
+    std::vector<CompletionItem>& matches) const {
+  struct RankedHistoryMatch {
+    CompletionItem item;
+    size_t recency_rank = 0;
+  };
+
+  std::vector<RankedHistoryMatch> ranked;
+  std::unordered_set<std::string> seen;
+  for (const CompletionItem& item : matches) {
+    seen.insert(ToLowerAscii(item.name));
+  }
+  for (size_t i = open_history_.size(); i > 0; --i) {
+    const size_t index = i - 1;
+    const std::string& entry = open_history_[index];
+    if (entry.empty() ||
+        (!prefix.empty() && !StartsWithCaseInsensitive(entry, prefix))) {
+      continue;
+    }
+
+    const std::string folded = ToLowerAscii(entry);
+    if (!seen.insert(folded).second) {
+      continue;
+    }
+
+    ranked.push_back({CompletionItem{entry, "open history"},
+                      open_history_.size() - 1 - index});
+  }
+
+  std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
+                                             const RankedHistoryMatch& b) {
+    if (a.item.name.size() != b.item.name.size()) {
+      return a.item.name.size() < b.item.name.size();
+    }
+    if (a.recency_rank != b.recency_rank) {
+      return a.recency_rank < b.recency_rank;
+    }
+    return ToLowerAscii(a.item.name) < ToLowerAscii(b.item.name);
+  });
+
+  for (const RankedHistoryMatch& match : ranked) {
+    matches.push_back(match.item);
+  }
+}
+
 void BrowserWindow::UpdateCommandAutocomplete() {
   ClearCommandAutocomplete();
   if (command_text_.find('\n') != std::string::npos) {
@@ -1600,12 +1685,7 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     const size_t arg_start = after_command.find_last_of(" \t");
     const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
     const std::string completed_args = arg_start == std::string::npos ? "" : after_command.substr(0, arg_start + 1);
-    const bool already_has_tab_arg = completed_args.find("tab") != std::string::npos ||
-                                     completed_args.find("-t") != std::string::npos ||
-                                     (arg_prefix == "tab" && !after_command.empty() &&
-                                      std::isspace(static_cast<unsigned char>(after_command.back()))) ||
-                                     (arg_prefix == "-t" && !after_command.empty() &&
-                                      std::isspace(static_cast<unsigned char>(after_command.back())));
+    const bool already_has_tab_arg = ArgsContainOpenTabArg(completed_args);
     const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
                                     (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
     if (!already_has_tab_arg && (completing_new_arg || !arg_prefix.empty())) {
@@ -1614,6 +1694,9 @@ void BrowserWindow::UpdateCommandAutocomplete() {
           matches.push_back(item);
         }
       }
+    }
+    if (completing_new_arg || !arg_prefix.empty()) {
+      AppendOpenHistoryMatches(arg_prefix, matches);
     }
   } else if ((StartsWithCaseInsensitive(typed_command, ":showmode") &&
               IsTokenBoundary(typed_command, 9)) ||
@@ -2785,6 +2868,7 @@ void BrowserWindow::SaveState() const {
   state.active_index = active_index_;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
+  state.open_history = open_history_;
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {
       state.tabs.push_back(tab.url);
