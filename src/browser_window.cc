@@ -24,6 +24,9 @@
 namespace vimbrowser {
 namespace {
 
+constexpr const char kIpcProtocolName[] = "vimbrowser-ipc";
+constexpr int kIpcProtocolVersion = 1;
+
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
 constexpr int kCommandAutocompleteRowHeight = 24;
@@ -367,6 +370,15 @@ std::string IpcSocketPathForStatePath(const std::string& state_path) {
     dir = "/tmp/vimbrowser";
   }
   return (dir / "ipc.sock").string();
+}
+
+std::string IpcVersionJson() {
+  std::ostringstream out;
+  out << "{"
+      << "\"protocol\":\"" << kIpcProtocolName << "\","
+      << "\"version\":" << kIpcProtocolVersion
+      << "}";
+  return out.str();
 }
 
 void WriteClipboardText(const std::string& text) {
@@ -2579,6 +2591,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   }
 
   const std::string command = ToLowerAscii(argv[0]);
+  if (command == "version" || command == "protocol") {
+    return IpcVersionJson();
+  }
   if (command == "status" || command == "json") {
     return IpcStatusJson();
   }
@@ -2649,7 +2664,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return IpcStatusJson();
   }
   if (command == "help") {
-    return "commands: status, fps, refresh, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
+    return "commands: version, status, fps, refresh, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
   }
   return "ERR unknown command\n";
 }
@@ -2679,6 +2694,8 @@ std::string BrowserWindow::IpcStatusJson() const {
 
   std::ostringstream out;
   out << "{"
+      << "\"ipc_protocol\":\"" << kIpcProtocolName << "\","
+      << "\"ipc_version\":" << kIpcProtocolVersion << ","
       << "\"active_index\":" << active_index_ << ","
       << "\"active_tab\":" << (active_index_ + 1) << ","
       << "\"tabs\":" << tabs_.size() << ","

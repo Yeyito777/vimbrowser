@@ -42,6 +42,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
+  // Canonical vimbrowser IPC command dispatcher. Keep external app automation
+  // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;

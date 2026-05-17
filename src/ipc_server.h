@@ -8,6 +8,12 @@ namespace vimbrowser {
 
 class BrowserWindow;
 
+// Canonical vimbrowser application IPC transport.
+//
+// This Unix-domain socket is the supported local automation/control interface for
+// vimbrowser chrome and app state. Prefer extending this protocol over adding
+// ad-hoc diagnostics, log scraping, or DevTools/Chrome-specific control paths.
+// Protocol and compatibility rules live in docs/ipc.md.
 class IpcServer final {
  public:
   IpcServer(BrowserWindow* owner, std::string socket_path);

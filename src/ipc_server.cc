@@ -158,6 +158,9 @@ void IpcServer::Loop() {
 }
 
 void IpcServer::HandleClient(int client_fd) {
+  // vimbrowser-ipc/1: one UTF-8-ish command line per connection, terminated by
+  // '\n' or EOF; one '\n'-terminated response. This deliberately stays tiny and
+  // scriptable, but it is the canonical app-control protocol. See docs/ipc.md.
   std::string command;
   char buffer[1024];
   while (command.size() < 8192) {
