@@ -1764,7 +1764,11 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   if (command_text_.find('\n') != std::string::npos) {
     return;
   }
-  if (command_vim_.cursor != command_text_.size()) {
+  const size_t cursor = command_vim_.mode == vim::Mode::kNormal
+                            ? std::min(command_vim_.cursor + 1,
+                                       command_text_.size())
+                            : command_vim_.cursor;
+  if (cursor != command_text_.size()) {
     return;
   }
 
@@ -2051,8 +2055,17 @@ bool BrowserWindow::SyncCommandTextFromField() {
     return false;
   }
 
-  const std::string text = command_field_->GetText().ToString();
-  const size_t cursor = std::min(command_field_->GetCursorPosition(), text.size());
+  std::string text = command_field_->GetText().ToString();
+  size_t cursor = std::min(command_field_->GetCursorPosition(), text.size());
+  if (command_text_.empty() && text == " ") {
+    // Empty command-normal mode renders one harmless space as the block cursor
+    // target. If CEF still reports that rendered placeholder after returning to
+    // insert mode, do not sync it into the real command model; otherwise typing
+    // ':' after dd creates a hidden trailing space and autocomplete refuses to
+    // open because the model cursor is no longer at end-of-line.
+    text.clear();
+    cursor = 0;
+  }
   if (text == command_text_ && cursor == command_vim_.cursor) {
     return false;
   }
