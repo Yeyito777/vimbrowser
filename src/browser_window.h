@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <memory>
 #include <string>
@@ -105,6 +106,10 @@ class BrowserWindow final : public CefWindowDelegate,
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void ActivateTab(size_t index);
+  void ScheduleActiveBrowserSync();
+  void ApplyActiveBrowserSelection(uint64_t generation);
+  void ScheduleStateSave();
+  void SaveStateForGeneration(uint64_t generation);
   void ActivateRelative(int delta);
   void ActivateFirstTab();
   void ActivateLastTab();
@@ -188,6 +193,11 @@ class BrowserWindow final : public CefWindowDelegate,
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool last_tab_close_placeholder_ = false;
+  size_t visible_tab_index_ = static_cast<size_t>(-1);
+  uint64_t active_browser_sync_generation_ = 0;
+  uint64_t state_save_generation_ = 0;
+  int laid_out_content_width_ = 0;
+  int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;
   std::vector<Tab> closed_tabs_;
   size_t active_index_ = 0;

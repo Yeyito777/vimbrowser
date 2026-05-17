@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <unordered_set>
 #include <utility>
@@ -53,6 +54,8 @@ constexpr int kFpsIndicatorPanelId = 116;
 constexpr int kFpsIndicatorFieldId = 117;
 constexpr int kAcceleratorCommandTab = 5000;
 constexpr int kAcceleratorCommandBacktab = 5001;
+constexpr int kAcceleratorTabNext = 5002;
+constexpr int kAcceleratorTabPrevious = 5003;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
@@ -65,6 +68,9 @@ constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
+constexpr int kTabContentActivationDelayMs = 75;
+constexpr int kTabStateSaveDelayMs = 250;
+constexpr size_t kNoTabIndex = std::numeric_limits<size_t>::max();
 
 bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
@@ -322,6 +328,20 @@ int TextColumns(const std::string& value) {
   return static_cast<int>(value.size());
 }
 
+std::string SidebarTextForTab(size_t index,
+                              const std::string& url,
+                              bool active) {
+  std::string text = active ? "▸ " : "  ";
+  text += std::to_string(index + 1);
+  text += ": ";
+  text += DisplayUrl(url);
+  if (text.size() > 160) {
+    text.resize(157);
+    text += "...";
+  }
+  return text;
+}
+
 std::string ShellRead(const char* command) {
   std::string output;
   FILE* pipe = popen(command, "r");
@@ -525,6 +545,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetToFillLayout();
   window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
   window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
+  window_->SetAccelerator(kAcceleratorTabNext, 'J', true, false, false, true);
+  window_->SetAccelerator(kAcceleratorTabPrevious, 'K', true, false, false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -690,6 +712,8 @@ void BrowserWindow::BuildChrome() {
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
+  ++active_browser_sync_generation_;
+  ++state_save_generation_;
   SaveState();
   if (ipc_server_) {
     ipc_server_->Stop();
@@ -767,6 +791,16 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
     if (command_id == kAcceleratorCommandTab ||
         command_id == kAcceleratorCommandBacktab) {
       return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
+    }
+  }
+  if (mode_ == Mode::kNormal && !native_hints_active_) {
+    if (command_id == kAcceleratorTabNext) {
+      ActivateRelative(1);
+      return true;
+    }
+    if (command_id == kAcceleratorTabPrevious) {
+      ActivateRelative(-1);
+      return true;
     }
   }
   return false;
@@ -1044,19 +1078,76 @@ void BrowserWindow::ActivateTab(size_t index) {
     return;
   }
 
-  if (active_index_ < tabs_.size()) {
-    tabs_[active_index_].view->SetVisible(false);
+  if (active_index_ == index) {
+    RefreshSidebar();
+    if (visible_tab_index_ != index) {
+      ScheduleActiveBrowserSync();
+    }
+    return;
   }
 
   active_index_ = index;
-  tabs_[active_index_].view->SetVisible(true);
-  UpdateFpsIndicator();
-  if (focus_area_ == FocusArea::kWebView) {
-    tabs_[active_index_].view->RequestFocus();
-  }
-  SaveState();
   RefreshSidebar();
-  Layout();
+  ScheduleStateSave();
+  ScheduleActiveBrowserSync();
+}
+
+void BrowserWindow::ScheduleActiveBrowserSync() {
+  if (!window_) {
+    return;
+  }
+
+  const uint64_t generation = ++active_browser_sync_generation_;
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ApplyActiveBrowserSelection, self,
+                     generation),
+      kTabContentActivationDelayMs);
+}
+
+void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
+  if (!window_ || generation != active_browser_sync_generation_ || tabs_.empty() ||
+      active_index_ >= tabs_.size()) {
+    return;
+  }
+
+  if (visible_tab_index_ < tabs_.size() && visible_tab_index_ != active_index_ &&
+      tabs_[visible_tab_index_].view) {
+    tabs_[visible_tab_index_].view->SetVisible(false);
+  }
+
+  visible_tab_index_ = active_index_;
+  Tab& tab = tabs_[active_index_];
+  if (tab.view) {
+    tab.view->SetVisible(true);
+    if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
+      content_inner_panel_->Layout();
+    }
+    if (focus_area_ == FocusArea::kWebView) {
+      tab.view->RequestFocus();
+    }
+  }
+  UpdateFpsIndicator();
+}
+
+void BrowserWindow::ScheduleStateSave() {
+  if (!window_) {
+    return;
+  }
+
+  const uint64_t generation = ++state_save_generation_;
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::SaveStateForGeneration,
+                                    self, generation),
+                     kTabStateSaveDelayMs);
+}
+
+void BrowserWindow::SaveStateForGeneration(uint64_t generation) {
+  if (window_ && generation == state_save_generation_) {
+    SaveState();
+  }
 }
 
 void BrowserWindow::ActivateRelative(int delta) {
@@ -1086,8 +1177,15 @@ void BrowserWindow::MoveActiveTab(int delta) {
   const int count = static_cast<int>(tabs_.size());
   const int current = static_cast<int>(active_index_);
   const int next = (current + delta + count) % count;
+  const size_t old_active_index = active_index_;
+  const size_t new_active_index = static_cast<size_t>(next);
   std::swap(tabs_[active_index_], tabs_[static_cast<size_t>(next)]);
-  active_index_ = static_cast<size_t>(next);
+  if (visible_tab_index_ == old_active_index) {
+    visible_tab_index_ = new_active_index;
+  } else if (visible_tab_index_ == new_active_index) {
+    visible_tab_index_ = old_active_index;
+  }
+  active_index_ = new_active_index;
   SaveState();
   RefreshSidebar();
   Layout();
@@ -1128,6 +1226,11 @@ void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
   if (tabs_[closing].view) {
     tabs_[closing].view->SetVisible(false);
   }
+  if (visible_tab_index_ == closing) {
+    visible_tab_index_ = kNoTabIndex;
+  } else if (visible_tab_index_ > closing && visible_tab_index_ < tabs_.size()) {
+    --visible_tab_index_;
+  }
   Tab closed_tab = tabs_[closing];
 
   const size_t next_index = focus_after_close == CloseFocus::kNextTab
@@ -1136,6 +1239,7 @@ void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(closing));
   active_index_ = std::min(next_index, tabs_.size() - 1);
   tabs_[active_index_].view->SetVisible(true);
+  visible_tab_index_ = active_index_;
   UpdateFpsIndicator();
   if (focus_area_ == FocusArea::kWebView) {
     tabs_[active_index_].view->RequestFocus();
@@ -2165,6 +2269,8 @@ void BrowserWindow::Layout() {
   sidebar_border_panel_->SetSize(CefSize(1, main_height));
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const int content_width = std::max(1, width - content_x);
+  const bool content_size_changed = content_width != laid_out_content_width_ ||
+                                    main_height != laid_out_content_height_;
   content_inner_panel_->SetBounds(CefRect(0, 0, content_width, main_height));
   command_panel_->SetSize(CefSize(width, kCommandHeight));
   command_separator_panel_->SetSize(CefSize(width, 1));
@@ -2205,7 +2311,6 @@ void BrowserWindow::Layout() {
     fps_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
     fps_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
                                             kModeIndicatorHeight));
-    UpdateFpsIndicator();
   }
 
   if (root_panel_->GetLayout()) {
@@ -2239,12 +2344,14 @@ void BrowserWindow::Layout() {
                     static_cast<int>(i) * kCommandAutocompleteRowHeight,
                 autocomplete_row_width, kCommandAutocompleteRowHeight));
   }
-  if (content_panel_->GetLayout()) {
+  if (content_size_changed && content_panel_->GetLayout()) {
     content_panel_->Layout();
   }
-  if (content_inner_panel_->GetLayout()) {
+  if (content_size_changed && content_inner_panel_->GetLayout()) {
     content_inner_panel_->Layout();
   }
+  laid_out_content_width_ = content_width;
+  laid_out_content_height_ = main_height;
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
   }
@@ -2258,6 +2365,22 @@ void BrowserWindow::Layout() {
 
 void BrowserWindow::RefreshSidebar() {
   if (!sidebar_content_panel_) {
+    return;
+  }
+
+  if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+    for (size_t i = 0; i < tabs_.size(); ++i) {
+      CefRefPtr<CefTextfield> row = sidebar_rows_[i].row;
+      if (!row) {
+        continue;
+      }
+      const bool active = i == active_index_;
+      row->SetText(SidebarTextForTab(i, tabs_[i].url, active));
+      row->SelectRange(CefRange(0, 0));
+      StyleTextfield(row, theme::kText,
+                     active ? theme::kSidebarSelBg : theme::kSidebarBg,
+                     "monospace, 12px");
+    }
     return;
   }
 
@@ -2279,14 +2402,7 @@ void BrowserWindow::RefreshSidebar() {
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    std::string text = active ? "▸ " : "  ";
-    text += std::to_string(i + 1);
-    text += ": ";
-    text += DisplayUrl(tabs_[i].url);
-    if (text.size() > 160) {
-      text.resize(157);
-      text += "...";
-    }
+    const std::string text = SidebarTextForTab(i, tabs_[i].url, active);
 
     const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
