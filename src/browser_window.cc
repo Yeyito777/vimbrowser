@@ -2740,6 +2740,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
 
+      if (website_mode_ == vim::Mode::kNormal &&
+          (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a'))) {
+        website_mode_ = vim::Mode::kInsert;
+        UpdateModeIndicator();
+        return true;
+      }
+
       // Regular Vim normal/visual modes are skeleton states for future operators,
       // text objects, and selections. For now they intentionally swallow plain
       // printable keys and perform no page action.

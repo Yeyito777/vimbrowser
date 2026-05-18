@@ -172,7 +172,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
 - when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
-- in website-normal mode, `i` / `a` enter insert mode
+- in website-normal and regular Vim normal web modes, `i` / `a` enter insert
+  mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`
   (`Shift-f`) opens hinted links in a new tab
 - in website-normal/normal web modes, `p` opens the clipboard in the current tab

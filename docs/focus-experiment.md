@@ -110,7 +110,7 @@ Initial experimental behavior:
   - Has its own web-mode state machine.
   - Default mode is website-normal.
   - Website-normal is the future home for hints, scrolling, and page commands.
-  - `i` / `a` in website-normal enter insert mode.
+  - `i` / `a` in website-normal or regular Vim normal enter insert mode.
   - Escape in insert mode enters regular Vim normal mode.
   - Escape in regular Vim normal or visual mode returns to website-normal.
   - Regular Vim normal and visual modes are skeleton states for now: they swallow
@@ -202,7 +202,8 @@ Then route keys like Exocortex:
    - route through the web-mode state machine first.
    - insert mode passes normal input through to CEF.
    - website-normal/regular-normal/visual currently swallow plain printable keys
-     unless a future binding claims them.
+     unless a binding claims them; `i`/`a` enter insert mode from website-normal
+     or regular-normal.
 
 This means the current normal-mode tab keybinds should stop being page-global.
 They should only work when `focus_area_ == kTabSidebar`.
@@ -227,7 +228,7 @@ Remaining notes/questions after these answers:
   `Ctrl+k` because there are only two non-command focus targets so far.
 - Website-view mode skeleton:
   - startup/default: website-normal
-  - website-normal `i`/`a`: insert
+  - website-normal or regular Vim normal `i`/`a`: insert
   - insert `Escape`: regular Vim normal
   - regular Vim normal/visual `Escape`: website-normal
   - visual/operators are intentionally only wired as future enum states for now.
