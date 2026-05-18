@@ -1,10 +1,13 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
+#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <limits.h>
 #include <string>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include "app.h"
@@ -74,6 +77,34 @@ void RemoveIfExists(const std::filesystem::path& path) {
   std::filesystem::remove(path, ec);
 }
 
+bool TryConnectUnixSocket(const std::filesystem::path& path) {
+  const std::string value = path.string();
+  if (value.empty() || value.size() >= sizeof(sockaddr_un::sun_path)) {
+    return false;
+  }
+
+  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    return false;
+  }
+
+  sockaddr_un addr = {};
+  addr.sun_family = AF_UNIX;
+  std::snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", value.c_str());
+  const bool ok = connect(fd, reinterpret_cast<sockaddr*>(&addr),
+                          sizeof(addr)) == 0;
+  close(fd);
+  return ok;
+}
+
+std::filesystem::path IpcSocketPathForStatePath(const std::string& state_path) {
+  std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
+  if (dir.empty()) {
+    dir = "/tmp/vimbrowser";
+  }
+  return dir / "ipc.sock";
+}
+
 void CleanStaleChromeSingleton(const std::string& root_cache_path) {
   if (root_cache_path.empty()) {
     return;
@@ -111,6 +142,39 @@ void CleanStaleChromeSingleton(const std::string& root_cache_path) {
   RemoveIfExists(lock);
 }
 
+bool ShouldExitForExistingProfile(const std::string& root_cache_path,
+                                  const std::string& state_path) {
+  if (root_cache_path.empty()) {
+    return false;
+  }
+
+  const std::filesystem::path ipc_socket = IpcSocketPathForStatePath(state_path);
+  const std::filesystem::path lock =
+      std::filesystem::path(root_cache_path) / "SingletonLock";
+
+  for (int attempt = 0; attempt < 50; ++attempt) {
+    if (TryConnectUnixSocket(ipc_socket)) {
+      std::cout << "vimbrowser: profile already open" << std::endl;
+      return true;
+    }
+
+    const int pid = PidFromChromeSingletonLock(lock);
+    if (!IsPidAlive(pid)) {
+      CleanStaleChromeSingleton(root_cache_path);
+      return false;
+    }
+
+    // The previous process may be between window-close, IPC shutdown, and
+    // Chromium singleton cleanup. Wait briefly instead of racing into CEF's
+    // process-singleton relaunch path, which can abort on a stale socket reset.
+    usleep(100000);
+  }
+
+  std::cerr << "vimbrowser: profile appears to be in use, but IPC is unavailable"
+            << std::endl;
+  return true;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -142,7 +206,9 @@ int main(int argc, char* argv[]) {
     return sub_process_exit_code;
   }
 
-  CleanStaleChromeSingleton(config.cache_path);
+  if (ShouldExitForExistingProfile(config.cache_path, config.state_path)) {
+    return 0;
+  }
 
   CefSettings settings;
   settings.no_sandbox = true;

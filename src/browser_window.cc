@@ -455,6 +455,19 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
 }
 
+void BrowserWindow::OnClientBeforeClose(BrowserClient*) {
+  if (!window_close_pending_ || !AllTabBrowsersClosed()) {
+    return;
+  }
+
+  window_close_allowed_ = true;
+  if (window_) {
+    window_->Close();
+  } else {
+    CefQuitMessageLoop();
+  }
+}
+
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
@@ -754,11 +767,33 @@ void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
-  for (Tab& tab : tabs_) {
-    if (tab.client && tab.client->browser()) {
-      tab.client->browser()->GetHost()->CloseBrowser(false);
+  if (window_close_allowed_ || AllTabBrowsersClosed()) {
+    window_close_allowed_ = true;
+    return true;
+  }
+
+  if (!window_close_pending_) {
+    window_close_pending_ = true;
+    ++active_browser_sync_generation_;
+    ++state_save_generation_;
+    SaveState();
+    if (ipc_server_) {
+      ipc_server_->Stop();
+      ipc_server_.reset();
     }
   }
+
+  bool all_ready_to_close = true;
+  for (Tab& tab : tabs_) {
+    if (tab.client && tab.client->browser()) {
+      all_ready_to_close &= tab.client->browser()->GetHost()->TryCloseBrowser();
+    }
+  }
+  if (!all_ready_to_close) {
+    return false;
+  }
+
+  window_close_allowed_ = true;
   return true;
 }
 
@@ -1298,6 +1333,15 @@ CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {
     return nullptr;
   }
   return tab.client->browser();
+}
+
+bool BrowserWindow::AllTabBrowsersClosed() const {
+  for (const Tab& tab : tabs_) {
+    if (tab.client && tab.client->browser()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 std::string BrowserWindow::ActiveTabUrl() const {

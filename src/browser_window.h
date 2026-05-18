@@ -41,6 +41,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
+  void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
   bool OnClientBeforePopup(BrowserClient* client,
                            const std::string& target_url,
@@ -171,6 +172,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string ModeIndicatorText() const;
   cef_color_t ModeIndicatorColor() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
+  bool AllTabBrowsersClosed() const;
   Tab* ActiveTab();
 
   std::vector<std::string> initial_urls_;
@@ -193,6 +195,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool last_tab_close_placeholder_ = false;
+  bool window_close_pending_ = false;
+  bool window_close_allowed_ = false;
   size_t visible_tab_index_ = static_cast<size_t>(-1);
   uint64_t active_browser_sync_generation_ = 0;
   uint64_t state_save_generation_ = 0;

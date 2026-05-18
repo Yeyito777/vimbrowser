@@ -31,6 +31,9 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   browser_ = nullptr;
+  if (owner_) {
+    owner_->OnClientBeforeClose(this);
+  }
 }
 
 void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,

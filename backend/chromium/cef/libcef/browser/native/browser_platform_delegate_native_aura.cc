@@ -114,9 +114,15 @@ void CefBrowserPlatformDelegateNativeAura::OnAnimationStep(
 void CefBrowserPlatformDelegateNativeAura::OnCompositingShuttingDown(
     ui::Compositor* compositor) {
   if (compositor == fps_observed_compositor_) {
+    if (compositor->HasObserver(this)) {
+      compositor->RemoveObserver(this);
+    }
     fps_observed_compositor_ = nullptr;
   }
   if (compositor == smooth_scroll_compositor_) {
+    if (compositor->HasAnimationObserver(this)) {
+      compositor->RemoveAnimationObserver(this);
+    }
     smooth_scroll_compositor_ = nullptr;
     smooth_scroll_scrolling_ = false;
   }
@@ -602,7 +608,9 @@ void CefBrowserPlatformDelegateNativeAura::InstallFpsObserver() {
 
 void CefBrowserPlatformDelegateNativeAura::RemoveFpsObserver() {
   if (fps_observed_compositor_) {
-    fps_observed_compositor_->RemoveObserver(this);
+    if (fps_observed_compositor_->HasObserver(this)) {
+      fps_observed_compositor_->RemoveObserver(this);
+    }
     fps_observed_compositor_ = nullptr;
   }
 }
