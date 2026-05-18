@@ -194,10 +194,15 @@ int main(int argc, char* argv[]) {
   command_line->InitFromArgv(argc, argv);
 
   vimbrowser::Config config = vimbrowser::ParseConfig(argc, argv);
+  if (!config.state_path.empty()) {
+    setenv("VIMBROWSER_STATE_PATH", config.state_path.c_str(), 1);
+  }
+  setenv("VIMBROWSER_SHADER", config.shader_enabled ? "on" : "off", 1);
   CefRefPtr<vimbrowser::App> app(new vimbrowser::App(config.initial_urls,
                                                      config.active_index,
                                                      config.show_mode_indicator,
                                                      config.show_fps_indicator,
+                                                     config.shader_enabled,
                                                      config.state_path,
                                                      config.disable_gpu));
 

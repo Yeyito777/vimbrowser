@@ -29,6 +29,28 @@ namespace {
 constexpr const char kIpcProtocolName[] = "vimbrowser-ipc";
 constexpr int kIpcProtocolVersion = 1;
 
+// This is only a style-invalidation pulse after :shader changes. The color
+// transform itself remains native Blink code in StyleResolver::ResolveStyle().
+constexpr const char kShaderRefreshScript[] = R"JS(
+(() => {
+  const refresh = () => {
+    const root = document.documentElement;
+    if (!root) return;
+    const oldDisplay = root.style.display;
+    root.style.display = 'none';
+    void root.offsetHeight;
+    root.style.display = oldDisplay;
+    void root.offsetHeight;
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refresh, {once: true});
+  } else {
+    refresh();
+    setTimeout(refresh, 300);
+  }
+})();
+)JS";
+
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
 constexpr int kCommandAutocompleteRowHeight = 24;
@@ -116,16 +138,17 @@ const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
       {":tab-focus", "focus tab by number/title/url"},
+      {":shader", "toggle native page color shader"},
       {":showmode", "toggle top-right vim mode display"},
       {":showfps", "toggle current page fps display"},
   };
   return commands;
 }
 
-const std::vector<CompletionItem>& ShowmodeArgList() {
+const std::vector<CompletionItem>& OnOffArgList() {
   static const std::vector<CompletionItem> args = {
-      {"off", "hide indicator"},
-      {"on", "show indicator"},
+      {"off", "turn off"},
+      {"on", "turn on"},
   };
   return args;
 }
@@ -140,7 +163,8 @@ const std::vector<CompletionItem>& OpenArgList() {
 
 bool CommandTakesArguments(const std::string& command) {
   return command == ":open" || command == ":tab-focus" ||
-         command == ":showmode" || command == ":showfps";
+         command == ":shader" || command == ":showmode" ||
+         command == ":showfps";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -454,12 +478,14 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              size_t active_index,
                              bool show_mode_indicator,
                              bool show_fps_indicator,
+                             bool shader_enabled,
                              std::string state_path)
     : initial_urls_(std::move(initial_urls)),
       state_path_(std::move(state_path)),
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
-      show_fps_indicator_(show_fps_indicator) {
+      show_fps_indicator_(show_fps_indicator),
+      shader_enabled_(shader_enabled) {
   open_history_ = ReadAppState(state_path_).open_history;
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
@@ -1484,6 +1510,29 @@ void BrowserWindow::CommitCommand() {
       return;
     }
 
+    if (command == ":shader") {
+      std::vector<std::string> argv = SplitArgs(args);
+      for (std::string& arg : argv) {
+        arg = ToLowerAscii(arg);
+      }
+
+      if (argv.empty()) {
+        const bool enabled = !shader_enabled_;
+        CancelCommand();
+        SetShaderEnabled(enabled);
+        return;
+      }
+      if (argv.size() == 1 && (argv[0] == "on" || argv[0] == "off")) {
+        const bool enabled = argv[0] == "on";
+        CancelCommand();
+        SetShaderEnabled(enabled);
+        return;
+      }
+
+      CancelCommand();
+      return;
+    }
+
     if (command != ":open" && command != ":tab-focus") {
       if (!args.empty()) {
         CancelCommand();
@@ -1947,7 +1996,9 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   } else if ((StartsWithCaseInsensitive(typed_command, ":showmode") &&
               IsTokenBoundary(typed_command, 9)) ||
              (StartsWithCaseInsensitive(typed_command, ":showfps") &&
-              IsTokenBoundary(typed_command, 8))) {
+              IsTokenBoundary(typed_command, 8)) ||
+             (StartsWithCaseInsensitive(typed_command, ":shader") &&
+              IsTokenBoundary(typed_command, 7))) {
     const size_t arg_start = after_command.find_last_of(" \t");
     const std::string arg_prefix = arg_start == std::string::npos
                                        ? after_command
@@ -1957,7 +2008,7 @@ void BrowserWindow::UpdateCommandAutocomplete() {
                                      std::isspace(static_cast<unsigned char>(
                                          after_command.back())));
     if (completing_new_arg || !arg_prefix.empty()) {
-      for (const CompletionItem& item : ShowmodeArgList()) {
+      for (const CompletionItem& item : OnOffArgList()) {
         if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
         }
@@ -3031,6 +3082,33 @@ void BrowserWindow::SetShowFpsIndicator(bool visible) {
   Layout();
 }
 
+void BrowserWindow::SetShaderEnabled(bool enabled) {
+  shader_enabled_ = enabled;
+  SaveState();
+  BroadcastShaderState();
+}
+
+void BrowserWindow::BroadcastShaderState() {
+  for (Tab& tab : tabs_) {
+    if (!tab.client || !tab.client->browser()) {
+      continue;
+    }
+    CefRefPtr<CefBrowser> browser = tab.client->browser();
+    std::vector<CefString> frame_ids;
+    browser->GetFrameIdentifiers(frame_ids);
+    if (frame_ids.empty() && browser->GetMainFrame()) {
+      frame_ids.push_back(browser->GetMainFrame()->GetIdentifier());
+    }
+    for (const CefString& frame_id : frame_ids) {
+      CefRefPtr<CefFrame> frame = browser->GetFrameByIdentifier(frame_id);
+      if (!frame) {
+        continue;
+      }
+      frame->ExecuteJavaScript(kShaderRefreshScript, frame->GetURL(), 0);
+    }
+  }
+}
+
 std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   const std::vector<std::string> argv = SplitArgs(command_line);
   if (argv.empty()) {
@@ -3075,6 +3153,22 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     return "ERR usage: showfps [on|off]\n";
   }
+  if (command == "shader") {
+    if (argv.size() == 1) {
+      SetShaderEnabled(!shader_enabled_);
+      return IpcStatusJson();
+    }
+    const std::string arg = ToLowerAscii(argv[1]);
+    if (arg == "on" || arg == "1" || arg == "true") {
+      SetShaderEnabled(true);
+      return IpcStatusJson();
+    }
+    if (arg == "off" || arg == "0" || arg == "false") {
+      SetShaderEnabled(false);
+      return IpcStatusJson();
+    }
+    return "ERR usage: shader [on|off]\n";
+  }
   if (command == "scroll") {
     if (argv.size() < 2) {
       return "ERR usage: scroll <dy> [count]\n";
@@ -3111,7 +3205,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return IpcStatusJson();
   }
   if (command == "help") {
-    return "commands: version, status, fps, refresh, url, showfps [on|off], scroll <dy> [count], tab <index>\n";
+    return "commands: version, status, fps, refresh, url, showfps [on|off], shader [on|off], scroll <dy> [count], tab <index>\n";
   }
   return "ERR unknown command\n";
 }
@@ -3149,6 +3243,7 @@ std::string BrowserWindow::IpcStatusJson() const {
       << "\"url\":\"" << JsonEscape(url) << "\","
       << "\"title\":\"" << JsonEscape(title) << "\","
       << "\"showfps\":" << (show_fps_indicator_ ? "true" : "false") << ","
+      << "\"shader\":" << (shader_enabled_ ? "true" : "false") << ","
       << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","
       << "\"fps\":" << (fps_has_sample ? std::to_string(static_cast<int>(std::round(fps))) : "null")
       << ",\"refresh_rate\":" << refresh_rate
@@ -3161,6 +3256,7 @@ void BrowserWindow::SaveState() const {
   state.active_index = active_index_;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
+  state.shader_enabled = shader_enabled_;
   state.open_history = open_history_;
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {

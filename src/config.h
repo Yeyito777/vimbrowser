@@ -20,8 +20,10 @@ struct Config {
   bool explicit_profile_dir = false;
   bool explicit_cache_path = false;
   bool explicit_remote_debugging_port = false;
+  bool explicit_shader_enabled = false;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
+  bool shader_enabled = true;
 };
 
 struct AppState {
@@ -30,6 +32,7 @@ struct AppState {
   size_t active_index = 0;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
+  bool shader_enabled = true;
 };
 
 Config ParseConfig(int argc, char* argv[]);

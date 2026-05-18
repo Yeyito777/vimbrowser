@@ -22,6 +22,17 @@ std::string ToLowerAscii(std::string value) {
   return value;
 }
 
+bool ParseBoolSetting(std::string value, bool fallback) {
+  value = ToLowerAscii(std::move(value));
+  if (value == "1" || value == "true" || value == "on" || value == "yes") {
+    return true;
+  }
+  if (value == "0" || value == "false" || value == "off" || value == "no") {
+    return false;
+  }
+  return fallback;
+}
+
 bool LooksLikeUrl(std::string_view text) {
   return StartsWith(text, "http://") || StartsWith(text, "https://") ||
          StartsWith(text, "file://") || StartsWith(text, "data:") ||
@@ -159,6 +170,8 @@ AppState ReadAppState(const std::string& state_path) {
       const std::string value = ToLowerAscii(std::string(line.substr(8)));
       state.show_fps_indicator = value == "1" || value == "true" ||
                                  value == "on" || value == "yes";
+    } else if (StartsWith(line, "shader=")) {
+      state.shader_enabled = ParseBoolSetting(line.substr(7), state.shader_enabled);
     }
   }
 
@@ -192,6 +205,7 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     }
     file << "showmode=" << (state.show_mode_indicator ? "on" : "off") << '\n';
     file << "showfps=" << (state.show_fps_indicator ? "on" : "off") << '\n';
+    file << "shader=" << (state.shader_enabled ? "on" : "off") << '\n';
     file << "active=" << state.active_index << '\n';
     for (const std::string& tab : state.tabs) {
       if (!tab.empty()) {
@@ -246,6 +260,10 @@ Config ParseConfig(int argc, char* argv[]) {
   Config config;
   config.cache_path = DefaultInstanceCachePath();
   config.state_path = DefaultStatePath();
+  if (const char* state_path = std::getenv("VIMBROWSER_STATE_PATH");
+      state_path && *state_path) {
+    config.state_path = AbsolutePath(state_path);
+  }
   bool is_subprocess = false;
 
   for (int i = 1; i < argc; ++i) {
@@ -268,6 +286,17 @@ Config ParseConfig(int argc, char* argv[]) {
     } else if (arg == "--cache-path" && i + 1 < argc) {
       config.cache_path = AbsolutePath(argv[++i]);
       config.explicit_cache_path = true;
+    } else if (StartsWith(arg, "--vimbrowser-state-path=")) {
+      config.state_path = AbsolutePath(ValueAfter(arg, "--vimbrowser-state-path="));
+    } else if (arg == "--vimbrowser-state-path" && i + 1 < argc) {
+      config.state_path = AbsolutePath(argv[++i]);
+    } else if (StartsWith(arg, "--vimbrowser-shader=")) {
+      config.shader_enabled = ParseBoolSetting(
+          ValueAfter(arg, "--vimbrowser-shader="), config.shader_enabled);
+      config.explicit_shader_enabled = true;
+    } else if (arg == "--vimbrowser-shader") {
+      config.shader_enabled = true;
+      config.explicit_shader_enabled = true;
     } else if (!arg.empty() && arg[0] != '-') {
       config.initial_urls.push_back(ResolveUrlOrSearch(std::string(arg)));
     }
@@ -276,6 +305,9 @@ Config ParseConfig(int argc, char* argv[]) {
   const AppState state = ReadAppState(config.state_path);
   config.show_mode_indicator = state.show_mode_indicator;
   config.show_fps_indicator = state.show_fps_indicator;
+  if (!config.explicit_shader_enabled) {
+    config.shader_enabled = state.shader_enabled;
+  }
 
   if (!config.initial_urls.empty()) {
     config.initial_url = config.initial_urls.front();

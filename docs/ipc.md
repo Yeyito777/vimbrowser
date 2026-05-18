@@ -76,6 +76,7 @@ Returns canonical app/tab state as JSON. Current fields:
   "url": "https://example.com/",
   "title": "Example Domain",
   "showfps": false,
+  "shader": true,
   "fps_has_sample": true,
   "fps": 165,
   "refresh_rate": 164.99
@@ -104,6 +105,10 @@ Returns the active tab's URL as plain text.
 ### `showfps [on|off]`
 
 Toggles or sets the visible FPS overlay and returns `status` JSON.
+
+### `shader [on|off]`
+
+Toggles or sets the native Blink page color shader and returns `status` JSON.
 
 ### `scroll <dy> [count]`
 

@@ -37,6 +37,7 @@ class BrowserWindow final : public CefWindowDelegate,
                 size_t active_index,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
+                bool shader_enabled,
                 std::string state_path);
 
   void Create();
@@ -165,6 +166,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void SetShowModeIndicator(bool visible);
   void UpdateFpsIndicator();
   void SetShowFpsIndicator(bool visible);
+  void SetShaderEnabled(bool enabled);
+  void BroadcastShaderState();
   void ScheduleFpsIndicatorUpdate();
   void OnFpsIndicatorUpdateTimer();
   std::string IpcStatusJson() const;
@@ -194,6 +197,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool sidebar_visible_ = true;
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
+  bool shader_enabled_ = true;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool last_tab_close_placeholder_ = false;
