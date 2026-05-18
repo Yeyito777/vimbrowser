@@ -120,6 +120,11 @@ Scrolls the active page by `dy` pixels, repeated `count` times. Returns `status`
 
 Activates the requested tab and returns `status` JSON.
 
+### `tab-close`
+
+Closes the active tab and destroys its underlying browser instance. Returns
+`status` JSON.
+
 ### `help`
 
 Returns a plain text command summary.

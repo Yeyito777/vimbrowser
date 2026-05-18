@@ -178,6 +178,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   (`Shift-f`) opens hinted links in a new tab
 - in website-normal/normal web modes, `p` opens the clipboard in the current tab
   and `P` opens the clipboard in a new tab
+- in website-normal/normal web modes, `d` closes the current tab and `D` closes
+  it while focusing the previous tab; closed tabs are destroyed in the CEF
+  backend, so media and page activity stop
 - `Escape` from insert mode enters regular Vim normal mode; `Escape` again
   returns to website-normal mode
 - left qutebrowser-style tab sidebar

@@ -58,6 +58,7 @@ class BrowserClient final : public CefClient,
                      bool* is_keyboard_shortcut) override;
 
   CefRefPtr<CefBrowser> browser() const { return browser_; }
+  void DetachOwner();
   void ShowDevTools();
   double current_fps() const;
   bool fps_has_sample() const;

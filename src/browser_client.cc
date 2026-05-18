@@ -36,6 +36,10 @@ void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   }
 }
 
+void BrowserClient::DetachOwner() {
+  owner_ = nullptr;
+}
+
 void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 TransitionType transition_type) {

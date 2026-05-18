@@ -965,6 +965,29 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     return true;
   }
 
+  if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
+    switch (PlainKeyChar(event)) {
+      case 'd':
+        CloseActiveTab(CloseFocus::kNextTab);
+        return true;
+      case 'D':
+        CloseActiveTab(CloseFocus::kPreviousTab);
+        return true;
+      case 'u':
+        UndoCloseTab();
+        return true;
+      case 'c':
+        CloneActiveTab();
+        return true;
+      case 'e':
+        MoveActiveTab(-1);
+        return true;
+      case 'E':
+        MoveActiveTab(1);
+        return true;
+    }
+  }
+
   return false;
 }
 
@@ -1295,27 +1318,30 @@ void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
     closed_tab_urls_.push_back(url);
   }
 
+  ++active_browser_sync_generation_;
+
   if (tabs_.size() == 1) {
-    if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
-      tab->url = "about:blank";
-      last_tab_close_placeholder_ = true;
-      tab->client->browser()->GetMainFrame()->LoadURL(tab->url);
-      UpdateFpsIndicator();
-      SaveState();
-      RefreshSidebar();
-    }
+    Tab closing_tab = tabs_[0];
+    tabs_.clear();
+    active_index_ = 0;
+    visible_tab_index_ = kNoTabIndex;
+    CloseTabBackend(closing_tab);
+    AddTab("about:blank", true);
+    last_tab_close_placeholder_ = true;
+    UpdateFpsIndicator();
+    SaveState();
+    RefreshSidebar();
+    Layout();
     return;
   }
 
-  if (tabs_[closing].view) {
-    tabs_[closing].view->SetVisible(false);
-  }
   if (visible_tab_index_ == closing) {
     visible_tab_index_ = kNoTabIndex;
   } else if (visible_tab_index_ > closing && visible_tab_index_ < tabs_.size()) {
     --visible_tab_index_;
   }
-  Tab closed_tab = tabs_[closing];
+  Tab closing_tab = tabs_[closing];
+  CloseTabBackend(closing_tab);
 
   const size_t next_index = focus_after_close == CloseFocus::kNextTab
                                 ? closing
@@ -1331,25 +1357,24 @@ void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
   SaveState();
   RefreshSidebar();
   Layout();
-  closed_tabs_.push_back(closed_tab);
   last_tab_close_placeholder_ = false;
 }
 
-void BrowserWindow::UndoCloseTab() {
-  if (!closed_tabs_.empty()) {
-    Tab tab = closed_tabs_.back();
-    closed_tabs_.pop_back();
-    std::cerr << "vimbrowser: undo-close-tab view url=" << tab.url
-              << " count=" << tabs_.size() << std::endl;
+void BrowserWindow::CloseTabBackend(Tab& tab) {
+  if (tab.view) {
     tab.view->SetVisible(false);
-    tabs_.push_back(tab);
-    SaveState();
-    RefreshSidebar();
-    Layout();
-    ActivateTab(tabs_.size() - 1);
-    return;
+    if (content_inner_panel_) {
+      content_inner_panel_->RemoveChildView(tab.view);
+    }
   }
+  if (tab.client) {
+    tab.client->DetachOwner();
+  }
+  tab.view = nullptr;
+  tab.client = nullptr;
+}
 
+void BrowserWindow::UndoCloseTab() {
   if (closed_tab_urls_.empty()) {
     std::cerr << "vimbrowser: undo-close-tab ignored; stack empty" << std::endl;
     return;
@@ -3204,8 +3229,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     ActivateTab(static_cast<size_t>(index - 1));
     return IpcStatusJson();
   }
+  if (command == "tab-close") {
+    if (argv.size() != 1) {
+      return "ERR usage: tab-close\n";
+    }
+    CloseActiveTab();
+    return IpcStatusJson();
+  }
   if (command == "help") {
-    return "commands: version, status, fps, refresh, url, showfps [on|off], shader [on|off], scroll <dy> [count], tab <index>\n";
+    return "commands: version, status, fps, refresh, url, showfps [on|off], shader [on|off], scroll <dy> [count], tab <index>, tab-close\n";
   }
   return "ERR unknown command\n";
 }

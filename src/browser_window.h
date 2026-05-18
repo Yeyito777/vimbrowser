@@ -118,6 +118,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void MoveActiveTab(int delta);
   void CloneActiveTab();
   void CloseActiveTab(CloseFocus focus_after_close = CloseFocus::kPreviousTab);
+  void CloseTabBackend(Tab& tab);
   void UndoCloseTab();
   std::string ActiveTabUrl() const;
   std::string ActiveTabTitle() const;
@@ -209,7 +210,6 @@ class BrowserWindow final : public CefWindowDelegate,
   int laid_out_content_width_ = 0;
   int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;
-  std::vector<Tab> closed_tabs_;
   size_t active_index_ = 0;
 
   CefRefPtr<CefWindow> window_;
