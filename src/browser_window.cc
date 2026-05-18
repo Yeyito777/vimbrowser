@@ -1715,6 +1715,7 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
     return;
   }
   const std::string url = ResolveUrlOrSearch(text);
+  RecordOpenHistory(text);
   if (new_tab) {
     AddTab(url, true);
   } else if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
