@@ -30,6 +30,8 @@ add_executable(vimbrowser
   src/ipc_server.cc
   src/ipc_server.h
   src/main.cc
+  src/shortcuts.c
+  src/shortcuts.h
   src/tab.h
   src/theme.h
   src/vim.cc

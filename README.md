@@ -183,6 +183,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   backend, so media and page activity stop
 - `u` / `:undo-close-tab` reopens the most recently closed tab at the index it
   was closed from, pushing later tabs right
+- `src/shortcuts.c` owns page-specific shortcut overrides; on YouTube in
+  website-normal/normal web modes, `Space` toggles playback, `h` / `l` seek
+  -/+5s, and `j` / `k` adjust volume -/+5%
 - `Escape` from insert mode enters regular Vim normal mode; `Escape` again
   returns to website-normal mode
 - left qutebrowser-style tab sidebar

@@ -155,6 +155,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   bool HandleWebsiteCommandKey(const CefKeyEvent& event);
+  std::optional<bool> HandlePageShortcut(const CefKeyEvent& event,
+                                         bool allow_forward_to_page);
   void ResetWebsitePendingKeys();
   bool StartNativeHints(const CefKeyEvent& event);
   void ScrollActivePageBy(int dy);

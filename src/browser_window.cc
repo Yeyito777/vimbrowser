@@ -21,6 +21,7 @@
 #include "include/views/cef_button.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "ipc_server.h"
+#include "shortcuts.h"
 #include "theme.h"
 
 namespace vimbrowser {
@@ -2782,6 +2783,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
 
+      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+        return *shortcut;
+      }
+
       if (StartNativeHints(event)) {
         return true;
       }
@@ -2817,6 +2822,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
 
+      if (website_mode_ == vim::Mode::kNormal) {
+        if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+          return *shortcut;
+        }
+      }
+
       if (website_mode_ == vim::Mode::kNormal && StartNativeHints(event)) {
         return true;
       }
@@ -2849,6 +2860,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   if (IsCharEvent(event)) {
+    if (website_mode_ == vim::Mode::kWebsiteNormal ||
+        website_mode_ == vim::Mode::kNormal) {
+      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+        return *shortcut;
+      }
+    }
     if (website_mode_ == vim::Mode::kInsert) {
       return false;
     }
@@ -2862,6 +2879,59 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   return false;
+}
+
+std::optional<bool> BrowserWindow::HandlePageShortcut(
+    const CefKeyEvent& event,
+    bool allow_forward_to_page) {
+  if (focus_area_ != FocusArea::kWebView || native_hints_active_) {
+    return std::nullopt;
+  }
+  if (website_mode_ != vim::Mode::kWebsiteNormal &&
+      website_mode_ != vim::Mode::kNormal) {
+    return std::nullopt;
+  }
+  if (!IsRawKeyDown(event) && !IsCharEvent(event)) {
+    return std::nullopt;
+  }
+
+  const char key = PlainKeyChar(event);
+  if (!key) {
+    return std::nullopt;
+  }
+
+  const std::string url = ActiveTabUrl();
+  const bool plain_without_shift =
+      IsPlain(event) && !(event.modifiers & EVENTFLAG_SHIFT_DOWN);
+  const VimbrowserShortcut shortcut = vimbrowser_shortcut_for_key(
+      url.c_str(), static_cast<unsigned char>(key), IsRawKeyDown(event),
+      IsCharEvent(event), plain_without_shift);
+
+  switch (shortcut.action) {
+    case VIMBROWSER_SHORTCUT_NONE:
+      return std::nullopt;
+    case VIMBROWSER_SHORTCUT_FORWARD_TO_PAGE:
+      if (!allow_forward_to_page) {
+        return std::nullopt;
+      }
+      ResetWebsitePendingKeys();
+      return false;
+    case VIMBROWSER_SHORTCUT_CONSUME:
+      ResetWebsitePendingKeys();
+      return true;
+    case VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT: {
+      ResetWebsitePendingKeys();
+      CefRefPtr<CefBrowser> browser = ActiveBrowser();
+      if (browser && browser->GetMainFrame() && shortcut.script &&
+          shortcut.script[0]) {
+        browser->GetMainFrame()->ExecuteJavaScript(
+            shortcut.script, browser->GetMainFrame()->GetURL(), 0);
+      }
+      return true;
+    }
+  }
+
+  return std::nullopt;
 }
 
 void BrowserWindow::ResetWebsitePendingKeys() {
@@ -2934,6 +3004,10 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
     if (key == 't') { YankActiveTitle(); return true; }
     if (key == 'm') { YankActiveMarkdown(); return true; }
     return true;
+  }
+
+  if (std::optional<bool> shortcut = HandlePageShortcut(event, false)) {
+    return *shortcut;
   }
 
   switch (key) {
