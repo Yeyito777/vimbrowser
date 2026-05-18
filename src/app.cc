@@ -22,6 +22,11 @@ App::App(std::vector<std::string> initial_urls,
 void App::OnBeforeCommandLineProcessing(
     const CefString& process_type,
     CefRefPtr<CefCommandLine> command_line) {
+  // These are vimbrowser-level flags. Do not forward them into Chromium's
+  // command line or process-singleton relaunch messages.
+  command_line->RemoveSwitch("profile-dir");
+  command_line->RemoveSwitch("cache-path");
+
   // Keep the shell minimal and deterministic. These are Chromium switches, not
   // external UI toolkits.
   command_line->AppendSwitch("disable-extensions");
@@ -33,6 +38,16 @@ void App::OnBeforeCommandLineProcessing(
   if (disable_gpu_) {
     command_line->AppendSwitch("disable-gpu");
   }
+}
+
+bool App::OnAlreadyRunningAppRelaunch(
+    CefRefPtr<CefCommandLine>,
+    const CefString&) {
+  // A durable --profile-dir is intentionally single-writer. For now, acknowledge
+  // relaunches so CEF exits the second process cleanly instead of creating a
+  // default Chrome-styled window against our profile. Opening URLs in the
+  // existing vimbrowser process should go through our Unix IPC protocol.
+  return true;
 }
 
 void App::OnContextInitialized() {

@@ -1,5 +1,10 @@
+#include <cerrno>
+#include <csignal>
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <limits.h>
+#include <string>
 #include <unistd.h>
 
 #include "app.h"
@@ -29,6 +34,81 @@ std::string Dirname(const std::string& path) {
     return ".";
   }
   return path.substr(0, slash);
+}
+
+bool IsPidAlive(int pid) {
+  if (pid <= 0) {
+    return false;
+  }
+  if (kill(pid, 0) == 0) {
+    return true;
+  }
+  return errno == EPERM;
+}
+
+int PidFromChromeSingletonLock(const std::filesystem::path& lock_path) {
+  std::error_code ec;
+  if (!std::filesystem::is_symlink(lock_path, ec)) {
+    return -1;
+  }
+  const std::string target = std::filesystem::read_symlink(lock_path, ec).string();
+  if (ec || target.empty()) {
+    return -1;
+  }
+  const size_t delimiter = target.rfind('-');
+  if (delimiter == std::string::npos || delimiter + 1 >= target.size()) {
+    return -1;
+  }
+  const std::string pid_text = target.substr(delimiter + 1);
+  char* end = nullptr;
+  errno = 0;
+  const long pid = std::strtol(pid_text.c_str(), &end, 10);
+  if (end == pid_text.c_str() || *end != '\0' || errno != 0 || pid <= 0) {
+    return -1;
+  }
+  return static_cast<int>(pid);
+}
+
+void RemoveIfExists(const std::filesystem::path& path) {
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+}
+
+void CleanStaleChromeSingleton(const std::string& root_cache_path) {
+  if (root_cache_path.empty()) {
+    return;
+  }
+
+  const std::filesystem::path root(root_cache_path);
+  const std::filesystem::path lock = root / "SingletonLock";
+  const std::filesystem::path socket = root / "SingletonSocket";
+  const std::filesystem::path cookie = root / "SingletonCookie";
+
+  std::error_code ec;
+  const bool has_lock = std::filesystem::exists(
+      std::filesystem::symlink_status(lock, ec));
+  ec.clear();
+  const bool has_socket = std::filesystem::exists(
+      std::filesystem::symlink_status(socket, ec));
+  ec.clear();
+  const bool has_cookie = std::filesystem::exists(
+      std::filesystem::symlink_status(cookie, ec));
+  if (!has_lock && !has_socket && !has_cookie) {
+    return;
+  }
+
+  const int pid = PidFromChromeSingletonLock(lock);
+  if (IsPidAlive(pid)) {
+    return;
+  }
+
+  // Chromium's process singleton can abort on Linux if a stale SingletonSocket
+  // accepts and immediately resets the relaunch connection while the matching
+  // SingletonLock is missing or points at a dead process. Remove only the three
+  // singleton coordination symlinks/files; keep all profile data intact.
+  RemoveIfExists(socket);
+  RemoveIfExists(cookie);
+  RemoveIfExists(lock);
 }
 
 }  // namespace
@@ -62,6 +142,8 @@ int main(int argc, char* argv[]) {
     return sub_process_exit_code;
   }
 
+  CleanStaleChromeSingleton(config.cache_path);
+
   CefSettings settings;
   settings.no_sandbox = true;
   settings.remote_debugging_port = config.remote_debugging_port;
@@ -79,8 +161,14 @@ int main(int argc, char* argv[]) {
   }
 
   if (!CefInitialize(main_args, settings, app, nullptr)) {
-    std::cerr << "vimbrowser: CefInitialize failed" << std::endl;
-    return 1;
+    const int exit_code = CefGetExitCode();
+    if (exit_code == CEF_RESULT_CODE_NORMAL_EXIT ||
+        exit_code == CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED) {
+      return 0;
+    }
+    std::cerr << "vimbrowser: CefInitialize failed with exit code "
+              << exit_code << std::endl;
+    return exit_code == 0 ? 1 : exit_code;
   }
 
   std::cout << "vimbrowser: " << config.initial_url << std::endl;
