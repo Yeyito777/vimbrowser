@@ -57,6 +57,8 @@ if [[ -d "${out_dir}/locales" ]]; then
   echo "synced ${out_dir#${repo_dir}/}/locales/ -> ${dist_dir#${repo_dir}/}/Resources/locales/"
 fi
 
+"${repo_dir}/scripts/slim-cef-runtime.sh" "${dist_dir}"
+
 cat <<EOF
 [+] Existing CEF binary distribution refreshed from incremental Chromium output:
     ${dist_dir}

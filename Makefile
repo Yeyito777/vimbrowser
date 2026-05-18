@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
@@ -23,13 +23,18 @@ build-chromium-cef:
 sync-source-distrib:
 	./scripts/sync-chromium-cef-distrib.sh
 
+slim-runtime:
+	./scripts/slim-cef-runtime.sh "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" "$(abspath $(BUILD_DIR))/Release"
+
 backend-dev: build-chromium-cef sync-source-distrib configure-source
 	cmake --build $(SOURCE_BUILD_DIR) -j$(JOBS)
+	./scripts/slim-cef-runtime.sh "$(abspath $(SOURCE_BUILD_DIR))/Release"
 	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
 
 source-distrib:
 	cd backend/chromium && PATH="$(CURDIR)/backend/depot_tools:$$PATH" autoninja -C out/Release_GN_x64 chrome_sandbox
 	cd backend/chromium/cef/tools && ./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
+	./scripts/slim-cef-runtime.sh "$$(ls -d backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)"
 
 configure-source:
 	@test -n "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" || { echo 'No source-built CEF distribution found; run make build-chromium-cef source-distrib, or set CEF_ROOT'; exit 1; }
@@ -40,9 +45,11 @@ configure: bootstrap
 
 build: configure
 	cmake --build $(BUILD_DIR) -j$(JOBS)
+	./scripts/slim-cef-runtime.sh "$(abspath $(BUILD_DIR))/Release"
 
 build-source: configure-source
 	cmake --build $(SOURCE_BUILD_DIR) -j$(JOBS)
+	./scripts/slim-cef-runtime.sh "$(abspath $(SOURCE_BUILD_DIR))/Release"
 
 install-wrapper:
 	mkdir -p $(dir $(INSTALL_BIN))

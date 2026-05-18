@@ -40,11 +40,17 @@ make backend-dev
 
 `backend-dev` keeps Chromium's incremental build cache in
 `backend/chromium/out/Release_GN_x64`, rebuilds `libcef`, syncs the changed
-runtime artifacts into the existing CEF binary distribution, rebuilds the small
+runtime artifacts into the existing CEF binary distribution, strips release ELF
+payload, prunes locale packs to the English runtime set, rebuilds the small
 vimbrowser shell, and reinstalls `~/.local/bin/vimbrowser`. Do not delete
 `backend/chromium/out/Release_GN_x64` unless you intentionally want to pay for a
 full Chromium rebuild again. Use `make source-distrib` only for a fresh package
 or major CEF distribution layout/API changes.
+
+The local CEF runtime is slimmed by `scripts/slim-cef-runtime.sh`: final release
+ELF binaries are stripped and only `en-US`/`en-GB` locale packs are kept by
+default. Set `VIMBROWSER_KEEP_LOCALES="en-US,es,..."` before the build if you
+want additional Chromium UI locales in the generated runtime.
 
 For fast visual mockups that do not need a C++/Chromium rebuild, there is also a
 small Vite lab under `frontend/`:
