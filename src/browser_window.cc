@@ -115,6 +115,7 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
 const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
+      {":tab-focus", "focus tab by number/title/url"},
       {":showmode", "toggle top-right vim mode display"},
       {":showfps", "toggle current page fps display"},
   };
@@ -138,7 +139,8 @@ const std::vector<CompletionItem>& OpenArgList() {
 }
 
 bool CommandTakesArguments(const std::string& command) {
-  return command == ":open" || command == ":showmode" || command == ":showfps";
+  return command == ":open" || command == ":tab-focus" ||
+         command == ":showmode" || command == ":showfps";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -298,6 +300,26 @@ bool StartsWithCaseInsensitive(const std::string& value, const std::string& pref
     }
   }
   return true;
+}
+
+bool ContainsCaseInsensitive(const std::string& value, const std::string& needle) {
+  if (needle.empty()) {
+    return true;
+  }
+  return ToLowerAscii(value).find(ToLowerAscii(needle)) != std::string::npos;
+}
+
+std::string Ellipsize(std::string value, size_t max_size) {
+  if (value.size() <= max_size) {
+    return value;
+  }
+  if (max_size <= 3) {
+    value.resize(max_size);
+    return value;
+  }
+  value.resize(max_size - 3);
+  value += "...";
+  return value;
 }
 
 bool IsWhitespaceOnly(const std::string& value) {
@@ -1550,8 +1572,17 @@ void BrowserWindow::CommitCommand() {
       }
       const std::string needle = text;
       for (size_t i = 0; i < tabs_.size(); ++i) {
-        const std::string haystack = tabs_[i].url;
-        if (haystack.find(needle) != std::string::npos) {
+        std::string title;
+        if (tabs_[i].client && tabs_[i].client->browser() &&
+            tabs_[i].client->browser()->GetHost()) {
+          CefRefPtr<CefNavigationEntry> entry =
+              tabs_[i].client->browser()->GetHost()->GetVisibleNavigationEntry();
+          if (entry) {
+            title = entry->GetTitle().ToString();
+          }
+        }
+        if (ContainsCaseInsensitive(tabs_[i].url, needle) ||
+            ContainsCaseInsensitive(title, needle)) {
           ActivateTab(i);
           return;
         }
@@ -1803,6 +1834,54 @@ void BrowserWindow::AppendOpenHistoryMatches(
   }
 }
 
+void BrowserWindow::AppendTabFocusMatches(
+    const std::string& prefix,
+    std::vector<CompletionItem>& matches) const {
+  std::unordered_set<std::string> seen;
+  for (const CompletionItem& item : matches) {
+    seen.insert(ToLowerAscii(item.name));
+  }
+
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    const Tab& tab = tabs_[i];
+    const std::string number = std::to_string(i + 1);
+    std::string title;
+    if (tab.client && tab.client->browser() && tab.client->browser()->GetHost()) {
+      CefRefPtr<CefNavigationEntry> entry =
+          tab.client->browser()->GetHost()->GetVisibleNavigationEntry();
+      if (entry) {
+        title = entry->GetTitle().ToString();
+      }
+    }
+
+    const bool matches_prefix =
+        prefix.empty() || StartsWithCaseInsensitive(number, prefix) ||
+        ContainsCaseInsensitive(title, prefix) ||
+        ContainsCaseInsensitive(tab.url, prefix);
+    if (!matches_prefix || !seen.insert(ToLowerAscii(number)).second) {
+      continue;
+    }
+
+    std::string description = "tab " + number;
+    if (i == active_index_) {
+      description += " (active)";
+    }
+    if (!title.empty()) {
+      description += "  ";
+      description += title;
+      if (!tab.url.empty()) {
+        description += " — ";
+        description += DisplayUrl(tab.url);
+      }
+    } else if (!tab.url.empty()) {
+      description += "  ";
+      description += DisplayUrl(tab.url);
+    }
+
+    matches.push_back({number, Ellipsize(std::move(description), 140)});
+  }
+}
+
 void BrowserWindow::UpdateCommandAutocomplete() {
   ClearCommandAutocomplete();
   if (command_text_.find('\n') != std::string::npos) {
@@ -1850,6 +1929,19 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     }
     if (completing_new_arg || !arg_prefix.empty()) {
       AppendOpenHistoryMatches(arg_prefix, matches);
+    }
+  } else if (StartsWithCaseInsensitive(typed_command, ":tab-focus") &&
+             IsTokenBoundary(typed_command, 10)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos
+                                       ? after_command
+                                       : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() &&
+                                     std::isspace(static_cast<unsigned char>(
+                                         after_command.back())));
+    if (completing_new_arg || !arg_prefix.empty()) {
+      AppendTabFocusMatches(arg_prefix, matches);
     }
   } else if ((StartsWithCaseInsensitive(typed_command, ":showmode") &&
               IsTokenBoundary(typed_command, 9)) ||

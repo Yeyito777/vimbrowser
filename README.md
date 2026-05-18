@@ -184,6 +184,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   editing skeleton
 - `:open` / `:open tab` autocomplete includes the last 1000 command-opened
   entries, shortest matching URLs first
+- `:tab-focus` is a first-class command; command autocomplete lists it and its
+  argument autocomplete offers open tabs by number/title/URL
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.

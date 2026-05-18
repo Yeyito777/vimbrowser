@@ -130,6 +130,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateCommandAutocomplete();
   void AppendOpenHistoryMatches(const std::string& prefix,
                                 std::vector<CompletionItem>& matches) const;
+  void AppendTabFocusMatches(const std::string& prefix,
+                             std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
   void FillCommandAutocomplete(const std::string& name);
   int CommandAutocompleteVisibleRows() const;
