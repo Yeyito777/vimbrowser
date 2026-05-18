@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 
+#include <atomic>
 #include <optional>
 #include <variant>
 
@@ -547,10 +548,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
   // Vimbrowser element shader. Static so every NativeTheme instance in the
   // process uses the same draw-path decision. Default is enabled; this is a
   // native paint hook, not a page CSS/JS override.
-  static bool element_shader_enabled() { return element_shader_enabled_; }
-  static void set_element_shader_enabled(bool enabled) {
-    element_shader_enabled_ = enabled;
-  }
+  static bool element_shader_enabled();
+  static void set_element_shader_enabled(bool enabled);
 
   // Whether high contrast is forced via command-line flag.
   static bool IsForcedHighContrast();
@@ -626,7 +625,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
 
   raw_ptr<NativeTheme> associated_web_instance_ = nullptr;
 
-  static bool element_shader_enabled_;
+  static std::atomic<bool> element_shader_enabled_;
 
   SEQUENCE_CHECKER(sequence_checker_);
 };

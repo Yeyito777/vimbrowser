@@ -7,12 +7,18 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <atomic>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include "base/callback_list.h"
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
@@ -58,9 +64,120 @@
 
 namespace ui {
 
-bool NativeTheme::element_shader_enabled_ = true;
+std::atomic<bool> NativeTheme::element_shader_enabled_{true};
 
 namespace {
+
+bool ParseVimbrowserShaderBool(std::string value, bool fallback) {
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  if (value == "1" || value == "true" || value == "on" || value == "yes") {
+    return true;
+  }
+  if (value == "0" || value == "false" || value == "off" || value == "no") {
+    return false;
+  }
+  return fallback;
+}
+
+bool InitialVimbrowserElementShaderEnabled() {
+  bool enabled = true;
+  if (const base::CommandLine* command_line =
+          base::CommandLine::ForCurrentProcess();
+      command_line && command_line->HasSwitch("vimbrowser-shader")) {
+    enabled = ParseVimbrowserShaderBool(
+        command_line->GetSwitchValueASCII("vimbrowser-shader"), enabled);
+  }
+
+  if (const char* env = std::getenv("VIMBROWSER_SHADER"); env && *env) {
+    enabled = ParseVimbrowserShaderBool(env, enabled);
+  }
+  return enabled;
+}
+
+bool ParseVimbrowserShaderFromStateText(const std::string& contents,
+                                        bool* enabled) {
+  size_t line_start = 0;
+  while (line_start <= contents.size()) {
+    size_t line_end = contents.find('\n', line_start);
+    if (line_end == std::string::npos) {
+      line_end = contents.size();
+    }
+    const std::string line = contents.substr(line_start, line_end - line_start);
+    if (line.rfind("shader=", 0) == 0) {
+      *enabled = ParseVimbrowserShaderBool(line.substr(7), *enabled);
+      return true;
+    }
+    if (line_end == contents.size()) {
+      break;
+    }
+    line_start = line_end + 1;
+  }
+  return false;
+}
+
+bool ReadVimbrowserShaderStateFile(bool* enabled) {
+  std::string state_path;
+  if (const char* env = std::getenv("VIMBROWSER_STATE_PATH"); env && *env) {
+    state_path = env;
+  } else if (const base::CommandLine* command_line =
+                 base::CommandLine::ForCurrentProcess();
+             command_line && command_line->HasSwitch("vimbrowser-state-path")) {
+    state_path = command_line->GetSwitchValueASCII("vimbrowser-state-path");
+  }
+  if (state_path.empty()) {
+    return false;
+  }
+
+  std::string contents;
+  if (!base::ReadFileToString(base::FilePath(state_path), &contents)) {
+    return false;
+  }
+  return ParseVimbrowserShaderFromStateText(contents, enabled);
+}
+
+std::atomic<bool>& VimbrowserNativeElementShaderInitializedStorage() {
+  static std::atomic<bool> initialized(false);
+  return initialized;
+}
+
+std::atomic<int64_t>& VimbrowserNativeElementShaderNextStateCheckUs() {
+  static std::atomic<int64_t> next_check_us(0);
+  return next_check_us;
+}
+
+void RefreshVimbrowserNativeElementShaderState(std::atomic<bool>* enabled) {
+  if (!VimbrowserNativeElementShaderInitializedStorage().load(
+          std::memory_order_acquire)) {
+    enabled->store(InitialVimbrowserElementShaderEnabled(),
+                   std::memory_order_relaxed);
+    VimbrowserNativeElementShaderInitializedStorage().store(
+        true, std::memory_order_release);
+  }
+
+  // Native scrollbar painting can be hit frequently. Poll the tiny vimbrowser
+  // state file at most four times per second per process and cache the boolean.
+  const int64_t now_us =
+      base::TimeTicks::Now().since_origin().InMicroseconds();
+  int64_t next_check_us =
+      VimbrowserNativeElementShaderNextStateCheckUs().load(
+          std::memory_order_relaxed);
+  if (now_us < next_check_us) {
+    return;
+  }
+  const int64_t new_next_check_us =
+      now_us + base::Milliseconds(250).InMicroseconds();
+  if (!VimbrowserNativeElementShaderNextStateCheckUs().compare_exchange_strong(
+          next_check_us, new_next_check_us, std::memory_order_relaxed)) {
+    return;
+  }
+
+  bool state_enabled = enabled->load(std::memory_order_relaxed);
+  if (ReadVimbrowserShaderStateFile(&state_enabled)) {
+    enabled->store(state_enabled, std::memory_order_relaxed);
+  }
+}
 
 #if BUILDFLAG(IS_MAC)
 using NativeUiTheme = NativeThemeMac;
@@ -92,6 +209,17 @@ using WebUiTheme = NativeThemeMobile;
 #endif
 
 }  // namespace
+
+bool NativeTheme::element_shader_enabled() {
+  RefreshVimbrowserNativeElementShaderState(&element_shader_enabled_);
+  return element_shader_enabled_.load(std::memory_order_relaxed);
+}
+
+void NativeTheme::set_element_shader_enabled(bool enabled) {
+  element_shader_enabled_.store(enabled, std::memory_order_relaxed);
+  VimbrowserNativeElementShaderInitializedStorage().store(
+      true, std::memory_order_release);
+}
 
 NativeTheme::MenuListExtraParams::MenuListExtraParams() = default;
 
