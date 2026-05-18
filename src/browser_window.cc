@@ -1156,7 +1156,12 @@ cef_runtime_style_t BrowserWindow::GetBrowserRuntimeStyle() {
 }
 
 void BrowserWindow::AddTab(std::string url, bool activate) {
+  InsertTab(std::move(url), tabs_.size(), activate);
+}
+
+void BrowserWindow::InsertTab(std::string url, size_t index, bool activate) {
   last_tab_close_placeholder_ = false;
+  const size_t insert_index = std::min(index, tabs_.size());
   CefBrowserSettings browser_settings;
   browser_settings.background_color = theme::kAppBg;
 
@@ -1169,12 +1174,18 @@ void BrowserWindow::AddTab(std::string url, bool activate) {
   tab.view->SetVisible(false);
   content_inner_panel_->AddChildView(tab.view);
 
-  tabs_.push_back(tab);
+  if (!tabs_.empty() && insert_index <= active_index_) {
+    ++active_index_;
+  }
+  if (visible_tab_index_ != kNoTabIndex && insert_index <= visible_tab_index_) {
+    ++visible_tab_index_;
+  }
+  tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(insert_index), tab);
   RefreshSidebar();
   Layout();
 
   if (activate) {
-    ActivateTab(tabs_.size() - 1);
+    ActivateTab(insert_index);
   } else {
     SaveState();
   }
@@ -1315,7 +1326,7 @@ void BrowserWindow::CloseActiveTab(CloseFocus focus_after_close) {
   std::cerr << "vimbrowser: close-tab index=" << (closing + 1)
             << " count=" << tabs_.size() << " url=" << url << std::endl;
   if (!url.empty()) {
-    closed_tab_urls_.push_back(url);
+    closed_tabs_.push_back({url, closing});
   }
 
   ++active_browser_sync_generation_;
@@ -1375,26 +1386,27 @@ void BrowserWindow::CloseTabBackend(Tab& tab) {
 }
 
 void BrowserWindow::UndoCloseTab() {
-  if (closed_tab_urls_.empty()) {
+  if (closed_tabs_.empty()) {
     std::cerr << "vimbrowser: undo-close-tab ignored; stack empty" << std::endl;
     return;
   }
-  const std::string url = closed_tab_urls_.back();
-  closed_tab_urls_.pop_back();
-  std::cerr << "vimbrowser: undo-close-tab url=" << url
+  const ClosedTab closed_tab = closed_tabs_.back();
+  closed_tabs_.pop_back();
+  std::cerr << "vimbrowser: undo-close-tab index=" << (closed_tab.index + 1)
+            << " url=" << closed_tab.url
             << " placeholder=" << last_tab_close_placeholder_
             << " count=" << tabs_.size() << std::endl;
   if (last_tab_close_placeholder_ && tabs_.size() == 1 &&
       active_index_ == 0 && tabs_[0].client && tabs_[0].client->browser()) {
     last_tab_close_placeholder_ = false;
-    tabs_[0].url = url;
-    tabs_[0].client->browser()->GetMainFrame()->LoadURL(url);
+    tabs_[0].url = closed_tab.url;
+    tabs_[0].client->browser()->GetMainFrame()->LoadURL(closed_tab.url);
     SaveState();
     RefreshSidebar();
     Layout();
     return;
   }
-  AddTab(url, true);
+  InsertTab(closed_tab.url, closed_tab.index, true);
 }
 
 CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {

@@ -105,8 +105,14 @@ class BrowserWindow final : public CefWindowDelegate,
     CefRefPtr<CefTextfield> row;
   };
 
+  struct ClosedTab {
+    std::string url;
+    size_t index = 0;
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
+  void InsertTab(std::string url, size_t index, bool activate);
   void ActivateTab(size_t index);
   void ScheduleActiveBrowserSync();
   void ApplyActiveBrowserSelection(uint64_t generation);
@@ -187,7 +193,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string command_text_;
   std::vector<std::string> open_history_;
   std::string website_pending_keys_;
-  std::vector<std::string> closed_tab_urls_;
+  std::vector<ClosedTab> closed_tabs_;
   vim::LineEditState command_vim_;
   CommandAutocompleteState command_autocomplete_;
   Mode mode_ = Mode::kNormal;

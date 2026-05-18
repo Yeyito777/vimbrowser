@@ -181,6 +181,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - in website-normal/normal web modes, `d` closes the current tab and `D` closes
   it while focusing the previous tab; closed tabs are destroyed in the CEF
   backend, so media and page activity stop
+- `u` / `:undo-close-tab` reopens the most recently closed tab at the index it
+  was closed from, pushing later tabs right
 - `Escape` from insert mode enters regular Vim normal mode; `Escape` again
   returns to website-normal mode
 - left qutebrowser-style tab sidebar
