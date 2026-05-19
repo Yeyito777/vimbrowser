@@ -31,6 +31,8 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 
 - [x] `f` — native backend link/control hints; activate in current tab
 - [x] `F` / `Shift-f` — native backend link/control hints; open links in a new tab
+- [x] `Ctrl-Space` — native backend scrollable-container hints; focus selected
+  scroll target for subsequent scroll commands
 
 ## Tab selection / tab control
 

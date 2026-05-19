@@ -62,6 +62,10 @@ class BrowserWindow final : public CefWindowDelegate,
                            bool activate);
   void OnClientBeforePopupAborted(BrowserClient* client, int popup_id);
   void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
+  void OnNativeHintScrollTarget(BrowserClient* client,
+                                int x,
+                                int y,
+                                bool is_page_scroller);
   void OnNativeHintsStopped(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation

@@ -13,6 +13,10 @@ struct Tab {
   std::string url;
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
+  bool has_scroll_target = false;
+  int scroll_target_x = 0;
+  int scroll_target_y = 0;
+  bool scroll_target_is_page = true;
 };
 
 }  // namespace vimbrowser

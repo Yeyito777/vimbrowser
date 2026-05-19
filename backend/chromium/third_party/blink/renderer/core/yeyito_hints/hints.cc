@@ -8,6 +8,7 @@
 
 #include "third_party/blink/public/common/input/web_keyboard_event.h"
 #include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/core/dom/element.h"
 #include "third_party/blink/renderer/core/editing/editing_utilities.h"
 #include "third_party/blink/renderer/core/frame/frame_console.h"
 #include "third_party/blink/renderer/core/frame/frame_overlay.h"
@@ -50,7 +51,7 @@ bool HasOnlyNoOrShiftModifiers(const WebKeyboardEvent& event) {
 }
 
 bool HasOnlyControlModifier(const WebKeyboardEvent& event) {
-  return (event.GetModifiers() & WebKeyboardEvent::kKeyModifiers) ==
+  return (event.GetModifiers() & WebInputEvent::kInputModifiers) ==
          WebInputEvent::kControlKey;
 }
 
@@ -83,6 +84,18 @@ bool IsEscapeKey(const WebKeyboardEvent& event) {
          event.dom_key == static_cast<uint32_t>(ui::DomKey::ESCAPE);
 }
 
+bool IsSpaceKey(const WebKeyboardEvent& event) {
+  return event.windows_key_code == VK_SPACE || event.text[0] == ' ' ||
+         event.unmodified_text[0] == ' ' ||
+         event.dom_key == static_cast<uint32_t>(ui::DomKey::FromCharacter(' '));
+}
+
+bool IsDocumentScroller(Element& element) {
+  Document& document = element.GetDocument();
+  return document.ScrollingElementNoLayout() == &element ||
+         document.documentElement() == &element || document.body() == &element;
+}
+
 void NotifyBrowserHintsStopped(LocalFrame* frame) {
   if (!frame) {
     return;
@@ -91,6 +104,28 @@ void NotifyBrowserHintsStopped(LocalFrame* frame) {
       mojom::blink::ConsoleMessageSource::kOther,
       mojom::blink::ConsoleMessageLevel::kInfo,
       String("__vimbrowser_native_hints_stopped__")));
+}
+
+void NotifyBrowserScrollTarget(LocalFrame* frame,
+                               Element& element,
+                               const gfx::RectF& rect) {
+  if (!frame || rect.IsEmpty()) {
+    return;
+  }
+
+  const int x = std::max(1, static_cast<int>(rect.x() + rect.width() / 2.0f));
+  const int y = std::max(1, static_cast<int>(rect.y() + rect.height() / 2.0f));
+  const bool is_page_scroller = IsDocumentScroller(element);
+  StringBuilder message;
+  message.Append("__vimbrowser_native_hint_scroll_target__");
+  message.AppendNumber(x);
+  message.Append(',');
+  message.AppendNumber(y);
+  message.Append(',');
+  message.AppendNumber(is_page_scroller ? 1 : 0);
+  frame->Console().AddMessage(MakeGarbageCollected<ConsoleMessage>(
+      mojom::blink::ConsoleMessageSource::kOther,
+      mojom::blink::ConsoleMessageLevel::kInfo, message.ToString()));
 }
 
 }  // namespace
@@ -302,11 +337,16 @@ void Hints::AssignLabels() {
   // page candidate gets "f" while preserving label uniqueness.
   if (hint_mode_ == HintMode::kFocus && label_length == 1 &&
       !candidates_.empty()) {
+    bool page_label_pinned = false;
     for (wtf_size_t i = 1; i < candidates_.size(); ++i) {
       if (candidates_[i].label == String("f")) {
         std::swap(candidates_[0].label, candidates_[i].label);
+        page_label_pinned = true;
         break;
       }
+    }
+    if (!page_label_pinned) {
+      candidates_[0].label = String("f");
     }
   }
 }
@@ -350,9 +390,12 @@ bool Hints::IsHoverHintModeEntryKey(const WebKeyboardEvent& event,
 }
 
 bool Hints::IsScrollableHintModeEntryKey(const WebKeyboardEvent& event,
-                                         bool is_browser_command) const {
-  return is_browser_command && HasOnlyControlModifier(event) &&
-         event.windows_key_code == VK_SPACE;
+                                         bool /*is_browser_command*/) const {
+  // Ctrl+Space is both a vimbrowser browser command and a web-visible keypress.
+  // Recognize the physical key stream as well as the synthetic browser-command
+  // event so scrollable hints work even when a toolkit forwards Ctrl+Space to
+  // Blink before the embedder can inject its normalized command event.
+  return HasOnlyControlModifier(event) && IsSpaceKey(event);
 }
 
 Hints::ActivationTarget Hints::ActivationTargetForClickEntryKey(
@@ -403,6 +446,10 @@ void Hints::ActivateCandidate(HintCandidate& candidate) {
   const ActivationTarget target = activation_target_;
   const bool keep_browser_hint_active_for_direct_open_tab =
       mode == HintMode::kClick && target == ActivationTarget::kNewTab;
+
+  if (mode == HintMode::kFocus && element) {
+    NotifyBrowserScrollTarget(frame, *element, rect);
+  }
 
   Stop(!keep_browser_hint_active_for_direct_open_tab);
   if (!frame || !element) {

@@ -21,6 +21,8 @@
 #include "ui/compositor/compositor.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/blink/web_input_event.h"
+#include "ui/events/keycodes/dom/dom_code.h"
+#include "ui/events/keycodes/dom/dom_key.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/views/widget/widget.h"
@@ -30,6 +32,19 @@ constexpr double kSmoothScrollFactor = 0.3;
 constexpr int kVimbrowserBrowserCommandWebModifier = 1 << 27;
 constexpr int kVimbrowserSmoothScrollWebModifier = 1 << 28;
 constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
+// Private CEF-side bit set by vimbrowser shell before event translation. It is
+// intentionally outside CEF's public modifier range and is not forwarded as a
+// Chromium ui::Event flag.
+constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
+
+bool IsCtrlSpaceBrowserCommand(const CefKeyEvent& event) {
+  return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+         !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         (event.windows_key_code == 0x20 || event.character == 0x20 ||
+          event.unmodified_character == 0x20);
+}
 }  // namespace
 
 CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
@@ -163,6 +178,17 @@ void CefBrowserPlatformDelegateNativeAura::SendVimbrowserBrowserCommandKeyEvent(
     modifiers |= kVimbrowserHintNewTabWebModifier;
   }
   web_event.SetModifiers(modifiers);
+  if (IsCtrlSpaceBrowserCommand(event)) {
+    // Ctrl+Space is frequently delivered by X11/GTK as the control character
+    // NUL. Normalize the browser-command web event here, after platform key
+    // translation, so Blink can reliably recognize the semantic Space key while
+    // still seeing the Control modifier that selects scrollable-hint mode.
+    web_event.windows_key_code = 0x20;
+    web_event.dom_code = static_cast<int>(ui::DomCode::SPACE);
+    web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(' '));
+    web_event.text[0] = ' ';
+    web_event.unmodified_text[0] = ' ';
+  }
   web_event.is_browser_shortcut = true;
   host->ForwardKeyboardEvent(web_event);
 }
@@ -198,12 +224,19 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
     const CefMouseEvent& event,
     int deltaX,
     int deltaY) {
+  const bool target_viewport =
+      !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
+  if (smooth_scroll_scrolling_ &&
+      smooth_scroll_target_viewport_ != target_viewport) {
+    AbortSmoothScroll();
+  }
   if (smooth_scroll_scrolling_ &&
       smooth_scroll_host_ != CurrentSmoothScrollHost()) {
     AbortSmoothScroll();
   }
 
   smooth_scroll_event_ = event;
+  smooth_scroll_target_viewport_ = target_viewport;
   // CEF wheel deltas have the opposite sign from the qutebrowser smooth
   // scroller's content-space deltas: a negative wheel Y scrolls page content
   // down. Store the same content-space direction qutebrowser stores in m_dy.
@@ -286,6 +319,7 @@ void CefBrowserPlatformDelegateNativeAura::ResetSmoothScrollState() {
   smooth_scroll_subpixel_y_ = 0.0;
   smooth_scroll_scrolling_ = false;
   smooth_scroll_sent_begin_ = false;
+  smooth_scroll_target_viewport_ = true;
 }
 
 content::RenderWidgetHost*
@@ -310,7 +344,7 @@ bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
   event.SetPositionInWidget(SmoothScrollPosition());
   event.data.scroll_begin.delta_x_hint = deltaXHint;
   event.data.scroll_begin.delta_y_hint = deltaYHint;
-  event.data.scroll_begin.target_viewport = true;
+  event.data.scroll_begin.target_viewport = smooth_scroll_target_viewport_;
   host->ForwardGestureEvent(event);
   smooth_scroll_host_ = host;
   smooth_scroll_sent_begin_ = true;

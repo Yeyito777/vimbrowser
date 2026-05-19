@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cctype>
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -436,6 +437,31 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
   if (text.rfind(kOpenTabPrefix, 0) == 0) {
     if (owner_) {
       owner_->OnNativeHintOpenTab(this, text.substr(kOpenTabPrefix.size()));
+    }
+    return true;
+  }
+  constexpr std::string_view kScrollTargetPrefix =
+      "__vimbrowser_native_hint_scroll_target__";
+  if (text.rfind(kScrollTargetPrefix, 0) == 0) {
+    const std::string payload = text.substr(kScrollTargetPrefix.size());
+    if (owner_) {
+      char* end = nullptr;
+      const long x = std::strtol(payload.c_str(), &end, 10);
+      if (end && *end == ',') {
+        char* y_end = nullptr;
+        const long y = std::strtol(end + 1, &y_end, 10);
+        if (y_end != end + 1) {
+          bool is_page_scroller = false;
+          if (*y_end == ',') {
+            char* page_end = nullptr;
+            const long page = std::strtol(y_end + 1, &page_end, 10);
+            is_page_scroller = page_end != y_end + 1 && page != 0;
+          }
+          owner_->OnNativeHintScrollTarget(this, static_cast<int>(x),
+                                          static_cast<int>(y),
+                                          is_page_scroller);
+        }
+      }
     }
     return true;
   }

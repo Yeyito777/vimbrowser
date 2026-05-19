@@ -189,6 +189,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`
   (`Shift-f`) opens hinted links in a new tab
+- in website-normal/normal web modes, `Ctrl+Space` starts native backend
+  scrollable hints; selecting a label focuses that scroll container and makes
+  subsequent `j`/`k`/page-scroll commands target it
 - in website-normal/normal web modes, `p` opens the clipboard in the current tab
   and `P` opens the clipboard in a new tab
 - in website-normal/normal web modes, `d` closes the current tab and `D` closes

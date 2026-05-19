@@ -197,6 +197,18 @@ bool IsPlain(const CefKeyEvent& event) {
          !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
 }
 
+bool HasOnlyControlModifier(const CefKeyEvent& event) {
+  return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+         !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
+}
+
+bool IsSpaceKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x20 || event.character == 0x20 ||
+         event.unmodified_character == 0x20;
+}
+
 bool IsPlainPrintableKey(const CefKeyEvent& event) {
   const char16_t c = event.character ? event.character : event.unmodified_character;
   return IsPlain(event) && IsPrintableAscii(c);
@@ -600,6 +612,11 @@ std::string IpcCommandsJson() {
 
 constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
+// Private CEF mouse-event modifier: Chromium masks this off as an unknown UI
+// flag, but our CEF Aura delegate reads it before translation to decide whether
+// synthetic smooth-scroll gestures should target the viewport or the element
+// under the hinted coordinates.
+constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
 
 std::string ReadFileToString(const std::string& path, std::string* error) {
   std::ifstream file(path, std::ios::binary);
@@ -909,6 +926,7 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
       tab.url = url;
+      tab.has_scroll_target = false;
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
       }
@@ -1039,6 +1057,21 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
   ResetWebsitePendingKeys();
   AddTabAfterActive(url, true);
   UpdateModeIndicator();
+}
+
+void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
+                                             int x,
+                                             int y,
+                                             bool is_page_scroller) {
+  Tab* tab = ActiveTab();
+  if (!tab || tab->client.get() != client) {
+    return;
+  }
+
+  tab->has_scroll_target = true;
+  tab->scroll_target_x = std::max(1, x);
+  tab->scroll_target_y = std::max(1, y);
+  tab->scroll_target_is_page = is_page_scroller;
 }
 
 void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
@@ -2667,7 +2700,14 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
 
   CefMouseEvent event;
   event.modifiers = 0;
-  if (Tab* tab = ActiveTab(); tab && tab->view) {
+  Tab* tab = ActiveTab();
+  if (tab && tab->has_scroll_target) {
+    event.x = tab->scroll_target_x;
+    event.y = tab->scroll_target_y;
+    if (!tab->scroll_target_is_page) {
+      event.modifiers |= kVimbrowserScrollTargetElementCefModifier;
+    }
+  } else if (tab && tab->view) {
     const CefRect bounds = tab->view->GetBounds();
     event.x = std::max(1, bounds.width / 2);
     event.y = std::max(1, bounds.height / 2);
@@ -3870,7 +3910,13 @@ void BrowserWindow::ResetWebsitePendingKeys() {
 }
 
 bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
-  if (!IsRawKeyDown(event) || !IsPlain(event) || event.windows_key_code != 'F') {
+  if (!IsRawKeyDown(event)) {
+    return false;
+  }
+
+  const bool click_hints = IsPlain(event) && event.windows_key_code == 'F';
+  const bool scrollable_hints = HasOnlyControlModifier(event) && IsSpaceKey(event);
+  if (!click_hints && !scrollable_hints) {
     return false;
   }
 
@@ -3882,7 +3928,16 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   ResetWebsitePendingKeys();
   native_hints_active_ = true;
   UpdateModeIndicator();
-  tab->client->SendBrowserCommandKeyEvent(event);
+  CefKeyEvent browser_event = event;
+  if (scrollable_hints) {
+    // Some toolkits deliver Ctrl+Space to the browser chrome as a control
+    // character with no virtual key. Blink's native hint dispatcher keys off the
+    // Windows virtual-key field after CEF translates this back into a web event,
+    // so preserve the semantic key explicitly for the renderer round-trip.
+    browser_event.windows_key_code = 0x20;
+    browser_event.unmodified_character = 0x20;
+  }
+  tab->client->SendBrowserCommandKeyEvent(browser_event);
   return true;
 }
 
