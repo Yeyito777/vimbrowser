@@ -158,6 +158,32 @@ bool IsDocumentScroller(Element& element) {
          document.documentElement() == &element || document.body() == &element;
 }
 
+bool HasOwnPointerCursor(Element& element) {
+  const ComputedStyle* style = element.GetComputedStyle();
+  if (!style) {
+    return false;
+  }
+
+  // Modern component UIs often put a single delegated click listener on a list
+  // container and mark each logical item with cursor:pointer. Blink's native
+  // event-listener map only sees the delegated container, not the real per-item
+  // targets. Use the non-inherited computed cursor as the browser-native signal
+  // that this element is an intentional clickable surface, while avoiding the
+  // hundreds of descendants that merely inherit cursor:pointer from that
+  // surface.
+  return style->Cursor() == ECursor::kPointer && !style->CursorIsInherited();
+}
+
+bool IsPointerCursorClickCandidate(Element& element) {
+  if (!HasOwnPointerCursor(element)) {
+    return false;
+  }
+
+  // Body/document-wide pointer cursors are page chrome, not useful click hint
+  // targets. Keep the heuristic focused on concrete widgets/cards.
+  return !IsDocumentScroller(element);
+}
+
 void NotifyBrowserOpenNewTab(LocalFrame* frame, const String& url) {
   if (!frame || url.empty()) {
     return;
@@ -267,7 +293,8 @@ bool MatchesCandidateGroup(Element& element,
 
   switch (group) {
     case CandidateGroup::kAll:
-      return HasClickBehavior(element);
+      return HasClickBehavior(element) ||
+             IsPointerCursorClickCandidate(element);
     case CandidateGroup::kHoverables:
       return HasHoverBehavior(element);
     case CandidateGroup::kRightClickables:
@@ -281,6 +308,53 @@ bool MatchesCandidateGroup(Element& element,
       return false;
   }
   return false;
+}
+
+bool IsDelegatedClickContainerOnly(Element& element,
+                                   CandidateGroup group,
+                                   const AtomicString& selector) {
+  if (group != CandidateGroup::kAll || !HasClickBehavior(element) ||
+      IsPointerCursorClickCandidate(element)) {
+    return false;
+  }
+  return selector.IsNull() || !element.matches(selector);
+}
+
+bool HasDescendantPointerCandidate(
+    Element& element,
+    const HeapVector<HintCandidate>& candidates) {
+  for (const HintCandidate& candidate : candidates) {
+    Element* descendant = candidate.element.Get();
+    if (!descendant || descendant == &element) {
+      continue;
+    }
+    if (descendant->IsDescendantOf(&element) &&
+        IsPointerCursorClickCandidate(*descendant)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void DropCoveredDelegatedClickContainers(
+    CandidateGroup group,
+    const AtomicString& selector,
+    HeapVector<HintCandidate>& candidates) {
+  if (group != CandidateGroup::kAll || candidates.size() < 2) {
+    return;
+  }
+
+  for (wtf_size_t i = candidates.size(); i > 0; --i) {
+    Element* element = candidates[i - 1].element.Get();
+    if (!element) {
+      candidates.EraseAt(i - 1);
+      continue;
+    }
+    if (IsDelegatedClickContainerOnly(*element, group, selector) &&
+        HasDescendantPointerCandidate(*element, candidates)) {
+      candidates.EraseAt(i - 1);
+    }
+  }
 }
 
 float RectArea(const gfx::RectF& rect) {
@@ -448,6 +522,7 @@ void CollectCandidates(LocalFrame& frame,
     CollectElementAndShadowTrees(element, viewport_size, group, selector,
                                  candidates);
   }
+  DropCoveredDelegatedClickContainers(group, selector, candidates);
 }
 
 ActivationResult ActivateCandidate(LocalFrame&,
