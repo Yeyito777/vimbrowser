@@ -28,6 +28,7 @@
 namespace {
 constexpr double kSmoothScrollFactor = 0.3;
 constexpr int kVimbrowserBrowserCommandWebModifier = 1 << 27;
+constexpr int kVimbrowserSmoothScrollWebModifier = 1 << 28;
 constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
 }  // namespace
 
@@ -37,13 +38,13 @@ CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
     : CefBrowserPlatformDelegateNative(window_info, background_color) {}
 
 CefBrowserPlatformDelegateNativeAura::~CefBrowserPlatformDelegateNativeAura() {
-  StopSmoothScrollAnimation();
+  AbortSmoothScroll();
   RemoveFpsObserver();
 }
 
 void CefBrowserPlatformDelegateNativeAura::WebContentsDestroyed(
     content::WebContents* web_contents) {
-  StopSmoothScrollAnimation();
+  AbortSmoothScroll();
   RemoveFpsObserver();
   CefBrowserPlatformDelegateNative::WebContentsDestroyed(web_contents);
 }
@@ -78,6 +79,14 @@ CefBrowserPlatformDelegateNativeAura::RootWindowBoundsCallback() {
 }
 
 void CefBrowserPlatformDelegateNativeAura::RenderViewReady() {
+  // Navigations/reloads can replace or reset the RenderWidgetHost input router
+  // while vimbrowser's synthetic smooth-scroll animation is still running. The
+  // old router may have seen our GestureScrollBegin, but the new one has not;
+  // sending a delayed GestureScrollEnd into the new router DCHECK-crashes. Treat
+  // render-view replacement as cancellation, just like physical touchpads do
+  // when a page tears down mid-gesture.
+  AbortSmoothScroll();
+
   CefBrowserPlatformDelegateNative::RenderViewReady();
 
   // The RWHV should now exist for Alloy style browsers.
@@ -124,7 +133,7 @@ void CefBrowserPlatformDelegateNativeAura::OnCompositingShuttingDown(
       compositor->RemoveAnimationObserver(this);
     }
     smooth_scroll_compositor_ = nullptr;
-    smooth_scroll_scrolling_ = false;
+    ResetSmoothScrollState();
   }
 }
 
@@ -189,6 +198,11 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
     const CefMouseEvent& event,
     int deltaX,
     int deltaY) {
+  if (smooth_scroll_scrolling_ &&
+      smooth_scroll_host_ != CurrentSmoothScrollHost()) {
+    AbortSmoothScroll();
+  }
+
   smooth_scroll_event_ = event;
   // CEF wheel deltas have the opposite sign from the qutebrowser smooth
   // scroller's content-space deltas: a negative wheel Y scrolls page content
@@ -202,8 +216,11 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
   if (!smooth_scroll_scrolling_) {
     smooth_scroll_subpixel_x_ = 0.0;
     smooth_scroll_subpixel_y_ = 0.0;
-    SendGestureScrollBegin(static_cast<float>(-content_dx),
-                           static_cast<float>(-content_dy));
+    if (!SendGestureScrollBegin(static_cast<float>(-content_dx),
+                                static_cast<float>(-content_dy))) {
+      ResetSmoothScrollState();
+      return;
+    }
     smooth_scroll_scrolling_ = true;
     smooth_scroll_last_tick_ = base::TimeTicks::Now();
     StartSmoothScrollAnimation();
@@ -256,54 +273,87 @@ void CefBrowserPlatformDelegateNativeAura::StopSmoothScrollAnimation() {
   smooth_scroll_compositor_ = nullptr;
 }
 
-void CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
+void CefBrowserPlatformDelegateNativeAura::AbortSmoothScroll() {
+  StopSmoothScrollAnimation();
+  ResetSmoothScrollState();
+}
+
+void CefBrowserPlatformDelegateNativeAura::ResetSmoothScrollState() {
+  smooth_scroll_host_ = nullptr;
+  smooth_scroll_dx_ = 0.0;
+  smooth_scroll_dy_ = 0.0;
+  smooth_scroll_subpixel_x_ = 0.0;
+  smooth_scroll_subpixel_y_ = 0.0;
+  smooth_scroll_scrolling_ = false;
+  smooth_scroll_sent_begin_ = false;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNativeAura::CurrentSmoothScrollHost() const {
+  auto* view = GetHostView();
+  return view ? view->host() : nullptr;
+}
+
+bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
     float deltaXHint,
     float deltaYHint) {
   auto* view = GetHostView();
-  if (!view || !view->host()) {
-    return;
+  auto* host = view ? view->host() : nullptr;
+  if (!host) {
+    return false;
   }
 
   blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollBegin,
-                               blink::WebInputEvent::kNoModifiers,
+                               kVimbrowserSmoothScrollWebModifier,
                                base::TimeTicks::Now());
   event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
   event.SetPositionInWidget(SmoothScrollPosition());
   event.data.scroll_begin.delta_x_hint = deltaXHint;
   event.data.scroll_begin.delta_y_hint = deltaYHint;
   event.data.scroll_begin.target_viewport = true;
-  view->host()->ForwardGestureEvent(event);
+  host->ForwardGestureEvent(event);
+  smooth_scroll_host_ = host;
+  smooth_scroll_sent_begin_ = true;
+  return true;
 }
 
-void CefBrowserPlatformDelegateNativeAura::SendGestureScrollUpdate(int stepX,
+bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollUpdate(int stepX,
                                                                    int stepY) {
   auto* view = GetHostView();
-  if (!view || !view->host()) {
-    return;
+  auto* host = view ? view->host() : nullptr;
+  if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
+      smooth_scroll_host_ != host) {
+    return false;
   }
 
   blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollUpdate,
-                               blink::WebInputEvent::kNoModifiers,
+                               kVimbrowserSmoothScrollWebModifier,
                                base::TimeTicks::Now());
   event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
   event.SetPositionInWidget(SmoothScrollPosition());
   event.data.scroll_update.delta_x = static_cast<float>(-stepX);
   event.data.scroll_update.delta_y = static_cast<float>(-stepY);
-  view->host()->ForwardGestureEvent(event);
+  host->ForwardGestureEvent(event);
+  return true;
 }
 
-void CefBrowserPlatformDelegateNativeAura::SendGestureScrollEnd() {
+bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollEnd() {
   auto* view = GetHostView();
-  if (!view || !view->host()) {
-    return;
+  auto* host = view ? view->host() : nullptr;
+  if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
+      smooth_scroll_host_ != host) {
+    return false;
   }
 
   blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollEnd,
-                               blink::WebInputEvent::kNoModifiers,
+                               kVimbrowserSmoothScrollWebModifier,
                                base::TimeTicks::Now());
   event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
   event.SetPositionInWidget(SmoothScrollPosition());
-  view->host()->ForwardGestureEvent(event);
+  host->ForwardGestureEvent(event);
+  smooth_scroll_host_ = nullptr;
+  smooth_scroll_sent_begin_ = false;
+  return true;
 }
 
 void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll(base::TimeTicks now) {
@@ -314,6 +364,13 @@ void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll(base::TimeTicks now)
   const base::TimeDelta elapsed = now - smooth_scroll_last_tick_;
   smooth_scroll_last_tick_ = now;
   const double dt = std::max(1.0, elapsed.InMillisecondsF());
+
+  if (!smooth_scroll_sent_begin_ ||
+      smooth_scroll_host_ != CurrentSmoothScrollHost()) {
+    AbortSmoothScroll();
+    return;
+  }
+
   const double effective_factor =
       1.0 - std::pow(1.0 - smooth_scroll_factor_, dt / 16.0);
 
@@ -332,7 +389,10 @@ void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll(base::TimeTicks now)
   smooth_scroll_dy_ -= frac_step_y;
 
   if (step_x != 0 || step_y != 0) {
-    SendGestureScrollUpdate(step_x, step_y);
+    if (!SendGestureScrollUpdate(step_x, step_y)) {
+      AbortSmoothScroll();
+      return;
+    }
     // The synthetic gesture update is the frame-driving unit for our
     // qutebrowser-style compositor scroll path. Count it directly instead of
     // opening a DevTools trace and mining DrawFrame/BeginFrame events. This is
@@ -346,11 +406,7 @@ void CefBrowserPlatformDelegateNativeAura::TickSmoothScroll(base::TimeTicks now)
       std::abs(smooth_scroll_dy_) < 0.01) {
     StopSmoothScrollAnimation();
     SendGestureScrollEnd();
-    smooth_scroll_scrolling_ = false;
-    smooth_scroll_dx_ = 0.0;
-    smooth_scroll_dy_ = 0.0;
-    smooth_scroll_subpixel_x_ = 0.0;
-    smooth_scroll_subpixel_y_ = 0.0;
+    ResetSmoothScrollState();
   }
 }
 

@@ -17,6 +17,7 @@
 #include "ui/gfx/geometry/vector2d.h"
 
 namespace content {
+class RenderWidgetHost;
 class RenderWidgetHostViewAura;
 }
 
@@ -123,14 +124,18 @@ class CefBrowserPlatformDelegateNativeAura
   void RecordFrameSubmission(base::TimeTicks now);
   void StartSmoothScrollAnimation();
   void StopSmoothScrollAnimation();
+  void AbortSmoothScroll();
+  void ResetSmoothScrollState();
+  content::RenderWidgetHost* CurrentSmoothScrollHost() const;
   gfx::PointF SmoothScrollPosition() const;
-  void SendGestureScrollBegin(float deltaXHint, float deltaYHint);
-  void SendGestureScrollUpdate(int stepX, int stepY);
-  void SendGestureScrollEnd();
+  bool SendGestureScrollBegin(float deltaXHint, float deltaYHint);
+  bool SendGestureScrollUpdate(int stepX, int stepY);
+  bool SendGestureScrollEnd();
   void TickSmoothScroll(base::TimeTicks now);
 
   CefMouseEvent smooth_scroll_event_ = {};
   raw_ptr<ui::Compositor> smooth_scroll_compositor_ = nullptr;
+  raw_ptr<content::RenderWidgetHost> smooth_scroll_host_ = nullptr;
   double smooth_scroll_dx_ = 0.0;
   double smooth_scroll_dy_ = 0.0;
   double smooth_scroll_subpixel_x_ = 0.0;
@@ -138,6 +143,7 @@ class CefBrowserPlatformDelegateNativeAura
   double smooth_scroll_factor_ = 0.3;
   base::TimeTicks smooth_scroll_last_tick_;
   bool smooth_scroll_scrolling_ = false;
+  bool smooth_scroll_sent_begin_ = false;
   raw_ptr<ui::Compositor> fps_observed_compositor_ = nullptr;
   int fps_frame_count_ = 0;
   double fps_current_ = 0.0;

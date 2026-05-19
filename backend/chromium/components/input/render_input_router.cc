@@ -41,6 +41,8 @@ namespace {
 
 using ::perfetto::protos::pbzero::ChromeLatencyInfo2;
 
+constexpr int kVimbrowserSmoothScrollWebModifier = 1 << 28;
+
 class UnboundWidgetInputHandler : public blink::mojom::WidgetInputHandler {
  public:
   void SetFocus(blink::mojom::FocusState focus_state) override {
@@ -709,14 +711,28 @@ void RenderInputRouter::SendGestureEventWithLatencyInfo(
         true;
   } else if (gesture_event.GetType() ==
              WebInputEvent::Type::kGestureScrollEnd) {
-    DCHECK(
-        is_in_gesture_scroll_[static_cast<int>(gesture_event.SourceDevice())])
+    if (!is_in_gesture_scroll_[static_cast<int>(gesture_event.SourceDevice())] &&
+        (gesture_event.GetModifiers() & kVimbrowserSmoothScrollWebModifier)) {
+      // vimbrowser synthesizes compositor-driven touchpad scroll gestures for
+      // keyboard/IPC scrolling. Reload/navigation can replace or reset the input
+      // router after the synthetic GestureScrollBegin but before the delayed
+      // animation tail sends GestureScrollEnd. Physical devices simply lose that
+      // stale tail; mirror that behavior instead of DCHECK-crashing the browser.
+      return;
+    }
+    DCHECK(is_in_gesture_scroll_[static_cast<int>(gesture_event.SourceDevice())])
         << "kGestureScrollEnd should not be sent when "
         << gesture_event.SourceDevice() << " is not in gesture scroll";
     is_in_gesture_scroll_[static_cast<int>(gesture_event.SourceDevice())] =
         false;
     is_in_touchpad_gesture_fling_ = false;
     gsb_filtered_for_paint_holding_ = false;
+  } else if (gesture_event.GetType() ==
+             WebInputEvent::Type::kGestureScrollUpdate) {
+    if (!is_in_gesture_scroll_[static_cast<int>(gesture_event.SourceDevice())] &&
+        (gesture_event.GetModifiers() & kVimbrowserSmoothScrollWebModifier)) {
+      return;
+    }
   } else if (gesture_event.GetType() ==
              WebInputEvent::Type::kGestureFlingStart) {
     if (gesture_event.SourceDevice() == blink::WebGestureDevice::kTouchpad) {

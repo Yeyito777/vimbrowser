@@ -16,6 +16,19 @@
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
 
+// Chromium/CEF zygote subprocesses are launched through the embedder executable
+// and can run with --change-stack-guard-on-fork=enable. The zygote changes the
+// process stack canary after fork; if the embedder's main() itself is protected,
+// returning from CefExecuteProcess() can trip glibc's stack-smashing check even
+// though the corrupted canary is intentional Chromium process setup, not a local
+// vimbrowser overflow. Match Chromium's launcher pattern by leaving only this
+// small entry function unprotected.
+#if defined(__clang__) || defined(__GNUC__)
+#define VIMBROWSER_NO_STACK_PROTECTOR __attribute__((no_stack_protector))
+#else
+#define VIMBROWSER_NO_STACK_PROTECTOR
+#endif
+
 namespace {
 
 void SetCefString(cef_string_t* target, const std::string& value) {
@@ -275,7 +288,7 @@ bool ShouldExitForExistingProfile(const std::string& root_cache_path,
 
 }  // namespace
 
-int main(int argc, char* argv[]) {
+VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   const std::string exe_path = ExecutablePath();
   const std::string exe_dir = Dirname(exe_path);
   if (!exe_dir.empty()) {
