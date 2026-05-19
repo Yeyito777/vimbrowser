@@ -138,6 +138,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
   void BuildChrome();
   void AddTab(std::string url, bool activate);
+  void AddTabAfterActive(std::string url, bool activate);
   void InsertTab(std::string url, size_t index, bool activate);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,

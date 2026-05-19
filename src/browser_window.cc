@@ -1037,7 +1037,7 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
   native_hints_active_ = false;
   website_mode_ = vim::Mode::kWebsiteNormal;
   ResetWebsitePendingKeys();
-  AddTab(url, true);
+  AddTabAfterActive(url, true);
   UpdateModeIndicator();
 }
 
@@ -1650,6 +1650,12 @@ cef_runtime_style_t BrowserWindow::GetBrowserRuntimeStyle() {
 
 void BrowserWindow::AddTab(std::string url, bool activate) {
   InsertTab(std::move(url), tabs_.size(), activate);
+}
+
+void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
+  const size_t insert_index =
+      active_index_ < tabs_.size() ? active_index_ + 1 : tabs_.size();
+  InsertTab(std::move(url), insert_index, activate);
 }
 
 void BrowserWindow::InsertTab(std::string url, size_t index, bool activate) {
