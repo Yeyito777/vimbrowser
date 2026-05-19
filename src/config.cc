@@ -298,7 +298,9 @@ Config ParseConfig(int argc, char* argv[]) {
       config.shader_enabled = true;
       config.explicit_shader_enabled = true;
     } else if (!arg.empty() && arg[0] != '-') {
-      config.initial_urls.push_back(ResolveUrlOrSearch(std::string(arg)));
+      const std::string url = ResolveUrlOrSearch(std::string(arg));
+      config.initial_urls.push_back(url);
+      config.explicit_initial_urls.push_back(url);
     }
   }
 

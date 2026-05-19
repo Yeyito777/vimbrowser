@@ -136,7 +136,10 @@ that runtime directory for `icudtl.dat`, pak files, locales, and shared
 libraries. The installed launcher also passes
 `--profile-dir /home/yeyito/.runtime/vimbrowser-yeyito` so the user's main
 browser profile has durable tabs/state plus Chromium cookies, IndexedDB,
-localStorage, CacheStorage, etc.
+localStorage, CacheStorage, etc. `make install-wrapper` also installs a
+`vimbrowser.desktop` entry plus a detached `vimbrowser-xdg-open` launcher for
+XDG/desktop URL opens; if the profile is already running, URL arguments are
+forwarded to the existing window over native IPC as new tabs.
 
 Profile semantics:
 

@@ -4,6 +4,8 @@ BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
 JOBS ?= 12
 INSTALL_BIN ?= $(HOME)/.local/bin/vimbrowser
+INSTALL_XDG_BIN ?= $(HOME)/.local/bin/vimbrowser-xdg-open
+INSTALL_DESKTOP ?= $(HOME)/.local/share/applications/vimbrowser.desktop
 WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
 CMAKE_ARGS ?=
@@ -63,7 +65,28 @@ install-wrapper:
 	  'cd "$(abspath $(BUILD_DIR))/Release"' \
 	  'exec ./vimbrowser --profile-dir="$(WRAPPER_PROFILE_DIR)" "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
 	chmod +x $(INSTALL_BIN)
+	mkdir -p $(dir $(INSTALL_XDG_BIN)) $(dir $(INSTALL_DESKTOP))
+	rm -f $(INSTALL_XDG_BIN)
+	printf '%s\n' '#!/usr/bin/env bash' \
+	  'set -euo pipefail' \
+	  '# Detach desktop/XDG launches so xdg-open returns immediately.' \
+	  '# The main launcher logs output and forwards URLs to an already-open profile.' \
+	  'nohup "$(INSTALL_BIN)" "$$@" >/dev/null 2>&1 &' > $(INSTALL_XDG_BIN)
+	chmod +x $(INSTALL_XDG_BIN)
+	printf '%s\n' '[Desktop Entry]' \
+	  'Name=vimbrowser' \
+	  'GenericName=Web Browser' \
+	  'Comment=Custom native CEF/Chromium vim-like browser' \
+	  'Exec=$(INSTALL_XDG_BIN) %u' \
+	  'Terminal=false' \
+	  'Type=Application' \
+	  'Icon=web-browser' \
+	  'Categories=Network;WebBrowser;' \
+	  'StartupNotify=true' \
+	  'MimeType=x-scheme-handler/unknown;x-scheme-handler/about;text/html;text/xml;application/xhtml+xml;application/xml;application/rdf+xml;application/pdf;image/gif;image/jpeg;image/png;image/webp;video/mp4;x-scheme-handler/http;x-scheme-handler/https;' > $(INSTALL_DESKTOP)
+	@if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database $(dir $(INSTALL_DESKTOP)); fi
 	@echo 'installed $(INSTALL_BIN) -> $(abspath $(BUILD_DIR))/Release/vimbrowser'
+	@echo 'installed $(INSTALL_DESKTOP)'
 
 install: build install-wrapper
 

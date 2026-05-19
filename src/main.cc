@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits.h>
 #include <string>
+#include <vector>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -97,6 +98,75 @@ bool TryConnectUnixSocket(const std::filesystem::path& path) {
   return ok;
 }
 
+bool SendIpcCommand(const std::filesystem::path& path,
+                    const std::string& command,
+                    std::string* response = nullptr) {
+  const std::string value = path.string();
+  if (value.empty() || value.size() >= sizeof(sockaddr_un::sun_path)) {
+    return false;
+  }
+
+  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    return false;
+  }
+
+  sockaddr_un addr = {};
+  addr.sun_family = AF_UNIX;
+  std::snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", value.c_str());
+  if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+    close(fd);
+    return false;
+  }
+
+  std::string payload = command;
+  if (payload.empty() || payload.back() != '\n') {
+    payload.push_back('\n');
+  }
+  size_t written = 0;
+  while (written < payload.size()) {
+    const ssize_t n = write(fd, payload.data() + written,
+                            payload.size() - written);
+    if (n < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      close(fd);
+      return false;
+    }
+    if (n == 0) {
+      close(fd);
+      return false;
+    }
+    written += static_cast<size_t>(n);
+  }
+
+  if (response) {
+    response->clear();
+    char buffer[4096];
+    while (true) {
+      const ssize_t n = read(fd, buffer, sizeof(buffer));
+      if (n < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        close(fd);
+        return false;
+      }
+      if (n == 0) {
+        break;
+      }
+      response->append(buffer, static_cast<size_t>(n));
+      if (response->find('\n') != std::string::npos) {
+        break;
+      }
+    }
+  }
+
+  close(fd);
+  return true;
+}
+
 std::filesystem::path IpcSocketPathForStatePath(const std::string& state_path) {
   std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
   if (dir.empty()) {
@@ -142,8 +212,33 @@ void CleanStaleChromeSingleton(const std::string& root_cache_path) {
   RemoveIfExists(lock);
 }
 
+bool ForwardLaunchUrlsToExistingProfile(
+    const std::filesystem::path& ipc_socket,
+    const std::vector<std::string>& urls) {
+  bool ok = true;
+  for (const std::string& url : urls) {
+    if (url.empty()) {
+      continue;
+    }
+    std::string response;
+    if (!SendIpcCommand(ipc_socket, "open-tab " + url, &response)) {
+      std::cerr << "vimbrowser: failed to forward URL to existing profile: "
+                << url << std::endl;
+      ok = false;
+      continue;
+    }
+    if (response.rfind("ERR", 0) == 0) {
+      std::cerr << "vimbrowser: existing profile rejected URL " << url << ": "
+                << response;
+      ok = false;
+    }
+  }
+  return ok;
+}
+
 bool ShouldExitForExistingProfile(const std::string& root_cache_path,
-                                  const std::string& state_path) {
+                                  const std::string& state_path,
+                                  const std::vector<std::string>& launch_urls) {
   if (root_cache_path.empty()) {
     return false;
   }
@@ -154,6 +249,9 @@ bool ShouldExitForExistingProfile(const std::string& root_cache_path,
 
   for (int attempt = 0; attempt < 50; ++attempt) {
     if (TryConnectUnixSocket(ipc_socket)) {
+      if (!launch_urls.empty()) {
+        ForwardLaunchUrlsToExistingProfile(ipc_socket, launch_urls);
+      }
       std::cout << "vimbrowser: profile already open" << std::endl;
       return true;
     }
@@ -211,7 +309,8 @@ int main(int argc, char* argv[]) {
     return sub_process_exit_code;
   }
 
-  if (ShouldExitForExistingProfile(config.cache_path, config.state_path)) {
+  if (ShouldExitForExistingProfile(config.cache_path, config.state_path,
+                                   config.explicit_initial_urls)) {
     return 0;
   }
 

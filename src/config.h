@@ -11,6 +11,7 @@ inline constexpr size_t kMaxOpenHistoryEntries = 1000;
 struct Config {
   std::string initial_url = "https://example.com";
   std::vector<std::string> initial_urls;
+  std::vector<std::string> explicit_initial_urls;
   std::string profile_dir;
   std::string cache_path;
   std::string state_path;
