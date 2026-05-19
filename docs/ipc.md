@@ -161,13 +161,13 @@ Deletes a tab by stable ID, using the same backend-destroying close path as the 
 
 Moves a tab to a target zero-based index. The target is clamped into the valid range. The tab's ID is preserved and the active tab identity is preserved across the reorder. Returns `tabs` JSON.
 
-#### `open-tab <url-or-query>`
+#### `open-tab <url-or-query-or-local-path>`
 
-Resolves the text with the same native URL/search path used by `:open`, records open history, opens a new active tab, and returns `status` JSON.
+Resolves the text with the same native URL/search/local-file path used by `:open`, records open history, opens a new active tab, and returns `status` JSON.
 
-#### `open <tabid> <url-or-query>`
+#### `open <tabid> <url-or-query-or-local-path>`
 
-Resolves the text with the native URL/search path, records open history, and loads it into an existing tab. The target tab is not implicitly activated. Returns `tabs` JSON.
+Resolves the text with the native URL/search/local-file path, records open history, and loads it into an existing tab. The target tab is not implicitly activated. Returns `tabs` JSON.
 
 #### `tab <1-based-index>`
 

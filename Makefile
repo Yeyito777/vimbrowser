@@ -58,19 +58,20 @@ install-wrapper:
 	rm -f $(INSTALL_BIN)
 	printf '%s\n' '#!/usr/bin/env bash' \
 	  'set -euo pipefail' \
+	  'launch_cwd="$$PWD"' \
 	  'log_dir="$${XDG_CACHE_HOME:-$$HOME/.cache}/vimbrowser"' \
 	  'mkdir -p "$$log_dir"' \
 	  'log_file="$$log_dir/vimbrowser.log"' \
 	  'printf "\\n[%s] vimbrowser %q\\n" "$$(date --iso-8601=seconds)" "$$*" >> "$$log_file"' \
 	  'cd "$(abspath $(BUILD_DIR))/Release"' \
-	  'exec ./vimbrowser --profile-dir="$(WRAPPER_PROFILE_DIR)" "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
+	  'exec env VIMBROWSER_LAUNCH_CWD="$$launch_cwd" ./vimbrowser --profile-dir="$(WRAPPER_PROFILE_DIR)" "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
 	chmod +x $(INSTALL_BIN)
 	mkdir -p $(dir $(INSTALL_XDG_BIN)) $(dir $(INSTALL_DESKTOP))
 	rm -f $(INSTALL_XDG_BIN)
 	printf '%s\n' '#!/usr/bin/env bash' \
 	  'set -euo pipefail' \
 	  '# Detach desktop/XDG launches so xdg-open returns immediately.' \
-	  '# The main launcher logs output and forwards URLs to an already-open profile.' \
+	  '# The main launcher logs output and forwards URLs/files to an already-open profile.' \
 	  'nohup "$(INSTALL_BIN)" "$$@" >/dev/null 2>&1 &' > $(INSTALL_XDG_BIN)
 	chmod +x $(INSTALL_XDG_BIN)
 	printf '%s\n' '[Desktop Entry]' \

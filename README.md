@@ -138,8 +138,8 @@ libraries. The installed launcher also passes
 browser profile has durable tabs/state plus Chromium cookies, IndexedDB,
 localStorage, CacheStorage, etc. `make install-wrapper` also installs a
 `vimbrowser.desktop` entry plus a detached `vimbrowser-xdg-open` launcher for
-XDG/desktop URL opens; if the profile is already running, URL arguments are
-forwarded to the existing window over native IPC as new tabs.
+XDG/desktop URL and local-file opens; if the profile is already running, URL or
+file arguments are forwarded to the existing window over native IPC as new tabs.
 
 Profile semantics:
 

@@ -291,6 +291,14 @@ bool ShouldExitForExistingProfile(const std::string& root_cache_path,
 VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   const std::string exe_path = ExecutablePath();
   const std::string exe_dir = Dirname(exe_path);
+  if (const char* launch_cwd = std::getenv("VIMBROWSER_LAUNCH_CWD");
+      !launch_cwd || !*launch_cwd) {
+    std::error_code ec;
+    const std::filesystem::path cwd = std::filesystem::current_path(ec);
+    if (!ec && !cwd.empty()) {
+      setenv("VIMBROWSER_LAUNCH_CWD", cwd.string().c_str(), 1);
+    }
+  }
   if (!exe_dir.empty()) {
     // CEF subprocess startup needs to find ICU/resources immediately. Keep the
     // shell robust when launched via ~/.local/bin/vimbrowser or any other cwd.

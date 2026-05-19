@@ -40,6 +40,12 @@ bool LooksLikeUrl(std::string_view text) {
          text.find('.') != std::string_view::npos || StartsWith(text, "localhost");
 }
 
+bool HasHandledUrlScheme(std::string_view text) {
+  return StartsWith(text, "http://") || StartsWith(text, "https://") ||
+         StartsWith(text, "file://") || StartsWith(text, "data:") ||
+         StartsWith(text, "about:") || StartsWith(text, "chrome://");
+}
+
 std::string PercentEncode(std::string_view text) {
   static constexpr char kHex[] = "0123456789ABCDEF";
   std::string out;
@@ -56,6 +62,78 @@ std::string PercentEncode(std::string_view text) {
     }
   }
   return out;
+}
+
+std::string PercentEncodeFilePath(std::string_view text) {
+  static constexpr char kHex[] = "0123456789ABCDEF";
+  std::string out;
+  for (unsigned char c : text) {
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' ||
+        c == '~' || c == '/') {
+      out.push_back(static_cast<char>(c));
+    } else {
+      out.push_back('%');
+      out.push_back(kHex[(c >> 4) & 0xF]);
+      out.push_back(kHex[c & 0xF]);
+    }
+  }
+  return out;
+}
+
+std::filesystem::path LaunchDirectory() {
+  if (const char* launch_cwd = std::getenv("VIMBROWSER_LAUNCH_CWD");
+      launch_cwd && *launch_cwd) {
+    return std::filesystem::path(launch_cwd);
+  }
+  std::error_code ec;
+  std::filesystem::path cwd = std::filesystem::current_path(ec);
+  if (!ec && !cwd.empty()) {
+    return cwd;
+  }
+  return ".";
+}
+
+std::filesystem::path ExpandLocalPath(std::string_view input) {
+  std::string value(input);
+  if (value == "~" || StartsWith(value, "~/")) {
+    if (const char* home = std::getenv("HOME"); home && *home) {
+      value = std::string(home) + value.substr(1);
+    }
+  }
+
+  std::filesystem::path path(value);
+  if (path.is_absolute()) {
+    return path;
+  }
+  return LaunchDirectory() / path;
+}
+
+bool LooksLikeLocalPath(std::string_view input) {
+  if (input.empty() || HasHandledUrlScheme(input)) {
+    return false;
+  }
+  if (input.front() == '/' || input == "~" || StartsWith(input, "~/") ||
+      StartsWith(input, "./") || StartsWith(input, "../")) {
+    return true;
+  }
+
+  std::error_code ec;
+  return std::filesystem::exists(ExpandLocalPath(input), ec) && !ec;
+}
+
+std::string FileUrlForLocalPath(std::string_view input) {
+  std::filesystem::path path = ExpandLocalPath(input);
+  std::error_code ec;
+  std::filesystem::path absolute = std::filesystem::weakly_canonical(path, ec);
+  if (ec || absolute.empty()) {
+    ec.clear();
+    absolute = std::filesystem::absolute(path, ec);
+  }
+  if (ec || absolute.empty()) {
+    absolute = path.lexically_normal();
+  }
+  return "file://" + PercentEncodeFilePath(absolute.lexically_normal().generic_string());
 }
 
 std::string RuntimeHome() {
@@ -232,6 +310,9 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
 std::string ResolveUrlOrSearch(std::string input) {
   if (input.empty()) {
     return "https://example.com";
+  }
+  if (LooksLikeLocalPath(input)) {
+    return FileUrlForLocalPath(input);
   }
   if (LooksLikeUrl(input)) {
     if (input.find("://") == std::string::npos && !StartsWith(input, "data:") &&
