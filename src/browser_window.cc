@@ -1329,6 +1329,13 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return HandleCommandModeKey(event);
   }
 
+  if (native_hints_active_ && focus_area_ == FocusArea::kWebView) {
+    // Native hints live in Blink and own the full key stream until they stop.
+    // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
+    // label matcher.
+    return false;
+  }
+
   if (HandleGlobalFocusKey(event)) {
     return true;
   }
@@ -1367,6 +1374,13 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
   if (mode_ != Mode::kNormal) {
     return HandleCommandModeKey(event);
+  }
+
+  if (native_hints_active_ && focus_area_ == FocusArea::kWebView) {
+    // Native hints live in Blink and own the full key stream until they stop.
+    // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
+    // label matcher.
+    return false;
   }
 
   if (HandleGlobalFocusKey(event)) {
@@ -3765,6 +3779,8 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
     const CefKeyEvent& event,
     bool allow_forward_to_page) {
   if (focus_area_ != FocusArea::kWebView || native_hints_active_) {
+    // Hint mode consumes hint-label characters in Blink. Page shortcuts must be
+    // completely disabled here so site-specific bindings never steal labels.
     return std::nullopt;
   }
   if (website_mode_ != vim::Mode::kWebsiteNormal &&
