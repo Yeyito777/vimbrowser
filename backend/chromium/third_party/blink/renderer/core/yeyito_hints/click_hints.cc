@@ -101,6 +101,11 @@ bool AllowsZeroOpacity(Element& element) {
 }
 
 bool HasVisibleStyle(Element& element) {
+  const ComputedStyle* element_style = element.GetComputedStyle();
+  if (!element_style || element_style->Visibility() != EVisibility::kVisible) {
+    return false;
+  }
+
   for (Node& ancestor : FlatTreeTraversal::InclusiveAncestorsOf(element)) {
     auto* ancestor_element = DynamicTo<Element>(ancestor);
     if (!ancestor_element) {
@@ -111,9 +116,13 @@ bool HasVisibleStyle(Element& element) {
     if (!style) {
       return false;
     }
-    if (style->Visibility() != EVisibility::kVisible) {
-      return false;
-    }
+    // CSS visibility is special: descendants can explicitly opt back into being
+    // painted with visibility:visible under a visibility:hidden ancestor. GitHub
+    // two-factor alternatives use exactly that pattern while animating the list
+    // open: the UL stays visibility:hidden, but its link items are visible. The
+    // target element's computed visibility check above is the authoritative
+    // paintability signal here; keep ancestor checks for opacity, which still
+    // composes multiplicatively and cannot be escaped by descendants.
     if (style->Opacity() == 0.0f &&
         (ancestor_element != &element || !AllowsZeroOpacity(element))) {
       return false;
