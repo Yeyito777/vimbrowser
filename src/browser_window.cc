@@ -1035,6 +1035,8 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
   }
 
   native_hints_active_ = false;
+  website_mode_ = vim::Mode::kWebsiteNormal;
+  ResetWebsitePendingKeys();
   AddTab(url, true);
   UpdateModeIndicator();
 }
@@ -1044,6 +1046,8 @@ void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
     return;
   }
   native_hints_active_ = false;
+  website_mode_ = vim::Mode::kWebsiteNormal;
+  ResetWebsitePendingKeys();
   UpdateModeIndicator();
 }
 
