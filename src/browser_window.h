@@ -26,6 +26,7 @@ namespace vimbrowser {
 struct CompletionItem {
   std::string name;
   std::string description;
+  std::string insert_text;
 };
 
 class BrowserWindow final : public CefWindowDelegate,
@@ -141,7 +142,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void AppendTabFocusMatches(const std::string& prefix,
                              std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
-  void FillCommandAutocomplete(const std::string& name);
+  void FillCommandAutocomplete(const CompletionItem& item);
   int CommandAutocompleteVisibleRows() const;
   int CommandAutocompleteHeight() const;
   int CommandAutocompleteWidth() const;

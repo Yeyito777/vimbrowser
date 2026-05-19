@@ -194,7 +194,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   command-normal mode, then `i` / `a` / `h` / `l` / `x` for a minimal shared Vim
   editing skeleton
 - `:open` / `:open tab` autocomplete includes the last 1000 command-opened
-  entries, shortest matching URLs first
+  entries, shortest matching URLs first; long history entries are ellipsized in
+  the popup while still completing to the full text
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
 - `:shader [on|off]` toggles the native Blink page color shader

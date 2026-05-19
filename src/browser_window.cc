@@ -93,6 +93,8 @@ constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
 constexpr int kTabContentActivationDelayMs = 75;
 constexpr int kTabStateSaveDelayMs = 250;
+constexpr size_t kOpenHistoryCompletionNameMax = 140;
+constexpr size_t kTabFocusCompletionDescriptionMax = 140;
 constexpr size_t kNoTabIndex = std::numeric_limits<size_t>::max();
 
 bool InIdRange(int id, int base, int count) {
@@ -345,6 +347,10 @@ std::string Ellipsize(std::string value, size_t max_size) {
   value.resize(max_size - 3);
   value += "...";
   return value;
+}
+
+const std::string& CompletionInsertText(const CompletionItem& item) {
+  return item.insert_text.empty() ? item.name : item.insert_text;
 }
 
 bool IsWhitespaceOnly(const std::string& value) {
@@ -1021,7 +1027,7 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
     const int index = id - kAutocompleteRowBaseId;
     if (index >= 0 && index < static_cast<int>(command_autocomplete_.matches.size())) {
       command_autocomplete_.selection = index;
-      FillCommandAutocomplete(command_autocomplete_.matches[index].name);
+      FillCommandAutocomplete(command_autocomplete_.matches[index]);
       SetCommandText(command_text_);
     }
     return;
@@ -1887,7 +1893,7 @@ void BrowserWindow::AppendOpenHistoryMatches(
   std::vector<RankedHistoryMatch> ranked;
   std::unordered_set<std::string> seen;
   for (const CompletionItem& item : matches) {
-    seen.insert(ToLowerAscii(item.name));
+    seen.insert(ToLowerAscii(CompletionInsertText(item)));
   }
   for (size_t i = open_history_.size(); i > 0; --i) {
     const size_t index = i - 1;
@@ -1902,19 +1908,23 @@ void BrowserWindow::AppendOpenHistoryMatches(
       continue;
     }
 
-    ranked.push_back({CompletionItem{entry, "open history"},
-                      open_history_.size() - 1 - index});
+    ranked.push_back(
+        {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
+                        "open history", entry},
+         open_history_.size() - 1 - index});
   }
 
   std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
                                              const RankedHistoryMatch& b) {
-    if (a.item.name.size() != b.item.name.size()) {
-      return a.item.name.size() < b.item.name.size();
+    const std::string& a_insert = CompletionInsertText(a.item);
+    const std::string& b_insert = CompletionInsertText(b.item);
+    if (a_insert.size() != b_insert.size()) {
+      return a_insert.size() < b_insert.size();
     }
     if (a.recency_rank != b.recency_rank) {
       return a.recency_rank < b.recency_rank;
     }
-    return ToLowerAscii(a.item.name) < ToLowerAscii(b.item.name);
+    return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
   });
 
   for (const RankedHistoryMatch& match : ranked) {
@@ -1966,7 +1976,8 @@ void BrowserWindow::AppendTabFocusMatches(
       description += DisplayUrl(tab.url);
     }
 
-    matches.push_back({number, Ellipsize(std::move(description), 140)});
+    matches.push_back({number, Ellipsize(std::move(description),
+                                         kTabFocusCompletionDescriptionMax)});
   }
 }
 
@@ -2065,11 +2076,12 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   command_autocomplete_.matches = std::move(matches);
 }
 
-void BrowserWindow::FillCommandAutocomplete(const std::string& name) {
+void BrowserWindow::FillCommandAutocomplete(const CompletionItem& item) {
   if (!command_autocomplete_.active) {
     return;
   }
 
+  const std::string& name = CompletionInsertText(item);
   std::string completed;
   if (!name.empty() && name[0] == ':') {
     const size_t first_non_space = command_autocomplete_.prefix.find_first_not_of(" \t");
@@ -2143,7 +2155,7 @@ bool BrowserWindow::CycleCommandAutocomplete(int direction) {
                                           : command_autocomplete_.selection - 1;
   }
   FillCommandAutocomplete(
-      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)].name);
+      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)]);
   SetCommandText(command_text_);
   Layout();
   return true;
