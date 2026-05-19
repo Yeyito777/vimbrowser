@@ -1971,6 +1971,17 @@ void BrowserWindow::CloseTabBackend(Tab& tab) {
   tab.client = nullptr;
 }
 
+void BrowserWindow::QuitBrowser() {
+  if (window_close_pending_) {
+    return;
+  }
+  if (window_) {
+    window_->Close();
+  } else {
+    CefQuitMessageLoop();
+  }
+}
+
 void BrowserWindow::UndoCloseTab() {
   if (closed_tabs_.empty()) {
     std::cerr << "vimbrowser: undo-close-tab ignored; stack empty" << std::endl;
@@ -2502,6 +2513,7 @@ void BrowserWindow::CommitCommand() {
         });
         return;
       }
+      if (command == ":q" || command == ":wq") { finish([&] { QuitBrowser(); }); return; }
       if (command == ":scroll-bottom") { finish([&] { ScrollActivePageToBottom(); }); return; }
       if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(kLineScrollPx); }); return; }
       if (command == ":scroll-page-down") { finish([&] { ScrollActivePageBy(1120); }); return; }

@@ -162,6 +162,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void CloseTabAtIndex(size_t closing,
                        CloseFocus focus_after_close = CloseFocus::kPreviousTab);
   void CloseTabBackend(Tab& tab);
+  void QuitBrowser();
   void UndoCloseTab();
   std::optional<size_t> FindTabIndexById(uint64_t tab_id) const;
   std::string TabsJson() const;
