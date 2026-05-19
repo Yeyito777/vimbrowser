@@ -288,6 +288,25 @@ bool IsTabKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x09 || event.native_key_code == 23;
 }
 
+bool IsDeleteKey(const CefKeyEvent& event) {
+  return event.windows_key_code == 0x2E || event.windows_key_code == 0xFFFF ||
+         event.native_key_code == 119;
+}
+
+bool IsNavigationEditingKey(const CefKeyEvent& event) {
+  switch (event.windows_key_code) {
+    case 0x23:  // End
+    case 0x24:  // Home
+    case 0x25:  // Left
+    case 0x26:  // Up
+    case 0x27:  // Right
+    case 0x28:  // Down
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool IsCtrlKey(const CefKeyEvent& event, char key) {
   if (!(event.modifiers & EVENTFLAG_CONTROL_DOWN)) {
     return false;
@@ -296,6 +315,24 @@ bool IsCtrlKey(const CefKeyEvent& event, char key) {
          event.character == key || event.character == key + ('a' - 'A') ||
          event.unmodified_character == key ||
          event.unmodified_character == key + ('a' - 'A');
+}
+
+bool IsCommonCtrlEditingKey(const CefKeyEvent& event) {
+  return IsCtrlKey(event, 'a') || IsCtrlKey(event, 'c') ||
+         IsCtrlKey(event, 'v') || IsCtrlKey(event, 'x') ||
+         IsCtrlKey(event, 'y') || IsCtrlKey(event, 'z');
+}
+
+bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event) {
+  if (!event.focus_on_editable_field) {
+    return false;
+  }
+  if (event.modifiers & (EVENTFLAG_ALT_DOWN | EVENTFLAG_COMMAND_DOWN)) {
+    return false;
+  }
+  return IsPlainPrintableKey(event) || IsBackspaceKey(event) ||
+         IsDeleteKey(event) || IsEnterKey(event) || IsTabKey(event) ||
+         IsNavigationEditingKey(event) || IsCommonCtrlEditingKey(event);
 }
 
 std::string Trim(std::string value) {
@@ -3726,6 +3763,11 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       return true;
     }
 
+    if (ShouldForwardFocusedEditableKey(event)) {
+      ResetWebsitePendingKeys();
+      return false;
+    }
+
     if (website_mode_ == vim::Mode::kWebsiteNormal) {
       if (PlainKeyChar(event) == ':') {
         BeginCommandText(":");
@@ -3819,6 +3861,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   if (IsCharEvent(event)) {
+    if (ShouldForwardFocusedEditableKey(event)) {
+      ResetWebsitePendingKeys();
+      return false;
+    }
     if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
       return *shortcut;
     }
