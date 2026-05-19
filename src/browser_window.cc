@@ -891,6 +891,20 @@ void BrowserWindow::OnClientBeforeClose(BrowserClient*) {
   }
 }
 
+bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
+  if (window_close_pending_) {
+    return false;
+  }
+
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].client.get() == client) {
+      CloseTabAtIndex(i, CloseFocus::kPreviousTab);
+      return true;
+    }
+  }
+  return false;
+}
+
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
@@ -926,19 +940,85 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
 }
 
 bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
+                                        CefRefPtr<BrowserClient> popup_client,
+                                        int popup_id,
                                         const std::string& target_url,
                                         bool activate) {
-  if (target_url.empty()) {
+  const bool source_owned = std::any_of(
+      tabs_.begin(), tabs_.end(),
+      [client](const Tab& tab) { return tab.client.get() == client; });
+  if (!source_owned) {
+    // Unknown popups should never escape into CEF-owned top-level windows.
+    return true;
+  }
+
+  if (!popup_client) {
+    if (target_url.empty()) {
+      return true;
+    }
+    native_hints_active_ = false;
+    AddTab(target_url, activate);
+    UpdateModeIndicator();
+    return true;
+  }
+
+  pending_popups_.push_back({popup_client, popup_id, target_url, activate});
+  return false;
+}
+
+void BrowserWindow::OnClientBeforePopupAborted(BrowserClient*, int popup_id) {
+  pending_popups_.erase(
+      std::remove_if(pending_popups_.begin(), pending_popups_.end(),
+                     [popup_id](const PendingPopup& popup) {
+                       return popup.popup_id == popup_id;
+                     }),
+      pending_popups_.end());
+}
+
+bool BrowserWindow::OnPopupBrowserViewCreated(
+    CefRefPtr<CefBrowserView> browser_view,
+    CefRefPtr<CefBrowserView> popup_browser_view,
+    bool is_devtools) {
+  if (is_devtools || !popup_browser_view) {
     return false;
   }
 
-  Tab* tab = ActiveTab();
-  if (!tab || tab->client.get() != client) {
+  CefRefPtr<CefBrowser> popup_browser = popup_browser_view->GetBrowser();
+  CefRefPtr<CefClient> cef_client =
+      popup_browser && popup_browser->GetHost()
+          ? popup_browser->GetHost()->GetClient()
+          : nullptr;
+  if (!cef_client) {
     return false;
+  }
+
+  auto pending = std::find_if(
+      pending_popups_.begin(), pending_popups_.end(),
+      [cef_client](const PendingPopup& popup) {
+        return static_cast<CefClient*>(popup.client.get()) == cef_client.get();
+      });
+  if (pending == pending_popups_.end()) {
+    return false;
+  }
+
+  std::string url = pending->target_url;
+  const bool activate = pending->activate;
+  CefRefPtr<BrowserClient> retained_popup_client = pending->client;
+  pending_popups_.erase(pending);
+
+  if (popup_browser && popup_browser->GetMainFrame()) {
+    const std::string frame_url = popup_browser->GetMainFrame()->GetURL();
+    if (!frame_url.empty()) {
+      url = frame_url;
+    }
+  }
+  if (url.empty()) {
+    url = "about:blank";
   }
 
   native_hints_active_ = false;
-  AddTab(target_url, activate);
+  InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
+                 activate);
   UpdateModeIndicator();
   return true;
 }
@@ -1577,6 +1657,37 @@ void BrowserWindow::InsertTab(std::string url, size_t index, bool activate) {
     ++visible_tab_index_;
   }
   tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(insert_index), tab);
+  RefreshSidebar();
+  Layout();
+
+  if (activate) {
+    ActivateTab(insert_index);
+  } else {
+    SaveState();
+  }
+}
+
+void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
+                                   CefRefPtr<BrowserClient> popup_client,
+                                   std::string url,
+                                   bool activate) {
+  if (!popup_browser_view || !popup_client) {
+    return;
+  }
+
+  last_tab_close_placeholder_ = false;
+
+  Tab tab;
+  tab.id = next_tab_id_++;
+  tab.url = std::move(url);
+  tab.client = popup_client;
+  tab.view = popup_browser_view;
+  tab.view->SetPreferAccelerators(true);
+  tab.view->SetVisible(false);
+  content_inner_panel_->AddChildView(tab.view);
+
+  const size_t insert_index = tabs_.size();
+  tabs_.push_back(tab);
   RefreshSidebar();
   Layout();
 

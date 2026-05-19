@@ -54,9 +54,13 @@ class BrowserWindow final : public CefWindowDelegate,
                               CefRefPtr<CefFrame> frame,
                               CefProcessId source_process,
                               CefRefPtr<CefProcessMessage> message);
+  bool OnClientDoClose(BrowserClient* client);
   bool OnClientBeforePopup(BrowserClient* client,
+                           CefRefPtr<BrowserClient> popup_client,
+                           int popup_id,
                            const std::string& target_url,
                            bool activate);
+  void OnClientBeforePopupAborted(BrowserClient* client, int popup_id);
   void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
   void OnNativeHintsStopped(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
@@ -71,6 +75,10 @@ class BrowserWindow final : public CefWindowDelegate,
                              const CefRect& new_bounds) override;
   void OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
                         CefRefPtr<CefBrowser> browser) override {}
+  bool OnPopupBrowserViewCreated(
+      CefRefPtr<CefBrowserView> browser_view,
+      CefRefPtr<CefBrowserView> popup_browser_view,
+      bool is_devtools) override;
   bool CanClose(CefRefPtr<CefWindow> window) override;
   bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) override;
   bool OnAccelerator(CefRefPtr<CefWindow> window, int command_id) override;
@@ -121,9 +129,20 @@ class BrowserWindow final : public CefWindowDelegate,
     size_t index = 0;
   };
 
+  struct PendingPopup {
+    CefRefPtr<BrowserClient> client;
+    int popup_id = 0;
+    std::string target_url;
+    bool activate = true;
+  };
+
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void InsertTab(std::string url, size_t index, bool activate);
+  void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
+                      CefRefPtr<BrowserClient> popup_client,
+                      std::string url,
+                      bool activate);
   void ActivateTab(size_t index);
   void ScheduleActiveBrowserSync();
   void ApplyActiveBrowserSelection(uint64_t generation);
@@ -237,6 +256,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::vector<ClosedTab> closed_tabs_;
   vim::LineEditState command_vim_;
   CommandAutocompleteState command_autocomplete_;
+  std::vector<PendingPopup> pending_popups_;
   Mode mode_ = Mode::kNormal;
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;

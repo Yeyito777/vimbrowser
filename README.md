@@ -167,7 +167,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 
 ## Current shell behavior
 
-- one top-level CEF Views window
+- one top-level CEF Views window; page-created popups are captured into the tab
+  strip instead of being allowed to escape as separate native windows, while
+  retaining real CEF popup/opener plumbing for OAuth-style auth flows
 - Alloy runtime style, no Chrome toolbar
 - URL/search startup argument
 - per-process isolated state/cache by default; persistent profiles require

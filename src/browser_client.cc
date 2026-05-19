@@ -60,6 +60,22 @@ constexpr size_t kNetworkLogLimit = 1000;
 constexpr size_t kNetworkBodyLimit = 1024 * 1024;
 constexpr size_t kNetworkRequestBodyLimit = 256 * 1024;
 
+bool ShouldOpenDispositionInTab(
+    CefRequestHandler::WindowOpenDisposition disposition) {
+  switch (disposition) {
+    case CEF_WOD_SINGLETON_TAB:
+    case CEF_WOD_NEW_FOREGROUND_TAB:
+    case CEF_WOD_NEW_BACKGROUND_TAB:
+    case CEF_WOD_NEW_POPUP:
+    case CEF_WOD_NEW_WINDOW:
+    case CEF_WOD_OFF_THE_RECORD:
+    case CEF_WOD_SWITCH_TO_TAB:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::string JsonEscape(std::string_view text) {
   std::string out;
   out.reserve(text.size() + 8);
@@ -316,13 +332,25 @@ void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
 }
 
 bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
+  CefRefPtr<BrowserClient> keep_alive(this);
+  if (owner_ && owner_->OnClientDoClose(this)) {
+    return true;
+  }
   return false;
 }
 
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+  CefRefPtr<BrowserClient> keep_alive(this);
   browser_ = nullptr;
   if (owner_) {
     owner_->OnClientBeforeClose(this);
+  }
+}
+
+void BrowserClient::OnBeforePopupAborted(CefRefPtr<CefBrowser> browser,
+                                         int popup_id) {
+  if (owner_) {
+    owner_->OnClientBeforePopupAborted(this, popup_id);
   }
 }
 
@@ -365,11 +393,32 @@ bool BrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                   CefRefPtr<CefDictionaryValue>& extra_info,
                                   bool* no_javascript_access) {
   if (!owner_) {
+    return true;
+  }
+
+  CefRefPtr<BrowserClient> popup_client = new BrowserClient(owner_);
+  client = popup_client;
+  const bool activate = target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
+  return owner_->OnClientBeforePopup(this, popup_client, popup_id,
+                                     target_url.ToString(), activate);
+}
+
+bool BrowserClient::OnOpenURLFromTab(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    const CefString& target_url,
+    CefRequestHandler::WindowOpenDisposition target_disposition,
+    bool user_gesture) {
+  if (!owner_) {
+    return false;
+  }
+  if (!ShouldOpenDispositionInTab(target_disposition)) {
     return false;
   }
 
   const bool activate = target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
-  return owner_->OnClientBeforePopup(this, target_url.ToString(), activate);
+  return owner_->OnClientBeforePopup(this, nullptr, 0, target_url.ToString(),
+                                     activate);
 }
 
 bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
