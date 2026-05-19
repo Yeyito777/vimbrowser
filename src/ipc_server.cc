@@ -6,13 +6,14 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <chrono>
+#include <condition_variable>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <condition_variable>
 
 #include "browser_window.h"
 #include "include/cef_task.h"
@@ -36,16 +37,25 @@ class IpcCommandTask final : public CefTask {
       : owner_(owner), command_(std::move(command)), pending_(std::move(pending)) {}
 
   void Execute() override {
-    std::string response;
     if (owner_) {
-      response = owner_->HandleIpcCommand(command_);
-    } else {
-      response = "ERR no owner\n";
+      owner_->HandleIpcCommandAsync(
+          command_, [pending = pending_](std::string response) {
+            {
+              std::lock_guard<std::mutex> lock(pending->mutex);
+              if (pending->done) {
+                return;
+              }
+              pending->response = std::move(response);
+              pending->done = true;
+            }
+            pending->cv.notify_one();
+          });
+      return;
     }
 
     {
       std::lock_guard<std::mutex> lock(pending_->mutex);
-      pending_->response = std::move(response);
+      pending_->response = "ERR no owner\n";
       pending_->done = true;
     }
     pending_->cv.notify_one();
@@ -162,8 +172,9 @@ void IpcServer::HandleClient(int client_fd) {
   // '\n' or EOF; one '\n'-terminated response. This deliberately stays tiny and
   // scriptable, but it is the canonical app-control protocol. See docs/ipc.md.
   std::string command;
-  char buffer[1024];
-  while (command.size() < 8192) {
+  char buffer[4096];
+  constexpr size_t kMaxCommandBytes = 1024 * 1024;
+  while (command.size() < kMaxCommandBytes) {
     const ssize_t n = read(client_fd, buffer, sizeof(buffer));
     if (n <= 0) {
       break;
@@ -187,7 +198,11 @@ void IpcServer::HandleClient(int client_fd) {
   }
 
   std::unique_lock<std::mutex> lock(pending->mutex);
-  pending->cv.wait(lock, [&] { return pending->done; });
+  if (!pending->cv.wait_for(lock, std::chrono::seconds(30),
+                            [&] { return pending->done; })) {
+    pending->response = "ERR ipc command timed out\n";
+    pending->done = true;
+  }
   if (pending->response.empty() || pending->response.back() != '\n') {
     pending->response.push_back('\n');
   }

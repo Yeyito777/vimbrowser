@@ -71,16 +71,24 @@ app control instead of adding one-off debug paths:
 ```bash
 scripts/vimbrowser-ipc status
 scripts/vimbrowser-ipc version
+scripts/vimbrowser-ipc tabs
+scripts/vimbrowser-ipc tab-focus 3
+scripts/vimbrowser-ipc html 3
+scripts/vimbrowser-ipc js 3 'document.title'
+scripts/vimbrowser-ipc network 3 list
 scripts/vimbrowser-ipc fps
 scripts/vimbrowser-ipc scroll 280
 ```
 
-By default the socket lives at `$XDG_STATE_HOME/vimbrowser/ipc.sock` or
-`~/.local/state/vimbrowser/ipc.sock`. Set `VIMBROWSER_IPC=/path/to/ipc.sock` to
-target a separate test instance.
+With `--profile-dir DIR`, the socket lives at `DIR/ipc.sock`; the installed
+wrapper profile is auto-detected by `scripts/vimbrowser-ipc`. Set
+`VIMBROWSER_PROFILE_DIR=DIR` or `VIMBROWSER_IPC=/path/to/ipc.sock` to target a
+separate test instance.
 
 See [`docs/ipc.md`](docs/ipc.md) for protocol framing, command semantics, and
-compatibility rules.
+compatibility rules. IPC now has stable tab IDs (separate from reorderable tab
+indexes), ID-based tab focus/delete/order/open commands, native HTML/text/JS,
+backend cookie inspection/mutation, and per-tab native network capture/replay.
 
 That backend is pinned to Chromium `147.0.7727.118` / CEF
 `d58e84d17dd3f646c906ac633156cd0ec46638e9`. Chromium and CEF source now live

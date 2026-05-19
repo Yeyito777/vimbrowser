@@ -5,10 +5,13 @@
 
 #include "include/cef_app.h"
 #include "include/cef_browser_process_handler.h"
+#include "include/cef_render_process_handler.h"
 
 namespace vimbrowser {
 
-class App final : public CefApp, public CefBrowserProcessHandler {
+class App final : public CefApp,
+                  public CefBrowserProcessHandler,
+                  public CefRenderProcessHandler {
  public:
   App(std::vector<std::string> initial_urls,
       size_t active_index,
@@ -21,6 +24,9 @@ class App final : public CefApp, public CefBrowserProcessHandler {
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
   }
+  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override {
+    return this;
+  }
 
   void OnBeforeCommandLineProcessing(
       const CefString& process_type,
@@ -29,6 +35,10 @@ class App final : public CefApp, public CefBrowserProcessHandler {
       CefRefPtr<CefCommandLine> command_line,
       const CefString& current_directory) override;
   void OnContextInitialized() override;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) override;
 
  private:
   std::vector<std::string> initial_urls_;

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "browser_client.h"
@@ -29,6 +31,8 @@ struct CompletionItem {
   std::string insert_text;
 };
 
+using IpcReplyCallback = std::function<void(std::string)>;
+
 class BrowserWindow final : public CefWindowDelegate,
                             public CefBrowserViewDelegate,
                             public CefButtonDelegate,
@@ -45,6 +49,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
+  bool OnClientProcessMessage(BrowserClient* client,
+                              CefRefPtr<CefBrowser> browser,
+                              CefRefPtr<CefFrame> frame,
+                              CefProcessId source_process,
+                              CefRefPtr<CefProcessMessage> message);
   bool OnClientBeforePopup(BrowserClient* client,
                            const std::string& target_url,
                            bool activate);
@@ -54,6 +63,7 @@ class BrowserWindow final : public CefWindowDelegate,
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
+  void HandleIpcCommandAsync(const std::string& command, IpcReplyCallback reply);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override;
@@ -123,10 +133,38 @@ class BrowserWindow final : public CefWindowDelegate,
   void ActivateFirstTab();
   void ActivateLastTab();
   void MoveActiveTab(int delta);
+  bool MoveTabToIndex(size_t from, size_t to);
+  CefRefPtr<CefBrowser> BrowserForTabId(uint64_t tab_id,
+                                        std::string* error,
+                                        size_t* index_out = nullptr) const;
   void CloneActiveTab();
   void CloseActiveTab(CloseFocus focus_after_close = CloseFocus::kPreviousTab);
+  void CloseTabAtIndex(size_t closing,
+                       CloseFocus focus_after_close = CloseFocus::kPreviousTab);
   void CloseTabBackend(Tab& tab);
   void UndoCloseTab();
+  std::optional<size_t> FindTabIndexById(uint64_t tab_id) const;
+  std::string TabsJson() const;
+  std::string TabJson(const Tab& tab, size_t index) const;
+  uint64_t ActiveTabId() const;
+  void CompleteJsIpcRequest(uint64_t request_id, std::string response);
+  void HandleHtmlIpcCommand(uint64_t tab_id, bool text, IpcReplyCallback reply);
+  void HandleJsIpcCommand(uint64_t tab_id,
+                          std::string code,
+                          IpcReplyCallback reply);
+  void HandleCookiesIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
+  void HandleCookieDeleteIpcCommand(uint64_t tab_id,
+                                    std::string name,
+                                    IpcReplyCallback reply);
+  void HandleCookieSetIpcCommand(uint64_t tab_id,
+                                 std::string name,
+                                 std::string value,
+                                 std::string domain,
+                                 std::string path,
+                                 IpcReplyCallback reply);
+  void HandleNetworkReplayIpcCommand(uint64_t tab_id,
+                                     uint64_t request_id,
+                                     IpcReplyCallback reply);
   std::string ActiveTabUrl() const;
   std::string ActiveTabTitle() const;
   CefRefPtr<CefBrowser> ActiveBrowser() const;
@@ -216,9 +254,12 @@ class BrowserWindow final : public CefWindowDelegate,
   size_t visible_tab_index_ = static_cast<size_t>(-1);
   uint64_t active_browser_sync_generation_ = 0;
   uint64_t state_save_generation_ = 0;
+  uint64_t next_tab_id_ = 1;
+  uint64_t next_ipc_request_id_ = 1;
   int laid_out_content_width_ = 0;
   int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;
+  std::unordered_map<uint64_t, IpcReplyCallback> pending_js_ipc_;
   size_t active_index_ = 0;
 
   CefRefPtr<CefWindow> window_;
