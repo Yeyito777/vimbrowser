@@ -108,6 +108,7 @@ static const char kYoutubeVolumeUpScript[] =
 
 typedef struct PageShortcutBinding {
   unsigned int key;
+  unsigned int modes;
   VimbrowserShortcutAction raw_action;
   VimbrowserShortcutAction char_action;
   const char* script;
@@ -190,15 +191,21 @@ static int matches_youtube(const char* url) {
 }
 
 static const PageShortcutBinding kYoutubeBindings[] = {
-    {' ', VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
+    {' ', VIMBROWSER_SHORTCUT_MODE_WEBSITE_NORMAL |
+              VIMBROWSER_SHORTCUT_MODE_NORMAL,
+     VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
      VIMBROWSER_SHORTCUT_CONSUME, kYoutubeTogglePlaybackScript},
-    {'h', VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
+    {'h', VIMBROWSER_SHORTCUT_MODE_INSERT,
+     VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
      VIMBROWSER_SHORTCUT_CONSUME, kYoutubeSeekBackScript},
-    {'j', VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
+    {'j', VIMBROWSER_SHORTCUT_MODE_INSERT,
+     VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
      VIMBROWSER_SHORTCUT_CONSUME, kYoutubeVolumeDownScript},
-    {'k', VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
+    {'k', VIMBROWSER_SHORTCUT_MODE_INSERT,
+     VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
      VIMBROWSER_SHORTCUT_CONSUME, kYoutubeVolumeUpScript},
-    {'l', VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
+    {'l', VIMBROWSER_SHORTCUT_MODE_INSERT,
+     VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
      VIMBROWSER_SHORTCUT_CONSUME, kYoutubeSeekForwardScript},
 };
 
@@ -218,8 +225,10 @@ VimbrowserShortcut vimbrowser_shortcut_for_key(const char* url,
                                                unsigned int key,
                                                int is_raw_key_down,
                                                int is_char_event,
-                                               int is_plain) {
-  if (!url || !*url || !is_plain || (!is_raw_key_down && !is_char_event)) {
+                                               int is_plain,
+                                               unsigned int mode) {
+  if (!url || !*url || !is_plain || !mode ||
+      (!is_raw_key_down && !is_char_event)) {
     return shortcut_none();
   }
 
@@ -237,6 +246,9 @@ VimbrowserShortcut vimbrowser_shortcut_for_key(const char* url,
          ++binding_index) {
       const PageShortcutBinding* binding = &table->bindings[binding_index];
       if (binding->key != normalized_key) {
+        continue;
+      }
+      if (!(binding->modes & mode)) {
         continue;
       }
       VimbrowserShortcut shortcut;

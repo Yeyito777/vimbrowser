@@ -2855,16 +2855,19 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       return false;
     }
 
+    if (website_mode_ == vim::Mode::kInsert) {
+      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+        return *shortcut;
+      }
+    }
+
     // Insert mode lets the page handle normal input. Escape was handled above.
     return false;
   }
 
   if (IsCharEvent(event)) {
-    if (website_mode_ == vim::Mode::kWebsiteNormal ||
-        website_mode_ == vim::Mode::kNormal) {
-      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
-        return *shortcut;
-      }
+    if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+      return *shortcut;
     }
     if (website_mode_ == vim::Mode::kInsert) {
       return false;
@@ -2888,7 +2891,8 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
     return std::nullopt;
   }
   if (website_mode_ != vim::Mode::kWebsiteNormal &&
-      website_mode_ != vim::Mode::kNormal) {
+      website_mode_ != vim::Mode::kNormal &&
+      website_mode_ != vim::Mode::kInsert) {
     return std::nullopt;
   }
   if (!IsRawKeyDown(event) && !IsCharEvent(event)) {
@@ -2900,12 +2904,24 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
     return std::nullopt;
   }
 
+  if (website_mode_ == vim::Mode::kInsert && event.focus_on_editable_field) {
+    return std::nullopt;
+  }
+
   const std::string url = ActiveTabUrl();
   const bool plain_without_shift =
       IsPlain(event) && !(event.modifiers & EVENTFLAG_SHIFT_DOWN);
+  unsigned int shortcut_mode = 0;
+  if (website_mode_ == vim::Mode::kWebsiteNormal) {
+    shortcut_mode = VIMBROWSER_SHORTCUT_MODE_WEBSITE_NORMAL;
+  } else if (website_mode_ == vim::Mode::kNormal) {
+    shortcut_mode = VIMBROWSER_SHORTCUT_MODE_NORMAL;
+  } else if (website_mode_ == vim::Mode::kInsert) {
+    shortcut_mode = VIMBROWSER_SHORTCUT_MODE_INSERT;
+  }
   const VimbrowserShortcut shortcut = vimbrowser_shortcut_for_key(
       url.c_str(), static_cast<unsigned char>(key), IsRawKeyDown(event),
-      IsCharEvent(event), plain_without_shift);
+      IsCharEvent(event), plain_without_shift, shortcut_mode);
 
   switch (shortcut.action) {
     case VIMBROWSER_SHORTCUT_NONE:
