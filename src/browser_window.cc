@@ -103,7 +103,9 @@ constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
-constexpr int kTabContentActivationDelayMs = 75;
+// Keep tab content selection asynchronous so rapid tab-switch bursts still
+// coalesce by generation, but do not add an artificial human-visible delay.
+constexpr int kTabContentActivationDelayMs = 0;
 constexpr int kTabStateSaveDelayMs = 250;
 constexpr size_t kOpenHistoryCompletionNameMax = 140;
 constexpr size_t kTabFocusCompletionDescriptionMax = 140;
