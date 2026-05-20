@@ -92,6 +92,12 @@ indexes), ID-based tab focus/delete/order/open commands, native HTML/text/JS,
 backend tab screenshots, backend cookie inspection/mutation, and per-tab native
 network capture/replay.
 
+Performance tracking lives in [`docs/benchmarks.md`](docs/benchmarks.md). Run
+`make benchmark` for the deterministic local regression suite,
+`make benchmark-live` for YouTube/GitHub/Discord/Reddit page-load tracking, or
+`scripts/vimbrowser-benchmark --suite all --output bench.json` for a combined
+machine-readable run.
+
 That backend is pinned to Chromium `147.0.7727.118` / CEF
 `d58e84d17dd3f646c906ac633156cd0ec46638e9`. Chromium and CEF source now live
 directly in the main vimbrowser git repository under `backend/chromium/` with

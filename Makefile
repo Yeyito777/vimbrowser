@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source benchmark benchmark-live benchmark-all vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
@@ -8,6 +8,7 @@ INSTALL_XDG_BIN ?= $(HOME)/.local/bin/vimbrowser-xdg-open
 INSTALL_DESKTOP ?= $(HOME)/.local/share/applications/vimbrowser.desktop
 WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
+BENCH_BINARY ?= $(abspath $(SOURCE_BUILD_DIR))/Release/vimbrowser
 CMAKE_ARGS ?=
 ifneq ($(CEF_ROOT),)
 CMAKE_ARGS += -DCEF_ROOT=$(CEF_ROOT)
@@ -93,6 +94,15 @@ install: build install-wrapper
 
 install-source: build-source
 	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
+
+benchmark:
+	./scripts/vimbrowser-benchmark --suite local --check --binary "$(BENCH_BINARY)"
+
+benchmark-live:
+	./scripts/vimbrowser-benchmark --suite live --binary "$(BENCH_BINARY)"
+
+benchmark-all:
+	./scripts/vimbrowser-benchmark --suite all --check --binary "$(BENCH_BINARY)"
 
 vite-install:
 	npm --prefix frontend install

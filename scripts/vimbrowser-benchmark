@@ -1,0 +1,696 @@
+#!/usr/bin/env python3
+"""Programmatic vimbrowser responsiveness/page-load benchmark harness.
+
+Runs vimbrowser in a nested xenv, drives it through native IPC, and emits
+machine-readable JSON plus a concise text report. The deterministic local suite
+is intended to be used as a code-level performance test; the live suite tracks
+real public sites and is diagnostic rather than strictly reproducible.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import http.server
+import json
+import os
+import shutil
+import socket
+import socketserver
+import statistics
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional
+
+REPO = Path(__file__).resolve().parents[1]
+IPC = REPO / "scripts" / "vimbrowser-ipc"
+DEFAULT_LIVE_URLS = [
+    "https://www.youtube.com/",
+    "https://github.com/",
+    "https://discord.com/",
+    "https://www.reddit.com/",
+]
+
+LOCAL_CHECK_THRESHOLDS_MS = {
+    "startup.single.ipc_ready_ms.p95": 2500.0,
+    "startup.single.page_complete_elapsed_ms.p95": 6000.0,
+    "startup.restore.all_complete_elapsed_ms.p95": 8000.0,
+    "local.open_page.observed_complete_ms.p95": 2500.0,
+    "local.tab_switch.visible_ms.p95": 180.0,
+    "local.tab_switch.first_raf_ms.p95": 180.0,
+    "local.screenshot.active_ms.p95": 2500.0,
+}
+LOCAL_CHECK_THRESHOLDS_COUNTS = {
+    "local.background_throttle.background_raf_delta_max": 5,
+    "local.background_throttle.background_interval_delta_max": 12,
+}
+
+
+def monotonic_ms() -> float:
+    return time.perf_counter() * 1000.0
+
+
+def run(
+    cmd: List[str],
+    *,
+    env: Optional[Dict[str, str]] = None,
+    timeout: float = 30,
+    check: bool = True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text: bool = True,
+) -> subprocess.CompletedProcess:
+    proc = subprocess.run(
+        cmd,
+        env=env,
+        timeout=timeout,
+        check=False,
+        stdout=stdout,
+        stderr=stderr,
+        text=text,
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(
+            f"command failed rc={proc.returncode}: {' '.join(cmd)}\n"
+            f"stdout={proc.stdout}\nstderr={proc.stderr}"
+        )
+    return proc
+
+
+def percentile(values: List[float], q: float) -> Optional[float]:
+    if not values:
+        return None
+    ordered = sorted(values)
+    idx = (len(ordered) - 1) * q / 100.0
+    lo = int(idx)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = idx - lo
+    return ordered[lo] * (1 - frac) + ordered[hi] * frac
+
+
+def summarize(values: Iterable[float]) -> Dict[str, Any]:
+    vals = [float(v) for v in values if v is not None]
+    if not vals:
+        return {"n": 0}
+    return {
+        "n": len(vals),
+        "mean": statistics.mean(vals),
+        "median": statistics.median(vals),
+        "p90": percentile(vals, 90),
+        "p95": percentile(vals, 95),
+        "p99": percentile(vals, 99),
+        "min": min(vals),
+        "max": max(vals),
+    }
+
+
+def fmt_ms(value: Optional[float]) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:.1f}ms"
+
+
+def fmt_summary(summary: Dict[str, Any]) -> str:
+    if not summary or summary.get("n", 0) == 0:
+        return "n=0"
+    return (
+        f"n={summary['n']} median={fmt_ms(summary.get('median'))} "
+        f"p95={fmt_ms(summary.get('p95'))} mean={fmt_ms(summary.get('mean'))} "
+        f"max={fmt_ms(summary.get('max'))}"
+    )
+
+
+def fmt_count_summary(summary: Dict[str, Any]) -> str:
+    if not summary or summary.get("n", 0) == 0:
+        return "n=0"
+    return (
+        f"n={summary['n']} median={summary.get('median'):.1f} "
+        f"p95={summary.get('p95'):.1f} mean={summary.get('mean'):.1f} "
+        f"max={summary.get('max'):.1f}"
+    )
+
+
+def free_port() -> int:
+    sock = socket.socket()
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return int(port)
+
+
+class ThreadingHTTPServer(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+
+
+class BenchmarkHTTPHandler(http.server.BaseHTTPRequestHandler):
+    server_version = "VimbrowserBenchmark/1.0"
+
+    def log_message(self, fmt: str, *args: Any) -> None:
+        return
+
+    def do_GET(self) -> None:  # noqa: N802 - stdlib callback
+        self.server.request_log.append({"t": monotonic_ms(), "path": self.path})
+        path = self.path.split("?", 1)[0]
+        if path.startswith("/asset"):
+            time.sleep(0.012)
+            body = (
+                b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00"
+                b"!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01"
+                b"\x00\x00\x02\x02D\x01\x00;"
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "image/gif")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if path.startswith("/page") or path.startswith("/heavy"):
+            name = path.strip("/").replace(".html", "") or "page"
+            asset_count = 24 if path.startswith("/page") else 48
+            spin_ms = 0 if path.startswith("/page") else 18
+            assets = "".join(
+                f'<img alt="" src="/asset?{name}-{i}" width="1" height="1">'
+                for i in range(asset_count)
+            )
+            body = f"""<!doctype html><meta charset="utf-8"><title>{name}</title>
+<style>
+html,body{{margin:0;height:100%;font:42px sans-serif;background:white;color:black}}
+#box{{margin:80px}}
+</style>
+<div id="box">{name}</div>{assets}
+<script>
+window.bench = {{
+  name: {name!r}, scriptStart: performance.now(), dcl: null, load: null,
+  rafCount: 0, intervalCount: 0, visEvents: [], paintEntries: []
+}};
+new PerformanceObserver(list => {{
+  bench.paintEntries.push(...list.getEntries().map(e => {{return {{name:e.name,startTime:e.startTime,duration:e.duration}}}}));
+}}).observe({{type: 'paint', buffered: true}});
+document.addEventListener('DOMContentLoaded', () => bench.dcl = performance.now());
+addEventListener('load', () => bench.load = performance.now());
+document.addEventListener('visibilitychange', () => bench.visEvents.push({{t:performance.now(),state:document.visibilityState}}));
+(function raf(t){{ bench.rafCount++; bench.lastRaf = t; requestAnimationFrame(raf); }})();
+setInterval(() => {{ bench.intervalCount++; bench.lastInterval = performance.now(); }}, 50);
+const start = performance.now(); while (performance.now() - start < {spin_ms}) {{}}
+</script>""".encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        self.send_response(404)
+        self.end_headers()
+
+
+class LocalBenchmarkServer:
+    def __init__(self) -> None:
+        self.port = free_port()
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", self.port), BenchmarkHTTPHandler)
+        self.httpd.request_log = []
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+
+    def __enter__(self) -> "LocalBenchmarkServer":
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+    def url(self, path: str) -> str:
+        return f"http://127.0.0.1:{self.port}{path}"
+
+
+class BrowserSession:
+    def __init__(self, binary: Path, tmp_root: Path, name: str, extra_args: Optional[List[str]] = None) -> None:
+        self.binary = binary
+        self.tmp_root = tmp_root
+        self.name = name
+        self.profile = tmp_root / f"profile-{name}"
+        self.env_name = f"vb-bench-{os.getpid()}-{name}"
+        self.extra_args = extra_args or []
+        self.ipc_env = os.environ.copy()
+        self.ipc_env["VIMBROWSER_PROFILE_DIR"] = str(self.profile)
+        self.started_xenv = False
+        self.process: Optional[subprocess.Popen] = None
+
+    def __enter__(self) -> "BrowserSession":
+        if not shutil.which("xenv"):
+            raise RuntimeError("xenv is required for vimbrowser benchmarks")
+        if not self.binary.exists():
+            raise RuntimeError(f"vimbrowser binary not found: {self.binary}")
+        run(["xenv", "start", self.env_name], timeout=30)
+        self.started_xenv = True
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        if self.started_xenv:
+            subprocess.run(["xenv", "stop", self.env_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.process = None
+
+    def launch(self, urls: Optional[List[str]] = None) -> float:
+        urls = urls or []
+        self.profile.mkdir(parents=True, exist_ok=True)
+        quoted_urls = " ".join(json.dumps(u) for u in urls)
+        extra = " ".join(json.dumps(a) for a in self.extra_args)
+        cmd = (
+            f"cd {json.dumps(str(self.binary.parent))} && "
+            f"./{self.binary.name} --profile-dir={json.dumps(str(self.profile))} {extra} {quoted_urls} "
+            f">{json.dumps(str(self.tmp_root / (self.name + '-browser.log')))} 2>&1"
+        )
+        start = monotonic_ms()
+        self.process = subprocess.Popen(
+            ["xenv", "run", "-e", self.env_name, "bash", "-lc", cmd],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return start
+
+    def ipc(self, args: List[str], timeout: float = 20) -> str:
+        return run([str(IPC)] + args, env=self.ipc_env, timeout=timeout).stdout
+
+    def ipc_json(self, args: List[str], timeout: float = 20) -> Dict[str, Any]:
+        return json.loads(self.ipc(args, timeout=timeout))
+
+    def wait_ipc_ready(self, start_ms: float, timeout: float = 30) -> Dict[str, Any]:
+        deadline = time.time() + timeout
+        last_error: Optional[BaseException] = None
+        while time.time() < deadline:
+            try:
+                status = self.ipc_json(["status"], timeout=2)
+                status["observed_elapsed_ms"] = monotonic_ms() - start_ms
+                return status
+            except Exception as exc:  # noqa: BLE001 - diagnostic retry loop
+                last_error = exc
+                time.sleep(0.05)
+        raise RuntimeError(f"IPC did not become ready: {last_error!r}")
+
+    def wait_tab_complete(self, tabid: int, start_ms: float, timeout: float = 30) -> Dict[str, Any]:
+        script = (
+            "JSON.stringify({ready:document.readyState,vis:document.visibilityState,"
+            "hidden:document.hidden,hasFocus:document.hasFocus(),title:document.title,"
+            "url:location.href,bench:window.bench||null,"
+            "nav:performance.getEntriesByType('navigation')[0]?.toJSON?.()||null,"
+            "paint:performance.getEntriesByType('paint').map(e=>({name:e.name,startTime:e.startTime,duration:e.duration}))})"
+        )
+        deadline = time.time() + timeout
+        last: Optional[Dict[str, Any]] = None
+        while time.time() < deadline:
+            payload = self.ipc_json(["js", str(tabid), script], timeout=4)
+            data = json.loads(payload["result"])
+            last = data
+            bench = data.get("bench") or {}
+            if data.get("ready") == "complete" and (bench.get("load") is not None or data.get("nav")):
+                data["observed_elapsed_ms"] = monotonic_ms() - start_ms
+                return data
+            time.sleep(0.03)
+        raise RuntimeError(f"tab {tabid} did not complete; last={last}")
+
+    def wait_tab_visible_after_switch(self, tabid: int, pre_raf: int, pre_interval: int, start_ms: float, timeout: float = 10) -> Dict[str, Any]:
+        script = "JSON.stringify({vis:document.visibilityState,hidden:document.hidden,bench:window.bench||{}})"
+        deadline = time.time() + timeout
+        visible_ms = first_raf_ms = first_interval_ms = None
+        last: Optional[Dict[str, Any]] = None
+        while time.time() < deadline:
+            data = json.loads(self.ipc_json(["js", str(tabid), script], timeout=3)["result"])
+            last = data
+            now = monotonic_ms()
+            bench = data.get("bench") or {}
+            if visible_ms is None and data.get("vis") == "visible":
+                visible_ms = now - start_ms
+            if first_raf_ms is None and bench.get("rafCount", 0) > pre_raf:
+                first_raf_ms = now - start_ms
+            if first_interval_ms is None and bench.get("intervalCount", 0) > pre_interval:
+                first_interval_ms = now - start_ms
+            if visible_ms is not None and first_raf_ms is not None and first_interval_ms is not None:
+                return {
+                    "visible_ms": visible_ms,
+                    "first_raf_ms": first_raf_ms,
+                    "first_interval_ms": first_interval_ms,
+                    "last": data,
+                }
+            time.sleep(0.003)
+        raise RuntimeError(f"tab {tabid} did not resume; last={last}")
+
+
+def resolve_binary(arg: Optional[str]) -> Path:
+    if arg:
+        return Path(arg).expanduser().resolve()
+    candidates = [
+        REPO / "build-source" / "Release" / "vimbrowser",
+        REPO / "build" / "Release" / "vimbrowser",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def get_paint_ms(record: Dict[str, Any], paint_name: str) -> Optional[float]:
+    for entry in record.get("paint") or []:
+        if entry.get("name") == paint_name:
+            return entry.get("startTime")
+    bench = record.get("bench") or {}
+    for entry in bench.get("paintEntries") or []:
+        if entry.get("name") == paint_name:
+            return entry.get("startTime")
+    return None
+
+
+def collect_nav_summary(record: Dict[str, Any]) -> Dict[str, Optional[float]]:
+    bench = record.get("bench") or {}
+    nav = record.get("nav") or {}
+    return {
+        "observed_complete_ms": record.get("observed_elapsed_ms"),
+        "dom_content_loaded_ms": bench.get("dcl") or nav.get("domContentLoadedEventEnd"),
+        "load_event_ms": bench.get("load") or nav.get("loadEventEnd"),
+        "first_paint_ms": get_paint_ms(record, "first-paint"),
+        "first_contentful_paint_ms": get_paint_ms(record, "first-contentful-paint"),
+        "nav_duration_ms": nav.get("duration"),
+        "transfer_size": nav.get("transferSize"),
+        "decoded_body_size": nav.get("decodedBodySize"),
+    }
+
+
+def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict[str, Any]:
+    result: Dict[str, Any] = {"suite": "local", "metrics": {}, "records": {}}
+    with LocalBenchmarkServer() as server:
+        # Single-page startup.
+        with BrowserSession(binary, tmp_root, "local-single", extra_args) as browser:
+            start = browser.launch([server.url("/page-start.html")])
+            status = browser.wait_ipc_ready(start)
+            tabid = int(status["active_tabid"])
+            page_record = browser.wait_tab_complete(tabid, start)
+            shot_start = monotonic_ms()
+            browser.ipc(["screenshot", str(tabid), "--json"], timeout=40)
+            screenshot_ms = monotonic_ms() - shot_start
+            result["records"]["startup_single"] = {
+                "status": status,
+                "page": page_record,
+                "nav": collect_nav_summary(page_record),
+                "active_screenshot_ms": screenshot_ms,
+            }
+            result["metrics"]["startup.single.ipc_ready_ms"] = summarize([status["observed_elapsed_ms"]])
+            result["metrics"]["startup.single.page_complete_elapsed_ms"] = summarize([page_record["observed_elapsed_ms"]])
+            result["metrics"]["startup.single.first_contentful_paint_ms"] = summarize(
+                [collect_nav_summary(page_record).get("first_contentful_paint_ms")]
+            )
+            result["metrics"]["local.screenshot.active_ms"] = summarize([screenshot_ms])
+
+        # Restore startup with several tabs, tab switching, background throttling.
+        with BrowserSession(binary, tmp_root, "local-restore", extra_args) as browser:
+            urls = [server.url(f"/page{i}.html") for i in range(6)]
+            browser.profile.mkdir(parents=True, exist_ok=True)
+            (browser.profile / "state").write_text(
+                "showmode=on\nshowfps=on\nshader=off\nactive=0\n" + "".join(f"tab={u}\n" for u in urls)
+            )
+            start = browser.launch([])
+            status = browser.wait_ipc_ready(start)
+            deadline = time.time() + 30
+            tabs: Dict[str, Any]
+            while True:
+                tabs = browser.ipc_json(["tabs"], timeout=3)
+                if len(tabs.get("tabs", [])) == len(urls):
+                    break
+                if time.time() > deadline:
+                    raise RuntimeError(f"restore tabs not ready: {tabs}")
+                time.sleep(0.05)
+            tab_ids = [int(t["id"]) for t in tabs["tabs"]]
+            page_records = {}
+            for tabid in tab_ids:
+                page_records[str(tabid)] = browser.wait_tab_complete(tabid, start, timeout=30)
+            result["records"]["restore_startup"] = {
+                "status": status,
+                "tabs": tabs,
+                "pages": page_records,
+                "nav": {tid: collect_nav_summary(record) for tid, record in page_records.items()},
+            }
+            result["metrics"]["startup.restore.ipc_ready_ms"] = summarize([status["observed_elapsed_ms"]])
+            result["metrics"]["startup.restore.all_complete_elapsed_ms"] = summarize(
+                [max(r["observed_elapsed_ms"] for r in page_records.values())]
+            )
+            result["metrics"]["startup.restore.page_load_event_ms"] = summarize(
+                [collect_nav_summary(r).get("load_event_ms") for r in page_records.values()]
+            )
+            result["metrics"]["startup.restore.first_contentful_paint_ms"] = summarize(
+                [collect_nav_summary(r).get("first_contentful_paint_ms") for r in page_records.values()]
+            )
+            result["records"]["visibility_after_restore"] = {
+                tid: {"vis": r.get("vis"), "hidden": r.get("hidden")} for tid, r in page_records.items()
+            }
+
+            # Background throttling: sample loop counters, wait, sample again.
+            loop_script = "JSON.stringify({vis:document.visibilityState,hidden:document.hidden,bench:window.bench||{}})"
+            before = {str(t): json.loads(browser.ipc_json(["js", str(t), loop_script], timeout=3)["result"]) for t in tab_ids}
+            time.sleep(2.0)
+            after = {str(t): json.loads(browser.ipc_json(["js", str(t), loop_script], timeout=3)["result"]) for t in tab_ids}
+            active = str(tabs["active_tabid"])
+            bg_ids = [str(t) for t in tab_ids if str(t) != active]
+            active_raf_delta = after[active]["bench"].get("rafCount", 0) - before[active]["bench"].get("rafCount", 0)
+            active_interval_delta = after[active]["bench"].get("intervalCount", 0) - before[active]["bench"].get("intervalCount", 0)
+            bg_raf_delta = [after[i]["bench"].get("rafCount", 0) - before[i]["bench"].get("rafCount", 0) for i in bg_ids]
+            bg_interval_delta = [after[i]["bench"].get("intervalCount", 0) - before[i]["bench"].get("intervalCount", 0) for i in bg_ids]
+            result["records"]["background_throttle"] = {
+                "active_tabid": active,
+                "active_raf_delta": active_raf_delta,
+                "active_interval_delta": active_interval_delta,
+                "background_raf_delta": bg_raf_delta,
+                "background_interval_delta": bg_interval_delta,
+                "before": before,
+                "after": after,
+            }
+            result["metrics"]["local.background_throttle.active_raf_delta"] = summarize([active_raf_delta])
+            result["metrics"]["local.background_throttle.background_raf_delta"] = summarize(bg_raf_delta)
+            result["metrics"]["local.background_throttle.active_interval_delta"] = summarize([active_interval_delta])
+            result["metrics"]["local.background_throttle.background_interval_delta"] = summarize(bg_interval_delta)
+            result["metrics"]["local.background_throttle.background_raf_delta_max"] = max(bg_raf_delta) if bg_raf_delta else 0
+            result["metrics"]["local.background_throttle.background_interval_delta_max"] = max(bg_interval_delta) if bg_interval_delta else 0
+
+            # Tab switch resume.
+            switch_rows = []
+            for tabid in tab_ids[1:] + tab_ids[:1]:
+                pre = json.loads(browser.ipc_json(["js", str(tabid), loop_script], timeout=3)["result"])
+                pre_raf = int((pre.get("bench") or {}).get("rafCount", 0))
+                pre_interval = int((pre.get("bench") or {}).get("intervalCount", 0))
+                switch_start = monotonic_ms()
+                switch_status = browser.ipc_json(["tab-focus", str(tabid)], timeout=10)
+                switch_cmd_ms = monotonic_ms() - switch_start
+                resume = browser.wait_tab_visible_after_switch(tabid, pre_raf, pre_interval, switch_start)
+                switch_rows.append({"tabid": tabid, "cmd_ms": switch_cmd_ms, **resume, "status": switch_status})
+            result["records"]["tab_switch"] = switch_rows
+            for key in ["cmd_ms", "visible_ms", "first_raf_ms", "first_interval_ms"]:
+                result["metrics"][f"local.tab_switch.{key[:-3] if key.endswith('_ms') else key}_ms"] = summarize(
+                    [row[key] for row in switch_rows]
+                )
+
+            # Active page open/load timings.
+            open_rows = []
+            for i in range(3):
+                url = server.url(f"/heavy{i}.html")
+                open_start = monotonic_ms()
+                status = browser.ipc_json(["open-tab", url], timeout=10)
+                open_cmd_ms = monotonic_ms() - open_start
+                tabid = int(status["active_tabid"])
+                record = browser.wait_tab_complete(tabid, open_start, timeout=30)
+                nav = collect_nav_summary(record)
+                open_rows.append({"url": url, "tabid": tabid, "open_cmd_ms": open_cmd_ms, "page": record, "nav": nav})
+            result["records"]["open_page"] = open_rows
+            result["metrics"]["local.open_page.open_cmd_ms"] = summarize([r["open_cmd_ms"] for r in open_rows])
+            result["metrics"]["local.open_page.observed_complete_ms"] = summarize([r["nav"].get("observed_complete_ms") for r in open_rows])
+            result["metrics"]["local.open_page.load_event_ms"] = summarize([r["nav"].get("load_event_ms") for r in open_rows])
+            result["metrics"]["local.open_page.first_contentful_paint_ms"] = summarize(
+                [r["nav"].get("first_contentful_paint_ms") for r in open_rows]
+            )
+    return result
+
+
+def live_ready_score(data: Dict[str, Any]) -> bool:
+    if data.get("ready") == "complete":
+        return True
+    nav = data.get("nav") or {}
+    if nav.get("domContentLoadedEventEnd") or nav.get("loadEventEnd"):
+        return True
+    # SPAs can leave ready/load odd under redirects; require non-trivial title/text.
+    return bool(data.get("title")) and int(data.get("bodyTextLength") or 0) > 100
+
+
+def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: List[str], strict: bool) -> Dict[str, Any]:
+    result: Dict[str, Any] = {"suite": "live", "urls": urls, "metrics": {}, "records": {}, "errors": []}
+    if not urls:
+        return result
+    with BrowserSession(binary, tmp_root, "live", extra_args) as browser:
+        launch_start = browser.launch(["about:blank"])
+        browser.wait_ipc_ready(launch_start, timeout=45)
+        rows = []
+        errors = []
+        for url in urls:
+            start = monotonic_ms()
+            tab_status = browser.ipc_json(["open-tab", url], timeout=20)
+            open_cmd_ms = monotonic_ms() - start
+            tabid = int(tab_status["active_tabid"])
+            script = (
+                "JSON.stringify({ready:document.readyState,title:document.title,url:location.href,"
+                "bodyTextLength:(document.body&&document.body.innerText||'').length,"
+                "vis:document.visibilityState,hidden:document.hidden,"
+                "nav:performance.getEntriesByType('navigation')[0]?.toJSON?.()||null,"
+                "paint:performance.getEntriesByType('paint').map(e=>({name:e.name,startTime:e.startTime,duration:e.duration}))})"
+            )
+            deadline = time.time() + 45
+            last = None
+            ok = False
+            while time.time() < deadline:
+                try:
+                    payload = browser.ipc_json(["js", str(tabid), script], timeout=6)
+                    data = json.loads(payload["result"])
+                    last = data
+                    if live_ready_score(data):
+                        ok = True
+                        break
+                except Exception as exc:  # noqa: BLE001 - keep live benchmark running
+                    last = {"error": repr(exc)}
+                time.sleep(0.25)
+            elapsed = monotonic_ms() - start
+            if not ok:
+                err = {"url": url, "tabid": tabid, "elapsed_ms": elapsed, "last": last}
+                errors.append(err)
+                if strict:
+                    raise RuntimeError(f"live page did not become ready: {err}")
+            record = last if isinstance(last, dict) else {}
+            nav = collect_nav_summary({**record, "observed_elapsed_ms": elapsed})
+            rows.append({"requested_url": url, "tabid": tabid, "ok": ok, "open_cmd_ms": open_cmd_ms, "elapsed_ms": elapsed, "page": record, "nav": nav})
+        result["records"]["pages"] = rows
+        result["errors"] = errors
+        result["metrics"]["live.open_cmd_ms"] = summarize([r["open_cmd_ms"] for r in rows])
+        result["metrics"]["live.observed_ready_ms"] = summarize([r["elapsed_ms"] for r in rows if r["ok"]])
+        result["metrics"]["live.load_event_ms"] = summarize([r["nav"].get("load_event_ms") for r in rows if r["ok"]])
+        result["metrics"]["live.first_contentful_paint_ms"] = summarize([r["nav"].get("first_contentful_paint_ms") for r in rows if r["ok"]])
+    return result
+
+
+def dotted_get(obj: Dict[str, Any], path: str) -> Any:
+    cur: Any = obj
+    for part in path.split("."):
+        if isinstance(cur, dict):
+            cur = cur.get(part)
+        else:
+            return None
+    return cur
+
+
+def run_checks(results: Dict[str, Any]) -> List[str]:
+    failures: List[str] = []
+    for suite in results.get("suites", []):
+        if suite.get("suite") != "local":
+            continue
+        root = suite.get("metrics", {})
+        for path, threshold in LOCAL_CHECK_THRESHOLDS_MS.items():
+            metric = path.rsplit(".", 1)[0]
+            stat = path.rsplit(".", 1)[1]
+            summary = root.get(metric) or {}
+            value = summary.get(stat) if isinstance(summary, dict) else None
+            if value is not None and value > threshold:
+                failures.append(f"{path}={value:.1f}ms > {threshold:.1f}ms")
+        for path, threshold in LOCAL_CHECK_THRESHOLDS_COUNTS.items():
+            value = root.get(path)
+            if value is not None and value > threshold:
+                failures.append(f"{path}={value} > {threshold}")
+    return failures
+
+
+def print_report(results: Dict[str, Any]) -> None:
+    print("VIMBROWSER BENCHMARK")
+    print(f"binary: {results['binary']}")
+    print(f"timestamp: {results['timestamp_unix']:.0f}")
+    for suite in results.get("suites", []):
+        print(f"\n[{suite['suite']}]")
+        metrics = suite.get("metrics", {})
+        for name in sorted(metrics):
+            value = metrics[name]
+            if isinstance(value, dict):
+                formatter = fmt_summary if name.endswith("_ms") else fmt_count_summary
+                print(f"{name}: {formatter(value)}")
+            else:
+                print(f"{name}: {value}")
+        if suite.get("suite") == "live":
+            for row in suite.get("records", {}).get("pages", []):
+                nav = row.get("nav", {})
+                page = row.get("page", {})
+                print(
+                    "live page: "
+                    f"ok={row.get('ok')} url={row.get('requested_url')} "
+                    f"ready={fmt_ms(row.get('elapsed_ms'))} "
+                    f"load={fmt_ms(nav.get('load_event_ms'))} "
+                    f"fcp={fmt_ms(nav.get('first_contentful_paint_ms'))} "
+                    f"title={page.get('title')!r} final={page.get('url')!r}"
+                )
+            if suite.get("errors"):
+                print(f"live errors: {len(suite['errors'])}")
+    if results.get("check_failures"):
+        print("\nCHECK FAILURES:")
+        for failure in results["check_failures"]:
+            print(f"- {failure}")
+    elif results.get("checked"):
+        print("\nCHECK: PASS")
+
+
+def parse_args(argv: List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--binary", help="Path to vimbrowser binary (default: build-source/Release/vimbrowser, then build/Release/vimbrowser)")
+    parser.add_argument("--suite", choices=["local", "live", "all"], default="local", help="Benchmark suite to run")
+    parser.add_argument("--live-url", action="append", dest="live_urls", help="Live URL to benchmark; repeatable. Defaults to YouTube/GitHub/Discord/Reddit for live/all")
+    parser.add_argument("--strict-live", action="store_true", help="Fail the process if any live URL times out/fails")
+    parser.add_argument("--check", action="store_true", help="Assert local benchmark thresholds and exit non-zero on regression")
+    parser.add_argument("--json", action="store_true", help="Print only JSON")
+    parser.add_argument("--output", help="Write JSON results to this path")
+    parser.add_argument("--keep-temp", action="store_true", help="Keep temporary profiles/logs and include the path in output")
+    parser.add_argument("--extra-arg", action="append", default=[], help="Extra argument to pass to vimbrowser; repeatable")
+    return parser.parse_args(argv)
+
+
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
+    binary = resolve_binary(args.binary)
+    tmp_root = Path(tempfile.mkdtemp(prefix="vimbrowser-benchmark-"))
+    suites: List[Dict[str, Any]] = []
+    results: Dict[str, Any] = {
+        "benchmark_version": 1,
+        "timestamp_unix": time.time(),
+        "repo": str(REPO),
+        "binary": str(binary),
+        "tmp_root": str(tmp_root),
+        "suite_requested": args.suite,
+        "suites": suites,
+    }
+    try:
+        if args.suite in ("local", "all"):
+            suites.append(run_local_suite(binary, tmp_root, args.extra_arg))
+        if args.suite in ("live", "all"):
+            urls = args.live_urls or DEFAULT_LIVE_URLS
+            suites.append(run_live_suite(binary, tmp_root, args.extra_arg, urls, args.strict_live))
+        results["checked"] = bool(args.check)
+        results["check_failures"] = run_checks(results) if args.check else []
+        if args.output:
+            Path(args.output).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+        if args.json:
+            print(json.dumps(results, sort_keys=True))
+        else:
+            print_report(results)
+            print("JSON_RESULTS=" + json.dumps(results, sort_keys=True))
+        if results.get("check_failures"):
+            return 1
+        return 0
+    finally:
+        if not args.keep_temp:
+            shutil.rmtree(tmp_root, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
