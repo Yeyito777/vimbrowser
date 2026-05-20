@@ -190,7 +190,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - in website-normal and regular Vim normal web modes, `i` / `a` enter insert
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`
-  (`Shift-f`) opens hinted links in a new tab
+  (`Shift-f`) opens hinted links in a new tab immediately after the active tab
 - in website-normal/normal web modes, `Ctrl+Space` starts native backend
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it

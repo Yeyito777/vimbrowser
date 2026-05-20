@@ -138,6 +138,8 @@ class BrowserWindow final : public CefWindowDelegate,
     int popup_id = 0;
     std::string target_url;
     bool activate = true;
+    uint64_t opener_tab_id = 0;
+    bool insert_after_opener = false;
   };
 
   void BuildChrome();
@@ -147,6 +149,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
                       std::string url,
+                      size_t index,
                       bool activate);
   void ActivateTab(size_t index);
   void ScheduleActiveBrowserSync();

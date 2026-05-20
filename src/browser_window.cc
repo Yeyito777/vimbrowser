@@ -1162,17 +1162,27 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
     return true;
   }
 
+  const bool hint_open_tab = native_hints_active_ && ActiveTab() &&
+                             ActiveTab()->client.get() == client;
+  const uint64_t opener_tab_id = hint_open_tab ? ActiveTab()->id : 0;
+
   if (!popup_client) {
     if (target_url.empty()) {
       return true;
     }
     native_hints_active_ = false;
-    AddTab(target_url, activate);
+    if (hint_open_tab) {
+      AddTabAfterActive(target_url, activate);
+    } else {
+      AddTab(target_url, activate);
+    }
     UpdateModeIndicator();
     return true;
   }
 
-  pending_popups_.push_back({popup_client, popup_id, target_url, activate});
+  pending_popups_.push_back(
+      {popup_client, popup_id, target_url, activate, opener_tab_id,
+       hint_open_tab});
   return false;
 }
 
@@ -1213,6 +1223,8 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
 
   std::string url = pending->target_url;
   const bool activate = pending->activate;
+  const bool insert_after_opener = pending->insert_after_opener;
+  const uint64_t opener_tab_id = pending->opener_tab_id;
   CefRefPtr<BrowserClient> retained_popup_client = pending->client;
   pending_popups_.erase(pending);
 
@@ -1227,8 +1239,16 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
   }
 
   native_hints_active_ = false;
+  size_t insert_index = tabs_.size();
+  if (insert_after_opener) {
+    if (std::optional<size_t> opener_index = FindTabIndexById(opener_tab_id)) {
+      insert_index = *opener_index + 1;
+    } else if (active_index_ < tabs_.size()) {
+      insert_index = active_index_ + 1;
+    }
+  }
   InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
-                 activate);
+                 insert_index, activate);
   UpdateModeIndicator();
   return true;
 }
@@ -1919,6 +1939,7 @@ void BrowserWindow::InsertTab(std::string url, size_t index, bool activate) {
 void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                                    CefRefPtr<BrowserClient> popup_client,
                                    std::string url,
+                                   size_t index,
                                    bool activate) {
   if (!popup_browser_view || !popup_client) {
     return;
@@ -1935,8 +1956,14 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   tab.view->SetVisible(false);
   content_inner_panel_->AddChildView(tab.view);
 
-  const size_t insert_index = tabs_.size();
-  tabs_.push_back(tab);
+  const size_t insert_index = std::min(index, tabs_.size());
+  if (!tabs_.empty() && insert_index <= active_index_) {
+    ++active_index_;
+  }
+  if (visible_tab_index_ != kNoTabIndex && insert_index <= visible_tab_index_) {
+    ++visible_tab_index_;
+  }
+  tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(insert_index), tab);
   RefreshSidebar();
   Layout();
 
