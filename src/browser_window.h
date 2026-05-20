@@ -190,6 +190,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleNetworkReplayIpcCommand(uint64_t tab_id,
                                      uint64_t request_id,
                                      IpcReplyCallback reply);
+  void HandleScreenshotIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
   std::string ActiveTabUrl() const;
   std::string ActiveTabTitle() const;
   CefRefPtr<CefBrowser> ActiveBrowser() const;

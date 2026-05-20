@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -20,7 +21,9 @@
 #include "include/cef_browser.h"
 #include "include/cef_color_ids.h"
 #include "include/cef_cookie.h"
+#include "include/cef_devtools_message_observer.h"
 #include "include/cef_navigation_entry.h"
+#include "include/cef_parser.h"
 #include "include/cef_process_message.h"
 #include "include/cef_request.h"
 #include "include/cef_response.h"
@@ -580,6 +583,16 @@ std::string IpcVersionJson() {
   return out.str();
 }
 
+int NextScreenshotDevToolsMessageId() {
+  // Use an explicit positive ID instead of ExecuteDevToolsMethod(0)'s auto-ID so
+  // an extremely fast DevTools method result cannot race observer initialization.
+  static int next_message_id = 900000000;
+  if (next_message_id >= 999000000) {
+    next_message_id = 900000000;
+  }
+  return next_message_id++;
+}
+
 struct IpcCommandInfo {
   const char* name;
   const char* usage;
@@ -610,6 +623,7 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"scroll-tab", "scroll-tab <tabid> <dy> [count]", "scroll a tab by stable id", "json"},
       {"html", "html <tabid>", "return current document HTML via native CEF frame source", "text/html"},
       {"text", "text <tabid>", "return current document text via native CEF frame text", "text/plain"},
+      {"screenshot", "screenshot <tabid>", "capture a tab as a PNG without changing focus", "image/png;base64"},
       {"js", "js <tabid> <javascript>", "evaluate JavaScript in the tab renderer", "json"},
       {"js-file", "js-file <tabid> <path>", "evaluate JavaScript loaded from a file", "json"},
       {"cookies", "cookies <tabid>", "list tab cookies using the backend cookie manager", "json"},
@@ -890,6 +904,147 @@ class URLRequestReplayClient final : public CefURLRequestClient {
   IMPLEMENT_REFCOUNTING(URLRequestReplayClient);
   DISALLOW_COPY_AND_ASSIGN(URLRequestReplayClient);
 };
+
+class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
+ public:
+  ScreenshotDevToolsObserver(uint64_t tab_id,
+                             std::string url,
+                             IpcReplyCallback reply,
+                             std::function<void()> cleanup = {})
+      : tab_id_(tab_id),
+        url_(std::move(url)),
+        reply_(std::move(reply)),
+        cleanup_(std::move(cleanup)) {}
+
+  void SetRegistration(CefRefPtr<CefRegistration> registration) {
+    registration_ = registration;
+  }
+
+  void SetMessageId(int message_id) { message_id_ = message_id; }
+
+  void Fail(std::string error) { Finish(std::move(error)); }
+
+  void OnDevToolsMethodResult(CefRefPtr<CefBrowser> browser,
+                              int message_id,
+                              bool success,
+                              const void* result,
+                              size_t result_size) override {
+    if (completed_ || message_id_ == 0 || message_id != message_id_) {
+      return;
+    }
+
+    if (!success) {
+      Finish("ERR screenshot failed: " + DevToolsErrorMessage(result, result_size) +
+             "\n");
+      return;
+    }
+
+    CefRefPtr<CefValue> value = CefParseJSON(result, result_size, JSON_PARSER_RFC);
+    if (!value || value->GetType() != VTYPE_DICTIONARY) {
+      Finish("ERR screenshot failed: invalid devtools response\n");
+      return;
+    }
+    CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
+    if (!dict || !dict->HasKey("data") || dict->GetType("data") != VTYPE_STRING) {
+      Finish("ERR screenshot failed: devtools response did not include image data\n");
+      return;
+    }
+
+    const std::string data = dict->GetString("data").ToString();
+    if (data.empty()) {
+      Finish("ERR screenshot failed: empty image data\n");
+      return;
+    }
+
+    std::ostringstream out;
+    out << "{"
+        << "\"tabid\":" << tab_id_ << ","
+        << "\"url\":\"" << JsonEscape(url_) << "\","
+        << "\"mime_type\":\"image/png\","
+        << "\"encoding\":\"base64\","
+        << "\"data\":\"" << JsonEscape(data) << "\""
+        << "}";
+    Finish(out.str());
+  }
+
+ private:
+  std::string DevToolsErrorMessage(const void* result, size_t result_size) const {
+    if (!result || result_size == 0) {
+      return "unknown error";
+    }
+    CefRefPtr<CefValue> value = CefParseJSON(result, result_size, JSON_PARSER_RFC);
+    if (value && value->GetType() == VTYPE_DICTIONARY) {
+      CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
+      if (dict && dict->HasKey("message") &&
+          dict->GetType("message") == VTYPE_STRING) {
+        return dict->GetString("message").ToString();
+      }
+    }
+    return std::string(static_cast<const char*>(result), result_size);
+  }
+
+  void Finish(std::string response) {
+    if (completed_) {
+      return;
+    }
+    completed_ = true;
+    registration_ = nullptr;
+    if (cleanup_) {
+      auto cleanup = std::move(cleanup_);
+      cleanup();
+    }
+    if (reply_) {
+      auto reply = std::move(reply_);
+      reply(std::move(response));
+    }
+  }
+
+  uint64_t tab_id_ = 0;
+  std::string url_;
+  IpcReplyCallback reply_;
+  std::function<void()> cleanup_;
+  CefRefPtr<CefRegistration> registration_;
+  int message_id_ = 0;
+  bool completed_ = false;
+
+  IMPLEMENT_REFCOUNTING(ScreenshotDevToolsObserver);
+  DISALLOW_COPY_AND_ASSIGN(ScreenshotDevToolsObserver);
+};
+
+void StartScreenshotDevToolsCapture(CefRefPtr<CefBrowserHost> host,
+                                    CefRefPtr<CefDictionaryValue> params,
+                                    CefRefPtr<ScreenshotDevToolsObserver> observer) {
+  if (!host || !observer) {
+    if (observer) {
+      observer->Fail("ERR screenshot failed to start\n");
+    }
+    return;
+  }
+
+  observer->SetRegistration(host->AddDevToolsMessageObserver(observer));
+  const int requested_message_id = NextScreenshotDevToolsMessageId();
+  observer->SetMessageId(requested_message_id);
+  const int message_id =
+      host->ExecuteDevToolsMethod(requested_message_id, "Page.captureScreenshot",
+                                  params);
+  if (message_id == 0) {
+    observer->Fail("ERR screenshot failed to start\n");
+    return;
+  }
+  if (message_id != requested_message_id) {
+    observer->SetMessageId(message_id);
+  }
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(
+          [](CefRefPtr<ScreenshotDevToolsObserver> observer) {
+            if (observer) {
+              observer->Fail("ERR screenshot timed out\n");
+            }
+          },
+          observer),
+      30000);
+}
 
 void WriteClipboardText(const std::string& text) {
   if (ShellWrite("xclip -selection clipboard -i 2>/dev/null", text)) {
@@ -2287,8 +2442,8 @@ void BrowserWindow::HandleCookieSetIpcCommand(uint64_t tab_id,
 }
 
 void BrowserWindow::HandleNetworkReplayIpcCommand(uint64_t tab_id,
-                                                 uint64_t request_id,
-                                                 IpcReplyCallback reply) {
+                                                  uint64_t request_id,
+                                                  IpcReplyCallback reply) {
   std::string error;
   size_t index = 0;
   CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error, &index);
@@ -2310,6 +2465,94 @@ void BrowserWindow::HandleNetworkReplayIpcCommand(uint64_t tab_id,
                                              ? browser->GetHost()->GetRequestContext()
                                              : nullptr;
   CefURLRequest::Create(request, client, context);
+}
+
+void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
+                                               IpcReplyCallback reply) {
+  std::string error;
+  size_t index = 0;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error, &index);
+  if (!browser) {
+    reply(error);
+    return;
+  }
+  CefRefPtr<CefBrowserHost> host = browser->GetHost();
+  if (!host) {
+    reply("ERR tab has no browser host\n");
+    return;
+  }
+
+  std::string url = tabs_[index].url;
+  if (browser->GetMainFrame()) {
+    const std::string frame_url = browser->GetMainFrame()->GetURL().ToString();
+    if (!frame_url.empty()) {
+      url = frame_url;
+    }
+  }
+
+  CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+  params->SetString("format", "png");
+  params->SetBool("fromSurface", true);
+  params->SetBool("captureBeyondViewport", false);
+  params->SetBool("optimizeForSpeed", true);
+
+  if (index == active_index_) {
+    CefRefPtr<ScreenshotDevToolsObserver> observer =
+        new ScreenshotDevToolsObserver(tab_id, std::move(url), std::move(reply));
+    StartScreenshotDevToolsCapture(host, params, observer);
+    return;
+  }
+
+  // Paint the inactive tab into a background compositor surface without
+  // activating or focusing it. CEF/Views only keeps a reliable surface for views
+  // that are attached and visible, so briefly show the target behind the active
+  // view, keep the active view frontmost, then let the backend CDP new-surface
+  // path copy the target's own surface. The cleanup hides the target again if it
+  // is still inactive.
+  CefRefPtr<CefBrowserView> target_view = tabs_[index].view;
+  CefRefPtr<CefBrowserView> active_view =
+      active_index_ < tabs_.size() ? tabs_[active_index_].view : nullptr;
+  if (target_view) {
+    target_view->SetVisible(true);
+  }
+  if (content_inner_panel_ && active_view && active_view != target_view) {
+    content_inner_panel_->ReorderChildView(active_view, -1);
+  }
+  if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
+    content_inner_panel_->Layout();
+  }
+
+  CefRefPtr<BrowserWindow> self(this);
+  auto cleanup = [self, target_view, tab_id]() {
+    const std::optional<size_t> index = self->FindTabIndexById(tab_id);
+    if (!index || *index != self->active_index_) {
+      if (target_view) {
+        target_view->SetVisible(false);
+      }
+    }
+    if (self->content_inner_panel_ && self->content_inner_panel_->GetLayout()) {
+      self->content_inner_panel_->Layout();
+    }
+  };
+
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(
+          [](CefRefPtr<CefBrowserHost> host,
+             CefRefPtr<CefDictionaryValue> params,
+             uint64_t tab_id,
+             std::string url,
+             IpcReplyCallback reply,
+             std::function<void()> cleanup) mutable {
+            CefRefPtr<ScreenshotDevToolsObserver> observer =
+                new ScreenshotDevToolsObserver(tab_id, std::move(url),
+                                               std::move(reply),
+                                               std::move(cleanup));
+            StartScreenshotDevToolsCapture(host, params, observer);
+          },
+          host, params, tab_id, std::move(url), std::move(reply),
+          std::move(cleanup)),
+      75);
 }
 
 std::string BrowserWindow::TabJson(const Tab& tab, size_t index) const {
@@ -4565,6 +4808,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  scroll-tab <tabid> <dy> [count]\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
+           "  screenshot <tabid>\n"
            "  js <tabid> <javascript>\n"
            "  js-file <tabid> <path>\n"
            "  cookies <tabid>\n"
@@ -4618,6 +4862,19 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
       return;
     }
     HandleHtmlIpcCommand(tab_id, command == "text", std::move(reply));
+    return;
+  }
+
+  if (command == "screenshot") {
+    if (argv.size() != 2) {
+      reply("ERR usage: screenshot <tabid>\n");
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleScreenshotIpcCommand(tab_id, std::move(reply));
     return;
   }
 

@@ -122,7 +122,13 @@ BASE_FEATURE(kCancelCompositionWhenWindowLosesFocus,
 // When enabled, CDP method Page.captureScreenshot will increment
 // the LocalSurfaceId instead of waiting for ForceRedraw to complete.
 // This should avoid a possible stall due to frames not being presented.
-BASE_FEATURE(kCDPScreenshotNewSurface, base::FEATURE_DISABLED_BY_DEFAULT);
+// vimbrowser: background tab IPC screenshots must be reliable without bringing
+// the target tab to the foreground. The legacy CDP screenshot path can stall
+// waiting for a ForceRedraw presentation from an occluded/inactive CEF
+// BrowserView. The new-surface path explicitly advances the LocalSurfaceId and
+// copies from that fresh surface, which is the background-buffer behavior we
+// need for unfocused tabs.
+BASE_FEATURE(kCDPScreenshotNewSurface, base::FEATURE_ENABLED_BY_DEFAULT);
 
 // When enabled, code cache does not use a browsing_data filter for deletions.
 BASE_FEATURE(kCodeCacheDeletionWithoutFilter, base::FEATURE_ENABLED_BY_DEFAULT);

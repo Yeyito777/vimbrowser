@@ -231,7 +231,7 @@ Toggles or sets the native Blink/native-theme page color shader and returns `sta
 
 ### Native debugging commands
 
-These commands are implemented in the app/backend through CEF frame, renderer-process, cookie-manager, resource-handler, response-filter, and URLRequest APIs. They are not wrappers around external CDP tooling.
+These commands are implemented in the app/backend through CEF frame, renderer-process, cookie-manager, resource-handler, response-filter, URLRequest, and DevTools protocol APIs owned by the embedded browser. They are not wrappers around external tooling.
 
 #### `html <tabid>`
 
@@ -240,6 +240,26 @@ Returns current full document HTML for the tab using `CefFrame::GetSource`.
 #### `text <tabid>`
 
 Returns current document text using `CefFrame::GetText`.
+
+#### `screenshot <tabid>`
+
+Captures the tab viewport as PNG without changing the focused tab. Active tabs
+capture from their current surface immediately; inactive tabs are captured via
+the browser backend's DevTools `Page.captureScreenshot` path, which asks the tab
+renderer/compositor for an image instead of focusing the tab or reading pixels
+from the host display. The raw IPC response is JSON:
+
+```json
+{"tabid":1,"url":"https://example.com/","mime_type":"image/png","encoding":"base64","data":"..."}
+```
+
+The `scripts/vimbrowser-ipc` helper decodes this command by default:
+
+```sh
+scripts/vimbrowser-ipc screenshot 1 > tab.png
+scripts/vimbrowser-ipc screenshot 1 -o tab.png
+scripts/vimbrowser-ipc screenshot 1 --json
+```
 
 #### `js <tabid> <javascript>`
 

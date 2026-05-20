@@ -6,6 +6,8 @@ wrapper: it should not grow alternate semantics that diverge from the app's
 Unix-socket command protocol.
 """
 import os
+import base64
+import json
 import socket
 import sys
 from pathlib import Path
@@ -27,13 +29,7 @@ def default_socket_path() -> Path:
     return Path("/tmp/vimbrowser/ipc.sock")
 
 
-def main() -> int:
-    socket_path = Path(os.environ.get("VIMBROWSER_IPC", default_socket_path()))
-    if len(sys.argv) < 2:
-        command = "status"
-    else:
-        command = " ".join(sys.argv[1:])
-
+def send_command(socket_path: Path, command: str) -> bytes:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.connect(str(socket_path))
         sock.sendall((command + "\n").encode())
@@ -44,7 +40,78 @@ def main() -> int:
             if not data:
                 break
             chunks.append(data)
-    sys.stdout.buffer.write(b"".join(chunks))
+    return b"".join(chunks)
+
+
+def maybe_handle_screenshot(socket_path: Path, argv: list[str]) -> int | None:
+    if len(argv) < 2 or argv[1] != "screenshot":
+        return None
+
+    passthrough = ["screenshot"]
+    output_path: Path | None = None
+    json_response = False
+    i = 2
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--json":
+            json_response = True
+            i += 1
+            continue
+        if arg in ("-o", "--output"):
+            if i + 1 >= len(argv):
+                sys.stderr.write("usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n")
+                return 2
+            output_path = Path(argv[i + 1])
+            i += 2
+            continue
+        passthrough.append(arg)
+        i += 1
+
+    response = send_command(socket_path, " ".join(passthrough))
+    if json_response:
+        sys.stdout.buffer.write(response)
+        return 0 if not response.startswith(b"ERR ") else 1
+    if response.startswith(b"ERR "):
+        sys.stderr.buffer.write(response)
+        return 1
+
+    try:
+        payload = json.loads(response.decode())
+        image = base64.b64decode(payload["data"], validate=True)
+    except Exception as exc:
+        sys.stderr.write(f"vimbrowser-ipc: invalid screenshot response: {exc}\n")
+        sys.stderr.buffer.write(response[:4096])
+        return 1
+
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(image)
+        metadata = {k: v for k, v in payload.items() if k != "data"}
+        metadata["path"] = str(output_path)
+        metadata["bytes"] = len(image)
+        sys.stdout.write(json.dumps(metadata, separators=(",", ":")) + "\n")
+        return 0
+
+    if sys.stdout.isatty():
+        path = Path(os.environ.get("TMPDIR", "/tmp")) / f"vimbrowser-screenshot-{payload.get('tabid', 'tab')}.png"
+        path.write_bytes(image)
+        sys.stdout.write(str(path) + "\n")
+        return 0
+
+    sys.stdout.buffer.write(image)
+    return 0
+
+
+def main() -> int:
+    socket_path = Path(os.environ.get("VIMBROWSER_IPC", default_socket_path()))
+    screenshot_result = maybe_handle_screenshot(socket_path, sys.argv)
+    if screenshot_result is not None:
+        return screenshot_result
+    if len(sys.argv) < 2:
+        command = "status"
+    else:
+        command = " ".join(sys.argv[1:])
+    sys.stdout.buffer.write(send_command(socket_path, command))
     return 0
 
 

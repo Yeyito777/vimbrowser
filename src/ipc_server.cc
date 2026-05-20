@@ -77,6 +77,25 @@ std::string TrimNewline(std::string value) {
   return value;
 }
 
+void WriteAll(int fd, const std::string& response) {
+  const char* data = response.data();
+  size_t remaining = response.size();
+  while (remaining > 0) {
+    const ssize_t written = write(fd, data, remaining);
+    if (written < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      return;
+    }
+    if (written == 0) {
+      return;
+    }
+    data += written;
+    remaining -= static_cast<size_t>(written);
+  }
+}
+
 }  // namespace
 
 IpcServer::IpcServer(BrowserWindow* owner, std::string socket_path)
@@ -198,7 +217,7 @@ void IpcServer::HandleClient(int client_fd) {
   }
 
   std::unique_lock<std::mutex> lock(pending->mutex);
-  if (!pending->cv.wait_for(lock, std::chrono::seconds(30),
+  if (!pending->cv.wait_for(lock, std::chrono::seconds(35),
                             [&] { return pending->done; })) {
     pending->response = "ERR ipc command timed out\n";
     pending->done = true;
@@ -206,9 +225,7 @@ void IpcServer::HandleClient(int client_fd) {
   if (pending->response.empty() || pending->response.back() != '\n') {
     pending->response.push_back('\n');
   }
-  const ssize_t ignored =
-      write(client_fd, pending->response.data(), pending->response.size());
-  (void)ignored;
+  WriteAll(client_fd, pending->response);
 }
 
 }  // namespace vimbrowser
