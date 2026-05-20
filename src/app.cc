@@ -216,6 +216,13 @@ void App::OnBeforeCommandLineProcessing(
   command_line->AppendSwitch("disable-sync");
   command_line->AppendSwitch("no-default-browser-check");
   command_line->AppendSwitchWithValue("disable-features", "Translate,MediaRouter");
+  if (!command_line->HasSwitch("autoplay-policy")) {
+    // Desktop Chromium's default is no-user-gesture-required. vimbrowser should
+    // not let restored tabs or freshly loaded pages start media on their own;
+    // explicit user play/click gestures still work.
+    command_line->AppendSwitchWithValue("autoplay-policy",
+                                       "user-gesture-required");
+  }
 
   if (disable_gpu_) {
     command_line->AppendSwitch("disable-gpu");

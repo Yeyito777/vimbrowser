@@ -181,6 +181,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   `--profile-dir DIR` or the installed `~/.local/bin/vimbrowser` wrapper
 - `Ctrl+Shift+I` opens DevTools
 - web view focused by default in website-normal mode
+- media autoplay is disabled by default; pages need an explicit user gesture to
+  start playback after fresh loads or browser restarts
 - `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
