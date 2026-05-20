@@ -17,6 +17,7 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "content/public/browser/web_contents.h"
 #include "ui/content_accelerators/accelerator_util.h"
 
 namespace {
@@ -68,6 +69,32 @@ bool ComputeAlloyStyle(
   // Chrome style is the default unless Alloy is specifically requested.
   return cef_delegate &&
          cef_delegate->GetBrowserRuntimeStyle() == CEF_RUNTIME_STYLE_ALLOY;
+}
+
+void ApplyVimbrowserWebContentsVisibility(content::WebContents* web_contents,
+                                          bool visible) {
+  if (!web_contents) {
+    return;
+  }
+
+  if (visible) {
+    web_contents->UpdateWebContentsVisibility(content::Visibility::VISIBLE);
+    return;
+  }
+
+  if (web_contents->GetVisibility() == content::Visibility::HIDDEN) {
+    return;
+  }
+
+  // WebContentsImpl ignores HIDDEN/OCCLUDED updates until it has been made
+  // VISIBLE at least once, even though non-initially-hidden WebContents start
+  // with GetVisibility() == VISIBLE. vimbrowser creates background tabs as
+  // hidden BrowserViews, so force that first real VISIBLE transition and then
+  // immediately hide. This lets restored/new background tabs enter true page
+  // visibility=hidden and get Chromium's normal background throttling without
+  // activating or focusing the tab.
+  web_contents->UpdateWebContentsVisibility(content::Visibility::VISIBLE);
+  web_contents->UpdateWebContentsVisibility(content::Visibility::HIDDEN);
 }
 
 }  // namespace
@@ -187,6 +214,8 @@ void CefBrowserViewImpl::BrowserCreated(
     base::RepeatingClosure on_bounds_changed) {
   browser_ = browser;
   on_bounds_changed_ = on_bounds_changed;
+  ApplyVimbrowserWebContentsVisibility(
+      browser_->GetWebContents(), root_view() && root_view()->GetVisible());
 }
 
 void CefBrowserViewImpl::BrowserDestroyed(CefBrowserHostBase* browser) {
@@ -265,6 +294,22 @@ void CefBrowserViewImpl::SetPreferAccelerators(bool prefer_accelerators) {
 cef_runtime_style_t CefBrowserViewImpl::GetRuntimeStyle() {
   CEF_REQUIRE_VALID_RETURN(CEF_RUNTIME_STYLE_DEFAULT);
   return IsAlloyStyle() ? CEF_RUNTIME_STYLE_ALLOY : CEF_RUNTIME_STYLE_CHROME;
+}
+
+void CefBrowserViewImpl::SetVisible(bool visible) {
+  CEF_REQUIRE_VALID_RETURN_VOID();
+  ParentClass::SetVisible(visible);
+
+  // vimbrowser: tab selection in our CEF Views shell hides/shows BrowserViews
+  // inside one top-level native window. In that embedding mode the Aura
+  // WebContents window can remain occlusion-visible even when the containing
+  // BrowserView is hidden, so Chromium keeps inactive tabs at foreground page
+  // visibility and runs rAF/timers for every tab. Explicitly synchronize the
+  // WebContents visibility with the BrowserView visibility so background tabs
+  // are actually hidden/throttled and resume when reactivated.
+  if (browser_) {
+    ApplyVimbrowserWebContentsVisibility(browser_->GetWebContents(), visible);
+  }
 }
 
 void CefBrowserViewImpl::RequestFocus() {

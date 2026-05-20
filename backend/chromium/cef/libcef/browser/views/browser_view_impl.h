@@ -76,6 +76,7 @@ class CefBrowserViewImpl
 
   // CefView methods:
   CefRefPtr<CefBrowserView> AsBrowserView() override { return this; }
+  void SetVisible(bool visible) override;
   void RequestFocus() override;
   void SetBackgroundColor(cef_color_t color) override;
 
