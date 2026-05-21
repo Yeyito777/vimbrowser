@@ -494,7 +494,7 @@ Color StyleColor::GetColor() const {
   // example in FilterEffectBuilder::BuildFilterEffect for shadow colors.
   // Unresolved color functions do not yet have a stored color.
   DCHECK(!IsUnresolvedColorFunction());
-  DCHECK(IsNumeric() || IsSystemColorIncludingDeprecated());
+  DCHECK(IsNumeric() || IsSystemColorIncludingDeprecated() || IsSystemColor());
   return color_or_unresolved_color_function_.color;
 }
 

@@ -189,6 +189,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - web view focused by default in website-normal mode
 - media autoplay is disabled by default; pages need an explicit user gesture to
   start playback after fresh loads or browser restarts
+- native content blocking is enabled by default for known ad-auction,
+  identity-sync, and analytics hosts; set `VIMBROWSER_CONTENT_BLOCKING=0` or
+  pass `--disable-vimbrowser-content-blocking` for a diagnostic run without it
 - `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the

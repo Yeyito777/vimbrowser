@@ -62,6 +62,142 @@ constexpr size_t kNetworkLogLimit = 1000;
 constexpr size_t kNetworkBodyLimit = 1024 * 1024;
 constexpr size_t kNetworkRequestBodyLimit = 256 * 1024;
 
+std::string LowerAscii(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  return value;
+}
+
+bool ParseBooleanSwitchValue(std::string_view value, bool fallback) {
+  if (value == "1" || value == "true" || value == "yes" || value == "on") {
+    return true;
+  }
+  if (value == "0" || value == "false" || value == "no" || value == "off") {
+    return false;
+  }
+  return fallback;
+}
+
+bool NativeContentBlockingEnabled() {
+  static const bool enabled = [] {
+    bool result = true;
+    if (const char* env = std::getenv("VIMBROWSER_CONTENT_BLOCKING");
+        env && *env) {
+      result = ParseBooleanSwitchValue(LowerAscii(env), result);
+    }
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+    if (command_line &&
+        command_line->HasSwitch("disable-vimbrowser-content-blocking")) {
+      result = false;
+    }
+    return result;
+  }();
+  return enabled;
+}
+
+std::string HostFromUrl(std::string_view url) {
+  size_t start = 0;
+  if (const size_t scheme = url.find("://"); scheme != std::string_view::npos) {
+    start = scheme + 3;
+  }
+  const size_t authority_end = url.find_first_of("/?#", start);
+  std::string_view authority =
+      authority_end == std::string_view::npos
+          ? url.substr(start)
+          : url.substr(start, authority_end - start);
+  if (const size_t at = authority.rfind('@'); at != std::string_view::npos) {
+    authority.remove_prefix(at + 1);
+  }
+  if (!authority.empty() && authority.front() == '[') {
+    const size_t close = authority.find(']');
+    if (close != std::string_view::npos) {
+      authority = authority.substr(1, close - 1);
+    }
+  } else if (const size_t colon = authority.find(':');
+             colon != std::string_view::npos) {
+    authority = authority.substr(0, colon);
+  }
+  while (!authority.empty() && authority.back() == '.') {
+    authority.remove_suffix(1);
+  }
+  return LowerAscii(std::string(authority));
+}
+
+bool HostMatchesDomain(std::string_view host, std::string_view domain) {
+  return host == domain ||
+         (host.size() > domain.size() &&
+          host.compare(host.size() - domain.size(), domain.size(), domain) == 0 &&
+          host[host.size() - domain.size() - 1] == '.');
+}
+
+bool IsTrackerHost(std::string_view host) {
+  // Native lightweight request blocking. Monkeytype is a good stress test here:
+  // accepting the consent dialog otherwise pulls in multiple ad auctions,
+  // identity-sync pixels, and analytics loops which run long main-thread tasks
+  // while the user is typing. Keep this list focused on ad/auction/analytics
+  // infrastructure and leave first-party app/CDN/auth resources alone.
+  static constexpr std::string_view kBlockedDomains[] = {
+      "2mdn.net",
+      "3lift.com",
+      "ad-delivery.net",
+      "ad.doubleclick.net",
+      "adnxs.com",
+      "adservice.google.com",
+      "adservice.google.com.pa",
+      "amazon-adsystem.com",
+      "analytics.yahoo.com",
+      "adsrvr.org",
+      "api.btloader.com",
+      "btloader.com",
+      "ccgateway.net",
+      "cdn.intergient.com",
+      "cdn.intergi.com",
+      "criteo.com",
+      "crwdcntrl.net",
+      "dns-finder.com",
+      "doubleclick.net",
+      "everesttech.net",
+      "eyeota.net",
+      "fixedfold.com",
+      "google-analytics.com",
+      "googlesyndication.com",
+      "googletagmanager.com",
+      "id5-sync.com",
+      "intergient.com",
+      "intergi.com",
+      "lijit.com",
+      "pubmatic.com",
+      "rubiconproject.com",
+      "scorecardresearch.com",
+      "tapad.com",
+  };
+  for (std::string_view domain : kBlockedDomains) {
+    if (HostMatchesDomain(host, domain)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ShouldBlockRequest(CefRefPtr<CefRequest> request) {
+  if (!NativeContentBlockingEnabled()) {
+    return false;
+  }
+  if (!request) {
+    return false;
+  }
+  const cef_resource_type_t resource_type = request->GetResourceType();
+  if (resource_type == RT_MAIN_FRAME) {
+    return false;
+  }
+  if (resource_type == RT_STYLESHEET || resource_type == RT_FONT_RESOURCE) {
+    return false;
+  }
+  const std::string host = HostFromUrl(request->GetURL().ToString());
+  return !host.empty() && IsTrackerHost(host);
+}
+
 bool ShouldOpenDispositionInTab(
     CefRequestHandler::WindowOpenDisposition disposition) {
   switch (disposition) {
@@ -558,6 +694,9 @@ BrowserClient::ReturnValue BrowserClient::OnBeforeResourceLoad(
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefRequest> request,
     CefRefPtr<CefCallback> callback) {
+  if (ShouldBlockRequest(request)) {
+    return RV_CANCEL;
+  }
   return RV_CONTINUE;
 }
 
