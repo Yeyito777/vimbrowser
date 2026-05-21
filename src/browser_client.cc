@@ -22,6 +22,7 @@
 extern "C" bool vimbrowser_browser_has_fps_sample(int browser_id);
 extern "C" double vimbrowser_get_browser_fps(int browser_id);
 extern "C" double vimbrowser_get_browser_refresh_rate(int browser_id);
+extern "C" bool vimbrowser_browser_is_currently_audible(int browser_id);
 extern "C" void vimbrowser_send_browser_command_key_event(
     int browser_id,
     const CefKeyEvent* event);
@@ -645,6 +646,11 @@ bool BrowserClient::fps_has_sample() const {
 double BrowserClient::compositor_refresh_rate() const {
   return browser_ ? vimbrowser_get_browser_refresh_rate(browser_->GetIdentifier())
                   : 0.0;
+}
+
+bool BrowserClient::is_currently_audible() const {
+  return browser_ &&
+         vimbrowser_browser_is_currently_audible(browser_->GetIdentifier());
 }
 
 void BrowserClient::SendBrowserCommandKeyEvent(const CefKeyEvent& event) {

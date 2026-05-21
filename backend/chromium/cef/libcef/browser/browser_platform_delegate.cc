@@ -151,6 +151,10 @@ double CefBrowserPlatformDelegate::GetCompositorRefreshRate() const {
   return 0.0;
 }
 
+bool CefBrowserPlatformDelegate::IsCurrentlyAudible() const {
+  return web_contents_ && web_contents_->IsCurrentlyAudible();
+}
+
 void CefBrowserPlatformDelegate::SendVimbrowserBrowserCommandKeyEvent(
     const CefKeyEvent& event) {
   SendKeyEvent(event);
@@ -200,6 +204,15 @@ extern "C" CEF_EXPORT double vimbrowser_get_browser_refresh_rate(
     return 0.0;
   }
   return browser->platform_delegate()->GetCompositorRefreshRate();
+}
+
+extern "C" CEF_EXPORT bool vimbrowser_browser_is_currently_audible(
+    int browser_id) {
+  auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
+  if (!browser || !browser->platform_delegate()) {
+    return false;
+  }
+  return browser->platform_delegate()->IsCurrentlyAudible();
 }
 
 extern "C" CEF_EXPORT void vimbrowser_send_browser_command_key_event(

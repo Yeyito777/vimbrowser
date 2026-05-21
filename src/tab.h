@@ -13,6 +13,7 @@ struct Tab {
   std::string url;
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
+  bool audible = false;
   bool has_scroll_target = false;
   int scroll_target_x = 0;
   int scroll_target_y = 0;

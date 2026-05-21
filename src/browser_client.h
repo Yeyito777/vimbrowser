@@ -115,6 +115,7 @@ class BrowserClient final : public CefClient,
   double current_fps() const;
   bool fps_has_sample() const;
   double compositor_refresh_rate() const;
+  bool is_currently_audible() const;
   void SendBrowserCommandKeyEvent(const CefKeyEvent& event);
   std::string NetworkListJson() const;
   std::string NetworkDetailJson(uint64_t request_id) const;

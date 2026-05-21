@@ -615,10 +615,14 @@ int TextColumns(const std::string& value) {
 
 std::string SidebarTextForTab(size_t index,
                               const std::string& url,
-                              bool active) {
+                              bool active,
+                              bool audible) {
   std::string text = active ? "▸ " : "  ";
   text += std::to_string(index + 1);
   text += ": ";
+  if (audible) {
+    text += "◉ ";
+  }
   text += DisplayUrl(url);
   if (text.size() > 160) {
     text.resize(157);
@@ -1837,6 +1841,12 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
       case 'c':
         CloneActiveTab();
         return true;
+      case '[':
+        ActivateRelativeAudible(-1);
+        return true;
+      case ']':
+        ActivateRelativeAudible(1);
+        return true;
       case 'e':
         MoveActiveTab(-1);
         return true;
@@ -2179,6 +2189,27 @@ void BrowserWindow::ActivateRelative(int delta) {
   int next = static_cast<int>(active_index_) + delta;
   next = (next % count + count) % count;
   ActivateTab(static_cast<size_t>(next));
+}
+
+bool BrowserWindow::ActivateRelativeAudible(int delta) {
+  if (tabs_.empty() || delta == 0) {
+    return false;
+  }
+  RefreshAudibleTabs();
+
+  const size_t count = tabs_.size();
+  const int direction = delta > 0 ? 1 : -1;
+  for (size_t step = 1; step <= count; ++step) {
+    const size_t offset = step % count;
+    const size_t index = direction > 0
+                             ? (active_index_ + offset) % count
+                             : (active_index_ + count - offset) % count;
+    if (tabs_[index].audible) {
+      ActivateTab(index);
+      return true;
+    }
+  }
+  return false;
 }
 
 void BrowserWindow::ActivateFirstTab() {
@@ -2743,6 +2774,7 @@ std::string BrowserWindow::TabJson(const Tab& tab, size_t index) const {
       << "\"index\":" << index << ","
       << "\"tab\":" << (index + 1) << ","
       << "\"active\":" << (index == active_index_ ? "true" : "false") << ","
+      << "\"audible\":" << (tab.audible ? "true" : "false") << ","
       << "\"url\":\"" << JsonEscape(url) << "\","
       << "\"title\":\"" << JsonEscape(title) << "\","
       << "\"loading\":" << (loading ? "true" : "false") << ","
@@ -4153,9 +4185,10 @@ void BrowserWindow::RefreshSidebar() {
         continue;
       }
       const bool active = i == active_index_;
-      row->SetText(SidebarTextForTab(i, tabs_[i].url, active));
+      row->SetText(SidebarTextForTab(i, tabs_[i].url, active,
+                                     tabs_[i].audible));
       row->SelectRange(CefRange(0, 0));
-      StyleTextfield(row, theme::kText,
+      StyleTextfield(row, tabs_[i].audible ? theme::kAccent : theme::kText,
                      active ? theme::kSidebarSelBg : theme::kSidebarBg,
                      "monospace, 12px");
     }
@@ -4180,14 +4213,16 @@ void BrowserWindow::RefreshSidebar() {
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const bool active = i == active_index_;
-    const std::string text = SidebarTextForTab(i, tabs_[i].url, active);
+    const std::string text = SidebarTextForTab(i, tabs_[i].url, active,
+                                               tabs_[i].audible);
 
     const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
+    const cef_color_t row_text = tabs_[i].audible ? theme::kAccent : theme::kText;
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
     row->SetText(text);
     row->SelectRange(CefRange(0, 0));
     row->SetID(kSidebarRowBaseId + static_cast<int>(i));
-    StyleTextfield(row, theme::kText, row_bg, "monospace, 12px");
+    StyleTextfield(row, row_text, row_bg, "monospace, 12px");
     sidebar_content_panel_->AddChildView(row);
     sidebar_rows_.push_back({row});
   }
@@ -4203,6 +4238,20 @@ void BrowserWindow::RefreshSidebar() {
   }
 
   sidebar_content_panel_->InvalidateLayout();
+}
+
+void BrowserWindow::RefreshAudibleTabs() {
+  bool changed = false;
+  for (Tab& tab : tabs_) {
+    const bool audible = tab.client && tab.client->is_currently_audible();
+    if (tab.audible != audible) {
+      tab.audible = audible;
+      changed = true;
+    }
+  }
+  if (changed) {
+    RefreshSidebar();
+  }
 }
 
 void BrowserWindow::SetFocusArea(FocusArea area) {
@@ -4743,6 +4792,9 @@ void BrowserWindow::OnFpsIndicatorUpdateTimer() {
   if (!window_) {
     return;
   }
+  // Reuse the existing lightweight chrome-status tick to keep sidebar audio
+  // indicators in sync even when the optional FPS overlay is hidden.
+  RefreshAudibleTabs();
   UpdateFpsIndicator();
   ScheduleFpsIndicatorUpdate();
 }
@@ -4792,9 +4844,11 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return IpcVersionJson();
   }
   if (command == "status" || command == "json") {
+    RefreshAudibleTabs();
     return IpcStatusJson();
   }
   if (command == "tabs") {
+    RefreshAudibleTabs();
     return TabsJson();
   }
   if (command == "commands") {
@@ -5306,9 +5360,11 @@ std::string BrowserWindow::IpcStatusJson() const {
   double refresh_rate = 0.0;
   std::string url;
   std::string title;
+  bool audible = false;
   if (!tabs_.empty() && active_index_ < tabs_.size()) {
     const Tab& tab = tabs_[active_index_];
     url = tab.url;
+    audible = tab.audible;
     if (tab.client) {
       fps_has_sample = tab.client->fps_has_sample();
       fps = tab.client->current_fps();
@@ -5333,6 +5389,7 @@ std::string BrowserWindow::IpcStatusJson() const {
       << "\"tabs\":" << tabs_.size() << ","
       << "\"url\":\"" << JsonEscape(url) << "\","
       << "\"title\":\"" << JsonEscape(title) << "\","
+      << "\"audible\":" << (audible ? "true" : "false") << ","
       << "\"showfps\":" << (show_fps_indicator_ ? "true" : "false") << ","
       << "\"shader\":" << (shader_enabled_ ? "true" : "false") << ","
       << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","

@@ -195,6 +195,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
 - when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
+- tabs currently emitting audio are shown in the sidebar as `◉` before their
+  URL and rendered with the theme accent color; when the tab sidebar is focused,
+  `[` / `]` move to the previous/next audible tab with wraparound
 - in website-normal and regular Vim normal web modes, `i` / `a` enter insert
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`

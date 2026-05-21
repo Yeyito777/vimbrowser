@@ -58,6 +58,10 @@ double CefBrowserPlatformDelegateChrome::GetCompositorRefreshRate() const {
   return native_delegate_->GetCompositorRefreshRate();
 }
 
+bool CefBrowserPlatformDelegateChrome::IsCurrentlyAudible() const {
+  return native_delegate_->IsCurrentlyAudible();
+}
+
 CefWindowHandle CefBrowserPlatformDelegateChrome::GetHostWindowHandle() const {
   return view_util::GetWindowHandle(GetNativeWindow());
 }

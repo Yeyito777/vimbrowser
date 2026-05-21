@@ -28,6 +28,7 @@ class CefBrowserPlatformDelegateChrome
   bool HasFpsSample() const override;
   double GetCurrentFps() const override;
   double GetCompositorRefreshRate() const override;
+  bool IsCurrentlyAudible() const override;
   CefWindowHandle GetHostWindowHandle() const override;
   web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost()
       const override;

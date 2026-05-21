@@ -33,6 +33,7 @@ class CefBrowserPlatformDelegateViews
   bool HasFpsSample() const override;
   double GetCurrentFps() const override;
   double GetCompositorRefreshRate() const override;
+  bool IsCurrentlyAudible() const override;
   bool CreateHostWindow() override;
   void CloseHostWindow() override;
   CefWindowHandle GetHostWindowHandle() const override;

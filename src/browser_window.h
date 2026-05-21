@@ -159,6 +159,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void ScheduleStateSave();
   void SaveStateForGeneration(uint64_t generation);
   void ActivateRelative(int delta);
+  bool ActivateRelativeAudible(int delta);
   void ActivateFirstTab();
   void ActivateLastTab();
   void MoveActiveTab(int delta);
@@ -223,6 +224,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateAutocompleteView();
   void Layout();
   void RefreshSidebar();
+  void RefreshAudibleTabs();
   void SetFocusArea(FocusArea area);
   void ToggleSidebar();
   bool HandleGlobalFocusKey(const CefKeyEvent& event);

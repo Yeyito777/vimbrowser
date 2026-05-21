@@ -102,6 +102,7 @@ Returns canonical app/tab state as JSON. Fields include:
   "tabs": 1,
   "url": "https://example.com/",
   "title": "Example Domain",
+  "audible": false,
   "showfps": false,
   "shader": true,
   "fps_has_sample": true,
@@ -127,6 +128,7 @@ Returns all tabs as JSON:
       "index": 0,
       "tab": 1,
       "active": false,
+      "audible": false,
       "url": "https://example.com/",
       "title": "Example Domain",
       "loading": false,
@@ -145,6 +147,8 @@ Notes:
 - `index` is zero-based.
 - `tab` is one-based.
 - `active_tabid` is the stable runtime tab ID.
+- `audible` mirrors Chromium's current per-tab audible state and drives the
+  sidebar audio indicator.
 - `fps` is `null` when no native compositor sample is available.
 
 ### Tab control
