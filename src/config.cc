@@ -214,6 +214,41 @@ std::string DefaultStatePath() {
   return DefaultInstanceStatePath();
 }
 
+const std::vector<SearchEngine>& SearchEngines() {
+  static const std::vector<SearchEngine> engines = {
+      {"yt", "https://www.youtube.com/results?search_query={}"},
+      {"gh", "https://github.com/search?q={}"},
+  };
+  return engines;
+}
+
+const SearchEngine* FindSearchEngine(std::string_view name) {
+  const std::string folded = ToLowerAscii(std::string(name));
+  for (const SearchEngine& engine : SearchEngines()) {
+    if (engine.name == folded) {
+      return &engine;
+    }
+  }
+  return nullptr;
+}
+
+std::string ResolveSearchEngineUrl(std::string_view name,
+                                   std::string_view query) {
+  const SearchEngine* engine = FindSearchEngine(name);
+  if (!engine) {
+    return ResolveUrlOrSearch(std::string(query));
+  }
+
+  std::string url = engine->url_template;
+  const std::string encoded = PercentEncode(query);
+  const size_t placeholder = url.find("{}");
+  if (placeholder == std::string::npos) {
+    return url + encoded;
+  }
+  url.replace(placeholder, 2, encoded);
+  return url;
+}
+
 AppState ReadAppState(const std::string& state_path) {
   AppState state;
   std::ifstream file(state_path);
@@ -232,6 +267,16 @@ AppState ReadAppState(const std::string& state_path) {
       const std::string entry = UnescapeStateValue(std::string_view(line).substr(13));
       if (!entry.empty()) {
         state.open_history.push_back(entry);
+      }
+    } else if (StartsWith(line, "search_history_")) {
+      const size_t equals = line.find('=');
+      if (equals != std::string::npos && equals > 15) {
+        const std::string engine = ToLowerAscii(line.substr(15, equals - 15));
+        const std::string entry =
+            UnescapeStateValue(std::string_view(line).substr(equals + 1));
+        if (FindSearchEngine(engine) && !entry.empty()) {
+          state.search_history[engine].push_back(entry);
+        }
       }
     } else if (StartsWith(line, "active=")) {
       const std::string value = line.substr(7);
@@ -260,6 +305,13 @@ AppState ReadAppState(const std::string& state_path) {
     state.open_history.erase(
         state.open_history.begin(),
         state.open_history.end() - static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+  }
+  for (auto& [engine, history] : state.search_history) {
+    if (history.size() > kMaxOpenHistoryEntries) {
+      history.erase(
+          history.begin(),
+          history.end() - static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+    }
   }
   return state;
 }
@@ -296,6 +348,23 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     for (size_t i = history_start; i < state.open_history.size(); ++i) {
       if (!state.open_history[i].empty()) {
         file << "open_history=" << EscapeStateValue(state.open_history[i]) << '\n';
+      }
+    }
+    for (const SearchEngine& engine : SearchEngines()) {
+      const auto it = state.search_history.find(engine.name);
+      if (it == state.search_history.end()) {
+        continue;
+      }
+      const std::vector<std::string>& history = it->second;
+      const size_t search_history_start =
+          history.size() > kMaxOpenHistoryEntries
+              ? history.size() - kMaxOpenHistoryEntries
+              : 0;
+      for (size_t i = search_history_start; i < history.size(); ++i) {
+        if (!history[i].empty()) {
+          file << "search_history_" << engine.name << "="
+               << EscapeStateValue(history[i]) << '\n';
+        }
       }
     }
   }

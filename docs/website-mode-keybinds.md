@@ -74,6 +74,10 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `:` — command line prefilled with `:`
 - [x] `o` — command line prefilled with `:open `
 - [x] `O` — command line prefilled with `:open tab `
+- [x] `:open yt <query>` / `:open tab yt <query>` — search YouTube with a
+  shared per-engine query history
+- [x] `:open gh <query>` / `:open tab gh <query>` — search GitHub with a shared
+  per-engine query history
 
 ## Explicitly not part of this batch
 

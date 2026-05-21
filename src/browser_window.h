@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <optional>
 #include <memory>
 #include <string>
@@ -121,6 +122,7 @@ class BrowserWindow final : public CefWindowDelegate,
     int selection = -1;
     std::string prefix;
     size_t token_start = 0;
+    size_t completion_start = std::string::npos;
     std::vector<CompletionItem> matches;
   };
 
@@ -206,6 +208,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateCommandAutocomplete();
   void AppendOpenHistoryMatches(const std::string& prefix,
                                 std::vector<CompletionItem>& matches) const;
+  void AppendSearchHistoryMatches(const std::string& engine,
+                                  const std::string& prefix,
+                                  std::vector<CompletionItem>& matches) const;
   void AppendTabFocusMatches(const std::string& prefix,
                              std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
@@ -232,6 +237,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void ScrollActivePageToBottom();
   void OpenClipboard(bool new_tab);
   void RecordOpenHistory(const std::string& text);
+  void RecordSearchHistory(const std::string& engine,
+                           const std::string& query);
   void ZoomActivePage(cef_zoom_command_t command);
   void YankActiveUrl();
   void YankActiveTitle();
@@ -262,6 +269,7 @@ class BrowserWindow final : public CefWindowDelegate,
   size_t initial_active_index_ = 0;
   std::string command_text_;
   std::vector<std::string> open_history_;
+  std::map<std::string, std::vector<std::string>> search_history_;
   std::string website_pending_keys_;
   std::vector<ClosedTab> closed_tabs_;
   vim::LineEditState command_vim_;

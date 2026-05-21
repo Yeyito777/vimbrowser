@@ -489,6 +489,122 @@ bool ArgsContainOpenTabArg(const std::string& value) {
   return false;
 }
 
+bool ParseSearchEngineInvocation(const std::string& text,
+                                 std::string* engine_out,
+                                 std::string* query_out) {
+  size_t engine_start = 0;
+  while (engine_start < text.size() &&
+         std::isspace(static_cast<unsigned char>(text[engine_start]))) {
+    ++engine_start;
+  }
+  if (engine_start >= text.size()) {
+    return false;
+  }
+
+  size_t engine_end = engine_start;
+  while (engine_end < text.size() &&
+         !std::isspace(static_cast<unsigned char>(text[engine_end]))) {
+    ++engine_end;
+  }
+
+  const std::string engine =
+      ToLowerAscii(text.substr(engine_start, engine_end - engine_start));
+  if (!FindSearchEngine(engine)) {
+    return false;
+  }
+
+  if (engine_out) {
+    *engine_out = engine;
+  }
+  if (query_out) {
+    *query_out = Trim(text.substr(engine_end));
+  }
+  return true;
+}
+
+struct OpenAutocompleteContext {
+  bool completing_new_arg = false;
+  std::string arg_prefix;
+  size_t arg_prefix_start = 0;
+  bool already_has_tab_arg = false;
+  std::string search_engine;
+  std::string search_prefix;
+  size_t search_prefix_start = 0;
+  bool search_engine_token_is_current = false;
+};
+
+OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
+    const std::string& after_command) {
+  OpenAutocompleteContext context;
+  const size_t arg_start = after_command.find_last_of(" \t");
+  context.arg_prefix = arg_start == std::string::npos
+                           ? after_command
+                           : after_command.substr(arg_start + 1);
+  context.arg_prefix_start = arg_start == std::string::npos ? 0 : arg_start + 1;
+  const std::string completed_args = arg_start == std::string::npos
+                                         ? ""
+                                         : after_command.substr(0, arg_start + 1);
+  context.already_has_tab_arg = ArgsContainOpenTabArg(completed_args);
+  context.completing_new_arg = IsWhitespaceOnly(after_command) ||
+                               (!after_command.empty() &&
+                                std::isspace(static_cast<unsigned char>(
+                                    after_command.back())));
+
+  size_t token_start = 0;
+  while (token_start < after_command.size() &&
+         std::isspace(static_cast<unsigned char>(after_command[token_start]))) {
+    ++token_start;
+  }
+  if (token_start >= after_command.size()) {
+    return context;
+  }
+  size_t token_end = token_start;
+  while (token_end < after_command.size() &&
+         !std::isspace(static_cast<unsigned char>(after_command[token_end]))) {
+    ++token_end;
+  }
+
+  const std::string first_token = after_command.substr(token_start,
+                                                       token_end - token_start);
+  if (IsOpenTabArg(first_token)) {
+    context.already_has_tab_arg = true;
+    token_start = token_end;
+    while (token_start < after_command.size() &&
+           std::isspace(static_cast<unsigned char>(after_command[token_start]))) {
+      ++token_start;
+    }
+    if (token_start >= after_command.size()) {
+      return context;
+    }
+    token_end = token_start;
+    while (token_end < after_command.size() &&
+           !std::isspace(static_cast<unsigned char>(after_command[token_end]))) {
+      ++token_end;
+    }
+  }
+
+  const std::string engine = ToLowerAscii(
+      after_command.substr(token_start, token_end - token_start));
+  if (!FindSearchEngine(engine)) {
+    return context;
+  }
+
+  context.search_engine = engine;
+  if (context.arg_prefix_start == token_start && !context.completing_new_arg) {
+    context.search_engine_token_is_current = true;
+    return context;
+  }
+
+  size_t query_start = token_end;
+  while (query_start < after_command.size() &&
+         std::isspace(static_cast<unsigned char>(after_command[query_start]))) {
+    ++query_start;
+  }
+  context.search_prefix_start = query_start;
+  context.search_prefix = after_command.substr(query_start);
+  return context;
+}
+
 bool IsTokenBoundary(const std::string& value, size_t pos) {
   return pos >= value.size() || std::isspace(static_cast<unsigned char>(value[pos]));
 }
@@ -1072,7 +1188,9 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
       shader_enabled_(shader_enabled) {
-  open_history_ = ReadAppState(state_path_).open_history;
+  const AppState state = ReadAppState(state_path_);
+  open_history_ = state.open_history;
+  search_history_ = state.search_history;
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
@@ -2967,12 +3085,26 @@ void BrowserWindow::CommitCommand() {
     return;
   }
 
-  const std::string url = ResolveUrlOrSearch(text);
+  std::string search_engine;
+  std::string search_query;
+  const bool is_search_engine_invocation =
+      ParseSearchEngineInvocation(text, &search_engine, &search_query);
+  const std::string url = is_search_engine_invocation
+                              ? ResolveSearchEngineUrl(search_engine, search_query)
+                              : ResolveUrlOrSearch(text);
   if (open_in_new_tab) {
-    RecordOpenHistory(text);
+    if (is_search_engine_invocation) {
+      RecordSearchHistory(search_engine, search_query);
+    } else {
+      RecordOpenHistory(text);
+    }
     AddTabAfterActive(url, true);
   } else if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
-    RecordOpenHistory(text);
+    if (is_search_engine_invocation) {
+      RecordSearchHistory(search_engine, search_query);
+    } else {
+      RecordOpenHistory(text);
+    }
     last_tab_close_placeholder_ = false;
     tab->url = url;
     tab->client->browser()->GetMainFrame()->LoadURL(url);
@@ -3093,6 +3225,33 @@ void BrowserWindow::RecordOpenHistory(const std::string& text) {
   }
 }
 
+void BrowserWindow::RecordSearchHistory(const std::string& engine,
+                                        const std::string& query) {
+  const std::string folded_engine = ToLowerAscii(engine);
+  if (!FindSearchEngine(folded_engine)) {
+    return;
+  }
+
+  std::string entry = Trim(query);
+  if (entry.empty()) {
+    return;
+  }
+
+  std::vector<std::string>& history = search_history_[folded_engine];
+  const std::string folded_entry = ToLowerAscii(entry);
+  history.erase(std::remove_if(history.begin(), history.end(),
+                               [&](const std::string& existing) {
+                                 return ToLowerAscii(existing) == folded_entry;
+                               }),
+                history.end());
+  history.push_back(std::move(entry));
+  if (history.size() > kMaxOpenHistoryEntries) {
+    history.erase(history.begin(),
+                  history.end() -
+                      static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+  }
+}
+
 void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
   if (browser && browser->GetHost()) {
@@ -3162,6 +3321,60 @@ void BrowserWindow::AppendOpenHistoryMatches(
         {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
                         "open history", entry},
          open_history_.size() - 1 - index});
+  }
+
+  std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
+                                             const RankedHistoryMatch& b) {
+    const std::string& a_insert = CompletionInsertText(a.item);
+    const std::string& b_insert = CompletionInsertText(b.item);
+    if (a_insert.size() != b_insert.size()) {
+      return a_insert.size() < b_insert.size();
+    }
+    if (a.recency_rank != b.recency_rank) {
+      return a.recency_rank < b.recency_rank;
+    }
+    return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
+  });
+
+  for (const RankedHistoryMatch& match : ranked) {
+    matches.push_back(match.item);
+  }
+}
+
+void BrowserWindow::AppendSearchHistoryMatches(
+    const std::string& engine,
+    const std::string& prefix,
+    std::vector<CompletionItem>& matches) const {
+  struct RankedHistoryMatch {
+    CompletionItem item;
+    size_t recency_rank = 0;
+  };
+
+  const std::string folded_engine = ToLowerAscii(engine);
+  const auto history_it = search_history_.find(folded_engine);
+  if (history_it == search_history_.end()) {
+    return;
+  }
+
+  std::vector<RankedHistoryMatch> ranked;
+  std::unordered_set<std::string> seen;
+  for (size_t i = history_it->second.size(); i > 0; --i) {
+    const size_t index = i - 1;
+    const std::string& entry = history_it->second[index];
+    if (entry.empty() ||
+        (!prefix.empty() && !StartsWithCaseInsensitive(entry, prefix))) {
+      continue;
+    }
+
+    const std::string folded = ToLowerAscii(entry);
+    if (!seen.insert(folded).second) {
+      continue;
+    }
+
+    ranked.push_back(
+        {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
+                        folded_engine + " search history", entry},
+         history_it->second.size() - 1 - index});
   }
 
   std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
@@ -3263,21 +3476,24 @@ void BrowserWindow::UpdateCommandAutocomplete() {
       }
     }
   } else if (StartsWithCaseInsensitive(typed_command, ":open") && IsTokenBoundary(typed_command, 5)) {
-    const size_t arg_start = after_command.find_last_of(" \t");
-    const std::string arg_prefix = arg_start == std::string::npos ? after_command : after_command.substr(arg_start + 1);
-    const std::string completed_args = arg_start == std::string::npos ? "" : after_command.substr(0, arg_start + 1);
-    const bool already_has_tab_arg = ArgsContainOpenTabArg(completed_args);
-    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
-                                    (!after_command.empty() && std::isspace(static_cast<unsigned char>(after_command.back())));
-    if (!already_has_tab_arg && (completing_new_arg || !arg_prefix.empty())) {
+    const OpenAutocompleteContext context = AnalyzeOpenAutocompleteArgs(after_command);
+    if (!context.search_engine.empty() &&
+        !context.search_engine_token_is_current) {
+      AppendSearchHistoryMatches(context.search_engine, context.search_prefix,
+                                 matches);
+      command_autocomplete_.completion_start = first_non_space + first_space + 1 +
+                                               context.search_prefix_start;
+    } else if (!context.already_has_tab_arg &&
+               (context.completing_new_arg || !context.arg_prefix.empty())) {
       for (const CompletionItem& item : OpenArgList()) {
-        if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
+        if (context.completing_new_arg ||
+            StartsWithCaseInsensitive(item.name, context.arg_prefix)) {
           matches.push_back(item);
         }
       }
-    }
-    if (completing_new_arg || !arg_prefix.empty()) {
-      AppendOpenHistoryMatches(arg_prefix, matches);
+      AppendOpenHistoryMatches(context.arg_prefix, matches);
+    } else if (context.completing_new_arg || !context.arg_prefix.empty()) {
+      AppendOpenHistoryMatches(context.arg_prefix, matches);
     }
   } else if (StartsWithCaseInsensitive(typed_command, ":tab-focus") &&
              IsTokenBoundary(typed_command, 10)) {
@@ -3323,6 +3539,14 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   command_autocomplete_.selection = -1;
   command_autocomplete_.prefix = command_text_;
   command_autocomplete_.token_start = first_non_space;
+  if (command_autocomplete_.completion_start == std::string::npos) {
+    command_autocomplete_.completion_start = command_text_.find_last_of(" \t");
+    if (command_autocomplete_.completion_start == std::string::npos) {
+      command_autocomplete_.completion_start = 0;
+    } else {
+      ++command_autocomplete_.completion_start;
+    }
+  }
   command_autocomplete_.matches = std::move(matches);
 }
 
@@ -3344,7 +3568,12 @@ void BrowserWindow::FillCommandAutocomplete(const CompletionItem& item) {
     }
   } else {
     const size_t last_space = command_autocomplete_.prefix.find_last_of(" \t");
-    if (last_space != std::string::npos) {
+    if (command_autocomplete_.completion_start != std::string::npos &&
+        command_autocomplete_.completion_start <= command_autocomplete_.prefix.size()) {
+      completed = command_autocomplete_.prefix.substr(
+                      0, command_autocomplete_.completion_start) +
+                  name;
+    } else if (last_space != std::string::npos) {
       completed = command_autocomplete_.prefix.substr(0, last_space + 1) + name;
     } else {
       completed = name;
@@ -3592,6 +3821,8 @@ void BrowserWindow::RebuildCommandCells() {
   size_t command_end = 0;
   size_t open_arg_start = 0;
   size_t open_arg_end = 0;
+  size_t search_engine_arg_start = 0;
+  size_t search_engine_arg_end = 0;
   const size_t first_non_space = command_text_.find_first_not_of(" \t");
   if (first_non_space != std::string::npos && command_text_[first_non_space] == ':') {
     const size_t command_start = first_non_space;
@@ -3624,6 +3855,26 @@ void BrowserWindow::RebuildCommandCells() {
         if (first_arg == "tab" || first_arg == "-t") {
           open_arg_start = arg_start;
           open_arg_end = arg_stop;
+          arg_start = arg_stop;
+          while (arg_start < command_text_.size() &&
+                 std::isspace(static_cast<unsigned char>(command_text_[arg_start]))) {
+            ++arg_start;
+          }
+          if (arg_start < command_text_.size()) {
+            arg_stop = command_text_.find_first_of(" \t", arg_start);
+            if (arg_stop == std::string::npos) {
+              arg_stop = command_text_.size();
+            }
+            const std::string search_engine = ToLowerAscii(
+                command_text_.substr(arg_start, arg_stop - arg_start));
+            if (FindSearchEngine(search_engine)) {
+              search_engine_arg_start = arg_start;
+              search_engine_arg_end = arg_stop;
+            }
+          }
+        } else if (FindSearchEngine(first_arg)) {
+          search_engine_arg_start = arg_start;
+          search_engine_arg_end = arg_stop;
         }
       }
     }
@@ -3655,6 +3906,12 @@ void BrowserWindow::RebuildCommandCells() {
     command_field_->ApplyTextColor(theme::kCommand,
                                    CefRange(static_cast<uint32_t>(open_arg_start),
                                             static_cast<uint32_t>(open_arg_end)));
+  }
+  if (search_engine_arg_end > search_engine_arg_start) {
+    command_field_->ApplyTextColor(
+        theme::kCommand,
+        CefRange(static_cast<uint32_t>(search_engine_arg_start),
+                 static_cast<uint32_t>(search_engine_arg_end)));
   }
   if (normal) {
     const size_t selection_end = std::min(cursor + 1, rendered_text.size());
@@ -5092,6 +5349,7 @@ void BrowserWindow::SaveState() const {
   state.show_fps_indicator = show_fps_indicator_;
   state.shader_enabled = shader_enabled_;
   state.open_history = open_history_;
+  state.search_history = search_history_;
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {
       state.tabs.push_back(tab.url);

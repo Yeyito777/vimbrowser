@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace vimbrowser {
@@ -30,10 +32,16 @@ struct Config {
 struct AppState {
   std::vector<std::string> tabs;
   std::vector<std::string> open_history;
+  std::map<std::string, std::vector<std::string>> search_history;
   size_t active_index = 0;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
   bool shader_enabled = true;
+};
+
+struct SearchEngine {
+  std::string name;
+  std::string url_template;
 };
 
 Config ParseConfig(int argc, char* argv[]);
@@ -41,6 +49,9 @@ std::string DefaultStatePath();
 AppState ReadAppState(const std::string& state_path);
 void WriteAppState(const std::string& state_path, const AppState& state);
 std::string ResolveUrlOrSearch(std::string input);
+const std::vector<SearchEngine>& SearchEngines();
+const SearchEngine* FindSearchEngine(std::string_view name);
+std::string ResolveSearchEngineUrl(std::string_view name, std::string_view query);
 std::string DisplayUrl(std::string url);
 
 }  // namespace vimbrowser
