@@ -38,6 +38,41 @@ DEFAULT_LIVE_URLS = [
     "https://discord.com/",
     "https://www.reddit.com/",
 ]
+KNOWN_TRACKER_DOMAINS = {
+    "2mdn.net",
+    "3lift.com",
+    "ad-delivery.net",
+    "ad.doubleclick.net",
+    "adnxs.com",
+    "adservice.google.com",
+    "adservice.google.com.pa",
+    "adsrvr.org",
+    "amazon-adsystem.com",
+    "analytics.yahoo.com",
+    "api.btloader.com",
+    "btloader.com",
+    "ccgateway.net",
+    "cdn.intergi.com",
+    "cdn.intergient.com",
+    "criteo.com",
+    "crwdcntrl.net",
+    "dns-finder.com",
+    "doubleclick.net",
+    "everesttech.net",
+    "eyeota.net",
+    "fixedfold.com",
+    "google-analytics.com",
+    "googlesyndication.com",
+    "googletagmanager.com",
+    "id5-sync.com",
+    "intergi.com",
+    "intergient.com",
+    "lijit.com",
+    "pubmatic.com",
+    "rubiconproject.com",
+    "scorecardresearch.com",
+    "tapad.com",
+}
 DEFAULT_MIN_REPO_FREE_GB = 100.0
 DEFAULT_MIN_TMP_FREE_GB = 1.0
 
@@ -611,6 +646,38 @@ def live_site_metric_label(url: str, index: int) -> str:
     source = f"{host}_{first_path}" if first_path else host
     label = re.sub(r"[^a-z0-9]+", "_", source).strip("_") or "url"
     return f"{index + 1:02d}_{label[:64]}"
+
+
+def is_known_tracker_host(host: str) -> bool:
+    host = (host or "").lower().strip(".")
+    if not host:
+        return False
+    if host in KNOWN_TRACKER_DOMAINS:
+        return True
+    while "." in host:
+        host = host.split(".", 1)[1]
+        if host in KNOWN_TRACKER_DOMAINS:
+            return True
+    return False
+
+
+def annotate_live_tracker_resources(smoothness: Dict[str, Any]) -> None:
+    host_counts = smoothness.get("resource_host_counts") or {}
+    if not isinstance(host_counts, dict):
+        return
+    tracker_hosts = []
+    total = 0
+    for host, count in host_counts.items():
+        try:
+            numeric_count = int(count)
+        except (TypeError, ValueError):
+            continue
+        if numeric_count > 0 and is_known_tracker_host(str(host)):
+            tracker_hosts.append({"host": str(host), "count": numeric_count})
+            total += numeric_count
+    tracker_hosts.sort(key=lambda row: (-int(row["count"]), row["host"]))
+    smoothness["resource_known_tracker_count"] = total
+    smoothness["resource_known_tracker_hosts"] = tracker_hosts
 
 
 def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict[str, Any]:
@@ -1385,6 +1452,8 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
             if ok:
                 try:
                     smoothness = collect_live_smoothness(browser, tabid)
+                    if smoothness.get("ok"):
+                        annotate_live_tracker_resources(smoothness)
                 except Exception as exc:  # noqa: BLE001 - live smoothness is diagnostic
                     smoothness = {"ok": False, "error": repr(exc)}
             rows.append({
@@ -1435,6 +1504,9 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
         )
         result["metrics"]["live.resources.third_party_count"] = summarize(
             [r.get("resource_third_party_count") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.known_tracker_count"] = summarize(
+            [r.get("resource_known_tracker_count") for r in smooth_rows]
         )
         result["metrics"]["live.resources.unparsable_count"] = summarize(
             [r.get("resource_unparsable_count") for r in smooth_rows]
@@ -1495,6 +1567,9 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
                 )
                 result["metrics"][f"{prefix}.resources.third_party_count"] = summarize(
                     [smoothness.get("resource_third_party_count")]
+                )
+                result["metrics"][f"{prefix}.resources.known_tracker_count"] = summarize(
+                    [smoothness.get("resource_known_tracker_count")]
                 )
                 result["metrics"][f"{prefix}.resources.unparsable_count"] = summarize(
                     [smoothness.get("resource_unparsable_count")]
@@ -1575,6 +1650,7 @@ def print_report(results: Dict[str, Any]) -> None:
                     f"resources={(row.get('smoothness') or {}).get('resource_count', 'n/a')} "
                     f"hosts={(row.get('smoothness') or {}).get('resource_unique_host_count', 'n/a')} "
                     f"third_party={(row.get('smoothness') or {}).get('resource_third_party_count', 'n/a')} "
+                    f"known_trackers={(row.get('smoothness') or {}).get('resource_known_tracker_count', 'n/a')} "
                     f"title={page.get('title')!r} final={page.get('url')!r}"
                 )
             if suite.get("errors"):

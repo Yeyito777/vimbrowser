@@ -1,0 +1,586 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "check_failures": [],
+  "checked": false,
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "live",
+  "suites": [
+    {
+      "errors": [],
+      "metrics": {
+        "live.first_contentful_paint_ms": {
+          "n": 0
+        },
+        "live.load_event_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.observed_ready_ms": {
+          "max": 1091.7314559817314,
+          "mean": 1091.7314559817314,
+          "median": 1091.7314559817314,
+          "min": 1091.7314559817314,
+          "n": 1,
+          "p90": 1091.7314559817314,
+          "p95": 1091.7314559817314,
+          "p99": 1091.7314559817314
+        },
+        "live.open_cmd_ms": {
+          "max": 13.09665197134018,
+          "mean": 13.09665197134018,
+          "median": 13.09665197134018,
+          "min": 13.09665197134018,
+          "n": 1,
+          "p90": 13.09665197134018,
+          "p95": 13.09665197134018,
+          "p99": 13.09665197134018
+        },
+        "live.resources.count": {
+          "max": 29.0,
+          "mean": 29.0,
+          "median": 29.0,
+          "min": 29.0,
+          "n": 1,
+          "p90": 29.0,
+          "p95": 29.0,
+          "p99": 29.0
+        },
+        "live.resources.decoded_body_size_bytes": {
+          "max": 3608324.0,
+          "mean": 3608324.0,
+          "median": 3608324.0,
+          "min": 3608324.0,
+          "n": 1,
+          "p90": 3608324.0,
+          "p95": 3608324.0,
+          "p99": 3608324.0
+        },
+        "live.resources.duration_max_ms": {
+          "max": 755.0,
+          "mean": 755.0,
+          "median": 755.0,
+          "min": 755.0,
+          "n": 1,
+          "p90": 755.0,
+          "p95": 755.0,
+          "p99": 755.0
+        },
+        "live.resources.duration_total_ms": {
+          "max": 7580.09999987483,
+          "mean": 7580.09999987483,
+          "median": 7580.09999987483,
+          "min": 7580.09999987483,
+          "n": 1,
+          "p90": 7580.09999987483,
+          "p95": 7580.09999987483,
+          "p99": 7580.09999987483
+        },
+        "live.resources.encoded_body_size_bytes": {
+          "max": 1269661.0,
+          "mean": 1269661.0,
+          "median": 1269661.0,
+          "min": 1269661.0,
+          "n": 1,
+          "p90": 1269661.0,
+          "p95": 1269661.0,
+          "p99": 1269661.0
+        },
+        "live.resources.known_tracker_count": {
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "min": 1.0,
+          "n": 1,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "live.resources.slow_500_count": {
+          "max": 3.0,
+          "mean": 3.0,
+          "median": 3.0,
+          "min": 3.0,
+          "n": 1,
+          "p90": 3.0,
+          "p95": 3.0,
+          "p99": 3.0
+        },
+        "live.resources.third_party_count": {
+          "max": 4.0,
+          "mean": 4.0,
+          "median": 4.0,
+          "min": 4.0,
+          "n": 1,
+          "p90": 4.0,
+          "p95": 4.0,
+          "p99": 4.0
+        },
+        "live.resources.transfer_size_bytes": {
+          "max": 1276861.0,
+          "mean": 1276861.0,
+          "median": 1276861.0,
+          "min": 1276861.0,
+          "n": 1,
+          "p90": 1276861.0,
+          "p95": 1276861.0,
+          "p99": 1276861.0
+        },
+        "live.resources.unique_host_count": {
+          "max": 6.0,
+          "mean": 6.0,
+          "median": 6.0,
+          "min": 6.0,
+          "n": 1,
+          "p90": 6.0,
+          "p95": 6.0,
+          "p99": 6.0
+        },
+        "live.resources.unparsable_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_monkeytype_com.first_contentful_paint_ms": {
+          "n": 0
+        },
+        "live.site.01_monkeytype_com.load_event_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_monkeytype_com.observed_ready_ms": {
+          "max": 1091.7314559817314,
+          "mean": 1091.7314559817314,
+          "median": 1091.7314559817314,
+          "min": 1091.7314559817314,
+          "n": 1,
+          "p90": 1091.7314559817314,
+          "p95": 1091.7314559817314,
+          "p99": 1091.7314559817314
+        },
+        "live.site.01_monkeytype_com.open_cmd_ms": {
+          "max": 13.09665197134018,
+          "mean": 13.09665197134018,
+          "median": 13.09665197134018,
+          "min": 13.09665197134018,
+          "n": 1,
+          "p90": 13.09665197134018,
+          "p95": 13.09665197134018,
+          "p99": 13.09665197134018
+        },
+        "live.site.01_monkeytype_com.resources.count": {
+          "max": 29.0,
+          "mean": 29.0,
+          "median": 29.0,
+          "min": 29.0,
+          "n": 1,
+          "p90": 29.0,
+          "p95": 29.0,
+          "p99": 29.0
+        },
+        "live.site.01_monkeytype_com.resources.decoded_body_size_bytes": {
+          "max": 3608324.0,
+          "mean": 3608324.0,
+          "median": 3608324.0,
+          "min": 3608324.0,
+          "n": 1,
+          "p90": 3608324.0,
+          "p95": 3608324.0,
+          "p99": 3608324.0
+        },
+        "live.site.01_monkeytype_com.resources.duration_max_ms": {
+          "max": 755.0,
+          "mean": 755.0,
+          "median": 755.0,
+          "min": 755.0,
+          "n": 1,
+          "p90": 755.0,
+          "p95": 755.0,
+          "p99": 755.0
+        },
+        "live.site.01_monkeytype_com.resources.duration_total_ms": {
+          "max": 7580.09999987483,
+          "mean": 7580.09999987483,
+          "median": 7580.09999987483,
+          "min": 7580.09999987483,
+          "n": 1,
+          "p90": 7580.09999987483,
+          "p95": 7580.09999987483,
+          "p99": 7580.09999987483
+        },
+        "live.site.01_monkeytype_com.resources.encoded_body_size_bytes": {
+          "max": 1269661.0,
+          "mean": 1269661.0,
+          "median": 1269661.0,
+          "min": 1269661.0,
+          "n": 1,
+          "p90": 1269661.0,
+          "p95": 1269661.0,
+          "p99": 1269661.0
+        },
+        "live.site.01_monkeytype_com.resources.known_tracker_count": {
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "min": 1.0,
+          "n": 1,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "live.site.01_monkeytype_com.resources.slow_500_count": {
+          "max": 3.0,
+          "mean": 3.0,
+          "median": 3.0,
+          "min": 3.0,
+          "n": 1,
+          "p90": 3.0,
+          "p95": 3.0,
+          "p99": 3.0
+        },
+        "live.site.01_monkeytype_com.resources.third_party_count": {
+          "max": 4.0,
+          "mean": 4.0,
+          "median": 4.0,
+          "min": 4.0,
+          "n": 1,
+          "p90": 4.0,
+          "p95": 4.0,
+          "p99": 4.0
+        },
+        "live.site.01_monkeytype_com.resources.transfer_size_bytes": {
+          "max": 1276861.0,
+          "mean": 1276861.0,
+          "median": 1276861.0,
+          "min": 1276861.0,
+          "n": 1,
+          "p90": 1276861.0,
+          "p95": 1276861.0,
+          "p99": 1276861.0
+        },
+        "live.site.01_monkeytype_com.resources.unique_host_count": {
+          "max": 6.0,
+          "mean": 6.0,
+          "median": 6.0,
+          "min": 6.0,
+          "n": 1,
+          "p90": 6.0,
+          "p95": 6.0,
+          "p99": 6.0
+        },
+        "live.site.01_monkeytype_com.resources.unparsable_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_monkeytype_com.smoothness.longtask_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_monkeytype_com.smoothness.longtask_total_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_monkeytype_com.smoothness.raf_fps": {
+          "max": 58.041472367947264,
+          "mean": 58.041472367947264,
+          "median": 58.041472367947264,
+          "min": 58.041472367947264,
+          "n": 1,
+          "p90": 58.041472367947264,
+          "p95": 58.041472367947264,
+          "p99": 58.041472367947264
+        },
+        "live.site.01_monkeytype_com.smoothness.raf_p95_ms": {
+          "max": 16.799999999999727,
+          "mean": 16.799999999999727,
+          "median": 16.799999999999727,
+          "min": 16.799999999999727,
+          "n": 1,
+          "p90": 16.799999999999727,
+          "p95": 16.799999999999727,
+          "p99": 16.799999999999727
+        },
+        "live.site.01_monkeytype_com.smoothness.raf_slow_33_count": {
+          "max": 2.0,
+          "mean": 2.0,
+          "median": 2.0,
+          "min": 2.0,
+          "n": 1,
+          "p90": 2.0,
+          "p95": 2.0,
+          "p99": 2.0
+        },
+        "live.site.01_monkeytype_com.smoothness.raf_slow_50_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.smoothness.longtask_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.smoothness.longtask_total_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.smoothness.raf_fps": {
+          "max": 58.041472367947264,
+          "mean": 58.041472367947264,
+          "median": 58.041472367947264,
+          "min": 58.041472367947264,
+          "n": 1,
+          "p90": 58.041472367947264,
+          "p95": 58.041472367947264,
+          "p99": 58.041472367947264
+        },
+        "live.smoothness.raf_p95_ms": {
+          "max": 16.799999999999727,
+          "mean": 16.799999999999727,
+          "median": 16.799999999999727,
+          "min": 16.799999999999727,
+          "n": 1,
+          "p90": 16.799999999999727,
+          "p95": 16.799999999999727,
+          "p99": 16.799999999999727
+        },
+        "live.smoothness.raf_slow_33_count": {
+          "max": 2.0,
+          "mean": 2.0,
+          "median": 2.0,
+          "min": 2.0,
+          "n": 1,
+          "p90": 2.0,
+          "p95": 2.0,
+          "p99": 2.0
+        },
+        "live.smoothness.raf_slow_50_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        }
+      },
+      "records": {
+        "pages": [
+          {
+            "elapsed_ms": 1091.7314559817314,
+            "nav": {
+              "decoded_body_size": 35446,
+              "dom_content_loaded_ms": 1071.3999999761581,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 0,
+              "nav_duration_ms": 0,
+              "observed_complete_ms": 1091.7314559817314,
+              "transfer_size": 9127
+            },
+            "ok": true,
+            "open_cmd_ms": 13.09665197134018,
+            "page": {
+              "bodyTextLength": 135,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 299.2999999821186,
+                "connectStart": 150,
+                "contentEncoding": "br",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 35446,
+                "deliveryType": "",
+                "domComplete": 0,
+                "domContentLoadedEventEnd": 1071.3999999761581,
+                "domContentLoadedEventStart": 1070.7999999821186,
+                "domInteractive": 747.6999999880791,
+                "domainLookupEnd": 150,
+                "domainLookupStart": 150,
+                "duration": 0,
+                "encodedBodySize": 8827,
+                "entryType": "navigation",
+                "fetchStart": 1.7999999821186066,
+                "finalResponseHeadersStart": 388.59999999403954,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 0,
+                "loadEventStart": 0,
+                "name": "https://monkeytype.com/",
+                "nextHopProtocol": "h2",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 299.39999997615814,
+                "responseEnd": 389.89999997615814,
+                "responseStart": 388.59999999403954,
+                "responseStatus": 200,
+                "secureConnectionStart": 225.19999998807907,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 9127,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "paint": [],
+              "ready": "interactive",
+              "title": "Monkeytype | A minimalistic, customizable typing test",
+              "url": "https://monkeytype.com/",
+              "vis": "visible"
+            },
+            "requested_url": "https://monkeytype.com/",
+            "site_label": "01_monkeytype_com",
+            "smoothness": {
+              "done": true,
+              "elapsed_ms": 2015.800000011921,
+              "longtask_count": 0,
+              "longtask_max_ms": 0,
+              "longtask_total_ms": 0,
+              "observer_error": null,
+              "ok": true,
+              "raf_avg_ms": 17.236752136752138,
+              "raf_fps": 58.041472367947264,
+              "raf_frames": 117,
+              "raf_max_ms": 33.5,
+              "raf_p50_ms": 16.699999999999818,
+              "raf_p95_ms": 16.799999999999727,
+              "raf_p99_ms": 33.299999999999955,
+              "raf_slow_33_count": 2,
+              "raf_slow_50_count": 0,
+              "resource_count": 29,
+              "resource_decoded_body_size_bytes": 3608324,
+              "resource_duration_max_ms": 755,
+              "resource_duration_total_ms": 7580.09999987483,
+              "resource_encoded_body_size_bytes": 1269661,
+              "resource_host_counts": {
+                "api.github.com": 1,
+                "api.monkeytype.com": 2,
+                "cdn.intergient.com": 1,
+                "monkeytype.com": 23,
+                "www.google.com": 1,
+                "www.gstatic.com": 1
+              },
+              "resource_initiator_counts": {
+                "fetch": 5,
+                "img": 1,
+                "link": 8,
+                "other": 9,
+                "script": 6
+              },
+              "resource_known_tracker_count": 1,
+              "resource_known_tracker_hosts": [
+                {
+                  "count": 1,
+                  "host": "cdn.intergient.com"
+                }
+              ],
+              "resource_slow_500_count": 3,
+              "resource_third_party_count": 4,
+              "resource_top_hosts": [
+                {
+                  "count": 23,
+                  "host": "monkeytype.com"
+                },
+                {
+                  "count": 2,
+                  "host": "api.monkeytype.com"
+                },
+                {
+                  "count": 1,
+                  "host": "api.github.com"
+                },
+                {
+                  "count": 1,
+                  "host": "cdn.intergient.com"
+                },
+                {
+                  "count": 1,
+                  "host": "www.google.com"
+                },
+                {
+                  "count": 1,
+                  "host": "www.gstatic.com"
+                }
+              ],
+              "resource_transfer_size_bytes": 1276861,
+              "resource_unique_host_count": 6,
+              "resource_unparsable_count": 0,
+              "visibility": "visible"
+            },
+            "tabid": 2
+          }
+        ]
+      },
+      "suite": "live",
+      "urls": [
+        "https://monkeytype.com/"
+      ]
+    }
+  ],
+  "timestamp_unix": 1779469998.4493716,
+  "tmp_root": "/tmp/vimbrowser-benchmark-bbllvomg"
+}
