@@ -37,6 +37,12 @@ enable_linux_installer=false
 enable_resource_allowlist_generation=false
 enable_widevine=true
 forbid_non_component_debug_builds=false
+# Chromium enables DCHECKs by default for non-official optimized builds. That is
+# useful for Chromium developer builds, but vimbrowser ships this backend as the
+# interactive browser runtime; the extra hot-path checks make heavy pages feel
+# throttled and can turn benign upstream DCHECKs into renderer crashes.
+dcheck_always_on=false
+enable_expensive_dchecks=false
 is_component_build=false
 is_debug=false
 is_official_build=false
