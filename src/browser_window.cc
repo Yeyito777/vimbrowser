@@ -5339,11 +5339,11 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
     }
     SaveState();
-    if (tab_index != active_index_ && tabs_.size() > kSidebarMaxRenderedRows &&
-        sidebar_spacer_) {
+    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
       const auto [render_start, render_count] =
           SidebarRenderedRange(tabs_.size(), active_index_);
-      if (tab_index >= render_start && tab_index < render_start + render_count) {
+      if (tab_index == active_index_ ||
+          (tab_index >= render_start && tab_index < render_start + render_count)) {
         ScheduleSidebarRefresh();
       }
       return TabsJson();
