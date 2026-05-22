@@ -4451,18 +4451,30 @@ bool BrowserWindow::RefreshSidebar() {
       sidebar_rows_.size() == render_count) {
     for (size_t row_index = 0; row_index < render_count; ++row_index) {
       const size_t i = render_start + row_index;
-      sidebar_rows_[row_index].tab_index = i;
-      CefRefPtr<CefTextfield> row = sidebar_rows_[row_index].row;
+      SidebarRowViews& row_views = sidebar_rows_[row_index];
+      row_views.tab_index = i;
+      CefRefPtr<CefTextfield> row = row_views.row;
       if (!row) {
         continue;
       }
       const bool active = i == active_index_;
-      row->SetText(SidebarTextForTab(i, tabs_[i].url, active,
-                                     tabs_[i].audible));
-      row->SelectRange(CefRange(0, 0));
-      StyleTextfield(row, tabs_[i].audible ? theme::kAccent : theme::kText,
-                     active ? theme::kSidebarSelBg : theme::kSidebarBg,
-                     "monospace, 12px");
+      const std::string text = SidebarTextForTab(i, tabs_[i].url, active,
+                                                tabs_[i].audible);
+      const cef_color_t row_bg =
+          active ? theme::kSidebarSelBg : theme::kSidebarBg;
+      const cef_color_t row_text =
+          tabs_[i].audible ? theme::kAccent : theme::kText;
+      if (row_views.text != text) {
+        row->SetText(text);
+        row->SelectRange(CefRange(0, 0));
+        row_views.text = text;
+      }
+      if (row_views.text_color != row_text ||
+          row_views.background_color != row_bg) {
+        StyleTextfield(row, row_text, row_bg, "monospace, 12px");
+        row_views.text_color = row_text;
+        row_views.background_color = row_bg;
+      }
     }
     return false;
   }
@@ -4497,7 +4509,7 @@ bool BrowserWindow::RefreshSidebar() {
     row->SetID(kSidebarRowBaseId + static_cast<int>(row_index));
     StyleTextfield(row, row_text, row_bg, "monospace, 12px");
     sidebar_content_panel_->AddChildView(row);
-    sidebar_rows_.push_back({row, i});
+    sidebar_rows_.push_back({row, i, text, row_text, row_bg});
   }
 
   sidebar_spacer_ = CefTextfield::CreateTextfield(this);
@@ -4557,12 +4569,22 @@ void BrowserWindow::RefreshSidebarRow(size_t index) {
     return;
   }
   const bool active = index == active_index_;
-  row->SetText(SidebarTextForTab(index, tabs_[index].url, active,
-                                 tabs_[index].audible));
-  row->SelectRange(CefRange(0, 0));
-  StyleTextfield(row, tabs_[index].audible ? theme::kAccent : theme::kText,
-                 active ? theme::kSidebarSelBg : theme::kSidebarBg,
-                 "monospace, 12px");
+  const std::string text = SidebarTextForTab(index, tabs_[index].url, active,
+                                            tabs_[index].audible);
+  const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
+  const cef_color_t row_text = tabs_[index].audible ? theme::kAccent : theme::kText;
+  SidebarRowViews& row_views = sidebar_rows_[row_index];
+  if (row_views.text != text) {
+    row->SetText(text);
+    row->SelectRange(CefRange(0, 0));
+    row_views.text = text;
+  }
+  if (row_views.text_color != row_text ||
+      row_views.background_color != row_bg) {
+    StyleTextfield(row, row_text, row_bg, "monospace, 12px");
+    row_views.text_color = row_text;
+    row_views.background_color = row_bg;
+  }
 }
 
 void BrowserWindow::RefreshAudibleTabs() {

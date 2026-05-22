@@ -130,6 +130,9 @@ class BrowserWindow final : public CefWindowDelegate,
   struct SidebarRowViews {
     CefRefPtr<CefTextfield> row;
     size_t tab_index = 0;
+    std::string text;
+    cef_color_t text_color = 0;
+    cef_color_t background_color = 0;
   };
 
   struct ClosedTab {
