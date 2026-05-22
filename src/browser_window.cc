@@ -784,6 +784,12 @@ void AppendJsonBool(std::string& out, bool value) {
   }
 }
 
+void SetTabUrl(Tab& tab, std::string url) {
+  tab.url = std::move(url);
+  tab.url_json.clear();
+  AppendJsonString(tab.url_json, tab.url);
+}
+
 std::string IpcSocketPathForStatePath(const std::string& state_path) {
   std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
   if (dir.empty()) {
@@ -1353,7 +1359,7 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
         return;
       }
       tab.deferred_load = false;
-      tab.url = url;
+      SetTabUrl(tab, url);
       tab.has_scroll_target = false;
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
@@ -2162,7 +2168,7 @@ void BrowserWindow::InsertTab(std::string url,
 
   Tab tab;
   tab.id = next_tab_id_++;
-  tab.url = std::move(url);
+  SetTabUrl(tab, std::move(url));
   tab.deferred_load = deferred_load;
 
   if (!tabs_.empty() && insert_index <= active_index_) {
@@ -2247,7 +2253,7 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
 
   Tab tab;
   tab.id = next_tab_id_++;
-  tab.url = std::move(url);
+  SetTabUrl(tab, std::move(url));
   tab.client = popup_client;
   ++tab_client_count_;
   tab.view = popup_browser_view;
@@ -2652,7 +2658,7 @@ void BrowserWindow::UndoCloseTab() {
   if (last_tab_close_placeholder_ && tabs_.size() == 1 &&
       active_index_ == 0 && tabs_[0].client && tabs_[0].client->browser()) {
     last_tab_close_placeholder_ = false;
-    tabs_[0].url = closed_tab.url;
+    SetTabUrl(tabs_[0], closed_tab.url);
     tabs_[0].client->browser()->GetMainFrame()->LoadURL(closed_tab.url);
     SaveState();
     RefreshSidebar();
@@ -3023,7 +3029,7 @@ void BrowserWindow::AppendTabJson(std::string& out,
   bool loading = false;
   bool can_go_back = false;
   bool can_go_forward = false;
-  std::string url = tab.url;
+  std::string url;
   std::string title;
 
   CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
@@ -3036,9 +3042,9 @@ void BrowserWindow::AppendTabJson(std::string& out,
     loading = browser->IsLoading();
     can_go_back = browser->CanGoBack();
     can_go_forward = browser->CanGoForward();
-    if (browser->GetMainFrame()) {
+    if (tab.url.empty() && browser->GetMainFrame()) {
       const std::string frame_url = browser->GetMainFrame()->GetURL().ToString();
-      if (url.empty() && !frame_url.empty()) {
+      if (!frame_url.empty()) {
         url = frame_url;
       }
     }
@@ -3062,7 +3068,11 @@ void BrowserWindow::AppendTabJson(std::string& out,
   out += ",\"audible\":";
   AppendJsonBool(out, tab.audible);
   out += ",\"url\":";
-  AppendJsonString(out, url);
+  if (!tab.url.empty()) {
+    out += tab.url_json;
+  } else {
+    AppendJsonString(out, url);
+  }
   out += ",\"title\":";
   AppendJsonString(out, title);
   out += ",\"loading\":";
@@ -3532,7 +3542,7 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
   } else if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
     last_tab_close_placeholder_ = false;
     if (active_index_ < tabs_.size()) {
-      tabs_[active_index_].url = url;
+      SetTabUrl(tabs_[active_index_], url);
     }
     browser->GetMainFrame()->LoadURL(url);
     SaveState();
@@ -5356,7 +5366,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     const size_t tab_index = *index;
     Tab& tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
-    tab.url = url;
+    SetTabUrl(tab, url);
     if (tab.client && tab.client->browser() &&
         tab.client->browser()->GetMainFrame()) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);

@@ -11,6 +11,7 @@ namespace vimbrowser {
 struct Tab {
   uint64_t id = 0;
   std::string url;
+  std::string url_json;
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
   bool deferred_load = false;
