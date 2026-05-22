@@ -1,11 +1,5 @@
 #!/usr/bin/perl
 
-sub sockaddr_un_linux {
-    my ($path) = @_;
-    die "vimbrowser-ipc: socket path too long: $path\n" if length($path) >= 108;
-    return pack("S Z108", 1, $path);
-}
-
 if (@ARGV && $ARGV[0] eq "screenshot") {
     my $helper = $0;
     $helper =~ s{/[^/]*$}{/vimbrowser-ipc-screenshot};
@@ -14,28 +8,28 @@ if (@ARGV && $ARGV[0] eq "screenshot") {
     die "vimbrowser-ipc: exec $helper: $!\n";
 }
 
-sub default_socket_path {
-    return "$ENV{VIMBROWSER_PROFILE_DIR}/ipc.sock"
-        if exists $ENV{VIMBROWSER_PROFILE_DIR} && length $ENV{VIMBROWSER_PROFILE_DIR};
-
-    my $wrapper_profile_socket = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock";
-    return $wrapper_profile_socket if -e $wrapper_profile_socket;
-
-    return "$ENV{XDG_STATE_HOME}/vimbrowser/ipc.sock"
-        if exists $ENV{XDG_STATE_HOME} && length $ENV{XDG_STATE_HOME};
-    return "$ENV{HOME}/.local/state/vimbrowser/ipc.sock"
-        if exists $ENV{HOME} && length $ENV{HOME};
-    return "/tmp/vimbrowser/ipc.sock";
-}
-
 my $path = exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC}
     ? $ENV{VIMBROWSER_IPC}
-    : default_socket_path();
+    : undef;
+if (!defined $path) {
+    if (exists $ENV{VIMBROWSER_PROFILE_DIR} && length $ENV{VIMBROWSER_PROFILE_DIR}) {
+        $path = "$ENV{VIMBROWSER_PROFILE_DIR}/ipc.sock";
+    } elsif (-e "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock") {
+        $path = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock";
+    } elsif (exists $ENV{XDG_STATE_HOME} && length $ENV{XDG_STATE_HOME}) {
+        $path = "$ENV{XDG_STATE_HOME}/vimbrowser/ipc.sock";
+    } elsif (exists $ENV{HOME} && length $ENV{HOME}) {
+        $path = "$ENV{HOME}/.local/state/vimbrowser/ipc.sock";
+    } else {
+        $path = "/tmp/vimbrowser/ipc.sock";
+    }
+}
 my $command = @ARGV == 1 ? $ARGV[0] : (@ARGV ? join(" ", @ARGV) : "status");
+die "vimbrowser-ipc: socket path too long: $path\n" if length($path) >= 108;
 
 socket(my $sock, 1, 1, 0)
     or die "vimbrowser-ipc: socket: $!\n";
-connect($sock, sockaddr_un_linux($path))
+connect($sock, pack("S Z108", 1, $path))
     or die "vimbrowser-ipc: connect $path: $!\n";
 
 my $request = "$command\n";
