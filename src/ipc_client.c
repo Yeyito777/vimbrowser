@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,44 +60,6 @@ static int write_all(int fd, const char* buffer, size_t length) {
   return 0;
 }
 
-static char* build_command_line(int argc, char** argv, size_t* out_length) {
-  if (argc <= 1) {
-    char* command = malloc(7);
-    if (!command) {
-      return NULL;
-    }
-    memcpy(command, "status\n", 7);
-    *out_length = 7;
-    return command;
-  }
-
-  size_t length = 1;  // trailing newline
-  for (int i = 1; i < argc; ++i) {
-    const size_t arg_length = strlen(argv[i]);
-    if (arg_length > SIZE_MAX - length - (i > 1 ? 1 : 0)) {
-      return NULL;
-    }
-    length += arg_length + (i > 1 ? 1 : 0);
-  }
-
-  char* command = malloc(length);
-  if (!command) {
-    return NULL;
-  }
-  char* out = command;
-  for (int i = 1; i < argc; ++i) {
-    if (i > 1) {
-      *out++ = ' ';
-    }
-    const size_t arg_length = strlen(argv[i]);
-    memcpy(out, argv[i], arg_length);
-    out += arg_length;
-  }
-  *out++ = '\n';
-  *out_length = length;
-  return command;
-}
-
 int main(int argc, char** argv) {
   if (argc > 1 && strcmp(argv[1], "screenshot") == 0) {
     exec_screenshot_helper(argc, argv);
@@ -150,20 +111,31 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  size_t command_length = 0;
-  char* command = build_command_line(argc, argv, &command_length);
-  if (!command) {
-    fprintf(stderr, "vimbrowser-ipc: command too large or out of memory\n");
-    close(fd);
-    return 1;
+  if (argc <= 1) {
+    if (write_all(fd, "status\n", 7) < 0) {
+      fprintf(stderr, "vimbrowser-ipc: write: %s\n", strerror(errno));
+      close(fd);
+      return 1;
+    }
+  } else {
+    for (int i = 1; i < argc; ++i) {
+      if (i > 1 && write_all(fd, " ", 1) < 0) {
+        fprintf(stderr, "vimbrowser-ipc: write: %s\n", strerror(errno));
+        close(fd);
+        return 1;
+      }
+      if (write_all(fd, argv[i], strlen(argv[i])) < 0) {
+        fprintf(stderr, "vimbrowser-ipc: write: %s\n", strerror(errno));
+        close(fd);
+        return 1;
+      }
+    }
+    if (write_all(fd, "\n", 1) < 0) {
+      fprintf(stderr, "vimbrowser-ipc: write: %s\n", strerror(errno));
+      close(fd);
+      return 1;
+    }
   }
-  if (write_all(fd, command, command_length) < 0) {
-    fprintf(stderr, "vimbrowser-ipc: write: %s\n", strerror(errno));
-    free(command);
-    close(fd);
-    return 1;
-  }
-  free(command);
 
   char buffer[262144];
   for (;;) {
