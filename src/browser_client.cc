@@ -678,7 +678,7 @@ CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
   }
 
   if (!NativeNetworkCaptureEnabled()) {
-    return this;
+    return ShouldBlockRequest(request) ? this : nullptr;
   }
 
   auto record = std::make_shared<NetworkRequestRecord>();
