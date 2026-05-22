@@ -2164,7 +2164,9 @@ void BrowserWindow::InsertTab(std::string url,
 
   if (activate && !bulk_tab_update_) {
     active_index_ = insert_index;
-    if (RefreshSidebar()) {
+    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
+      ScheduleSidebarRefresh();
+    } else if (RefreshSidebar()) {
       Layout();
     }
     ScheduleStateSave();
