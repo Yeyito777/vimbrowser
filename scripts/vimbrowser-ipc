@@ -6,8 +6,6 @@ wrapper: it should not grow alternate semantics that diverge from the app's
 Unix-socket command protocol.
 """
 import os
-import base64
-import json
 import socket
 import sys
 from pathlib import Path
@@ -84,6 +82,9 @@ def maybe_handle_screenshot(socket_path: Path, argv: list[str]) -> int | None:
     if response.startswith(b"ERR "):
         sys.stderr.buffer.write(response)
         return 1
+
+    import base64
+    import json
 
     try:
         payload = json.loads(response.decode())
