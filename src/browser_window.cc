@@ -2466,8 +2466,12 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
       ((from >= old_render_end && to >= old_render_end) ||
        (from < old_render_start && to < old_render_start));
   if (!can_keep_virtual_sidebar) {
-    if (RefreshSidebar()) {
-      Layout();
+    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
+      ScheduleSidebarRefresh();
+    } else {
+      if (RefreshSidebar()) {
+        Layout();
+      }
     }
   }
   return true;
