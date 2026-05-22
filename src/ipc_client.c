@@ -2,6 +2,7 @@
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -105,7 +106,9 @@ int main(int argc, char** argv) {
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
   memcpy(addr.sun_path, path, strlen(path) + 1);
-  if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+  const socklen_t addr_len =
+      (socklen_t)(offsetof(struct sockaddr_un, sun_path) + strlen(path) + 1);
+  if (connect(fd, (struct sockaddr*)&addr, addr_len) < 0) {
     fprintf(stderr, "vimbrowser-ipc: connect %s: %s\n", path, strerror(errno));
     close(fd);
     return 1;
