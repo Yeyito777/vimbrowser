@@ -2160,6 +2160,17 @@ void BrowserWindow::InsertTab(std::string url,
   if (!deferred_load) {
     EnsureTabBrowser(insert_index, false);
   }
+
+  if (activate && !bulk_tab_update_) {
+    active_index_ = insert_index;
+    if (RefreshSidebar()) {
+      Layout();
+    }
+    ScheduleStateSave();
+    ScheduleActiveBrowserSync();
+    return;
+  }
+
   if (!bulk_tab_update_) {
     RefreshSidebar();
     Layout();
