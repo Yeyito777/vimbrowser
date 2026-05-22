@@ -1005,6 +1005,26 @@ def run_ipc_suite(
                 result["metrics"]["ipc.tab_close_active_ms"] = record["summary"]
                 result["metrics"]["ipc.tab_close_active_response_bytes"] = response_size
 
+            open_tab_rows: List[float] = []
+            response_size = 0
+            open_tab_iterations = min(iterations, 40)
+            for i in range(open_tab_iterations):
+                url = server.url(f"/open-tab-active-{i}.html")
+                row_start = monotonic_ms()
+                data = browser.ipc_direct(f"open-tab {url}", timeout=20)
+                open_tab_rows.append(monotonic_ms() - row_start)
+                if not response_size:
+                    response_size = len(data)
+            if open_tab_rows:
+                record = {
+                    "opened_count": len(open_tab_rows),
+                    "summary": summarize(open_tab_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["open_tab_active"] = record
+                result["metrics"]["ipc.open_tab_active_ms"] = record["summary"]
+                result["metrics"]["ipc.open_tab_active_response_bytes"] = response_size
+
             result["records"] = direct_records
     return result
 
