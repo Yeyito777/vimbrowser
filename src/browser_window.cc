@@ -2178,6 +2178,7 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
 
   CefBrowserSettings browser_settings;
   browser_settings.background_color = theme::kAppBg;
+  ++tab_client_count_;
   tab.client = new BrowserClient(this);
   const std::string browser_url = load_deferred_now && tab.deferred_load
                                       ? tab.url
@@ -2210,6 +2211,7 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   tab.id = next_tab_id_++;
   tab.url = std::move(url);
   tab.client = popup_client;
+  ++tab_client_count_;
   tab.view = popup_browser_view;
   tab.view->SetPreferAccelerators(true);
   tab.view->SetVisible(false);
@@ -2547,6 +2549,9 @@ void BrowserWindow::CloseTabBackend(Tab& tab) {
   }
   if (tab.client) {
     tab.client->DetachOwner();
+    if (tab_client_count_ > 0) {
+      --tab_client_count_;
+    }
   }
   tab.view = nullptr;
   tab.client = nullptr;
@@ -4509,11 +4514,19 @@ void BrowserWindow::RefreshSidebarRow(size_t index) {
 
 void BrowserWindow::RefreshAudibleTabs() {
   bool changed = false;
+  size_t clients_seen = 0;
   for (Tab& tab : tabs_) {
+    if (!tab.client) {
+      continue;
+    }
+    ++clients_seen;
     const bool audible = tab.client && tab.client->is_currently_audible();
     if (tab.audible != audible) {
       tab.audible = audible;
       changed = true;
+    }
+    if (clients_seen >= tab_client_count_) {
+      break;
     }
   }
   if (changed) {

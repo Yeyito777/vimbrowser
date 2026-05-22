@@ -306,6 +306,7 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t sidebar_refresh_generation_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
+  size_t tab_client_count_ = 0;
   int laid_out_content_width_ = 0;
   int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;
