@@ -3023,6 +3023,25 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
 void BrowserWindow::AppendTabJson(std::string& out,
                                   const Tab& tab,
                                   size_t index) const {
+  if (!tab.client && !tab.url.empty()) {
+    out += "{\"id\":";
+    AppendJsonNumber(out, tab.id);
+    out += ",\"index\":";
+    AppendJsonNumber(out, index);
+    out += ",\"tab\":";
+    AppendJsonNumber(out, index + 1);
+    out += ",\"active\":";
+    AppendJsonBool(out, index == active_index_);
+    out += ",\"audible\":";
+    AppendJsonBool(out, tab.audible);
+    out += ",\"url\":";
+    out += tab.url_json;
+    out += ",\"title\":\"\",\"loading\":false,\"can_go_back\":false,"
+           "\"can_go_forward\":false,\"fps_has_sample\":false,\"fps\":null,"
+           "\"refresh_rate\":0}";
+    return;
+  }
+
   bool fps_has_sample = false;
   double fps = 0.0;
   double refresh_rate = 0.0;
