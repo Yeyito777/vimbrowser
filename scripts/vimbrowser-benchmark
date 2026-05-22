@@ -83,6 +83,7 @@ LOCAL_CHECK_THRESHOLDS_MS = {
     "local.open_page.observed_complete_ms.p95": 2500.0,
     "local.resource_fanout.observed_complete_ms.p95": 4000.0,
     "local.blocked_resource_fanout.observed_complete_ms.p95": 1500.0,
+    "local.subdomain_blocked_resource_fanout.observed_complete_ms.p95": 1500.0,
     "local.mixed_resource_fanout.observed_complete_ms.p95": 3000.0,
     "local.tab_switch.visible_ms.p95": 180.0,
     "local.tab_switch.first_raf_ms.p95": 180.0,
@@ -95,6 +96,7 @@ LOCAL_CHECK_THRESHOLDS_COUNTS = {
 LOCAL_CHECK_SUMMARY_MAX = {
     "local.resource_fanout.resource_count.max": 240,
     "local.blocked_resource_fanout.server_request_count.max": 1,
+    "local.subdomain_blocked_resource_fanout.server_request_count.max": 1,
     "local.mixed_resource_fanout.server_request_count.max": 121,
 }
 LOCAL_CHECK_SUMMARY_MIN = {
@@ -239,11 +241,13 @@ class BenchmarkHTTPHandler(http.server.BaseHTTPRequestHandler):
             return
         if (path.startswith("/page") or path.startswith("/heavy") or
                 path.startswith("/fanout") or path.startswith("/blocked-fanout") or
+                path.startswith("/subdomain-blocked-fanout") or
                 path.startswith("/mixed-fanout")):
             name = path.strip("/").replace(".html", "") or "page"
             blocked_fanout = path.startswith("/blocked-fanout")
+            subdomain_blocked_fanout = path.startswith("/subdomain-blocked-fanout")
             mixed_fanout = path.startswith("/mixed-fanout")
-            if blocked_fanout:
+            if blocked_fanout or subdomain_blocked_fanout:
                 asset_count = 240
                 spin_ms = 0
             elif mixed_fanout:
@@ -258,14 +262,16 @@ class BenchmarkHTTPHandler(http.server.BaseHTTPRequestHandler):
             else:
                 asset_count = 24
                 spin_ms = 0
-            if blocked_fanout:
+            if blocked_fanout or subdomain_blocked_fanout:
                 # These URLs are deliberately not same-origin.  The built-in
                 # native content blocker should cancel them before any external
                 # DNS/network work, giving us a deterministic blocked-request
-                # path that complements /fanout's allowed-resource path.
+                # path that complements /fanout's allowed-resource path.  The
+                # subdomain variant exercises parent-domain tracker matching.
                 port = self.server.server_address[1]
+                host = "pixel.google-analytics.com" if subdomain_blocked_fanout else "google-analytics.com"
                 assets = "".join(
-                    f'<img alt="" src="http://google-analytics.com:{port}/asset?{name}-{i}" width="1" height="1">'
+                    f'<img alt="" src="http://{host}:{port}/asset?{name}-{i}" width="1" height="1">'
                     for i in range(asset_count)
                 )
             elif mixed_fanout:
@@ -888,6 +894,49 @@ def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict
             )
             result["metrics"]["local.blocked_resource_fanout.server_request_count"] = summarize(
                 [r["server_request_count"] for r in blocked_fanout_rows]
+            )
+
+            # Blocked subdomain fanout: exercises the same cancel path as the
+            # exact-host blocked fanout while verifying that parent-domain
+            # tracker matches remain fast and deterministic.
+            subdomain_blocked_fanout_rows = []
+            for i in range(3):
+                before_requests = len(server.httpd.request_log)
+                url = server.url(f"/subdomain-blocked-fanout{i}.html")
+                open_start = monotonic_ms()
+                status = browser.ipc_json(["open-tab", url], timeout=10)
+                open_cmd_ms = monotonic_ms() - open_start
+                tabid = int(status["active_tabid"])
+                record = browser.wait_tab_complete(tabid, open_start, timeout=45)
+                nav = collect_nav_summary(record)
+                resource_count_payload = browser.ipc_json(
+                    ["js", str(tabid), "JSON.stringify(performance.getEntriesByType('resource').length)"],
+                    timeout=4,
+                )
+                subdomain_blocked_fanout_rows.append({
+                    "url": url,
+                    "tabid": tabid,
+                    "open_cmd_ms": open_cmd_ms,
+                    "page": record,
+                    "nav": nav,
+                    "resource_count": int(json.loads(resource_count_payload["result"])),
+                    "server_request_count": len(server.httpd.request_log) - before_requests,
+                })
+            result["records"]["subdomain_blocked_resource_fanout"] = subdomain_blocked_fanout_rows
+            result["metrics"]["local.subdomain_blocked_resource_fanout.open_cmd_ms"] = summarize(
+                [r["open_cmd_ms"] for r in subdomain_blocked_fanout_rows]
+            )
+            result["metrics"]["local.subdomain_blocked_resource_fanout.observed_complete_ms"] = summarize(
+                [r["nav"].get("observed_complete_ms") for r in subdomain_blocked_fanout_rows]
+            )
+            result["metrics"]["local.subdomain_blocked_resource_fanout.load_event_ms"] = summarize(
+                [r["nav"].get("load_event_ms") for r in subdomain_blocked_fanout_rows]
+            )
+            result["metrics"]["local.subdomain_blocked_resource_fanout.resource_count"] = summarize(
+                [r["resource_count"] for r in subdomain_blocked_fanout_rows]
+            )
+            result["metrics"]["local.subdomain_blocked_resource_fanout.server_request_count"] = summarize(
+                [r["server_request_count"] for r in subdomain_blocked_fanout_rows]
             )
 
             # Mixed-resource fanout: real pages commonly include both allowed

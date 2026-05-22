@@ -1,0 +1,3387 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "check_failures": [],
+  "checked": true,
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "local",
+  "suites": [
+    {
+      "metrics": {
+        "local.background_throttle.active_interval_delta": {
+          "max": 40.0,
+          "mean": 40.0,
+          "median": 40.0,
+          "min": 40.0,
+          "n": 1,
+          "p90": 40.0,
+          "p95": 40.0,
+          "p99": 40.0
+        },
+        "local.background_throttle.active_raf_delta": {
+          "max": 121.0,
+          "mean": 121.0,
+          "median": 121.0,
+          "min": 121.0,
+          "n": 1,
+          "p90": 121.0,
+          "p95": 121.0,
+          "p99": 121.0
+        },
+        "local.background_throttle.background_interval_delta": {
+          "max": 2.0,
+          "mean": 2.0,
+          "median": 2.0,
+          "min": 2.0,
+          "n": 5,
+          "p90": 2.0,
+          "p95": 2.0,
+          "p99": 2.0
+        },
+        "local.background_throttle.background_interval_delta_max": 2,
+        "local.background_throttle.background_raf_delta": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "local.background_throttle.background_raf_delta_max": 0,
+        "local.blocked_resource_fanout.load_event_ms": {
+          "max": 65.30000001192093,
+          "mean": 59.60000000397364,
+          "median": 64.2999999821186,
+          "min": 49.20000001788139,
+          "n": 3,
+          "p90": 65.10000000596047,
+          "p95": 65.20000000894069,
+          "p99": 65.28000001132489
+        },
+        "local.blocked_resource_fanout.observed_complete_ms": {
+          "max": 99.70704701542854,
+          "mean": 87.9077030022939,
+          "median": 83.31981399655342,
+          "min": 80.69624799489975,
+          "n": 3,
+          "p90": 96.42960041165352,
+          "p95": 98.06832371354103,
+          "p99": 99.37930235505104
+        },
+        "local.blocked_resource_fanout.open_cmd_ms": {
+          "max": 19.536466002464294,
+          "mean": 18.747544010480244,
+          "median": 19.35027101635933,
+          "min": 17.35589501261711,
+          "n": 3,
+          "p90": 19.4992270052433,
+          "p95": 19.5178465038538,
+          "p99": 19.532742102742198
+        },
+        "local.blocked_resource_fanout.resource_count": {
+          "max": 246.0,
+          "mean": 245.33333333333334,
+          "median": 246.0,
+          "min": 244.0,
+          "n": 3,
+          "p90": 246.0,
+          "p95": 246.0,
+          "p99": 246.0
+        },
+        "local.blocked_resource_fanout.server_request_count": {
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "min": 1.0,
+          "n": 3,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "local.mixed_resource_fanout.load_event_ms": {
+          "max": 368.0,
+          "mean": 359.40000000596046,
+          "median": 357.15000000596046,
+          "min": 355.30000001192093,
+          "n": 4,
+          "p90": 365.05999999642376,
+          "p95": 366.52999999821185,
+          "p99": 367.7059999996424
+        },
+        "local.mixed_resource_fanout.observed_complete_ms": {
+          "max": 412.80808398127556,
+          "mean": 403.72575549036264,
+          "median": 404.6799889802933,
+          "min": 392.73496001958847,
+          "n": 4,
+          "p90": 411.88901297450064,
+          "p95": 412.34854847788813,
+          "p99": 412.716176880598
+        },
+        "local.mixed_resource_fanout.open_cmd_ms": {
+          "max": 26.587105989456177,
+          "mean": 25.481177493929863,
+          "median": 25.453749001026154,
+          "min": 24.430105984210968,
+          "n": 4,
+          "p90": 26.420105585455893,
+          "p95": 26.50360578745604,
+          "p99": 26.57040594905615
+        },
+        "local.mixed_resource_fanout.resource_count": {
+          "max": 245.0,
+          "mean": 242.75,
+          "median": 242.0,
+          "min": 242.0,
+          "n": 4,
+          "p90": 244.10000000000002,
+          "p95": 244.55,
+          "p99": 244.91
+        },
+        "local.mixed_resource_fanout.server_request_count": {
+          "max": 121.0,
+          "mean": 121.0,
+          "median": 121.0,
+          "min": 121.0,
+          "n": 4,
+          "p90": 121.0,
+          "p95": 121.0,
+          "p99": 121.0
+        },
+        "local.open_page.first_contentful_paint_ms": {
+          "max": 80.0,
+          "mean": 72.0,
+          "median": 72.0,
+          "min": 64.0,
+          "n": 3,
+          "p90": 78.39999999999999,
+          "p95": 79.2,
+          "p99": 79.84
+        },
+        "local.open_page.load_event_ms": {
+          "max": 142.5,
+          "mean": 139.93333332737288,
+          "median": 141.7999999821186,
+          "min": 135.5,
+          "n": 3,
+          "p90": 142.3599999964237,
+          "p95": 142.42999999821188,
+          "p99": 142.4859999996424
+        },
+        "local.open_page.observed_complete_ms": {
+          "max": 179.28221902251244,
+          "mean": 177.6271420121193,
+          "median": 176.95662400126457,
+          "min": 176.64258301258087,
+          "n": 3,
+          "p90": 178.81710001826286,
+          "p95": 179.04965952038765,
+          "p99": 179.2357071220875
+        },
+        "local.open_page.open_cmd_ms": {
+          "max": 14.405239015817642,
+          "mean": 13.46483533581098,
+          "median": 13.044635027647018,
+          "min": 12.944631963968277,
+          "n": 3,
+          "p90": 14.133118218183519,
+          "p95": 14.269178617000579,
+          "p99": 14.37802693605423
+        },
+        "local.resource_fanout.load_event_ms": {
+          "max": 724.5999999940395,
+          "mean": 719.5,
+          "median": 720.7000000178814,
+          "min": 713.1999999880791,
+          "n": 3,
+          "p90": 723.8199999988079,
+          "p95": 724.2099999964238,
+          "p99": 724.5219999945164
+        },
+        "local.resource_fanout.observed_complete_ms": {
+          "max": 756.7648259997368,
+          "mean": 755.2326530019442,
+          "median": 755.4729450047016,
+          "min": 753.4601880013943,
+          "n": 3,
+          "p90": 756.5064498007298,
+          "p95": 756.6356379002333,
+          "p99": 756.7389883798361
+        },
+        "local.resource_fanout.open_cmd_ms": {
+          "max": 19.377902001142502,
+          "mean": 17.272942662239075,
+          "median": 17.176768988370895,
+          "min": 15.264156997203827,
+          "n": 3,
+          "p90": 18.93767539858818,
+          "p95": 19.157788699865343,
+          "p99": 19.33387934088707
+        },
+        "local.resource_fanout.resource_count": {
+          "max": 240.0,
+          "mean": 240.0,
+          "median": 240.0,
+          "min": 240.0,
+          "n": 3,
+          "p90": 240.0,
+          "p95": 240.0,
+          "p99": 240.0
+        },
+        "local.screenshot.active_ms": {
+          "max": 40.381835013628006,
+          "mean": 40.381835013628006,
+          "median": 40.381835013628006,
+          "min": 40.381835013628006,
+          "n": 1,
+          "p90": 40.381835013628006,
+          "p95": 40.381835013628006,
+          "p99": 40.381835013628006
+        },
+        "local.subdomain_blocked_resource_fanout.load_event_ms": {
+          "max": 66.40000000596046,
+          "mean": 62.76666667064031,
+          "median": 66.0,
+          "min": 55.900000005960464,
+          "n": 3,
+          "p90": 66.32000000476837,
+          "p95": 66.36000000536441,
+          "p99": 66.39200000584127
+        },
+        "local.subdomain_blocked_resource_fanout.observed_complete_ms": {
+          "max": 101.77771499752998,
+          "mean": 97.4282596508662,
+          "median": 100.38548895716667,
+          "min": 90.12157499790192,
+          "n": 3,
+          "p90": 101.49926978945733,
+          "p95": 101.63849239349365,
+          "p99": 101.74987047672272
+        },
+        "local.subdomain_blocked_resource_fanout.open_cmd_ms": {
+          "max": 23.21078598499298,
+          "mean": 21.587049663066864,
+          "median": 21.492130011320114,
+          "min": 20.058232992887497,
+          "n": 3,
+          "p90": 22.867054790258408,
+          "p95": 23.038920387625694,
+          "p99": 23.176412865519524
+        },
+        "local.subdomain_blocked_resource_fanout.resource_count": {
+          "max": 246.0,
+          "mean": 245.33333333333334,
+          "median": 246.0,
+          "min": 244.0,
+          "n": 3,
+          "p90": 246.0,
+          "p95": 246.0,
+          "p99": 246.0
+        },
+        "local.subdomain_blocked_resource_fanout.server_request_count": {
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "min": 1.0,
+          "n": 3,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "local.tab_switch.cmd_ms": {
+          "max": 1.2464309930801392,
+          "mean": 1.0422888348499935,
+          "median": 1.0117429792881012,
+          "min": 0.9107890129089355,
+          "n": 6,
+          "p90": 1.184178501367569,
+          "p95": 1.215304747223854,
+          "p99": 1.240205743908882
+        },
+        "local.tab_switch.first_interval_ms": {
+          "max": 8.312150001525879,
+          "mean": 6.139958346883456,
+          "median": 6.844743028283119,
+          "min": 3.3989009857177734,
+          "n": 6,
+          "p90": 7.8250695168972015,
+          "p95": 8.06860975921154,
+          "p99": 8.26344195306301
+        },
+        "local.tab_switch.first_raf_ms": {
+          "max": 8.312150001525879,
+          "mean": 6.802534848451614,
+          "median": 7.273597031831741,
+          "min": 3.3989009857177734,
+          "n": 6,
+          "p90": 8.194416508078575,
+          "p95": 8.253283254802227,
+          "p99": 8.300376652181148
+        },
+        "local.tab_switch.visible_ms": {
+          "max": 4.388893008232117,
+          "mean": 3.383150344093641,
+          "median": 3.2766820043325424,
+          "min": 2.4336190223693848,
+          "n": 6,
+          "p90": 4.245058506727219,
+          "p95": 4.316975757479668,
+          "p99": 4.374509558081627
+        },
+        "startup.restore.all_complete_elapsed_ms": {
+          "max": 822.4682269990444,
+          "mean": 822.4682269990444,
+          "median": 822.4682269990444,
+          "min": 822.4682269990444,
+          "n": 1,
+          "p90": 822.4682269990444,
+          "p95": 822.4682269990444,
+          "p99": 822.4682269990444
+        },
+        "startup.restore.first_contentful_paint_ms": {
+          "max": 144.0,
+          "mean": 144.0,
+          "median": 144.0,
+          "min": 144.0,
+          "n": 1,
+          "p90": 144.0,
+          "p95": 144.0,
+          "p99": 144.0
+        },
+        "startup.restore.ipc_ready_ms": {
+          "max": 378.4250949919224,
+          "mean": 378.4250949919224,
+          "median": 378.4250949919224,
+          "min": 378.4250949919224,
+          "n": 1,
+          "p90": 378.4250949919224,
+          "p95": 378.4250949919224,
+          "p99": 378.4250949919224
+        },
+        "startup.restore.page_load_event_ms": {
+          "max": 467.5,
+          "mean": 414.6166666696469,
+          "median": 447.8500000089407,
+          "min": 229.59999999403954,
+          "n": 6,
+          "p90": 461.30000001192093,
+          "p95": 464.40000000596046,
+          "p99": 466.88000000119206
+        },
+        "startup.single.first_contentful_paint_ms": {
+          "max": 80.0,
+          "mean": 80.0,
+          "median": 80.0,
+          "min": 80.0,
+          "n": 1,
+          "p90": 80.0,
+          "p95": 80.0,
+          "p99": 80.0
+        },
+        "startup.single.ipc_ready_ms": {
+          "max": 335.40992498397827,
+          "mean": 335.40992498397827,
+          "median": 335.40992498397827,
+          "min": 335.40992498397827,
+          "n": 1,
+          "p90": 335.40992498397827,
+          "p95": 335.40992498397827,
+          "p99": 335.40992498397827
+        },
+        "startup.single.page_complete_elapsed_ms": {
+          "max": 428.6267009973526,
+          "mean": 428.6267009973526,
+          "median": 428.6267009973526,
+          "min": 428.6267009973526,
+          "n": 1,
+          "p90": 428.6267009973526,
+          "p95": 428.6267009973526,
+          "p99": 428.6267009973526
+        }
+      },
+      "records": {
+        "background_throttle": {
+          "active_interval_delta": 40,
+          "active_raf_delta": 121,
+          "active_tabid": "1",
+          "after": {
+            "1": {
+              "bench": {
+                "dcl": 119.7999999821186,
+                "intervalCount": 48,
+                "lastInterval": 2519.5,
+                "lastRaf": 2525.6,
+                "load": 229.59999999403954,
+                "name": "page0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 144
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 144
+                  }
+                ],
+                "rafCount": 146,
+                "scriptStart": 119.19999998807907,
+                "visEvents": []
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "2": {
+              "bench": {
+                "dcl": 103.09999999403954,
+                "intervalCount": 3,
+                "lastInterval": 2359.4000000059605,
+                "load": 467.5,
+                "name": "page1",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 102.59999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "3": {
+              "bench": {
+                "dcl": 99.2000000178814,
+                "intervalCount": 3,
+                "lastInterval": 2352.9000000059605,
+                "load": 451.60000002384186,
+                "name": "page2",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 98.7000000178814,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "4": {
+              "bench": {
+                "dcl": 91.59999999403954,
+                "intervalCount": 3,
+                "lastInterval": 2345.5999999940395,
+                "load": 444.09999999403954,
+                "name": "page3",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.09999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "5": {
+              "bench": {
+                "dcl": 92,
+                "intervalCount": 3,
+                "lastInterval": 2336.4000000059605,
+                "load": 455.10000002384186,
+                "name": "page4",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.7000000178814,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "6": {
+              "bench": {
+                "dcl": 84.09999999403954,
+                "intervalCount": 3,
+                "lastInterval": 2327.199999988079,
+                "load": 439.7999999821186,
+                "name": "page5",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 83.59999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            }
+          },
+          "background_interval_delta": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "background_raf_delta": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "before": {
+            "1": {
+              "bench": {
+                "dcl": 119.7999999821186,
+                "intervalCount": 8,
+                "lastInterval": 519.5,
+                "lastRaf": 508.9,
+                "load": 229.59999999403954,
+                "name": "page0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 144
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 144
+                  }
+                ],
+                "rafCount": 25,
+                "scriptStart": 119.19999998807907,
+                "visEvents": []
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "2": {
+              "bench": {
+                "dcl": 103.09999999403954,
+                "intervalCount": 1,
+                "lastInterval": 359.5,
+                "load": 467.5,
+                "name": "page1",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 102.59999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "3": {
+              "bench": {
+                "dcl": 99.2000000178814,
+                "intervalCount": 1,
+                "lastInterval": 352.90000000596046,
+                "load": 451.60000002384186,
+                "name": "page2",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 98.7000000178814,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "4": {
+              "bench": {
+                "dcl": 91.59999999403954,
+                "intervalCount": 1,
+                "lastInterval": 345.5,
+                "load": 444.09999999403954,
+                "name": "page3",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.09999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "5": {
+              "bench": {
+                "dcl": 92,
+                "intervalCount": 1,
+                "lastInterval": 336.40000000596046,
+                "load": 455.10000002384186,
+                "name": "page4",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.7000000178814,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            },
+            "6": {
+              "bench": {
+                "dcl": 84.09999999403954,
+                "intervalCount": 1,
+                "lastInterval": 327.2999999821186,
+                "load": 439.7999999821186,
+                "name": "page5",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 83.59999999403954,
+                "visEvents": []
+              },
+              "hidden": true,
+              "vis": "hidden"
+            }
+          }
+        },
+        "blocked_resource_fanout": [
+          {
+            "nav": {
+              "decoded_body_size": 24790,
+              "dom_content_loaded_ms": 28.200000017881393,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 49.20000001788139,
+              "nav_duration_ms": 49.20000001788139,
+              "observed_complete_ms": 80.69624799489975,
+              "transfer_size": 25090
+            },
+            "open_cmd_ms": 17.35589501261711,
+            "page": {
+              "bench": {
+                "dcl": 28.200000017881393,
+                "intervalCount": 0,
+                "lastRaf": 63.4,
+                "load": 49.20000001788139,
+                "name": "blocked-fanout0",
+                "paintEntries": [],
+                "rafCount": 4,
+                "scriptStart": 27.80000001192093,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.4000000059604645,
+                "connectStart": 1.4000000059604645,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 24790,
+                "deliveryType": "",
+                "domComplete": 49.20000001788139,
+                "domContentLoadedEventEnd": 28.200000017881393,
+                "domContentLoadedEventStart": 28.100000023841858,
+                "domInteractive": 28.100000023841858,
+                "domainLookupEnd": 1.4000000059604645,
+                "domainLookupStart": 1.4000000059604645,
+                "duration": 49.20000001788139,
+                "encodedBodySize": 24790,
+                "entryType": "navigation",
+                "fetchStart": 1.4000000059604645,
+                "finalResponseHeadersStart": 2.7000000178813934,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 49.20000001788139,
+                "loadEventStart": 49.20000001788139,
+                "name": "http://127.0.0.1:46443/blocked-fanout0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.2000000178813934,
+                "responseEnd": 3.2000000178813934,
+                "responseStart": 2.7000000178813934,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 25090,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 80.69624799489975,
+              "paint": [],
+              "ready": "complete",
+              "title": "blocked-fanout0",
+              "url": "http://127.0.0.1:46443/blocked-fanout0.html",
+              "vis": "visible"
+            },
+            "resource_count": 244,
+            "server_request_count": 1,
+            "tabid": 13,
+            "url": "http://127.0.0.1:46443/blocked-fanout0.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 24790,
+              "dom_content_loaded_ms": 28,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 65.30000001192093,
+              "nav_duration_ms": 65.40000000596046,
+              "observed_complete_ms": 83.31981399655342,
+              "transfer_size": 25090
+            },
+            "open_cmd_ms": 19.35027101635933,
+            "page": {
+              "bench": {
+                "dcl": 28,
+                "intervalCount": 0,
+                "lastRaf": 63.2,
+                "load": 65.30000001192093,
+                "name": "blocked-fanout1",
+                "paintEntries": [],
+                "rafCount": 4,
+                "scriptStart": 27.5,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 24790,
+                "deliveryType": "",
+                "domComplete": 65.2000000178814,
+                "domContentLoadedEventEnd": 28,
+                "domContentLoadedEventStart": 27.900000005960464,
+                "domInteractive": 27.900000005960464,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 65.40000000596046,
+                "encodedBodySize": 24790,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 3,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 65.40000000596046,
+                "loadEventStart": 65.30000001192093,
+                "name": "http://127.0.0.1:46443/blocked-fanout1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.5,
+                "responseStart": 3,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 25090,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 83.31981399655342,
+              "paint": [],
+              "ready": "complete",
+              "title": "blocked-fanout1",
+              "url": "http://127.0.0.1:46443/blocked-fanout1.html",
+              "vis": "visible"
+            },
+            "resource_count": 246,
+            "server_request_count": 1,
+            "tabid": 14,
+            "url": "http://127.0.0.1:46443/blocked-fanout1.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 24790,
+              "dom_content_loaded_ms": 29.899999976158142,
+              "first_contentful_paint_ms": 64,
+              "first_paint_ms": 64,
+              "load_event_ms": 64.2999999821186,
+              "nav_duration_ms": 64.2999999821186,
+              "observed_complete_ms": 99.70704701542854,
+              "transfer_size": 25090
+            },
+            "open_cmd_ms": 19.536466002464294,
+            "page": {
+              "bench": {
+                "dcl": 29.899999976158142,
+                "intervalCount": 1,
+                "lastInterval": 79.7999999821186,
+                "lastRaf": 78.6,
+                "load": 64.2999999821186,
+                "name": "blocked-fanout2",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 64
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 64
+                  }
+                ],
+                "rafCount": 5,
+                "scriptStart": 29.399999976158142,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.399999976158142,
+                "connectStart": 1.399999976158142,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 24790,
+                "deliveryType": "",
+                "domComplete": 64.19999998807907,
+                "domContentLoadedEventEnd": 29.899999976158142,
+                "domContentLoadedEventStart": 29.799999982118607,
+                "domInteractive": 29.799999982118607,
+                "domainLookupEnd": 1.399999976158142,
+                "domainLookupStart": 1.399999976158142,
+                "duration": 64.2999999821186,
+                "encodedBodySize": 24790,
+                "entryType": "navigation",
+                "fetchStart": 1.399999976158142,
+                "finalResponseHeadersStart": 2.7999999821186066,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 64.2999999821186,
+                "loadEventStart": 64.19999998807907,
+                "name": "http://127.0.0.1:46443/blocked-fanout2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.199999988079071,
+                "responseEnd": 3.399999976158142,
+                "responseStart": 2.7999999821186066,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 25090,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 99.70704701542854,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 64
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 64
+                }
+              ],
+              "ready": "complete",
+              "title": "blocked-fanout2",
+              "url": "http://127.0.0.1:46443/blocked-fanout2.html",
+              "vis": "visible"
+            },
+            "resource_count": 246,
+            "server_request_count": 1,
+            "tabid": 15,
+            "url": "http://127.0.0.1:46443/blocked-fanout2.html"
+          }
+        ],
+        "mixed_resource_fanout": [
+          {
+            "nav": {
+              "decoded_body_size": 20344,
+              "dom_content_loaded_ms": 55.69999998807907,
+              "first_contentful_paint_ms": 64,
+              "first_paint_ms": 64,
+              "load_event_ms": 368,
+              "nav_duration_ms": 368,
+              "observed_complete_ms": 392.73496001958847,
+              "transfer_size": 20644
+            },
+            "open_cmd_ms": 24.877060025930405,
+            "page": {
+              "bench": {
+                "dcl": 55.69999998807907,
+                "intervalCount": 6,
+                "lastInterval": 355.5,
+                "lastRaf": 361.2,
+                "load": 368,
+                "name": "mixed-fanout0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 64
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 64
+                  }
+                ],
+                "rafCount": 21,
+                "scriptStart": 55.19999998807907,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.5999999940395355,
+                "connectStart": 1.5999999940395355,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 20344,
+                "deliveryType": "",
+                "domComplete": 367.90000000596046,
+                "domContentLoadedEventEnd": 55.80000001192093,
+                "domContentLoadedEventStart": 55.599999994039536,
+                "domInteractive": 55.599999994039536,
+                "domainLookupEnd": 1.5999999940395355,
+                "domainLookupStart": 1.5999999940395355,
+                "duration": 368,
+                "encodedBodySize": 20344,
+                "entryType": "navigation",
+                "fetchStart": 1.5999999940395355,
+                "finalResponseHeadersStart": 2.9000000059604645,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 368,
+                "loadEventStart": 367.90000000596046,
+                "name": "http://127.0.0.1:46443/mixed-fanout0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.4000000059604645,
+                "responseStart": 2.9000000059604645,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 20644,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 392.73496001958847,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 64
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 64
+                }
+              ],
+              "ready": "complete",
+              "title": "mixed-fanout0",
+              "url": "http://127.0.0.1:46443/mixed-fanout0.html",
+              "vis": "visible"
+            },
+            "resource_count": 245,
+            "server_request_count": 121,
+            "tabid": 19,
+            "url": "http://127.0.0.1:46443/mixed-fanout0.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 20344,
+              "dom_content_loaded_ms": 34.20000001788139,
+              "first_contentful_paint_ms": 88,
+              "first_paint_ms": 88,
+              "load_event_ms": 356.10000002384186,
+              "nav_duration_ms": 356.10000002384186,
+              "observed_complete_ms": 409.74451395869255,
+              "transfer_size": 20644
+            },
+            "open_cmd_ms": 24.430105984210968,
+            "page": {
+              "bench": {
+                "dcl": 34.20000001788139,
+                "intervalCount": 7,
+                "lastInterval": 383.30000001192093,
+                "lastRaf": 384.8,
+                "load": 356.10000002384186,
+                "name": "mixed-fanout1",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 88
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 88
+                  }
+                ],
+                "rafCount": 23,
+                "scriptStart": 33.10000002384186,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.4000000059604645,
+                "connectStart": 1.4000000059604645,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 20344,
+                "deliveryType": "",
+                "domComplete": 356,
+                "domContentLoadedEventEnd": 34.20000001788139,
+                "domContentLoadedEventStart": 34.10000002384186,
+                "domInteractive": 34.10000002384186,
+                "domainLookupEnd": 1.4000000059604645,
+                "domainLookupStart": 1.4000000059604645,
+                "duration": 356.10000002384186,
+                "encodedBodySize": 20344,
+                "entryType": "navigation",
+                "fetchStart": 1.4000000059604645,
+                "finalResponseHeadersStart": 3.5,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 356.10000002384186,
+                "loadEventStart": 356,
+                "name": "http://127.0.0.1:46443/mixed-fanout1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.600000023841858,
+                "responseEnd": 4,
+                "responseStart": 3.5,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 20644,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 409.74451395869255,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 88
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 88
+                }
+              ],
+              "ready": "complete",
+              "title": "mixed-fanout1",
+              "url": "http://127.0.0.1:46443/mixed-fanout1.html",
+              "vis": "visible"
+            },
+            "resource_count": 242,
+            "server_request_count": 121,
+            "tabid": 20,
+            "url": "http://127.0.0.1:46443/mixed-fanout1.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 20344,
+              "dom_content_loaded_ms": 35.599999994039536,
+              "first_contentful_paint_ms": 92,
+              "first_paint_ms": 92,
+              "load_event_ms": 358.19999998807907,
+              "nav_duration_ms": 358.19999998807907,
+              "observed_complete_ms": 412.80808398127556,
+              "transfer_size": 20644
+            },
+            "open_cmd_ms": 26.030437976121902,
+            "page": {
+              "bench": {
+                "dcl": 35.599999994039536,
+                "intervalCount": 7,
+                "lastInterval": 385.40000000596046,
+                "lastRaf": 371.4,
+                "load": 358.19999998807907,
+                "name": "mixed-fanout2",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 92
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 92
+                  }
+                ],
+                "rafCount": 22,
+                "scriptStart": 35.19999998807907,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.699999988079071,
+                "connectStart": 1.699999988079071,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 20344,
+                "deliveryType": "",
+                "domComplete": 358.19999998807907,
+                "domContentLoadedEventEnd": 35.599999994039536,
+                "domContentLoadedEventStart": 35.599999994039536,
+                "domInteractive": 35.599999994039536,
+                "domainLookupEnd": 1.699999988079071,
+                "domainLookupStart": 1.699999988079071,
+                "duration": 358.19999998807907,
+                "encodedBodySize": 20344,
+                "entryType": "navigation",
+                "fetchStart": 1.699999988079071,
+                "finalResponseHeadersStart": 2.9000000059604645,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 358.19999998807907,
+                "loadEventStart": 358.19999998807907,
+                "name": "http://127.0.0.1:46443/mixed-fanout2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.2999999821186066,
+                "responseStart": 2.9000000059604645,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 20644,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 412.80808398127556,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 92
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 92
+                }
+              ],
+              "ready": "complete",
+              "title": "mixed-fanout2",
+              "url": "http://127.0.0.1:46443/mixed-fanout2.html",
+              "vis": "visible"
+            },
+            "resource_count": 242,
+            "server_request_count": 121,
+            "tabid": 21,
+            "url": "http://127.0.0.1:46443/mixed-fanout2.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 20344,
+              "dom_content_loaded_ms": 31.099999994039536,
+              "first_contentful_paint_ms": 76,
+              "first_paint_ms": 76,
+              "load_event_ms": 355.30000001192093,
+              "nav_duration_ms": 355.30000001192093,
+              "observed_complete_ms": 399.615464001894,
+              "transfer_size": 20644
+            },
+            "open_cmd_ms": 26.587105989456177,
+            "page": {
+              "bench": {
+                "dcl": 31.099999994039536,
+                "intervalCount": 6,
+                "lastInterval": 330.90000000596046,
+                "lastRaf": 373.4,
+                "load": 355.30000001192093,
+                "name": "mixed-fanout3",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 76
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 76
+                  }
+                ],
+                "rafCount": 23,
+                "scriptStart": 30.599999994039536,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 20344,
+                "deliveryType": "",
+                "domComplete": 355.2000000178814,
+                "domContentLoadedEventEnd": 31.099999994039536,
+                "domContentLoadedEventStart": 31,
+                "domInteractive": 31,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 355.30000001192093,
+                "encodedBodySize": 20344,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 3,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 355.30000001192093,
+                "loadEventStart": 355.2000000178814,
+                "name": "http://127.0.0.1:46443/mixed-fanout3.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.4000000059604645,
+                "responseEnd": 3.4000000059604645,
+                "responseStart": 3,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 20644,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 399.615464001894,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 76
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 76
+                }
+              ],
+              "ready": "complete",
+              "title": "mixed-fanout3",
+              "url": "http://127.0.0.1:46443/mixed-fanout3.html",
+              "vis": "visible"
+            },
+            "resource_count": 242,
+            "server_request_count": 121,
+            "tabid": 22,
+            "url": "http://127.0.0.1:46443/mixed-fanout3.html"
+          }
+        ],
+        "open_page": [
+          {
+            "nav": {
+              "decoded_body_size": 3792,
+              "dom_content_loaded_ms": 41.39999997615814,
+              "first_contentful_paint_ms": 72,
+              "first_paint_ms": 72,
+              "load_event_ms": 142.5,
+              "nav_duration_ms": 142.5,
+              "observed_complete_ms": 176.95662400126457,
+              "transfer_size": 4092
+            },
+            "open_cmd_ms": 12.944631963968277,
+            "page": {
+              "bench": {
+                "dcl": 41.39999997615814,
+                "intervalCount": 2,
+                "lastInterval": 115.89999997615814,
+                "lastRaf": 153.4,
+                "load": 142.5,
+                "name": "heavy0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 72
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 72
+                  }
+                ],
+                "rafCount": 10,
+                "scriptStart": 15.699999988079071,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 3792,
+                "deliveryType": "",
+                "domComplete": 142.39999997615814,
+                "domContentLoadedEventEnd": 41.39999997615814,
+                "domContentLoadedEventStart": 41.39999997615814,
+                "domInteractive": 41.39999997615814,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 142.5,
+                "encodedBodySize": 3792,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 2.899999976158142,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 142.5,
+                "loadEventStart": 142.39999997615814,
+                "name": "http://127.0.0.1:46443/heavy0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.5,
+                "responseStart": 2.899999976158142,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 4092,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 176.95662400126457,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 72
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 72
+                }
+              ],
+              "ready": "complete",
+              "title": "heavy0",
+              "url": "http://127.0.0.1:46443/heavy0.html",
+              "vis": "visible"
+            },
+            "tabid": 7,
+            "url": "http://127.0.0.1:46443/heavy0.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 3792,
+              "dom_content_loaded_ms": 43.79999998211861,
+              "first_contentful_paint_ms": 80,
+              "first_paint_ms": 80,
+              "load_event_ms": 141.7999999821186,
+              "nav_duration_ms": 141.7999999821186,
+              "observed_complete_ms": 179.28221902251244,
+              "transfer_size": 4092
+            },
+            "open_cmd_ms": 13.044635027647018,
+            "page": {
+              "bench": {
+                "dcl": 43.79999998211861,
+                "intervalCount": 3,
+                "lastInterval": 168.2999999821186,
+                "lastRaf": 159.6,
+                "load": 141.7999999821186,
+                "name": "heavy1",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 80
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 80
+                  }
+                ],
+                "rafCount": 10,
+                "scriptStart": 18,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 3792,
+                "deliveryType": "",
+                "domComplete": 141.69999998807907,
+                "domContentLoadedEventEnd": 43.79999998211861,
+                "domContentLoadedEventStart": 43.69999998807907,
+                "domInteractive": 43.69999998807907,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 141.7999999821186,
+                "encodedBodySize": 3792,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 3,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 141.7999999821186,
+                "loadEventStart": 141.69999998807907,
+                "name": "http://127.0.0.1:46443/heavy1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.399999976158142,
+                "responseStart": 3,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 4092,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 179.28221902251244,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 80
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 80
+                }
+              ],
+              "ready": "complete",
+              "title": "heavy1",
+              "url": "http://127.0.0.1:46443/heavy1.html",
+              "vis": "visible"
+            },
+            "tabid": 8,
+            "url": "http://127.0.0.1:46443/heavy1.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 3792,
+              "dom_content_loaded_ms": 39.900000005960464,
+              "first_contentful_paint_ms": 64,
+              "first_paint_ms": 64,
+              "load_event_ms": 135.5,
+              "nav_duration_ms": 135.5,
+              "observed_complete_ms": 176.64258301258087,
+              "transfer_size": 4092
+            },
+            "open_cmd_ms": 14.405239015817642,
+            "page": {
+              "bench": {
+                "dcl": 39.900000005960464,
+                "intervalCount": 2,
+                "lastInterval": 114.80000001192093,
+                "lastRaf": 162.7,
+                "load": 135.5,
+                "name": "heavy2",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 64
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 64
+                  }
+                ],
+                "rafCount": 10,
+                "scriptStart": 14.599999994039536,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.7000000178813934,
+                "connectStart": 1.7000000178813934,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 3792,
+                "deliveryType": "",
+                "domComplete": 135.40000000596046,
+                "domContentLoadedEventEnd": 39.900000005960464,
+                "domContentLoadedEventStart": 39.900000005960464,
+                "domInteractive": 39.80000001192093,
+                "domainLookupEnd": 1.7000000178813934,
+                "domainLookupStart": 1.7000000178813934,
+                "duration": 135.5,
+                "encodedBodySize": 3792,
+                "entryType": "navigation",
+                "fetchStart": 1.7000000178813934,
+                "finalResponseHeadersStart": 2.800000011920929,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 135.5,
+                "loadEventStart": 135.40000000596046,
+                "name": "http://127.0.0.1:46443/heavy2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.5,
+                "responseEnd": 3.2000000178813934,
+                "responseStart": 2.800000011920929,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 4092,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 176.64258301258087,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 64
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 64
+                }
+              ],
+              "ready": "complete",
+              "title": "heavy2",
+              "url": "http://127.0.0.1:46443/heavy2.html",
+              "vis": "visible"
+            },
+            "tabid": 9,
+            "url": "http://127.0.0.1:46443/heavy2.html"
+          }
+        ],
+        "resource_fanout": [
+          {
+            "nav": {
+              "decoded_body_size": 14926,
+              "dom_content_loaded_ms": 32.400000005960464,
+              "first_contentful_paint_ms": 88,
+              "first_paint_ms": 88,
+              "load_event_ms": 720.7000000178814,
+              "nav_duration_ms": 720.7000000178814,
+              "observed_complete_ms": 753.4601880013943,
+              "transfer_size": 15226
+            },
+            "open_cmd_ms": 15.264156997203827,
+            "page": {
+              "bench": {
+                "dcl": 32.400000005960464,
+                "intervalCount": 14,
+                "lastInterval": 732.0999999940395,
+                "lastRaf": 734.5,
+                "load": 720.7000000178814,
+                "name": "fanout0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 88
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 88
+                  }
+                ],
+                "rafCount": 45,
+                "scriptStart": 32,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 14926,
+                "deliveryType": "",
+                "domComplete": 720.5,
+                "domContentLoadedEventEnd": 32.400000005960464,
+                "domContentLoadedEventStart": 32.30000001192093,
+                "domInteractive": 32.30000001192093,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 720.7000000178814,
+                "encodedBodySize": 14926,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 3.800000011920929,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 720.7000000178814,
+                "loadEventStart": 720.5999999940395,
+                "name": "http://127.0.0.1:46443/fanout0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 3.5,
+                "responseEnd": 4.300000011920929,
+                "responseStart": 3.800000011920929,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 15226,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 753.4601880013943,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 88
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 88
+                }
+              ],
+              "ready": "complete",
+              "title": "fanout0",
+              "url": "http://127.0.0.1:46443/fanout0.html",
+              "vis": "visible"
+            },
+            "resource_count": 240,
+            "tabid": 10,
+            "url": "http://127.0.0.1:46443/fanout0.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 14926,
+              "dom_content_loaded_ms": 45.599999994039536,
+              "first_contentful_paint_ms": 80,
+              "first_paint_ms": 80,
+              "load_event_ms": 713.1999999880791,
+              "nav_duration_ms": 713.1999999880791,
+              "observed_complete_ms": 755.4729450047016,
+              "transfer_size": 15226
+            },
+            "open_cmd_ms": 19.377902001142502,
+            "page": {
+              "bench": {
+                "dcl": 45.599999994039536,
+                "intervalCount": 13,
+                "lastInterval": 695.2999999821186,
+                "lastRaf": 726.5,
+                "load": 713.1999999880791,
+                "name": "fanout1",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 80
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 80
+                  }
+                ],
+                "rafCount": 43,
+                "scriptStart": 45,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 14926,
+                "deliveryType": "",
+                "domComplete": 713,
+                "domContentLoadedEventEnd": 45.599999994039536,
+                "domContentLoadedEventStart": 45.39999997615814,
+                "domInteractive": 45.39999997615814,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 713.1999999880791,
+                "encodedBodySize": 14926,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 2.5999999940395355,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 713.1999999880791,
+                "loadEventStart": 713,
+                "name": "http://127.0.0.1:46443/fanout1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.399999976158142,
+                "responseEnd": 3.0999999940395355,
+                "responseStart": 2.5999999940395355,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 15226,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 755.4729450047016,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 80
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 80
+                }
+              ],
+              "ready": "complete",
+              "title": "fanout1",
+              "url": "http://127.0.0.1:46443/fanout1.html",
+              "vis": "visible"
+            },
+            "resource_count": 240,
+            "tabid": 11,
+            "url": "http://127.0.0.1:46443/fanout1.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 14926,
+              "dom_content_loaded_ms": 31.700000017881393,
+              "first_contentful_paint_ms": 72,
+              "first_paint_ms": 72,
+              "load_event_ms": 724.5999999940395,
+              "nav_duration_ms": 724.5999999940395,
+              "observed_complete_ms": 756.7648259997368,
+              "transfer_size": 15226
+            },
+            "open_cmd_ms": 17.176768988370895,
+            "page": {
+              "bench": {
+                "dcl": 31.700000017881393,
+                "intervalCount": 14,
+                "lastInterval": 731.5,
+                "lastRaf": 738.2,
+                "load": 724.5999999940395,
+                "name": "fanout2",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 72
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 72
+                  }
+                ],
+                "rafCount": 45,
+                "scriptStart": 31.30000001192093,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.5,
+                "connectStart": 1.5,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 14926,
+                "deliveryType": "",
+                "domComplete": 724.5999999940395,
+                "domContentLoadedEventEnd": 31.700000017881393,
+                "domContentLoadedEventStart": 31.700000017881393,
+                "domInteractive": 31.700000017881393,
+                "domainLookupEnd": 1.5,
+                "domainLookupStart": 1.5,
+                "duration": 724.5999999940395,
+                "encodedBodySize": 14926,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 2.800000011920929,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 724.5999999940395,
+                "loadEventStart": 724.5999999940395,
+                "name": "http://127.0.0.1:46443/fanout2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.300000011920929,
+                "responseEnd": 3.300000011920929,
+                "responseStart": 2.800000011920929,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 15226,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 756.7648259997368,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 72
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 72
+                }
+              ],
+              "ready": "complete",
+              "title": "fanout2",
+              "url": "http://127.0.0.1:46443/fanout2.html",
+              "vis": "visible"
+            },
+            "resource_count": 240,
+            "tabid": 12,
+            "url": "http://127.0.0.1:46443/fanout2.html"
+          }
+        ],
+        "restore_startup": {
+          "nav": {
+            "1": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 119.7999999821186,
+              "first_contentful_paint_ms": 144,
+              "first_paint_ms": 144,
+              "load_event_ms": 229.59999999403954,
+              "nav_duration_ms": 229.59999999403954,
+              "observed_complete_ms": 535.3082339763641,
+              "transfer_size": 2720
+            },
+            "2": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 103.09999999403954,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 467.5,
+              "nav_duration_ms": 467.5,
+              "observed_complete_ms": 817.6662109792233,
+              "transfer_size": 2720
+            },
+            "3": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 99.2000000178814,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 451.60000002384186,
+              "nav_duration_ms": 451.60000002384186,
+              "observed_complete_ms": 819.0653260052204,
+              "transfer_size": 2720
+            },
+            "4": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 91.59999999403954,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 444.09999999403954,
+              "nav_duration_ms": 444.09999999403954,
+              "observed_complete_ms": 820.2222340106964,
+              "transfer_size": 2720
+            },
+            "5": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 92,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 455.10000002384186,
+              "nav_duration_ms": 455.10000002384186,
+              "observed_complete_ms": 821.3632110059261,
+              "transfer_size": 2720
+            },
+            "6": {
+              "decoded_body_size": 2420,
+              "dom_content_loaded_ms": 84.09999999403954,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 439.7999999821186,
+              "nav_duration_ms": 439.7999999821186,
+              "observed_complete_ms": 822.4682269990444,
+              "transfer_size": 2720
+            }
+          },
+          "pages": {
+            "1": {
+              "bench": {
+                "dcl": 119.7999999821186,
+                "intervalCount": 2,
+                "lastInterval": 219.59999999403954,
+                "lastRaf": 225.7,
+                "load": 229.59999999403954,
+                "name": "page0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 144
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 144
+                  }
+                ],
+                "rafCount": 8,
+                "scriptStart": 119.19999998807907,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 3,
+                "connectStart": 3,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 229.39999997615814,
+                "domContentLoadedEventEnd": 119.89999997615814,
+                "domContentLoadedEventStart": 119.7999999821186,
+                "domInteractive": 119.69999998807907,
+                "domainLookupEnd": 3,
+                "domainLookupStart": 3,
+                "duration": 229.59999999403954,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 3,
+                "finalResponseHeadersStart": 105.39999997615814,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 229.59999999403954,
+                "loadEventStart": 229.39999997615814,
+                "name": "http://127.0.0.1:46443/page0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 104.89999997615814,
+                "responseEnd": 106.59999999403954,
+                "responseStart": 105.39999997615814,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 535.3082339763641,
+              "paint": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 144
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 144
+                }
+              ],
+              "ready": "complete",
+              "title": "page0",
+              "url": "http://127.0.0.1:46443/page0.html",
+              "vis": "visible"
+            },
+            "2": {
+              "bench": {
+                "dcl": 103.09999999403954,
+                "intervalCount": 1,
+                "lastInterval": 359.5,
+                "load": 467.5,
+                "name": "page1",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 102.59999999403954,
+                "visEvents": []
+              },
+              "hasFocus": false,
+              "hidden": true,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.2000000178813934,
+                "connectStart": 1.2000000178813934,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 467.5,
+                "domContentLoadedEventEnd": 103.09999999403954,
+                "domContentLoadedEventStart": 102.90000000596046,
+                "domInteractive": 102.90000000596046,
+                "domainLookupEnd": 1.2000000178813934,
+                "domainLookupStart": 1.2000000178813934,
+                "duration": 467.5,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 1.2000000178813934,
+                "finalResponseHeadersStart": 87.2000000178814,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 467.5,
+                "loadEventStart": 467.5,
+                "name": "http://127.0.0.1:46443/page1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 86.90000000596046,
+                "responseEnd": 88.59999999403954,
+                "responseStart": 87.2000000178814,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 817.6662109792233,
+              "paint": [],
+              "ready": "complete",
+              "title": "page1",
+              "url": "http://127.0.0.1:46443/page1.html",
+              "vis": "hidden"
+            },
+            "3": {
+              "bench": {
+                "dcl": 99.2000000178814,
+                "intervalCount": 1,
+                "lastInterval": 352.90000000596046,
+                "load": 451.60000002384186,
+                "name": "page2",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 98.7000000178814,
+                "visEvents": []
+              },
+              "hasFocus": false,
+              "hidden": true,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 80.7000000178814,
+                "connectStart": 80.40000000596046,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 451.5,
+                "domContentLoadedEventEnd": 99.2000000178814,
+                "domContentLoadedEventStart": 99,
+                "domInteractive": 99,
+                "domainLookupEnd": 80.40000000596046,
+                "domainLookupStart": 80.40000000596046,
+                "duration": 451.60000002384186,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 1.2000000178813934,
+                "finalResponseHeadersStart": 82.5,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 451.60000002384186,
+                "loadEventStart": 451.5,
+                "name": "http://127.0.0.1:46443/page2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 82.30000001192093,
+                "responseEnd": 83.40000000596046,
+                "responseStart": 82.5,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 819.0653260052204,
+              "paint": [],
+              "ready": "complete",
+              "title": "page2",
+              "url": "http://127.0.0.1:46443/page2.html",
+              "vis": "hidden"
+            },
+            "4": {
+              "bench": {
+                "dcl": 91.59999999403954,
+                "intervalCount": 1,
+                "lastInterval": 345.5,
+                "load": 444.09999999403954,
+                "name": "page3",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.09999999403954,
+                "visEvents": []
+              },
+              "hasFocus": false,
+              "hidden": true,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 73.5,
+                "connectStart": 73.30000001192093,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 443.90000000596046,
+                "domContentLoadedEventEnd": 91.59999999403954,
+                "domContentLoadedEventStart": 91.5,
+                "domInteractive": 91.5,
+                "domainLookupEnd": 73.30000001192093,
+                "domainLookupStart": 73.30000001192093,
+                "duration": 444.09999999403954,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 1.5,
+                "finalResponseHeadersStart": 75.5,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 444.09999999403954,
+                "loadEventStart": 444,
+                "name": "http://127.0.0.1:46443/page3.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 75.09999999403954,
+                "responseEnd": 76.7000000178814,
+                "responseStart": 75.5,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 820.2222340106964,
+              "paint": [],
+              "ready": "complete",
+              "title": "page3",
+              "url": "http://127.0.0.1:46443/page3.html",
+              "vis": "hidden"
+            },
+            "5": {
+              "bench": {
+                "dcl": 92,
+                "intervalCount": 1,
+                "lastInterval": 336.40000000596046,
+                "load": 455.10000002384186,
+                "name": "page4",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 91.7000000178814,
+                "visEvents": []
+              },
+              "hasFocus": false,
+              "hidden": true,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 65.90000000596046,
+                "connectStart": 65.90000000596046,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 455.10000002384186,
+                "domContentLoadedEventEnd": 92,
+                "domContentLoadedEventStart": 92,
+                "domInteractive": 92,
+                "domainLookupEnd": 65.90000000596046,
+                "domainLookupStart": 65.90000000596046,
+                "duration": 455.10000002384186,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 1.2000000178813934,
+                "finalResponseHeadersStart": 68,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 455.10000002384186,
+                "loadEventStart": 455.10000002384186,
+                "name": "http://127.0.0.1:46443/page4.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 67.80000001192093,
+                "responseEnd": 70,
+                "responseStart": 68,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 821.3632110059261,
+              "paint": [],
+              "ready": "complete",
+              "title": "page4",
+              "url": "http://127.0.0.1:46443/page4.html",
+              "vis": "hidden"
+            },
+            "6": {
+              "bench": {
+                "dcl": 84.09999999403954,
+                "intervalCount": 1,
+                "lastInterval": 327.2999999821186,
+                "load": 439.7999999821186,
+                "name": "page5",
+                "paintEntries": [],
+                "rafCount": 1,
+                "scriptStart": 83.59999999403954,
+                "visEvents": []
+              },
+              "hasFocus": false,
+              "hidden": true,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 57.69999998807907,
+                "connectStart": 57.099999994039536,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 2420,
+                "deliveryType": "",
+                "domComplete": 439.59999999403954,
+                "domContentLoadedEventEnd": 84.09999999403954,
+                "domContentLoadedEventStart": 84,
+                "domInteractive": 84,
+                "domainLookupEnd": 57.099999994039536,
+                "domainLookupStart": 57,
+                "duration": 439.7999999821186,
+                "encodedBodySize": 2420,
+                "entryType": "navigation",
+                "fetchStart": 1.2999999821186066,
+                "finalResponseHeadersStart": 59.19999998807907,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 439.7999999821186,
+                "loadEventStart": 439.59999999403954,
+                "name": "http://127.0.0.1:46443/page5.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 58.79999998211861,
+                "responseEnd": 61.29999998211861,
+                "responseStart": 59.19999998807907,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 2720,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 822.4682269990444,
+              "paint": [],
+              "ready": "complete",
+              "title": "page5",
+              "url": "http://127.0.0.1:46443/page5.html",
+              "vis": "hidden"
+            }
+          },
+          "status": {
+            "active_index": 0,
+            "active_tab": 1,
+            "active_tabid": 1,
+            "audible": false,
+            "fps": null,
+            "fps_has_sample": false,
+            "ipc_protocol": "vimbrowser-ipc",
+            "ipc_version": 1,
+            "observed_elapsed_ms": 378.4250949919224,
+            "refresh_rate": 0,
+            "shader": false,
+            "showfps": true,
+            "tabs": 6,
+            "title": "",
+            "url": "http://127.0.0.1:46443/page0.html"
+          },
+          "tabs": {
+            "active_index": 0,
+            "active_tab": 1,
+            "active_tabid": 1,
+            "ipc_protocol": "vimbrowser-ipc",
+            "ipc_version": 1,
+            "tabs": [
+              {
+                "active": true,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 1,
+                "index": 0,
+                "loading": true,
+                "refresh_rate": 60,
+                "tab": 1,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page0.html"
+              },
+              {
+                "active": false,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 2,
+                "index": 1,
+                "loading": true,
+                "refresh_rate": 60,
+                "tab": 2,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page1.html"
+              },
+              {
+                "active": false,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 3,
+                "index": 2,
+                "loading": true,
+                "refresh_rate": 0,
+                "tab": 3,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page2.html"
+              },
+              {
+                "active": false,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 4,
+                "index": 3,
+                "loading": true,
+                "refresh_rate": 0,
+                "tab": 4,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page3.html"
+              },
+              {
+                "active": false,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 5,
+                "index": 4,
+                "loading": true,
+                "refresh_rate": 0,
+                "tab": 5,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page4.html"
+              },
+              {
+                "active": false,
+                "audible": false,
+                "can_go_back": false,
+                "can_go_forward": false,
+                "fps": null,
+                "fps_has_sample": false,
+                "id": 6,
+                "index": 5,
+                "loading": true,
+                "refresh_rate": 0,
+                "tab": 6,
+                "title": "",
+                "url": "http://127.0.0.1:46443/page5.html"
+              }
+            ]
+          }
+        },
+        "startup_single": {
+          "active_screenshot_ms": 40.381835013628006,
+          "nav": {
+            "decoded_body_size": 2555,
+            "dom_content_loaded_ms": 60,
+            "first_contentful_paint_ms": 80,
+            "first_paint_ms": 80,
+            "load_event_ms": 122.5,
+            "nav_duration_ms": 122.5,
+            "observed_complete_ms": 428.6267009973526,
+            "transfer_size": 2855
+          },
+          "page": {
+            "bench": {
+              "dcl": 60,
+              "intervalCount": 1,
+              "lastInterval": 109.7000000178814,
+              "lastRaf": 110.9,
+              "load": 122.5,
+              "name": "page-start",
+              "paintEntries": [
+                {
+                  "duration": 0,
+                  "name": "first-paint",
+                  "startTime": 80
+                },
+                {
+                  "duration": 0,
+                  "name": "first-contentful-paint",
+                  "startTime": 80
+                }
+              ],
+              "rafCount": 6,
+              "scriptStart": 59.400000005960464,
+              "visEvents": []
+            },
+            "hasFocus": true,
+            "hidden": false,
+            "nav": {
+              "activationStart": 0,
+              "confidence": {
+                "randomizedTriggerRate": 0.4994798,
+                "value": "low"
+              },
+              "connectEnd": 3.2000000178813934,
+              "connectStart": 3.2000000178813934,
+              "contentEncoding": "",
+              "criticalCHRestart": 0,
+              "decodedBodySize": 2555,
+              "deliveryType": "",
+              "domComplete": 122.30000001192093,
+              "domContentLoadedEventEnd": 60,
+              "domContentLoadedEventStart": 59.900000005960464,
+              "domInteractive": 59.80000001192093,
+              "domainLookupEnd": 3.2000000178813934,
+              "domainLookupStart": 3.2000000178813934,
+              "duration": 122.5,
+              "encodedBodySize": 2555,
+              "entryType": "navigation",
+              "fetchStart": 3.2000000178813934,
+              "finalResponseHeadersStart": 47.70000001788139,
+              "firstInterimResponseStart": 0,
+              "initiatorType": "navigation",
+              "loadEventEnd": 122.5,
+              "loadEventStart": 122.30000001192093,
+              "name": "http://127.0.0.1:46443/page-start.html",
+              "nextHopProtocol": "http/1.0",
+              "notRestoredReasons": null,
+              "redirectCount": 0,
+              "redirectEnd": 0,
+              "redirectStart": 0,
+              "renderBlockingStatus": "non-blocking",
+              "requestStart": 47.30000001192093,
+              "responseEnd": 48.400000005960464,
+              "responseStart": 47.70000001788139,
+              "responseStatus": 200,
+              "secureConnectionStart": 0,
+              "serverTiming": [],
+              "startTime": 0,
+              "transferSize": 2855,
+              "type": "navigate",
+              "unloadEventEnd": 0,
+              "unloadEventStart": 0,
+              "workerCacheLookupStart": 0,
+              "workerFinalSourceType": "",
+              "workerMatchedSourceType": "",
+              "workerRouterEvaluationStart": 0,
+              "workerStart": 0
+            },
+            "observed_elapsed_ms": 428.6267009973526,
+            "paint": [
+              {
+                "duration": 0,
+                "name": "first-paint",
+                "startTime": 80
+              },
+              {
+                "duration": 0,
+                "name": "first-contentful-paint",
+                "startTime": 80
+              }
+            ],
+            "ready": "complete",
+            "title": "page-start",
+            "url": "http://127.0.0.1:46443/page-start.html",
+            "vis": "visible"
+          },
+          "status": {
+            "active_index": 0,
+            "active_tab": 1,
+            "active_tabid": 1,
+            "audible": false,
+            "fps": null,
+            "fps_has_sample": false,
+            "ipc_protocol": "vimbrowser-ipc",
+            "ipc_version": 1,
+            "observed_elapsed_ms": 335.40992498397827,
+            "refresh_rate": 0,
+            "shader": true,
+            "showfps": false,
+            "tabs": 1,
+            "title": "",
+            "url": "http://127.0.0.1:46443/page-start.html"
+          }
+        },
+        "subdomain_blocked_resource_fanout": [
+          {
+            "nav": {
+              "decoded_body_size": 28660,
+              "dom_content_loaded_ms": 51.5,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 66.40000000596046,
+              "nav_duration_ms": 66.40000000596046,
+              "observed_complete_ms": 100.38548895716667,
+              "transfer_size": 28960
+            },
+            "open_cmd_ms": 20.058232992887497,
+            "page": {
+              "bench": {
+                "dcl": 51.5,
+                "intervalCount": 1,
+                "lastInterval": 81.09999999403954,
+                "lastRaf": 77.3,
+                "load": 66.40000000596046,
+                "name": "subdomain-blocked-fanout0",
+                "paintEntries": [],
+                "rafCount": 5,
+                "scriptStart": 30.80000001192093,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.300000011920929,
+                "connectStart": 1.300000011920929,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 28660,
+                "deliveryType": "",
+                "domComplete": 66.30000001192093,
+                "domContentLoadedEventEnd": 51.5,
+                "domContentLoadedEventStart": 51.400000005960464,
+                "domInteractive": 51.400000005960464,
+                "domainLookupEnd": 1.300000011920929,
+                "domainLookupStart": 1.300000011920929,
+                "duration": 66.40000000596046,
+                "encodedBodySize": 28660,
+                "entryType": "navigation",
+                "fetchStart": 1.300000011920929,
+                "finalResponseHeadersStart": 2.5,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 66.40000000596046,
+                "loadEventStart": 66.30000001192093,
+                "name": "http://127.0.0.1:46443/subdomain-blocked-fanout0.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.0999999940395355,
+                "responseEnd": 3,
+                "responseStart": 2.5,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 28960,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 100.38548895716667,
+              "paint": [],
+              "ready": "complete",
+              "title": "subdomain-blocked-fanout0",
+              "url": "http://127.0.0.1:46443/subdomain-blocked-fanout0.html",
+              "vis": "visible"
+            },
+            "resource_count": 246,
+            "server_request_count": 1,
+            "tabid": 16,
+            "url": "http://127.0.0.1:46443/subdomain-blocked-fanout0.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 28660,
+              "dom_content_loaded_ms": 28.900000005960464,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 66,
+              "nav_duration_ms": 66,
+              "observed_complete_ms": 101.77771499752998,
+              "transfer_size": 28960
+            },
+            "open_cmd_ms": 21.492130011320114,
+            "page": {
+              "bench": {
+                "dcl": 28.900000005960464,
+                "intervalCount": 1,
+                "lastInterval": 78.80000001192093,
+                "lastRaf": 74.7,
+                "load": 66,
+                "name": "subdomain-blocked-fanout1",
+                "paintEntries": [],
+                "rafCount": 5,
+                "scriptStart": 28.5,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "high"
+                },
+                "connectEnd": 1.4000000059604645,
+                "connectStart": 1.4000000059604645,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 28660,
+                "deliveryType": "",
+                "domComplete": 65.90000000596046,
+                "domContentLoadedEventEnd": 29,
+                "domContentLoadedEventStart": 28.900000005960464,
+                "domInteractive": 28.900000005960464,
+                "domainLookupEnd": 1.4000000059604645,
+                "domainLookupStart": 1.4000000059604645,
+                "duration": 66,
+                "encodedBodySize": 28660,
+                "entryType": "navigation",
+                "fetchStart": 1.4000000059604645,
+                "finalResponseHeadersStart": 2.9000000059604645,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 66,
+                "loadEventStart": 65.90000000596046,
+                "name": "http://127.0.0.1:46443/subdomain-blocked-fanout1.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.300000011920929,
+                "responseEnd": 3.300000011920929,
+                "responseStart": 2.9000000059604645,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 28960,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 101.77771499752998,
+              "paint": [],
+              "ready": "complete",
+              "title": "subdomain-blocked-fanout1",
+              "url": "http://127.0.0.1:46443/subdomain-blocked-fanout1.html",
+              "vis": "visible"
+            },
+            "resource_count": 246,
+            "server_request_count": 1,
+            "tabid": 17,
+            "url": "http://127.0.0.1:46443/subdomain-blocked-fanout1.html"
+          },
+          {
+            "nav": {
+              "decoded_body_size": 28660,
+              "dom_content_loaded_ms": 33.20000001788139,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 55.900000005960464,
+              "nav_duration_ms": 55.900000005960464,
+              "observed_complete_ms": 90.12157499790192,
+              "transfer_size": 28960
+            },
+            "open_cmd_ms": 23.21078598499298,
+            "page": {
+              "bench": {
+                "dcl": 33.20000001788139,
+                "intervalCount": 0,
+                "lastRaf": 54.1,
+                "load": 55.900000005960464,
+                "name": "subdomain-blocked-fanout2",
+                "paintEntries": [],
+                "rafCount": 3,
+                "scriptStart": 32.60000002384186,
+                "visEvents": []
+              },
+              "hasFocus": true,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": {
+                  "randomizedTriggerRate": 0.4994798,
+                  "value": "low"
+                },
+                "connectEnd": 1.600000023841858,
+                "connectStart": 1.600000023841858,
+                "contentEncoding": "",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 28660,
+                "deliveryType": "",
+                "domComplete": 55.80000001192093,
+                "domContentLoadedEventEnd": 33.20000001788139,
+                "domContentLoadedEventStart": 33,
+                "domInteractive": 33,
+                "domainLookupEnd": 1.600000023841858,
+                "domainLookupStart": 1.600000023841858,
+                "duration": 55.900000005960464,
+                "encodedBodySize": 28660,
+                "entryType": "navigation",
+                "fetchStart": 1.600000023841858,
+                "finalResponseHeadersStart": 3.100000023841858,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 55.900000005960464,
+                "loadEventStart": 55.80000001192093,
+                "name": "http://127.0.0.1:46443/subdomain-blocked-fanout2.html",
+                "nextHopProtocol": "http/1.0",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 2.600000023841858,
+                "responseEnd": 3.600000023841858,
+                "responseStart": 3.100000023841858,
+                "responseStatus": 200,
+                "secureConnectionStart": 0,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 28960,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "observed_elapsed_ms": 90.12157499790192,
+              "paint": [],
+              "ready": "complete",
+              "title": "subdomain-blocked-fanout2",
+              "url": "http://127.0.0.1:46443/subdomain-blocked-fanout2.html",
+              "vis": "visible"
+            },
+            "resource_count": 244,
+            "server_request_count": 1,
+            "tabid": 18,
+            "url": "http://127.0.0.1:46443/subdomain-blocked-fanout2.html"
+          }
+        ],
+        "tab_switch": [
+          {
+            "cmd_ms": 0.9511010348796844,
+            "first_interval_ms": 7.337989032268524,
+            "first_raf_ms": 7.337989032268524,
+            "last": {
+              "bench": {
+                "dcl": 103.09999999403954,
+                "intervalCount": 4,
+                "lastInterval": 2517.5,
+                "lastRaf": 2507.4,
+                "load": 467.5,
+                "name": "page1",
+                "paintEntries": [],
+                "rafCount": 2,
+                "scriptStart": 102.59999999403954,
+                "visEvents": [
+                  {
+                    "state": "visible",
+                    "t": 2516.5
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 1,
+              "active_tab": 2,
+              "active_tabid": 2,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page1",
+              "url": "http://127.0.0.1:46443/page1.html"
+            },
+            "tabid": 2,
+            "visible_ms": 3.1544630229473114
+          },
+          {
+            "cmd_ms": 1.0131029784679413,
+            "first_interval_ms": 8.312150001525879,
+            "first_raf_ms": 8.312150001525879,
+            "last": {
+              "bench": {
+                "dcl": 99.2000000178814,
+                "intervalCount": 4,
+                "lastInterval": 2520.300000011921,
+                "lastRaf": 2517.4,
+                "load": 451.60000002384186,
+                "name": "page2",
+                "paintEntries": [],
+                "rafCount": 2,
+                "scriptStart": 98.7000000178814,
+                "visEvents": [
+                  {
+                    "state": "visible",
+                    "t": 2518.7000000178814
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 2,
+              "active_tab": 3,
+              "active_tabid": 3,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page2",
+              "url": "http://127.0.0.1:46443/page2.html"
+            },
+            "tabid": 3,
+            "visible_ms": 4.388893008232117
+          },
+          {
+            "cmd_ms": 1.2464309930801392,
+            "first_interval_ms": 4.101224005222321,
+            "first_raf_ms": 8.076683014631271,
+            "last": {
+              "bench": {
+                "dcl": 91.59999999403954,
+                "intervalCount": 4,
+                "lastInterval": 2521.9000000059605,
+                "lastRaf": 2510.1,
+                "load": 444.09999999403954,
+                "name": "page3",
+                "paintEntries": [],
+                "rafCount": 2,
+                "scriptStart": 91.09999999403954,
+                "visEvents": [
+                  {
+                    "state": "visible",
+                    "t": 2520.9000000059605
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 3,
+              "active_tab": 4,
+              "active_tabid": 4,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page3",
+              "url": "http://127.0.0.1:46443/page3.html"
+            },
+            "tabid": 4,
+            "visible_ms": 4.101224005222321
+          },
+          {
+            "cmd_ms": 1.1219260096549988,
+            "first_interval_ms": 7.2092050313949585,
+            "first_raf_ms": 7.2092050313949585,
+            "last": {
+              "bench": {
+                "dcl": 92,
+                "intervalCount": 4,
+                "lastInterval": 2520.300000011921,
+                "lastRaf": 2517.5,
+                "load": 455.10000002384186,
+                "name": "page4",
+                "paintEntries": [],
+                "rafCount": 2,
+                "scriptStart": 91.7000000178814,
+                "visEvents": [
+                  {
+                    "state": "visible",
+                    "t": 2520
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 4,
+              "active_tab": 5,
+              "active_tabid": 5,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page4",
+              "url": "http://127.0.0.1:46443/page4.html"
+            },
+            "tabid": 5,
+            "visible_ms": 2.821802020072937
+          },
+          {
+            "cmd_ms": 0.9107890129089355,
+            "first_interval_ms": 6.48028102517128,
+            "first_raf_ms": 6.48028102517128,
+            "last": {
+              "bench": {
+                "dcl": 84.09999999403954,
+                "intervalCount": 4,
+                "lastInterval": 2519.199999988079,
+                "lastRaf": 2508.4,
+                "load": 439.7999999821186,
+                "name": "page5",
+                "paintEntries": [],
+                "rafCount": 2,
+                "scriptStart": 83.59999999403954,
+                "visEvents": [
+                  {
+                    "state": "visible",
+                    "t": 2518.9000000059605
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 5,
+              "active_tab": 6,
+              "active_tabid": 6,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page5",
+              "url": "http://127.0.0.1:46443/page5.html"
+            },
+            "tabid": 6,
+            "visible_ms": 2.4336190223693848
+          },
+          {
+            "cmd_ms": 1.010382980108261,
+            "first_interval_ms": 3.3989009857177734,
+            "first_raf_ms": 3.3989009857177734,
+            "last": {
+              "bench": {
+                "dcl": 119.7999999821186,
+                "intervalCount": 49,
+                "lastInterval": 2576.5999999940395,
+                "lastRaf": 2575.6,
+                "load": 229.59999999403954,
+                "name": "page0",
+                "paintEntries": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 144
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 144
+                  }
+                ],
+                "rafCount": 147,
+                "scriptStart": 119.19999998807907,
+                "visEvents": [
+                  {
+                    "state": "hidden",
+                    "t": 2534.199999988079
+                  },
+                  {
+                    "state": "visible",
+                    "t": 2576.399999976158
+                  }
+                ]
+              },
+              "hidden": false,
+              "vis": "visible"
+            },
+            "status": {
+              "active_index": 0,
+              "active_tab": 1,
+              "active_tabid": 1,
+              "audible": false,
+              "fps": 4,
+              "fps_has_sample": true,
+              "ipc_protocol": "vimbrowser-ipc",
+              "ipc_version": 1,
+              "refresh_rate": 60.00239944458008,
+              "shader": false,
+              "showfps": true,
+              "tabs": 6,
+              "title": "page0",
+              "url": "http://127.0.0.1:46443/page0.html"
+            },
+            "tabid": 1,
+            "visible_ms": 3.3989009857177734
+          }
+        ],
+        "visibility_after_restore": {
+          "1": {
+            "hidden": false,
+            "vis": "visible"
+          },
+          "2": {
+            "hidden": true,
+            "vis": "hidden"
+          },
+          "3": {
+            "hidden": true,
+            "vis": "hidden"
+          },
+          "4": {
+            "hidden": true,
+            "vis": "hidden"
+          },
+          "5": {
+            "hidden": true,
+            "vis": "hidden"
+          },
+          "6": {
+            "hidden": true,
+            "vis": "hidden"
+          }
+        }
+      },
+      "suite": "local"
+    }
+  ],
+  "timestamp_unix": 1779470548.1286242,
+  "tmp_root": "/tmp/vimbrowser-benchmark-1u8xd1nc"
+}
