@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <charconv>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -705,6 +706,57 @@ std::string JsonEscape(std::string_view text) {
     }
   }
   return out;
+}
+
+void AppendJsonEscaped(std::string& out, std::string_view text) {
+  for (unsigned char c : text) {
+    switch (c) {
+      case '\\': out += "\\\\"; break;
+      case '"': out += "\\\""; break;
+      case '\n': out += "\\n"; break;
+      case '\r': out += "\\r"; break;
+      case '\t': out += "\\t"; break;
+      default:
+        if (c < 0x20) {
+          static constexpr char kHex[] = "0123456789abcdef";
+          out += "\\u00";
+          out.push_back(kHex[(c >> 4) & 0xf]);
+          out.push_back(kHex[c & 0xf]);
+        } else {
+          out.push_back(static_cast<char>(c));
+        }
+        break;
+    }
+  }
+}
+
+void AppendJsonString(std::string& out, std::string_view text) {
+  out.push_back('"');
+  AppendJsonEscaped(out, text);
+  out.push_back('"');
+}
+
+template <typename Integer>
+void AppendJsonNumber(std::string& out, Integer value) {
+  char buffer[32];
+  auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), value);
+  if (ec == std::errc()) {
+    out.append(buffer, ptr);
+  }
+}
+
+void AppendJsonNumber(std::string& out, double value) {
+  char buffer[64];
+  auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), value);
+  if (ec == std::errc()) {
+    out.append(buffer, ptr);
+  } else {
+    out += "0";
+  }
+}
+
+void AppendJsonBool(std::string& out, bool value) {
+  out += value ? "true" : "false";
 }
 
 std::string IpcSocketPathForStatePath(const std::string& state_path) {
@@ -2831,7 +2883,9 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
       75);
 }
 
-std::string BrowserWindow::TabJson(const Tab& tab, size_t index) const {
+void BrowserWindow::AppendTabJson(std::string& out,
+                                  const Tab& tab,
+                                  size_t index) const {
   bool fps_has_sample = false;
   double fps = 0.0;
   double refresh_rate = 0.0;
@@ -2866,44 +2920,61 @@ std::string BrowserWindow::TabJson(const Tab& tab, size_t index) const {
     }
   }
 
-  std::ostringstream out;
-  out << "{"
-      << "\"id\":" << tab.id << ","
-      << "\"index\":" << index << ","
-      << "\"tab\":" << (index + 1) << ","
-      << "\"active\":" << (index == active_index_ ? "true" : "false") << ","
-      << "\"audible\":" << (tab.audible ? "true" : "false") << ","
-      << "\"url\":\"" << JsonEscape(url) << "\","
-      << "\"title\":\"" << JsonEscape(title) << "\","
-      << "\"loading\":" << (loading ? "true" : "false") << ","
-      << "\"can_go_back\":" << (can_go_back ? "true" : "false") << ","
-      << "\"can_go_forward\":" << (can_go_forward ? "true" : "false") << ","
-      << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","
-      << "\"fps\":"
-      << (fps_has_sample ? std::to_string(static_cast<int>(std::round(fps)))
-                         : "null")
-      << ",\"refresh_rate\":" << refresh_rate
-      << "}";
-  return out.str();
+  out += "{\"id\":";
+  AppendJsonNumber(out, tab.id);
+  out += ",\"index\":";
+  AppendJsonNumber(out, index);
+  out += ",\"tab\":";
+  AppendJsonNumber(out, index + 1);
+  out += ",\"active\":";
+  AppendJsonBool(out, index == active_index_);
+  out += ",\"audible\":";
+  AppendJsonBool(out, tab.audible);
+  out += ",\"url\":";
+  AppendJsonString(out, url);
+  out += ",\"title\":";
+  AppendJsonString(out, title);
+  out += ",\"loading\":";
+  AppendJsonBool(out, loading);
+  out += ",\"can_go_back\":";
+  AppendJsonBool(out, can_go_back);
+  out += ",\"can_go_forward\":";
+  AppendJsonBool(out, can_go_forward);
+  out += ",\"fps_has_sample\":";
+  AppendJsonBool(out, fps_has_sample);
+  out += ",\"fps\":";
+  if (fps_has_sample) {
+    AppendJsonNumber(out, static_cast<int>(std::round(fps)));
+  } else {
+    out += "null";
+  }
+  out += ",\"refresh_rate\":";
+  AppendJsonNumber(out, refresh_rate);
+  out += "}";
 }
 
 std::string BrowserWindow::TabsJson() const {
-  std::ostringstream out;
-  out << "{"
-      << "\"ipc_protocol\":\"" << kIpcProtocolName << "\","
-      << "\"ipc_version\":" << kIpcProtocolVersion << ","
-      << "\"active_tabid\":" << ActiveTabId() << ","
-      << "\"active_index\":" << active_index_ << ","
-      << "\"active_tab\":" << (active_index_ + 1) << ","
-      << "\"tabs\":[";
+  std::string out;
+  out.reserve(96 + tabs_.size() * 220);
+  out += "{\"ipc_protocol\":\"";
+  out += kIpcProtocolName;
+  out += "\",\"ipc_version\":";
+  AppendJsonNumber(out, kIpcProtocolVersion);
+  out += ",\"active_tabid\":";
+  AppendJsonNumber(out, ActiveTabId());
+  out += ",\"active_index\":";
+  AppendJsonNumber(out, active_index_);
+  out += ",\"active_tab\":";
+  AppendJsonNumber(out, active_index_ + 1);
+  out += ",\"tabs\":[";
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (i > 0) {
-      out << ",";
+      out.push_back(',');
     }
-    out << TabJson(tabs_[i], i);
+    AppendTabJson(out, tabs_[i], i);
   }
-  out << "]}";
-  return out.str();
+  out += "]}";
+  return out;
 }
 
 CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {

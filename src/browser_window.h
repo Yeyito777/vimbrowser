@@ -181,7 +181,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void UndoCloseTab();
   std::optional<size_t> FindTabIndexById(uint64_t tab_id) const;
   std::string TabsJson() const;
-  std::string TabJson(const Tab& tab, size_t index) const;
+  void AppendTabJson(std::string& out, const Tab& tab, size_t index) const;
   uint64_t ActiveTabId() const;
   void CompleteJsIpcRequest(uint64_t request_id, std::string response);
   void HandleHtmlIpcCommand(uint64_t tab_id, bool text, IpcReplyCallback reply);
