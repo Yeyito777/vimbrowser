@@ -1025,6 +1025,43 @@ def run_ipc_suite(
                 result["metrics"]["ipc.open_tab_active_ms"] = record["summary"]
                 result["metrics"]["ipc.open_tab_active_response_bytes"] = response_size
 
+            open_tab_complete_rows: List[Dict[str, Any]] = []
+            open_tab_complete_iterations = min(iterations, 5)
+            for i in range(open_tab_complete_iterations):
+                url = server.url(f"/page-open-tab-active-complete-{i}.html")
+                row_start = monotonic_ms()
+                data = browser.ipc_direct(f"open-tab {url}", timeout=20)
+                command_ms = monotonic_ms() - row_start
+                status_payload = json.loads(data)
+                tabid = int(status_payload.get("active_tabid", 0))
+                page = browser.wait_tab_complete(tabid, row_start, timeout=30)
+                nav = collect_nav_summary(page)
+                open_tab_complete_rows.append({
+                    "url": url,
+                    "tabid": tabid,
+                    "command_ms": command_ms,
+                    "complete_ms": page["observed_elapsed_ms"],
+                    "page": page,
+                    "nav": nav,
+                })
+            if open_tab_complete_rows:
+                direct_records["open_tab_active_complete"] = {
+                    "opened_count": len(open_tab_complete_rows),
+                    "rows": open_tab_complete_rows,
+                }
+                result["metrics"]["ipc.open_tab_active_complete_ms"] = summarize(
+                    [row["complete_ms"] for row in open_tab_complete_rows]
+                )
+                result["metrics"]["ipc.open_tab_active_complete_command_ms"] = summarize(
+                    [row["command_ms"] for row in open_tab_complete_rows]
+                )
+                result["metrics"]["ipc.open_tab_active_complete_load_event_ms"] = summarize(
+                    [row["nav"].get("load_event_ms") for row in open_tab_complete_rows]
+                )
+                result["metrics"]["ipc.open_tab_active_complete_fcp_ms"] = summarize(
+                    [row["nav"].get("first_contentful_paint_ms") for row in open_tab_complete_rows]
+                )
+
             result["records"] = direct_records
     return result
 
