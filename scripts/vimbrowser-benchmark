@@ -897,19 +897,23 @@ def run_ipc_suite(
                 result["metrics"]["ipc.js_moved_cycle_ms"] = record["summary"]
                 result["metrics"]["ipc.js_moved_cycle_response_bytes"] = response_size
 
+            active_open_state = json.loads(browser.ipc_direct("tabs"))
+            active_open_tabid = int(active_open_state.get("active_tabid", active_tabid))
+            active_open_index = int(active_open_state.get("active_index", 0))
             active_open_rows: List[float] = []
             response_size = 0
             active_open_iterations = min(iterations, 40)
             for i in range(active_open_iterations):
                 url = server.url(f"/active-open-{i}.html")
                 row_start = monotonic_ms()
-                data = browser.ipc_direct(f"open {active_tabid} {url}", timeout=20)
+                data = browser.ipc_direct(f"open {active_open_tabid} {url}", timeout=20)
                 active_open_rows.append(monotonic_ms() - row_start)
                 if not response_size:
                     response_size = len(data)
             if active_open_rows:
                 record = {
-                    "tabid": active_tabid,
+                    "tabid": active_open_tabid,
+                    "active_index": active_open_index,
                     "opened_count": len(active_open_rows),
                     "summary": summarize(active_open_rows),
                     "response_bytes": response_size,
