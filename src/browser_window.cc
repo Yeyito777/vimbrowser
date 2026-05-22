@@ -720,7 +720,15 @@ std::string JsonEscape(std::string_view text) {
 }
 
 void AppendJsonEscaped(std::string& out, std::string_view text) {
-  for (unsigned char c : text) {
+  const char* chunk_start = text.data();
+  const char* const end = text.data() + text.size();
+  for (const char* current = chunk_start; current != end; ++current) {
+    const unsigned char c = static_cast<unsigned char>(*current);
+    if (c != '\\' && c != '"' && c >= 0x20) {
+      continue;
+    }
+
+    out.append(chunk_start, static_cast<size_t>(current - chunk_start));
     switch (c) {
       case '\\': out += "\\\\"; break;
       case '"': out += "\\\""; break;
@@ -738,7 +746,9 @@ void AppendJsonEscaped(std::string& out, std::string_view text) {
         }
         break;
     }
+    chunk_start = current + 1;
   }
+  out.append(chunk_start, static_cast<size_t>(end - chunk_start));
 }
 
 void AppendJsonString(std::string& out, std::string_view text) {
