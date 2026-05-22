@@ -103,6 +103,7 @@ constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
+constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
 // Keep tab content selection asynchronous so rapid tab-switch bursts still
 // coalesce by generation, but do not add an artificial human-visible delay.
 constexpr int kTabContentActivationDelayMs = 0;
@@ -1241,6 +1242,10 @@ bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
   for (Tab& tab : tabs_) {
     if (tab.client.get() == client) {
+      if (tab.deferred_load && url == "about:blank") {
+        return;
+      }
+      tab.deferred_load = false;
       tab.url = url;
       tab.has_scroll_target = false;
       if (url != "about:blank") {
@@ -1459,8 +1464,12 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
+  const bool lazy_restore_background_tabs =
+      initial_urls_.size() >= kLazyRestoreBackgroundTabThreshold;
   for (size_t i = 0; i < initial_urls_.size(); ++i) {
-    AddTab(initial_urls_[i], i == initial_active_index_);
+    const bool activate = i == initial_active_index_;
+    InsertTab(initial_urls_[i], tabs_.size(), activate,
+              lazy_restore_background_tabs && !activate);
   }
   RefreshSidebar();
 
@@ -2033,18 +2042,25 @@ void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
   InsertTab(std::move(url), insert_index, activate);
 }
 
-void BrowserWindow::InsertTab(std::string url, size_t index, bool activate) {
+void BrowserWindow::InsertTab(std::string url,
+                              size_t index,
+                              bool activate,
+                              bool defer_load) {
   last_tab_close_placeholder_ = false;
   const size_t insert_index = std::min(index, tabs_.size());
   CefBrowserSettings browser_settings;
   browser_settings.background_color = theme::kAppBg;
+  const bool deferred_load = defer_load && !activate;
 
   Tab tab;
   tab.id = next_tab_id_++;
   tab.url = std::move(url);
+  tab.deferred_load = deferred_load;
   tab.client = new BrowserClient(this);
-  tab.view = CefBrowserView::CreateBrowserView(tab.client, tab.url, browser_settings,
-                                               nullptr, nullptr, this);
+  const std::string browser_url = deferred_load ? "about:blank" : tab.url;
+  tab.view = CefBrowserView::CreateBrowserView(tab.client, browser_url,
+                                               browser_settings, nullptr,
+                                               nullptr, this);
   tab.view->SetPreferAccelerators(true);
   tab.view->SetVisible(false);
   content_inner_panel_->AddChildView(tab.view);
@@ -2162,6 +2178,11 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
   Tab& tab = tabs_[active_index_];
   if (tab.view) {
     tab.view->SetVisible(true);
+    if (tab.deferred_load && tab.client && tab.client->browser() &&
+        tab.client->browser()->GetMainFrame()) {
+      tab.deferred_load = false;
+      tab.client->browser()->GetMainFrame()->LoadURL(tab.url);
+    }
     if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
       content_inner_panel_->Layout();
     }
