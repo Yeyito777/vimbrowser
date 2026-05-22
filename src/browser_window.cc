@@ -5616,24 +5616,42 @@ std::string BrowserWindow::IpcStatusJson() const {
     }
   }
 
-  std::ostringstream out;
-  out << "{"
-      << "\"ipc_protocol\":\"" << kIpcProtocolName << "\","
-      << "\"ipc_version\":" << kIpcProtocolVersion << ","
-      << "\"active_tabid\":" << ActiveTabId() << ","
-      << "\"active_index\":" << active_index_ << ","
-      << "\"active_tab\":" << (active_index_ + 1) << ","
-      << "\"tabs\":" << tabs_.size() << ","
-      << "\"url\":\"" << JsonEscape(url) << "\","
-      << "\"title\":\"" << JsonEscape(title) << "\","
-      << "\"audible\":" << (audible ? "true" : "false") << ","
-      << "\"showfps\":" << (show_fps_indicator_ ? "true" : "false") << ","
-      << "\"shader\":" << (shader_enabled_ ? "true" : "false") << ","
-      << "\"fps_has_sample\":" << (fps_has_sample ? "true" : "false") << ","
-      << "\"fps\":" << (fps_has_sample ? std::to_string(static_cast<int>(std::round(fps))) : "null")
-      << ",\"refresh_rate\":" << refresh_rate
-      << "}";
-  return out.str();
+  std::string out;
+  out.reserve(256 + url.size() + title.size());
+  out += "{\"ipc_protocol\":\"";
+  out += kIpcProtocolName;
+  out += "\",\"ipc_version\":";
+  AppendJsonNumber(out, kIpcProtocolVersion);
+  out += ",\"active_tabid\":";
+  AppendJsonNumber(out, ActiveTabId());
+  out += ",\"active_index\":";
+  AppendJsonNumber(out, active_index_);
+  out += ",\"active_tab\":";
+  AppendJsonNumber(out, active_index_ + 1);
+  out += ",\"tabs\":";
+  AppendJsonNumber(out, tabs_.size());
+  out += ",\"url\":";
+  AppendJsonString(out, url);
+  out += ",\"title\":";
+  AppendJsonString(out, title);
+  out += ",\"audible\":";
+  AppendJsonBool(out, audible);
+  out += ",\"showfps\":";
+  AppendJsonBool(out, show_fps_indicator_);
+  out += ",\"shader\":";
+  AppendJsonBool(out, shader_enabled_);
+  out += ",\"fps_has_sample\":";
+  AppendJsonBool(out, fps_has_sample);
+  out += ",\"fps\":";
+  if (fps_has_sample) {
+    AppendJsonNumber(out, static_cast<int>(std::round(fps)));
+  } else {
+    out += "null";
+  }
+  out += ",\"refresh_rate\":";
+  AppendJsonNumber(out, refresh_rate);
+  out += "}";
+  return out;
 }
 
 void BrowserWindow::SaveState() const {
