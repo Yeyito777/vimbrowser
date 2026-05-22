@@ -2567,6 +2567,12 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     last_tab_close_placeholder_ = false;
     return;
   }
+  if (!closing_active && tabs_.size() > kSidebarMaxRenderedRows &&
+      sidebar_spacer_) {
+    ScheduleSidebarRefresh();
+    last_tab_close_placeholder_ = false;
+    return;
+  }
   const bool sidebar_hierarchy_changed = RefreshSidebar();
   if (closing_active || sidebar_hierarchy_changed) {
     Layout();
