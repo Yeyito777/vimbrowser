@@ -1,133 +1,176 @@
-#!/usr/bin/python3 -S
-"""Client for vimbrowser's canonical local IPC protocol.
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Socket qw(AF_UNIX SOCK_STREAM sockaddr_un);
 
-The protocol is documented in docs/ipc.md. Keep this script as a thin transport
-wrapper: it should not grow alternate semantics that diverge from the app's
-Unix-socket command protocol.
-"""
-import os
-import socket
-import sys
+sub default_socket_path {
+    return "$ENV{VIMBROWSER_PROFILE_DIR}/ipc.sock"
+        if exists $ENV{VIMBROWSER_PROFILE_DIR} && length $ENV{VIMBROWSER_PROFILE_DIR};
 
+    my $wrapper_profile_socket = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock";
+    return $wrapper_profile_socket if -e $wrapper_profile_socket;
 
-def default_socket_path() -> str:
-    profile_dir = os.environ.get("VIMBROWSER_PROFILE_DIR")
-    if profile_dir:
-        return os.path.join(profile_dir, "ipc.sock")
-    wrapper_profile_socket = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock"
-    if os.path.exists(wrapper_profile_socket):
-        return wrapper_profile_socket
-    state_home = os.environ.get("XDG_STATE_HOME")
-    if state_home:
-        return os.path.join(state_home, "vimbrowser", "ipc.sock")
-    home = os.environ.get("HOME")
-    if home:
-        return os.path.join(home, ".local", "state", "vimbrowser", "ipc.sock")
-    return "/tmp/vimbrowser/ipc.sock"
+    return "$ENV{XDG_STATE_HOME}/vimbrowser/ipc.sock"
+        if exists $ENV{XDG_STATE_HOME} && length $ENV{XDG_STATE_HOME};
+    return "$ENV{HOME}/.local/state/vimbrowser/ipc.sock"
+        if exists $ENV{HOME} && length $ENV{HOME};
+    return "/tmp/vimbrowser/ipc.sock";
+}
 
+sub socket_path {
+    return $ENV{VIMBROWSER_IPC}
+        if exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC};
+    return default_socket_path();
+}
 
-def send_command(socket_path: str, command: str) -> bytes:
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.connect(socket_path)
-        sock.sendall((command + "\n").encode())
-        chunks = []
-        while True:
-            data = sock.recv(262144)
-            if not data:
-                break
-            chunks.append(data)
-    return b"".join(chunks)
+sub connect_socket {
+    my ($path) = @_;
+    socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
+        or die "vimbrowser-ipc: socket: $!\n";
+    connect($sock, sockaddr_un($path))
+        or die "vimbrowser-ipc: connect $path: $!\n";
+    return $sock;
+}
 
+sub write_all {
+    my ($fh, $data) = @_;
+    my $offset = 0;
+    my $length = length($data);
+    while ($offset < $length) {
+        my $written = syswrite($fh, $data, $length - $offset, $offset);
+        die "vimbrowser-ipc: write: $!\n" unless defined $written;
+        $offset += $written;
+    }
+}
 
-def stream_command(socket_path: str, command: str, output_fd: int) -> None:
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.connect(socket_path)
-        sock.sendall((command + "\n").encode())
-        while True:
-            data = sock.recv(262144)
-            if not data:
-                break
-            os.write(output_fd, data)
+sub send_request {
+    my ($sock, $command) = @_;
+    write_all($sock, "$command\n");
+}
 
+sub send_command {
+    my ($path, $command) = @_;
+    my $sock = connect_socket($path);
+    send_request($sock, $command);
+    my $response = "";
+    my $buffer;
+    while (1) {
+        my $read = sysread($sock, $buffer, 262144);
+        die "vimbrowser-ipc: recv: $!\n" unless defined $read;
+        last if $read == 0;
+        $response .= $buffer;
+    }
+    return $response;
+}
 
-def maybe_handle_screenshot(socket_path: str, argv: list[str]) -> int | None:
-    if len(argv) < 2 or argv[1] != "screenshot":
-        return None
+sub stream_command {
+    my ($path, $command) = @_;
+    my $sock = connect_socket($path);
+    send_request($sock, $command);
+    my $buffer;
+    while (1) {
+        my $read = sysread($sock, $buffer, 262144);
+        die "vimbrowser-ipc: recv: $!\n" unless defined $read;
+        last if $read == 0;
+        write_all(\*STDOUT, $buffer);
+    }
+}
 
-    from pathlib import Path
+sub write_file {
+    my ($path, $data) = @_;
+    require File::Basename;
+    require File::Path;
+    my $dir = File::Basename::dirname($path);
+    File::Path::make_path($dir) if defined $dir && length $dir && $dir ne ".";
+    open(my $fh, ">:raw", $path) or die "vimbrowser-ipc: write $path: $!\n";
+    print {$fh} $data or die "vimbrowser-ipc: write $path: $!\n";
+    close($fh) or die "vimbrowser-ipc: write $path: $!\n";
+}
 
-    passthrough = ["screenshot"]
-    output_path = None
-    json_response = False
-    i = 2
-    while i < len(argv):
-        arg = argv[i]
-        if arg == "--json":
-            json_response = True
-            i += 1
-            continue
-        if arg in ("-o", "--output"):
-            if i + 1 >= len(argv):
-                sys.stderr.write("usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n")
-                return 2
-            output_path = Path(argv[i + 1])
-            i += 2
-            continue
-        passthrough.append(arg)
-        i += 1
+sub maybe_handle_screenshot {
+    my ($path, @argv) = @_;
+    return undef if @argv < 1 || $argv[0] ne "screenshot";
 
-    response = send_command(socket_path, " ".join(passthrough))
-    if json_response:
-        sys.stdout.buffer.write(response)
-        return 0 if not response.startswith(b"ERR ") else 1
-    if response.startswith(b"ERR "):
-        sys.stderr.buffer.write(response)
-        return 1
+    my @passthrough = ("screenshot");
+    my $output_path;
+    my $json_response = 0;
+    my $i = 1;
+    while ($i < @argv) {
+        my $arg = $argv[$i];
+        if ($arg eq "-o" || $arg eq "--output") {
+            if ($i + 1 >= @argv) {
+                print STDERR "usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n";
+                return 2;
+            }
+            $output_path = $argv[$i + 1];
+            $i += 2;
+            next;
+        }
+        if ($arg eq "--json") {
+            $json_response = 1;
+            ++$i;
+            next;
+        }
+        push @passthrough, $arg;
+        ++$i;
+    }
 
-    import base64
-    import json
+    my $response = send_command($path, join(" ", @passthrough));
+    if ($json_response) {
+        binmode STDOUT;
+        print STDOUT $response;
+        return $response =~ /^ERR / ? 1 : 0;
+    }
+    if ($response =~ /^ERR /) {
+        print STDERR $response;
+        return 1;
+    }
 
-    try:
-        payload = json.loads(response.decode())
-        image = base64.b64decode(payload["data"], validate=True)
-    except Exception as exc:
-        sys.stderr.write(f"vimbrowser-ipc: invalid screenshot response: {exc}\n")
-        sys.stderr.buffer.write(response[:4096])
-        return 1
+    require JSON::PP;
+    require MIME::Base64;
+    my $payload;
+    my $image;
+    eval {
+        $payload = JSON::PP::decode_json($response);
+        die "missing data" unless ref($payload) eq "HASH" && exists $payload->{data};
+        die "invalid base64" if $payload->{data} =~ /[^A-Za-z0-9+\/=\r\n]/;
+        $image = MIME::Base64::decode_base64($payload->{data});
+        1;
+    } or do {
+        my $error = $@ || "unknown error";
+        chomp $error;
+        print STDERR "vimbrowser-ipc: invalid screenshot response: $error\n";
+        binmode STDERR;
+        print STDERR substr($response, 0, 4096);
+        return 1;
+    };
 
-    if output_path is not None:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(image)
-        metadata = {k: v for k, v in payload.items() if k != "data"}
-        metadata["path"] = str(output_path)
-        metadata["bytes"] = len(image)
-        sys.stdout.write(json.dumps(metadata, separators=(",", ":")) + "\n")
-        return 0
+    if (defined $output_path) {
+        write_file($output_path, $image);
+        my %metadata = map { $_ => $payload->{$_} } grep { $_ ne "data" } keys %{$payload};
+        $metadata{path} = $output_path;
+        $metadata{bytes} = length($image);
+        print STDOUT JSON::PP->new->canonical(0)->utf8->encode(\%metadata), "\n";
+        return 0;
+    }
 
-    if sys.stdout.isatty():
-        path = Path(os.environ.get("TMPDIR", "/tmp")) / f"vimbrowser-screenshot-{payload.get('tabid', 'tab')}.png"
-        path.write_bytes(image)
-        sys.stdout.write(str(path) + "\n")
-        return 0
+    if (-t STDOUT) {
+        my $tmpdir = exists $ENV{TMPDIR} && length $ENV{TMPDIR} ? $ENV{TMPDIR} : "/tmp";
+        my $tabid = exists $payload->{tabid} ? $payload->{tabid} : "tab";
+        my $path_out = "$tmpdir/vimbrowser-screenshot-$tabid.png";
+        write_file($path_out, $image);
+        print STDOUT "$path_out\n";
+        return 0;
+    }
 
-    sys.stdout.buffer.write(image)
-    return 0
+    binmode STDOUT;
+    print STDOUT $image;
+    return 0;
+}
 
-
-def main() -> int:
-    socket_path = os.environ.get("VIMBROWSER_IPC")
-    if not socket_path:
-        socket_path = default_socket_path()
-    screenshot_result = maybe_handle_screenshot(socket_path, sys.argv)
-    if screenshot_result is not None:
-        return screenshot_result
-    if len(sys.argv) < 2:
-        command = "status"
-    else:
-        command = " ".join(sys.argv[1:])
-    stream_command(socket_path, command, 1)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+my $path = socket_path();
+my $screenshot_result = maybe_handle_screenshot($path, @ARGV);
+exit $screenshot_result if defined $screenshot_result;
+my $command = @ARGV ? join(" ", @ARGV) : "status";
+stream_command($path, $command);
+exit 0;
