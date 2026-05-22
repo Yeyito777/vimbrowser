@@ -1,0 +1,863 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "check_failures": [],
+  "checked": false,
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "live",
+  "suites": [
+    {
+      "errors": [],
+      "metrics": {
+        "live.first_contentful_paint_ms": {
+          "n": 0
+        },
+        "live.load_event_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 2,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.observed_ready_ms": {
+          "max": 1198.594664990902,
+          "mean": 826.5940984934568,
+          "median": 826.5940984934568,
+          "min": 454.59353199601173,
+          "n": 2,
+          "p90": 1124.194551691413,
+          "p95": 1161.3946083411574,
+          "p99": 1191.154653660953
+        },
+        "live.open_cmd_ms": {
+          "max": 19.853502988815308,
+          "mean": 14.120868995785713,
+          "median": 14.120868995785713,
+          "min": 8.388235002756119,
+          "n": 2,
+          "p90": 18.70697619020939,
+          "p95": 19.280239589512348,
+          "p99": 19.738850308954717
+        },
+        "live.resources.count": {
+          "max": 148.0,
+          "mean": 77.0,
+          "median": 77.0,
+          "min": 6.0,
+          "n": 2,
+          "p90": 133.8,
+          "p95": 140.9,
+          "p99": 146.58
+        },
+        "live.resources.decoded_body_size_bytes": {
+          "max": 12101746.0,
+          "mean": 6057558.5,
+          "median": 6057558.5,
+          "min": 13371.0,
+          "n": 2,
+          "p90": 10892908.5,
+          "p95": 11497327.25,
+          "p99": 11980862.25
+        },
+        "live.resources.duration_max_ms": {
+          "max": 622.7000000178814,
+          "mean": 369.6000000089407,
+          "median": 369.6000000089407,
+          "min": 116.5,
+          "n": 2,
+          "p90": 572.0800000160932,
+          "p95": 597.3900000169873,
+          "p99": 617.6380000177026
+        },
+        "live.resources.duration_total_ms": {
+          "max": 50942.0,
+          "mean": 25761.40000000596,
+          "median": 25761.40000000596,
+          "min": 580.8000000119209,
+          "n": 2,
+          "p90": 45905.8800000012,
+          "p95": 48423.94000000059,
+          "p99": 50438.38800000012
+        },
+        "live.resources.encoded_body_size_bytes": {
+          "max": 3775378.0,
+          "mean": 1889983.0,
+          "median": 1889983.0,
+          "min": 4588.0,
+          "n": 2,
+          "p90": 3398299.0,
+          "p95": 3586838.4999999995,
+          "p99": 3737670.0999999996
+        },
+        "live.resources.slow_500_count": {
+          "max": 67.0,
+          "mean": 33.5,
+          "median": 33.5,
+          "min": 0.0,
+          "n": 2,
+          "p90": 60.300000000000004,
+          "p95": 63.65,
+          "p99": 66.33
+        },
+        "live.resources.third_party_count": {
+          "max": 141.0,
+          "mean": 70.5,
+          "median": 70.5,
+          "min": 0.0,
+          "n": 2,
+          "p90": 126.9,
+          "p95": 133.95,
+          "p99": 139.59
+        },
+        "live.resources.transfer_size_bytes": {
+          "max": 3817978.0,
+          "mean": 1911875.5,
+          "median": 1911875.5,
+          "min": 5773.0,
+          "n": 2,
+          "p90": 3436757.5,
+          "p95": 3627367.7499999995,
+          "p99": 3779855.9499999997
+        },
+        "live.resources.unique_host_count": {
+          "max": 4.0,
+          "mean": 2.5,
+          "median": 2.5,
+          "min": 1.0,
+          "n": 2,
+          "p90": 3.7,
+          "p95": 3.8499999999999996,
+          "p99": 3.9699999999999998
+        },
+        "live.resources.unparsable_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 2,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_github_com.first_contentful_paint_ms": {
+          "n": 0
+        },
+        "live.site.01_github_com.load_event_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_github_com.observed_ready_ms": {
+          "max": 1198.594664990902,
+          "mean": 1198.594664990902,
+          "median": 1198.594664990902,
+          "min": 1198.594664990902,
+          "n": 1,
+          "p90": 1198.594664990902,
+          "p95": 1198.594664990902,
+          "p99": 1198.594664990902
+        },
+        "live.site.01_github_com.open_cmd_ms": {
+          "max": 19.853502988815308,
+          "mean": 19.853502988815308,
+          "median": 19.853502988815308,
+          "min": 19.853502988815308,
+          "n": 1,
+          "p90": 19.853502988815308,
+          "p95": 19.853502988815308,
+          "p99": 19.853502988815308
+        },
+        "live.site.01_github_com.resources.count": {
+          "max": 148.0,
+          "mean": 148.0,
+          "median": 148.0,
+          "min": 148.0,
+          "n": 1,
+          "p90": 148.0,
+          "p95": 148.0,
+          "p99": 148.0
+        },
+        "live.site.01_github_com.resources.decoded_body_size_bytes": {
+          "max": 12101746.0,
+          "mean": 12101746.0,
+          "median": 12101746.0,
+          "min": 12101746.0,
+          "n": 1,
+          "p90": 12101746.0,
+          "p95": 12101746.0,
+          "p99": 12101746.0
+        },
+        "live.site.01_github_com.resources.duration_max_ms": {
+          "max": 622.7000000178814,
+          "mean": 622.7000000178814,
+          "median": 622.7000000178814,
+          "min": 622.7000000178814,
+          "n": 1,
+          "p90": 622.7000000178814,
+          "p95": 622.7000000178814,
+          "p99": 622.7000000178814
+        },
+        "live.site.01_github_com.resources.duration_total_ms": {
+          "max": 50942.0,
+          "mean": 50942.0,
+          "median": 50942.0,
+          "min": 50942.0,
+          "n": 1,
+          "p90": 50942.0,
+          "p95": 50942.0,
+          "p99": 50942.0
+        },
+        "live.site.01_github_com.resources.encoded_body_size_bytes": {
+          "max": 3775378.0,
+          "mean": 3775378.0,
+          "median": 3775378.0,
+          "min": 3775378.0,
+          "n": 1,
+          "p90": 3775378.0,
+          "p95": 3775378.0,
+          "p99": 3775378.0
+        },
+        "live.site.01_github_com.resources.slow_500_count": {
+          "max": 67.0,
+          "mean": 67.0,
+          "median": 67.0,
+          "min": 67.0,
+          "n": 1,
+          "p90": 67.0,
+          "p95": 67.0,
+          "p99": 67.0
+        },
+        "live.site.01_github_com.resources.third_party_count": {
+          "max": 141.0,
+          "mean": 141.0,
+          "median": 141.0,
+          "min": 141.0,
+          "n": 1,
+          "p90": 141.0,
+          "p95": 141.0,
+          "p99": 141.0
+        },
+        "live.site.01_github_com.resources.transfer_size_bytes": {
+          "max": 3817978.0,
+          "mean": 3817978.0,
+          "median": 3817978.0,
+          "min": 3817978.0,
+          "n": 1,
+          "p90": 3817978.0,
+          "p95": 3817978.0,
+          "p99": 3817978.0
+        },
+        "live.site.01_github_com.resources.unique_host_count": {
+          "max": 4.0,
+          "mean": 4.0,
+          "median": 4.0,
+          "min": 4.0,
+          "n": 1,
+          "p90": 4.0,
+          "p95": 4.0,
+          "p99": 4.0
+        },
+        "live.site.01_github_com.resources.unparsable_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.01_github_com.smoothness.longtask_count": {
+          "max": 4.0,
+          "mean": 4.0,
+          "median": 4.0,
+          "min": 4.0,
+          "n": 1,
+          "p90": 4.0,
+          "p95": 4.0,
+          "p99": 4.0
+        },
+        "live.site.01_github_com.smoothness.longtask_total_ms": {
+          "max": 417.0,
+          "mean": 417.0,
+          "median": 417.0,
+          "min": 417.0,
+          "n": 1,
+          "p90": 417.0,
+          "p95": 417.0,
+          "p99": 417.0
+        },
+        "live.site.01_github_com.smoothness.raf_fps": {
+          "max": 47.95444327874228,
+          "mean": 47.95444327874228,
+          "median": 47.95444327874228,
+          "min": 47.95444327874228,
+          "n": 1,
+          "p90": 47.95444327874228,
+          "p95": 47.95444327874228,
+          "p99": 47.95444327874228
+        },
+        "live.site.01_github_com.smoothness.raf_p95_ms": {
+          "max": 33.399999999999864,
+          "mean": 33.399999999999864,
+          "median": 33.399999999999864,
+          "min": 33.399999999999864,
+          "n": 1,
+          "p90": 33.399999999999864,
+          "p95": 33.399999999999864,
+          "p99": 33.399999999999864
+        },
+        "live.site.01_github_com.smoothness.raf_slow_33_count": {
+          "max": 5.0,
+          "mean": 5.0,
+          "median": 5.0,
+          "min": 5.0,
+          "n": 1,
+          "p90": 5.0,
+          "p95": 5.0,
+          "p99": 5.0
+        },
+        "live.site.01_github_com.smoothness.raf_slow_50_count": {
+          "max": 4.0,
+          "mean": 4.0,
+          "median": 4.0,
+          "min": 4.0,
+          "n": 1,
+          "p90": 4.0,
+          "p95": 4.0,
+          "p99": 4.0
+        },
+        "live.site.02_news_ycombinator_com.first_contentful_paint_ms": {
+          "n": 0
+        },
+        "live.site.02_news_ycombinator_com.load_event_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.observed_ready_ms": {
+          "max": 454.59353199601173,
+          "mean": 454.59353199601173,
+          "median": 454.59353199601173,
+          "min": 454.59353199601173,
+          "n": 1,
+          "p90": 454.59353199601173,
+          "p95": 454.59353199601173,
+          "p99": 454.59353199601173
+        },
+        "live.site.02_news_ycombinator_com.open_cmd_ms": {
+          "max": 8.388235002756119,
+          "mean": 8.388235002756119,
+          "median": 8.388235002756119,
+          "min": 8.388235002756119,
+          "n": 1,
+          "p90": 8.388235002756119,
+          "p95": 8.388235002756119,
+          "p99": 8.388235002756119
+        },
+        "live.site.02_news_ycombinator_com.resources.count": {
+          "max": 6.0,
+          "mean": 6.0,
+          "median": 6.0,
+          "min": 6.0,
+          "n": 1,
+          "p90": 6.0,
+          "p95": 6.0,
+          "p99": 6.0
+        },
+        "live.site.02_news_ycombinator_com.resources.decoded_body_size_bytes": {
+          "max": 13371.0,
+          "mean": 13371.0,
+          "median": 13371.0,
+          "min": 13371.0,
+          "n": 1,
+          "p90": 13371.0,
+          "p95": 13371.0,
+          "p99": 13371.0
+        },
+        "live.site.02_news_ycombinator_com.resources.duration_max_ms": {
+          "max": 116.5,
+          "mean": 116.5,
+          "median": 116.5,
+          "min": 116.5,
+          "n": 1,
+          "p90": 116.5,
+          "p95": 116.5,
+          "p99": 116.5
+        },
+        "live.site.02_news_ycombinator_com.resources.duration_total_ms": {
+          "max": 580.8000000119209,
+          "mean": 580.8000000119209,
+          "median": 580.8000000119209,
+          "min": 580.8000000119209,
+          "n": 1,
+          "p90": 580.8000000119209,
+          "p95": 580.8000000119209,
+          "p99": 580.8000000119209
+        },
+        "live.site.02_news_ycombinator_com.resources.encoded_body_size_bytes": {
+          "max": 4588.0,
+          "mean": 4588.0,
+          "median": 4588.0,
+          "min": 4588.0,
+          "n": 1,
+          "p90": 4588.0,
+          "p95": 4588.0,
+          "p99": 4588.0
+        },
+        "live.site.02_news_ycombinator_com.resources.slow_500_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.resources.third_party_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.resources.transfer_size_bytes": {
+          "max": 5773.0,
+          "mean": 5773.0,
+          "median": 5773.0,
+          "min": 5773.0,
+          "n": 1,
+          "p90": 5773.0,
+          "p95": 5773.0,
+          "p99": 5773.0
+        },
+        "live.site.02_news_ycombinator_com.resources.unique_host_count": {
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "min": 1.0,
+          "n": 1,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "live.site.02_news_ycombinator_com.resources.unparsable_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.smoothness.longtask_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.smoothness.longtask_total_ms": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.smoothness.raf_fps": {
+          "max": 57.27947402534384,
+          "mean": 57.27947402534384,
+          "median": 57.27947402534384,
+          "min": 57.27947402534384,
+          "n": 1,
+          "p90": 57.27947402534384,
+          "p95": 57.27947402534384,
+          "p99": 57.27947402534384
+        },
+        "live.site.02_news_ycombinator_com.smoothness.raf_p95_ms": {
+          "max": 16.700000000000273,
+          "mean": 16.700000000000273,
+          "median": 16.700000000000273,
+          "min": 16.700000000000273,
+          "n": 1,
+          "p90": 16.700000000000273,
+          "p95": 16.700000000000273,
+          "p99": 16.700000000000273
+        },
+        "live.site.02_news_ycombinator_com.smoothness.raf_slow_33_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.site.02_news_ycombinator_com.smoothness.raf_slow_50_count": {
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "n": 1,
+          "p90": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "live.smoothness.longtask_count": {
+          "max": 4.0,
+          "mean": 2.0,
+          "median": 2.0,
+          "min": 0.0,
+          "n": 2,
+          "p90": 3.6,
+          "p95": 3.8,
+          "p99": 3.96
+        },
+        "live.smoothness.longtask_total_ms": {
+          "max": 417.0,
+          "mean": 208.5,
+          "median": 208.5,
+          "min": 0.0,
+          "n": 2,
+          "p90": 375.3,
+          "p95": 396.15,
+          "p99": 412.83
+        },
+        "live.smoothness.raf_fps": {
+          "max": 57.27947402534384,
+          "mean": 52.61695865204306,
+          "median": 52.61695865204306,
+          "min": 47.95444327874228,
+          "n": 2,
+          "p90": 56.346970950683684,
+          "p95": 56.813222488013764,
+          "p99": 57.18622371787782
+        },
+        "live.smoothness.raf_p95_ms": {
+          "max": 33.399999999999864,
+          "mean": 25.050000000000068,
+          "median": 25.050000000000068,
+          "min": 16.700000000000273,
+          "n": 2,
+          "p90": 31.729999999999905,
+          "p95": 32.564999999999884,
+          "p99": 33.23299999999987
+        },
+        "live.smoothness.raf_slow_33_count": {
+          "max": 5.0,
+          "mean": 2.5,
+          "median": 2.5,
+          "min": 0.0,
+          "n": 2,
+          "p90": 4.5,
+          "p95": 4.75,
+          "p99": 4.95
+        },
+        "live.smoothness.raf_slow_50_count": {
+          "max": 4.0,
+          "mean": 2.0,
+          "median": 2.0,
+          "min": 0.0,
+          "n": 2,
+          "p90": 3.6,
+          "p95": 3.8,
+          "p99": 3.96
+        }
+      },
+      "records": {
+        "pages": [
+          {
+            "elapsed_ms": 1198.594664990902,
+            "nav": {
+              "decoded_body_size": 570542,
+              "dom_content_loaded_ms": 0,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 0,
+              "nav_duration_ms": 0,
+              "observed_complete_ms": 1198.594664990902,
+              "transfer_size": 127172
+            },
+            "ok": true,
+            "open_cmd_ms": 19.853502988815308,
+            "page": {
+              "bodyTextLength": 5580,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": null,
+                "connectEnd": 431.59999999403954,
+                "connectStart": 137.5,
+                "contentEncoding": "gzip",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 570542,
+                "deliveryType": "",
+                "domComplete": 0,
+                "domContentLoadedEventEnd": 0,
+                "domContentLoadedEventStart": 0,
+                "domInteractive": 1170.2999999821186,
+                "domainLookupEnd": 137.5,
+                "domainLookupStart": 137.5,
+                "duration": 0,
+                "encodedBodySize": 126872,
+                "entryType": "navigation",
+                "fetchStart": 2,
+                "finalResponseHeadersStart": 530.5,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 0,
+                "loadEventStart": 0,
+                "name": "https://github.com/",
+                "nextHopProtocol": "h2",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 431.69999998807907,
+                "responseEnd": 796.2999999821186,
+                "responseStart": 530.5,
+                "responseStatus": 200,
+                "secureConnectionStart": 238,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 127172,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "paint": [],
+              "ready": "interactive",
+              "title": "GitHub \u00b7 Change is constant. GitHub keeps you ahead. \u00b7 GitHub",
+              "url": "https://github.com/",
+              "vis": "visible"
+            },
+            "requested_url": "https://github.com/",
+            "site_label": "01_github_com",
+            "smoothness": {
+              "done": true,
+              "elapsed_ms": 2001.9000000059605,
+              "longtask_count": 4,
+              "longtask_max_ms": 168,
+              "longtask_total_ms": 417,
+              "observer_error": null,
+              "ok": true,
+              "raf_avg_ms": 21.007291666666664,
+              "raf_fps": 47.95444327874228,
+              "raf_frames": 96,
+              "raf_max_ms": 166.70000000000027,
+              "raf_p50_ms": 16.699999999999818,
+              "raf_p95_ms": 33.399999999999864,
+              "raf_p99_ms": 83.40000000000009,
+              "raf_slow_33_count": 5,
+              "raf_slow_50_count": 4,
+              "resource_count": 148,
+              "resource_decoded_body_size_bytes": 12101746,
+              "resource_duration_max_ms": 622.7000000178814,
+              "resource_duration_total_ms": 50942,
+              "resource_encoded_body_size_bytes": 3775378,
+              "resource_host_counts": {
+                "api.github.com": 1,
+                "collector.github.com": 5,
+                "github.com": 1,
+                "github.githubassets.com": 141
+              },
+              "resource_initiator_counts": {
+                "beacon": 6,
+                "css": 1,
+                "fetch": 4,
+                "img": 11,
+                "link": 23,
+                "other": 3,
+                "script": 99,
+                "video": 1
+              },
+              "resource_slow_500_count": 67,
+              "resource_third_party_count": 141,
+              "resource_top_hosts": [
+                {
+                  "count": 141,
+                  "host": "github.githubassets.com"
+                },
+                {
+                  "count": 5,
+                  "host": "collector.github.com"
+                },
+                {
+                  "count": 1,
+                  "host": "api.github.com"
+                },
+                {
+                  "count": 1,
+                  "host": "github.com"
+                }
+              ],
+              "resource_transfer_size_bytes": 3817978,
+              "resource_unique_host_count": 4,
+              "resource_unparsable_count": 0,
+              "visibility": "visible"
+            },
+            "tabid": 2
+          },
+          {
+            "elapsed_ms": 454.59353199601173,
+            "nav": {
+              "decoded_body_size": 34563,
+              "dom_content_loaded_ms": 0,
+              "first_contentful_paint_ms": null,
+              "first_paint_ms": null,
+              "load_event_ms": 0,
+              "nav_duration_ms": 0,
+              "observed_complete_ms": 454.59353199601173,
+              "transfer_size": 6024
+            },
+            "ok": true,
+            "open_cmd_ms": 8.388235002756119,
+            "page": {
+              "bodyTextLength": 4007,
+              "hidden": false,
+              "nav": {
+                "activationStart": 0,
+                "confidence": null,
+                "connectEnd": 313.7000000178814,
+                "connectStart": 83.10000002384186,
+                "contentEncoding": "gzip",
+                "criticalCHRestart": 0,
+                "decodedBodySize": 34563,
+                "deliveryType": "",
+                "domComplete": 0,
+                "domContentLoadedEventEnd": 0,
+                "domContentLoadedEventStart": 0,
+                "domInteractive": 0,
+                "domainLookupEnd": 83.10000002384186,
+                "domainLookupStart": 4.700000017881393,
+                "duration": 0,
+                "encodedBodySize": 5724,
+                "entryType": "navigation",
+                "fetchStart": 1.2000000178813934,
+                "finalResponseHeadersStart": 423.90000000596046,
+                "firstInterimResponseStart": 0,
+                "initiatorType": "navigation",
+                "loadEventEnd": 0,
+                "loadEventStart": 0,
+                "name": "https://news.ycombinator.com/",
+                "nextHopProtocol": "h2",
+                "notRestoredReasons": null,
+                "redirectCount": 0,
+                "redirectEnd": 0,
+                "redirectStart": 0,
+                "renderBlockingStatus": "non-blocking",
+                "requestStart": 313.80000001192093,
+                "responseEnd": 424.5,
+                "responseStart": 423.90000000596046,
+                "responseStatus": 200,
+                "secureConnectionStart": 194.5,
+                "serverTiming": [],
+                "startTime": 0,
+                "transferSize": 6024,
+                "type": "navigate",
+                "unloadEventEnd": 0,
+                "unloadEventStart": 0,
+                "workerCacheLookupStart": 0,
+                "workerFinalSourceType": "",
+                "workerMatchedSourceType": "",
+                "workerRouterEvaluationStart": 0,
+                "workerStart": 0
+              },
+              "paint": [],
+              "ready": "loading",
+              "title": "Hacker News",
+              "url": "https://news.ycombinator.com/",
+              "vis": "visible"
+            },
+            "requested_url": "https://news.ycombinator.com/",
+            "site_label": "02_news_ycombinator_com",
+            "smoothness": {
+              "done": true,
+              "elapsed_ms": 2007.699999988079,
+              "longtask_count": 0,
+              "longtask_max_ms": 0,
+              "longtask_total_ms": 0,
+              "observer_error": null,
+              "ok": true,
+              "raf_avg_ms": 16.666086956521738,
+              "raf_fps": 57.27947402534384,
+              "raf_frames": 115,
+              "raf_max_ms": 16.800000000000182,
+              "raf_p50_ms": 16.699999999999818,
+              "raf_p95_ms": 16.700000000000273,
+              "raf_p99_ms": 16.800000000000182,
+              "raf_slow_33_count": 0,
+              "raf_slow_50_count": 0,
+              "resource_count": 6,
+              "resource_decoded_body_size_bytes": 13371,
+              "resource_duration_max_ms": 116.5,
+              "resource_duration_total_ms": 580.8000000119209,
+              "resource_encoded_body_size_bytes": 4588,
+              "resource_host_counts": {
+                "news.ycombinator.com": 6
+              },
+              "resource_initiator_counts": {
+                "css": 1,
+                "img": 2,
+                "link": 1,
+                "other": 1,
+                "script": 1
+              },
+              "resource_slow_500_count": 0,
+              "resource_third_party_count": 0,
+              "resource_top_hosts": [
+                {
+                  "count": 6,
+                  "host": "news.ycombinator.com"
+                }
+              ],
+              "resource_transfer_size_bytes": 5773,
+              "resource_unique_host_count": 1,
+              "resource_unparsable_count": 0,
+              "visibility": "visible"
+            },
+            "tabid": 3
+          }
+        ]
+      },
+      "suite": "live",
+      "urls": [
+        "https://github.com/",
+        "https://news.ycombinator.com/"
+      ]
+    }
+  ],
+  "timestamp_unix": 1779465421.839152,
+  "tmp_root": "/tmp/vimbrowser-benchmark-2avol61x"
+}

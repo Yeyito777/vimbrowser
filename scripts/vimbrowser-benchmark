@@ -476,6 +476,11 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
   const longTasks = r.longTasks || [];
   const resources = performance.getEntriesByType('resource') || [];
   const initiators = {};
+  const resourceHosts = {};
+  let thirdPartyResourceCount = 0;
+  let unparsableResourceCount = 0;
+  const pageHost = (location.hostname || '').toLowerCase();
+  const isSameSiteHost = host => host === pageHost || (pageHost && host.endsWith('.' + pageHost));
   let transferSize = 0;
   let encodedBodySize = 0;
   let decodedBodySize = 0;
@@ -485,6 +490,17 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
   for (const e of resources) {
     const initiator = e.initiatorType || 'other';
     initiators[initiator] = (initiators[initiator] || 0) + 1;
+    try {
+      const host = new URL(e.name, location.href).hostname.toLowerCase();
+      if (host) {
+        resourceHosts[host] = (resourceHosts[host] || 0) + 1;
+        if (!isSameSiteHost(host)) thirdPartyResourceCount++;
+      } else {
+        unparsableResourceCount++;
+      }
+    } catch (err) {
+      unparsableResourceCount++;
+    }
     transferSize += e.transferSize || 0;
     encodedBodySize += e.encodedBodySize || 0;
     decodedBodySize += e.decodedBodySize || 0;
@@ -517,7 +533,15 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
     resource_duration_total_ms:resourceDurationTotal,
     resource_duration_max_ms:resourceDurationMax,
     resource_slow_500_count:resourceSlow500Count,
+    resource_unique_host_count:Object.keys(resourceHosts).length,
+    resource_third_party_count:thirdPartyResourceCount,
+    resource_unparsable_count:unparsableResourceCount,
     resource_initiator_counts:initiators,
+    resource_host_counts:resourceHosts,
+    resource_top_hosts:Object.entries(resourceHosts)
+      .sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]))
+      .slice(0,10)
+      .map(([host,count])=>({host,count})),
     observer_error:r.error
   });
 })()
@@ -1230,6 +1254,15 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
         result["metrics"]["live.resources.slow_500_count"] = summarize(
             [r.get("resource_slow_500_count") for r in smooth_rows]
         )
+        result["metrics"]["live.resources.unique_host_count"] = summarize(
+            [r.get("resource_unique_host_count") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.third_party_count"] = summarize(
+            [r.get("resource_third_party_count") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.unparsable_count"] = summarize(
+            [r.get("resource_unparsable_count") for r in smooth_rows]
+        )
         for row in rows:
             label = row.get("site_label") or "site"
             prefix = f"live.site.{label}"
@@ -1280,6 +1313,15 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
                 )
                 result["metrics"][f"{prefix}.resources.slow_500_count"] = summarize(
                     [smoothness.get("resource_slow_500_count")]
+                )
+                result["metrics"][f"{prefix}.resources.unique_host_count"] = summarize(
+                    [smoothness.get("resource_unique_host_count")]
+                )
+                result["metrics"][f"{prefix}.resources.third_party_count"] = summarize(
+                    [smoothness.get("resource_third_party_count")]
+                )
+                result["metrics"][f"{prefix}.resources.unparsable_count"] = summarize(
+                    [smoothness.get("resource_unparsable_count")]
                 )
     return result
 
@@ -1341,6 +1383,8 @@ def print_report(results: Dict[str, Any]) -> None:
                     f"raf_p95={fmt_ms((row.get('smoothness') or {}).get('raf_p95_ms'))} "
                     f"longtasks={(row.get('smoothness') or {}).get('longtask_count', 'n/a')} "
                     f"resources={(row.get('smoothness') or {}).get('resource_count', 'n/a')} "
+                    f"hosts={(row.get('smoothness') or {}).get('resource_unique_host_count', 'n/a')} "
+                    f"third_party={(row.get('smoothness') or {}).get('resource_third_party_count', 'n/a')} "
                     f"title={page.get('title')!r} final={page.get('url')!r}"
                 )
             if suite.get("errors"):
