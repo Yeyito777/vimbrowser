@@ -194,6 +194,7 @@ void IpcServer::HandleClient(int client_fd) {
   // '\n' or EOF; one '\n'-terminated response. This deliberately stays tiny and
   // scriptable, but it is the canonical app-control protocol. See docs/ipc.md.
   std::string command;
+  command.reserve(128);
   char buffer[4096];
   constexpr size_t kMaxCommandBytes = 1024 * 1024;
   while (command.size() < kMaxCommandBytes) {
