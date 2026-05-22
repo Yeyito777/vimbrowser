@@ -841,22 +841,29 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
 }
 
 std::string IpcCommandsJson() {
-  std::ostringstream out;
-  out << "{\"commands\":[";
-  const auto& commands = IpcCommandList();
-  for (size_t i = 0; i < commands.size(); ++i) {
-    if (i) {
-      out << ",";
+  static const std::string kJson = [] {
+    std::string out;
+    out.reserve(4096);
+    out += "{\"commands\":[";
+    const auto& commands = IpcCommandList();
+    for (size_t i = 0; i < commands.size(); ++i) {
+      if (i) {
+        out.push_back(',');
+      }
+      out += "{\"name\":";
+      AppendJsonString(out, commands[i].name);
+      out += ",\"usage\":";
+      AppendJsonString(out, commands[i].usage);
+      out += ",\"description\":";
+      AppendJsonString(out, commands[i].description);
+      out += ",\"response\":";
+      AppendJsonString(out, commands[i].response);
+      out.push_back('}');
     }
-    out << "{"
-        << "\"name\":\"" << JsonEscape(commands[i].name) << "\","
-        << "\"usage\":\"" << JsonEscape(commands[i].usage) << "\","
-        << "\"description\":\"" << JsonEscape(commands[i].description) << "\","
-        << "\"response\":\"" << JsonEscape(commands[i].response) << "\""
-        << "}";
-  }
-  out << "]}";
-  return out.str();
+    out += "]}";
+    return out;
+  }();
+  return kJson;
 }
 
 constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
