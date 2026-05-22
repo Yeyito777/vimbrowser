@@ -10,6 +10,7 @@ namespace vimbrowser {
 
 struct Tab {
   uint64_t id = 0;
+  std::string id_json;
   std::string url;
   std::string url_json;
   CefRefPtr<BrowserClient> client;

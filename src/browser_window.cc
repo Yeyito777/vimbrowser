@@ -790,6 +790,12 @@ void SetTabUrl(Tab& tab, std::string url) {
   AppendJsonString(tab.url_json, tab.url);
 }
 
+void SetTabId(Tab& tab, uint64_t id) {
+  tab.id = id;
+  tab.id_json.clear();
+  AppendJsonNumber(tab.id_json, tab.id);
+}
+
 std::string IpcSocketPathForStatePath(const std::string& state_path) {
   std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
   if (dir.empty()) {
@@ -2167,7 +2173,7 @@ void BrowserWindow::InsertTab(std::string url,
   const bool deferred_load = defer_load && !activate;
 
   Tab tab;
-  tab.id = next_tab_id_++;
+  SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
   tab.deferred_load = deferred_load;
 
@@ -2252,7 +2258,7 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   last_tab_close_placeholder_ = false;
 
   Tab tab;
-  tab.id = next_tab_id_++;
+  SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
   tab.client = popup_client;
   ++tab_client_count_;
@@ -3025,7 +3031,7 @@ void BrowserWindow::AppendTabJson(std::string& out,
                                   size_t index) const {
   if (!tab.client && !tab.url.empty()) {
     out += "{\"id\":";
-    AppendJsonNumber(out, tab.id);
+    out += tab.id_json;
     out += ",\"index\":";
     AppendJsonNumber(out, index);
     out += ",\"tab\":";
@@ -3077,7 +3083,11 @@ void BrowserWindow::AppendTabJson(std::string& out,
   }
 
   out += "{\"id\":";
-  AppendJsonNumber(out, tab.id);
+  if (!tab.id_json.empty()) {
+    out += tab.id_json;
+  } else {
+    AppendJsonNumber(out, tab.id);
+  }
   out += ",\"index\":";
   AppendJsonNumber(out, index);
   out += ",\"tab\":";
