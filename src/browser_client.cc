@@ -487,7 +487,6 @@ void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   if (owner_) {
     owner_->OnClientBrowserCreated(this);
   }
-  std::cout << "vimbrowser: browser ready" << std::endl;
 }
 
 bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
