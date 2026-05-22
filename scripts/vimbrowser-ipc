@@ -3,6 +3,14 @@ use strict;
 use warnings;
 use Socket qw(AF_UNIX SOCK_STREAM sockaddr_un);
 
+if (@ARGV && $ARGV[0] eq "screenshot") {
+    my $helper = $0;
+    $helper =~ s{/[^/]*$}{/vimbrowser-ipc-screenshot};
+    $helper = "./vimbrowser-ipc-screenshot" if $helper eq $0;
+    exec $helper, @ARGV;
+    die "vimbrowser-ipc: exec $helper: $!\n";
+}
+
 sub default_socket_path {
     return "$ENV{VIMBROWSER_PROFILE_DIR}/ipc.sock"
         if exists $ENV{VIMBROWSER_PROFILE_DIR} && length $ENV{VIMBROWSER_PROFILE_DIR};
@@ -17,160 +25,34 @@ sub default_socket_path {
     return "/tmp/vimbrowser/ipc.sock";
 }
 
-sub socket_path {
-    return $ENV{VIMBROWSER_IPC}
-        if exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC};
-    return default_socket_path();
+my $path = exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC}
+    ? $ENV{VIMBROWSER_IPC}
+    : default_socket_path();
+my $command = @ARGV ? join(" ", @ARGV) : "status";
+
+socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
+    or die "vimbrowser-ipc: socket: $!\n";
+connect($sock, sockaddr_un($path))
+    or die "vimbrowser-ipc: connect $path: $!\n";
+
+my $request = "$command\n";
+my $offset = 0;
+while ($offset < length($request)) {
+    my $written = syswrite($sock, $request, length($request) - $offset, $offset);
+    die "vimbrowser-ipc: write: $!\n" unless defined $written;
+    $offset += $written;
 }
 
-sub connect_socket {
-    my ($path) = @_;
-    socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
-        or die "vimbrowser-ipc: socket: $!\n";
-    connect($sock, sockaddr_un($path))
-        or die "vimbrowser-ipc: connect $path: $!\n";
-    return $sock;
-}
-
-sub write_all {
-    my ($fh, $data) = @_;
-    my $offset = 0;
-    my $length = length($data);
-    while ($offset < $length) {
-        my $written = syswrite($fh, $data, $length - $offset, $offset);
+my $buffer;
+while (1) {
+    my $read = sysread($sock, $buffer, 262144);
+    die "vimbrowser-ipc: recv: $!\n" unless defined $read;
+    last if $read == 0;
+    $offset = 0;
+    while ($offset < $read) {
+        my $written = syswrite(STDOUT, $buffer, $read - $offset, $offset);
         die "vimbrowser-ipc: write: $!\n" unless defined $written;
         $offset += $written;
     }
 }
-
-sub send_request {
-    my ($sock, $command) = @_;
-    write_all($sock, "$command\n");
-}
-
-sub send_command {
-    my ($path, $command) = @_;
-    my $sock = connect_socket($path);
-    send_request($sock, $command);
-    my $response = "";
-    my $buffer;
-    while (1) {
-        my $read = sysread($sock, $buffer, 262144);
-        die "vimbrowser-ipc: recv: $!\n" unless defined $read;
-        last if $read == 0;
-        $response .= $buffer;
-    }
-    return $response;
-}
-
-sub stream_command {
-    my ($path, $command) = @_;
-    my $sock = connect_socket($path);
-    send_request($sock, $command);
-    my $buffer;
-    while (1) {
-        my $read = sysread($sock, $buffer, 262144);
-        die "vimbrowser-ipc: recv: $!\n" unless defined $read;
-        last if $read == 0;
-        write_all(\*STDOUT, $buffer);
-    }
-}
-
-sub write_file {
-    my ($path, $data) = @_;
-    require File::Basename;
-    require File::Path;
-    my $dir = File::Basename::dirname($path);
-    File::Path::make_path($dir) if defined $dir && length $dir && $dir ne ".";
-    open(my $fh, ">:raw", $path) or die "vimbrowser-ipc: write $path: $!\n";
-    print {$fh} $data or die "vimbrowser-ipc: write $path: $!\n";
-    close($fh) or die "vimbrowser-ipc: write $path: $!\n";
-}
-
-sub maybe_handle_screenshot {
-    my ($path, @argv) = @_;
-    return undef if @argv < 1 || $argv[0] ne "screenshot";
-
-    my @passthrough = ("screenshot");
-    my $output_path;
-    my $json_response = 0;
-    my $i = 1;
-    while ($i < @argv) {
-        my $arg = $argv[$i];
-        if ($arg eq "-o" || $arg eq "--output") {
-            if ($i + 1 >= @argv) {
-                print STDERR "usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n";
-                return 2;
-            }
-            $output_path = $argv[$i + 1];
-            $i += 2;
-            next;
-        }
-        if ($arg eq "--json") {
-            $json_response = 1;
-            ++$i;
-            next;
-        }
-        push @passthrough, $arg;
-        ++$i;
-    }
-
-    my $response = send_command($path, join(" ", @passthrough));
-    if ($json_response) {
-        binmode STDOUT;
-        print STDOUT $response;
-        return $response =~ /^ERR / ? 1 : 0;
-    }
-    if ($response =~ /^ERR /) {
-        print STDERR $response;
-        return 1;
-    }
-
-    require JSON::PP;
-    require MIME::Base64;
-    my $payload;
-    my $image;
-    eval {
-        $payload = JSON::PP::decode_json($response);
-        die "missing data" unless ref($payload) eq "HASH" && exists $payload->{data};
-        die "invalid base64" if $payload->{data} =~ /[^A-Za-z0-9+\/=\r\n]/;
-        $image = MIME::Base64::decode_base64($payload->{data});
-        1;
-    } or do {
-        my $error = $@ || "unknown error";
-        chomp $error;
-        print STDERR "vimbrowser-ipc: invalid screenshot response: $error\n";
-        binmode STDERR;
-        print STDERR substr($response, 0, 4096);
-        return 1;
-    };
-
-    if (defined $output_path) {
-        write_file($output_path, $image);
-        my %metadata = map { $_ => $payload->{$_} } grep { $_ ne "data" } keys %{$payload};
-        $metadata{path} = $output_path;
-        $metadata{bytes} = length($image);
-        print STDOUT JSON::PP->new->canonical(0)->utf8->encode(\%metadata), "\n";
-        return 0;
-    }
-
-    if (-t STDOUT) {
-        my $tmpdir = exists $ENV{TMPDIR} && length $ENV{TMPDIR} ? $ENV{TMPDIR} : "/tmp";
-        my $tabid = exists $payload->{tabid} ? $payload->{tabid} : "tab";
-        my $path_out = "$tmpdir/vimbrowser-screenshot-$tabid.png";
-        write_file($path_out, $image);
-        print STDOUT "$path_out\n";
-        return 0;
-    }
-
-    binmode STDOUT;
-    print STDOUT $image;
-    return 0;
-}
-
-my $path = socket_path();
-my $screenshot_result = maybe_handle_screenshot($path, @ARGV);
-exit $screenshot_result if defined $screenshot_result;
-my $command = @ARGV ? join(" ", @ARGV) : "status";
-stream_command($path, $command);
 exit 0;

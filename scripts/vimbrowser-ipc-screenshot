@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Socket qw(AF_UNIX SOCK_STREAM sockaddr_un);
+
+sub default_socket_path {
+    return "$ENV{VIMBROWSER_PROFILE_DIR}/ipc.sock"
+        if exists $ENV{VIMBROWSER_PROFILE_DIR} && length $ENV{VIMBROWSER_PROFILE_DIR};
+
+    my $wrapper_profile_socket = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock";
+    return $wrapper_profile_socket if -e $wrapper_profile_socket;
+
+    return "$ENV{XDG_STATE_HOME}/vimbrowser/ipc.sock"
+        if exists $ENV{XDG_STATE_HOME} && length $ENV{XDG_STATE_HOME};
+    return "$ENV{HOME}/.local/state/vimbrowser/ipc.sock"
+        if exists $ENV{HOME} && length $ENV{HOME};
+    return "/tmp/vimbrowser/ipc.sock";
+}
+
+sub socket_path {
+    return $ENV{VIMBROWSER_IPC}
+        if exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC};
+    return default_socket_path();
+}
+
+sub write_all {
+    my ($fh, $data) = @_;
+    my $offset = 0;
+    my $length = length($data);
+    while ($offset < $length) {
+        my $written = syswrite($fh, $data, $length - $offset, $offset);
+        die "vimbrowser-ipc: write: $!\n" unless defined $written;
+        $offset += $written;
+    }
+}
+
+sub send_command {
+    my ($path, $command) = @_;
+    socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
+        or die "vimbrowser-ipc: socket: $!\n";
+    connect($sock, sockaddr_un($path))
+        or die "vimbrowser-ipc: connect $path: $!\n";
+    write_all($sock, "$command\n");
+
+    my $response = "";
+    my $buffer;
+    while (1) {
+        my $read = sysread($sock, $buffer, 262144);
+        die "vimbrowser-ipc: recv: $!\n" unless defined $read;
+        last if $read == 0;
+        $response .= $buffer;
+    }
+    return $response;
+}
+
+sub write_file {
+    my ($path, $data) = @_;
+    require File::Basename;
+    require File::Path;
+    my $dir = File::Basename::dirname($path);
+    File::Path::make_path($dir) if defined $dir && length $dir && $dir ne ".";
+    open(my $fh, ">:raw", $path) or die "vimbrowser-ipc: write $path: $!\n";
+    print {$fh} $data or die "vimbrowser-ipc: write $path: $!\n";
+    close($fh) or die "vimbrowser-ipc: write $path: $!\n";
+}
+
+if (!@ARGV || $ARGV[0] ne "screenshot") {
+    print STDERR "usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n";
+    exit 2;
+}
+
+my @passthrough = ("screenshot");
+my $output_path;
+my $json_response = 0;
+my $i = 1;
+while ($i < @ARGV) {
+    my $arg = $ARGV[$i];
+    if ($arg eq "-o" || $arg eq "--output") {
+        if ($i + 1 >= @ARGV) {
+            print STDERR "usage: vimbrowser-ipc screenshot <tabid> [-o path] [--json]\n";
+            exit 2;
+        }
+        $output_path = $ARGV[$i + 1];
+        $i += 2;
+        next;
+    }
+    if ($arg eq "--json") {
+        $json_response = 1;
+        ++$i;
+        next;
+    }
+    push @passthrough, $arg;
+    ++$i;
+}
+
+my $response = send_command(socket_path(), join(" ", @passthrough));
+if ($json_response) {
+    binmode STDOUT;
+    print STDOUT $response;
+    exit($response =~ /^ERR / ? 1 : 0);
+}
+if ($response =~ /^ERR /) {
+    print STDERR $response;
+    exit 1;
+}
+
+require JSON::PP;
+require MIME::Base64;
+my $payload;
+my $image;
+eval {
+    $payload = JSON::PP::decode_json($response);
+    die "missing data" unless ref($payload) eq "HASH" && exists $payload->{data};
+    die "invalid base64" if $payload->{data} =~ /[^A-Za-z0-9+\/=\r\n]/;
+    $image = MIME::Base64::decode_base64($payload->{data});
+    1;
+} or do {
+    my $error = $@ || "unknown error";
+    chomp $error;
+    print STDERR "vimbrowser-ipc: invalid screenshot response: $error\n";
+    binmode STDERR;
+    print STDERR substr($response, 0, 4096);
+    exit 1;
+};
+
+if (defined $output_path) {
+    write_file($output_path, $image);
+    my %metadata = map { $_ => $payload->{$_} } grep { $_ ne "data" } keys %{$payload};
+    $metadata{path} = $output_path;
+    $metadata{bytes} = length($image);
+    print STDOUT JSON::PP->new->canonical(0)->utf8->encode(\%metadata), "\n";
+    exit 0;
+}
+
+if (-t STDOUT) {
+    my $tmpdir = exists $ENV{TMPDIR} && length $ENV{TMPDIR} ? $ENV{TMPDIR} : "/tmp";
+    my $tabid = exists $payload->{tabid} ? $payload->{tabid} : "tab";
+    my $path_out = "$tmpdir/vimbrowser-screenshot-$tabid.png";
+    write_file($path_out, $image);
+    print STDOUT "$path_out\n";
+    exit 0;
+}
+
+binmode STDOUT;
+print STDOUT $image;
+exit 0;
