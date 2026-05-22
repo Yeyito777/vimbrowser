@@ -2546,11 +2546,16 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
 
   if (closing_active) {
     active_index_ = std::min(next_index, tabs_.size() - 1);
-    EnsureTabBrowser(active_index_, true);
-    if (tabs_[active_index_].view) {
-      tabs_[active_index_].view->SetVisible(true);
+    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
+      visible_tab_index_ = kNoTabIndex;
+      ScheduleActiveBrowserSync();
+    } else {
+      EnsureTabBrowser(active_index_, true);
+      if (tabs_[active_index_].view) {
+        tabs_[active_index_].view->SetVisible(true);
+      }
+      visible_tab_index_ = active_index_;
     }
-    visible_tab_index_ = active_index_;
   } else if (active_id != 0) {
     if (std::optional<size_t> index = FindTabIndexById(active_id)) {
       active_index_ = *index;
