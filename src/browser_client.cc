@@ -145,13 +145,6 @@ std::string HostFromUrl(std::string_view url) {
   return LowerAscii(std::string(authority));
 }
 
-bool HostMatchesDomain(std::string_view host, std::string_view domain) {
-  return host == domain ||
-         (host.size() > domain.size() &&
-          host.compare(host.size() - domain.size(), domain.size(), domain) == 0 &&
-          host[host.size() - domain.size() - 1] == '.');
-}
-
 bool IsTrackerHost(std::string_view host) {
   // Native lightweight request blocking. Monkeytype is a good stress test here:
   // accepting the consent dialog otherwise pulls in multiple ad auctions,
@@ -166,14 +159,14 @@ bool IsTrackerHost(std::string_view host) {
       "adnxs.com",
       "adservice.google.com",
       "adservice.google.com.pa",
+      "adsrvr.org",
       "amazon-adsystem.com",
       "analytics.yahoo.com",
-      "adsrvr.org",
       "api.btloader.com",
       "btloader.com",
       "ccgateway.net",
-      "cdn.intergient.com",
       "cdn.intergi.com",
+      "cdn.intergient.com",
       "criteo.com",
       "crwdcntrl.net",
       "dns-finder.com",
@@ -185,18 +178,33 @@ bool IsTrackerHost(std::string_view host) {
       "googlesyndication.com",
       "googletagmanager.com",
       "id5-sync.com",
-      "intergient.com",
       "intergi.com",
+      "intergient.com",
       "lijit.com",
       "pubmatic.com",
       "rubiconproject.com",
       "scorecardresearch.com",
       "tapad.com",
   };
-  for (std::string_view domain : kBlockedDomains) {
-    if (HostMatchesDomain(host, domain)) {
+  constexpr size_t kBlockedDomainCount =
+      sizeof(kBlockedDomains) / sizeof(kBlockedDomains[0]);
+  auto is_blocked_domain = [](std::string_view domain) {
+    return std::binary_search(kBlockedDomains,
+                              kBlockedDomains + kBlockedDomainCount,
+                              domain);
+  };
+
+  if (is_blocked_domain(host)) {
+    return true;
+  }
+
+  size_t dot = host.find('.');
+  while (dot != std::string_view::npos) {
+    const std::string_view parent = host.substr(dot + 1);
+    if (!parent.empty() && is_blocked_domain(parent)) {
       return true;
     }
+    dot = host.find('.', dot + 1);
   }
   return false;
 }
