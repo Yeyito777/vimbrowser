@@ -259,6 +259,7 @@ class BrowserSession:
         self.extra_args = extra_args or []
         self.ipc_env = os.environ.copy()
         self.ipc_env["VIMBROWSER_PROFILE_DIR"] = str(self.profile)
+        self.ipc_env["VIMBROWSER_IPC"] = str(self.profile / "ipc.sock")
         built_ipc = self.binary.parent / "vimbrowser-ipc"
         self.ipc_client = built_ipc if built_ipc.exists() else IPC
         self.started_xenv = False
