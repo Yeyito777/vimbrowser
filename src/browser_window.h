@@ -151,6 +151,7 @@ class BrowserWindow final : public CefWindowDelegate,
                  size_t index,
                  bool activate,
                  bool defer_load = false);
+  bool EnsureTabBrowser(size_t index, bool load_deferred_now);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
                       std::string url,

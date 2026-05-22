@@ -2048,22 +2048,12 @@ void BrowserWindow::InsertTab(std::string url,
                               bool defer_load) {
   last_tab_close_placeholder_ = false;
   const size_t insert_index = std::min(index, tabs_.size());
-  CefBrowserSettings browser_settings;
-  browser_settings.background_color = theme::kAppBg;
   const bool deferred_load = defer_load && !activate;
 
   Tab tab;
   tab.id = next_tab_id_++;
   tab.url = std::move(url);
   tab.deferred_load = deferred_load;
-  tab.client = new BrowserClient(this);
-  const std::string browser_url = deferred_load ? "about:blank" : tab.url;
-  tab.view = CefBrowserView::CreateBrowserView(tab.client, browser_url,
-                                               browser_settings, nullptr,
-                                               nullptr, this);
-  tab.view->SetPreferAccelerators(true);
-  tab.view->SetVisible(false);
-  content_inner_panel_->AddChildView(tab.view);
 
   if (!tabs_.empty() && insert_index <= active_index_) {
     ++active_index_;
@@ -2072,6 +2062,9 @@ void BrowserWindow::InsertTab(std::string url,
     ++visible_tab_index_;
   }
   tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(insert_index), tab);
+  if (!deferred_load) {
+    EnsureTabBrowser(insert_index, false);
+  }
   RefreshSidebar();
   Layout();
 
@@ -2080,6 +2073,39 @@ void BrowserWindow::InsertTab(std::string url,
   } else {
     SaveState();
   }
+}
+
+bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
+  if (!content_inner_panel_ || index >= tabs_.size()) {
+    return false;
+  }
+  Tab& tab = tabs_[index];
+  if (tab.view) {
+    if (load_deferred_now && tab.deferred_load && tab.client &&
+        tab.client->browser() && tab.client->browser()->GetMainFrame()) {
+      tab.deferred_load = false;
+      tab.client->browser()->GetMainFrame()->LoadURL(tab.url);
+    }
+    return true;
+  }
+
+  CefBrowserSettings browser_settings;
+  browser_settings.background_color = theme::kAppBg;
+  tab.client = new BrowserClient(this);
+  const std::string browser_url = load_deferred_now && tab.deferred_load
+                                      ? tab.url
+                                      : (tab.deferred_load ? "about:blank"
+                                                           : tab.url);
+  if (load_deferred_now) {
+    tab.deferred_load = false;
+  }
+  tab.view = CefBrowserView::CreateBrowserView(tab.client, browser_url,
+                                               browser_settings, nullptr,
+                                               nullptr, this);
+  tab.view->SetPreferAccelerators(true);
+  tab.view->SetVisible(false);
+  content_inner_panel_->AddChildView(tab.view);
+  return true;
 }
 
 void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
@@ -2131,7 +2157,7 @@ void BrowserWindow::ActivateTab(size_t index) {
     } else {
       RefreshSidebar();
     }
-    if (visible_tab_index_ != index) {
+    if (visible_tab_index_ != index || !tabs_[index].view) {
       ScheduleActiveBrowserSync();
     }
     return;
@@ -2175,6 +2201,7 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
   }
 
   visible_tab_index_ = active_index_;
+  EnsureTabBrowser(active_index_, true);
   Tab& tab = tabs_[active_index_];
   if (tab.view) {
     tab.view->SetVisible(true);
@@ -2369,6 +2396,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
 
   if (closing_active) {
     active_index_ = std::min(next_index, tabs_.size() - 1);
+    EnsureTabBrowser(active_index_, true);
     if (tabs_[active_index_].view) {
       tabs_[active_index_].view->SetVisible(true);
     }
