@@ -34,6 +34,8 @@ DEFAULT_LIVE_URLS = [
     "https://discord.com/",
     "https://www.reddit.com/",
 ]
+DEFAULT_MIN_REPO_FREE_GB = 100.0
+DEFAULT_MIN_TMP_FREE_GB = 1.0
 
 LOCAL_CHECK_THRESHOLDS_MS = {
     "startup.single.ipc_ready_ms.p95": 2500.0,
@@ -132,6 +134,21 @@ def fmt_count_summary(summary: Dict[str, Any]) -> str:
         f"p95={summary.get('p95'):.1f} mean={summary.get('mean'):.1f} "
         f"max={summary.get('max'):.1f}"
     )
+
+
+def bytes_to_gib(value: int) -> float:
+    return value / (1024.0 ** 3)
+
+
+def require_free_space(path: Path, min_free_gb: float, label: str) -> None:
+    usage = shutil.disk_usage(path)
+    free_gb = bytes_to_gib(usage.free)
+    if free_gb < min_free_gb:
+        raise RuntimeError(
+            f"refusing to run benchmark: {label} filesystem at {path} has "
+            f"only {free_gb:.1f}GiB free; require at least {min_free_gb:.1f}GiB. "
+            "This guard prevents benchmark/crash experiments from causing ENOSPC."
+        )
 
 
 def free_port() -> int:
@@ -657,11 +674,25 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--output", help="Write JSON results to this path")
     parser.add_argument("--keep-temp", action="store_true", help="Keep temporary profiles/logs and include the path in output")
     parser.add_argument("--extra-arg", action="append", default=[], help="Extra argument to pass to vimbrowser; repeatable")
+    parser.add_argument(
+        "--min-repo-free-gb",
+        type=float,
+        default=DEFAULT_MIN_REPO_FREE_GB,
+        help="Abort if the repository filesystem has less free space than this many GiB (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--min-tmp-free-gb",
+        type=float,
+        default=DEFAULT_MIN_TMP_FREE_GB,
+        help="Abort if the benchmark temp filesystem has less free space than this many GiB (default: %(default)s)",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: List[str]) -> int:
     args = parse_args(argv)
+    require_free_space(REPO, args.min_repo_free_gb, "repository")
+    require_free_space(Path(tempfile.gettempdir()), args.min_tmp_free_gb, "temporary")
     binary = resolve_binary(args.binary)
     tmp_root = Path(tempfile.mkdtemp(prefix="vimbrowser-benchmark-"))
     suites: List[Dict[str, Any]] = []

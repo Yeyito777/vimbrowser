@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Run crash-prone vimbrowser performance experiments with core dumps disabled
+# and a conservative disk-free preflight. Intended for custom xenv/manual runs
+# that do not go through scripts/vimbrowser-benchmark.
+set -euo pipefail
+
+min_repo_free_gb="${VIMBROWSER_SAFE_MIN_REPO_FREE_GB:-100}"
+min_tmp_free_gb="${VIMBROWSER_SAFE_MIN_TMP_FREE_GB:-1}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+python3 - "$repo_root" "$min_repo_free_gb" "$min_tmp_free_gb" <<'PY'
+import shutil
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1])
+min_repo = float(sys.argv[2])
+min_tmp = float(sys.argv[3])
+
+def check(path: Path, minimum: float, label: str) -> None:
+    usage = shutil.disk_usage(path)
+    free = usage.free / (1024 ** 3)
+    if free < minimum:
+        raise SystemExit(
+            f"vimbrowser-safe-run: refusing to run: {label} filesystem at {path} "
+            f"has only {free:.1f}GiB free; require {minimum:.1f}GiB"
+        )
+
+check(repo, min_repo, "repository")
+check(Path('/tmp'), min_tmp, "temporary")
+PY
+
+ulimit -c 0 || true
+exec "$@"
