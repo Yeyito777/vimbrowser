@@ -288,6 +288,7 @@ class BrowserWindow final : public CefWindowDelegate,
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
+  bool bulk_tab_update_ = false;
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
   bool shader_enabled_ = true;

@@ -1466,11 +1466,13 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   BuildChrome();
   const bool lazy_restore_background_tabs =
       initial_urls_.size() >= kLazyRestoreBackgroundTabThreshold;
+  bulk_tab_update_ = true;
   for (size_t i = 0; i < initial_urls_.size(); ++i) {
     const bool activate = i == initial_active_index_;
     InsertTab(initial_urls_[i], tabs_.size(), activate,
               lazy_restore_background_tabs && !activate);
   }
+  bulk_tab_update_ = false;
   RefreshSidebar();
 
   window_->CenterWindow(CefSize(1200, 800));
@@ -2065,12 +2067,14 @@ void BrowserWindow::InsertTab(std::string url,
   if (!deferred_load) {
     EnsureTabBrowser(insert_index, false);
   }
-  RefreshSidebar();
-  Layout();
+  if (!bulk_tab_update_) {
+    RefreshSidebar();
+    Layout();
+  }
 
   if (activate) {
     ActivateTab(insert_index);
-  } else {
+  } else if (!bulk_tab_update_) {
     SaveState();
   }
 }
@@ -2152,10 +2156,12 @@ void BrowserWindow::ActivateTab(size_t index) {
   }
 
   if (active_index_ == index) {
-    if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-      RefreshSidebarRow(index);
-    } else {
-      RefreshSidebar();
+    if (!bulk_tab_update_) {
+      if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+        RefreshSidebarRow(index);
+      } else {
+        RefreshSidebar();
+      }
     }
     if (visible_tab_index_ != index || !tabs_[index].view) {
       ScheduleActiveBrowserSync();
@@ -2165,13 +2171,17 @@ void BrowserWindow::ActivateTab(size_t index) {
 
   const size_t previous_active_index = active_index_;
   active_index_ = index;
-  if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-    RefreshSidebarRow(previous_active_index);
-    RefreshSidebarRow(active_index_);
-  } else {
-    RefreshSidebar();
+  if (!bulk_tab_update_) {
+    if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+      RefreshSidebarRow(previous_active_index);
+      RefreshSidebarRow(active_index_);
+    } else {
+      RefreshSidebar();
+    }
   }
-  ScheduleStateSave();
+  if (!bulk_tab_update_) {
+    ScheduleStateSave();
+  }
   ScheduleActiveBrowserSync();
 }
 
