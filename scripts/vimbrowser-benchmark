@@ -900,6 +900,7 @@ def run_ipc_suite(
             close_state = json.loads(browser.ipc_direct("tabs"))
             close_snapshot = close_state["tabs"]
             active_index = int(close_state.get("active_index", 0))
+            close_active_tabid = int(close_state.get("active_tabid", active_tabid))
             if len(close_snapshot) > 96:
                 close_start = min(max(active_index - 48, 0), len(close_snapshot) - 96)
             else:
@@ -907,7 +908,7 @@ def run_ipc_suite(
             close_ids = [
                 int(row["id"])
                 for row in close_snapshot[close_start:close_start + 96]
-                if int(row["id"]) != active_tabid
+                if int(row["id"]) != close_active_tabid
             ][:iterations]
             if close_ids:
                 close_rows: List[float] = []
