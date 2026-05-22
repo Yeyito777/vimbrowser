@@ -8,26 +8,25 @@ Unix-socket command protocol.
 import os
 import socket
 import sys
-from pathlib import Path
 
 
-def default_socket_path() -> Path:
+def default_socket_path() -> str:
     profile_dir = os.environ.get("VIMBROWSER_PROFILE_DIR")
     if profile_dir:
-        return Path(profile_dir) / "ipc.sock"
-    wrapper_profile_socket = Path("/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock")
-    if wrapper_profile_socket.exists():
+        return os.path.join(profile_dir, "ipc.sock")
+    wrapper_profile_socket = "/home/yeyito/.runtime/vimbrowser-yeyito/ipc.sock"
+    if os.path.exists(wrapper_profile_socket):
         return wrapper_profile_socket
     state_home = os.environ.get("XDG_STATE_HOME")
     if state_home:
-        return Path(state_home) / "vimbrowser" / "ipc.sock"
+        return os.path.join(state_home, "vimbrowser", "ipc.sock")
     home = os.environ.get("HOME")
     if home:
-        return Path(home) / ".local" / "state" / "vimbrowser" / "ipc.sock"
-    return Path("/tmp/vimbrowser/ipc.sock")
+        return os.path.join(home, ".local", "state", "vimbrowser", "ipc.sock")
+    return "/tmp/vimbrowser/ipc.sock"
 
 
-def send_command(socket_path: Path, command: str) -> bytes:
+def send_command(socket_path: str, command: str) -> bytes:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.connect(str(socket_path))
         sock.sendall((command + "\n").encode())
@@ -40,7 +39,7 @@ def send_command(socket_path: Path, command: str) -> bytes:
     return b"".join(chunks)
 
 
-def stream_command(socket_path: Path, command: str, output) -> None:
+def stream_command(socket_path: str, command: str, output) -> None:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.connect(str(socket_path))
         sock.sendall((command + "\n").encode())
@@ -51,12 +50,14 @@ def stream_command(socket_path: Path, command: str, output) -> None:
             output.write(data)
 
 
-def maybe_handle_screenshot(socket_path: Path, argv: list[str]) -> int | None:
+def maybe_handle_screenshot(socket_path: str, argv: list[str]) -> int | None:
     if len(argv) < 2 or argv[1] != "screenshot":
         return None
 
+    from pathlib import Path
+
     passthrough = ["screenshot"]
-    output_path: Path | None = None
+    output_path = None
     json_response = False
     i = 2
     while i < len(argv):
@@ -114,7 +115,7 @@ def maybe_handle_screenshot(socket_path: Path, argv: list[str]) -> int | None:
 
 
 def main() -> int:
-    socket_path = Path(os.environ.get("VIMBROWSER_IPC", default_socket_path()))
+    socket_path = os.environ.get("VIMBROWSER_IPC", default_socket_path())
     screenshot_result = maybe_handle_screenshot(socket_path, sys.argv)
     if screenshot_result is not None:
         return screenshot_result
