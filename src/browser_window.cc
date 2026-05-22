@@ -3076,7 +3076,11 @@ void BrowserWindow::AppendTabJson(std::string& out,
     out += "null";
   }
   out += ",\"refresh_rate\":";
-  AppendJsonNumber(out, refresh_rate);
+  if (refresh_rate == 0.0) {
+    out.push_back('0');
+  } else {
+    AppendJsonNumber(out, refresh_rate);
+  }
   out += "}";
 }
 
