@@ -2405,6 +2405,11 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
   const uint64_t visible_id = visible_tab_index_ < tabs_.size()
                                   ? tabs_[visible_tab_index_].id
                                   : 0;
+  const size_t old_active_index = active_index_;
+  const size_t old_visible_index = visible_tab_index_;
+  const auto [old_render_start, old_render_count] =
+      SidebarRenderedRange(tabs_.size(), active_index_);
+  const size_t old_render_end = old_render_start + old_render_count;
 
   Tab tab = tabs_[from];
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(from));
@@ -2423,8 +2428,17 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
   }
 
   SaveState();
-  RefreshSidebar();
-  Layout();
+  const bool can_keep_virtual_sidebar =
+      tabs_.size() > kSidebarMaxRenderedRows &&
+      active_index_ == old_active_index &&
+      visible_tab_index_ == old_visible_index &&
+      sidebar_rows_.size() == old_render_count &&
+      ((from >= old_render_end && to >= old_render_end) ||
+       (from < old_render_start && to < old_render_start));
+  if (!can_keep_virtual_sidebar) {
+    RefreshSidebar();
+    Layout();
+  }
   return true;
 }
 
