@@ -773,6 +773,18 @@ def measure_direct_ipc(browser: BrowserSession, command: str, iterations: int, t
     return {"summary": summarize(rows), "response_bytes": response_size}
 
 
+def measure_shell_ipc(browser: BrowserSession, args: List[str], iterations: int, timeout: float = 20) -> Dict[str, Any]:
+    rows: List[float] = []
+    response_size = 0
+    for _ in range(iterations):
+        start = monotonic_ms()
+        proc = run([str(IPC)] + args, env=browser.ipc_env, timeout=timeout, text=False)
+        rows.append(monotonic_ms() - start)
+        if not response_size:
+            response_size = len(proc.stdout or b"")
+    return {"summary": summarize(rows), "response_bytes": response_size}
+
+
 def run_ipc_suite(
     binary: Path,
     tmp_root: Path,
@@ -780,16 +792,19 @@ def run_ipc_suite(
     tab_count: int,
     iterations: int,
     moved_tabs: int,
+    shell_iterations: int,
 ) -> Dict[str, Any]:
-    """Microbenchmark direct IPC/status paths without subprocess overhead."""
+    """Microbenchmark direct IPC paths and optional full shell-client IPC."""
     tab_count = max(1, tab_count)
     iterations = max(1, iterations)
     moved_tabs = max(0, min(moved_tabs, tab_count))
+    shell_iterations = max(0, shell_iterations)
     result: Dict[str, Any] = {
         "suite": "ipc",
         "tab_count": tab_count,
         "iterations": iterations,
         "moved_tabs": moved_tabs,
+        "shell_iterations": shell_iterations,
         "metrics": {},
         "records": {},
     }
@@ -896,6 +911,18 @@ def run_ipc_suite(
                 direct_records["js_moved_cycle"] = record
                 result["metrics"]["ipc.js_moved_cycle_ms"] = record["summary"]
                 result["metrics"]["ipc.js_moved_cycle_response_bytes"] = response_size
+
+            if shell_iterations:
+                shell_records: Dict[str, Any] = {}
+                for name, args in [
+                    ("status", ["status"]),
+                    ("tabs", ["tabs"]),
+                ]:
+                    record = measure_shell_ipc(browser, args, shell_iterations)
+                    shell_records[name] = record
+                    result["metrics"][f"ipc.shell_{name}_ms"] = record["summary"]
+                    result["metrics"][f"ipc.shell_{name}_response_bytes"] = record["response_bytes"]
+                direct_records["shell"] = shell_records
 
             active_open_state = json.loads(browser.ipc_direct("tabs"))
             active_open_tabid = int(active_open_state.get("active_tabid", active_tabid))
@@ -1182,6 +1209,12 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         help="Number of moved tabs to cycle through in --suite ipc (default: %(default)s)",
     )
     parser.add_argument(
+        "--ipc-shell-iterations",
+        type=int,
+        default=0,
+        help="Full scripts/vimbrowser-ipc subprocess iterations per shell metric for --suite ipc (default: disabled)",
+    )
+    parser.add_argument(
         "--min-repo-free-gb",
         type=float,
         default=DEFAULT_MIN_REPO_FREE_GB,
@@ -1234,6 +1267,7 @@ def main(argv: List[str]) -> int:
                     args.ipc_tabs,
                     args.ipc_iterations,
                     args.ipc_moved_tabs,
+                    args.ipc_shell_iterations,
                 )
             )
         if args.suite in ("live", "all"):
