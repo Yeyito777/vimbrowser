@@ -42,6 +42,17 @@ def send_command(socket_path: Path, command: str) -> bytes:
     return b"".join(chunks)
 
 
+def stream_command(socket_path: Path, command: str, output) -> None:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.connect(str(socket_path))
+        sock.sendall((command + "\n").encode())
+        while True:
+            data = sock.recv(262144)
+            if not data:
+                break
+            output.write(data)
+
+
 def maybe_handle_screenshot(socket_path: Path, argv: list[str]) -> int | None:
     if len(argv) < 2 or argv[1] != "screenshot":
         return None
@@ -110,7 +121,7 @@ def main() -> int:
         command = "status"
     else:
         command = " ".join(sys.argv[1:])
-    sys.stdout.buffer.write(send_command(socket_path, command))
+    stream_command(socket_path, command, sys.stdout.buffer)
     return 0
 
 
