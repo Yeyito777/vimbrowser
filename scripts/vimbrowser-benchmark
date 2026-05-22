@@ -190,10 +190,17 @@ class BenchmarkHTTPHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if path.startswith("/page") or path.startswith("/heavy"):
+        if path.startswith("/page") or path.startswith("/heavy") or path.startswith("/fanout"):
             name = path.strip("/").replace(".html", "") or "page"
-            asset_count = 24 if path.startswith("/page") else 48
-            spin_ms = 0 if path.startswith("/page") else 18
+            if path.startswith("/fanout"):
+                asset_count = 240
+                spin_ms = 0
+            elif path.startswith("/heavy"):
+                asset_count = 48
+                spin_ms = 18
+            else:
+                asset_count = 24
+                spin_ms = 0
             assets = "".join(
                 f'<img alt="" src="/asset?{name}-{i}" width="1" height="1">'
                 for i in range(asset_count)
@@ -690,6 +697,43 @@ def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict
             result["metrics"]["local.open_page.load_event_ms"] = summarize([r["nav"].get("load_event_ms") for r in open_rows])
             result["metrics"]["local.open_page.first_contentful_paint_ms"] = summarize(
                 [r["nav"].get("first_contentful_paint_ms") for r in open_rows]
+            )
+
+            # High-resource local page: stresses request-handler overhead without
+            # relying on public-network timing or external ad/tracker hosts.
+            fanout_rows = []
+            for i in range(3):
+                url = server.url(f"/fanout{i}.html")
+                open_start = monotonic_ms()
+                status = browser.ipc_json(["open-tab", url], timeout=10)
+                open_cmd_ms = monotonic_ms() - open_start
+                tabid = int(status["active_tabid"])
+                record = browser.wait_tab_complete(tabid, open_start, timeout=45)
+                nav = collect_nav_summary(record)
+                resource_count_payload = browser.ipc_json(
+                    ["js", str(tabid), "JSON.stringify(performance.getEntriesByType('resource').length)"],
+                    timeout=4,
+                )
+                fanout_rows.append({
+                    "url": url,
+                    "tabid": tabid,
+                    "open_cmd_ms": open_cmd_ms,
+                    "page": record,
+                    "nav": nav,
+                    "resource_count": int(json.loads(resource_count_payload["result"])),
+                })
+            result["records"]["resource_fanout"] = fanout_rows
+            result["metrics"]["local.resource_fanout.open_cmd_ms"] = summarize(
+                [r["open_cmd_ms"] for r in fanout_rows]
+            )
+            result["metrics"]["local.resource_fanout.observed_complete_ms"] = summarize(
+                [r["nav"].get("observed_complete_ms") for r in fanout_rows]
+            )
+            result["metrics"]["local.resource_fanout.load_event_ms"] = summarize(
+                [r["nav"].get("load_event_ms") for r in fanout_rows]
+            )
+            result["metrics"]["local.resource_fanout.resource_count"] = summarize(
+                [r["resource_count"] for r in fanout_rows]
             )
     return result
 
