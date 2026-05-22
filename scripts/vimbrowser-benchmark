@@ -954,6 +954,30 @@ def run_ipc_suite(
                 result["metrics"]["ipc.tab_close_rendered_ms"] = record["summary"]
                 result["metrics"]["ipc.tab_close_rendered_response_bytes"] = response_size
 
+            active_close_iterations = min(iterations, 40, max(tab_count - 1, 0))
+            if active_close_iterations:
+                active_close_state = json.loads(browser.ipc_direct("tabs"))
+                active_close_tabid = int(active_close_state.get("active_tabid", active_tabid))
+                active_close_index = int(active_close_state.get("active_index", 0))
+                active_close_rows: List[float] = []
+                response_size = 0
+                for _ in range(active_close_iterations):
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct("tab-close")
+                    active_close_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "initial_tabid": active_close_tabid,
+                    "initial_active_index": active_close_index,
+                    "closed_count": len(active_close_rows),
+                    "summary": summarize(active_close_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["tab_close_active"] = record
+                result["metrics"]["ipc.tab_close_active_ms"] = record["summary"]
+                result["metrics"]["ipc.tab_close_active_response_bytes"] = response_size
+
             result["records"] = direct_records
     return result
 
