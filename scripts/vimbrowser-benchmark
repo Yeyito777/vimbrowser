@@ -852,6 +852,25 @@ def run_ipc_suite(
                 result["metrics"]["ipc.tab_focus_nearby_ms"] = record["summary"]
                 result["metrics"]["ipc.tab_focus_nearby_response_bytes"] = response_size
 
+                order_rows: List[float] = []
+                response_size = 0
+                for i in range(iterations):
+                    target = 0 if i % 2 == 0 else tab_count - 1
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct(f"tab-order {active_tabid} {target}")
+                    order_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "tabid": active_tabid,
+                    "target_indices": [0, tab_count - 1],
+                    "summary": summarize(order_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["tab_order_active"] = record
+                result["metrics"]["ipc.tab_order_active_ms"] = record["summary"]
+                result["metrics"]["ipc.tab_order_active_response_bytes"] = response_size
+
             if moved_tabs:
                 moved_ids = [int(tabs[i]["id"]) for i in range(moved_tabs)]
                 for tabid in moved_ids:
@@ -877,6 +896,32 @@ def run_ipc_suite(
                 direct_records["js_moved_cycle"] = record
                 result["metrics"]["ipc.js_moved_cycle_ms"] = record["summary"]
                 result["metrics"]["ipc.js_moved_cycle_response_bytes"] = response_size
+
+            close_snapshot = json.loads(browser.ipc_direct("tabs"))["tabs"]
+            close_start = min(50, max(0, len(close_snapshot) - 2))
+            close_ids = [
+                int(row["id"])
+                for row in close_snapshot[close_start:]
+                if int(row["id"]) != active_tabid
+            ][:iterations]
+            if close_ids:
+                close_rows: List[float] = []
+                response_size = 0
+                for tabid in close_ids:
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct(f"tab-close {tabid}")
+                    close_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "start_index": close_start,
+                    "closed_count": len(close_ids),
+                    "summary": summarize(close_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["tab_close_rendered"] = record
+                result["metrics"]["ipc.tab_close_rendered_ms"] = record["summary"]
+                result["metrics"]["ipc.tab_close_rendered_response_bytes"] = response_size
 
             result["records"] = direct_records
     return result
