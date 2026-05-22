@@ -46,6 +46,9 @@ LOCAL_CHECK_THRESHOLDS_MS = {
     "startup.single.page_complete_elapsed_ms.p95": 6000.0,
     "startup.restore.all_complete_elapsed_ms.p95": 8000.0,
     "local.open_page.observed_complete_ms.p95": 2500.0,
+    "local.resource_fanout.observed_complete_ms.p95": 4000.0,
+    "local.blocked_resource_fanout.observed_complete_ms.p95": 1500.0,
+    "local.mixed_resource_fanout.observed_complete_ms.p95": 3000.0,
     "local.tab_switch.visible_ms.p95": 180.0,
     "local.tab_switch.first_raf_ms.p95": 180.0,
     "local.screenshot.active_ms.p95": 2500.0,
@@ -53,6 +56,15 @@ LOCAL_CHECK_THRESHOLDS_MS = {
 LOCAL_CHECK_THRESHOLDS_COUNTS = {
     "local.background_throttle.background_raf_delta_max": 5,
     "local.background_throttle.background_interval_delta_max": 12,
+}
+LOCAL_CHECK_SUMMARY_MAX = {
+    "local.resource_fanout.resource_count.max": 240,
+    "local.blocked_resource_fanout.server_request_count.max": 1,
+    "local.mixed_resource_fanout.server_request_count.max": 121,
+}
+LOCAL_CHECK_SUMMARY_MIN = {
+    "local.resource_fanout.resource_count.min": 240,
+    "local.mixed_resource_fanout.server_request_count.min": 121,
 }
 
 
@@ -1517,6 +1529,20 @@ def run_checks(results: Dict[str, Any]) -> List[str]:
             value = root.get(path)
             if value is not None and value > threshold:
                 failures.append(f"{path}={value} > {threshold}")
+        for path, threshold in LOCAL_CHECK_SUMMARY_MAX.items():
+            metric = path.rsplit(".", 1)[0]
+            stat = path.rsplit(".", 1)[1]
+            summary = root.get(metric) or {}
+            value = summary.get(stat) if isinstance(summary, dict) else None
+            if value is not None and value > threshold:
+                failures.append(f"{path}={value} > {threshold}")
+        for path, threshold in LOCAL_CHECK_SUMMARY_MIN.items():
+            metric = path.rsplit(".", 1)[0]
+            stat = path.rsplit(".", 1)[1]
+            summary = root.get(metric) or {}
+            value = summary.get(stat) if isinstance(summary, dict) else None
+            if value is not None and value < threshold:
+                failures.append(f"{path}={value} < {threshold}")
     return failures
 
 
