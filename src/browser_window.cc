@@ -2613,6 +2613,8 @@ std::optional<size_t> BrowserWindow::FindTabIndexById(uint64_t tab_id) const {
   }
   const size_t likely_index = static_cast<size_t>(tab_id - 1);
   if (likely_index < tabs_.size() && tabs_[likely_index].id == tab_id) {
+    second_cached_tab_lookup_id_ = cached_tab_lookup_id_;
+    second_cached_tab_lookup_index_ = cached_tab_lookup_index_;
     cached_tab_lookup_id_ = tab_id;
     cached_tab_lookup_index_ = likely_index;
     return likely_index;
@@ -2621,8 +2623,15 @@ std::optional<size_t> BrowserWindow::FindTabIndexById(uint64_t tab_id) const {
       tabs_[cached_tab_lookup_index_].id == tab_id) {
     return cached_tab_lookup_index_;
   }
+  if (second_cached_tab_lookup_id_ == tab_id &&
+      second_cached_tab_lookup_index_ < tabs_.size() &&
+      tabs_[second_cached_tab_lookup_index_].id == tab_id) {
+    return second_cached_tab_lookup_index_;
+  }
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].id == tab_id) {
+      second_cached_tab_lookup_id_ = cached_tab_lookup_id_;
+      second_cached_tab_lookup_index_ = cached_tab_lookup_index_;
       cached_tab_lookup_id_ = tab_id;
       cached_tab_lookup_index_ = i;
       return i;
