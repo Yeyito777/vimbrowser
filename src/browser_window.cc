@@ -635,6 +635,7 @@ std::string SidebarTextForTab(size_t index,
                               bool active,
                               bool audible) {
   std::string text = active ? "▸ " : "  ";
+  text.reserve(168);
   text += std::to_string(index + 1);
   text += ": ";
   if (audible) {
