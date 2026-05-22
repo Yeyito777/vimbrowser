@@ -1,0 +1,994 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "binary_file": {
+    "mtime_ns": 1779474512220352414,
+    "size_bytes": 1920344
+  },
+  "check_failures": [],
+  "checked": false,
+  "git": {
+    "dirty": false,
+    "head": "7ed27e4202c7f30398dd8918679819b6bf7f8ca0"
+  },
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "ipc",
+  "suites": [
+    {
+      "iterations": 5,
+      "metrics": {
+        "ipc.commands_ms": {
+          "max": 0.4788359999656677,
+          "mean": 0.18191601634025573,
+          "median": 0.11067402362823486,
+          "min": 0.09420302510261536,
+          "n": 5,
+          "p90": 0.33772320747375495,
+          "p95": 0.4082796037197112,
+          "p99": 0.4647247207164764
+        },
+        "ipc.commands_response_bytes": 4089,
+        "ipc.js_moved_cycle_ms": {
+          "max": 0.5734089910984039,
+          "mean": 0.3780265927314758,
+          "median": 0.3786830008029938,
+          "min": 0.20418700575828552,
+          "n": 5,
+          "p90": 0.5255593955516815,
+          "p95": 0.5494841933250427,
+          "p99": 0.5686240315437318
+        },
+        "ipc.js_moved_cycle_response_bytes": 41,
+        "ipc.js_sequential_ms": {
+          "max": 10.417703986167908,
+          "mean": 2.3112823903560638,
+          "median": 0.2518790066242218,
+          "min": 0.2142769992351532,
+          "n": 5,
+          "p90": 6.425639986991883,
+          "p95": 8.421671986579893,
+          "p99": 10.018497586250305
+        },
+        "ipc.js_sequential_response_bytes": 41,
+        "ipc.open_active_ms": {
+          "max": 2.7656849920749664,
+          "mean": 2.1269683957099916,
+          "median": 2.046339988708496,
+          "min": 1.7969110012054443,
+          "n": 5,
+          "p90": 2.523396199941635,
+          "p95": 2.6445405960083006,
+          "p99": 2.7414561128616333
+        },
+        "ipc.open_active_response_bytes": 22662,
+        "ipc.open_tab_active_complete_command_ms": {
+          "max": 101.22634002566338,
+          "mean": 27.205624407529832,
+          "median": 9.231653988361359,
+          "min": 7.98301100730896,
+          "n": 5,
+          "p90": 64.5228404223919,
+          "p95": 82.87459022402763,
+          "p99": 97.55599006533622
+        },
+        "ipc.open_tab_active_complete_fcp_ms": {
+          "max": 40.0,
+          "mean": 32.8,
+          "median": 36.0,
+          "min": 24.0,
+          "n": 5,
+          "p90": 38.4,
+          "p95": 39.2,
+          "p99": 39.84
+        },
+        "ipc.open_tab_active_complete_load_event_ms": {
+          "max": 80.60000002384186,
+          "mean": 76.3,
+          "median": 75.69999998807907,
+          "min": 74.09999999403954,
+          "n": 5,
+          "p90": 78.68000000715256,
+          "p95": 79.64000001549721,
+          "p99": 80.40800002217293
+        },
+        "ipc.open_tab_active_complete_ms": {
+          "max": 191.345203012228,
+          "mean": 110.44112079739571,
+          "median": 90.85825699567795,
+          "min": 88.4075640141964,
+          "n": 5,
+          "p90": 151.22826738953592,
+          "p95": 171.28673520088194,
+          "p99": 187.3335094499588
+        },
+        "ipc.open_tab_active_ms": {
+          "max": 104.17194101214409,
+          "mean": 99.35395638346672,
+          "median": 99.48316997289658,
+          "min": 95.1286229789257,
+          "n": 5,
+          "p90": 102.52289260029792,
+          "p95": 103.347416806221,
+          "p99": 104.00703617095948
+        },
+        "ipc.open_tab_active_response_bytes": 276,
+        "ipc.startup.ipc_ready_ms": {
+          "max": 415.6267559826374,
+          "mean": 415.6267559826374,
+          "median": 415.6267559826374,
+          "min": 415.6267559826374,
+          "n": 1,
+          "p90": 415.6267559826374,
+          "p95": 415.6267559826374,
+          "p99": 415.6267559826374
+        },
+        "ipc.status_ms": {
+          "max": 0.17928603291511536,
+          "mean": 0.11104579567909241,
+          "median": 0.09384298324584961,
+          "min": 0.08231300115585327,
+          "n": 5,
+          "p90": 0.15112521052360536,
+          "p95": 0.16520562171936035,
+          "p99": 0.17646995067596435
+        },
+        "ipc.status_response_bytes": 283,
+        "ipc.tab_close_active_ms": {
+          "max": 96.98700597882271,
+          "mean": 95.01510900259018,
+          "median": 94.95350700616837,
+          "min": 93.06635302305222,
+          "n": 5,
+          "p90": 96.27644998431205,
+          "p95": 96.63172798156738,
+          "p99": 96.91595037937164
+        },
+        "ipc.tab_close_active_response_bytes": 283,
+        "ipc.tab_close_rendered_ms": {
+          "max": 94.28052401542664,
+          "mean": 20.601402199268342,
+          "median": 2.7633140087127686,
+          "min": 0.2907399833202362,
+          "n": 5,
+          "p90": 58.57642281055451,
+          "p95": 76.42847341299056,
+          "p99": 90.71011389493941
+        },
+        "ipc.tab_close_rendered_response_bytes": 286,
+        "ipc.tab_focus_active_noop_ms": {
+          "max": 0.19840702414512634,
+          "mean": 0.09410320520401001,
+          "median": 0.07416200637817383,
+          "min": 0.055222004652023315,
+          "n": 5,
+          "p90": 0.15319340825080874,
+          "p95": 0.1758002161979675,
+          "p99": 0.19388566255569456
+        },
+        "ipc.tab_focus_active_noop_response_bytes": 289,
+        "ipc.tab_focus_nearby_ms": {
+          "max": 1.46942999958992,
+          "mean": 0.9078126013278961,
+          "median": 0.9665330052375793,
+          "min": 0.2323169708251953,
+          "n": 5,
+          "p90": 1.2711232006549835,
+          "p95": 1.3702766001224516,
+          "p99": 1.4495993196964263
+        },
+        "ipc.tab_focus_nearby_response_bytes": 287,
+        "ipc.tab_order_active_ms": {
+          "max": 0.19809699058532715,
+          "mean": 0.14778100252151488,
+          "median": 0.13573399186134338,
+          "min": 0.13164502382278442,
+          "n": 5,
+          "p90": 0.17519979476928713,
+          "p95": 0.18664839267730712,
+          "p99": 0.19580727100372314
+        },
+        "ipc.tab_order_active_response_bytes": 22617,
+        "ipc.tabs_ms": {
+          "max": 0.47076600790023804,
+          "mean": 0.20697901248931885,
+          "median": 0.1572350263595581,
+          "min": 0.11575400829315186,
+          "n": 5,
+          "p90": 0.3506980061531067,
+          "p95": 0.4107320070266723,
+          "p99": 0.45875920772552486
+        },
+        "ipc.tabs_response_bytes": 22591,
+        "ipc.version_ms": {
+          "max": 8.007211983203888,
+          "mean": 2.227365791797638,
+          "median": 0.20458698272705078,
+          "min": 0.06545200943946838,
+          "n": 5,
+          "p90": 5.9095647811889656,
+          "p95": 6.958388382196425,
+          "p99": 7.797447263002396
+        },
+        "ipc.version_response_bytes": 42
+      },
+      "moved_tabs": 2,
+      "records": {
+        "active_tabid": 100,
+        "commands": {
+          "response_bytes": 4089,
+          "summary": {
+            "max": 0.4788359999656677,
+            "mean": 0.18191601634025573,
+            "median": 0.11067402362823486,
+            "min": 0.09420302510261536,
+            "n": 5,
+            "p90": 0.33772320747375495,
+            "p95": 0.4082796037197112,
+            "p99": 0.4647247207164764
+          }
+        },
+        "js_moved_cycle": {
+          "moved_tabids": [
+            1,
+            2
+          ],
+          "response_bytes": 41,
+          "summary": {
+            "max": 0.5734089910984039,
+            "mean": 0.3780265927314758,
+            "median": 0.3786830008029938,
+            "min": 0.20418700575828552,
+            "n": 5,
+            "p90": 0.5255593955516815,
+            "p95": 0.5494841933250427,
+            "p99": 0.5686240315437318
+          }
+        },
+        "js_sequential": {
+          "response_bytes": 41,
+          "summary": {
+            "max": 10.417703986167908,
+            "mean": 2.3112823903560638,
+            "median": 0.2518790066242218,
+            "min": 0.2142769992351532,
+            "n": 5,
+            "p90": 6.425639986991883,
+            "p95": 8.421671986579893,
+            "p99": 10.018497586250305
+          }
+        },
+        "open_active": {
+          "active_index": 99,
+          "opened_count": 5,
+          "response_bytes": 22662,
+          "summary": {
+            "max": 2.7656849920749664,
+            "mean": 2.1269683957099916,
+            "median": 2.046339988708496,
+            "min": 1.7969110012054443,
+            "n": 5,
+            "p90": 2.523396199941635,
+            "p95": 2.6445405960083006,
+            "p99": 2.7414561128616333
+          },
+          "tabid": 2
+        },
+        "open_tab_active": {
+          "opened_count": 5,
+          "response_bytes": 276,
+          "summary": {
+            "max": 104.17194101214409,
+            "mean": 99.35395638346672,
+            "median": 99.48316997289658,
+            "min": 95.1286229789257,
+            "n": 5,
+            "p90": 102.52289260029792,
+            "p95": 103.347416806221,
+            "p99": 104.00703617095948
+          }
+        },
+        "open_tab_active_complete": {
+          "opened_count": 5,
+          "rows": [
+            {
+              "command_ms": 101.22634002566338,
+              "complete_ms": 191.345203012228,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 20.100000023841858,
+                "first_contentful_paint_ms": 40,
+                "first_paint_ms": 40,
+                "load_event_ms": 80.60000002384186,
+                "nav_duration_ms": 80.7000000178814,
+                "observed_complete_ms": 191.345203012228,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 20.100000023841858,
+                  "intervalCount": 1,
+                  "lastInterval": 69.90000000596046,
+                  "lastRaf": 86.6,
+                  "load": 80.60000002384186,
+                  "name": "page-open-tab-active-complete-0",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 40
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 40
+                    }
+                  ],
+                  "rafCount": 6,
+                  "scriptStart": 19.700000017881393,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "high"
+                  },
+                  "connectEnd": 1.600000023841858,
+                  "connectStart": 1.600000023841858,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 80.60000002384186,
+                  "domContentLoadedEventEnd": 20.100000023841858,
+                  "domContentLoadedEventStart": 20.100000023841858,
+                  "domInteractive": 20,
+                  "domainLookupEnd": 1.600000023841858,
+                  "domainLookupStart": 1.600000023841858,
+                  "duration": 80.7000000178814,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 1.600000023841858,
+                  "finalResponseHeadersStart": 3,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 80.7000000178814,
+                  "loadEventStart": 80.60000002384186,
+                  "name": "http://127.0.0.1:46019/page-open-tab-active-complete-0.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 2.5,
+                  "responseEnd": 3.300000011920929,
+                  "responseStart": 3,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 191.345203012228,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 40
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 40
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-0",
+                "url": "http://127.0.0.1:46019/page-open-tab-active-complete-0.html",
+                "vis": "visible"
+              },
+              "tabid": 106,
+              "url": "http://127.0.0.1:46019/page-open-tab-active-complete-0.html"
+            },
+            {
+              "command_ms": 7.98301100730896,
+              "complete_ms": 88.4075640141964,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 13.300000011920929,
+                "first_contentful_paint_ms": 24,
+                "first_paint_ms": 24,
+                "load_event_ms": 75.69999998807907,
+                "nav_duration_ms": 75.69999998807907,
+                "observed_complete_ms": 88.4075640141964,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 13.300000011920929,
+                  "intervalCount": 1,
+                  "lastInterval": 63.19999998807907,
+                  "lastRaf": 71.1,
+                  "load": 75.69999998807907,
+                  "name": "page-open-tab-active-complete-1",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 24
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 24
+                    }
+                  ],
+                  "rafCount": 6,
+                  "scriptStart": 12.900000005960464,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "low"
+                  },
+                  "connectEnd": 1.300000011920929,
+                  "connectStart": 1.300000011920929,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 75.5,
+                  "domContentLoadedEventEnd": 13.300000011920929,
+                  "domContentLoadedEventStart": 13.199999988079071,
+                  "domInteractive": 13.199999988079071,
+                  "domainLookupEnd": 1.300000011920929,
+                  "domainLookupStart": 1.300000011920929,
+                  "duration": 75.69999998807907,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 1.300000011920929,
+                  "finalResponseHeadersStart": 2.5,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 75.69999998807907,
+                  "loadEventStart": 75.59999999403954,
+                  "name": "http://127.0.0.1:46019/page-open-tab-active-complete-1.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 2.199999988079071,
+                  "responseEnd": 3.0999999940395355,
+                  "responseStart": 2.5,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 88.4075640141964,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 24
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 24
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-1",
+                "url": "http://127.0.0.1:46019/page-open-tab-active-complete-1.html",
+                "vis": "visible"
+              },
+              "tabid": 107,
+              "url": "http://127.0.0.1:46019/page-open-tab-active-complete-1.html"
+            },
+            {
+              "command_ms": 9.231653988361359,
+              "complete_ms": 90.85825699567795,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 13.900000005960464,
+                "first_contentful_paint_ms": 36,
+                "first_paint_ms": 36,
+                "load_event_ms": 75.30000001192093,
+                "nav_duration_ms": 75.30000001192093,
+                "observed_complete_ms": 90.85825699567795,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 13.900000005960464,
+                  "intervalCount": 1,
+                  "lastInterval": 63.70000001788139,
+                  "lastRaf": 82.5,
+                  "load": 75.30000001192093,
+                  "name": "page-open-tab-active-complete-2",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 36
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 36
+                    }
+                  ],
+                  "rafCount": 7,
+                  "scriptStart": 13.400000005960464,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "low"
+                  },
+                  "connectEnd": 2.2000000178813934,
+                  "connectStart": 2.2000000178813934,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 75.30000001192093,
+                  "domContentLoadedEventEnd": 13.900000005960464,
+                  "domContentLoadedEventStart": 13.700000017881393,
+                  "domInteractive": 13.700000017881393,
+                  "domainLookupEnd": 2.2000000178813934,
+                  "domainLookupStart": 2.2000000178813934,
+                  "duration": 75.30000001192093,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 2.2000000178813934,
+                  "finalResponseHeadersStart": 3.5,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 75.30000001192093,
+                  "loadEventStart": 75.30000001192093,
+                  "name": "http://127.0.0.1:46019/page-open-tab-active-complete-2.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 3.2000000178813934,
+                  "responseEnd": 4,
+                  "responseStart": 3.5,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 90.85825699567795,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 36
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 36
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-2",
+                "url": "http://127.0.0.1:46019/page-open-tab-active-complete-2.html",
+                "vis": "visible"
+              },
+              "tabid": 108,
+              "url": "http://127.0.0.1:46019/page-open-tab-active-complete-2.html"
+            },
+            {
+              "command_ms": 9.467591017484665,
+              "complete_ms": 90.54171600937843,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 13.199999988079071,
+                "first_contentful_paint_ms": 28,
+                "first_paint_ms": 28,
+                "load_event_ms": 74.09999999403954,
+                "nav_duration_ms": 74.09999999403954,
+                "observed_complete_ms": 90.54171600937843,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 13.199999988079071,
+                  "intervalCount": 1,
+                  "lastInterval": 63,
+                  "lastRaf": 74,
+                  "load": 74.09999999403954,
+                  "name": "page-open-tab-active-complete-3",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 28
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 28
+                    }
+                  ],
+                  "rafCount": 6,
+                  "scriptStart": 12.800000011920929,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "low"
+                  },
+                  "connectEnd": 1.5,
+                  "connectStart": 1.5,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 74,
+                  "domContentLoadedEventEnd": 13.199999988079071,
+                  "domContentLoadedEventStart": 13.099999994039536,
+                  "domInteractive": 13.099999994039536,
+                  "domainLookupEnd": 1.5,
+                  "domainLookupStart": 1.5,
+                  "duration": 74.09999999403954,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 1.5,
+                  "finalResponseHeadersStart": 2.800000011920929,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 74.09999999403954,
+                  "loadEventStart": 74,
+                  "name": "http://127.0.0.1:46019/page-open-tab-active-complete-3.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 2.5,
+                  "responseEnd": 3.300000011920929,
+                  "responseStart": 2.800000011920929,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 90.54171600937843,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 28
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 28
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-3",
+                "url": "http://127.0.0.1:46019/page-open-tab-active-complete-3.html",
+                "vis": "visible"
+              },
+              "tabid": 109,
+              "url": "http://127.0.0.1:46019/page-open-tab-active-complete-3.html"
+            },
+            {
+              "command_ms": 8.119525998830795,
+              "complete_ms": 91.05286395549774,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 14.799999982118607,
+                "first_contentful_paint_ms": 36,
+                "first_paint_ms": 36,
+                "load_event_ms": 75.7999999821186,
+                "nav_duration_ms": 75.7999999821186,
+                "observed_complete_ms": 91.05286395549774,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 14.799999982118607,
+                  "intervalCount": 1,
+                  "lastInterval": 64.69999998807907,
+                  "lastRaf": 67.9,
+                  "load": 75.7999999821186,
+                  "name": "page-open-tab-active-complete-4",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 36
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 36
+                    }
+                  ],
+                  "rafCount": 6,
+                  "scriptStart": 14.199999988079071,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "low"
+                  },
+                  "connectEnd": 1.2999999821186066,
+                  "connectStart": 1.2999999821186066,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 75.69999998807907,
+                  "domContentLoadedEventEnd": 14.799999982118607,
+                  "domContentLoadedEventStart": 14.699999988079071,
+                  "domInteractive": 14.699999988079071,
+                  "domainLookupEnd": 1.2999999821186066,
+                  "domainLookupStart": 1.2999999821186066,
+                  "duration": 75.7999999821186,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 1.2999999821186066,
+                  "finalResponseHeadersStart": 2.699999988079071,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 75.7999999821186,
+                  "loadEventStart": 75.7999999821186,
+                  "name": "http://127.0.0.1:46019/page-open-tab-active-complete-4.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 2.4000000059604645,
+                  "responseEnd": 3.199999988079071,
+                  "responseStart": 2.699999988079071,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 91.05286395549774,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 36
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 36
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-4",
+                "url": "http://127.0.0.1:46019/page-open-tab-active-complete-4.html",
+                "vis": "visible"
+              },
+              "tabid": 110,
+              "url": "http://127.0.0.1:46019/page-open-tab-active-complete-4.html"
+            }
+          ]
+        },
+        "startup_status": {
+          "active_index": 99,
+          "active_tab": 100,
+          "active_tabid": 100,
+          "audible": false,
+          "fps": null,
+          "fps_has_sample": false,
+          "ipc_protocol": "vimbrowser-ipc",
+          "ipc_version": 1,
+          "observed_elapsed_ms": 415.6267559826374,
+          "refresh_rate": 0,
+          "shader": false,
+          "showfps": false,
+          "tabs": 100,
+          "title": "",
+          "url": "http://127.0.0.1:46019/page99.html"
+        },
+        "status": {
+          "response_bytes": 283,
+          "summary": {
+            "max": 0.17928603291511536,
+            "mean": 0.11104579567909241,
+            "median": 0.09384298324584961,
+            "min": 0.08231300115585327,
+            "n": 5,
+            "p90": 0.15112521052360536,
+            "p95": 0.16520562171936035,
+            "p99": 0.17646995067596435
+          }
+        },
+        "tab_close_active": {
+          "closed_count": 5,
+          "initial_active_index": 94,
+          "initial_tabid": 2,
+          "response_bytes": 283,
+          "summary": {
+            "max": 96.98700597882271,
+            "mean": 95.01510900259018,
+            "median": 94.95350700616837,
+            "min": 93.06635302305222,
+            "n": 5,
+            "p90": 96.27644998431205,
+            "p95": 96.63172798156738,
+            "p99": 96.91595037937164
+          }
+        },
+        "tab_close_rendered": {
+          "closed_count": 5,
+          "response_bytes": 286,
+          "start_index": 4,
+          "summary": {
+            "max": 94.28052401542664,
+            "mean": 20.601402199268342,
+            "median": 2.7633140087127686,
+            "min": 0.2907399833202362,
+            "n": 5,
+            "p90": 58.57642281055451,
+            "p95": 76.42847341299056,
+            "p99": 90.71011389493941
+          }
+        },
+        "tab_focus_active_noop": {
+          "response_bytes": 289,
+          "summary": {
+            "max": 0.19840702414512634,
+            "mean": 0.09410320520401001,
+            "median": 0.07416200637817383,
+            "min": 0.055222004652023315,
+            "n": 5,
+            "p90": 0.15319340825080874,
+            "p95": 0.1758002161979675,
+            "p99": 0.19388566255569456
+          },
+          "tabid": 100
+        },
+        "tab_focus_nearby": {
+          "focus_tabids": [
+            99,
+            100
+          ],
+          "response_bytes": 287,
+          "summary": {
+            "max": 1.46942999958992,
+            "mean": 0.9078126013278961,
+            "median": 0.9665330052375793,
+            "min": 0.2323169708251953,
+            "n": 5,
+            "p90": 1.2711232006549835,
+            "p95": 1.3702766001224516,
+            "p99": 1.4495993196964263
+          }
+        },
+        "tab_order_active": {
+          "response_bytes": 22617,
+          "summary": {
+            "max": 0.19809699058532715,
+            "mean": 0.14778100252151488,
+            "median": 0.13573399186134338,
+            "min": 0.13164502382278442,
+            "n": 5,
+            "p90": 0.17519979476928713,
+            "p95": 0.18664839267730712,
+            "p99": 0.19580727100372314
+          },
+          "tabid": 100,
+          "target_indices": [
+            0,
+            99
+          ]
+        },
+        "tabs": {
+          "response_bytes": 22591,
+          "summary": {
+            "max": 0.47076600790023804,
+            "mean": 0.20697901248931885,
+            "median": 0.1572350263595581,
+            "min": 0.11575400829315186,
+            "n": 5,
+            "p90": 0.3506980061531067,
+            "p95": 0.4107320070266723,
+            "p99": 0.45875920772552486
+          }
+        },
+        "version": {
+          "response_bytes": 42,
+          "summary": {
+            "max": 8.007211983203888,
+            "mean": 2.227365791797638,
+            "median": 0.20458698272705078,
+            "min": 0.06545200943946838,
+            "n": 5,
+            "p90": 5.9095647811889656,
+            "p95": 6.958388382196425,
+            "p99": 7.797447263002396
+          }
+        }
+      },
+      "shell_iterations": 0,
+      "suite": "ipc",
+      "tab_count": 100
+    }
+  ],
+  "timestamp_unix": 1779474512.5034118,
+  "tmp_root": "/tmp/vimbrowser-benchmark-pc06r9hw"
+}

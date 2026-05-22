@@ -129,7 +129,7 @@ bool IpcServer::Start() {
     server_fd_ = -1;
     return false;
   }
-  std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
+  std::memcpy(addr.sun_path, socket_path_.c_str(), socket_path_.size() + 1);
 
   const socklen_t addr_len = static_cast<socklen_t>(
       offsetof(sockaddr_un, sun_path) + socket_path_.size() + 1);
