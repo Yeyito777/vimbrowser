@@ -96,6 +96,27 @@ bool NativeContentBlockingEnabled() {
   return enabled;
 }
 
+bool NativeNetworkCaptureEnabled() {
+  static const bool enabled = [] {
+    bool result = false;
+    if (const char* env = std::getenv("VIMBROWSER_NETWORK_CAPTURE");
+        env && *env) {
+      result = ParseBooleanSwitchValue(LowerAscii(env), result);
+    }
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+    if (command_line &&
+        command_line->HasSwitch("enable-vimbrowser-network-capture")) {
+      result = true;
+    }
+    if (command_line &&
+        command_line->HasSwitch("disable-vimbrowser-network-capture")) {
+      result = false;
+    }
+    return result;
+  }();
+  return enabled;
+}
+
 std::string HostFromUrl(std::string_view url) {
   size_t start = 0;
   if (const size_t scheme = url.find("://"); scheme != std::string_view::npos) {
@@ -655,6 +676,10 @@ CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
   disable_default_handling = false;
   if (!request) {
     return nullptr;
+  }
+
+  if (!NativeNetworkCaptureEnabled()) {
+    return this;
   }
 
   auto record = std::make_shared<NetworkRequestRecord>();

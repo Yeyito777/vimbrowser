@@ -192,6 +192,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - native content blocking is enabled by default for known ad-auction,
   identity-sync, and analytics hosts; set `VIMBROWSER_CONTENT_BLOCKING=0` or
   pass `--disable-vimbrowser-content-blocking` for a diagnostic run without it
+- native network body capture/replay is off by default to keep normal browsing
+  and benchmarks on the fast path; set `VIMBROWSER_NETWORK_CAPTURE=1` or pass
+  `--enable-vimbrowser-network-capture` when you need IPC `network` diagnostics
 - `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
