@@ -821,6 +821,7 @@ def run_ipc_suite(
                 ("version", "version"),
                 ("commands", "commands"),
                 ("status", "status"),
+                ("tabs", "tabs"),
                 ("js_sequential", f"js {active_tabid} JSON.stringify(1)"),
             ]:
                 record = measure_direct_ipc(browser, command, iterations)
