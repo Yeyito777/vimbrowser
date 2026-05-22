@@ -1140,6 +1140,7 @@ def run_ipc_suite(
                 "startup_status": status,
                 "active_tabid": active_tabid,
             }
+            result["metrics"]["ipc.startup.ipc_ready_ms"] = summarize([status.get("observed_elapsed_ms")])
 
             for name, command in [
                 ("version", "version"),
