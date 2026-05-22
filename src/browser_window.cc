@@ -2476,6 +2476,14 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
 
   const bool closing_active = closing == active_index_;
   const uint64_t active_id = active_index_ < tabs_.size() ? tabs_[active_index_].id : 0;
+  const size_t old_active_index = active_index_;
+  const size_t old_visible_index = visible_tab_index_;
+  const auto [old_render_start, old_render_count] =
+      SidebarRenderedRange(tabs_.size(), active_index_);
+  const size_t old_render_end = old_render_start + old_render_count;
+  const bool can_keep_virtual_sidebar_on_close =
+      tabs_.size() > kSidebarMaxRenderedRows && !closing_active &&
+      closing >= old_render_end && sidebar_rows_.size() == old_render_count;
   const std::string closing_url = tabs_[closing].url;
   std::cerr << "vimbrowser: close-tab id=" << tabs_[closing].id
             << " index=" << (closing + 1)
@@ -2535,6 +2543,11 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     tabs_[active_index_].view->RequestFocus();
   }
   SaveState();
+  if (can_keep_virtual_sidebar_on_close && active_index_ == old_active_index &&
+      visible_tab_index_ == old_visible_index) {
+    last_tab_close_placeholder_ = false;
+    return;
+  }
   RefreshSidebar();
   Layout();
   last_tab_close_placeholder_ = false;
