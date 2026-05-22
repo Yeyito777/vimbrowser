@@ -250,6 +250,7 @@ def free_port() -> int:
 
 class ThreadingHTTPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
+    daemon_threads = True
 
     def handle_error(self, request: Any, client_address: Any) -> None:
         exc = sys.exc_info()[1]
