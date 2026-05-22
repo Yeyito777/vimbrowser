@@ -261,8 +261,13 @@ class BrowserSession:
         quoted_urls = " ".join(json.dumps(u) for u in urls)
         extra = " ".join(json.dumps(a) for a in self.extra_args)
         cmd = (
+            # Benchmark/development runs can intentionally exercise broken or
+            # in-progress Chromium code.  Never let crash storms turn into giant
+            # systemd-coredump writes; renderer/browser children inherit this
+            # limit from the shell that launches the browser.
+            "ulimit -c 0 || true; "
             f"cd {json.dumps(str(self.binary.parent))} && "
-            f"./{self.binary.name} --profile-dir={json.dumps(str(self.profile))} {extra} {quoted_urls} "
+            f"exec ./{self.binary.name} --profile-dir={json.dumps(str(self.profile))} {extra} {quoted_urls} "
             f">{json.dumps(str(self.tmp_root / (self.name + '-browser.log')))} 2>&1"
         )
         start = monotonic_ms()
