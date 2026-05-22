@@ -1,7 +1,15 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Socket qw(AF_UNIX SOCK_STREAM sockaddr_un);
+
+use constant AF_UNIX => 1;
+use constant SOCK_STREAM => 1;
+
+sub sockaddr_un_linux {
+    my ($path) = @_;
+    die "vimbrowser-ipc: socket path too long: $path\n" if length($path) >= 108;
+    return pack("S Z108", AF_UNIX, $path);
+}
 
 if (@ARGV && $ARGV[0] eq "screenshot") {
     my $helper = $0;
@@ -32,7 +40,7 @@ my $command = @ARGV ? join(" ", @ARGV) : "status";
 
 socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
     or die "vimbrowser-ipc: socket: $!\n";
-connect($sock, sockaddr_un($path))
+connect($sock, sockaddr_un_linux($path))
     or die "vimbrowser-ipc: connect $path: $!\n";
 
 my $request = "$command\n";
