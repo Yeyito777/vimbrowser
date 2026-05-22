@@ -880,6 +880,25 @@ def run_ipc_suite(
                 result["metrics"]["ipc.tab_focus_nearby_ms"] = record["summary"]
                 result["metrics"]["ipc.tab_focus_nearby_response_bytes"] = response_size
 
+                browser.ipc_direct(f"tab-focus {active_tabid}")
+                time.sleep(0.30)
+                noop_focus_rows: List[float] = []
+                response_size = 0
+                for _ in range(iterations):
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct(f"tab-focus {active_tabid}")
+                    noop_focus_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "tabid": active_tabid,
+                    "summary": summarize(noop_focus_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["tab_focus_active_noop"] = record
+                result["metrics"]["ipc.tab_focus_active_noop_ms"] = record["summary"]
+                result["metrics"]["ipc.tab_focus_active_noop_response_bytes"] = response_size
+
                 order_rows: List[float] = []
                 response_size = 0
                 for i in range(iterations):
