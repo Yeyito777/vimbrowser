@@ -829,6 +829,29 @@ def run_ipc_suite(
                 result["metrics"][f"ipc.{name}_ms"] = record["summary"]
                 result["metrics"][f"ipc.{name}_response_bytes"] = record["response_bytes"]
 
+            if tab_count >= 2:
+                focus_ids = [int(tabs[tab_count - 2]["id"]), active_tabid]
+                for tabid in focus_ids:
+                    browser.ipc_direct(f"tab-focus {tabid}")
+                    time.sleep(0.08)
+                focus_rows: List[float] = []
+                response_size = 0
+                for i in range(iterations):
+                    tabid = focus_ids[i % len(focus_ids)]
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct(f"tab-focus {tabid}")
+                    focus_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "focus_tabids": focus_ids,
+                    "summary": summarize(focus_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["tab_focus_nearby"] = record
+                result["metrics"]["ipc.tab_focus_nearby_ms"] = record["summary"]
+                result["metrics"]["ipc.tab_focus_nearby_response_bytes"] = response_size
+
             if moved_tabs:
                 moved_ids = [int(tabs[i]["id"]) for i in range(moved_tabs)]
                 for tabid in moved_ids:
