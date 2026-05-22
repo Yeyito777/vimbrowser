@@ -472,6 +472,25 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
   const sum = a => a.reduce((x,y)=>x+y,0);
   const elapsed = (r.end || performance.now()) - r.start;
   const longTasks = r.longTasks || [];
+  const resources = performance.getEntriesByType('resource') || [];
+  const initiators = {};
+  let transferSize = 0;
+  let encodedBodySize = 0;
+  let decodedBodySize = 0;
+  let resourceDurationTotal = 0;
+  let resourceDurationMax = 0;
+  let resourceSlow500Count = 0;
+  for (const e of resources) {
+    const initiator = e.initiatorType || 'other';
+    initiators[initiator] = (initiators[initiator] || 0) + 1;
+    transferSize += e.transferSize || 0;
+    encodedBodySize += e.encodedBodySize || 0;
+    decodedBodySize += e.decodedBodySize || 0;
+    const duration = e.duration || 0;
+    resourceDurationTotal += duration;
+    if (duration > resourceDurationMax) resourceDurationMax = duration;
+    if (duration > 500) resourceSlow500Count++;
+  }
   return JSON.stringify({
     ok:true,
     done:!!r.done,
@@ -489,6 +508,14 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
     longtask_count:longTasks.length,
     longtask_total_ms:sum(longTasks.map(x=>x.duration||0)),
     longtask_max_ms:longTasks.length ? Math.max(...longTasks.map(x=>x.duration||0)) : 0,
+    resource_count:resources.length,
+    resource_transfer_size_bytes:transferSize,
+    resource_encoded_body_size_bytes:encodedBodySize,
+    resource_decoded_body_size_bytes:decodedBodySize,
+    resource_duration_total_ms:resourceDurationTotal,
+    resource_duration_max_ms:resourceDurationMax,
+    resource_slow_500_count:resourceSlow500Count,
+    resource_initiator_counts:initiators,
     observer_error:r.error
   });
 })()
@@ -1182,6 +1209,25 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
         result["metrics"]["live.smoothness.raf_slow_50_count"] = summarize([r.get("raf_slow_50_count") for r in smooth_rows])
         result["metrics"]["live.smoothness.longtask_count"] = summarize([r.get("longtask_count") for r in smooth_rows])
         result["metrics"]["live.smoothness.longtask_total_ms"] = summarize([r.get("longtask_total_ms") for r in smooth_rows])
+        result["metrics"]["live.resources.count"] = summarize([r.get("resource_count") for r in smooth_rows])
+        result["metrics"]["live.resources.transfer_size_bytes"] = summarize(
+            [r.get("resource_transfer_size_bytes") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.encoded_body_size_bytes"] = summarize(
+            [r.get("resource_encoded_body_size_bytes") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.decoded_body_size_bytes"] = summarize(
+            [r.get("resource_decoded_body_size_bytes") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.duration_total_ms"] = summarize(
+            [r.get("resource_duration_total_ms") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.duration_max_ms"] = summarize(
+            [r.get("resource_duration_max_ms") for r in smooth_rows]
+        )
+        result["metrics"]["live.resources.slow_500_count"] = summarize(
+            [r.get("resource_slow_500_count") for r in smooth_rows]
+        )
         for row in rows:
             label = row.get("site_label") or "site"
             prefix = f"live.site.{label}"
@@ -1211,6 +1257,27 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
                 )
                 result["metrics"][f"{prefix}.smoothness.longtask_total_ms"] = summarize(
                     [smoothness.get("longtask_total_ms")]
+                )
+                result["metrics"][f"{prefix}.resources.count"] = summarize(
+                    [smoothness.get("resource_count")]
+                )
+                result["metrics"][f"{prefix}.resources.transfer_size_bytes"] = summarize(
+                    [smoothness.get("resource_transfer_size_bytes")]
+                )
+                result["metrics"][f"{prefix}.resources.encoded_body_size_bytes"] = summarize(
+                    [smoothness.get("resource_encoded_body_size_bytes")]
+                )
+                result["metrics"][f"{prefix}.resources.decoded_body_size_bytes"] = summarize(
+                    [smoothness.get("resource_decoded_body_size_bytes")]
+                )
+                result["metrics"][f"{prefix}.resources.duration_total_ms"] = summarize(
+                    [smoothness.get("resource_duration_total_ms")]
+                )
+                result["metrics"][f"{prefix}.resources.duration_max_ms"] = summarize(
+                    [smoothness.get("resource_duration_max_ms")]
+                )
+                result["metrics"][f"{prefix}.resources.slow_500_count"] = summarize(
+                    [smoothness.get("resource_slow_500_count")]
                 )
     return result
 
@@ -1271,6 +1338,7 @@ def print_report(results: Dict[str, Any]) -> None:
                     f"fcp={fmt_ms(nav.get('first_contentful_paint_ms'))} "
                     f"raf_p95={fmt_ms((row.get('smoothness') or {}).get('raf_p95_ms'))} "
                     f"longtasks={(row.get('smoothness') or {}).get('longtask_count', 'n/a')} "
+                    f"resources={(row.get('smoothness') or {}).get('resource_count', 'n/a')} "
                     f"title={page.get('title')!r} final={page.get('url')!r}"
                 )
             if suite.get("errors"):
