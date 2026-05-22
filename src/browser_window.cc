@@ -247,6 +247,10 @@ bool IsPlainLetterKey(const CefKeyEvent& event, char key) {
          c == upper || c == lower;
 }
 
+char LowerAsciiChar(char c) {
+  return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+}
+
 char PlainKeyChar(const CefKeyEvent& event) {
   if (!IsPlain(event)) {
     return 0;
@@ -4811,6 +4815,9 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
 
       if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
         website_mode_ = vim::Mode::kInsert;
+        if (const char key = PlainKeyChar(event)) {
+          suppress_next_website_char_ = LowerAsciiChar(key);
+        }
         UpdateModeIndicator();
         return true;
       }
@@ -4821,7 +4828,8 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       if (IsPlainPrintableKey(event)) {
         return true;
       }
-      return false;
+      ResetWebsitePendingKeys();
+      return true;
     }
 
     if (website_mode_ == vim::Mode::kNormal || website_mode_ == vim::Mode::kVisual) {
@@ -4854,6 +4862,9 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       if (website_mode_ == vim::Mode::kNormal &&
           (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a'))) {
         website_mode_ = vim::Mode::kInsert;
+        if (const char key = PlainKeyChar(event)) {
+          suppress_next_website_char_ = LowerAsciiChar(key);
+        }
         UpdateModeIndicator();
         return true;
       }
@@ -4864,7 +4875,8 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       if (IsPlainPrintableKey(event)) {
         return true;
       }
-      return false;
+      ResetWebsitePendingKeys();
+      return true;
     }
 
     if (website_mode_ == vim::Mode::kInsert) {
@@ -4878,6 +4890,14 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   if (IsCharEvent(event)) {
+    if (suppress_next_website_char_) {
+      const std::optional<char> suppressed = suppress_next_website_char_;
+      suppress_next_website_char_.reset();
+      if (const char key = PlainKeyChar(event);
+          key && LowerAsciiChar(key) == *suppressed) {
+        return true;
+      }
+    }
     if (ShouldForwardFocusedEditableKey(event)) {
       ResetWebsitePendingKeys();
       return false;
@@ -4894,7 +4914,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       UpdateModeIndicator();
       return true;
     }
-    return IsPlainPrintableKey(event);
+    return true;
   }
 
   return false;

@@ -293,6 +293,7 @@ class BrowserWindow final : public CefWindowDelegate,
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
+  std::optional<char> suppress_next_website_char_;
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
   bool bulk_tab_update_ = false;
