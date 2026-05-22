@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use warnings;
 
 sub sockaddr_un_linux {
     my ($path) = @_;
