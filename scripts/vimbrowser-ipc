@@ -28,7 +28,7 @@ def default_socket_path() -> str:
 
 def send_command(socket_path: str, command: str) -> bytes:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.connect(str(socket_path))
+        sock.connect(socket_path)
         sock.sendall((command + "\n").encode())
         chunks = []
         while True:
@@ -41,7 +41,7 @@ def send_command(socket_path: str, command: str) -> bytes:
 
 def stream_command(socket_path: str, command: str, output_fd: int) -> None:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.connect(str(socket_path))
+        sock.connect(socket_path)
         sock.sendall((command + "\n").encode())
         while True:
             data = sock.recv(262144)
