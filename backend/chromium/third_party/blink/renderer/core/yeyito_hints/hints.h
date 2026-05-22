@@ -78,7 +78,6 @@ class CORE_EXPORT Hints final : public GarbageCollected<Hints>,
                                     bool is_browser_command) const;
   ActivationTarget ActivationTargetForClickEntryKey(
       const WebKeyboardEvent& event) const;
-  bool ShouldIgnoreEntryKeyForFocusedEditable() const;
   bool AppendTypedCharacter(const WebKeyboardEvent& event);
   WebInputEventResult HandleTypedPrefix();
   void ActivateCandidate(HintCandidate& candidate);

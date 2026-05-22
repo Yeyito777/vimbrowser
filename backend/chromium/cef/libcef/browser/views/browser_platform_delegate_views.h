@@ -43,6 +43,7 @@ class CefBrowserPlatformDelegateViews
   SkColor GetBackgroundColor() const override;
   void WasResized() override;
   void SendKeyEvent(const CefKeyEvent& event) override;
+  void SendVimbrowserBrowserCommandKeyEvent(const CefKeyEvent& event) override;
   void SendMouseClickEvent(const CefMouseEvent& event,
                            CefBrowserHost::MouseButtonType type,
                            bool mouseUp,

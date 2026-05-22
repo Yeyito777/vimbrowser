@@ -1797,7 +1797,13 @@ void RenderWidgetHostImpl::ForwardKeyboardEventWithCommands(
   }
   input::NativeWebKeyboardEventWithLatencyInfo key_event_with_latency(key_event,
                                                                       latency);
-  key_event_with_latency.event.is_browser_shortcut = is_shortcut;
+  // Preserve browser-originated shortcut marking on synthetic key events.  The
+  // vimbrowser embedder uses RenderWidgetHost::ForwardKeyboardEvent to inject
+  // native hint commands after its shell mode machine has accepted a key; those
+  // events are already marked as browser shortcuts and should not be downgraded
+  // just because the normal pre-handle pass did not rediscover them.
+  key_event_with_latency.event.is_browser_shortcut =
+      key_event_with_latency.event.is_browser_shortcut || is_shortcut;
   GetRenderInputRouter()->DispatchInputEventWithLatencyInfo(
       key_event_with_latency.event, &key_event_with_latency.latency,
       &key_event_with_latency.event.GetModifiableEventLatencyMetadata());

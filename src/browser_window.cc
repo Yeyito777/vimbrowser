@@ -4538,7 +4538,7 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
     return false;
   }
 
-  const bool click_hints = IsPlain(event) && event.windows_key_code == 'F';
+  const bool click_hints = IsPlainLetterKey(event, 'f');
   const bool scrollable_hints = HasOnlyControlModifier(event) && IsSpaceKey(event);
   if (!click_hints && !scrollable_hints) {
     return false;
@@ -4553,6 +4553,11 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   native_hints_active_ = true;
   UpdateModeIndicator();
   CefKeyEvent browser_event = event;
+  if (click_hints) {
+    // Normalize toolkit-specific lower/upper keycodes to the Windows virtual-key
+    // code that Blink's native hint dispatcher expects.
+    browser_event.windows_key_code = 'F';
+  }
   if (scrollable_hints) {
     // Some toolkits deliver Ctrl+Space to the browser chrome as a control
     // character with no virtual key. Blink's native hint dispatcher keys off the

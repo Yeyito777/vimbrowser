@@ -179,9 +179,16 @@ WebInputEventResult Hints::HandleKeyEvent(const WebKeyboardEvent& event) {
     }
 
     const bool is_browser_command = IsVimbrowserBrowserCommand(event);
-    const HintEntry entry = EntryForKeyEvent(event, is_browser_command);
-    if (!entry.is_entry ||
-        (!is_browser_command && ShouldIgnoreEntryKeyForFocusedEditable())) {
+    if (!is_browser_command) {
+      // Hint entry is owned by the vimbrowser shell mode machine.  Normal and
+      // website-normal modes inject an explicit browser-command key event when
+      // they want Blink to enter native hint mode; raw page keypresses must stay
+      // page input, especially in insert mode where a plain "f" is just text.
+      return WebInputEventResult::kNotHandled;
+    }
+
+    const HintEntry entry = EntryForKeyEvent(event, true);
+    if (!entry.is_entry) {
       return WebInputEventResult::kNotHandled;
     }
 
@@ -409,15 +416,6 @@ Hints::ActivationTarget Hints::ActivationTargetForClickEntryKey(
   }
   return HasNoKeyModifiers(event) ? ActivationTarget::kCurrentTab
                                   : ActivationTarget::kNewTab;
-}
-
-bool Hints::ShouldIgnoreEntryKeyForFocusedEditable() const {
-  LocalFrame* frame = GetSupplementable();
-  if (!frame || !frame->GetDocument()) {
-    return true;
-  }
-  Node* focused = frame->GetDocument()->FocusedElement();
-  return focused && IsEditable(*focused);
 }
 
 bool Hints::AppendTypedCharacter(const WebKeyboardEvent& event) {

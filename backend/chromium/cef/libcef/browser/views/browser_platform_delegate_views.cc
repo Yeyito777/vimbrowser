@@ -148,6 +148,11 @@ void CefBrowserPlatformDelegateViews::SendKeyEvent(const CefKeyEvent& event) {
   native_delegate_->SendKeyEvent(event);
 }
 
+void CefBrowserPlatformDelegateViews::SendVimbrowserBrowserCommandKeyEvent(
+    const CefKeyEvent& event) {
+  native_delegate_->SendVimbrowserBrowserCommandKeyEvent(event);
+}
+
 void CefBrowserPlatformDelegateViews::SendMouseClickEvent(
     const CefMouseEvent& event,
     CefBrowserHost::MouseButtonType type,
