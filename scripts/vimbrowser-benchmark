@@ -4,7 +4,9 @@
 Runs vimbrowser in a nested xenv, drives it through native IPC, and emits
 machine-readable JSON plus a concise text report. The deterministic local suite
 is intended to be used as a code-level performance test; the live suite tracks
-real public sites and is diagnostic rather than strictly reproducible.
+real public sites and is diagnostic rather than strictly reproducible. The
+large-restore suite is an optional focused startup benchmark for restored
+sessions with many tabs.
 """
 
 from __future__ import annotations
@@ -325,16 +327,20 @@ class BrowserSession:
         )
         deadline = time.time() + timeout
         last: Optional[Dict[str, Any]] = None
+        last_error: Optional[BaseException] = None
         while time.time() < deadline:
-            payload = self.ipc_json(["js", str(tabid), script], timeout=4)
-            data = json.loads(payload["result"])
-            last = data
-            bench = data.get("bench") or {}
-            if data.get("ready") == "complete" and (bench.get("load") is not None or data.get("nav")):
-                data["observed_elapsed_ms"] = monotonic_ms() - start_ms
-                return data
+            try:
+                payload = self.ipc_json(["js", str(tabid), script], timeout=4)
+                data = json.loads(payload["result"])
+                last = data
+                bench = data.get("bench") or {}
+                if data.get("ready") == "complete" and (bench.get("load") is not None or data.get("nav")):
+                    data["observed_elapsed_ms"] = monotonic_ms() - start_ms
+                    return data
+            except Exception as exc:  # noqa: BLE001 - tab/browser may still be initializing
+                last_error = exc
             time.sleep(0.03)
-        raise RuntimeError(f"tab {tabid} did not complete; last={last}")
+        raise RuntimeError(f"tab {tabid} did not complete; last={last} last_error={last_error!r}")
 
     def wait_tab_visible_after_switch(self, tabid: int, pre_raf: int, pre_interval: int, start_ms: float, timeout: float = 10) -> Dict[str, Any]:
         script = "JSON.stringify({vis:document.visibilityState,hidden:document.hidden,bench:window.bench||{}})"
@@ -602,6 +608,140 @@ def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict
     return result
 
 
+def request_count_by_prefix(requests: List[Dict[str, Any]], prefix: str) -> int:
+    return sum(1 for row in requests if str(row.get("path", "")).startswith(prefix))
+
+
+def run_large_restore_suite(
+    binary: Path,
+    tmp_root: Path,
+    extra_args: List[str],
+    tab_count: int,
+    activate_index: int,
+) -> Dict[str, Any]:
+    """Measure startup behavior for a large restored session.
+
+    Unlike the broad local suite, this intentionally creates enough restored
+    tabs to exercise lazy background-tab restore and startup chrome batching. It
+    waits only for the active tab at startup because background tabs may be
+    deliberately deferred. It then activates one deferred tab to track the
+    first-load cost paid by lazy restoration.
+    """
+    tab_count = max(1, tab_count)
+    activate_index = max(0, min(activate_index, tab_count - 1))
+    result: Dict[str, Any] = {
+        "suite": "large-restore",
+        "tab_count": tab_count,
+        "activate_index": activate_index,
+        "metrics": {},
+        "records": {},
+    }
+    with LocalBenchmarkServer() as server:
+        with BrowserSession(binary, tmp_root, "large-restore", extra_args) as browser:
+            urls = [server.url(f"/page{i}.html") for i in range(tab_count)]
+            browser.profile.mkdir(parents=True, exist_ok=True)
+            (browser.profile / "state").write_text(
+                "showmode=on\nshowfps=on\nshader=off\nactive=0\n"
+                + "".join(f"tab={u}\n" for u in urls)
+            )
+
+            start = browser.launch([])
+            status = browser.wait_ipc_ready(start, timeout=45)
+            deadline = time.time() + 45
+            tabs: Dict[str, Any]
+            tabs_ready_ms: Optional[float] = None
+            while True:
+                tabs = browser.ipc_json(["tabs"], timeout=5)
+                if len(tabs.get("tabs", [])) == tab_count:
+                    tabs_ready_ms = monotonic_ms() - start
+                    break
+                if time.time() > deadline:
+                    raise RuntimeError(f"large restore tabs not ready: {tabs}")
+                time.sleep(0.05)
+
+            active_tabid = int(tabs.get("active_tabid") or status["active_tabid"])
+            active_page = browser.wait_tab_complete(active_tabid, start, timeout=45)
+            active_nav = collect_nav_summary(active_page)
+
+            # Count startup requests after a fixed post-launch window. This keeps
+            # the metric comparable across implementations: eager restore should
+            # request every restored page quickly, while lazy restore should
+            # request only the active page before user activation.
+            elapsed_s = (monotonic_ms() - start) / 1000.0
+            if elapsed_s < 3.0:
+                time.sleep(3.0 - elapsed_s)
+            startup_requests = list(server.httpd.request_log)
+
+            result["records"]["startup"] = {
+                "status": status,
+                "tabs": tabs,
+                "tabs_ready_ms": tabs_ready_ms,
+                "active_tabid": active_tabid,
+                "active_page": active_page,
+                "active_nav": active_nav,
+                "request_count_after_3s": len(startup_requests),
+                "page_request_count_after_3s": request_count_by_prefix(startup_requests, "/page"),
+                "asset_request_count_after_3s": request_count_by_prefix(startup_requests, "/asset"),
+            }
+
+            result["metrics"]["large_restore.startup.ipc_ready_ms"] = summarize([status["observed_elapsed_ms"]])
+            result["metrics"]["large_restore.startup.tabs_ready_ms"] = summarize([tabs_ready_ms])
+            result["metrics"]["large_restore.startup.active_complete_ms"] = summarize(
+                [active_page["observed_elapsed_ms"]]
+            )
+            result["metrics"]["large_restore.startup.active_load_event_ms"] = summarize(
+                [active_nav.get("load_event_ms")]
+            )
+            result["metrics"]["large_restore.startup.requests_after_3s"] = len(startup_requests)
+            result["metrics"]["large_restore.startup.page_requests_after_3s"] = request_count_by_prefix(
+                startup_requests, "/page"
+            )
+            result["metrics"]["large_restore.startup.asset_requests_after_3s"] = request_count_by_prefix(
+                startup_requests, "/asset"
+            )
+
+            if activate_index != 0 and activate_index < len(tabs.get("tabs", [])):
+                target = tabs["tabs"][activate_index]
+                target_tabid = int(target["id"])
+                before_activation_count = len(server.httpd.request_log)
+                activate_start = monotonic_ms()
+                focus_status = browser.ipc_json(["tab-focus", str(target_tabid)], timeout=10)
+                focus_cmd_ms = monotonic_ms() - activate_start
+                activated_page = browser.wait_tab_complete(target_tabid, activate_start, timeout=45)
+                activated_nav = collect_nav_summary(activated_page)
+                activation_requests = list(server.httpd.request_log)[before_activation_count:]
+                result["records"]["deferred_activation"] = {
+                    "target_index": activate_index,
+                    "target_tabid": target_tabid,
+                    "target_before": target,
+                    "focus_status": focus_status,
+                    "focus_cmd_ms": focus_cmd_ms,
+                    "page": activated_page,
+                    "nav": activated_nav,
+                    "request_count": len(activation_requests),
+                    "page_request_count": request_count_by_prefix(activation_requests, "/page"),
+                    "asset_request_count": request_count_by_prefix(activation_requests, "/asset"),
+                }
+                result["metrics"]["large_restore.deferred_activation.focus_cmd_ms"] = summarize([focus_cmd_ms])
+                result["metrics"]["large_restore.deferred_activation.complete_ms"] = summarize(
+                    [activated_page["observed_elapsed_ms"]]
+                )
+                result["metrics"]["large_restore.deferred_activation.load_event_ms"] = summarize(
+                    [activated_nav.get("load_event_ms")]
+                )
+                result["metrics"]["large_restore.deferred_activation.first_contentful_paint_ms"] = summarize(
+                    [activated_nav.get("first_contentful_paint_ms")]
+                )
+                result["metrics"]["large_restore.deferred_activation.requests"] = len(activation_requests)
+                result["metrics"]["large_restore.deferred_activation.page_requests"] = request_count_by_prefix(
+                    activation_requests, "/page"
+                )
+                result["metrics"]["large_restore.deferred_activation.asset_requests"] = request_count_by_prefix(
+                    activation_requests, "/asset"
+                )
+    return result
+
+
 def live_ready_score(data: Dict[str, Any]) -> bool:
     if data.get("ready") == "complete":
         return True
@@ -758,7 +898,12 @@ def print_report(results: Dict[str, Any]) -> None:
 def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", help="Path to vimbrowser binary (default: build-source/Release/vimbrowser, then build/Release/vimbrowser)")
-    parser.add_argument("--suite", choices=["local", "live", "all"], default="local", help="Benchmark suite to run")
+    parser.add_argument(
+        "--suite",
+        choices=["local", "live", "large-restore", "all"],
+        default="local",
+        help="Benchmark suite to run; 'all' runs local and live, while large-restore is opt-in",
+    )
     parser.add_argument("--live-url", action="append", dest="live_urls", help="Live URL to benchmark; repeatable. Defaults to YouTube/GitHub/Discord/Reddit for live/all")
     parser.add_argument("--strict-live", action="store_true", help="Fail the process if any live URL times out/fails")
     parser.add_argument("--check", action="store_true", help="Assert local benchmark thresholds and exit non-zero on regression")
@@ -766,6 +911,18 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--output", help="Write JSON results to this path")
     parser.add_argument("--keep-temp", action="store_true", help="Keep temporary profiles/logs and include the path in output")
     parser.add_argument("--extra-arg", action="append", default=[], help="Extra argument to pass to vimbrowser; repeatable")
+    parser.add_argument(
+        "--large-restore-tabs",
+        type=int,
+        default=60,
+        help="Number of restored tabs for --suite large-restore (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--large-restore-activate-index",
+        type=int,
+        default=5,
+        help="Zero-based restored tab index to activate after startup in --suite large-restore (default: %(default)s)",
+    )
     parser.add_argument(
         "--min-repo-free-gb",
         type=float,
@@ -800,6 +957,16 @@ def main(argv: List[str]) -> int:
     try:
         if args.suite in ("local", "all"):
             suites.append(run_local_suite(binary, tmp_root, args.extra_arg))
+        if args.suite == "large-restore":
+            suites.append(
+                run_large_restore_suite(
+                    binary,
+                    tmp_root,
+                    args.extra_arg,
+                    args.large_restore_tabs,
+                    args.large_restore_activate_index,
+                )
+            )
         if args.suite in ("live", "all"):
             urls = args.live_urls or DEFAULT_LIVE_URLS
             suites.append(run_live_suite(binary, tmp_root, args.extra_arg, urls, args.strict_live))
