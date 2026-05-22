@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -307,10 +308,8 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
   size_t tab_client_count_ = 0;
-  mutable uint64_t cached_tab_lookup_id_ = 0;
-  mutable size_t cached_tab_lookup_index_ = 0;
-  mutable uint64_t second_cached_tab_lookup_id_ = 0;
-  mutable size_t second_cached_tab_lookup_index_ = 0;
+  mutable std::array<uint64_t, 4> cached_tab_lookup_ids_{};
+  mutable std::array<size_t, 4> cached_tab_lookup_indexes_{};
   int laid_out_content_width_ = 0;
   int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;

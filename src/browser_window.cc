@@ -118,6 +118,16 @@ constexpr size_t kOpenHistoryCompletionNameMax = 140;
 constexpr size_t kTabFocusCompletionDescriptionMax = 140;
 constexpr size_t kNoTabIndex = std::numeric_limits<size_t>::max();
 
+size_t IndexAfterVectorMove(size_t index, size_t from, size_t to) {
+  if (index == from) {
+    return to;
+  }
+  if (from < to) {
+    return (index > from && index <= to) ? index - 1 : index;
+  }
+  return (index >= to && index < from) ? index + 1 : index;
+}
+
 bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
 }
@@ -2416,10 +2426,6 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
     return true;
   }
 
-  const uint64_t active_id = active_index_ < tabs_.size() ? tabs_[active_index_].id : 0;
-  const uint64_t visible_id = visible_tab_index_ < tabs_.size()
-                                  ? tabs_[visible_tab_index_].id
-                                  : 0;
   const size_t old_active_index = active_index_;
   const size_t old_visible_index = visible_tab_index_;
   const auto [old_render_start, old_render_count] =
@@ -2430,16 +2436,13 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(from));
   tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(to), tab);
 
-  if (active_id != 0) {
-    if (std::optional<size_t> index = FindTabIndexById(active_id)) {
-      active_index_ = *index;
-    }
+  if (old_active_index < tabs_.size()) {
+    active_index_ = IndexAfterVectorMove(old_active_index, from, to);
   }
-  visible_tab_index_ = kNoTabIndex;
-  if (visible_id != 0) {
-    if (std::optional<size_t> index = FindTabIndexById(visible_id)) {
-      visible_tab_index_ = *index;
-    }
+  if (old_visible_index < tabs_.size()) {
+    visible_tab_index_ = IndexAfterVectorMove(old_visible_index, from, to);
+  } else {
+    visible_tab_index_ = kNoTabIndex;
   }
 
   SaveState();
@@ -2611,29 +2614,36 @@ std::optional<size_t> BrowserWindow::FindTabIndexById(uint64_t tab_id) const {
   if (tab_id == 0) {
     return std::nullopt;
   }
+  auto cache_lookup = [&]() -> std::optional<size_t> {
+    for (size_t i = 0; i < cached_tab_lookup_ids_.size(); ++i) {
+      if (cached_tab_lookup_ids_[i] == tab_id &&
+          cached_tab_lookup_indexes_[i] < tabs_.size() &&
+          tabs_[cached_tab_lookup_indexes_[i]].id == tab_id) {
+        return cached_tab_lookup_indexes_[i];
+      }
+    }
+    return std::nullopt;
+  };
+  auto cache_store = [&](size_t index) {
+    for (size_t i = cached_tab_lookup_ids_.size() - 1; i > 0; --i) {
+      cached_tab_lookup_ids_[i] = cached_tab_lookup_ids_[i - 1];
+      cached_tab_lookup_indexes_[i] = cached_tab_lookup_indexes_[i - 1];
+    }
+    cached_tab_lookup_ids_[0] = tab_id;
+    cached_tab_lookup_indexes_[0] = index;
+  };
+
   const size_t likely_index = static_cast<size_t>(tab_id - 1);
   if (likely_index < tabs_.size() && tabs_[likely_index].id == tab_id) {
-    second_cached_tab_lookup_id_ = cached_tab_lookup_id_;
-    second_cached_tab_lookup_index_ = cached_tab_lookup_index_;
-    cached_tab_lookup_id_ = tab_id;
-    cached_tab_lookup_index_ = likely_index;
+    cache_store(likely_index);
     return likely_index;
   }
-  if (cached_tab_lookup_id_ == tab_id && cached_tab_lookup_index_ < tabs_.size() &&
-      tabs_[cached_tab_lookup_index_].id == tab_id) {
-    return cached_tab_lookup_index_;
-  }
-  if (second_cached_tab_lookup_id_ == tab_id &&
-      second_cached_tab_lookup_index_ < tabs_.size() &&
-      tabs_[second_cached_tab_lookup_index_].id == tab_id) {
-    return second_cached_tab_lookup_index_;
+  if (std::optional<size_t> cached_index = cache_lookup()) {
+    return *cached_index;
   }
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].id == tab_id) {
-      second_cached_tab_lookup_id_ = cached_tab_lookup_id_;
-      second_cached_tab_lookup_index_ = cached_tab_lookup_index_;
-      cached_tab_lookup_id_ = tab_id;
-      cached_tab_lookup_index_ = i;
+      cache_store(i);
       return i;
     }
   }
