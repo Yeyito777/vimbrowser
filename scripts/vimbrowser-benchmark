@@ -259,6 +259,8 @@ class BrowserSession:
         self.extra_args = extra_args or []
         self.ipc_env = os.environ.copy()
         self.ipc_env["VIMBROWSER_PROFILE_DIR"] = str(self.profile)
+        built_ipc = self.binary.parent / "vimbrowser-ipc"
+        self.ipc_client = built_ipc if built_ipc.exists() else IPC
         self.started_xenv = False
         self.process: Optional[subprocess.Popen] = None
 
@@ -301,7 +303,7 @@ class BrowserSession:
         return start
 
     def ipc(self, args: List[str], timeout: float = 20) -> str:
-        return run([str(IPC)] + args, env=self.ipc_env, timeout=timeout).stdout
+        return run([str(self.ipc_client)] + args, env=self.ipc_env, timeout=timeout).stdout
 
     def ipc_json(self, args: List[str], timeout: float = 20) -> Dict[str, Any]:
         return json.loads(self.ipc(args, timeout=timeout))
@@ -818,7 +820,7 @@ def measure_shell_ipc(browser: BrowserSession, args: List[str], iterations: int,
     response_size = 0
     for _ in range(iterations):
         start = monotonic_ms()
-        proc = run([str(IPC)] + args, env=browser.ipc_env, timeout=timeout, text=False)
+        proc = run([str(browser.ipc_client)] + args, env=browser.ipc_env, timeout=timeout, text=False)
         rows.append(monotonic_ms() - start)
         if not response_size:
             response_size = len(proc.stdout or b"")

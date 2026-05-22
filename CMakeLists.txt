@@ -38,6 +38,10 @@ add_executable(vimbrowser
   src/vim.h
 )
 
+add_executable(vimbrowser-ipc
+  src/ipc_client.c
+)
+
 SET_EXECUTABLE_TARGET_PROPERTIES(vimbrowser)
 
 target_include_directories(vimbrowser PRIVATE
@@ -51,9 +55,14 @@ target_link_libraries(vimbrowser PRIVATE
   ${CEF_STANDARD_LIBS}
 )
 
+target_compile_definitions(vimbrowser-ipc PRIVATE
+  VIMBROWSER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_dependencies(vimbrowser libcef_dll_wrapper)
 
 COPY_FILES(vimbrowser "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
 COPY_FILES(vimbrowser "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
 
 install(TARGETS vimbrowser RUNTIME DESTINATION bin)
+install(TARGETS vimbrowser-ipc RUNTIME DESTINATION bin)

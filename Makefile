@@ -4,6 +4,8 @@ BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
 JOBS ?= 12
 INSTALL_BIN ?= $(HOME)/.local/bin/vimbrowser
+INSTALL_IPC_BIN ?= $(HOME)/.local/bin/vimbrowser-ipc
+INSTALL_IPC_SCREENSHOT_BIN ?= $(HOME)/.local/bin/vimbrowser-ipc-screenshot
 INSTALL_XDG_BIN ?= $(HOME)/.local/bin/vimbrowser-xdg-open
 INSTALL_DESKTOP ?= $(HOME)/.local/share/applications/vimbrowser.desktop
 WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
@@ -67,6 +69,13 @@ install-wrapper:
 	  'cd "$(abspath $(BUILD_DIR))/Release"' \
 	  'exec env VIMBROWSER_LAUNCH_CWD="$$launch_cwd" ./vimbrowser --profile-dir="$(WRAPPER_PROFILE_DIR)" "$$@" >> "$$log_file" 2>&1' > $(INSTALL_BIN)
 	chmod +x $(INSTALL_BIN)
+	@if [ -x "$(abspath $(BUILD_DIR))/Release/vimbrowser-ipc" ]; then \
+	  rm -f $(INSTALL_IPC_BIN); \
+	  cp "$(abspath $(BUILD_DIR))/Release/vimbrowser-ipc" $(INSTALL_IPC_BIN); \
+	  chmod +x $(INSTALL_IPC_BIN); \
+	  cp scripts/vimbrowser-ipc-screenshot $(INSTALL_IPC_SCREENSHOT_BIN); \
+	  chmod +x $(INSTALL_IPC_SCREENSHOT_BIN); \
+	fi
 	mkdir -p $(dir $(INSTALL_XDG_BIN)) $(dir $(INSTALL_DESKTOP))
 	rm -f $(INSTALL_XDG_BIN)
 	printf '%s\n' '#!/usr/bin/env bash' \
@@ -88,6 +97,7 @@ install-wrapper:
 	  'MimeType=x-scheme-handler/unknown;x-scheme-handler/about;text/html;text/xml;application/xhtml+xml;application/xml;application/rdf+xml;application/pdf;image/gif;image/jpeg;image/png;image/webp;video/mp4;x-scheme-handler/http;x-scheme-handler/https;' > $(INSTALL_DESKTOP)
 	@if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database $(dir $(INSTALL_DESKTOP)); fi
 	@echo 'installed $(INSTALL_BIN) -> $(abspath $(BUILD_DIR))/Release/vimbrowser'
+	@if [ -x "$(INSTALL_IPC_BIN)" ]; then echo 'installed $(INSTALL_IPC_BIN)'; fi
 	@echo 'installed $(INSTALL_DESKTOP)'
 
 install: build install-wrapper
