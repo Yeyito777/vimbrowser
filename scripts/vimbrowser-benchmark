@@ -583,6 +583,14 @@ def git_metadata() -> Dict[str, Any]:
     return metadata
 
 
+def file_metadata(path: Path) -> Dict[str, Any]:
+    try:
+        stat = path.stat()
+    except OSError:
+        return {}
+    return {"size_bytes": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+
+
 def get_paint_ms(record: Dict[str, Any], paint_name: str) -> Optional[float]:
     for entry in record.get("paint") or []:
         if entry.get("name") == paint_name:
@@ -1884,6 +1892,7 @@ def main(argv: List[str]) -> int:
             "repo": str(REPO),
             "git": git_metadata(),
             "binary": str(binary),
+            "binary_file": file_metadata(binary),
             "tmp_root": str(tmp_root),
             "suite_requested": args.suite,
             "suites": suites,

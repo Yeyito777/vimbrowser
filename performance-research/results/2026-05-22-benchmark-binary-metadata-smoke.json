@@ -1,0 +1,414 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "binary_file": {
+    "mtime_ns": 1779474334517099506,
+    "size_bytes": 1378960
+  },
+  "check_failures": [],
+  "checked": false,
+  "git": {
+    "dirty": true,
+    "head": "13608fd8c55ea35f19128e4497c3716c59c56d31"
+  },
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "ipc",
+  "suites": [
+    {
+      "iterations": 1,
+      "metrics": {
+        "ipc.commands_ms": {
+          "max": 0.5103369653224945,
+          "mean": 0.5103369653224945,
+          "median": 0.5103369653224945,
+          "min": 0.5103369653224945,
+          "n": 1,
+          "p90": 0.5103369653224945,
+          "p95": 0.5103369653224945,
+          "p99": 0.5103369653224945
+        },
+        "ipc.commands_response_bytes": 4089,
+        "ipc.js_moved_cycle_ms": {
+          "max": 0.47156599164009094,
+          "mean": 0.47156599164009094,
+          "median": 0.47156599164009094,
+          "min": 0.47156599164009094,
+          "n": 1,
+          "p90": 0.47156599164009094,
+          "p95": 0.47156599164009094,
+          "p99": 0.47156599164009094
+        },
+        "ipc.js_moved_cycle_response_bytes": 41,
+        "ipc.js_sequential_ms": {
+          "max": 15.444088995456696,
+          "mean": 15.444088995456696,
+          "median": 15.444088995456696,
+          "min": 15.444088995456696,
+          "n": 1,
+          "p90": 15.444088995456696,
+          "p95": 15.444088995456696,
+          "p99": 15.444088995456696
+        },
+        "ipc.js_sequential_response_bytes": 41,
+        "ipc.open_active_ms": {
+          "max": 2.6978119909763336,
+          "mean": 2.6978119909763336,
+          "median": 2.6978119909763336,
+          "min": 2.6978119909763336,
+          "n": 1,
+          "p90": 2.6978119909763336,
+          "p95": 2.6978119909763336,
+          "p99": 2.6978119909763336
+        },
+        "ipc.open_active_response_bytes": 351,
+        "ipc.open_tab_active_complete_command_ms": {
+          "max": 27.862574011087418,
+          "mean": 27.862574011087418,
+          "median": 27.862574011087418,
+          "min": 27.862574011087418,
+          "n": 1,
+          "p90": 27.862574011087418,
+          "p95": 27.862574011087418,
+          "p99": 27.862574011087418
+        },
+        "ipc.open_tab_active_complete_fcp_ms": {
+          "max": 40.0,
+          "mean": 40.0,
+          "median": 40.0,
+          "min": 40.0,
+          "n": 1,
+          "p90": 40.0,
+          "p95": 40.0,
+          "p99": 40.0
+        },
+        "ipc.open_tab_active_complete_load_event_ms": {
+          "max": 77.69999998807907,
+          "mean": 77.69999998807907,
+          "median": 77.69999998807907,
+          "min": 77.69999998807907,
+          "n": 1,
+          "p90": 77.69999998807907,
+          "p95": 77.69999998807907,
+          "p99": 77.69999998807907
+        },
+        "ipc.open_tab_active_complete_ms": {
+          "max": 112.57206401228905,
+          "mean": 112.57206401228905,
+          "median": 112.57206401228905,
+          "min": 112.57206401228905,
+          "n": 1,
+          "p90": 112.57206401228905,
+          "p95": 112.57206401228905,
+          "p99": 112.57206401228905
+        },
+        "ipc.open_tab_active_ms": {
+          "max": 7.815246999263763,
+          "mean": 7.815246999263763,
+          "median": 7.815246999263763,
+          "min": 7.815246999263763,
+          "n": 1,
+          "p90": 7.815246999263763,
+          "p95": 7.815246999263763,
+          "p99": 7.815246999263763
+        },
+        "ipc.open_tab_active_response_bytes": 271,
+        "ipc.startup.ipc_ready_ms": {
+          "max": 321.66513100266457,
+          "mean": 321.66513100266457,
+          "median": 321.66513100266457,
+          "min": 321.66513100266457,
+          "n": 1,
+          "p90": 321.66513100266457,
+          "p95": 321.66513100266457,
+          "p99": 321.66513100266457
+        },
+        "ipc.status_ms": {
+          "max": 0.16041600704193115,
+          "mean": 0.16041600704193115,
+          "median": 0.16041600704193115,
+          "min": 0.16041600704193115,
+          "n": 1,
+          "p90": 0.16041600704193115,
+          "p95": 0.16041600704193115,
+          "p99": 0.16041600704193115
+        },
+        "ipc.status_response_bytes": 260,
+        "ipc.tabs_ms": {
+          "max": 0.20444700121879578,
+          "mean": 0.20444700121879578,
+          "median": 0.20444700121879578,
+          "min": 0.20444700121879578,
+          "n": 1,
+          "p90": 0.20444700121879578,
+          "p95": 0.20444700121879578,
+          "p99": 0.20444700121879578
+        },
+        "ipc.tabs_response_bytes": 328,
+        "ipc.version_ms": {
+          "max": 1.1659699976444244,
+          "mean": 1.1659699976444244,
+          "median": 1.1659699976444244,
+          "min": 1.1659699976444244,
+          "n": 1,
+          "p90": 1.1659699976444244,
+          "p95": 1.1659699976444244,
+          "p99": 1.1659699976444244
+        },
+        "ipc.version_response_bytes": 42
+      },
+      "moved_tabs": 1,
+      "records": {
+        "active_tabid": 1,
+        "commands": {
+          "response_bytes": 4089,
+          "summary": {
+            "max": 0.5103369653224945,
+            "mean": 0.5103369653224945,
+            "median": 0.5103369653224945,
+            "min": 0.5103369653224945,
+            "n": 1,
+            "p90": 0.5103369653224945,
+            "p95": 0.5103369653224945,
+            "p99": 0.5103369653224945
+          }
+        },
+        "js_moved_cycle": {
+          "moved_tabids": [
+            1
+          ],
+          "response_bytes": 41,
+          "summary": {
+            "max": 0.47156599164009094,
+            "mean": 0.47156599164009094,
+            "median": 0.47156599164009094,
+            "min": 0.47156599164009094,
+            "n": 1,
+            "p90": 0.47156599164009094,
+            "p95": 0.47156599164009094,
+            "p99": 0.47156599164009094
+          }
+        },
+        "js_sequential": {
+          "response_bytes": 41,
+          "summary": {
+            "max": 15.444088995456696,
+            "mean": 15.444088995456696,
+            "median": 15.444088995456696,
+            "min": 15.444088995456696,
+            "n": 1,
+            "p90": 15.444088995456696,
+            "p95": 15.444088995456696,
+            "p99": 15.444088995456696
+          }
+        },
+        "open_active": {
+          "active_index": 0,
+          "opened_count": 1,
+          "response_bytes": 351,
+          "summary": {
+            "max": 2.6978119909763336,
+            "mean": 2.6978119909763336,
+            "median": 2.6978119909763336,
+            "min": 2.6978119909763336,
+            "n": 1,
+            "p90": 2.6978119909763336,
+            "p95": 2.6978119909763336,
+            "p99": 2.6978119909763336
+          },
+          "tabid": 1
+        },
+        "open_tab_active": {
+          "opened_count": 1,
+          "response_bytes": 271,
+          "summary": {
+            "max": 7.815246999263763,
+            "mean": 7.815246999263763,
+            "median": 7.815246999263763,
+            "min": 7.815246999263763,
+            "n": 1,
+            "p90": 7.815246999263763,
+            "p95": 7.815246999263763,
+            "p99": 7.815246999263763
+          }
+        },
+        "open_tab_active_complete": {
+          "opened_count": 1,
+          "rows": [
+            {
+              "command_ms": 27.862574011087418,
+              "complete_ms": 112.57206401228905,
+              "nav": {
+                "decoded_body_size": 3122,
+                "dom_content_loaded_ms": 17.099999994039536,
+                "first_contentful_paint_ms": 40,
+                "first_paint_ms": 40,
+                "load_event_ms": 77.69999998807907,
+                "nav_duration_ms": 77.69999998807907,
+                "observed_complete_ms": 112.57206401228905,
+                "transfer_size": 3422
+              },
+              "page": {
+                "bench": {
+                  "dcl": 17.099999994039536,
+                  "intervalCount": 1,
+                  "lastInterval": 66.90000000596046,
+                  "lastRaf": 73,
+                  "load": 77.69999998807907,
+                  "name": "page-open-tab-active-complete-0",
+                  "paintEntries": [
+                    {
+                      "duration": 0,
+                      "name": "first-paint",
+                      "startTime": 40
+                    },
+                    {
+                      "duration": 0,
+                      "name": "first-contentful-paint",
+                      "startTime": 40
+                    }
+                  ],
+                  "rafCount": 5,
+                  "scriptStart": 16.69999998807907,
+                  "visEvents": []
+                },
+                "hasFocus": true,
+                "hidden": false,
+                "nav": {
+                  "activationStart": 0,
+                  "confidence": {
+                    "randomizedTriggerRate": 0.4994798,
+                    "value": "low"
+                  },
+                  "connectEnd": 1.699999988079071,
+                  "connectStart": 1.699999988079071,
+                  "contentEncoding": "",
+                  "criticalCHRestart": 0,
+                  "decodedBodySize": 3122,
+                  "deliveryType": "",
+                  "domComplete": 77.59999999403954,
+                  "domContentLoadedEventEnd": 17.099999994039536,
+                  "domContentLoadedEventStart": 17,
+                  "domInteractive": 16.900000005960464,
+                  "domainLookupEnd": 1.699999988079071,
+                  "domainLookupStart": 1.699999988079071,
+                  "duration": 77.69999998807907,
+                  "encodedBodySize": 3122,
+                  "entryType": "navigation",
+                  "fetchStart": 1.699999988079071,
+                  "finalResponseHeadersStart": 3.300000011920929,
+                  "firstInterimResponseStart": 0,
+                  "initiatorType": "navigation",
+                  "loadEventEnd": 77.69999998807907,
+                  "loadEventStart": 77.59999999403954,
+                  "name": "http://127.0.0.1:45245/page-open-tab-active-complete-0.html",
+                  "nextHopProtocol": "http/1.0",
+                  "notRestoredReasons": null,
+                  "redirectCount": 0,
+                  "redirectEnd": 0,
+                  "redirectStart": 0,
+                  "renderBlockingStatus": "non-blocking",
+                  "requestStart": 2.5999999940395355,
+                  "responseEnd": 3.800000011920929,
+                  "responseStart": 3.300000011920929,
+                  "responseStatus": 200,
+                  "secureConnectionStart": 0,
+                  "serverTiming": [],
+                  "startTime": 0,
+                  "transferSize": 3422,
+                  "type": "navigate",
+                  "unloadEventEnd": 0,
+                  "unloadEventStart": 0,
+                  "workerCacheLookupStart": 0,
+                  "workerFinalSourceType": "",
+                  "workerMatchedSourceType": "",
+                  "workerRouterEvaluationStart": 0,
+                  "workerStart": 0
+                },
+                "observed_elapsed_ms": 112.57206401228905,
+                "paint": [
+                  {
+                    "duration": 0,
+                    "name": "first-paint",
+                    "startTime": 40
+                  },
+                  {
+                    "duration": 0,
+                    "name": "first-contentful-paint",
+                    "startTime": 40
+                  }
+                ],
+                "ready": "complete",
+                "title": "page-open-tab-active-complete-0",
+                "url": "http://127.0.0.1:45245/page-open-tab-active-complete-0.html",
+                "vis": "visible"
+              },
+              "tabid": 3,
+              "url": "http://127.0.0.1:45245/page-open-tab-active-complete-0.html"
+            }
+          ]
+        },
+        "startup_status": {
+          "active_index": 0,
+          "active_tab": 1,
+          "active_tabid": 1,
+          "audible": false,
+          "fps": null,
+          "fps_has_sample": false,
+          "ipc_protocol": "vimbrowser-ipc",
+          "ipc_version": 1,
+          "observed_elapsed_ms": 321.66513100266457,
+          "refresh_rate": 0,
+          "shader": false,
+          "showfps": false,
+          "tabs": 1,
+          "title": "",
+          "url": "http://127.0.0.1:45245/page0.html"
+        },
+        "status": {
+          "response_bytes": 260,
+          "summary": {
+            "max": 0.16041600704193115,
+            "mean": 0.16041600704193115,
+            "median": 0.16041600704193115,
+            "min": 0.16041600704193115,
+            "n": 1,
+            "p90": 0.16041600704193115,
+            "p95": 0.16041600704193115,
+            "p99": 0.16041600704193115
+          }
+        },
+        "tabs": {
+          "response_bytes": 328,
+          "summary": {
+            "max": 0.20444700121879578,
+            "mean": 0.20444700121879578,
+            "median": 0.20444700121879578,
+            "min": 0.20444700121879578,
+            "n": 1,
+            "p90": 0.20444700121879578,
+            "p95": 0.20444700121879578,
+            "p99": 0.20444700121879578
+          }
+        },
+        "version": {
+          "response_bytes": 42,
+          "summary": {
+            "max": 1.1659699976444244,
+            "mean": 1.1659699976444244,
+            "median": 1.1659699976444244,
+            "min": 1.1659699976444244,
+            "n": 1,
+            "p90": 1.1659699976444244,
+            "p95": 1.1659699976444244,
+            "p99": 1.1659699976444244
+          }
+        }
+      },
+      "shell_iterations": 0,
+      "suite": "ipc",
+      "tab_count": 1
+    }
+  ],
+  "timestamp_unix": 1779474412.1490507,
+  "tmp_root": "/tmp/vimbrowser-benchmark-91wauplo"
+}
