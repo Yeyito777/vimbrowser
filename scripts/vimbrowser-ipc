@@ -33,7 +33,7 @@ sub default_socket_path {
 my $path = exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC}
     ? $ENV{VIMBROWSER_IPC}
     : default_socket_path();
-my $command = @ARGV ? join(" ", @ARGV) : "status";
+my $command = @ARGV == 1 ? $ARGV[0] : (@ARGV ? join(" ", @ARGV) : "status");
 
 socket(my $sock, 1, 1, 0)
     or die "vimbrowser-ipc: socket: $!\n";
