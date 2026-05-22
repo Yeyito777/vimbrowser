@@ -2563,6 +2563,10 @@ std::optional<size_t> BrowserWindow::FindTabIndexById(uint64_t tab_id) const {
   if (tab_id == 0) {
     return std::nullopt;
   }
+  const size_t likely_index = static_cast<size_t>(tab_id - 1);
+  if (likely_index < tabs_.size() && tabs_[likely_index].id == tab_id) {
+    return likely_index;
+  }
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].id == tab_id) {
       return i;
