@@ -2564,6 +2564,15 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     tabs_[active_index_].view->RequestFocus();
   }
   SaveState();
+  if (closing_active && tabs_.size() > kSidebarMaxRenderedRows &&
+      sidebar_spacer_) {
+    ScheduleSidebarRefresh();
+    if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
+      content_inner_panel_->Layout();
+    }
+    last_tab_close_placeholder_ = false;
+    return;
+  }
   if (can_keep_virtual_sidebar_on_close && active_index_ == old_active_index &&
       visible_tab_index_ == old_visible_index) {
     last_tab_close_placeholder_ = false;
