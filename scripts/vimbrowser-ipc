@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use strict;
 use warnings;
 
 sub sockaddr_un_linux {
