@@ -1,0 +1,166 @@
+{
+  "benchmark_version": 1,
+  "binary": "/home/yeyito/Workspace/active-development/vimbrowser/build-source/Release/vimbrowser",
+  "check_failures": [],
+  "checked": false,
+  "repo": "/home/yeyito/Workspace/active-development/vimbrowser",
+  "suite_requested": "ipc",
+  "suites": [
+    {
+      "iterations": 200,
+      "metrics": {
+        "ipc.commands_ms": {
+          "max": 0.844197005033493,
+          "mean": 0.07700563102960586,
+          "median": 0.05766202509403229,
+          "min": 0.0423009991645813,
+          "n": 200,
+          "p90": 0.09955591559410094,
+          "p95": 0.15982198566198363,
+          "p99": 0.3680774310231173
+        },
+        "ipc.commands_response_bytes": 4089,
+        "ipc.js_moved_cycle_ms": {
+          "max": 0.9228289723396301,
+          "mean": 0.21308422833681107,
+          "median": 0.19279100000858307,
+          "min": 0.15149500966072083,
+          "n": 200,
+          "p90": 0.2781110018491745,
+          "p95": 0.3304730236530304,
+          "p99": 0.5000964006781576
+        },
+        "ipc.js_moved_cycle_response_bytes": 41,
+        "ipc.js_sequential_ms": {
+          "max": 0.9798009991645813,
+          "mean": 0.21174853727221488,
+          "median": 0.17945101857185364,
+          "min": 0.14807501435279846,
+          "n": 200,
+          "p90": 0.2783300131559372,
+          "p95": 0.4426144853234293,
+          "p99": 0.7393894949555395
+        },
+        "ipc.js_sequential_response_bytes": 41,
+        "ipc.status_ms": {
+          "max": 0.5870090126991272,
+          "mean": 0.068370663523674,
+          "median": 0.0466964989900589,
+          "min": 0.042911022901535034,
+          "n": 200,
+          "p90": 0.09175098836421966,
+          "p95": 0.14219603389501584,
+          "p99": 0.34036413520574493
+        },
+        "ipc.status_response_bytes": 295,
+        "ipc.version_ms": {
+          "max": 8.756395995616913,
+          "mean": 0.19854086890816688,
+          "median": 0.05721700191497803,
+          "min": 0.039191991090774536,
+          "n": 200,
+          "p90": 0.1596551030874252,
+          "p95": 0.44281109273433783,
+          "p99": 3.9361380103230363
+        },
+        "ipc.version_response_bytes": 42
+      },
+      "moved_tabs": 4,
+      "records": {
+        "active_tabid": 1000,
+        "commands": {
+          "response_bytes": 4089,
+          "summary": {
+            "max": 0.844197005033493,
+            "mean": 0.07700563102960586,
+            "median": 0.05766202509403229,
+            "min": 0.0423009991645813,
+            "n": 200,
+            "p90": 0.09955591559410094,
+            "p95": 0.15982198566198363,
+            "p99": 0.3680774310231173
+          }
+        },
+        "js_moved_cycle": {
+          "moved_tabids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "response_bytes": 41,
+          "summary": {
+            "max": 0.9228289723396301,
+            "mean": 0.21308422833681107,
+            "median": 0.19279100000858307,
+            "min": 0.15149500966072083,
+            "n": 200,
+            "p90": 0.2781110018491745,
+            "p95": 0.3304730236530304,
+            "p99": 0.5000964006781576
+          }
+        },
+        "js_sequential": {
+          "response_bytes": 41,
+          "summary": {
+            "max": 0.9798009991645813,
+            "mean": 0.21174853727221488,
+            "median": 0.17945101857185364,
+            "min": 0.14807501435279846,
+            "n": 200,
+            "p90": 0.2783300131559372,
+            "p95": 0.4426144853234293,
+            "p99": 0.7393894949555395
+          }
+        },
+        "startup_status": {
+          "active_index": 999,
+          "active_tab": 1000,
+          "active_tabid": 1000,
+          "audible": false,
+          "fps": null,
+          "fps_has_sample": false,
+          "ipc_protocol": "vimbrowser-ipc",
+          "ipc_version": 1,
+          "observed_elapsed_ms": 418.5637989938259,
+          "refresh_rate": 0,
+          "shader": false,
+          "showfps": false,
+          "tabs": 1000,
+          "title": "",
+          "url": "http://127.0.0.1:34723/page999.html"
+        },
+        "status": {
+          "response_bytes": 295,
+          "summary": {
+            "max": 0.5870090126991272,
+            "mean": 0.068370663523674,
+            "median": 0.0466964989900589,
+            "min": 0.042911022901535034,
+            "n": 200,
+            "p90": 0.09175098836421966,
+            "p95": 0.14219603389501584,
+            "p99": 0.34036413520574493
+          }
+        },
+        "version": {
+          "response_bytes": 42,
+          "summary": {
+            "max": 8.756395995616913,
+            "mean": 0.19854086890816688,
+            "median": 0.05721700191497803,
+            "min": 0.039191991090774536,
+            "n": 200,
+            "p90": 0.1596551030874252,
+            "p95": 0.44281109273433783,
+            "p99": 3.9361380103230363
+          }
+        }
+      },
+      "suite": "ipc",
+      "tab_count": 1000
+    }
+  ],
+  "timestamp_unix": 1779447176.792848,
+  "tmp_root": "/tmp/vimbrowser-benchmark-j_e0elzo"
+}

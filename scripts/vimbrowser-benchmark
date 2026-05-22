@@ -304,6 +304,25 @@ class BrowserSession:
     def ipc_json(self, args: List[str], timeout: float = 20) -> Dict[str, Any]:
         return json.loads(self.ipc(args, timeout=timeout))
 
+    def ipc_direct(self, command: str, timeout: float = 20) -> bytes:
+        """Send a raw IPC command without subprocess/client startup overhead."""
+        sock_path = self.profile / "ipc.sock"
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            sock.settimeout(timeout)
+            sock.connect(str(sock_path))
+            sock.sendall((command + "\n").encode())
+            sock.shutdown(socket.SHUT_WR)
+            chunks = []
+            while True:
+                chunk = sock.recv(262144)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+        data = b"".join(chunks)
+        if data.startswith(b"ERR "):
+            raise RuntimeError(data.decode(errors="replace"))
+        return data
+
     def wait_ipc_ready(self, start_ms: float, timeout: float = 30) -> Dict[str, Any]:
         deadline = time.time() + timeout
         last_error: Optional[BaseException] = None
@@ -742,6 +761,103 @@ def run_large_restore_suite(
     return result
 
 
+def measure_direct_ipc(browser: BrowserSession, command: str, iterations: int, timeout: float = 20) -> Dict[str, Any]:
+    rows: List[float] = []
+    response_size = 0
+    for _ in range(iterations):
+        start = monotonic_ms()
+        data = browser.ipc_direct(command, timeout=timeout)
+        rows.append(monotonic_ms() - start)
+        if not response_size:
+            response_size = len(data)
+    return {"summary": summarize(rows), "response_bytes": response_size}
+
+
+def run_ipc_suite(
+    binary: Path,
+    tmp_root: Path,
+    extra_args: List[str],
+    tab_count: int,
+    iterations: int,
+    moved_tabs: int,
+) -> Dict[str, Any]:
+    """Microbenchmark direct IPC/status paths without subprocess overhead."""
+    tab_count = max(1, tab_count)
+    iterations = max(1, iterations)
+    moved_tabs = max(0, min(moved_tabs, tab_count))
+    result: Dict[str, Any] = {
+        "suite": "ipc",
+        "tab_count": tab_count,
+        "iterations": iterations,
+        "moved_tabs": moved_tabs,
+        "metrics": {},
+        "records": {},
+    }
+    with LocalBenchmarkServer() as server:
+        with BrowserSession(binary, tmp_root, "ipc", extra_args) as browser:
+            urls = [server.url(f"/page{i}.html") for i in range(tab_count)]
+            browser.profile.mkdir(parents=True, exist_ok=True)
+            (browser.profile / "state").write_text(
+                f"showmode=on\nshowfps=off\nshader=off\nactive={tab_count - 1}\n"
+                + "".join(f"tab={u}\n" for u in urls)
+            )
+            start = browser.launch([])
+            status = browser.wait_ipc_ready(start, timeout=60)
+            deadline = time.time() + 60
+            while int(status.get("tabs", 0)) != tab_count:
+                if time.time() > deadline:
+                    raise RuntimeError(f"ipc suite tabs not ready: {status}")
+                time.sleep(0.05)
+                status = json.loads(browser.ipc_direct("status"))
+
+            tabs = json.loads(browser.ipc_direct("tabs"))["tabs"]
+            active_tabid = int(tabs[tab_count - 1]["id"])
+            direct_records: Dict[str, Any] = {
+                "startup_status": status,
+                "active_tabid": active_tabid,
+            }
+
+            for name, command in [
+                ("version", "version"),
+                ("commands", "commands"),
+                ("status", "status"),
+                ("js_sequential", f"js {active_tabid} JSON.stringify(1)"),
+            ]:
+                record = measure_direct_ipc(browser, command, iterations)
+                direct_records[name] = record
+                result["metrics"][f"ipc.{name}_ms"] = record["summary"]
+                result["metrics"][f"ipc.{name}_response_bytes"] = record["response_bytes"]
+
+            if moved_tabs:
+                moved_ids = [int(tabs[i]["id"]) for i in range(moved_tabs)]
+                for tabid in moved_ids:
+                    browser.ipc_direct(f"tab-order {tabid} {tab_count - 1}")
+                for tabid in moved_ids:
+                    browser.ipc_direct(f"tab-focus {tabid}")
+                    time.sleep(0.08)
+                moved_rows: List[float] = []
+                response_size = 0
+                for i in range(iterations):
+                    tabid = moved_ids[i % len(moved_ids)]
+                    command = f"js {tabid} JSON.stringify(1)"
+                    row_start = monotonic_ms()
+                    data = browser.ipc_direct(command)
+                    moved_rows.append(monotonic_ms() - row_start)
+                    if not response_size:
+                        response_size = len(data)
+                record = {
+                    "moved_tabids": moved_ids,
+                    "summary": summarize(moved_rows),
+                    "response_bytes": response_size,
+                }
+                direct_records["js_moved_cycle"] = record
+                result["metrics"]["ipc.js_moved_cycle_ms"] = record["summary"]
+                result["metrics"]["ipc.js_moved_cycle_response_bytes"] = response_size
+
+            result["records"] = direct_records
+    return result
+
+
 def live_ready_score(data: Dict[str, Any]) -> bool:
     if data.get("ready") == "complete":
         return True
@@ -900,9 +1016,9 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--binary", help="Path to vimbrowser binary (default: build-source/Release/vimbrowser, then build/Release/vimbrowser)")
     parser.add_argument(
         "--suite",
-        choices=["local", "live", "large-restore", "all"],
+        choices=["local", "live", "large-restore", "ipc", "all"],
         default="local",
-        help="Benchmark suite to run; 'all' runs local and live, while large-restore is opt-in",
+        help="Benchmark suite to run; 'all' runs local and live, while large-restore/ipc are opt-in",
     )
     parser.add_argument("--live-url", action="append", dest="live_urls", help="Live URL to benchmark; repeatable. Defaults to YouTube/GitHub/Discord/Reddit for live/all")
     parser.add_argument("--strict-live", action="store_true", help="Fail the process if any live URL times out/fails")
@@ -922,6 +1038,24 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         type=int,
         default=5,
         help="Zero-based restored tab index to activate after startup in --suite large-restore (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--ipc-tabs",
+        type=int,
+        default=1000,
+        help="Number of restored tabs for --suite ipc (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--ipc-iterations",
+        type=int,
+        default=200,
+        help="Direct IPC iterations per metric for --suite ipc (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--ipc-moved-tabs",
+        type=int,
+        default=4,
+        help="Number of moved tabs to cycle through in --suite ipc (default: %(default)s)",
     )
     parser.add_argument(
         "--min-repo-free-gb",
@@ -965,6 +1099,17 @@ def main(argv: List[str]) -> int:
                     args.extra_arg,
                     args.large_restore_tabs,
                     args.large_restore_activate_index,
+                )
+            )
+        if args.suite == "ipc":
+            suites.append(
+                run_ipc_suite(
+                    binary,
+                    tmp_root,
+                    args.extra_arg,
+                    args.ipc_tabs,
+                    args.ipc_iterations,
+                    args.ipc_moved_tabs,
                 )
             )
         if args.suite in ("live", "all"):
