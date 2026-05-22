@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
@@ -130,7 +131,9 @@ bool IpcServer::Start() {
   }
   std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
 
-  if (bind(server_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+  const socklen_t addr_len = static_cast<socklen_t>(
+      offsetof(sockaddr_un, sun_path) + socket_path_.size() + 1);
+  if (bind(server_fd_, reinterpret_cast<sockaddr*>(&addr), addr_len) != 0) {
     std::cerr << "vimbrowser: ipc bind(" << socket_path_ << ") failed: "
               << std::strerror(errno) << std::endl;
     close(server_fd_);
