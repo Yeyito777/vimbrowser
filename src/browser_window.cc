@@ -2110,15 +2110,25 @@ void BrowserWindow::ActivateTab(size_t index) {
   }
 
   if (active_index_ == index) {
-    RefreshSidebar();
+    if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+      RefreshSidebarRow(index);
+    } else {
+      RefreshSidebar();
+    }
     if (visible_tab_index_ != index) {
       ScheduleActiveBrowserSync();
     }
     return;
   }
 
+  const size_t previous_active_index = active_index_;
   active_index_ = index;
-  RefreshSidebar();
+  if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+    RefreshSidebarRow(previous_active_index);
+    RefreshSidebarRow(active_index_);
+  } else {
+    RefreshSidebar();
+  }
   ScheduleStateSave();
   ScheduleActiveBrowserSync();
 }
@@ -4180,17 +4190,7 @@ void BrowserWindow::RefreshSidebar() {
 
   if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
     for (size_t i = 0; i < tabs_.size(); ++i) {
-      CefRefPtr<CefTextfield> row = sidebar_rows_[i].row;
-      if (!row) {
-        continue;
-      }
-      const bool active = i == active_index_;
-      row->SetText(SidebarTextForTab(i, tabs_[i].url, active,
-                                     tabs_[i].audible));
-      row->SelectRange(CefRange(0, 0));
-      StyleTextfield(row, tabs_[i].audible ? theme::kAccent : theme::kText,
-                     active ? theme::kSidebarSelBg : theme::kSidebarBg,
-                     "monospace, 12px");
+      RefreshSidebarRow(i);
     }
     return;
   }
@@ -4238,6 +4238,23 @@ void BrowserWindow::RefreshSidebar() {
   }
 
   sidebar_content_panel_->InvalidateLayout();
+}
+
+void BrowserWindow::RefreshSidebarRow(size_t index) {
+  if (index >= tabs_.size() || index >= sidebar_rows_.size()) {
+    return;
+  }
+  CefRefPtr<CefTextfield> row = sidebar_rows_[index].row;
+  if (!row) {
+    return;
+  }
+  const bool active = index == active_index_;
+  row->SetText(SidebarTextForTab(index, tabs_[index].url, active,
+                                 tabs_[index].audible));
+  row->SelectRange(CefRange(0, 0));
+  StyleTextfield(row, tabs_[index].audible ? theme::kAccent : theme::kText,
+                 active ? theme::kSidebarSelBg : theme::kSidebarBg,
+                 "monospace, 12px");
 }
 
 void BrowserWindow::RefreshAudibleTabs() {

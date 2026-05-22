@@ -224,6 +224,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateAutocompleteView();
   void Layout();
   void RefreshSidebar();
+  void RefreshSidebarRow(size_t index);
   void RefreshAudibleTabs();
   void SetFocusArea(FocusArea area);
   void ToggleSidebar();
