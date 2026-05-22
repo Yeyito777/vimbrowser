@@ -1,0 +1,1 @@
+vimbrowser-benchmark: refusing to run: another vimbrowser-benchmark process appears active (manual-lock-test). This guard prevents overlapping xenv/vimbrowser runs; wait for it to finish, terminate stale processes, or pass --allow-concurrent only for an intentional isolated experiment.

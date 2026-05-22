@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import fcntl
 import http.server
 import json
 import os
@@ -75,6 +76,7 @@ KNOWN_TRACKER_DOMAINS = {
 }
 DEFAULT_MIN_REPO_FREE_GB = 100.0
 DEFAULT_MIN_TMP_FREE_GB = 1.0
+BENCHMARK_LOCK_PATH = Path(tempfile.gettempdir()) / "vimbrowser-benchmark.lock"
 
 LOCAL_CHECK_THRESHOLDS_MS = {
     "startup.single.ipc_ready_ms.p95": 2500.0,
@@ -202,6 +204,40 @@ def require_free_space(path: Path, min_free_gb: float, label: str) -> None:
             f"only {free_gb:.1f}GiB free; require at least {min_free_gb:.1f}GiB. "
             "This guard prevents benchmark/crash experiments from causing ENOSPC."
         )
+
+
+@contextlib.contextmanager
+def exclusive_benchmark_lock(allow_concurrent: bool):
+    if allow_concurrent:
+        yield None
+        return
+
+    BENCHMARK_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with BENCHMARK_LOCK_PATH.open("a+") as lock_file:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            lock_file.seek(0)
+            holder = lock_file.read().strip() or "unknown pid"
+            raise SystemExit(
+                "vimbrowser-benchmark: refusing to run: another vimbrowser-benchmark "
+                f"process appears active ({holder}). This guard prevents "
+                "overlapping xenv/vimbrowser runs; wait for it to finish, "
+                "terminate stale processes, or pass --allow-concurrent only "
+                "for an intentional isolated experiment."
+            ) from None
+
+        lock_file.seek(0)
+        lock_file.truncate()
+        lock_file.write(f"pid={os.getpid()} repo={REPO}\n")
+        lock_file.flush()
+        try:
+            yield lock_file
+        finally:
+            lock_file.seek(0)
+            lock_file.truncate()
+            lock_file.flush()
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def free_port() -> int:
@@ -1728,6 +1764,11 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--json", action="store_true", help="Print only JSON")
     parser.add_argument("--output", help="Write JSON results to this path")
     parser.add_argument("--keep-temp", action="store_true", help="Keep temporary profiles/logs and include the path in output")
+    parser.add_argument(
+        "--allow-concurrent",
+        action="store_true",
+        help="Allow overlapping benchmark harness runs; by default a /tmp lock prevents concurrent xenv/vimbrowser benchmarks",
+    )
     parser.add_argument("--extra-arg", action="append", default=[], help="Extra argument to pass to vimbrowser; repeatable")
     parser.add_argument(
         "--large-restore-tabs",
@@ -1782,63 +1823,64 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 
 def main(argv: List[str]) -> int:
     args = parse_args(argv)
-    require_free_space(REPO, args.min_repo_free_gb, "repository")
-    require_free_space(Path(tempfile.gettempdir()), args.min_tmp_free_gb, "temporary")
-    binary = resolve_binary(args.binary)
-    tmp_root = Path(tempfile.mkdtemp(prefix="vimbrowser-benchmark-"))
-    suites: List[Dict[str, Any]] = []
-    results: Dict[str, Any] = {
-        "benchmark_version": 1,
-        "timestamp_unix": time.time(),
-        "repo": str(REPO),
-        "binary": str(binary),
-        "tmp_root": str(tmp_root),
-        "suite_requested": args.suite,
-        "suites": suites,
-    }
-    try:
-        if args.suite in ("local", "all"):
-            suites.append(run_local_suite(binary, tmp_root, args.extra_arg))
-        if args.suite == "large-restore":
-            suites.append(
-                run_large_restore_suite(
-                    binary,
-                    tmp_root,
-                    args.extra_arg,
-                    args.large_restore_tabs,
-                    args.large_restore_activate_index,
+    with exclusive_benchmark_lock(args.allow_concurrent):
+        require_free_space(REPO, args.min_repo_free_gb, "repository")
+        require_free_space(Path(tempfile.gettempdir()), args.min_tmp_free_gb, "temporary")
+        binary = resolve_binary(args.binary)
+        tmp_root = Path(tempfile.mkdtemp(prefix="vimbrowser-benchmark-"))
+        suites: List[Dict[str, Any]] = []
+        results: Dict[str, Any] = {
+            "benchmark_version": 1,
+            "timestamp_unix": time.time(),
+            "repo": str(REPO),
+            "binary": str(binary),
+            "tmp_root": str(tmp_root),
+            "suite_requested": args.suite,
+            "suites": suites,
+        }
+        try:
+            if args.suite in ("local", "all"):
+                suites.append(run_local_suite(binary, tmp_root, args.extra_arg))
+            if args.suite == "large-restore":
+                suites.append(
+                    run_large_restore_suite(
+                        binary,
+                        tmp_root,
+                        args.extra_arg,
+                        args.large_restore_tabs,
+                        args.large_restore_activate_index,
+                    )
                 )
-            )
-        if args.suite == "ipc":
-            suites.append(
-                run_ipc_suite(
-                    binary,
-                    tmp_root,
-                    args.extra_arg,
-                    args.ipc_tabs,
-                    args.ipc_iterations,
-                    args.ipc_moved_tabs,
-                    args.ipc_shell_iterations,
+            if args.suite == "ipc":
+                suites.append(
+                    run_ipc_suite(
+                        binary,
+                        tmp_root,
+                        args.extra_arg,
+                        args.ipc_tabs,
+                        args.ipc_iterations,
+                        args.ipc_moved_tabs,
+                        args.ipc_shell_iterations,
+                    )
                 )
-            )
-        if args.suite in ("live", "all"):
-            urls = args.live_urls or DEFAULT_LIVE_URLS
-            suites.append(run_live_suite(binary, tmp_root, args.extra_arg, urls, args.strict_live))
-        results["checked"] = bool(args.check)
-        results["check_failures"] = run_checks(results) if args.check else []
-        if args.output:
-            Path(args.output).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
-        if args.json:
-            print(json.dumps(results, sort_keys=True))
-        else:
-            print_report(results)
-            print("JSON_RESULTS=" + json.dumps(results, sort_keys=True))
-        if results.get("check_failures"):
-            return 1
-        return 0
-    finally:
-        if not args.keep_temp:
-            shutil.rmtree(tmp_root, ignore_errors=True)
+            if args.suite in ("live", "all"):
+                urls = args.live_urls or DEFAULT_LIVE_URLS
+                suites.append(run_live_suite(binary, tmp_root, args.extra_arg, urls, args.strict_live))
+            results["checked"] = bool(args.check)
+            results["check_failures"] = run_checks(results) if args.check else []
+            if args.output:
+                Path(args.output).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+            if args.json:
+                print(json.dumps(results, sort_keys=True))
+            else:
+                print_report(results)
+                print("JSON_RESULTS=" + json.dumps(results, sort_keys=True))
+            if results.get("check_failures"):
+                return 1
+            return 0
+        finally:
+            if not args.keep_temp:
+                shutil.rmtree(tmp_root, ignore_errors=True)
 
 
 if __name__ == "__main__":
