@@ -82,7 +82,8 @@ scripts/vimbrowser-ipc scroll 280
 ```
 
 With `--profile-dir DIR`, the socket lives at `DIR/ipc.sock`; the installed
-wrapper profile is auto-detected by `scripts/vimbrowser-ipc`. Set
+wrapper profile is auto-detected by the built `vimbrowser-ipc` client and the
+source `scripts/vimbrowser-ipc` fallback. Set
 `VIMBROWSER_PROFILE_DIR=DIR` or `VIMBROWSER_IPC=/path/to/ipc.sock` to target a
 separate test instance.
 

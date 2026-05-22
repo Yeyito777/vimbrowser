@@ -38,7 +38,7 @@ Errors start with `ERR `.
 
 ## Reference client
 
-Use `scripts/vimbrowser-ipc` as the canonical CLI wrapper:
+Use the installed `vimbrowser-ipc` command or the source-tree `scripts/vimbrowser-ipc` fallback as the canonical CLI wrapper:
 
 ```bash
 scripts/vimbrowser-ipc status
@@ -48,7 +48,7 @@ VIMBROWSER_PROFILE_DIR=/tmp/my-vimbrowser-profile scripts/vimbrowser-ipc tabs
 VIMBROWSER_IPC=/tmp/test/ipc.sock scripts/vimbrowser-ipc status
 ```
 
-The script is intentionally thin. Protocol semantics belong in the browser command dispatcher, not in the wrapper.
+The client is intentionally thin. Protocol semantics belong in the browser command dispatcher, not in the wrapper. The built native client is preferred for low-latency automation; the source Perl script remains a portable fallback/reference path.
 
 ## Tab IDs versus indexes
 
