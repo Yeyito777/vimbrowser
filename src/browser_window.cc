@@ -108,7 +108,7 @@ constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
 constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
-constexpr int kVirtualSidebarRefreshDelayMs = 100;
+constexpr int kVirtualSidebarRefreshDelayMs = 250;
 // Keep tab content selection asynchronous so rapid tab-switch bursts still
 // coalesce by generation, but do not add an artificial human-visible delay.
 constexpr int kTabContentActivationDelayMs = 0;
