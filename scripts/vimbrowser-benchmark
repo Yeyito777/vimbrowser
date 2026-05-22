@@ -534,6 +534,38 @@ def resolve_binary(arg: Optional[str]) -> Path:
     return candidates[0]
 
 
+def git_metadata() -> Dict[str, Any]:
+    metadata: Dict[str, Any] = {}
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=True,
+        ).stdout.strip()
+        if head:
+            metadata["head"] = head
+    except (OSError, subprocess.SubprocessError):
+        pass
+    try:
+        status = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=REPO,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=True,
+        ).stdout
+        metadata["dirty"] = bool(status.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return metadata
+
+
 def get_paint_ms(record: Dict[str, Any], paint_name: str) -> Optional[float]:
     for entry in record.get("paint") or []:
         if entry.get("name") == paint_name:
@@ -1833,6 +1865,7 @@ def main(argv: List[str]) -> int:
             "benchmark_version": 1,
             "timestamp_unix": time.time(),
             "repo": str(REPO),
+            "git": git_metadata(),
             "binary": str(binary),
             "tmp_root": str(tmp_root),
             "suite_requested": args.suite,
