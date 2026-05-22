@@ -768,12 +768,17 @@ std::string IpcSocketPathForStatePath(const std::string& state_path) {
 }
 
 std::string IpcVersionJson() {
-  std::ostringstream out;
-  out << "{"
-      << "\"protocol\":\"" << kIpcProtocolName << "\","
-      << "\"version\":" << kIpcProtocolVersion
-      << "}";
-  return out.str();
+  static const std::string kJson = [] {
+    std::string out;
+    out.reserve(48);
+    out += "{\"protocol\":";
+    AppendJsonString(out, kIpcProtocolName);
+    out += ",\"version\":";
+    AppendJsonNumber(out, kIpcProtocolVersion);
+    out.push_back('}');
+    return out;
+  }();
+  return kJson;
 }
 
 int NextScreenshotDevToolsMessageId() {
