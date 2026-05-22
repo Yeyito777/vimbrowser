@@ -5319,7 +5319,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     const std::string text = JoinArgs(argv, 2);
     const std::string url = ResolveUrlOrSearch(text);
     RecordOpenHistory(text);
-    Tab& tab = tabs_[*index];
+    const size_t tab_index = *index;
+    Tab& tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
     tab.url = url;
     if (tab.client && tab.client->browser() &&
@@ -5327,6 +5328,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
     }
     SaveState();
+    if (tab_index != active_index_ && tabs_.size() > kSidebarMaxRenderedRows &&
+        sidebar_spacer_) {
+      const auto [render_start, render_count] =
+          SidebarRenderedRange(tabs_.size(), active_index_);
+      if (tab_index >= render_start && tab_index < render_start + render_count) {
+        ScheduleSidebarRefresh();
+      }
+      return TabsJson();
+    }
     RefreshSidebar();
     Layout();
     return TabsJson();
