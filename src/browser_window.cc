@@ -94,6 +94,10 @@ constexpr int kAcceleratorTabPrevious = 5003;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
+// The sidebar is fixed-height and does not expose a scroll container. Rendering
+// hundreds of off-screen textfields dominates extreme session restore startup,
+// while 96 rows already covers unusually tall windows at 24px per row.
+constexpr size_t kSidebarMaxRenderedRows = 96;
 // Experimental chrome-level mode indicator. Flip to false to disable without
 // touching the mode/focus state machines.
 constexpr bool kModeIndicatorEnabled = true;
@@ -104,6 +108,7 @@ constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
 constexpr int kSmallScrollPx = 140;
 constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
+constexpr int kVirtualSidebarRefreshDelayMs = 100;
 // Keep tab content selection asynchronous so rapid tab-switch bursts still
 // coalesce by generation, but do not add an artificial human-visible delay.
 constexpr int kTabContentActivationDelayMs = 0;
@@ -630,6 +635,19 @@ std::string SidebarTextForTab(size_t index,
     text += "...";
   }
   return text;
+}
+
+std::pair<size_t, size_t> SidebarRenderedRange(size_t tab_count,
+                                               size_t active_index) {
+  if (tab_count <= kSidebarMaxRenderedRows) {
+    return {0, tab_count};
+  }
+  const size_t half_window = kSidebarMaxRenderedRows / 2;
+  size_t start = active_index > half_window ? active_index - half_window : 0;
+  if (start + kSidebarMaxRenderedRows > tab_count) {
+    start = tab_count - kSidebarMaxRenderedRows;
+  }
+  return {start, kSidebarMaxRenderedRows};
 }
 
 std::string ShellRead(const char* command) {
@@ -1888,8 +1906,9 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
 void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   const int id = button ? button->GetID() : 0;
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
-    const size_t index = static_cast<size_t>(id - kSidebarRowBaseId);
-    if (index < tabs_.size()) {
+    const size_t row_index = static_cast<size_t>(id - kSidebarRowBaseId);
+    if (row_index < sidebar_rows_.size()) {
+      const size_t index = sidebar_rows_[row_index].tab_index;
       ActivateTab(index);
       SetFocusArea(FocusArea::kTabSidebar);
     }
@@ -2156,33 +2175,43 @@ void BrowserWindow::ActivateTab(size_t index) {
   }
 
   if (active_index_ == index) {
+    bool needs_sidebar_refresh = false;
     if (!bulk_tab_update_) {
-      if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+      if (tabs_.size() <= kSidebarMaxRenderedRows &&
+          sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
         RefreshSidebarRow(index);
       } else {
-        RefreshSidebar();
+        needs_sidebar_refresh = true;
       }
     }
     if (visible_tab_index_ != index || !tabs_[index].view) {
       ScheduleActiveBrowserSync();
+    }
+    if (needs_sidebar_refresh) {
+      ScheduleSidebarRefresh();
     }
     return;
   }
 
   const size_t previous_active_index = active_index_;
   active_index_ = index;
+  bool needs_sidebar_refresh = false;
   if (!bulk_tab_update_) {
-    if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+    if (tabs_.size() <= kSidebarMaxRenderedRows &&
+        sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
       RefreshSidebarRow(previous_active_index);
       RefreshSidebarRow(active_index_);
     } else {
-      RefreshSidebar();
+      needs_sidebar_refresh = true;
     }
   }
   if (!bulk_tab_update_) {
     ScheduleStateSave();
   }
   ScheduleActiveBrowserSync();
+  if (needs_sidebar_refresh) {
+    ScheduleSidebarRefresh();
+  }
 }
 
 void BrowserWindow::ScheduleActiveBrowserSync() {
@@ -4247,7 +4276,8 @@ void BrowserWindow::RefreshSidebar() {
     return;
   }
 
-  if (sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+  if (tabs_.size() <= kSidebarMaxRenderedRows &&
+      sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
     for (size_t i = 0; i < tabs_.size(); ++i) {
       RefreshSidebarRow(i);
     }
@@ -4270,7 +4300,10 @@ void BrowserWindow::RefreshSidebar() {
     sidebar_content_layout = sidebar_content_panel_->GetLayout()->AsBoxLayout();
   }
 
-  for (size_t i = 0; i < tabs_.size(); ++i) {
+  const auto [render_start, render_count] =
+      SidebarRenderedRange(tabs_.size(), active_index_);
+  for (size_t row_index = 0; row_index < render_count; ++row_index) {
+    const size_t i = render_start + row_index;
     const bool active = i == active_index_;
     const std::string text = SidebarTextForTab(i, tabs_[i].url, active,
                                                tabs_[i].audible);
@@ -4280,10 +4313,10 @@ void BrowserWindow::RefreshSidebar() {
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
     row->SetText(text);
     row->SelectRange(CefRange(0, 0));
-    row->SetID(kSidebarRowBaseId + static_cast<int>(i));
+    row->SetID(kSidebarRowBaseId + static_cast<int>(row_index));
     StyleTextfield(row, row_text, row_bg, "monospace, 12px");
     sidebar_content_panel_->AddChildView(row);
-    sidebar_rows_.push_back({row});
+    sidebar_rows_.push_back({row, i});
   }
 
   sidebar_spacer_ = CefTextfield::CreateTextfield(this);
@@ -4299,11 +4332,45 @@ void BrowserWindow::RefreshSidebar() {
   sidebar_content_panel_->InvalidateLayout();
 }
 
-void BrowserWindow::RefreshSidebarRow(size_t index) {
-  if (index >= tabs_.size() || index >= sidebar_rows_.size()) {
+void BrowserWindow::ScheduleSidebarRefresh() {
+  if (!window_) {
     return;
   }
-  CefRefPtr<CefTextfield> row = sidebar_rows_[index].row;
+
+  const uint64_t generation = ++sidebar_refresh_generation_;
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::RefreshSidebarForGeneration,
+                                    self, generation),
+                     kVirtualSidebarRefreshDelayMs);
+}
+
+void BrowserWindow::RefreshSidebarForGeneration(uint64_t generation) {
+  if (window_ && generation == sidebar_refresh_generation_) {
+    RefreshSidebar();
+  }
+}
+
+void BrowserWindow::RefreshSidebarRow(size_t index) {
+  if (index >= tabs_.size()) {
+    return;
+  }
+  size_t row_index = index;
+  if (sidebar_rows_.size() != tabs_.size() ||
+      row_index >= sidebar_rows_.size() ||
+      sidebar_rows_[row_index].tab_index != index) {
+    row_index = sidebar_rows_.size();
+    for (size_t i = 0; i < sidebar_rows_.size(); ++i) {
+      if (sidebar_rows_[i].tab_index == index) {
+        row_index = i;
+        break;
+      }
+    }
+  }
+  if (row_index >= sidebar_rows_.size()) {
+    return;
+  }
+  CefRefPtr<CefTextfield> row = sidebar_rows_[row_index].row;
   if (!row) {
     return;
   }

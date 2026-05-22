@@ -128,6 +128,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
   struct SidebarRowViews {
     CefRefPtr<CefTextfield> row;
+    size_t tab_index = 0;
   };
 
   struct ClosedTab {
@@ -228,6 +229,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateAutocompleteView();
   void Layout();
   void RefreshSidebar();
+  void ScheduleSidebarRefresh();
+  void RefreshSidebarForGeneration(uint64_t generation);
   void RefreshSidebarRow(size_t index);
   void RefreshAudibleTabs();
   void SetFocusArea(FocusArea area);
@@ -300,6 +303,7 @@ class BrowserWindow final : public CefWindowDelegate,
   size_t visible_tab_index_ = static_cast<size_t>(-1);
   uint64_t active_browser_sync_generation_ = 0;
   uint64_t state_save_generation_ = 0;
+  uint64_t sidebar_refresh_generation_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
   int laid_out_content_width_ = 0;
