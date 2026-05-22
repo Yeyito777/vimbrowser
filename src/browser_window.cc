@@ -777,7 +777,11 @@ void AppendJsonNumber(std::string& out, double value) {
 }
 
 void AppendJsonBool(std::string& out, bool value) {
-  out += value ? "true" : "false";
+  if (value) {
+    out.append("true", 4);
+  } else {
+    out.append("false", 5);
+  }
 }
 
 std::string IpcSocketPathForStatePath(const std::string& state_path) {
