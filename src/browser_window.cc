@@ -3100,7 +3100,7 @@ void BrowserWindow::AppendTabJson(std::string& out,
 
 std::string BrowserWindow::TabsJson() const {
   std::string out;
-  out.reserve(96 + tabs_.size() * 220);
+  out.reserve(96 + tabs_.size() * 240);
   out += "{\"ipc_protocol\":\"";
   out += kIpcProtocolName;
   out += "\",\"ipc_version\":";
