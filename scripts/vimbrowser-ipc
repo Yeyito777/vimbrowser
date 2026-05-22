@@ -33,10 +33,9 @@ def send_command(socket_path: Path, command: str) -> bytes:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.connect(str(socket_path))
         sock.sendall((command + "\n").encode())
-        sock.shutdown(socket.SHUT_WR)
         chunks = []
         while True:
-            data = sock.recv(4096)
+            data = sock.recv(262144)
             if not data:
                 break
             chunks.append(data)
