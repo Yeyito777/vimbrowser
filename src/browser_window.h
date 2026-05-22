@@ -228,7 +228,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool SyncCommandTextFromField();
   void UpdateAutocompleteView();
   void Layout();
-  void RefreshSidebar();
+  bool RefreshSidebar();
   void ScheduleSidebarRefresh();
   void RefreshSidebarForGeneration(uint64_t generation);
   void RefreshSidebarRow(size_t index);

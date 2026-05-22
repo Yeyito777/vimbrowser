@@ -2400,8 +2400,9 @@ void BrowserWindow::MoveActiveTab(int delta) {
   }
   active_index_ = new_active_index;
   SaveState();
-  RefreshSidebar();
-  Layout();
+  if (RefreshSidebar()) {
+    Layout();
+  }
 }
 
 bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
@@ -2448,8 +2449,9 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
       ((from >= old_render_end && to >= old_render_end) ||
        (from < old_render_start && to < old_render_start));
   if (!can_keep_virtual_sidebar) {
-    RefreshSidebar();
-    Layout();
+    if (RefreshSidebar()) {
+      Layout();
+    }
   }
   return true;
 }
@@ -4372,9 +4374,9 @@ void BrowserWindow::Layout() {
   }
 }
 
-void BrowserWindow::RefreshSidebar() {
+bool BrowserWindow::RefreshSidebar() {
   if (!sidebar_content_panel_) {
-    return;
+    return false;
   }
 
   if (tabs_.size() <= kSidebarMaxRenderedRows &&
@@ -4382,7 +4384,29 @@ void BrowserWindow::RefreshSidebar() {
     for (size_t i = 0; i < tabs_.size(); ++i) {
       RefreshSidebarRow(i);
     }
-    return;
+    return false;
+  }
+
+  const auto [render_start, render_count] =
+      SidebarRenderedRange(tabs_.size(), active_index_);
+  if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_ &&
+      sidebar_rows_.size() == render_count) {
+    for (size_t row_index = 0; row_index < render_count; ++row_index) {
+      const size_t i = render_start + row_index;
+      sidebar_rows_[row_index].tab_index = i;
+      CefRefPtr<CefTextfield> row = sidebar_rows_[row_index].row;
+      if (!row) {
+        continue;
+      }
+      const bool active = i == active_index_;
+      row->SetText(SidebarTextForTab(i, tabs_[i].url, active,
+                                     tabs_[i].audible));
+      row->SelectRange(CefRange(0, 0));
+      StyleTextfield(row, tabs_[i].audible ? theme::kAccent : theme::kText,
+                     active ? theme::kSidebarSelBg : theme::kSidebarBg,
+                     "monospace, 12px");
+    }
+    return false;
   }
 
   for (auto& row : sidebar_rows_) {
@@ -4401,8 +4425,6 @@ void BrowserWindow::RefreshSidebar() {
     sidebar_content_layout = sidebar_content_panel_->GetLayout()->AsBoxLayout();
   }
 
-  const auto [render_start, render_count] =
-      SidebarRenderedRange(tabs_.size(), active_index_);
   for (size_t row_index = 0; row_index < render_count; ++row_index) {
     const size_t i = render_start + row_index;
     const bool active = i == active_index_;
@@ -4431,6 +4453,7 @@ void BrowserWindow::RefreshSidebar() {
   }
 
   sidebar_content_panel_->InvalidateLayout();
+  return true;
 }
 
 void BrowserWindow::ScheduleSidebarRefresh() {
