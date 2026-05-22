@@ -2,13 +2,10 @@
 use strict;
 use warnings;
 
-use constant AF_UNIX => 1;
-use constant SOCK_STREAM => 1;
-
 sub sockaddr_un_linux {
     my ($path) = @_;
     die "vimbrowser-ipc: socket path too long: $path\n" if length($path) >= 108;
-    return pack("S Z108", AF_UNIX, $path);
+    return pack("S Z108", 1, $path);
 }
 
 if (@ARGV && $ARGV[0] eq "screenshot") {
@@ -38,7 +35,7 @@ my $path = exists $ENV{VIMBROWSER_IPC} && length $ENV{VIMBROWSER_IPC}
     : default_socket_path();
 my $command = @ARGV ? join(" ", @ARGV) : "status";
 
-socket(my $sock, AF_UNIX, SOCK_STREAM, 0)
+socket(my $sock, 1, 1, 0)
     or die "vimbrowser-ipc: socket: $!\n";
 connect($sock, sockaddr_un_linux($path))
     or die "vimbrowser-ipc: connect $path: $!\n";
