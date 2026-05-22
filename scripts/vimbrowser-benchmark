@@ -16,6 +16,7 @@ import contextlib
 import http.server
 import json
 import os
+import re
 import shutil
 import socket
 import socketserver
@@ -27,6 +28,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+from urllib.parse import urlparse
 
 REPO = Path(__file__).resolve().parents[1]
 IPC = REPO / "scripts" / "vimbrowser-ipc"
@@ -493,6 +495,17 @@ def collect_live_smoothness(browser: BrowserSession, tabid: int, sample_ms: int 
 """
     payload = browser.ipc_json(["js", str(tabid), read_script], timeout=6)
     return json.loads(payload["result"])
+
+
+def live_site_metric_label(url: str, index: int) -> str:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "url").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    first_path = parsed.path.strip("/").split("/", 1)[0]
+    source = f"{host}_{first_path}" if first_path else host
+    label = re.sub(r"[^a-z0-9]+", "_", source).strip("_") or "url"
+    return f"{index + 1:02d}_{label[:64]}"
 
 
 def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict[str, Any]:
@@ -1086,6 +1099,7 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
         rows = []
         errors = []
         for url in urls:
+            site_label = live_site_metric_label(url, len(rows))
             start = monotonic_ms()
             tab_status = browser.ipc_json(["open-tab", url], timeout=20)
             open_cmd_ms = monotonic_ms() - start
@@ -1127,6 +1141,7 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
                     smoothness = {"ok": False, "error": repr(exc)}
             rows.append({
                 "requested_url": url,
+                "site_label": site_label,
                 "tabid": tabid,
                 "ok": ok,
                 "open_cmd_ms": open_cmd_ms,
@@ -1148,6 +1163,36 @@ def run_live_suite(binary: Path, tmp_root: Path, extra_args: List[str], urls: Li
         result["metrics"]["live.smoothness.raf_slow_50_count"] = summarize([r.get("raf_slow_50_count") for r in smooth_rows])
         result["metrics"]["live.smoothness.longtask_count"] = summarize([r.get("longtask_count") for r in smooth_rows])
         result["metrics"]["live.smoothness.longtask_total_ms"] = summarize([r.get("longtask_total_ms") for r in smooth_rows])
+        for row in rows:
+            label = row.get("site_label") or "site"
+            prefix = f"live.site.{label}"
+            nav = row.get("nav") or {}
+            smoothness = row.get("smoothness") or {}
+            result["metrics"][f"{prefix}.open_cmd_ms"] = summarize([row.get("open_cmd_ms")])
+            result["metrics"][f"{prefix}.observed_ready_ms"] = summarize(
+                [row.get("elapsed_ms") if row.get("ok") else None]
+            )
+            result["metrics"][f"{prefix}.load_event_ms"] = summarize(
+                [nav.get("load_event_ms") if row.get("ok") else None]
+            )
+            result["metrics"][f"{prefix}.first_contentful_paint_ms"] = summarize(
+                [nav.get("first_contentful_paint_ms") if row.get("ok") else None]
+            )
+            if smoothness.get("ok"):
+                result["metrics"][f"{prefix}.smoothness.raf_fps"] = summarize([smoothness.get("raf_fps")])
+                result["metrics"][f"{prefix}.smoothness.raf_p95_ms"] = summarize([smoothness.get("raf_p95_ms")])
+                result["metrics"][f"{prefix}.smoothness.raf_slow_33_count"] = summarize(
+                    [smoothness.get("raf_slow_33_count")]
+                )
+                result["metrics"][f"{prefix}.smoothness.raf_slow_50_count"] = summarize(
+                    [smoothness.get("raf_slow_50_count")]
+                )
+                result["metrics"][f"{prefix}.smoothness.longtask_count"] = summarize(
+                    [smoothness.get("longtask_count")]
+                )
+                result["metrics"][f"{prefix}.smoothness.longtask_total_ms"] = summarize(
+                    [smoothness.get("longtask_total_ms")]
+                )
     return result
 
 
