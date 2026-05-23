@@ -1920,7 +1920,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
     }
   }
-  if (mode_ == Mode::kNormal && !native_hints_active_) {
+  if (mode_ == Mode::kNormal && !native_hints_active_ &&
+      !(focus_area_ == FocusArea::kWebView &&
+        website_mode_ == vim::Mode::kInsert)) {
     if (command_id == kAcceleratorTabNext) {
       ActivateRelative(1);
       return true;
