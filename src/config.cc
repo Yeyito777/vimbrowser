@@ -398,6 +398,11 @@ std::string DisplayUrl(std::string url) {
     url.erase(0, 8);
   } else if (StartsWith(url, "http://")) {
     url.erase(0, 7);
+  } else if (StartsWith(url, "file:///")) {
+    url.erase(0, 8);
+  }
+  if (StartsWith(url, "www.")) {
+    url.erase(0, 4);
   }
   if (url.size() > 28) {
     url.resize(27);
