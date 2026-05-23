@@ -4777,11 +4777,11 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     return true;
   }
 
-  if (HasOnlyControlModifier(event) && IsCtrlKey(event, 'J') &&
-      focus_area_ == FocusArea::kWebView) {
-    // Ctrl+J is a webview-local browser command: right-click native hints.
-    // Let HandleWebsiteModeKey forward the command into Blink instead of using
-    // it as the global sidebar/webview focus toggle.
+  if (HasOnlyControlModifier(event) && focus_area_ == FocusArea::kWebView &&
+      (IsCtrlKey(event, 'J') || IsCtrlKey(event, 'K'))) {
+    // Ctrl+J/Ctrl+K are webview-local browser commands for right-click/hover
+    // native hints.  Let HandleWebsiteModeKey forward the command into Blink
+    // instead of using it as the global sidebar/webview focus toggle.
     return false;
   }
 
@@ -5042,8 +5042,10 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   const bool click_hints = IsPlainLetterKey(event, 'f');
   const bool right_click_hints = HasOnlyControlModifier(event) &&
                                  IsCtrlKey(event, 'J');
+  const bool hover_hints = HasOnlyControlModifier(event) && IsCtrlKey(event, 'K');
   const bool scrollable_hints = HasOnlyControlModifier(event) && IsSpaceKey(event);
-  if (!click_hints && !right_click_hints && !scrollable_hints) {
+  if (!click_hints && !right_click_hints && !hover_hints &&
+      !scrollable_hints) {
     return false;
   }
 
@@ -5067,6 +5069,12 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
     // round-trip just like Ctrl+Space scrollable hints.
     browser_event.windows_key_code = 'J';
     browser_event.unmodified_character = 'j';
+  }
+  if (hover_hints) {
+    // Blink's native hint dispatcher recognizes Ctrl+K as the hover hint entry
+    // command. Preserve the semantic key explicitly for the renderer round-trip.
+    browser_event.windows_key_code = 'K';
+    browser_event.unmodified_character = 'k';
   }
   if (scrollable_hints) {
     // Some toolkits deliver Ctrl+Space to the browser chrome as a control

@@ -196,9 +196,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - native network body capture/replay is off by default to keep normal browsing
   and benchmarks on the fast path; set `VIMBROWSER_NETWORK_CAPTURE=1` or pass
   `--enable-vimbrowser-network-capture` when you need IPC `network` diagnostics
-- `Ctrl+k` cycles focus between web view and tab sidebar; `Ctrl+j` does the
-  same while the tab sidebar is focused, but starts right-click hints while the
-  web view is focused
+- `Ctrl+j` / `Ctrl+k` cycle focus from the tab sidebar back to the web view;
+  while the web view is focused they start right-click/hover hints instead
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
@@ -215,6 +214,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - in website-normal/normal web modes, `Ctrl+j` starts native backend
   right-click hints; selecting a label dispatches a context-menu/right-click on
   that element
+- in website-normal/normal web modes, `Ctrl+k` starts native backend hover hints;
+  selecting a label dispatches a synthetic hover/mouse-move over that element
 - in website-normal/normal web modes, `Ctrl+Space` starts native backend
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it
