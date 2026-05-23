@@ -92,6 +92,7 @@ constexpr int kAcceleratorCommandTab = 5000;
 constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kAcceleratorTabNext = 5002;
 constexpr int kAcceleratorTabPrevious = 5003;
+constexpr int kAcceleratorSidebarSpace = 5004;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
@@ -1639,6 +1640,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
   window_->SetAccelerator(kAcceleratorTabNext, 'J', true, false, false, true);
   window_->SetAccelerator(kAcceleratorTabPrevious, 'K', true, false, false, true);
+  window_->SetAccelerator(kAcceleratorSidebarSpace, 0x20, false, false, false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -1884,6 +1886,9 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
+    return false;
+  }
   if (mode_ != Mode::kNormal && IsCharEvent(event) && PlainKeyChar(event) == ':') {
     return true;
   }
@@ -1906,6 +1911,12 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return HandleWebsiteModeKey(event);
   }
 
+  if (focus_area_ == FocusArea::kTabSidebar &&
+      (IsEscapeKey(event) || IsSpaceKey(event))) {
+    ForwardKeyToActivePage(event);
+    return true;
+  }
+
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -1914,6 +1925,9 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
+  if (forwarding_key_to_page_) {
+    return false;
+  }
   if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
     if (command_id == kAcceleratorCommandTab ||
         command_id == kAcceleratorCommandBacktab) {
@@ -1923,6 +1937,17 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   if (mode_ == Mode::kNormal && !native_hints_active_ &&
       !(focus_area_ == FocusArea::kWebView &&
         website_mode_ == vim::Mode::kInsert)) {
+    if (command_id == kAcceleratorSidebarSpace &&
+        focus_area_ == FocusArea::kTabSidebar) {
+      CefKeyEvent event;
+      event.type = KEYEVENT_RAWKEYDOWN;
+      event.windows_key_code = 0x20;
+      event.native_key_code = 65;
+      event.character = 0x20;
+      event.unmodified_character = 0x20;
+      ForwardKeyToActivePage(event);
+      return true;
+    }
     if (command_id == kAcceleratorTabNext) {
       ActivateRelative(1);
       return true;
@@ -1936,6 +1961,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
+  if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
+    return false;
+  }
   if (mode_ != Mode::kNormal) {
     return HandleCommandModeKey(event);
   }
@@ -1953,6 +1981,12 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
 
   if (focus_area_ == FocusArea::kWebView) {
     return HandleWebsiteModeKey(event);
+  }
+
+  if (focus_area_ == FocusArea::kTabSidebar &&
+      (IsEscapeKey(event) || IsSpaceKey(event))) {
+    ForwardKeyToActivePage(event);
+    return true;
   }
 
   if (!IsRawKeyDown(event)) {
@@ -2496,6 +2530,22 @@ void BrowserWindow::ActivateLastTab() {
   if (!tabs_.empty()) {
     ActivateTab(tabs_.size() - 1);
   }
+}
+
+void BrowserWindow::ForwardKeyToActivePage(const CefKeyEvent& event) {
+  if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
+    forwarding_key_to_page_ = true;
+    browser->GetHost()->SendKeyEvent(event);
+    CefRefPtr<BrowserWindow> self = this;
+    CefPostDelayedTask(TID_UI,
+                       base::BindOnce(&BrowserWindow::ClearForwardingKeyGuard,
+                                      self),
+                       50);
+  }
+}
+
+void BrowserWindow::ClearForwardingKeyGuard() {
+  forwarding_key_to_page_ = false;
 }
 
 void BrowserWindow::MoveActiveTab(int delta) {
@@ -4838,6 +4888,9 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
+      if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+        return false;
+      }
       if ((event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
           website_mode_ == vim::Mode::kInsert) {
         website_mode_ = vim::Mode::kWebsiteNormal;

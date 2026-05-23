@@ -175,6 +175,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool ActivateRelativeAudible(int delta);
   void ActivateFirstTab();
   void ActivateLastTab();
+  void ForwardKeyToActivePage(const CefKeyEvent& event);
+  void ClearForwardingKeyGuard();
   void MoveActiveTab(int delta);
   bool MoveTabToIndex(size_t from, size_t to);
   CefRefPtr<CefBrowser> BrowserForTabId(uint64_t tab_id,
@@ -304,6 +306,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
   bool shader_enabled_ = true;
+  bool forwarding_key_to_page_ = false;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool last_tab_close_placeholder_ = false;
