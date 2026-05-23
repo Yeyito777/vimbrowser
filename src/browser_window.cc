@@ -653,6 +653,38 @@ std::string SidebarTextForTab(size_t index,
   return text;
 }
 
+uint32_t DecimalDigits(size_t value) {
+  uint32_t digits = 1;
+  while (value >= 10) {
+    value /= 10;
+    ++digits;
+  }
+  return digits;
+}
+
+void StyleSidebarRow(CefRefPtr<CefTextfield> row,
+                     size_t index,
+                     bool active,
+                     bool audible,
+                     cef_color_t background) {
+  StyleTextfield(row, theme::kText, background, "monospace, 12px");
+  if (!row) {
+    return;
+  }
+  if (active) {
+    row->ApplyTextColor(theme::kAccent, CefRange(0, 1));
+  }
+  if (audible) {
+    // SidebarTextForTab format: "<marker><space><1-based index>: <icon> <url>".
+    // The status glyphs are BMP characters, so these CefRange offsets are UTF-16
+    // code-unit positions even though the backing std::string is UTF-8.
+    const uint32_t audible_icon_offset = 2 + DecimalDigits(index + 1) + 2;
+    row->ApplyTextColor(theme::kAccent,
+                        CefRange(audible_icon_offset,
+                                 audible_icon_offset + 1));
+  }
+}
+
 std::pair<size_t, size_t> SidebarRenderedRange(size_t tab_count,
                                                size_t active_index) {
   if (tab_count <= kSidebarMaxRenderedRows) {
@@ -4550,16 +4582,17 @@ bool BrowserWindow::RefreshSidebar() {
                                                 tabs_[i].audible);
       const cef_color_t row_bg =
           active ? theme::kSidebarSelBg : theme::kSidebarBg;
-      const cef_color_t row_text =
-          tabs_[i].audible ? theme::kAccent : theme::kText;
+      const cef_color_t row_text = theme::kText;
+      bool text_changed = false;
       if (row_views.text != text) {
         row->SetText(text);
         row->SelectRange(CefRange(0, 0));
         row_views.text = text;
+        text_changed = true;
       }
-      if (row_views.text_color != row_text ||
+      if (text_changed || row_views.text_color != row_text ||
           row_views.background_color != row_bg) {
-        StyleTextfield(row, row_text, row_bg, "monospace, 12px");
+        StyleSidebarRow(row, i, active, tabs_[i].audible, row_bg);
         row_views.text_color = row_text;
         row_views.background_color = row_bg;
       }
@@ -4590,12 +4623,12 @@ bool BrowserWindow::RefreshSidebar() {
                                                tabs_[i].audible);
 
     const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
-    const cef_color_t row_text = tabs_[i].audible ? theme::kAccent : theme::kText;
+    const cef_color_t row_text = theme::kText;
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
     row->SetText(text);
     row->SelectRange(CefRange(0, 0));
     row->SetID(kSidebarRowBaseId + static_cast<int>(row_index));
-    StyleTextfield(row, row_text, row_bg, "monospace, 12px");
+    StyleSidebarRow(row, i, active, tabs_[i].audible, row_bg);
     sidebar_content_panel_->AddChildView(row);
     sidebar_rows_.push_back({row, i, text, row_text, row_bg});
   }
@@ -4660,16 +4693,18 @@ void BrowserWindow::RefreshSidebarRow(size_t index) {
   const std::string text = SidebarTextForTab(index, tabs_[index].url, active,
                                             tabs_[index].audible);
   const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
-  const cef_color_t row_text = tabs_[index].audible ? theme::kAccent : theme::kText;
+  const cef_color_t row_text = theme::kText;
   SidebarRowViews& row_views = sidebar_rows_[row_index];
+  bool text_changed = false;
   if (row_views.text != text) {
     row->SetText(text);
     row->SelectRange(CefRange(0, 0));
     row_views.text = text;
+    text_changed = true;
   }
-  if (row_views.text_color != row_text ||
+  if (text_changed || row_views.text_color != row_text ||
       row_views.background_color != row_bg) {
-    StyleTextfield(row, row_text, row_bg, "monospace, 12px");
+    StyleSidebarRow(row, index, active, tabs_[index].audible, row_bg);
     row_views.text_color = row_text;
     row_views.background_color = row_bg;
   }
