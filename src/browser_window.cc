@@ -2005,9 +2005,11 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
         CloneActiveTab();
         return true;
       case '[':
+      case 'h':
         ActivateRelativeAudible(-1);
         return true;
       case ']':
+      case 'l':
         ActivateRelativeAudible(1);
         return true;
       case 'e':
