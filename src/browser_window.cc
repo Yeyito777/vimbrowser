@@ -671,9 +671,6 @@ void StyleSidebarRow(CefRefPtr<CefTextfield> row,
   if (!row) {
     return;
   }
-  if (active) {
-    row->ApplyTextColor(theme::kAccent, CefRange(0, 1));
-  }
   if (audible) {
     // SidebarTextForTab format: "<marker><space><1-based index>: <icon> <url>".
     // The status glyphs are BMP characters, so these CefRange offsets are UTF-16
