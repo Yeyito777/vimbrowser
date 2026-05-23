@@ -196,19 +196,25 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - native network body capture/replay is off by default to keep normal browsing
   and benchmarks on the fast path; set `VIMBROWSER_NETWORK_CAPTURE=1` or pass
   `--enable-vimbrowser-network-capture` when you need IPC `network` diagnostics
-- `Ctrl+j` / `Ctrl+k` cycle focus between web view and tab sidebar
+- `Ctrl+k` cycles focus between web view and tab sidebar; `Ctrl+j` does the
+  same while the tab sidebar is focused, but starts right-click hints while the
+  web view is focused
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
 - when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
 - tabs currently emitting audio are shown in the sidebar as `◉` before their
-  URL and rendered with the theme accent color; when the tab sidebar is focused,
-  `[` / `]` move to the previous/next audible tab with wraparound
+  URL; only that status icon is rendered with the theme accent color. When the
+  tab sidebar is focused, `[` / `]` or `h` / `l` move to the previous/next
+  audible tab with wraparound
 - in website-normal and regular Vim normal web modes, `i` / `a` enter insert
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`
   (`Shift-f`) opens hinted links in a new tab immediately after the active tab
+- in website-normal/normal web modes, `Ctrl+j` starts native backend
+  right-click hints; selecting a label dispatches a context-menu/right-click on
+  that element
 - in website-normal/normal web modes, `Ctrl+Space` starts native backend
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it
