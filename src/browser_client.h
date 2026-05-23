@@ -40,6 +40,9 @@ class BrowserClient final : public CefClient,
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforePopupAborted(CefRefPtr<CefBrowser> browser,
                             int popup_id) override;
+  void OnAddressChange(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       const CefString& url) override;
   void OnLoadError(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefFrame> frame,
                    ErrorCode error_code,

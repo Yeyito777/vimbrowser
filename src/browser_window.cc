@@ -1392,9 +1392,24 @@ bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
-  for (Tab& tab : tabs_) {
+  UpdateClientUrl(client, url, true);
+}
+
+void BrowserWindow::OnClientAddressChange(BrowserClient* client,
+                                          const std::string& url) {
+  UpdateClientUrl(client, url, false);
+}
+
+void BrowserWindow::UpdateClientUrl(BrowserClient* client,
+                                    const std::string& url,
+                                    bool force_update) {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    Tab& tab = tabs_[i];
     if (tab.client.get() == client) {
       if (tab.deferred_load && url == "about:blank") {
+        return;
+      }
+      if (!force_update && tab.url == url) {
         return;
       }
       tab.deferred_load = false;
@@ -1404,7 +1419,18 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
         last_tab_close_placeholder_ = false;
       }
       SaveState();
-      RefreshSidebar();
+      if (tabs_.size() <= kSidebarMaxRenderedRows &&
+          sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
+        RefreshSidebarRow(i);
+      } else if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
+        const auto [render_start, render_count] =
+            SidebarRenderedRange(tabs_.size(), active_index_);
+        if (i >= render_start && i < render_start + render_count) {
+          ScheduleSidebarRefresh();
+        }
+      } else {
+        RefreshSidebar();
+      }
       return;
     }
   }

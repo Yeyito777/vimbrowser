@@ -532,6 +532,14 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefFrame> frame,
+                                    const CefString& url) {
+  if (owner_ && frame && frame->IsMain()) {
+    owner_->OnClientAddressChange(this, url.ToString());
+  }
+}
+
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode error_code,

@@ -51,6 +51,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
+  void OnClientAddressChange(BrowserClient* client, const std::string& url);
   bool OnClientProcessMessage(BrowserClient* client,
                               CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
@@ -163,6 +164,9 @@ class BrowserWindow final : public CefWindowDelegate,
                       size_t index,
                       bool activate);
   void ActivateTab(size_t index);
+  void UpdateClientUrl(BrowserClient* client,
+                       const std::string& url,
+                       bool force_update);
   void ScheduleActiveBrowserSync();
   void ApplyActiveBrowserSelection(uint64_t generation);
   void ScheduleStateSave();
