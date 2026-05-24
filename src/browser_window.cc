@@ -65,6 +65,17 @@ constexpr const char kShaderRefreshScript[] = R"JS(
 })();
 )JS";
 
+constexpr const char kBlurActiveElementScript[] = R"JS(
+(() => {
+  const element = document.activeElement;
+  if (element && element !== document.body &&
+      element !== document.documentElement &&
+      typeof element.blur === 'function') {
+    element.blur();
+  }
+})();
+)JS";
+
 constexpr int kSidebarWidth = 175;
 constexpr int kCommandHeight = 28;
 constexpr int kCommandAutocompleteRowHeight = 24;
@@ -2540,10 +2551,33 @@ void BrowserWindow::ActivateLastTab() {
   }
 }
 
+void BrowserWindow::ScheduleActivePageBlur() {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser) {
+    return;
+  }
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::BlurPageFocus, self,
+                                    browser),
+                     25);
+}
+
+void BrowserWindow::BlurPageFocus(CefRefPtr<CefBrowser> browser) {
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  browser->GetMainFrame()->ExecuteJavaScript(
+      kBlurActiveElementScript, browser->GetMainFrame()->GetURL(), 0);
+}
+
 void BrowserWindow::ForwardKeyToActivePage(const CefKeyEvent& event) {
   if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
     forwarding_key_to_page_ = true;
     browser->GetHost()->SendKeyEvent(event);
+    if (IsEscapeKey(event)) {
+      ScheduleActivePageBlur();
+    }
     CefRefPtr<BrowserWindow> self = this;
     CefPostDelayedTask(TID_UI,
                        base::BindOnce(&BrowserWindow::ClearForwardingKeyGuard,
@@ -4904,6 +4938,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
       if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+        ScheduleActivePageBlur();
         return false;
       }
       if (website_mode_ == vim::Mode::kNormal ||

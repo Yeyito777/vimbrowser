@@ -265,6 +265,7 @@ def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
     h.key("Escape", pause=0.2)
     web = h.snapshot()
     require("Escape" in web["keys"], "website-mode Escape did not pass through", web)
+    require(web["active"] != "input", "website-mode Escape did not blur focused input", web)
 
     h.reset(focus_input=True)
     h.focus_sidebar()
@@ -272,6 +273,7 @@ def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
     h.key("space", pause=0.35)
     sidebar = h.snapshot()
     require("Escape" in sidebar["keys"], "sidebar Escape did not pass through", sidebar)
+    require(sidebar["active"] != "input", "sidebar Escape did not blur focused input", sidebar)
     require(" " in sidebar["keys"] or "Spacebar" in sidebar["keys"],
             "sidebar Space did not pass through", sidebar)
     require(len(sidebar["keys"]) < 10, "forwarded sidebar keys recursively re-entered shell", sidebar)

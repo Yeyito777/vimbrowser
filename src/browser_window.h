@@ -175,6 +175,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool ActivateRelativeAudible(int delta);
   void ActivateFirstTab();
   void ActivateLastTab();
+  void ScheduleActivePageBlur();
+  void BlurPageFocus(CefRefPtr<CefBrowser> browser);
   void ForwardKeyToActivePage(const CefKeyEvent& event);
   void ClearForwardingKeyGuard();
   void MoveActiveTab(int delta);
