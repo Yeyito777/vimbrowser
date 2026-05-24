@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Regression tests for committed vimbrowser keyboard-mode routing fixes.
+"""Regression tests for vimbrowser shell/webview keyboard routing.
 
 These tests run the built browser inside an xenv, drive real key events, and
-observe DOM keyboard/input events through vimbrowser-ipc. They cover committed
-regressions around mode-entry key suppression, insert-mode shifted typing, and
-intentional Escape/Space passthroughs.
+observe DOM keyboard/input events through vimbrowser-ipc. They cover regressions
+where shell/sidebar keybindings accidentally leak into page text fields, and the
+intentional mode/passthrough exceptions around Insert, Escape, Shift+J/K, and
+sidebar forwarded keys.
 """
 
 from __future__ import annotations
@@ -187,10 +188,6 @@ class Harness:
     def snapshot(self) -> dict:
         return self.js("JSON.stringify(window.snapshotProbe())")
 
-    def focus_input(self) -> None:
-        self.js("document.getElementById('input').focus(); document.getElementById('input').value=''; window.clearProbe()")
-        time.sleep(0.05)
-
     def focus_sidebar(self) -> None:
         # First Ctrl+M hides the initially visible sidebar while keeping webview
         # focus; second Ctrl+M shows it again and focuses the sidebar.
@@ -203,29 +200,64 @@ def require(condition: bool, message: str, details=None) -> None:
 
 
 def test_mode_entry_i_does_not_leak_and_insert_types(h: Harness) -> None:
-    h.reset(focus_input=False)
+    h.reset(focus_input=True)
     h.key("i", pause=0.2)
     after_i = h.snapshot()
-    require("i" not in after_i["keys"], "mode-entry i leaked to the page", after_i)
-    require(not any(e.get("key") == "i" for e in after_i["events"]),
-            "mode-entry i generated page key events", after_i)
+    require(after_i["value"] == "", "mode-entry i typed into focused input", after_i)
+    require(not any(e.get("type") == "input" for e in after_i["events"]),
+            "mode-entry i generated an input event", after_i)
 
-    h.focus_input()
     h.key("x", pause=0.2)
     after_x = h.snapshot()
     require(after_x["value"] == "x", "insert mode did not forward following text key", after_x)
 
 
 def test_shifted_jk_type_in_insert_mode(h: Harness) -> None:
-    h.reset(focus_input=False)
+    h.reset(focus_input=True)
     h.key("i", pause=0.2)
-    h.focus_input()
+    h.clear()
     h.key("shift+j", pause=0.15)
     h.key("shift+k", pause=0.2)
     snap = h.snapshot()
     require(snap["value"] == "JK", "Shift+J/K did not type capital letters in insert mode", snap)
     require("J" in snap["keys"] and "K" in snap["keys"],
             "Shift+J/K did not reach the page as keydown events", snap)
+
+
+def test_insert_escape_exits_without_passthrough(h: Harness) -> None:
+    h.reset(focus_input=True)
+    h.key("i", pause=0.2)
+    h.clear()
+    h.key("a", pause=0.15)
+    h.key("Escape", pause=0.2)
+    h.key("j", pause=0.25)
+    snap = h.snapshot()
+    require(snap["value"] == "a", "insert Escape did not exit before normal-mode j", snap)
+    require("Escape" not in snap["keys"], "insert-mode Escape leaked to the page", snap)
+    require(snap["scrollY"] > 0, "normal-mode j did not scroll after insert Escape", snap)
+
+
+def test_website_keybinds_do_not_type(h: Harness) -> None:
+    h.reset(focus_input=True)
+    h.key("j", pause=0.2)
+    after_j = h.snapshot()
+    require(after_j["scrollY"] > 0, "website-mode j did not scroll page", after_j)
+
+    h.key("k", "m", pause=0.3)
+    snap = h.snapshot()
+    require(snap["value"] == "", "website-mode keybindings leaked into focused input", snap)
+    require(not any(e.get("type") == "input" for e in snap["events"]),
+            "website-mode keybindings generated input events", snap)
+
+
+def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
+    h.reset(focus_input=True)
+    h.focus_sidebar()
+    h.key("j", "k", "m", pause=0.35)
+    snap = h.snapshot()
+    require(snap["value"] == "", "sidebar keybindings leaked into focused input", snap)
+    require(not any(e.get("type") == "input" for e in snap["events"]),
+            "sidebar keybindings generated input events", snap)
 
 
 def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
@@ -248,6 +280,9 @@ def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
 TESTS = [
     test_mode_entry_i_does_not_leak_and_insert_types,
     test_shifted_jk_type_in_insert_mode,
+    test_insert_escape_exits_without_passthrough,
+    test_website_keybinds_do_not_type,
+    test_sidebar_keybinds_do_not_type,
     test_escape_and_sidebar_space_passthrough,
 ]
 

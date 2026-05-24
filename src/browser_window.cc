@@ -1917,6 +1917,10 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return true;
   }
 
+  if (focus_area_ == FocusArea::kTabSidebar && !IsRawKeyDown(event)) {
+    return IsCharEvent(event);
+  }
+
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -1989,11 +1993,11 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
     return true;
   }
 
-  if (!IsRawKeyDown(event)) {
-    return false;
+  if (focus_area_ == FocusArea::kTabSidebar && !IsRawKeyDown(event)) {
+    return IsCharEvent(event);
   }
 
-  if (event.focus_on_editable_field) {
+  if (!IsRawKeyDown(event)) {
     return false;
   }
 
@@ -2081,6 +2085,10 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
         MoveActiveTab(1);
         return true;
     }
+  }
+
+  if (focus_area_ == FocusArea::kTabSidebar) {
+    return true;
   }
 
   return false;
@@ -4888,26 +4896,28 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   if (IsRawKeyDown(event)) {
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
-      if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
-        return false;
-      }
-      if ((event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
-          website_mode_ == vim::Mode::kInsert) {
-        website_mode_ = vim::Mode::kWebsiteNormal;
+      if (website_mode_ == vim::Mode::kInsert) {
+        website_mode_ = (event.modifiers & EVENTFLAG_SHIFT_DOWN)
+                            ? vim::Mode::kWebsiteNormal
+                            : vim::Mode::kNormal;
         UpdateModeIndicator();
         return true;
       }
-      if (website_mode_ == vim::Mode::kInsert) {
-        website_mode_ = vim::Mode::kNormal;
-      } else if (website_mode_ == vim::Mode::kNormal ||
-                 website_mode_ == vim::Mode::kVisual) {
+      if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+        return false;
+      }
+      if (website_mode_ == vim::Mode::kNormal ||
+          website_mode_ == vim::Mode::kVisual) {
         website_mode_ = vim::Mode::kWebsiteNormal;
+        UpdateModeIndicator();
+        return true;
       }
       UpdateModeIndicator();
       return true;
     }
 
-    if (ShouldForwardFocusedEditableKey(event)) {
+    if (website_mode_ == vim::Mode::kInsert &&
+        ShouldForwardFocusedEditableKey(event)) {
       ResetWebsitePendingKeys();
       return false;
     }
@@ -5021,7 +5031,8 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
     }
-    if (ShouldForwardFocusedEditableKey(event)) {
+    if (website_mode_ == vim::Mode::kInsert &&
+        ShouldForwardFocusedEditableKey(event)) {
       ResetWebsitePendingKeys();
       return false;
     }
