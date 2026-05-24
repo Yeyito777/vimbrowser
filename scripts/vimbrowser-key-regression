@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""Regression tests for committed vimbrowser keyboard-mode routing fixes.
+
+These tests run the built browser inside an xenv, drive real key events, and
+observe DOM keyboard/input events through vimbrowser-ipc. They cover committed
+regressions around mode-entry key suppression, insert-mode shifted typing, and
+intentional Escape/Space passthroughs.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import textwrap
+import time
+
+REPO = Path(__file__).resolve().parents[1]
+IPC = REPO / "scripts" / "vimbrowser-ipc"
+SAFE_RUN = REPO / "scripts" / "vimbrowser-safe-run"
+DEFAULT_BINARY = REPO / "build-source" / "Release" / "vimbrowser"
+
+TEST_HTML = """<!doctype html>
+<meta charset=\"utf-8\">
+<title>vimbrowser key regression</title>
+<body tabindex=\"0\" style=\"font:20px sans-serif;padding:20px;height:3000px\">
+<input id=\"input\" autofocus style=\"font:20px sans-serif;width:420px\" />
+<button id=\"button\">button</button>
+<script>
+window.events=[];
+window.keys=[];
+for (const t of ['keydown','keypress','keyup','beforeinput','input']) {
+  document.addEventListener(t, e => {
+    window.events.push({
+      type: e.type,
+      key: e.key,
+      code: e.code,
+      target: e.target && e.target.id || e.target.tagName,
+      value: document.getElementById('input').value,
+      scrollY: window.scrollY
+    });
+    if (t === 'keydown') window.keys.push(e.key);
+  }, true);
+}
+window.resetProbe = (focusInput = true) => {
+  window.events=[];
+  window.keys=[];
+  window.scrollTo(0,0);
+  const input = document.getElementById('input');
+  input.value='';
+  if (focusInput) input.focus(); else document.body.focus();
+  return 'ok';
+};
+window.snapshotProbe = () => ({
+  value: document.getElementById('input').value,
+  keys: window.keys,
+  events: window.events,
+  scrollY: window.scrollY,
+  active: document.activeElement && (document.activeElement.id || document.activeElement.tagName)
+});
+window.clearProbe = () => {
+  window.events=[];
+  window.keys=[];
+  return 'ok';
+};
+window.addEventListener('load', () => window.resetProbe(true));
+</script>
+"""
+
+RUN_ID = 0
+
+
+def run(cmd: list[str], *, env: dict[str, str] | None = None, timeout: float = 30) -> str:
+    proc = subprocess.run(
+        cmd,
+        cwd=REPO,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"command failed ({proc.returncode}): {' '.join(cmd)}\n"
+            f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        )
+    return proc.stdout
+
+
+class Harness:
+    def __init__(self, binary: Path):
+        self.binary = binary.resolve()
+        self.profile = Path(tempfile.mkdtemp(prefix="vb-key-regression-profile-"))
+        self.page = self.profile / "key_regression.html"
+        self.page.write_text(TEST_HTML)
+        self.env_name = f"vb-key-regression-{os.getpid()}-{time.monotonic_ns()}"
+        self.env = os.environ.copy()
+        self.env["VIMBROWSER_PROFILE_DIR"] = str(self.profile)
+        self.tab_id: str | None = None
+
+    def cleanup(self) -> None:
+        subprocess.run(["xenv", "stop", self.env_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        shutil.rmtree(self.profile, ignore_errors=True)
+
+    def __enter__(self) -> "Harness":
+        if not self.binary.exists():
+            raise RuntimeError(f"binary not found: {self.binary}")
+        run(["xenv", "start", self.env_name], timeout=30)
+        script = (
+            f'cd "{self.binary.parent}" && '
+            f'exec "{SAFE_RUN}" ./"{self.binary.name}" '
+            f'--profile-dir="{self.profile}" "file://{self.page}"'
+        )
+        subprocess.Popen(
+            ["xenv", "run", "-e", self.env_name, "bash", "-lc", script],
+            cwd=REPO,
+            env=self.env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        self.tab_id = self.wait_for_tab()
+        self.wait_for_ready()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.cleanup()
+
+    def ipc(self, args: list[str], timeout: float = 10) -> dict:
+        return json.loads(run([str(IPC), *args], env=self.env, timeout=timeout))
+
+    def wait_for_tab(self) -> str:
+        deadline = time.time() + 30
+        last = None
+        while time.time() < deadline:
+            try:
+                status = self.ipc(["status"], timeout=2)
+                tab = status.get("active_tabid")
+                if tab:
+                    return str(tab)
+            except Exception as exc:  # Browser may still be starting.
+                last = exc
+            time.sleep(0.05)
+        raise RuntimeError(f"browser IPC did not become ready; last={last!r}")
+
+    def js(self, expr: str, timeout: float = 10):
+        if self.tab_id is None:
+            raise RuntimeError("tab is not ready")
+        outer = self.ipc(["js", self.tab_id, expr], timeout=timeout)
+        result = outer.get("result")
+        try:
+            return json.loads(result)
+        except Exception:
+            return result
+
+    def wait_for_ready(self) -> None:
+        deadline = time.time() + 15
+        while time.time() < deadline:
+            try:
+                ready = self.js("JSON.stringify({ready:document.readyState})")
+                if ready.get("ready") == "complete":
+                    return
+            except Exception:
+                pass
+            time.sleep(0.05)
+        raise RuntimeError("page did not reach readyState=complete")
+
+    def key(self, *keys: str, pause: float = 0.15) -> None:
+        run(["xenv", "key", "-e", self.env_name, *keys], timeout=10)
+        time.sleep(pause)
+
+    def reset(self, *, focus_input: bool = True) -> None:
+        global RUN_ID
+        RUN_ID += 1
+        self.js(f"window.location.hash='case{RUN_ID}'; window.resetProbe({str(focus_input).lower()})")
+        time.sleep(0.05)
+
+    def clear(self) -> None:
+        self.js("window.clearProbe()")
+        time.sleep(0.05)
+
+    def snapshot(self) -> dict:
+        return self.js("JSON.stringify(window.snapshotProbe())")
+
+    def focus_input(self) -> None:
+        self.js("document.getElementById('input').focus(); document.getElementById('input').value=''; window.clearProbe()")
+        time.sleep(0.05)
+
+    def focus_sidebar(self) -> None:
+        # First Ctrl+M hides the initially visible sidebar while keeping webview
+        # focus; second Ctrl+M shows it again and focuses the sidebar.
+        self.key("ctrl+m", "ctrl+m", pause=0.25)
+
+
+def require(condition: bool, message: str, details=None) -> None:
+    if not condition:
+        raise AssertionError(f"{message}\n{json.dumps(details, indent=2)}")
+
+
+def test_mode_entry_i_does_not_leak_and_insert_types(h: Harness) -> None:
+    h.reset(focus_input=False)
+    h.key("i", pause=0.2)
+    after_i = h.snapshot()
+    require("i" not in after_i["keys"], "mode-entry i leaked to the page", after_i)
+    require(not any(e.get("key") == "i" for e in after_i["events"]),
+            "mode-entry i generated page key events", after_i)
+
+    h.focus_input()
+    h.key("x", pause=0.2)
+    after_x = h.snapshot()
+    require(after_x["value"] == "x", "insert mode did not forward following text key", after_x)
+
+
+def test_shifted_jk_type_in_insert_mode(h: Harness) -> None:
+    h.reset(focus_input=False)
+    h.key("i", pause=0.2)
+    h.focus_input()
+    h.key("shift+j", pause=0.15)
+    h.key("shift+k", pause=0.2)
+    snap = h.snapshot()
+    require(snap["value"] == "JK", "Shift+J/K did not type capital letters in insert mode", snap)
+    require("J" in snap["keys"] and "K" in snap["keys"],
+            "Shift+J/K did not reach the page as keydown events", snap)
+
+
+def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
+    h.reset(focus_input=True)
+    h.key("Escape", pause=0.2)
+    web = h.snapshot()
+    require("Escape" in web["keys"], "website-mode Escape did not pass through", web)
+
+    h.reset(focus_input=True)
+    h.focus_sidebar()
+    h.key("Escape", pause=0.2)
+    h.key("space", pause=0.35)
+    sidebar = h.snapshot()
+    require("Escape" in sidebar["keys"], "sidebar Escape did not pass through", sidebar)
+    require(" " in sidebar["keys"] or "Spacebar" in sidebar["keys"],
+            "sidebar Space did not pass through", sidebar)
+    require(len(sidebar["keys"]) < 10, "forwarded sidebar keys recursively re-entered shell", sidebar)
+
+
+TESTS = [
+    test_mode_entry_i_does_not_leak_and_insert_types,
+    test_shifted_jk_type_in_insert_mode,
+    test_escape_and_sidebar_space_passthrough,
+]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
+    args = parser.parse_args()
+
+    print("vimbrowser key regression tests")
+    print(f"binary: {args.binary}")
+    for test in TESTS:
+        name = test.__name__.replace("test_", "")
+        print(f"[RUN] {name}")
+        with Harness(args.binary) as h:
+            test(h)
+        print(f"[PASS] {name}")
+    print("CHECK: PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print("CHECK: FAIL", file=sys.stderr)
+        print(textwrap.indent(str(exc), "  "), file=sys.stderr)
+        raise

@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source benchmark benchmark-live benchmark-all vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build
 SOURCE_BUILD_DIR ?= build-source
@@ -113,6 +113,9 @@ benchmark-live:
 
 benchmark-all:
 	./scripts/vimbrowser-benchmark --suite all --check --binary "$(BENCH_BINARY)"
+
+key-regression:
+	./scripts/vimbrowser-key-regression --binary "$(BENCH_BINARY)"
 
 vite-install:
 	npm --prefix frontend install
