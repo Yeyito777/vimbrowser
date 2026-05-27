@@ -153,6 +153,14 @@ if [[ "${suite}" != "smoke" ]]; then
       'CEF platform delegate accessibility edit; tracks accessibility-specific code split out of the canonical delegate.'
   fi
 
+  if [[ -f "${repo_dir}/backend/chromium/cef/libcef/browser/browser_platform_delegate_printing.cc" ]]; then
+    add_scenario \
+      cef_platform_printing_backend_dev \
+      'backend/chromium/cef/libcef/browser/browser_platform_delegate_printing.cc' \
+      "${make_cmd}" \
+      'CEF platform delegate printing edit; tracks print-preview-specific code split out of the canonical delegate.'
+  fi
+
   add_scenario \
     shell_cc_build_source \
     'src/browser_window.cc' \
