@@ -166,6 +166,38 @@ if [[ "${suite}" != "smoke" ]]; then
     'src/browser_window.cc' \
     "${shell_cmd}" \
     'Top-level vimbrowser shell edit; isolates CMake/source-distribution shell loop.'
+
+  if [[ -f "${repo_dir}/src/browser_window_commands.cc" ]]; then
+    add_scenario \
+      shell_commands_build_source \
+      'src/browser_window_commands.cc' \
+      "${shell_cmd}" \
+      'Vimbrowser command-line/autocomplete shell edit; tracks code split out of browser_window.cc.'
+  fi
+
+  if [[ -f "${repo_dir}/src/browser_window_tabs.cc" ]]; then
+    add_scenario \
+      shell_tabs_build_source \
+      'src/browser_window_tabs.cc' \
+      "${shell_cmd}" \
+      'Vimbrowser tab lifecycle/state shell edit; tracks code split out of browser_window.cc.'
+  fi
+
+  if [[ -f "${repo_dir}/src/browser_window_ipc.cc" ]]; then
+    add_scenario \
+      shell_ipc_build_source \
+      'src/browser_window_ipc.cc' \
+      "${shell_cmd}" \
+      'Vimbrowser IPC/cookie/network/screenshot shell edit; tracks code split out of browser_window.cc.'
+  fi
+
+  if [[ -f "${repo_dir}/src/browser_window_internal.cc" ]]; then
+    add_scenario \
+      shell_internal_build_source \
+      'src/browser_window_internal.cc' \
+      "${shell_cmd}" \
+      'Vimbrowser stable helper shell edit; tracks helper code split out of browser_window.cc.'
+  fi
 fi
 
 if [[ "${suite}" == "full" ]]; then
