@@ -73,16 +73,36 @@ is_elf() {
   [[ "${magic}" == $'\x7fELF' ]]
 }
 
+is_stripped_elf() {
+  local path=$1
+  command -v file >/dev/null 2>&1 || return 1
+
+  local description
+  description=$(file -b "${path}" 2>/dev/null || true)
+  [[ -n "${description}" ]] || return 1
+  [[ "${description}" == *"not stripped"* ]] && return 1
+  [[ "${description}" == *"stripped"* ]]
+}
+
 strip_if_elf() {
   local path=$1
   [[ "${strip_enabled}" == "1" ]] || return 0
   [[ -f "${path}" ]] || return 0
   is_elf "${path}" || return 0
 
-  local before after
+  if is_stripped_elf "${path}"; then
+    echo "already stripped ${path}: $(human_size "$(path_size "${path}")")"
+    return 0
+  fi
+
+  local before after mtime_ref
   before=$(path_size "${path}")
+  mtime_ref=$(mktemp)
+  touch -r "${path}" "${mtime_ref}"
   "${strip_tool}" --strip-unneeded "${path}" 2>/dev/null || \
     "${strip_tool}" "${path}"
+  touch -r "${mtime_ref}" "${path}"
+  rm -f "${mtime_ref}"
   after=$(path_size "${path}")
   if (( after < before )); then
     echo "stripped ${path}: $(human_size "${before}") -> $(human_size "${after}")"

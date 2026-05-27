@@ -8,8 +8,8 @@ if [[ $# -ne 3 ]]; then
 usage: scripts/backend-dev-build.sh <source-build-dir> <cef-root-or-empty> <jobs>
 
 Runs the backend-dev build loop and writes <source-build-dir>/.backend-dev-changed
-with 1 when the CMake/runtime/install portion changed, or 0 when the lower half
-of the loop was skipped as already up to date.
+with 1 when the shell/wrapper needs reinstalling, or 0 when the installed
+wrapper is already up to date.
 EOF
   exit 2
 fi
@@ -139,6 +139,13 @@ fi
 
 if [[ "${runtime_changed}" == "0" && "${need_shell_build}" == "0" ]]; then
   echo "[+] backend-dev lower half is already up to date; skipping CMake rebuild, runtime slim, and wrapper reinstall."
+  printf '0\n' >"${changed_file}"
+  exit 0
+fi
+
+if [[ "${runtime_changed}" == "1" && "${need_shell_build}" == "0" ]]; then
+  echo "[+] Backend runtime changed; syncing CEF payload without relinking vimbrowser shell."
+  "${repo_dir}/scripts/sync-cef-runtime.sh" "${cef_root}" "${source_build_dir}/Release"
   printf '0\n' >"${changed_file}"
   exit 0
 fi
