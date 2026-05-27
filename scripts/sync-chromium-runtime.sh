@@ -32,8 +32,23 @@ is_elf() {
   local path=$1
   [[ -f "${path}" ]] || return 1
   local magic
-  magic=$(LC_ALL=C head -c 4 "${path}" || true)
-  [[ "${magic}" == $'\x7fELF' ]]
+  magic=$(od -An -N4 -tx1 "${path}" 2>/dev/null | tr -d '[:space:]')
+  [[ "${magic}" == "7f454c46" ]]
+}
+
+elf_build_id() {
+  local path=$1
+  readelf -n "${path}" 2>/dev/null | awk '/Build ID:/ { print $3; exit }'
+}
+
+same_elf_build_id() {
+  local src=$1
+  local dst=$2
+  local src_build_id dst_build_id
+  src_build_id=$(elf_build_id "${src}")
+  [[ -n "${src_build_id}" ]] || return 1
+  dst_build_id=$(elf_build_id "${dst}")
+  [[ "${src_build_id}" == "${dst_build_id}" ]]
 }
 
 copy_file() {
@@ -47,6 +62,12 @@ copy_file() {
 
   mkdir -p "$(dirname "${dst}")"
   if [[ "${strip_enabled}" == "1" ]] && is_elf "${src}"; then
+    if [[ -f "${dst}" ]] && is_elf "${dst}" && same_elf_build_id "${src}" "${dst}"; then
+      touch -r "${src}" "${dst}"
+      echo "matched stripped ${src#${repo_dir}/} -> ${dst#${repo_dir}/}"
+      return 0
+    fi
+
     local tmp
     tmp=$(mktemp "${dst}.XXXXXX")
     if ! "${strip_tool}" --strip-unneeded -o "${tmp}" "${src}" 2>/dev/null; then
