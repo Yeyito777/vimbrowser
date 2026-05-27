@@ -137,6 +137,14 @@ if [[ "${suite}" != "smoke" ]]; then
       'Vimbrowser-specific CEF browser API edit; measures the backend code this project changes most often.'
   fi
 
+  if [[ -f "${repo_dir}/backend/chromium/cef/libcef/browser/browser_platform_delegate_config.cc" ]]; then
+    add_scenario \
+      cef_platform_config_backend_dev \
+      'backend/chromium/cef/libcef/browser/browser_platform_delegate_config.cc' \
+      "${make_cmd}" \
+      'CEF platform delegate configuration/printing/accessibility edit; tracks heavy code split out of the canonical delegate.'
+  fi
+
   add_scenario \
     shell_cc_build_source \
     'src/browser_window.cc' \
