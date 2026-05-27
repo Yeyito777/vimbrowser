@@ -17,6 +17,8 @@ fi
 source_build_dir=$1
 cef_root_arg=$2
 jobs=$3
+chromium_build_dir=${CHROMIUM_BUILD_DIR:-Release_GN_x64}
+chromium_out_dir="${repo_dir}/backend/chromium/out/${chromium_build_dir}"
 
 case "${source_build_dir}" in
   /*) ;;
@@ -40,47 +42,6 @@ resolve_cef_root() {
   else
     latest_cef_root
   fi
-}
-
-runtime_fingerprint() {
-  local root=$1
-  [[ -n "${root}" && -d "${root}" ]] || return 0
-  python3 - "${root}" <<'PY'
-import os
-import sys
-
-root = sys.argv[1]
-paths = []
-for rel in (
-    'Release/libcef.so',
-    'Release/chrome-sandbox',
-    'Release/libEGL.so',
-    'Release/libGLESv2.so',
-    'Release/libvk_swiftshader.so',
-    'Release/libvulkan.so.1',
-    'Release/vk_swiftshader_icd.json',
-    'Release/v8_context_snapshot.bin',
-    'Resources/chrome_100_percent.pak',
-    'Resources/chrome_200_percent.pak',
-    'Resources/resources.pak',
-    'Resources/icudtl.dat',
-):
-    paths.append(os.path.join(root, rel))
-
-locales = os.path.join(root, 'Resources', 'locales')
-if os.path.isdir(locales):
-    for name in sorted(os.listdir(locales)):
-        if name.endswith(('.pak', '.pak.info')):
-            paths.append(os.path.join(locales, name))
-
-for path in paths:
-    try:
-        st = os.stat(path)
-    except FileNotFoundError:
-        print(f'MISSING {os.path.relpath(path, root)}')
-    else:
-        print(f'{os.path.relpath(path, root)} {st.st_mtime_ns} {st.st_size}')
-PY
 }
 
 shell_inputs_newer_than() {
@@ -108,22 +69,11 @@ configure_needed() {
   return 1
 }
 
-cef_root_before=$(resolve_cef_root)
-fingerprint_before=$(runtime_fingerprint "${cef_root_before}")
-
-"${repo_dir}/scripts/build-chromium-cef.sh"
-"${repo_dir}/scripts/sync-chromium-cef-distrib.sh"
-
 cef_root=$(resolve_cef_root)
 if [[ -z "${cef_root}" || ! -d "${cef_root}" ]]; then
-  echo "error: no source-built CEF distribution found after sync" >&2
+  echo "error: no source-built CEF distribution found" >&2
+  echo "       Run 'make source-distrib' once, or set CEF_ROOT." >&2
   exit 1
-fi
-
-fingerprint_after=$(runtime_fingerprint "${cef_root}")
-runtime_changed=0
-if [[ "${cef_root_before}" != "${cef_root}" || "${fingerprint_before}" != "${fingerprint_after}" ]]; then
-  runtime_changed=1
 fi
 
 vimbrowser_bin="${source_build_dir}/Release/vimbrowser"
@@ -137,18 +87,16 @@ if [[ "${need_configure}" == "1" || ! -x "${vimbrowser_bin}" ]] || shell_inputs_
   need_shell_build=1
 fi
 
-if [[ "${runtime_changed}" == "0" && "${need_shell_build}" == "0" ]]; then
-  echo "[+] backend-dev lower half is already up to date; skipping CMake rebuild, runtime slim, and wrapper reinstall."
+"${repo_dir}/scripts/build-chromium-cef.sh"
+
+if [[ "${need_shell_build}" == "0" ]]; then
+  "${repo_dir}/scripts/sync-chromium-runtime.sh" "${chromium_out_dir}" "${source_build_dir}/Release"
+  echo "[+] vimbrowser shell is up to date; source CEF distribution sync skipped for this backend-only loop."
   printf '0\n' >"${changed_file}"
   exit 0
 fi
 
-if [[ "${runtime_changed}" == "1" && "${need_shell_build}" == "0" ]]; then
-  echo "[+] Backend runtime changed; syncing CEF payload without relinking vimbrowser shell."
-  "${repo_dir}/scripts/sync-cef-runtime.sh" "${cef_root}" "${source_build_dir}/Release"
-  printf '0\n' >"${changed_file}"
-  exit 0
-fi
+"${repo_dir}/scripts/sync-chromium-cef-distrib.sh"
 
 if [[ "${need_configure}" == "1" ]]; then
   cmake -S "${repo_dir}" -B "${source_build_dir}" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="${cef_root}"
