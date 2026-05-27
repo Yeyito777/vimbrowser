@@ -26,7 +26,9 @@ export PATH="${depot_tools}:$PATH"
 cd "${chromium_src}"
 
 mkdir -p "out/${build_dir}"
-cat > "out/${build_dir}/args.gn" <<'EOF'
+args_path="out/${build_dir}/args.gn"
+args_tmp=$(mktemp "out/${build_dir}/args.gn.XXXXXX")
+cat > "${args_tmp}" <<'EOF'
 blink_heap_inside_shared_library=true
 clang_use_chrome_plugins=false
 disable_fieldtrial_testing_config=true
@@ -66,11 +68,24 @@ chrome_pgo_phase=0
 EOF
 
 if [[ -n "${GN_DEFINES:-}" ]]; then
-  printf '\n# Appended from GN_DEFINES\n%s\n' "${GN_DEFINES}" >> "out/${build_dir}/args.gn"
+  printf '\n# Appended from GN_DEFINES\n%s\n' "${GN_DEFINES}" >> "${args_tmp}"
 fi
 
-echo "[+] Generating Chromium/CEF GN files in backend/chromium/out/${build_dir}"
-gn gen "out/${build_dir}" ${GN_ARGUMENTS:-}
+args_changed=1
+if [[ -f "${args_path}" ]] && cmp -s "${args_tmp}" "${args_path}"; then
+  args_changed=0
+  rm -f "${args_tmp}"
+else
+  mv "${args_tmp}" "${args_path}"
+fi
+
+if [[ "${args_changed}" == "1" || ! -f "out/${build_dir}/build.ninja" || -n "${GN_ARGUMENTS:-}" || "${VIMBROWSER_FORCE_GN_GEN:-0}" == "1" ]]; then
+  echo "[+] Generating Chromium/CEF GN files in backend/chromium/out/${build_dir}"
+  gn gen "out/${build_dir}" ${GN_ARGUMENTS:-}
+else
+  echo "[+] Reusing existing Chromium/CEF GN files in backend/chromium/out/${build_dir}"
+  echo "    args.gn unchanged; autoninja will regenerate the manifest if GN inputs changed."
+fi
 
 echo "[+] Building ${target} in backend/chromium/out/${build_dir}"
 autoninja -C "out/${build_dir}" "${target}"
