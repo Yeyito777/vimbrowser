@@ -1,0 +1,1 @@
+{"command": "make backend-dev JOBS=${BENCH_JOBS}", "dirty_path": null, "exit_code": 0, "jobs": 12, "log": "runs/20260527T213756Z-smoke-post-exp041-recovery/logs/noop_backend_dev-1.log", "run": 1, "scenario": "noop_backend_dev", "suite": "smoke", "timestamp_utc": "20260527T213756Z", "wall_seconds": 2.098}
