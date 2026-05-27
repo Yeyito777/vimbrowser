@@ -492,6 +492,8 @@ source_set("browser_sources") {
     "web_authentication_delegate.cc",
     "web_authentication_delegate.h",
     "web_authentication_request_proxy.h",
+    "web_contents_accessibility.cc",
+    "web_contents_accessibility.h",
     "web_contents.cc",
     "web_contents.h",
     "web_contents_capability_type.h",

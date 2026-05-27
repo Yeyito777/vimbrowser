@@ -4,7 +4,7 @@
 
 #include "cef/libcef/browser/browser_platform_delegate.h"
 
-#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/public/browser/web_contents_accessibility.h"
 #include "ui/accessibility/ax_mode.h"
 
 void CefBrowserPlatformDelegate::SetAccessibilityState(
@@ -16,10 +16,7 @@ void CefBrowserPlatformDelegate::SetAccessibilityState(
     return;
   }
 
-  content::WebContentsImpl* web_contents_impl =
-      static_cast<content::WebContentsImpl*>(web_contents_);
-
-  if (!web_contents_impl) {
+  if (!web_contents_) {
     return;
   }
 
@@ -29,5 +26,5 @@ void CefBrowserPlatformDelegate::SetAccessibilityState(
   if (accessibility_state == STATE_ENABLED) {
     accMode = IsWindowless() ? ui::kAXModeWebContentsOnly : ui::kAXModeComplete;
   }
-  web_contents_impl->SetAccessibilityMode(accMode);
+  content::SetWebContentsAccessibilityMode(web_contents_, accMode);
 }
