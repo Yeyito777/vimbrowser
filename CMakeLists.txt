@@ -49,6 +49,10 @@ target_include_directories(vimbrowser PRIVATE
   "${CEF_INCLUDE_PATH}"
 )
 
+target_precompile_headers(vimbrowser PRIVATE
+  "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/browser_pch.h>"
+)
+
 target_link_libraries(vimbrowser PRIVATE
   libcef_lib
   libcef_dll_wrapper
