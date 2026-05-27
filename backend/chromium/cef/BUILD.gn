@@ -524,6 +524,7 @@ source_set("libcef_static") {
     "libcef/browser/browser_platform_delegate.cc",
     "libcef/browser/browser_platform_delegate.h",
     "libcef/browser/browser_platform_delegate_create.cc",
+    "libcef/browser/vimbrowser_browser_api.cc",
     "libcef/browser/certificate_query.cc",
     "libcef/browser/certificate_query.h",
     "libcef/browser/chrome/browser_delegate.h",

@@ -129,6 +129,14 @@ if [[ "${suite}" != "smoke" ]]; then
     "${make_cmd}" \
     'Representative CEF backend implementation edit; canonical whole-loop dirty backend case.'
 
+  if [[ -f "${repo_dir}/backend/chromium/cef/libcef/browser/vimbrowser_browser_api.cc" ]]; then
+    add_scenario \
+      vimbrowser_cef_api_backend_dev \
+      'backend/chromium/cef/libcef/browser/vimbrowser_browser_api.cc' \
+      "${make_cmd}" \
+      'Vimbrowser-specific CEF browser API edit; measures the backend code this project changes most often.'
+  fi
+
   add_scenario \
     shell_cc_build_source \
     'src/browser_window.cc' \
