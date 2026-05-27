@@ -31,7 +31,6 @@ copy_file() {
   local dst=$2
   if [[ -f "${src}" ]]; then
     if [[ -f "${dst}" && ! "${src}" -nt "${dst}" ]]; then
-      echo "up-to-date ${dst#${repo_dir}/}"
       return 0
     fi
     mkdir -p "$(dirname "${dst}")"
