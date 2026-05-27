@@ -104,6 +104,8 @@ constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kAcceleratorTabNext = 5002;
 constexpr int kAcceleratorTabPrevious = 5003;
 constexpr int kAcceleratorSidebarSpace = 5004;
+constexpr int kAcceleratorHintRightClick = 5005;
+constexpr int kAcceleratorHintHover = 5006;
 constexpr int kSidebarRowBaseId = 2000;
 constexpr int kAutocompleteRowBaseId = 6000;
 constexpr int kSidebarRowHeight = 24;
@@ -361,8 +363,9 @@ bool IsCommonCtrlEditingKey(const CefKeyEvent& event) {
          IsCtrlKey(event, 'y') || IsCtrlKey(event, 'z');
 }
 
-bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event) {
-  if (!event.focus_on_editable_field) {
+bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event,
+                                     bool focus_on_editable_field) {
+  if (!focus_on_editable_field) {
     return false;
   }
   if (event.modifiers & (EVENTFLAG_ALT_DOWN | EVENTFLAG_COMMAND_DOWN)) {
@@ -950,6 +953,8 @@ std::string IpcCommandsJson() {
 
 constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
+constexpr const char kFocusedEditableMessage[] =
+    "__vimbrowser_focused_editable_changed__";
 // Private CEF mouse-event modifier: Chromium masks this off as an unknown UI
 // flag, but our CEF Aura delegate reads it before translation to decide whether
 // synthetic smooth-scroll gestures should target the viewport or the element
@@ -1426,6 +1431,9 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
       }
       tab.deferred_load = false;
       SetTabUrl(tab, url);
+      if (force_update) {
+        tab.focused_editable_node = false;
+      }
       tab.has_scroll_target = false;
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
@@ -1453,7 +1461,36 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
                                            CefRefPtr<CefFrame> frame,
                                            CefProcessId source_process,
                                            CefRefPtr<CefProcessMessage> message) {
-  if (!message || message->GetName().ToString() != kJsResultMessage) {
+  if (!message) {
+    return false;
+  }
+  const std::string name = message->GetName().ToString();
+  if (name == kFocusedEditableMessage) {
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    const bool focused_editable = args && args->GetSize() >= 1 && args->GetBool(0);
+    bool active_tab_focused_editable = false;
+    for (Tab& tab : tabs_) {
+      if (tab.client.get() == client) {
+        tab.focused_editable_node = focused_editable;
+        active_tab_focused_editable = focused_editable && ActiveTab() == &tab;
+        break;
+      }
+    }
+    if (active_tab_focused_editable && mode_ == Mode::kNormal &&
+        focus_area_ == FocusArea::kWebView) {
+      // A page text control receiving focus is an explicit typing intent. This
+      // covers normal clicks, page script focus, and native hints selecting an
+      // input, so the next key goes straight to the field without requiring an
+      // extra `i` first.
+      website_mode_ = vim::Mode::kInsert;
+      ResetWebsitePendingKeys();
+      suppress_next_website_char_.reset();
+      UpdateModeIndicator();
+    }
+    return true;
+  }
+
+  if (name != kJsResultMessage) {
     return false;
   }
   CefRefPtr<CefListValue> args = message->GetArgumentList();
@@ -1610,7 +1647,9 @@ void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
     return;
   }
   native_hints_active_ = false;
-  website_mode_ = vim::Mode::kWebsiteNormal;
+  website_mode_ = website_mode_ == vim::Mode::kInsert
+                      ? vim::Mode::kInsert
+                      : vim::Mode::kWebsiteNormal;
   ResetWebsitePendingKeys();
   UpdateModeIndicator();
 }
@@ -1652,6 +1691,9 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetAccelerator(kAcceleratorTabNext, 'J', true, false, false, true);
   window_->SetAccelerator(kAcceleratorTabPrevious, 'K', true, false, false, true);
   window_->SetAccelerator(kAcceleratorSidebarSpace, 0x20, false, false, false, true);
+  window_->SetAccelerator(kAcceleratorHintRightClick, 'L', false, true, false,
+                          true);
+  window_->SetAccelerator(kAcceleratorHintHover, 'H', false, true, false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -1952,6 +1994,20 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   if (mode_ == Mode::kNormal && !native_hints_active_ &&
       !(focus_area_ == FocusArea::kWebView &&
         website_mode_ == vim::Mode::kInsert)) {
+    if ((command_id == kAcceleratorHintRightClick ||
+         command_id == kAcceleratorHintHover) &&
+        focus_area_ == FocusArea::kWebView) {
+      CefKeyEvent event;
+      event.type = KEYEVENT_RAWKEYDOWN;
+      event.windows_key_code =
+          command_id == kAcceleratorHintRightClick ? 'L' : 'H';
+      event.native_key_code = event.windows_key_code;
+      event.character = 0;
+      event.unmodified_character =
+          command_id == kAcceleratorHintRightClick ? 'l' : 'h';
+      event.modifiers = EVENTFLAG_CONTROL_DOWN;
+      return StartNativeHints(event);
+    }
     if (command_id == kAcceleratorSidebarSpace &&
         focus_area_ == FocusArea::kTabSidebar) {
       CefKeyEvent event;
@@ -3315,6 +3371,21 @@ CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {
     return nullptr;
   }
   return tab.client->browser();
+}
+
+bool BrowserWindow::PageHasFocusedEditable(const CefKeyEvent& event) {
+  if (event.focus_on_editable_field) {
+    // Persist a true per-key focus signal. CEF can invoke us both before and
+    // after renderer key handling for the same physical key; keeping the state
+    // true prevents the post-renderer callback from running a page shortcut
+    // after the input box already received the text event.
+    if (Tab* tab = ActiveTab()) {
+      tab->focused_editable_node = true;
+    }
+    return true;
+  }
+  return !tabs_.empty() && active_index_ < tabs_.size() &&
+         tabs_[active_index_].focused_editable_node;
 }
 
 bool BrowserWindow::AllTabBrowsersClosed() const {
@@ -4897,14 +4968,6 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     return true;
   }
 
-  if (HasOnlyControlModifier(event) && focus_area_ == FocusArea::kWebView &&
-      (IsCtrlKey(event, 'J') || IsCtrlKey(event, 'K'))) {
-    // Ctrl+J/Ctrl+K are webview-local browser commands for right-click/hover
-    // native hints.  Let HandleWebsiteModeKey forward the command into Blink
-    // instead of using it as the global sidebar/webview focus toggle.
-    return false;
-  }
-
   if (IsCtrlKey(event, 'J') || IsCtrlKey(event, 'K')) {
     if (!sidebar_visible_) {
       SetFocusArea(FocusArea::kWebView);
@@ -4928,6 +4991,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   }
 
   if (IsRawKeyDown(event)) {
+    // `i`/`a` mode-entry keydowns are consumed by browser chrome. Some CEF/X11
+    // paths still deliver a following CHAR for that same physical key, so we
+    // keep a one-CHAR suppressor. If another raw keydown arrives first, the
+    // mode-entry CHAR never arrived; clear the suppressor so the user's first
+    // real insert-mode keypress (notably another `i`/`I`) is not eaten.
+    suppress_next_website_char_.reset();
+
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
       if (website_mode_ == vim::Mode::kInsert) {
@@ -4937,22 +5007,22 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         UpdateModeIndicator();
         return true;
       }
-      if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
-        ScheduleActivePageBlur();
-        return false;
-      }
       if (website_mode_ == vim::Mode::kNormal ||
           website_mode_ == vim::Mode::kVisual) {
         website_mode_ = vim::Mode::kWebsiteNormal;
         UpdateModeIndicator();
         return true;
       }
+      if (!(event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+        ScheduleActivePageBlur();
+        return false;
+      }
       UpdateModeIndicator();
       return true;
     }
 
     if (website_mode_ == vim::Mode::kInsert &&
-        ShouldForwardFocusedEditableKey(event)) {
+        ShouldForwardFocusedEditableKey(event, PageHasFocusedEditable(event))) {
       ResetWebsitePendingKeys();
       return false;
     }
@@ -5067,7 +5137,7 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
     }
     if (website_mode_ == vim::Mode::kInsert &&
-        ShouldForwardFocusedEditableKey(event)) {
+        ShouldForwardFocusedEditableKey(event, PageHasFocusedEditable(event))) {
       ResetWebsitePendingKeys();
       return false;
     }
@@ -5111,7 +5181,8 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
     return std::nullopt;
   }
 
-  if (website_mode_ == vim::Mode::kInsert && event.focus_on_editable_field) {
+  const bool focus_on_editable_field = PageHasFocusedEditable(event);
+  if (website_mode_ == vim::Mode::kInsert && focus_on_editable_field) {
     return std::nullopt;
   }
 
@@ -5128,7 +5199,8 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
   }
   const VimbrowserShortcut shortcut = vimbrowser_shortcut_for_key(
       url.c_str(), static_cast<unsigned char>(key), IsRawKeyDown(event),
-      IsCharEvent(event), plain_without_shift, shortcut_mode);
+      IsCharEvent(event), plain_without_shift,
+      focus_on_editable_field ? 1 : 0, shortcut_mode);
 
   switch (shortcut.action) {
     case VIMBROWSER_SHORTCUT_NONE:
@@ -5168,8 +5240,9 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
 
   const bool click_hints = IsPlainLetterKey(event, 'f');
   const bool right_click_hints = HasOnlyControlModifier(event) &&
-                                 IsCtrlKey(event, 'J');
-  const bool hover_hints = HasOnlyControlModifier(event) && IsCtrlKey(event, 'K');
+                                 IsCtrlKey(event, 'L');
+  const bool hover_hints = HasOnlyControlModifier(event) &&
+                           IsCtrlKey(event, 'H');
   const bool scrollable_hints = HasOnlyControlModifier(event) && IsSpaceKey(event);
   if (!click_hints && !right_click_hints && !hover_hints &&
       !scrollable_hints) {
@@ -5191,17 +5264,17 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
     browser_event.windows_key_code = 'F';
   }
   if (right_click_hints) {
-    // Blink's native hint dispatcher recognizes Ctrl+J as the right-click hint
+    // Blink's native hint dispatcher recognizes Ctrl+L as the right-click hint
     // entry command. Preserve the semantic key explicitly for the renderer
     // round-trip just like Ctrl+Space scrollable hints.
-    browser_event.windows_key_code = 'J';
-    browser_event.unmodified_character = 'j';
+    browser_event.windows_key_code = 'L';
+    browser_event.unmodified_character = 'l';
   }
   if (hover_hints) {
-    // Blink's native hint dispatcher recognizes Ctrl+K as the hover hint entry
+    // Blink's native hint dispatcher recognizes Ctrl+H as the hover hint entry
     // command. Preserve the semantic key explicitly for the renderer round-trip.
-    browser_event.windows_key_code = 'K';
-    browser_event.unmodified_character = 'k';
+    browser_event.windows_key_code = 'H';
+    browser_event.unmodified_character = 'h';
   }
   if (scrollable_hints) {
     // Some toolkits deliver Ctrl+Space to the browser chrome as a control
@@ -6063,6 +6136,8 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonBool(out, show_fps_indicator_);
   out += ",\"shader\":";
   AppendJsonBool(out, shader_enabled_);
+  out += ",\"mode\":";
+  AppendJsonString(out, ModeIndicatorText());
   out += ",\"fps_has_sample\":";
   AppendJsonBool(out, fps_has_sample);
   out += ",\"fps\":";

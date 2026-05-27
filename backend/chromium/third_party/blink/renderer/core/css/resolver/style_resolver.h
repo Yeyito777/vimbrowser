@@ -59,6 +59,12 @@ class StyleResolverState;
 class StyleRulePositionTry;
 class StyleRuleUsageTracker;
 
+// Vimbrowser's native page shader is a renderer/backend paint transform, not
+// CSS/JS injection. Paint code uses this helper for shader-only pixels that
+// must not be exposed as computed style (for example caret and selection
+// colors).
+CORE_EXPORT bool VimbrowserElementShaderEnabledForDocument(const Document&);
+
 // This class selects a ComputedStyle for a given element in a document based on
 // the document's collection of stylesheets (user styles, author styles, UA
 // style). There is a 1-1 relationship of StyleResolver and Document.

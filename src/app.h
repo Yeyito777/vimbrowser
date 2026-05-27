@@ -35,6 +35,9 @@ class App final : public CefApp,
       CefRefPtr<CefCommandLine> command_line,
       const CefString& current_directory) override;
   void OnContextInitialized() override;
+  void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame,
+                            CefRefPtr<CefDOMNode> node) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,

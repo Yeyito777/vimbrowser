@@ -17,6 +17,7 @@ struct Tab {
   CefRefPtr<CefBrowserView> view;
   bool deferred_load = false;
   bool audible = false;
+  bool focused_editable_node = false;
   bool has_scroll_target = false;
   int scroll_target_x = 0;
   int scroll_target_y = 0;

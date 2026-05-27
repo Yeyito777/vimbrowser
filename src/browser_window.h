@@ -285,6 +285,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool HandleNormalModeKey(const CefKeyEvent& event);
   bool AllTabBrowsersClosed() const;
   Tab* ActiveTab();
+  bool PageHasFocusedEditable(const CefKeyEvent& event);
 
   std::vector<std::string> initial_urls_;
   std::string state_path_;

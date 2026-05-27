@@ -16,6 +16,33 @@ namespace {
 
 constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
+constexpr const char kFocusedEditableMessage[] =
+    "__vimbrowser_focused_editable_changed__";
+
+bool IsEditableTextNode(CefRefPtr<CefDOMNode> node) {
+  if (!node) {
+    return false;
+  }
+  if (node->IsEditable()) {
+    return true;
+  }
+  if (!node->IsFormControlElement()) {
+    return false;
+  }
+  switch (node->GetFormControlElementType()) {
+    case DOM_FORM_CONTROL_TYPE_INPUT_EMAIL:
+    case DOM_FORM_CONTROL_TYPE_INPUT_NUMBER:
+    case DOM_FORM_CONTROL_TYPE_INPUT_PASSWORD:
+    case DOM_FORM_CONTROL_TYPE_INPUT_SEARCH:
+    case DOM_FORM_CONTROL_TYPE_INPUT_TELEPHONE:
+    case DOM_FORM_CONTROL_TYPE_INPUT_TEXT:
+    case DOM_FORM_CONTROL_TYPE_INPUT_URL:
+    case DOM_FORM_CONTROL_TYPE_TEXT_AREA:
+      return true;
+    default:
+      return false;
+  }
+}
 
 std::string JsonEscape(std::string_view text) {
   std::string out;
@@ -245,6 +272,21 @@ void App::OnContextInitialized() {
                                                     show_fps_indicator_,
                                                     shader_enabled_, state_path_));
   window->Create();
+}
+
+void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>,
+                               CefRefPtr<CefFrame> frame,
+                               CefRefPtr<CefDOMNode> node) {
+  // Mirror renderer-side focused-editable state into the browser process.  Page
+  // shortcuts are decided before/around normal renderer key dispatch, so the
+  // shell needs a durable focus signal instead of relying only on the per-key
+  // CefKeyEvent flag.
+  CefRefPtr<CefProcessMessage> message =
+      CefProcessMessage::Create(kFocusedEditableMessage);
+  message->GetArgumentList()->SetBool(0, IsEditableTextNode(node));
+  if (frame && frame->IsValid()) {
+    frame->SendProcessMessage(PID_BROWSER, message);
+  }
 }
 
 bool App::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,

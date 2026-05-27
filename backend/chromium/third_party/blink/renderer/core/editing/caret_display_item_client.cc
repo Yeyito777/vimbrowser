@@ -25,6 +25,7 @@
 
 #include "third_party/blink/renderer/core/editing/caret_display_item_client.h"
 
+#include "third_party/blink/renderer/core/css/resolver/style_resolver.h"
 #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
 #include "third_party/blink/renderer/core/editing/editing_utilities.h"
 #include "third_party/blink/renderer/core/editing/local_caret_rect.h"
@@ -221,6 +222,13 @@ void CaretDisplayItemClient::UpdateStyleAndLayoutIfNeeded(
   if (caret_position.AnchorNode()) {
     new_color = caret_position.AnchorNode()->GetLayoutObject()->ResolveColor(
         GetCSSPropertyCaretColor());
+    if (VimbrowserElementShaderEnabledForDocument(
+            caret_position.AnchorNode()->GetDocument())) {
+      // Native shader caret color. This is deliberately applied to the caret
+      // display item client instead of the CSS caret-color property so pages
+      // cannot observe it through computed style.
+      new_color = Color(0x48, 0xc9, 0xe3);  // #48c9e3
+    }
   }
   if (new_color != color_) {
     needs_paint_invalidation_ = true;

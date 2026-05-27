@@ -332,6 +332,11 @@ Color HighlightStyleUtils::HighlightBackgroundColor(
     if (node && !style.IsSelectable()) {
       return Color::kTransparent;
     }
+    if (VimbrowserElementShaderEnabledForDocument(document)) {
+      // Native shader selection color. Keep this at paint/compositor level so
+      // pages still see their own ::selection computed style.
+      return Color(0x4f, 0x52, 0x58);  // #4f5258
+    }
   }
 
   const ComputedStyle* pseudo_style = HighlightPseudoStyle(style, pseudo);
@@ -462,6 +467,16 @@ HighlightStyleUtils::HighlightPaintingStyle(
       background_color = maybe_color.value();
     } else {
       colors_from_previous_layer.Put(HighlightColorProperty::kBackgroundColor);
+    }
+
+    if (pseudo == kPseudoIdSelection &&
+        VimbrowserElementShaderEnabledForDocument(document)) {
+      // Same paint-only shader override as HighlightBackgroundColor(), for the
+      // highlight overlay path that stores backgrounds in
+      // HighlightTextPaintStyle.
+      background_color = Color(0x4f, 0x52, 0x58);  // #4f5258
+      colors_from_previous_layer.Remove(
+          HighlightColorProperty::kBackgroundColor);
     }
   }
 

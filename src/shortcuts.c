@@ -111,6 +111,7 @@ typedef struct PageShortcutBinding {
   unsigned int modes;
   VimbrowserShortcutAction raw_action;
   VimbrowserShortcutAction char_action;
+  int suppress_in_focused_editable;
   const char* script;
 } PageShortcutBinding;
 
@@ -194,19 +195,19 @@ static const PageShortcutBinding kYoutubeBindings[] = {
     {' ', VIMBROWSER_SHORTCUT_MODE_WEBSITE_NORMAL |
               VIMBROWSER_SHORTCUT_MODE_NORMAL,
      VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
-     VIMBROWSER_SHORTCUT_CONSUME, kYoutubeTogglePlaybackScript},
+     VIMBROWSER_SHORTCUT_CONSUME, 0, kYoutubeTogglePlaybackScript},
     {'h', VIMBROWSER_SHORTCUT_MODE_INSERT,
      VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
-     VIMBROWSER_SHORTCUT_CONSUME, kYoutubeSeekBackScript},
+     VIMBROWSER_SHORTCUT_CONSUME, 1, kYoutubeSeekBackScript},
     {'j', VIMBROWSER_SHORTCUT_MODE_INSERT,
      VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
-     VIMBROWSER_SHORTCUT_CONSUME, kYoutubeVolumeDownScript},
+     VIMBROWSER_SHORTCUT_CONSUME, 1, kYoutubeVolumeDownScript},
     {'k', VIMBROWSER_SHORTCUT_MODE_INSERT,
      VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
-     VIMBROWSER_SHORTCUT_CONSUME, kYoutubeVolumeUpScript},
+     VIMBROWSER_SHORTCUT_CONSUME, 1, kYoutubeVolumeUpScript},
     {'l', VIMBROWSER_SHORTCUT_MODE_INSERT,
      VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT,
-     VIMBROWSER_SHORTCUT_CONSUME, kYoutubeSeekForwardScript},
+     VIMBROWSER_SHORTCUT_CONSUME, 1, kYoutubeSeekForwardScript},
 };
 
 static const PageShortcutTable kPageShortcuts[] = {
@@ -226,6 +227,7 @@ VimbrowserShortcut vimbrowser_shortcut_for_key(const char* url,
                                                int is_raw_key_down,
                                                int is_char_event,
                                                int is_plain,
+                                               int focus_on_editable_field,
                                                unsigned int mode) {
   if (!url || !*url || !is_plain || !mode ||
       (!is_raw_key_down && !is_char_event)) {
@@ -249,6 +251,9 @@ VimbrowserShortcut vimbrowser_shortcut_for_key(const char* url,
         continue;
       }
       if (!(binding->modes & mode)) {
+        continue;
+      }
+      if (focus_on_editable_field && binding->suppress_in_focused_editable) {
         continue;
       }
       VimbrowserShortcut shortcut;

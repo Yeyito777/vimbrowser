@@ -387,13 +387,13 @@ bool Hints::IsClickHintModeEntryKey(const WebKeyboardEvent& event) const {
 bool Hints::IsRightClickHintModeEntryKey(const WebKeyboardEvent& event,
                                          bool is_browser_command) const {
   return is_browser_command && HasOnlyControlModifier(event) &&
-         event.windows_key_code == VK_J;
+         event.windows_key_code == VK_L;
 }
 
 bool Hints::IsHoverHintModeEntryKey(const WebKeyboardEvent& event,
                                     bool is_browser_command) const {
   return is_browser_command && HasOnlyControlModifier(event) &&
-         event.windows_key_code == VK_K;
+         event.windows_key_code == VK_H;
 }
 
 bool Hints::IsScrollableHintModeEntryKey(const WebKeyboardEvent& event,

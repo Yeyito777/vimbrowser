@@ -27,6 +27,7 @@ VimbrowserShortcut vimbrowser_shortcut_for_key(const char* url,
                                                int is_raw_key_down,
                                                int is_char_event,
                                                int is_plain,
+                                               int focus_on_editable_field,
                                                unsigned int mode);
 
 #ifdef __cplusplus

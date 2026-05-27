@@ -355,6 +355,38 @@ bool IsVimbrowserInternalPage(const Document& document) {
   return url.GetString().find("vimbrowser-ui=1") != String::npos;
 }
 
+bool IsYouTubeDocument(const Document& document) {
+  const String host = document.Url().Host().ToString();
+  return host == "youtube.com" || host.ends_with(".youtube.com");
+}
+
+bool IsYouTubeCinematicsSubtree(const Element& element) {
+  DEFINE_STATIC_LOCAL(AtomicString, kCinematicsId, ("cinematics"));
+  for (const Element* current = &element; current;
+       current = current->parentElement()) {
+    if (current->GetIdAttribute() == kCinematicsId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SuppressYouTubeCinematicsAmbientMode(StyleResolverState& state) {
+  if (!IsYouTubeDocument(state.GetDocument()) ||
+      !IsYouTubeCinematicsSubtree(state.GetElement())) {
+    return false;
+  }
+
+  // YouTube ambient mode paints sampled video colors into #cinematics canvas
+  // layers. Those pixels are not CSS colors, so the element shader cannot
+  // recolor them. Hide only this decorative subtree when the shader is active;
+  // videos and normal page content remain untouched.
+  ComputedStyleBuilder& builder = state.StyleBuilder();
+  builder.SetVisibility(EVisibility::kHidden);
+  builder.SetOpacity(0);
+  return true;
+}
+
 void ApplyElementShader(StyleResolverState& state) {
   if (!VimbrowserElementShaderEnabled() ||
       IsVimbrowserInternalPage(state.GetDocument())) {
@@ -363,9 +395,10 @@ void ApplyElementShader(StyleResolverState& state) {
 
   ComputedStyleBuilder& builder = state.StyleBuilder();
 
-  // Handle ::selection pseudo-element — custom highlight color
+  // Selection paint is shadered in HighlightStyleUtils instead of by rewriting
+  // the ::selection computed style. That keeps the page-visible style tree at
+  // the author's values while the compositor/backend still emits our pixels.
   if (builder.StyleType() == kPseudoIdSelection) {
-    builder.SetBackgroundColor(StyleColor(Color(0x4f, 0x52, 0x58)));  // #4f5258
     return;
   }
 
@@ -401,6 +434,10 @@ void ApplyElementShader(StyleResolverState& state) {
       builder.SetBorderBottomWidth(1);
       builder.SetBorderLeftWidth(1);
     }
+    return;
+  }
+
+  if (SuppressYouTubeCinematicsAmbientMode(state)) {
     return;
   }
 
@@ -1113,6 +1150,10 @@ void ApplyInertness(StyleResolverState& state) {
 }
 
 }  // namespace
+
+bool VimbrowserElementShaderEnabledForDocument(const Document& document) {
+  return VimbrowserElementShaderEnabled() && !IsVimbrowserInternalPage(document);
+}
 
 static CSSPropertyValueSet* LeftToRightDeclaration() {
   DEFINE_STATIC_LOCAL(

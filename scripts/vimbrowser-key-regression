@@ -11,13 +11,17 @@ sidebar forwarded keys.
 from __future__ import annotations
 
 import argparse
+import http.server
 import json
 import os
 from pathlib import Path
 import shutil
+import shlex
+import ssl
 import subprocess
 import sys
 import tempfile
+import threading
 import textwrap
 import time
 
@@ -32,11 +36,17 @@ TEST_HTML = """<!doctype html>
 <body tabindex=\"0\" style=\"font:20px sans-serif;padding:20px;height:3000px\">
 <input id=\"input\" autofocus style=\"font:20px sans-serif;width:420px\" />
 <button id=\"button\">button</button>
+<div id=\"hover\" onmouseover=\"void 0\"
+     style=\"display:inline-block;margin-left:20px;padding:12px;border:1px solid #888\">
+  hover target
+</div>
 <script>
 window.events=[];
 window.keys=[];
-for (const t of ['keydown','keypress','keyup','beforeinput','input']) {
+for (const t of ['keydown','keypress','keyup','beforeinput','input',
+                 'contextmenu','mouseover','mousemove']) {
   document.addEventListener(t, e => {
+    if (t === 'contextmenu') e.preventDefault();
     window.events.push({
       type: e.type,
       key: e.key,
@@ -71,6 +81,145 @@ window.clearProbe = () => {
 };
 window.addEventListener('load', () => window.resetProbe(true));
 </script>
+	"""
+
+YOUTUBE_TEST_HTML = """<!doctype html>
+<meta charset=\"utf-8\">
+<title>vimbrowser youtube shortcut regression</title>
+<body tabindex=\"0\" style=\"font:20px sans-serif;padding:20px;height:3000px\">
+<input id=\"input\" autofocus style=\"font:20px sans-serif;width:420px\" />
+<div id=\"movie_player\"></div>
+<script>
+window.events=[];
+window.keys=[];
+window.shortcutLog=[];
+const player = document.getElementById('movie_player');
+player._volume = 50;
+player.getVolume = () => player._volume;
+player.setVolume = v => {
+  player._volume = v;
+  window.shortcutLog.push(`volume:${v}`);
+};
+player.isMuted = () => false;
+player.unMute = () => { window.shortcutLog.push('unmute'); };
+for (const t of ['keydown','keypress','keyup','beforeinput','input']) {
+  document.addEventListener(t, e => {
+    window.events.push({
+      type: e.type,
+      key: e.key,
+      code: e.code,
+      target: e.target && e.target.id || e.target.tagName,
+      value: document.getElementById('input').value,
+      shortcutLog: window.shortcutLog.slice()
+    });
+    if (t === 'keydown') window.keys.push(e.key);
+  }, true);
+}
+window.resetProbe = (focusInput = true) => {
+  window.events=[];
+  window.keys=[];
+  window.shortcutLog=[];
+  player._volume = 50;
+  const input = document.getElementById('input');
+  input.value='';
+  if (focusInput) input.focus(); else document.body.focus();
+  return 'ok';
+};
+window.snapshotProbe = () => ({
+  value: document.getElementById('input').value,
+  keys: window.keys,
+  events: window.events,
+  shortcutLog: window.shortcutLog,
+  volume: player._volume,
+  active: document.activeElement && (document.activeElement.id || document.activeElement.tagName)
+});
+window.clearProbe = () => {
+  window.events=[];
+  window.keys=[];
+  window.shortcutLog=[];
+  return 'ok';
+};
+window.addEventListener('load', () => window.resetProbe(true));
+</script>
+"""
+
+YOUTUBE_CINEMATICS_TEST_HTML = """<!doctype html>
+<meta charset="utf-8">
+<title>vimbrowser youtube cinematics regression</title>
+<body style="margin:0;background:#0f0f0f">
+<div id="movie_player" style="position:relative;width:640px;height:360px;background:#111">
+  <video></video>
+  <div id="cinematics" style="position:absolute;inset:0;visibility:visible;opacity:1;pointer-events:none">
+    <div style="position:absolute;inset:0;transform:scale(1.5,2)">
+      <canvas width="110" height="75" style="position:absolute;width:100%;height:100%;visibility:visible;opacity:1"></canvas>
+    </div>
+  </div>
+</div>
+<script>
+window.snapshotProbe = () => {
+  const root = document.getElementById('cinematics');
+  const canvas = root.querySelector('canvas');
+  const rootStyle = getComputedStyle(root);
+  const canvasStyle = getComputedStyle(canvas);
+  return {
+    root: {
+      display: rootStyle.display,
+      visibility: rootStyle.visibility,
+      opacity: rootStyle.opacity
+    },
+    canvas: {
+      display: canvasStyle.display,
+      visibility: canvasStyle.visibility,
+      opacity: canvasStyle.opacity
+    }
+  };
+};
+</script>
+"""
+
+MP4_PLAYBACK_TEST_HTML = """<!doctype html>
+<meta charset="utf-8">
+<title>vimbrowser proprietary media playback regression</title>
+<body style="margin:0;background:#111;color:#eee;font:16px sans-serif">
+<video id="video" muted playsinline preload="auto" src="/test.mp4"
+       style="width:320px;height:180px"></video>
+<script>
+window.playState = {};
+window.startPlayback = () => {
+  const video = document.getElementById('video');
+  video.muted = true;
+  const promise = video.play();
+  window.playState.started = true;
+  if (promise && promise.then) {
+    promise.then(() => {
+      window.playState.promise = 'resolved';
+    }).catch(error => {
+      window.playState.promise = 'rejected';
+      window.playState.error = `${error.name}: ${error.message}`;
+    });
+  }
+  return 'ok';
+};
+window.snapshotProbe = () => {
+  const video = document.getElementById('video');
+  return {
+    readyState: video.readyState,
+    networkState: video.networkState,
+    currentTime: video.currentTime,
+    paused: video.paused,
+    ended: video.ended,
+    error: video.error && {
+      code: video.error.code,
+      message: video.error.message
+    },
+    canPlay: video.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'),
+    mseH264AacMp4: window.MediaSource
+      ? MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')
+      : false,
+    playState: window.playState
+  };
+};
+</script>
 """
 
 RUN_ID = 0
@@ -94,12 +243,109 @@ def run(cmd: list[str], *, env: dict[str, str] | None = None, timeout: float = 3
     return proc.stdout
 
 
+class StaticHttpsServer:
+    def __init__(self, html: str, host: str = "not.youtube.com"):
+        self.html = html
+        self.host = host
+        self.root = Path(tempfile.mkdtemp(prefix="vb-key-regression-https-"))
+        self.httpd: http.server.ThreadingHTTPServer | None = None
+        self.thread: threading.Thread | None = None
+        self.url: str | None = None
+
+    def __enter__(self) -> "StaticHttpsServer":
+        cert = self.root / "cert.pem"
+        key = self.root / "key.pem"
+        run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
+            "-keyout", str(key), "-out", str(cert), "-days", "1",
+            "-subj", f"/CN={self.host}",
+            "-addext", f"subjectAltName=DNS:{self.host}",
+        ], timeout=20)
+
+        html = self.html.encode()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(html)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(html)
+
+            def log_message(self, format: str, *args) -> None:  # noqa: A002
+                return
+
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=cert, keyfile=key)
+        self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
+        port = self.httpd.server_address[1]
+        self.url = f"https://{self.host}:{port}/watch?v=regression"
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self.httpd:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+
+class StaticHttpMediaServer:
+    def __init__(self):
+        self.root = Path(tempfile.mkdtemp(prefix="vb-key-regression-media-"))
+        self.httpd: http.server.ThreadingHTTPServer | None = None
+        self.thread: threading.Thread | None = None
+        self.url: str | None = None
+
+    def __enter__(self) -> "StaticHttpMediaServer":
+        media = self.root / "test.mp4"
+        run([
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc2=size=96x96:rate=24",
+            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+            "-t", "1",
+            "-pix_fmt", "yuv420p",
+            "-c:v", "libx264", "-profile:v", "baseline", "-level", "3.0",
+            "-c:a", "aac",
+            "-movflags", "+faststart",
+            str(media),
+        ], timeout=30)
+        (self.root / "index.html").write_text(MP4_PLAYBACK_TEST_HTML)
+        root = self.root
+
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=str(root), **kwargs)
+
+            def log_message(self, format: str, *args) -> None:  # noqa: A002
+                return
+
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        port = self.httpd.server_address[1]
+        self.url = f"http://127.0.0.1:{port}/index.html"
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self.httpd:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+
 class Harness:
-    def __init__(self, binary: Path):
+    def __init__(self, binary: Path, *, initial_url: str | None = None,
+                 html: str = TEST_HTML, extra_browser_args: list[str] | None = None):
         self.binary = binary.resolve()
         self.profile = Path(tempfile.mkdtemp(prefix="vb-key-regression-profile-"))
         self.page = self.profile / "key_regression.html"
-        self.page.write_text(TEST_HTML)
+        self.page.write_text(html)
+        self.initial_url = initial_url or f"file://{self.page}"
+        self.extra_browser_args = extra_browser_args or []
         self.env_name = f"vb-key-regression-{os.getpid()}-{time.monotonic_ns()}"
         self.env = os.environ.copy()
         self.env["VIMBROWSER_PROFILE_DIR"] = str(self.profile)
@@ -116,7 +362,9 @@ class Harness:
         script = (
             f'cd "{self.binary.parent}" && '
             f'exec "{SAFE_RUN}" ./"{self.binary.name}" '
-            f'--profile-dir="{self.profile}" "file://{self.page}"'
+            f'--profile-dir={shlex.quote(str(self.profile))} '
+            f'{" ".join(shlex.quote(arg) for arg in self.extra_browser_args)} '
+            f'{shlex.quote(self.initial_url)}'
         )
         subprocess.Popen(
             ["xenv", "run", "-e", self.env_name, "bash", "-lc", script],
@@ -171,6 +419,17 @@ class Harness:
             time.sleep(0.05)
         raise RuntimeError("page did not reach readyState=complete")
 
+    def wait_for_mode(self, mode: str, timeout: float = 3) -> dict:
+        deadline = time.time() + timeout
+        last = None
+        while time.time() < deadline:
+            last = self.ipc(["status"])
+            if last.get("mode") == mode:
+                return last
+            time.sleep(0.05)
+        raise AssertionError(
+            f"browser mode did not become {mode!r}\n{json.dumps(last, indent=2)}")
+
     def key(self, *keys: str, pause: float = 0.15) -> None:
         run(["xenv", "key", "-e", self.env_name, *keys], timeout=10)
         time.sleep(pause)
@@ -199,8 +458,33 @@ def require(condition: bool, message: str, details=None) -> None:
         raise AssertionError(f"{message}\n{json.dumps(details, indent=2)}")
 
 
+def reset_to_website_mode(h: Harness, *, focus_input: bool) -> dict:
+    h.reset(focus_input=focus_input)
+    if focus_input:
+        # Focusing a text field now intentionally auto-enters insert mode.  Wait
+        # for that signal so Escape/Escape reliably returns to website mode while
+        # preserving the focused input for tests that verify website-mode keys.
+        try:
+            h.wait_for_mode("INSERT", timeout=2)
+        except AssertionError:
+            pass
+    status = h.ipc(["status"])
+    if status.get("mode") == "INSERT":
+        h.key("Escape", "Escape", pause=0.25)
+    elif status.get("mode") in ("NORMAL", "VISUAL"):
+        h.key("Escape", pause=0.2)
+    status = h.ipc(["status"])
+    require(status.get("mode") == "WEBSITE",
+            "could not reset browser to website mode", status)
+    return status
+
+
 def test_mode_entry_i_does_not_leak_and_insert_types(h: Harness) -> None:
     h.reset(focus_input=True)
+    h.wait_for_mode("INSERT")
+    h.key("Escape", pause=0.2)
+    h.wait_for_mode("NORMAL")
+    h.clear()
     h.key("i", pause=0.2)
     after_i = h.snapshot()
     require(after_i["value"] == "", "mode-entry i typed into focused input", after_i)
@@ -212,9 +496,66 @@ def test_mode_entry_i_does_not_leak_and_insert_types(h: Harness) -> None:
     require(after_x["value"] == "x", "insert mode did not forward following text key", after_x)
 
 
+def test_text_input_focus_auto_enters_insert_mode(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.clear()
+    h.js("document.getElementById('input').focus(); 'ok'")
+    status = h.wait_for_mode("INSERT")
+    focused = h.snapshot()
+    require(focused["active"] == "input",
+            "programmatic input focus did not focus the input",
+            {"status": status, "snapshot": focused})
+
+    h.clear()
+    h.key("x", pause=0.2)
+    typed = h.snapshot()
+    require(typed["value"] == "x",
+            "focused input did not receive typing without pressing i", typed)
+
+
+def test_hint_to_text_input_auto_enters_insert_mode(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.clear()
+    h.key("f", pause=0.25)
+    # The body has tabindex=0 for focus tests and receives the first hint label;
+    # the text input is the next click-hint target on this fixture.
+    h.key("s", pause=0.5)
+    status = h.wait_for_mode("INSERT")
+    focused = h.snapshot()
+    require(focused["active"] == "input",
+            "hint selection did not focus the input",
+            {"status": status, "snapshot": focused})
+
+    h.clear()
+    h.key("z", pause=0.2)
+    typed = h.snapshot()
+    require(typed["value"] == "z",
+            "hint-focused input did not receive typing without pressing i", typed)
+
+
+def test_first_i_and_shift_i_type_in_insert_mode(h: Harness) -> None:
+    h.reset(focus_input=True)
+    h.wait_for_mode("INSERT")
+    h.clear()
+    h.key("i", pause=0.2)
+    lower = h.snapshot()
+    require(lower["value"] == "i",
+            "first insert-mode 'i' keypress was swallowed", lower)
+
+    h.key("Escape", "Escape", pause=0.25)
+    h.reset(focus_input=False)
+    h.reset(focus_input=True)
+    h.wait_for_mode("INSERT")
+    h.clear()
+    h.key("shift+i", pause=0.2)
+    upper = h.snapshot()
+    require(upper["value"] == "I",
+            "first insert-mode 'I' keypress was swallowed", upper)
+
+
 def test_shifted_jk_type_in_insert_mode(h: Harness) -> None:
     h.reset(focus_input=True)
-    h.key("i", pause=0.2)
+    h.wait_for_mode("INSERT")
     h.clear()
     h.key("shift+j", pause=0.15)
     h.key("shift+k", pause=0.2)
@@ -226,7 +567,7 @@ def test_shifted_jk_type_in_insert_mode(h: Harness) -> None:
 
 def test_insert_escape_exits_without_passthrough(h: Harness) -> None:
     h.reset(focus_input=True)
-    h.key("i", pause=0.2)
+    h.wait_for_mode("INSERT")
     h.clear()
     h.key("a", pause=0.15)
     h.key("Escape", pause=0.2)
@@ -237,8 +578,39 @@ def test_insert_escape_exits_without_passthrough(h: Harness) -> None:
     require(snap["scrollY"] > 0, "normal-mode j did not scroll after insert Escape", snap)
 
 
-def test_website_keybinds_do_not_type(h: Harness) -> None:
+def test_normal_escape_returns_to_website_mode(h: Harness) -> None:
     h.reset(focus_input=True)
+    h.wait_for_mode("INSERT")
+    h.key("Escape", "Escape", pause=0.25)
+    initial_status = h.ipc(["status"])
+    require(initial_status.get("mode") == "WEBSITE",
+            "initial web mode was not website mode", initial_status)
+
+    h.key("i", pause=0.2)
+    insert_status = h.ipc(["status"])
+    require(insert_status.get("mode") == "INSERT",
+            "website-normal i did not enter insert mode", insert_status)
+
+    h.key("Escape", pause=0.2)
+    normal_status = h.ipc(["status"])
+    require(normal_status.get("mode") == "NORMAL",
+            "insert Escape did not enter regular normal mode", normal_status)
+
+    h.clear()
+    h.key("Escape", pause=0.2)
+    website_status = h.ipc(["status"])
+    snap = h.snapshot()
+    require(website_status.get("mode") == "WEBSITE",
+            "normal-mode Escape did not return to website mode",
+            {"status": website_status, "snapshot": snap})
+    require(not any(e.get("type") == "keydown" and e.get("key") == "Escape"
+                    for e in snap["events"]),
+            "normal-mode Escape leaked to the page while switching modes", snap)
+
+
+def test_website_keybinds_do_not_type(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=True)
+    h.clear()
     h.key("j", pause=0.2)
     after_j = h.snapshot()
     require(after_j["scrollY"] > 0, "website-mode j did not scroll page", after_j)
@@ -260,14 +632,236 @@ def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
             "sidebar keybindings generated input events", snap)
 
 
+def test_ctrl_jk_cycle_focus_not_hints(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=True)
+    h.clear()
+    h.key("ctrl+j", "ctrl+j", pause=0.25)
+    h.key("j", pause=0.25)
+    after_ctrl_j = h.snapshot()
+    require(after_ctrl_j["scrollY"] > 0,
+            "Ctrl+J no longer cycled focus back to the webview", after_ctrl_j)
+    require(not any(e.get("type") == "contextmenu" for e in after_ctrl_j["events"]),
+            "Ctrl+J still started right-click hints", after_ctrl_j)
+
+    reset_to_website_mode(h, focus_input=True)
+    h.clear()
+    h.key("ctrl+k", "ctrl+k", pause=0.25)
+    h.key("j", pause=0.25)
+    after_ctrl_k = h.snapshot()
+    require(after_ctrl_k["scrollY"] > 0,
+            "Ctrl+K no longer cycled focus back to the webview", after_ctrl_k)
+    require(not any(e.get("type") in ("mouseover", "mousemove")
+                    for e in after_ctrl_k["events"]),
+            "Ctrl+K still started hover hints", after_ctrl_k)
+
+
+def test_ctrl_lh_start_right_click_and_hover_hints(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.clear()
+    h.key("ctrl+l", pause=0.25)
+    h.key("a", pause=0.5)
+    right_click = h.snapshot()
+    require(any(e.get("type") == "contextmenu" for e in right_click["events"]),
+            "Ctrl+L did not start right-click hints", right_click)
+
+    reset_to_website_mode(h, focus_input=False)
+    h.clear()
+    h.key("ctrl+h", pause=0.25)
+    h.key("a", pause=0.5)
+    hover = h.snapshot()
+    require(any(e.get("type") in ("mouseover", "mousemove")
+                for e in hover["events"]),
+            "Ctrl+H did not start hover hints", hover)
+
+
+def test_cold_start_launch_url_restores_saved_tabs_at_bottom(binary: Path) -> None:
+    h = Harness(binary)
+    try:
+        saved_one = h.profile / "saved-one.html"
+        saved_two = h.profile / "saved-two.html"
+        saved_one.write_text("<!doctype html><title>saved one</title>")
+        saved_two.write_text("<!doctype html><title>saved two</title>")
+        saved_urls = [saved_one.as_uri(), saved_two.as_uri()]
+        opened_url = h.initial_url
+        (h.profile / "state").write_text(
+            "showmode=on\n"
+            "showfps=off\n"
+            "shader=on\n"
+            "active=0\n"
+            + "".join(f"tab={url}\n" for url in saved_urls)
+        )
+
+        with h:
+            tabs = h.ipc(["tabs"])
+            urls = [tab.get("url") for tab in tabs.get("tabs", [])]
+            require(urls == [*saved_urls, opened_url],
+                    "cold-start launch URL did not preserve saved tabs and append at bottom",
+                    tabs)
+            require(tabs.get("active_index") == 2,
+                    "cold-start launch URL was not focused at the bottom", tabs)
+    finally:
+        h.cleanup()
+
+
+test_cold_start_launch_url_restores_saved_tabs_at_bottom.owns_harness = True
+
+
+def test_youtube_insert_hjkl_respects_focused_text_input(binary: Path) -> None:
+    with StaticHttpsServer(YOUTUBE_TEST_HTML) as server:
+        require(server.url is not None, "test https server did not start")
+        with Harness(
+            binary,
+            initial_url=server.url,
+            html=YOUTUBE_TEST_HTML,
+            extra_browser_args=[
+                "--host-resolver-rules=MAP not.youtube.com 127.0.0.1",
+                "--ignore-certificate-errors",
+            ],
+        ) as h:
+            status = h.ipc(["status"])
+            require("not.youtube.com" in status.get("url", ""),
+                    "youtube shortcut regression page did not load with youtube host",
+                    status)
+
+            h.reset(focus_input=True)
+            h.key("i", pause=0.2)
+            h.clear()
+            time.sleep(0.2)
+            for key in ("h", "j", "k", "l"):
+                h.key(key, pause=0.15)
+            focused = h.snapshot()
+            require(focused["active"] == "input",
+                    "youtube shortcut text-input case lost input focus", focused)
+            require(focused["value"] == "hjkl",
+                    "YouTube insert-mode h/j/k/l shortcuts captured text input",
+                    focused)
+            require(focused["shortcutLog"] == [],
+                    "YouTube insert-mode h/j/k/l shortcuts ran while text input was focused",
+                    focused)
+
+            h.reset(focus_input=False)
+            h.clear()
+            h.key("j", "k", pause=0.45)
+            body = h.snapshot()
+            require(body["active"] == "BODY",
+                    "youtube shortcut body-focus case did not focus the body", body)
+            require(any(str(entry).startswith("volume:")
+                        for entry in body["shortcutLog"]),
+                    "YouTube insert-mode j/k shortcuts no longer run outside text input",
+                    body)
+
+
+test_youtube_insert_hjkl_respects_focused_text_input.owns_harness = True
+
+
+def test_youtube_cinematics_hidden_by_shader(binary: Path) -> None:
+    with StaticHttpsServer(YOUTUBE_CINEMATICS_TEST_HTML, host="www.youtube.com") as server:
+        require(server.url is not None, "youtube cinematics test server did not start")
+
+        def snapshot_for_shader(shader: str) -> dict:
+            h = Harness(
+                binary,
+                initial_url=server.url,
+                html=YOUTUBE_CINEMATICS_TEST_HTML,
+                extra_browser_args=[
+                    "--host-resolver-rules=MAP www.youtube.com 127.0.0.1",
+                    "--ignore-certificate-errors",
+                    f"--vimbrowser-shader={shader}",
+                ],
+            )
+            (h.profile / "state").write_text(
+                "showmode=on\n"
+                "showfps=off\n"
+                f"shader={shader}\n"
+                "active=0\n"
+            )
+            with h:
+                status = h.ipc(["status"])
+                require("www.youtube.com" in status.get("url", ""),
+                        "youtube cinematics regression page did not load with youtube host",
+                        status)
+                return h.snapshot()
+
+        shader_on = snapshot_for_shader("on")
+        require(shader_on["root"]["visibility"] == "hidden" and
+                shader_on["root"]["opacity"] == "0" and
+                shader_on["canvas"]["visibility"] == "hidden" and
+                shader_on["canvas"]["opacity"] == "0",
+                "YouTube #cinematics ambient canvas was not suppressed with shader on",
+                shader_on)
+
+        shader_off = snapshot_for_shader("off")
+        require(shader_off["root"]["visibility"] == "visible" and
+                shader_off["root"]["opacity"] == "1" and
+                shader_off["canvas"]["visibility"] == "visible" and
+                shader_off["canvas"]["opacity"] == "1",
+                "YouTube #cinematics ambient canvas was suppressed with shader off",
+                shader_off)
+
+
+test_youtube_cinematics_hidden_by_shader.owns_harness = True
+
+
+def test_proprietary_media_codecs_advertised(h: Harness) -> None:
+    support = h.js(r'''JSON.stringify((() => {
+      const video = document.createElement('video');
+      const audio = document.createElement('audio');
+      return {
+        h264AacMp4: video.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'),
+        h264Mp4: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+        aacMp4: audio.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
+        mp3: audio.canPlayType('audio/mpeg'),
+        mseH264AacMp4: window.MediaSource
+          ? MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')
+          : false
+      };
+    })())''')
+    for key in ("h264AacMp4", "h264Mp4", "aacMp4", "mp3"):
+        require(support.get(key) in ("maybe", "probably"),
+                f"Chromium media stack does not advertise {key} support", support)
+    require(support.get("mseH264AacMp4") is True,
+            "Chromium MSE media stack does not advertise H.264/AAC MP4 support",
+            support)
+
+
+def test_h264_aac_mp4_video_actually_plays(binary: Path) -> None:
+    with StaticHttpMediaServer() as server:
+        require(server.url is not None, "media playback server did not start")
+        with Harness(
+            binary,
+            initial_url=server.url,
+            html=MP4_PLAYBACK_TEST_HTML,
+        ) as h:
+            initial = h.snapshot()
+            require(initial.get("canPlay") in ("maybe", "probably") and
+                    initial.get("mseH264AacMp4") is True,
+                    "H.264/AAC MP4 playback fixture is not advertised as supported",
+                    initial)
+
+            h.js("window.startPlayback()")
+            deadline = time.time() + 5
+            last = None
+            while time.time() < deadline:
+                last = h.snapshot()
+                if (not last.get("error") and not last.get("paused") and
+                        float(last.get("currentTime") or 0) > 0.05):
+                    return
+                time.sleep(0.1)
+            require(False, "H.264/AAC MP4 video did not start playing", last)
+
+
+test_h264_aac_mp4_video_actually_plays.owns_harness = True
+
+
 def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
-    h.reset(focus_input=True)
+    reset_to_website_mode(h, focus_input=True)
+    h.clear()
     h.key("Escape", pause=0.2)
     web = h.snapshot()
     require("Escape" in web["keys"], "website-mode Escape did not pass through", web)
     require(web["active"] != "input", "website-mode Escape did not blur focused input", web)
 
-    h.reset(focus_input=True)
+    reset_to_website_mode(h, focus_input=True)
     h.focus_sidebar()
     h.key("Escape", pause=0.2)
     h.key("space", pause=0.35)
@@ -281,10 +875,21 @@ def test_escape_and_sidebar_space_passthrough(h: Harness) -> None:
 
 TESTS = [
     test_mode_entry_i_does_not_leak_and_insert_types,
+    test_text_input_focus_auto_enters_insert_mode,
+    test_hint_to_text_input_auto_enters_insert_mode,
+    test_first_i_and_shift_i_type_in_insert_mode,
     test_shifted_jk_type_in_insert_mode,
     test_insert_escape_exits_without_passthrough,
+    test_normal_escape_returns_to_website_mode,
     test_website_keybinds_do_not_type,
     test_sidebar_keybinds_do_not_type,
+    test_ctrl_jk_cycle_focus_not_hints,
+    test_ctrl_lh_start_right_click_and_hover_hints,
+    test_cold_start_launch_url_restores_saved_tabs_at_bottom,
+    test_youtube_insert_hjkl_respects_focused_text_input,
+    test_youtube_cinematics_hidden_by_shader,
+    test_proprietary_media_codecs_advertised,
+    test_h264_aac_mp4_video_actually_plays,
     test_escape_and_sidebar_space_passthrough,
 ]
 
@@ -299,8 +904,11 @@ def main() -> int:
     for test in TESTS:
         name = test.__name__.replace("test_", "")
         print(f"[RUN] {name}")
-        with Harness(args.binary) as h:
-            test(h)
+        if getattr(test, "owns_harness", False):
+            test(args.binary)
+        else:
+            with Harness(args.binary) as h:
+                test(h)
         print(f"[PASS] {name}")
     print("CHECK: PASS")
     return 0

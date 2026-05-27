@@ -149,6 +149,8 @@ localStorage, CacheStorage, etc. `make install-wrapper` also installs a
 `vimbrowser.desktop` entry plus a detached `vimbrowser-xdg-open` launcher for
 XDG/desktop URL and local-file opens; if the profile is already running, URL or
 file arguments are forwarded to the existing window over native IPC as new tabs.
+If the profile is closed, XDG launch arguments are appended after restored saved
+tabs and the last opened argument is focused at the bottom of the tab stack.
 
 Profile semantics:
 
@@ -190,14 +192,16 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - web view focused by default in website-normal mode
 - media autoplay is disabled by default; pages need an explicit user gesture to
   start playback after fresh loads or browser restarts
+- the source-built CEF backend enables Chrome-branded FFmpeg proprietary codec
+  support, including MP4/H.264/AAC/MP3 media used by sites like X/Twitter and
+  Steam
 - native content blocking is enabled by default for known ad-auction,
   identity-sync, and analytics hosts; set `VIMBROWSER_CONTENT_BLOCKING=0` or
   pass `--disable-vimbrowser-content-blocking` for a diagnostic run without it
 - native network body capture/replay is off by default to keep normal browsing
   and benchmarks on the fast path; set `VIMBROWSER_NETWORK_CAPTURE=1` or pass
   `--enable-vimbrowser-network-capture` when you need IPC `network` diagnostics
-- `Ctrl+j` / `Ctrl+k` cycle focus from the tab sidebar back to the web view;
-  while the web view is focused they start right-click/hover hints instead
+- `Ctrl+j` / `Ctrl+k` cycle focus between the tab sidebar and the web view
 - `Ctrl+m` toggles the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
@@ -211,10 +215,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`
   (`Shift-f`) opens hinted links in a new tab immediately after the active tab
-- in website-normal/normal web modes, `Ctrl+j` starts native backend
+- in website-normal/normal web modes, `Ctrl+l` starts native backend
   right-click hints; selecting a label dispatches a context-menu/right-click on
   that element
-- in website-normal/normal web modes, `Ctrl+k` starts native backend hover hints;
+- in website-normal/normal web modes, `Ctrl+h` starts native backend hover hints;
   selecting a label dispatches a synthetic hover/mouse-move over that element
 - in website-normal/normal web modes, `Ctrl+Space` starts native backend
   scrollable hints; selecting a label focuses that scroll container and makes
@@ -228,9 +232,12 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   was closed from, pushing later tabs right
 - `src/shortcuts.c` owns page-specific shortcut overrides; on YouTube in
   website-normal/normal web modes, `Space` toggles playback; in insert mode,
-  `h` / `l` seek -/+5s and `j` / `k` adjust volume -/+5%
+  `h` / `l` seek -/+5s and `j` / `k` adjust volume -/+5% unless a page text
+  field is focused, in which case the keys type into the field normally
 - `Escape` from insert mode enters regular Vim normal mode; `Escape` again
   returns to website-normal mode
+- when a page text field receives focus, including via native hints, web mode
+  automatically enters insert mode so typing can start immediately
 - left qutebrowser-style tab sidebar
 - bottom qutebrowser-style command line while command mode is active
 - command line starts in insert mode, shows a block cursor, supports `Escape` to
@@ -244,7 +251,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   its own shared current-tab/new-tab query history.
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
-- `:shader [on|off]` toggles the native Blink page color shader
+- `:shader [on|off]` toggles the native Blink page color shader; with the
+  shader enabled, YouTube's decorative `#cinematics` ambient-mode canvas glow is
+  hidden natively so it cannot leave an unshadered dark square around videos
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.

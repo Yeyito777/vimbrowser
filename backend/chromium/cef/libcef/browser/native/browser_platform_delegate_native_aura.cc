@@ -45,6 +45,25 @@ bool IsCtrlSpaceBrowserCommand(const CefKeyEvent& event) {
          (event.windows_key_code == 0x20 || event.character == 0x20 ||
           event.unmodified_character == 0x20);
 }
+
+bool IsCtrlLetterBrowserCommand(const CefKeyEvent& event, char key) {
+  return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+         !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         event.windows_key_code == key;
+}
+
+void NormalizeCtrlLetterBrowserCommand(input::NativeWebKeyboardEvent& web_event,
+                                       char key,
+                                       ui::DomCode dom_code) {
+  const char lower = static_cast<char>(key + ('a' - 'A'));
+  web_event.windows_key_code = key;
+  web_event.dom_code = static_cast<int>(dom_code);
+  web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(lower));
+  web_event.text[0] = lower;
+  web_event.unmodified_text[0] = lower;
+}
 }  // namespace
 
 CefBrowserPlatformDelegateNativeAura::CefBrowserPlatformDelegateNativeAura(
@@ -188,6 +207,14 @@ void CefBrowserPlatformDelegateNativeAura::SendVimbrowserBrowserCommandKeyEvent(
     web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(' '));
     web_event.text[0] = ' ';
     web_event.unmodified_text[0] = ' ';
+  }
+  if (IsCtrlLetterBrowserCommand(event, 'H')) {
+    // Ctrl+H is the ASCII Backspace control character on X11. Normalize the
+    // synthetic browser-command event back to semantic KeyH so Blink hint entry
+    // can bind Ctrl+H without exposing anything to page input.
+    NormalizeCtrlLetterBrowserCommand(web_event, 'H', ui::DomCode::US_H);
+  } else if (IsCtrlLetterBrowserCommand(event, 'L')) {
+    NormalizeCtrlLetterBrowserCommand(web_event, 'L', ui::DomCode::US_L);
   }
   web_event.is_browser_shortcut = true;
   host->ForwardKeyboardEvent(web_event);

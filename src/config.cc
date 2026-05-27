@@ -466,8 +466,18 @@ Config ParseConfig(int argc, char* argv[]) {
     config.shader_enabled = state.shader_enabled;
   }
 
-  if (!config.initial_urls.empty()) {
-    config.initial_url = config.initial_urls.front();
+  if (!config.explicit_initial_urls.empty()) {
+    if (!state.tabs.empty()) {
+      config.initial_urls = state.tabs;
+      config.initial_urls.insert(config.initial_urls.end(),
+                                 config.explicit_initial_urls.begin(),
+                                 config.explicit_initial_urls.end());
+      config.active_index = config.initial_urls.size() - 1;
+    }
+    if (!config.initial_urls.empty()) {
+      config.initial_url = config.initial_urls[std::min(config.active_index,
+                                                        config.initial_urls.size() - 1)];
+    }
   } else if (!state.tabs.empty()) {
     config.initial_urls = state.tabs;
     config.active_index = std::min(state.active_index, config.initial_urls.size() - 1);

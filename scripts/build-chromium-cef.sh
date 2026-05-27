@@ -36,6 +36,12 @@ enable_downgrade_processing=false
 enable_linux_installer=false
 enable_resource_allowlist_generation=false
 enable_widevine=true
+# Sites such as X/Twitter and Steam serve MP4/H.264/AAC media.  Chromium's
+# default open-source FFmpeg branding advertises only the free codec set, which
+# makes those players fail with "media could not be played".
+proprietary_codecs=true
+ffmpeg_branding="Chrome"
+rtc_use_h264=true
 forbid_non_component_debug_builds=false
 # Chromium enables DCHECKs by default for non-official optimized builds. That is
 # useful for Chromium developer builds, but vimbrowser ships this backend as the
