@@ -31,10 +31,13 @@ sync-source-distrib:
 slim-runtime:
 	./scripts/slim-cef-runtime.sh "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" "$(abspath $(BUILD_DIR))/Release"
 
-backend-dev: build-chromium-cef sync-source-distrib configure-source
-	cmake --build $(SOURCE_BUILD_DIR) -j$(JOBS)
-	./scripts/slim-cef-runtime.sh "$(abspath $(SOURCE_BUILD_DIR))/Release"
-	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
+backend-dev:
+	./scripts/backend-dev-build.sh "$(SOURCE_BUILD_DIR)" "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" "$(JOBS)"
+	@if [ "$$(cat "$(SOURCE_BUILD_DIR)/.backend-dev-changed" 2>/dev/null || echo 1)" = 1 ]; then \
+	  $(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper; \
+	else \
+	  echo 'installed wrapper already up to date'; \
+	fi
 
 source-distrib:
 	cd backend/chromium && PATH="$(CURDIR)/backend/depot_tools:$$PATH" autoninja -C out/Release_GN_x64 chrome_sandbox
