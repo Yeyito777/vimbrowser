@@ -24,14 +24,66 @@ if [[ ! -d "${out_dir}" ]]; then
   exit 1
 fi
 
+changed=0
+
 copy_file() {
   local src=$1
   local dst=$2
   if [[ -f "${src}" ]]; then
+    if [[ -f "${dst}" && ! "${src}" -nt "${dst}" ]]; then
+      echo "up-to-date ${dst#${repo_dir}/}"
+      return 0
+    fi
     mkdir -p "$(dirname "${dst}")"
     cp -a "${src}" "${dst}"
+    changed=1
     echo "synced ${src#${repo_dir}/} -> ${dst#${repo_dir}/}"
   fi
+}
+
+locale_is_kept() {
+  local base=$1
+  local keep_locales_csv=${VIMBROWSER_KEEP_LOCALES:-en-US,en-GB}
+  local locale
+  IFS=',' read -ra locales <<<"${keep_locales_csv}"
+  for locale in "${locales[@]}"; do
+    locale=${locale//[[:space:]]/}
+    [[ -n "${locale}" ]] || continue
+    case "${base}" in
+      "${locale}.pak"|"${locale}.pak.info"|"${locale}"_*.pak|"${locale}"_*.pak.info)
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
+sync_locales() {
+  local src_dir=$1
+  local dst_dir=$2
+  [[ -d "${src_dir}" ]] || return 0
+
+  mkdir -p "${dst_dir}"
+
+  local file base dst kept=0 removed=0
+  while IFS= read -r -d '' file; do
+    base=$(basename "${file}")
+    if locale_is_kept "${base}"; then
+      copy_file "${file}" "${dst_dir}/${base}"
+      kept=$((kept + 1))
+    fi
+  done < <(find "${src_dir}" -type f \( -name '*.pak' -o -name '*.pak.info' \) -print0)
+
+  while IFS= read -r -d '' file; do
+    base=$(basename "${file}")
+    if ! locale_is_kept "${base}" || [[ ! -f "${src_dir}/${base}" ]]; then
+      rm -f "${file}"
+      removed=$((removed + 1))
+      changed=1
+    fi
+  done < <(find "${dst_dir}" -type f \( -name '*.pak' -o -name '*.pak.info' \) -print0)
+
+  echo "synced kept locales ${src_dir#${repo_dir}/}/ -> ${dst_dir#${repo_dir}/}/ (kept ${kept}, removed ${removed})"
 }
 
 # Runtime binaries used by vimbrowser's CEF distribution. This is the fast path
@@ -51,13 +103,13 @@ copy_file "${out_dir}/chrome_200_percent.pak" "${dist_dir}/Resources/chrome_200_
 copy_file "${out_dir}/resources.pak" "${dist_dir}/Resources/resources.pak"
 copy_file "${out_dir}/icudtl.dat" "${dist_dir}/Resources/icudtl.dat"
 
-if [[ -d "${out_dir}/locales" ]]; then
-  mkdir -p "${dist_dir}/Resources/locales"
-  rsync -a --delete "${out_dir}/locales/" "${dist_dir}/Resources/locales/"
-  echo "synced ${out_dir#${repo_dir}/}/locales/ -> ${dist_dir#${repo_dir}/}/Resources/locales/"
-fi
+sync_locales "${out_dir}/locales" "${dist_dir}/Resources/locales"
 
-"${repo_dir}/scripts/slim-cef-runtime.sh" "${dist_dir}"
+if [[ "${changed}" == "1" || "${VIMBROWSER_FORCE_RUNTIME_SLIM:-0}" == "1" ]]; then
+  "${repo_dir}/scripts/slim-cef-runtime.sh" "${dist_dir}"
+else
+  echo "[+] Existing CEF binary distribution already up to date; runtime slim skipped."
+fi
 
 cat <<EOF
 [+] Existing CEF binary distribution refreshed from incremental Chromium output:
