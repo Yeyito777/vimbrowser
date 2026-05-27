@@ -1,0 +1,4 @@
+# Keep raw command logs out of git; summaries/results are small and may be committed.
+*.log
+*/logs/
+latest
