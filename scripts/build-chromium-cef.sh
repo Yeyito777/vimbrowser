@@ -88,7 +88,7 @@ else
 fi
 
 echo "[+] Building ${target} in backend/chromium/out/${build_dir}"
-autoninja -C "out/${build_dir}" "${target}"
+autoninja -C "out/${build_dir}" --fast_nop "${target}"
 
 cat <<EOF
 [+] Build finished.
