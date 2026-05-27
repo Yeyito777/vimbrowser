@@ -527,6 +527,8 @@ source_set("libcef_static") {
     "libcef/browser/browser_platform_delegate_external.cc",
     "libcef/browser/browser_platform_delegate.h",
     "libcef/browser/browser_platform_delegate_create.cc",
+    "libcef/browser/browser_platform_delegate_lookup.cc",
+    "libcef/browser/browser_platform_delegate_lookup.h",
     "libcef/browser/browser_platform_delegate_popup.cc",
     "libcef/browser/browser_platform_delegate_vimbrowser.cc",
     "libcef/browser/browser_platform_delegate_web_contents.cc",
