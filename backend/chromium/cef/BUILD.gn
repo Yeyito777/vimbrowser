@@ -533,6 +533,8 @@ source_set("libcef_static") {
     "libcef/browser/browser_platform_delegate_lookup.h",
     "libcef/browser/browser_platform_delegate_popup.cc",
     "libcef/browser/browser_platform_delegate_printing.cc",
+    "libcef/browser/browser_platform_delegate_printing_prefs.cc",
+    "libcef/browser/browser_platform_delegate_printing_prefs.h",
     "libcef/browser/browser_platform_delegate_vimbrowser.cc",
     "libcef/browser/browser_platform_delegate_web_contents.cc",
     "libcef/browser/vimbrowser_browser_api.cc",

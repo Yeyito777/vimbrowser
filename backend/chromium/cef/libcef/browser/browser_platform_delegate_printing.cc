@@ -5,13 +5,9 @@
 #include "cef/libcef/browser/browser_platform_delegate.h"
 
 #include "base/command_line.h"
-#include "cef/libcef/browser/browser_context.h"
+#include "cef/libcef/browser/browser_platform_delegate_printing_prefs.h"
 #include "cef/libcef/common/cef_switches.h"
-#include "chrome/browser/profiles/profile.h"
 #include "chrome/common/chrome_switches.h"
-#include "chrome/common/pref_names.h"
-#include "components/prefs/pref_service.h"
-#include "content/public/browser/web_contents.h"
 
 bool CefBrowserPlatformDelegate::IsPrintPreviewSupported() const {
   if (IsWindowless()) {
@@ -19,14 +15,9 @@ bool CefBrowserPlatformDelegate::IsPrintPreviewSupported() const {
     return false;
   }
 
-  if (web_contents_) {
-    auto cef_browser_context = CefBrowserContext::FromBrowserContext(
-        web_contents_->GetBrowserContext());
-    if (cef_browser_context->AsProfile()->GetPrefs()->GetBoolean(
-            prefs::kPrintPreviewDisabled)) {
-      // Disabled on the Profile.
-      return false;
-    }
+  if (cef::IsPrintPreviewDisabledForWebContents(web_contents_)) {
+    // Disabled on the Profile.
+    return false;
   }
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
