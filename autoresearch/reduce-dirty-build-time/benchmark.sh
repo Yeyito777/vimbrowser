@@ -175,6 +175,14 @@ if [[ "${suite}" != "smoke" ]]; then
       'Vimbrowser command-line/autocomplete shell edit; tracks code split out of browser_window.cc.'
   fi
 
+  if [[ -f "${repo_dir}/src/browser_window_autocomplete.cc" ]]; then
+    add_scenario \
+      shell_autocomplete_build_source \
+      'src/browser_window_autocomplete.cc' \
+      "${shell_cmd}" \
+      'Vimbrowser command autocomplete/rendering shell edit; tracks code split out of command handling.'
+  fi
+
   if [[ -f "${repo_dir}/src/browser_window_tabs.cc" ]]; then
     add_scenario \
       shell_tabs_build_source \
