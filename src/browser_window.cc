@@ -43,6 +43,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              size_t active_index,
                              bool show_mode_indicator,
                              bool show_fps_indicator,
+                             bool show_statusline,
                              bool shader_enabled,
                              std::string state_path)
     : initial_urls_(std::move(initial_urls)),
@@ -50,6 +51,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
+      show_statusline_(show_statusline),
       shader_enabled_(shader_enabled) {
   const AppState state = ReadAppState(state_path_);
   open_history_ = state.open_history;
@@ -126,6 +128,9 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
       tab.has_scroll_target = false;
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
+      }
+      if (i == active_index_) {
+        UpdateStatusBar();
       }
       SaveState();
       if (tabs_.size() <= kSidebarMaxRenderedRows &&
@@ -465,6 +470,50 @@ void BrowserWindow::BuildChrome() {
   content_inner_panel_->SetToFillLayout();
   content_panel_->AddChildView(content_inner_panel_);
 
+  status_bar_panel_ = CefPanel::CreatePanel(this);
+  status_bar_panel_->SetID(kStatusBarPanelId);
+  status_bar_panel_->SetBackgroundColor(StatusBarBackgroundColor());
+  CefBoxLayoutSettings status_settings = {};
+  status_settings.size = sizeof(status_settings);
+  status_settings.horizontal = true;
+  status_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  CefRefPtr<CefBoxLayout> status_layout =
+      status_bar_panel_->SetToBoxLayout(status_settings);
+
+  status_sidebar_spacer_panel_ = CefPanel::CreatePanel(nullptr);
+  status_sidebar_spacer_panel_->SetID(kStatusSidebarSpacerPanelId);
+  status_sidebar_spacer_panel_->SetBackgroundColor(theme::kSidebarBg);
+  status_bar_panel_->AddChildView(status_sidebar_spacer_panel_);
+
+  status_sidebar_border_panel_ = CefPanel::CreatePanel(nullptr);
+  status_sidebar_border_panel_->SetID(kStatusSidebarBorderPanelId);
+  status_sidebar_border_panel_->SetBackgroundColor(theme::kBorderUnfocused);
+  status_bar_panel_->AddChildView(status_sidebar_border_panel_);
+
+  status_url_label_ = CefLabelButton::CreateLabelButton(this, "");
+  status_url_label_->SetID(kStatusUrlFieldId);
+  status_url_label_->SetFontList("monospace, 12px");
+  status_url_label_->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_RIGHT);
+  status_url_label_->SetFocusable(false);
+  status_url_label_->SetInkDropEnabled(false);
+  status_url_label_->SetBackgroundColor(StatusBarBackgroundColor());
+  status_url_label_->SetEnabledTextColors(theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+  status_url_label_->SetAccessibleName("vimbrowser current tab URL");
+  status_bar_panel_->AddChildView(status_url_label_);
+  status_layout->SetFlexForView(status_url_label_, 1);
+
+  status_mode_field_ = CefTextfield::CreateTextfield(this);
+  status_mode_field_->SetID(kStatusModeFieldId);
+  StyleTextfield(status_mode_field_, theme::kVimNormal,
+                 StatusBarBackgroundColor(), "monospace, 12px");
+  status_mode_field_->SetAccessibleName("vimbrowser current mode");
+  status_bar_panel_->AddChildView(status_mode_field_);
+
+  root_panel_->AddChildView(status_bar_panel_);
+
   command_panel_ = CefPanel::CreatePanel(this);
   command_panel_->SetID(kCommandPanelId);
   command_panel_->SetBackgroundColor(theme::kAppBg);
@@ -576,6 +625,11 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
+  status_url_label_ = nullptr;
+  status_mode_field_ = nullptr;
+  status_sidebar_border_panel_ = nullptr;
+  status_sidebar_spacer_panel_ = nullptr;
+  status_bar_panel_ = nullptr;
   content_inner_panel_ = nullptr;
   content_panel_ = nullptr;
   command_separator_panel_ = nullptr;
@@ -924,6 +978,21 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(std::max(1, CommandAutocompleteWidth()),
                    std::max(1, CommandAutocompleteHeight()));
   }
+  if (id == kStatusBarPanelId) {
+    return CefSize(1200, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarSpacerPanelId) {
+    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarBorderPanelId) {
+    return CefSize(sidebar_visible_ ? 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusModeFieldId) {
+    return CefSize(kStatusModeWidth, kStatusBarHeight);
+  }
+  if (id == kStatusUrlFieldId) {
+    return CefSize(1200, kStatusBarHeight);
+  }
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
   }
@@ -969,6 +1038,21 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kCommandAutocompletePanelId) {
     return CefSize(1, 1);
   }
+  if (id == kStatusBarPanelId) {
+    return CefSize(1, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarSpacerPanelId) {
+    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarBorderPanelId) {
+    return CefSize(sidebar_visible_ ? 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusModeFieldId) {
+    return CefSize(kStatusModeWidth, kStatusBarHeight);
+  }
+  if (id == kStatusUrlFieldId) {
+    return CefSize(1, kStatusBarHeight);
+  }
   if (InIdRange(id, kSidebarRowBaseId, 1000) ||
       id == kSidebarSpacerId ||
       id == kCommandFieldId ||
@@ -995,6 +1079,21 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   }
   if (id == kCommandAutocompletePanelId) {
     return CefSize(0, 0);
+  }
+  if (id == kStatusBarPanelId) {
+    return CefSize(0, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarSpacerPanelId) {
+    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusSidebarBorderPanelId) {
+    return CefSize(sidebar_visible_ ? 1 : 0, kStatusBarHeight);
+  }
+  if (id == kStatusModeFieldId) {
+    return CefSize(kStatusModeWidth, kStatusBarHeight);
+  }
+  if (id == kStatusUrlFieldId) {
+    return CefSize(0, kStatusBarHeight);
   }
   if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId ||
       id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
@@ -1089,7 +1188,8 @@ void BrowserWindow::Layout() {
   const int command_total_height = kCommandHeight + 1;
   const int autocomplete_height = CommandAutocompleteHeight();
   const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
-  const int main_height = height;
+  const int main_height =
+      std::max(1, height - (show_statusline_ ? kStatusBarHeight : 0));
   if (command_overlay_) {
     command_overlay_->SetVisible(mode_ != Mode::kNormal);
   }
@@ -1116,6 +1216,11 @@ void BrowserWindow::Layout() {
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
   RestyleView(autocomplete_panel_);
+  RestyleView(status_bar_panel_);
+  RestyleView(status_sidebar_spacer_panel_);
+  RestyleView(status_sidebar_border_panel_);
+  RestyleView(status_mode_field_);
+  RestyleView(status_url_label_);
   RestyleView(mode_indicator_panel_);
   RestyleView(mode_indicator_label_);
   RestyleView(fps_indicator_panel_);
@@ -1126,9 +1231,15 @@ void BrowserWindow::Layout() {
   sidebar_border_panel_->SetSize(CefSize(1, main_height));
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const int content_width = std::max(1, width - content_x);
+  const int content_inner_height = main_height;
   const bool content_size_changed = content_width != laid_out_content_width_ ||
-                                    main_height != laid_out_content_height_;
-  content_inner_panel_->SetBounds(CefRect(0, 0, content_width, main_height));
+                                    content_inner_height != laid_out_content_height_;
+  content_inner_panel_->SetBounds(CefRect(0, 0, content_width, content_inner_height));
+  if (status_bar_panel_) {
+    status_bar_panel_->SetVisible(show_statusline_);
+    status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
+    status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
+  }
   command_panel_->SetSize(CefSize(width, kCommandHeight));
   command_separator_panel_->SetSize(CefSize(width, 1));
   command_content_panel_->SetSize(CefSize(width, kCommandHeight));
@@ -1207,8 +1318,40 @@ void BrowserWindow::Layout() {
   if (content_size_changed && content_inner_panel_->GetLayout()) {
     content_inner_panel_->Layout();
   }
+  if (status_bar_panel_ && status_bar_panel_->GetLayout()) {
+    status_bar_panel_->Layout();
+  }
+  if (status_sidebar_spacer_panel_) {
+    status_sidebar_spacer_panel_->SetVisible(sidebar_visible_);
+    status_sidebar_spacer_panel_->SetSize(
+        CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight));
+    status_sidebar_spacer_panel_->SetBounds(
+        CefRect(0, 0, sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight));
+  }
+  if (status_sidebar_border_panel_) {
+    status_sidebar_border_panel_->SetVisible(sidebar_visible_);
+    status_sidebar_border_panel_->SetSize(
+        CefSize(sidebar_visible_ ? 1 : 0, kStatusBarHeight));
+    status_sidebar_border_panel_->SetBounds(
+        CefRect(sidebar_visible_ ? kSidebarWidth - 1 : 0, 0,
+                sidebar_visible_ ? 1 : 0, kStatusBarHeight));
+    status_sidebar_border_panel_->SetBackgroundColor(
+        focus_area_ == FocusArea::kTabSidebar ? theme::kAccent
+                                              : theme::kBorderUnfocused);
+  }
+  if (status_url_label_) {
+    status_url_label_->SetBounds(CefRect(content_x, 0,
+                                         std::max(1, content_width - kStatusModeWidth),
+                                         kStatusBarHeight));
+  }
+  if (status_mode_field_) {
+    status_mode_field_->SetBounds(
+        CefRect(std::max(0, width - kStatusModeWidth), 0,
+                kStatusModeWidth, kStatusBarHeight));
+  }
+  UpdateStatusBar();
   laid_out_content_width_ = content_width;
-  laid_out_content_height_ = main_height;
+  laid_out_content_height_ = content_inner_height;
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
   }
@@ -1894,6 +2037,26 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kContentInnerPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kStatusBarPanelId) {
+    view->SetBackgroundColor(StatusBarBackgroundColor());
+  } else if (id == kStatusSidebarSpacerPanelId) {
+    view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (id == kStatusSidebarBorderPanelId) {
+    view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
+                                 ? theme::kAccent
+                                 : theme::kBorderUnfocused);
+  } else if (id == kStatusModeFieldId && status_mode_field_) {
+    StyleTextfield(status_mode_field_, ModeIndicatorColor(),
+                   StatusBarBackgroundColor(), "monospace, 12px");
+    UpdateStatusBar();
+  } else if (id == kStatusUrlFieldId && status_url_label_) {
+    status_url_label_->SetEnabledTextColors(theme::kText);
+    status_url_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+    status_url_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+    status_url_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+    status_url_label_->SetBackgroundColor(StatusBarBackgroundColor());
+    status_url_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+    UpdateStatusBar();
   } else if (id == kRootPanelId || id == kMainPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kModeIndicatorPanelId) {
@@ -1920,6 +2083,7 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
 }
 
 void BrowserWindow::UpdateModeIndicator() {
+  UpdateStatusBar();
   if (!kModeIndicatorEnabled || !mode_indicator_label_) {
     return;
   }
@@ -1938,6 +2102,49 @@ void BrowserWindow::UpdateModeIndicator() {
   mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
   mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
   mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
+void BrowserWindow::UpdateStatusBar() {
+  if (!status_mode_field_ && !status_url_label_) {
+    return;
+  }
+
+  const std::string mode = ModeIndicatorText();
+  const cef_color_t background = StatusBarBackgroundColor();
+  if (status_bar_panel_) {
+    status_bar_panel_->SetBackgroundColor(background);
+  }
+  if (status_sidebar_spacer_panel_) {
+    status_sidebar_spacer_panel_->SetBackgroundColor(theme::kSidebarBg);
+  }
+  if (status_sidebar_border_panel_) {
+    status_sidebar_border_panel_->SetBackgroundColor(
+        focus_area_ == FocusArea::kTabSidebar ? theme::kAccent
+                                              : theme::kBorderUnfocused);
+  }
+  if (status_mode_field_) {
+    status_mode_field_->SetText(mode);
+    status_mode_field_->SetTextColor(ModeIndicatorColor());
+    status_mode_field_->SetBackgroundColor(background);
+    status_mode_field_->SelectRange(CefRange(0, 0));
+  }
+
+  if (!status_url_label_) {
+    return;
+  }
+
+  std::string url = ActiveTabUrl();
+  if (url.empty()) {
+    url = "about:blank";
+  }
+
+  status_url_label_->SetText(url + "  ");
+  status_url_label_->SetEnabledTextColors(theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+  status_url_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+  status_url_label_->SetBackgroundColor(background);
+  status_url_label_->SetState(CEF_BUTTON_STATE_NORMAL);
 }
 
 void BrowserWindow::SetShowModeIndicator(bool visible) {
@@ -2007,6 +2214,13 @@ void BrowserWindow::SetShowFpsIndicator(bool visible) {
   Layout();
 }
 
+void BrowserWindow::SetShowStatusLine(bool visible) {
+  show_statusline_ = visible;
+  SaveState();
+  UpdateStatusBar();
+  Layout();
+}
+
 void BrowserWindow::SetShaderEnabled(bool enabled) {
   shader_enabled_ = enabled;
   SaveState();
@@ -2039,6 +2253,7 @@ void BrowserWindow::SaveState() const {
   state.active_index = active_index_;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
+  state.show_statusline = show_statusline_;
   state.shader_enabled = shader_enabled_;
   state.open_history = open_history_;
   state.search_history = search_history_;
@@ -2099,6 +2314,18 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
       return theme::kVimVisual;
   }
   return theme::kVimNormal;
+}
+
+cef_color_t BrowserWindow::StatusBarBackgroundColor() const {
+  if (mode_ == Mode::kNormal && focus_area_ == FocusArea::kWebView) {
+    if (website_mode_ == vim::Mode::kInsert) {
+      return theme::kAccent;
+    }
+    if (website_mode_ == vim::Mode::kNormal) {
+      return theme::kSidebarSelBg;
+    }
+  }
+  return theme::kSidebarBg;
 }
 
 Tab* BrowserWindow::ActiveTab() {

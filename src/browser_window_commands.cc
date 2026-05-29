@@ -105,6 +105,29 @@ void BrowserWindow::CommitCommand() {
       return;
     }
 
+    if (command == ":showstatusline") {
+      std::vector<std::string> argv = SplitArgs(args);
+      for (std::string& arg : argv) {
+        arg = ToLowerAscii(arg);
+      }
+
+      if (argv.empty()) {
+        const bool visible = !show_statusline_;
+        CancelCommand();
+        SetShowStatusLine(visible);
+        return;
+      }
+      if (argv.size() == 1 && (argv[0] == "on" || argv[0] == "off")) {
+        const bool visible = argv[0] == "on";
+        CancelCommand();
+        SetShowStatusLine(visible);
+        return;
+      }
+
+      CancelCommand();
+      return;
+    }
+
     if (command == ":shader") {
       std::vector<std::string> argv = SplitArgs(args);
       for (std::string& arg : argv) {

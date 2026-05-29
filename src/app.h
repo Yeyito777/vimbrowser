@@ -17,6 +17,7 @@ class App final : public CefApp,
       size_t active_index,
       bool show_mode_indicator,
       bool show_fps_indicator,
+      bool show_statusline,
       bool shader_enabled,
       std::string state_path,
       bool disable_gpu);
@@ -48,6 +49,7 @@ class App final : public CefApp,
   size_t active_index_;
   bool show_mode_indicator_;
   bool show_fps_indicator_;
+  bool show_statusline_;
   bool shader_enabled_;
   std::string state_path_;
   bool disable_gpu_;

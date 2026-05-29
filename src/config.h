@@ -26,6 +26,7 @@ struct Config {
   bool explicit_shader_enabled = false;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
+  bool show_statusline = true;
   bool shader_enabled = true;
 };
 
@@ -36,6 +37,7 @@ struct AppState {
   size_t active_index = 0;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
+  bool show_statusline = true;
   bool shader_enabled = true;
 };
 

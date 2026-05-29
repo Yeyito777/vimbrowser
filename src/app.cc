@@ -217,6 +217,7 @@ App::App(std::vector<std::string> initial_urls,
          size_t active_index,
          bool show_mode_indicator,
          bool show_fps_indicator,
+         bool show_statusline,
          bool shader_enabled,
          std::string state_path,
          bool disable_gpu)
@@ -224,6 +225,7 @@ App::App(std::vector<std::string> initial_urls,
       active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
+      show_statusline_(show_statusline),
       shader_enabled_(shader_enabled),
       state_path_(std::move(state_path)),
       disable_gpu_(disable_gpu) {}
@@ -270,6 +272,7 @@ void App::OnContextInitialized() {
   CefRefPtr<BrowserWindow> window(new BrowserWindow(initial_urls_, active_index_,
                                                     show_mode_indicator_,
                                                     show_fps_indicator_,
+                                                    show_statusline_,
                                                     shader_enabled_, state_path_));
   window->Create();
 }

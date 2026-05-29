@@ -1,7 +1,6 @@
-.PHONY: bootstrap bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime backend-dev source-distrib configure configure-source build build-source install-wrapper install install-source benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: all bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime source-distrib build install-wrapper install benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
 
-BUILD_DIR ?= build
-SOURCE_BUILD_DIR ?= build-source
+BUILD_DIR ?= build-source
 JOBS ?= 12
 INSTALL_BIN ?= $(HOME)/.local/bin/vimbrowser
 INSTALL_IPC_BIN ?= $(HOME)/.local/bin/vimbrowser-ipc
@@ -10,14 +9,10 @@ INSTALL_XDG_BIN ?= $(HOME)/.local/bin/vimbrowser-xdg-open
 INSTALL_DESKTOP ?= $(HOME)/.local/share/applications/vimbrowser.desktop
 WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
-BENCH_BINARY ?= $(abspath $(SOURCE_BUILD_DIR))/Release/vimbrowser
-CMAKE_ARGS ?=
-ifneq ($(CEF_ROOT),)
-CMAKE_ARGS += -DCEF_ROOT=$(CEF_ROOT)
-endif
+CEF_ROOT ?= $(SOURCE_CEF_ROOT)
+BENCH_BINARY ?= $(abspath $(BUILD_DIR))/Release/vimbrowser
 
-bootstrap:
-	./scripts/bootstrap-cef.sh
+all: build
 
 bootstrap-chromium:
 	./scripts/bootstrap-chromium-source.sh
@@ -29,35 +24,18 @@ sync-source-distrib:
 	./scripts/sync-chromium-cef-distrib.sh
 
 slim-runtime:
-	./scripts/slim-cef-runtime.sh "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" "$(abspath $(BUILD_DIR))/Release"
-
-backend-dev:
-	./scripts/backend-dev-build.sh "$(SOURCE_BUILD_DIR)" "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" "$(JOBS)"
-	@if [ "$$(cat "$(SOURCE_BUILD_DIR)/.backend-dev-changed" 2>/dev/null || echo 1)" = 1 ]; then \
-	  $(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper; \
-	else \
-	  echo 'installed wrapper already up to date'; \
-	fi
+	./scripts/slim-cef-runtime.sh "$(abspath $(BUILD_DIR))/Release"
 
 source-distrib:
 	cd backend/chromium && PATH="$(CURDIR)/backend/depot_tools:$$PATH" autoninja -C out/Release_GN_x64 chrome_sandbox
 	cd backend/chromium/cef/tools && ./make_distrib.sh --ninja-build --x64-build --minimal --allow-partial --no-archive --output-dir ../binary_distrib
 	./scripts/slim-cef-runtime.sh "$$(ls -d backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)"
 
-configure-source:
-	@test -n "$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))" || { echo 'No source-built CEF distribution found; run make build-chromium-cef source-distrib, or set CEF_ROOT'; exit 1; }
-	cmake -S . -B $(SOURCE_BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$(or $(CEF_ROOT),$(SOURCE_CEF_ROOT))"
-
-configure: bootstrap
-	cmake -S . -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release $(CMAKE_ARGS)
-
-build: configure
+build:
+	@test -n "$(CEF_ROOT)" || { echo 'No source-built CEF distribution found; run make build-chromium-cef source-distrib, or set CEF_ROOT'; exit 1; }
+	cmake -S . -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$(CEF_ROOT)"
 	cmake --build $(BUILD_DIR) -j$(JOBS)
 	./scripts/slim-cef-runtime.sh "$(abspath $(BUILD_DIR))/Release"
-
-build-source: configure-source
-	cmake --build $(SOURCE_BUILD_DIR) -j$(JOBS)
-	./scripts/slim-cef-runtime.sh "$(abspath $(SOURCE_BUILD_DIR))/Release"
 
 install-wrapper:
 	mkdir -p $(dir $(INSTALL_BIN))
@@ -104,9 +82,6 @@ install-wrapper:
 	@echo 'installed $(INSTALL_DESKTOP)'
 
 install: build install-wrapper
-
-install-source: build-source
-	$(MAKE) BUILD_DIR=$(SOURCE_BUILD_DIR) install-wrapper
 
 benchmark:
 	./scripts/vimbrowser-benchmark --suite local --check --binary "$(BENCH_BINARY)"

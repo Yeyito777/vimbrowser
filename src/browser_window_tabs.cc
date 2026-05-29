@@ -60,6 +60,7 @@ void BrowserWindow::InsertTab(std::string url,
     }
     ScheduleStateSave();
     ScheduleActiveBrowserSync();
+    UpdateStatusBar();
     return;
   }
 
@@ -169,6 +170,7 @@ void BrowserWindow::ActivateTab(size_t index) {
     if (needs_sidebar_refresh) {
       ScheduleSidebarRefresh();
     }
+    UpdateStatusBar();
     return;
   }
 
@@ -191,6 +193,7 @@ void BrowserWindow::ActivateTab(size_t index) {
   if (needs_sidebar_refresh) {
     ScheduleSidebarRefresh();
   }
+  UpdateStatusBar();
 }
 
 void BrowserWindow::ScheduleActiveBrowserSync() {
@@ -236,6 +239,7 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
     }
   }
   UpdateFpsIndicator();
+  UpdateStatusBar();
 }
 
 void BrowserWindow::ScheduleStateSave() {
@@ -357,6 +361,7 @@ void BrowserWindow::MoveActiveTab(int delta) {
   if (RefreshSidebar()) {
     Layout();
   }
+  UpdateStatusBar();
 }
 
 bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
@@ -404,6 +409,7 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
       }
     }
   }
+  UpdateStatusBar();
   return true;
 }
 
@@ -492,6 +498,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     }
   }
   UpdateFpsIndicator();
+  UpdateStatusBar();
   if (closing_active && focus_area_ == FocusArea::kWebView &&
       tabs_[active_index_].view) {
     tabs_[active_index_].view->RequestFocus();
@@ -504,17 +511,20 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
       content_inner_panel_->Layout();
     }
     last_tab_close_placeholder_ = false;
+    UpdateStatusBar();
     return;
   }
   if (can_keep_virtual_sidebar_on_close && active_index_ == old_active_index &&
       visible_tab_index_ == old_visible_index) {
     last_tab_close_placeholder_ = false;
+    UpdateStatusBar();
     return;
   }
   if (!closing_active && tabs_.size() > kSidebarMaxRenderedRows &&
       sidebar_spacer_) {
     ScheduleSidebarRefresh();
     last_tab_close_placeholder_ = false;
+    UpdateStatusBar();
     return;
   }
   const bool sidebar_hierarchy_changed = RefreshSidebar();
@@ -522,6 +532,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     Layout();
   }
   last_tab_close_placeholder_ = false;
+  UpdateStatusBar();
 }
 
 void BrowserWindow::CloseTabBackend(Tab& tab) {

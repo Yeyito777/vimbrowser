@@ -242,6 +242,8 @@ void BrowserWindow::UpdateCommandAutocomplete() {
               IsTokenBoundary(typed_command, 9)) ||
              (StartsWithCaseInsensitive(typed_command, ":showfps") &&
               IsTokenBoundary(typed_command, 8)) ||
+             (StartsWithCaseInsensitive(typed_command, ":showstatusline") &&
+              IsTokenBoundary(typed_command, 15)) ||
              (StartsWithCaseInsensitive(typed_command, ":shader") &&
               IsTokenBoundary(typed_command, 7))) {
     const size_t arg_start = after_command.find_last_of(" \t");

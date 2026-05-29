@@ -1002,6 +1002,22 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     return "ERR usage: showfps [on|off]\n";
   }
+  if (command == "showstatusline") {
+    if (argv.size() == 1) {
+      SetShowStatusLine(!show_statusline_);
+      return IpcStatusJson();
+    }
+    const std::string arg = ToLowerAscii(argv[1]);
+    if (arg == "on" || arg == "1" || arg == "true") {
+      SetShowStatusLine(true);
+      return IpcStatusJson();
+    }
+    if (arg == "off" || arg == "0" || arg == "false") {
+      SetShowStatusLine(false);
+      return IpcStatusJson();
+    }
+    return "ERR usage: showstatusline [on|off]\n";
+  }
   if (command == "shader") {
     if (argv.size() == 1) {
       SetShaderEnabled(!shader_enabled_);
@@ -1103,6 +1119,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  refresh\n"
            "  url\n"
            "  showfps [on|off]\n"
+           "  showstatusline [on|off]\n"
            "  shader [on|off]\n"
            "  tab <1-based-index>\n"
            "  tab-close [tabid]\n";
@@ -1341,6 +1358,8 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonBool(out, audible);
   out += ",\"showfps\":";
   AppendJsonBool(out, show_fps_indicator_);
+  out += ",\"showstatusline\":";
+  AppendJsonBool(out, show_statusline_);
   out += ",\"shader\":";
   AppendJsonBool(out, shader_enabled_);
   out += ",\"mode\":";

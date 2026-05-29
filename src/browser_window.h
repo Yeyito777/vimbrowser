@@ -44,6 +44,7 @@ class BrowserWindow final : public CefWindowDelegate,
                 size_t active_index,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
+                bool show_statusline,
                 bool shader_enabled,
                 std::string state_path);
 
@@ -267,11 +268,13 @@ class BrowserWindow final : public CefWindowDelegate,
   void YankActiveMarkdown();
   void YankActiveDom();
   void RestyleView(CefRefPtr<CefView> view);
+  void UpdateStatusBar();
   void UpdateCommandView();
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
   void UpdateFpsIndicator();
   void SetShowFpsIndicator(bool visible);
+  void SetShowStatusLine(bool visible);
   void SetShaderEnabled(bool enabled);
   void BroadcastShaderState();
   void ScheduleFpsIndicatorUpdate();
@@ -282,6 +285,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void RebuildAutocompleteRows();
   std::string ModeIndicatorText() const;
   cef_color_t ModeIndicatorColor() const;
+  cef_color_t StatusBarBackgroundColor() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   bool AllTabBrowsersClosed() const;
   Tab* ActiveTab();
@@ -308,6 +312,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool bulk_tab_update_ = false;
   bool show_mode_indicator_ = true;
   bool show_fps_indicator_ = false;
+  bool show_statusline_ = true;
   bool shader_enabled_ = true;
   bool forwarding_key_to_page_ = false;
   bool fps_update_scheduled_ = false;
@@ -340,6 +345,11 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefTextfield> sidebar_spacer_;
   CefRefPtr<CefPanel> content_panel_;
   CefRefPtr<CefPanel> content_inner_panel_;
+  CefRefPtr<CefPanel> status_bar_panel_;
+  CefRefPtr<CefPanel> status_sidebar_spacer_panel_;
+  CefRefPtr<CefPanel> status_sidebar_border_panel_;
+  CefRefPtr<CefTextfield> status_mode_field_;
+  CefRefPtr<CefLabelButton> status_url_label_;
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;

@@ -98,6 +98,11 @@ constexpr int kCommandFieldId = 114;
 constexpr int kSidebarSpacerId = 115;
 constexpr int kFpsIndicatorPanelId = 116;
 constexpr int kFpsIndicatorFieldId = 117;
+constexpr int kStatusBarPanelId = 118;
+constexpr int kStatusModeFieldId = 119;
+constexpr int kStatusUrlFieldId = 120;
+constexpr int kStatusSidebarSpacerPanelId = 121;
+constexpr int kStatusSidebarBorderPanelId = 122;
 constexpr int kAcceleratorCommandTab = 5000;
 constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kAcceleratorTabNext = 5002;
@@ -117,6 +122,8 @@ constexpr size_t kSidebarMaxRenderedRows = 96;
 constexpr bool kModeIndicatorEnabled = true;
 constexpr int kModeIndicatorWidth = 96;
 constexpr int kModeIndicatorHeight = 24;
+constexpr int kStatusBarHeight = 16;
+constexpr int kStatusModeWidth = 64;
 constexpr int kCommandTextInsetX = 0;
 constexpr int kCommandCharWidth = 8;
 constexpr int kLineScrollPx = 280;
@@ -188,6 +195,7 @@ const std::vector<CompletionItem>& CommandList() {
       {":shader", "toggle native page color shader"},
       {":showmode", "toggle top-right vim mode display"},
       {":showfps", "toggle current page fps display"},
+      {":showstatusline", "toggle bottom statusline display"},
   };
   return commands;
 }
@@ -211,7 +219,7 @@ const std::vector<CompletionItem>& OpenArgList() {
 bool CommandTakesArguments(const std::string& command) {
   return command == ":open" || command == ":tab-focus" ||
          command == ":shader" || command == ":showmode" ||
-         command == ":showfps";
+         command == ":showfps" || command == ":showstatusline";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {
@@ -906,6 +914,7 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"refresh", "refresh", "active tab compositor refresh rate", "text/plain"},
       {"url", "url", "active tab url", "text/plain"},
       {"showfps", "showfps [on|off]", "toggle/set fps overlay", "json"},
+      {"showstatusline", "showstatusline [on|off]", "toggle/set bottom statusline", "json"},
       {"shader", "shader [on|off]", "toggle/set shader", "json"},
       {"tab", "tab <1-based-index>", "legacy focus by index", "json"},
       {"tab-close", "tab-close [tabid]", "legacy close active tab, or close tabid when provided", "json"},
