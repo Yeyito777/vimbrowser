@@ -295,9 +295,6 @@ void BrowserWindow::FillCommandAutocomplete(const CompletionItem& item) {
                                     ? ""
                                     : command_autocomplete_.prefix.substr(0, first_non_space);
     completed = leading + name;
-    if (CommandTakesArguments(name)) {
-      completed += " ";
-    }
   } else {
     const size_t last_space = command_autocomplete_.prefix.find_last_of(" \t");
     if (command_autocomplete_.completion_start != std::string::npos &&

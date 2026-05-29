@@ -268,6 +268,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void YankActiveMarkdown();
   void YankActiveDom();
   void RestyleView(CefRefPtr<CefView> view);
+  void SetStatusOutput(std::string message, int timeout_ms = 3000);
+  void ClearStatusOutputForGeneration(uint64_t generation);
   void UpdateStatusBar();
   void UpdateCommandView();
   void UpdateModeIndicator();
@@ -295,6 +297,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string state_path_;
   size_t initial_active_index_ = 0;
   std::string command_text_;
+  std::string status_output_text_;
   std::vector<std::string> open_history_;
   std::map<std::string, std::vector<std::string>> search_history_;
   std::string website_pending_keys_;
@@ -324,6 +327,7 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t active_browser_sync_generation_ = 0;
   uint64_t state_save_generation_ = 0;
   uint64_t sidebar_refresh_generation_ = 0;
+  uint64_t status_output_generation_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
   size_t tab_client_count_ = 0;
@@ -347,7 +351,9 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> content_inner_panel_;
   CefRefPtr<CefPanel> status_bar_panel_;
   CefRefPtr<CefPanel> status_sidebar_spacer_panel_;
-  CefRefPtr<CefPanel> status_sidebar_border_panel_;
+  CefRefPtr<CefPanel> status_border_panel_;
+  CefRefPtr<CefPanel> status_content_panel_;
+  CefRefPtr<CefTextfield> status_output_field_;
   CefRefPtr<CefTextfield> status_mode_field_;
   CefRefPtr<CefLabelButton> status_url_label_;
   CefRefPtr<CefPanel> command_panel_;

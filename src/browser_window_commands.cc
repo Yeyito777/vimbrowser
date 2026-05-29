@@ -474,7 +474,9 @@ void BrowserWindow::ZoomActivePage(cef_zoom_command_t command) {
 }
 
 void BrowserWindow::YankActiveUrl() {
-  WriteClipboardText(ActiveTabUrl());
+  const std::string url = ActiveTabUrl();
+  WriteClipboardText(url);
+  SetStatusOutput("url copied: " + url);
 }
 
 void BrowserWindow::YankActiveTitle() {
