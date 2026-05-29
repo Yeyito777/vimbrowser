@@ -36,6 +36,7 @@ constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
 // intentionally outside CEF's public modifier range and is not forwarded as a
 // Chromium ui::Event flag.
 constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
+constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 
 bool IsCtrlSpaceBrowserCommand(const CefKeyEvent& event) {
   return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
@@ -269,6 +270,10 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
   // down. Store the same content-space direction qutebrowser stores in m_dy.
   const int content_dx = -deltaX;
   const int content_dy = -deltaY;
+  if (event.modifiers & kVimbrowserInstantScrollCefModifier) {
+    SendInstantGestureScroll(event, content_dx, content_dy);
+    return;
+  }
   smooth_scroll_dx_ += content_dx;
   smooth_scroll_dy_ += content_dy;
   smooth_scroll_factor_ = kSmoothScrollFactor;
@@ -353,6 +358,33 @@ content::RenderWidgetHost*
 CefBrowserPlatformDelegateNativeAura::CurrentSmoothScrollHost() const {
   auto* view = GetHostView();
   return view ? view->host() : nullptr;
+}
+
+void CefBrowserPlatformDelegateNativeAura::SendInstantGestureScroll(
+    const CefMouseEvent& event,
+    int content_dx,
+    int content_dy) {
+  AbortSmoothScroll();
+
+  if (content_dx == 0 && content_dy == 0) {
+    return;
+  }
+
+  smooth_scroll_event_ = event;
+  smooth_scroll_target_viewport_ =
+      !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
+
+  if (!SendGestureScrollBegin(static_cast<float>(-content_dx),
+                              static_cast<float>(-content_dy))) {
+    ResetSmoothScrollState();
+    return;
+  }
+  if (!SendGestureScrollUpdate(content_dx, content_dy)) {
+    AbortSmoothScroll();
+    return;
+  }
+  SendGestureScrollEnd();
+  ResetSmoothScrollState();
 }
 
 bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(

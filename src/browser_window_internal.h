@@ -109,6 +109,7 @@ inline constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 inline constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
 inline constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
+inline constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 
 struct OpenAutocompleteContext {
   bool completing_new_arg = false;

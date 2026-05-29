@@ -128,6 +128,9 @@ class CefBrowserPlatformDelegateNativeAura
   void ResetSmoothScrollState();
   content::RenderWidgetHost* CurrentSmoothScrollHost() const;
   gfx::PointF SmoothScrollPosition() const;
+  void SendInstantGestureScroll(const CefMouseEvent& event,
+                                int content_dx,
+                                int content_dy);
   bool SendGestureScrollBegin(float deltaXHint, float deltaYHint);
   bool SendGestureScrollUpdate(int stepX, int stepY);
   bool SendGestureScrollEnd();

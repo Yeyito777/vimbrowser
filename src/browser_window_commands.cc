@@ -15,6 +15,44 @@
 
 namespace vimbrowser {
 
+namespace {
+
+// gg/G enters through the same CEF wheel/compositor path as j/k and the Ctrl
+// scroll keys, targeting the same current scroll container. The only extra bit
+// asks the existing CEF gesture bridge to dispatch this edge jump immediately
+// instead of feeding it into the smooth-scroll accumulator/timer.
+constexpr int kScrollToEdgePx = 10'000'000;
+
+CefMouseEvent ScrollTargetMouseEvent(Tab* tab, CefRefPtr<CefWindow> window) {
+  CefMouseEvent event;
+  event.modifiers = 0;
+  if (tab && tab->has_scroll_target) {
+    event.x = tab->scroll_target_x;
+    event.y = tab->scroll_target_y;
+    if (!tab->scroll_target_is_page) {
+      event.modifiers |= kVimbrowserScrollTargetElementCefModifier;
+    }
+  } else if (tab && tab->view) {
+    const CefRect bounds = tab->view->GetBounds();
+    event.x = std::max(1, bounds.width / 2);
+    event.y = std::max(1, bounds.height / 2);
+  } else if (window) {
+    const CefRect bounds = window->GetBounds();
+    event.x = std::max(1, bounds.width / 2);
+    event.y = std::max(1, bounds.height / 2);
+  }
+  return event;
+}
+
+void SendScrollWheel(CefRefPtr<CefBrowser> browser,
+                     const CefMouseEvent& event,
+                     int dy) {
+  // CEF/Chromium wheel deltas use negative Y to scroll page content down.
+  browser->GetHost()->SendMouseWheelEvent(event, 0, -dy);
+}
+
+}  // namespace
+
 void BrowserWindow::BeginCommand(Mode mode) {
   BeginCommandText(mode == Mode::kCommandOpenNext ? ":open tab " : ":open ");
   mode_ = mode;
@@ -353,49 +391,27 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
     return;
   }
 
-  CefMouseEvent event;
-  event.modifiers = 0;
-  Tab* tab = ActiveTab();
-  if (tab && tab->has_scroll_target) {
-    event.x = tab->scroll_target_x;
-    event.y = tab->scroll_target_y;
-    if (!tab->scroll_target_is_page) {
-      event.modifiers |= kVimbrowserScrollTargetElementCefModifier;
-    }
-  } else if (tab && tab->view) {
-    const CefRect bounds = tab->view->GetBounds();
-    event.x = std::max(1, bounds.width / 2);
-    event.y = std::max(1, bounds.height / 2);
-  } else if (window_) {
-    const CefRect bounds = window_->GetBounds();
-    event.x = std::max(1, bounds.width / 2);
-    event.y = std::max(1, bounds.height / 2);
-  }
-
-  // CEF/Chromium wheel deltas use negative Y to scroll page content down.
-  browser->GetHost()->SendMouseWheelEvent(event, 0, -dy);
+  SendScrollWheel(browser, ScrollTargetMouseEvent(ActiveTab(), window_), dy);
 }
 
 void BrowserWindow::ScrollActivePageToTop() {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
-  if (!browser || !browser->GetMainFrame()) {
+  if (!browser) {
     return;
   }
-  browser->GetMainFrame()->ExecuteJavaScript(
-      "window.scrollTo({left:0,top:0,behavior:'auto'});",
-      browser->GetMainFrame()->GetURL(), 0);
+  CefMouseEvent event = ScrollTargetMouseEvent(ActiveTab(), window_);
+  event.modifiers |= kVimbrowserInstantScrollCefModifier;
+  SendScrollWheel(browser, event, -kScrollToEdgePx);
 }
 
 void BrowserWindow::ScrollActivePageToBottom() {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
-  if (!browser || !browser->GetMainFrame()) {
+  if (!browser) {
     return;
   }
-  browser->GetMainFrame()->ExecuteJavaScript(
-      "window.scrollTo({left:0,top:document.scrollingElement?"
-      "document.scrollingElement.scrollHeight:document.body.scrollHeight,"
-      "behavior:'auto'});",
-      browser->GetMainFrame()->GetURL(), 0);
+  CefMouseEvent event = ScrollTargetMouseEvent(ActiveTab(), window_);
+  event.modifiers |= kVimbrowserInstantScrollCefModifier;
+  SendScrollWheel(browser, event, kScrollToEdgePx);
 }
 
 void BrowserWindow::OpenClipboard(bool new_tab) {

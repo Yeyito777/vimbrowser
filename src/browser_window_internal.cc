@@ -960,6 +960,10 @@ constexpr const char kFocusedEditableMessage[] =
 // synthetic smooth-scroll gestures should target the viewport or the element
 // under the hinted coordinates.
 constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
+// Private CEF mouse-event modifier: use the same synthetic gesture path as
+// normal vimbrowser scrolling, but dispatch the full delta immediately instead
+// of feeding it through the smooth-scroll animation accumulator/timer.
+constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 
 std::string ReadFileToString(const std::string& path, std::string* error) {
   std::ifstream file(path, std::ios::binary);
