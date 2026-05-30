@@ -170,12 +170,12 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
         break;
       }
     }
-    if (active_tab_focused_editable && mode_ == Mode::kNormal &&
-        focus_area_ == FocusArea::kWebView) {
-      // A page text control receiving focus is an explicit typing intent. This
-      // covers normal clicks, page script focus, and native hints selecting an
-      // input, so the next key goes straight to the field without requiring an
-      // extra `i` first.
+    if (active_tab_focused_editable && native_hints_active_ &&
+        mode_ == Mode::kNormal && focus_area_ == FocusArea::kWebView) {
+      // Only native hints turn focused page text controls into vimbrowser insert
+      // mode.  Ordinary mouse clicks, tab traversal, autofocus, and page script
+      // focus must leave the website vim mode alone so normal-mode keys remain
+      // under vimbrowser's control until the user explicitly enters insert mode.
       website_mode_ = vim::Mode::kInsert;
       ResetWebsitePendingKeys();
       suppress_next_website_char_.reset();
@@ -334,6 +334,20 @@ void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
   tab->scroll_target_x = std::max(1, x);
   tab->scroll_target_y = std::max(1, y);
   tab->scroll_target_is_page = is_page_scroller;
+}
+
+void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient* client) {
+  Tab* tab = ActiveTab();
+  if (!native_hints_active_ || !tab || tab->client.get() != client ||
+      mode_ != Mode::kNormal || focus_area_ != FocusArea::kWebView) {
+    return;
+  }
+
+  tab->focused_editable_node = true;
+  website_mode_ = vim::Mode::kInsert;
+  ResetWebsitePendingKeys();
+  suppress_next_website_char_.reset();
+  UpdateModeIndicator();
 }
 
 void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {

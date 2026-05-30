@@ -128,6 +128,20 @@ void NotifyBrowserScrollTarget(LocalFrame* frame,
       mojom::blink::ConsoleMessageLevel::kInfo, message.ToString()));
 }
 
+void NotifyBrowserHintFocusedEditable(LocalFrame* frame) {
+  if (!frame) {
+    return;
+  }
+  frame->Console().AddMessage(MakeGarbageCollected<ConsoleMessage>(
+      mojom::blink::ConsoleMessageSource::kOther,
+      mojom::blink::ConsoleMessageLevel::kInfo,
+      String("__vimbrowser_native_hint_focused_editable__")));
+}
+
+bool IsEditableTextElement(Element& element) {
+  return element.IsTextControl() || IsEditable(element);
+}
+
 }  // namespace
 
 const char Hints::kSupplementName[] = "Hints";
@@ -448,9 +462,16 @@ void Hints::ActivateCandidate(HintCandidate& candidate) {
   if (mode == HintMode::kFocus && element) {
     NotifyBrowserScrollTarget(frame, *element, rect);
   }
+  if (element && IsEditableTextElement(*element)) {
+    // FocusedNodeChanged is not fired when hinting the text box that already has
+    // DOM focus, so send an explicit browser-process signal for hinted editable
+    // activation.  The browser gates this on native_hints_active_, preserving the
+    // rule that only hinting may auto-enter insert mode.
+    NotifyBrowserHintFocusedEditable(frame);
+  }
 
-  Stop(!keep_browser_hint_active_for_direct_open_tab);
   if (!frame || !element) {
+    Stop(!keep_browser_hint_active_for_direct_open_tab);
     if (keep_browser_hint_active_for_direct_open_tab) {
       NotifyBrowserHintsStopped(frame);
     }
@@ -466,8 +487,18 @@ void Hints::ActivateCandidate(HintCandidate& candidate) {
       } else if (target == ActivationTarget::kRightClick) {
         action = click_hints::ActivationAction::kRightClick;
       }
+      if (keep_browser_hint_active_for_direct_open_tab) {
+        // Keep the browser-process hint flag alive for popup/open-tab routing,
+        // but stop Blink's label matcher before dispatching the click.
+        Stop(false);
+      }
       const click_hints::ActivationResult result =
           click_hints::ActivateCandidate(*frame, *element, rect, action);
+      if (!keep_browser_hint_active_for_direct_open_tab) {
+        // Stop after activation so a hinted input's FocusedNodeChanged IPC is
+        // delivered while the browser still knows the focus came from hints.
+        Stop(true);
+      }
       if (keep_browser_hint_active_for_direct_open_tab &&
           result != click_hints::ActivationResult::kOpenedBrowserTab) {
         NotifyBrowserHintsStopped(frame);
@@ -476,10 +507,12 @@ void Hints::ActivateCandidate(HintCandidate& candidate) {
     }
     case HintMode::kHover:
       hover_hints::ActivateCandidate(*frame, *element, rect);
+      Stop(true);
       return;
     case HintMode::kFocus:
       click_hints::ActivateCandidate(*frame, *element, rect,
                                      click_hints::ActivationAction::kFocus);
+      Stop(true);
       return;
   }
 }

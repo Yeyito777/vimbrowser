@@ -638,6 +638,12 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
     }
     return true;
   }
+  if (text == "__vimbrowser_native_hint_focused_editable__") {
+    if (owner_) {
+      owner_->OnNativeHintFocusedEditable(this);
+    }
+    return true;
+  }
   if (text == "__vimbrowser_native_hints_stopped__") {
     if (owner_) {
       owner_->OnNativeHintsStopped(this);

@@ -70,6 +70,7 @@ class BrowserWindow final : public CefWindowDelegate,
                                 int x,
                                 int y,
                                 bool is_page_scroller);
+  void OnNativeHintFocusedEditable(BrowserClient* client);
   void OnNativeHintsStopped(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
