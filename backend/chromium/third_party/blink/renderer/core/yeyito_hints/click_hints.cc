@@ -226,10 +226,50 @@ const AtomicString& VimbrowserScrollTargetAttr() {
   return attr;
 }
 
+const AtomicString& VimbrowserPdfScrollTargetAttr() {
+  DEFINE_STATIC_LOCAL(AtomicString, attr,
+                      ("data-vimbrowser-pdf-scroll-target"));
+  return attr;
+}
+
 const AtomicString& VimbrowserAddedTabIndexAttr() {
   DEFINE_STATIC_LOCAL(AtomicString, attr,
                       ("data-vimbrowser-added-tabindex"));
   return attr;
+}
+
+void ClearVimbrowserScrollTargetMarker(Element& element,
+                                       const AtomicString& target_attr,
+                                       const AtomicString& added_tabindex_attr) {
+  if (element.hasAttribute(target_attr)) {
+    element.removeAttribute(target_attr);
+  }
+  if (element.hasAttribute(added_tabindex_attr)) {
+    element.removeAttribute(html_names::kTabindexAttr);
+    element.removeAttribute(added_tabindex_attr);
+  }
+}
+
+void ClearVimbrowserScrollTargetMarkersInTree(
+    ContainerNode& root,
+    const AtomicString& target_attr,
+    const AtomicString& added_tabindex_attr) {
+  if (auto* root_element = DynamicTo<Element>(root)) {
+    ClearVimbrowserScrollTargetMarker(*root_element, target_attr,
+                                      added_tabindex_attr);
+    if (ShadowRoot* shadow_root = root_element->GetShadowRoot()) {
+      ClearVimbrowserScrollTargetMarkersInTree(*shadow_root, target_attr,
+                                               added_tabindex_attr);
+    }
+  }
+
+  for (Element& element : ElementTraversal::DescendantsOf(root)) {
+    ClearVimbrowserScrollTargetMarker(element, target_attr, added_tabindex_attr);
+    if (ShadowRoot* shadow_root = element.GetShadowRoot()) {
+      ClearVimbrowserScrollTargetMarkersInTree(*shadow_root, target_attr,
+                                               added_tabindex_attr);
+    }
+  }
 }
 
 void ClearVimbrowserScrollTargetMarkers(Document& document) {
@@ -237,17 +277,8 @@ void ClearVimbrowserScrollTargetMarkers(Document& document) {
   if (!root) {
     return;
   }
-  const AtomicString& target_attr = VimbrowserScrollTargetAttr();
-  const AtomicString& added_tabindex_attr = VimbrowserAddedTabIndexAttr();
-  for (Element& element : ElementTraversal::InclusiveDescendantsOf(*root)) {
-    if (element.hasAttribute(target_attr)) {
-      element.removeAttribute(target_attr);
-    }
-    if (element.hasAttribute(added_tabindex_attr)) {
-      element.removeAttribute(html_names::kTabindexAttr);
-      element.removeAttribute(added_tabindex_attr);
-    }
-  }
+  ClearVimbrowserScrollTargetMarkersInTree(
+      *root, VimbrowserScrollTargetAttr(), VimbrowserAddedTabIndexAttr());
 }
 
 void MarkVimbrowserScrollTarget(Element& element) {
@@ -269,6 +300,10 @@ bool OverflowBlocksScrolling(EOverflow overflow) {
 }
 
 bool IsScrollableElement(Element& element) {
+  if (element.hasAttribute(VimbrowserPdfScrollTargetAttr())) {
+    return true;
+  }
+
   const bool has_vertical_range = element.scrollHeight() > element.clientHeight();
   const bool has_horizontal_range = element.scrollWidth() > element.clientWidth();
   if (!has_vertical_range && !has_horizontal_range) {

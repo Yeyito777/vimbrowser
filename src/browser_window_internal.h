@@ -108,6 +108,7 @@ inline constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 inline constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 inline constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
+inline constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
 inline constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
 inline constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 

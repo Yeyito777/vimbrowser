@@ -263,7 +263,7 @@ void CPDF_Font::CheckFontMetrics() {
 bool CPDF_Font::ShouldApplyGlyphSpacingHeuristic(
     const CFX_Font* current_font,
     bool is_vertical_writing) const {
-  if (is_vertical_writing || IsEmbedded() || !HasFontWidths()) {
+  if (!current_font || is_vertical_writing || IsEmbedded() || !HasFontWidths()) {
     return false;
   }
 
@@ -279,6 +279,9 @@ bool CPDF_Font::ShouldApplyGlyphSpacingHeuristic(
   }
 
   CFX_SubstFont* subst_font = current_font->GetSubstFont();
+  if (!subst_font) {
+    return false;
+  }
   if (subst_font->IsBuiltInGenericFont()) {
     return false;
   }
@@ -449,11 +452,16 @@ std::vector<TextCharPos> CPDF_Font::GetCharPosList(
       current_font = GetFont();
       text_char_pos.fallback_font_position_ = -1;
     } else {
-      int32_t fallback_position = FallbackFontFromCharcode(char_code);
-      current_font = GetFontFallback(fallback_position);
-      text_char_pos.fallback_font_position_ = fallback_position;
+      int fallback_position = FallbackFontFromCharcode(char_code);
       text_char_pos.glyph_index_ =
           FallbackGlyphFromCharcode(fallback_position, char_code);
+      if (text_char_pos.glyph_index_ == static_cast<uint32_t>(-1)) {
+        current_font = GetFont();
+        text_char_pos.fallback_font_position_ = -1;
+      } else {
+        current_font = GetFontFallback(fallback_position);
+        text_char_pos.fallback_font_position_ = fallback_position;
+      }
 #if BUILDFLAG(IS_APPLE)
       text_char_pos.ext_gid_ = text_char_pos.glyph_index_;
 #endif
@@ -469,7 +477,8 @@ std::vector<TextCharPos> CPDF_Font::GetCharPosList(
     text_char_pos.glyph_adjust_ = false;
 
     float scaling_factor = 1.0f;
-    if (ShouldApplyGlyphSpacingHeuristic(current_font, is_vertical_writing)) {
+    if (text_char_pos.glyph_index_ != static_cast<uint32_t>(-1) &&
+        ShouldApplyGlyphSpacingHeuristic(current_font, is_vertical_writing)) {
       int pdf_glyph_width = GetCharWidth(char_code);
       int font_glyph_width =
           current_font->GetGlyphWidth(text_char_pos.glyph_index_);
@@ -555,7 +564,7 @@ const char* CPDF_Font::GetAdobeCharName(
   return name;
 }
 
-uint32_t CPDF_Font::FallbackFontFromCharcode(uint32_t charcode) {
+int CPDF_Font::FallbackFontFromCharcode(uint32_t charcode) {
   if (font_fallbacks_.empty()) {
     font_fallbacks_.push_back(std::make_unique<CFX_Font>());
     FX_SAFE_INT32 safe_weight = stem_v_;
@@ -565,17 +574,23 @@ uint32_t CPDF_Font::FallbackFontFromCharcode(uint32_t charcode) {
         safe_weight.ValueOrDefault(pdfium::kFontWeightNormal), italic_angle_,
         FX_CodePage::kDefANSI, IsVertWriting());
   }
-  return 0;
+  return font_fallbacks_.front()->GetFace() ? 0 : -1;
 }
 
 int CPDF_Font::FallbackGlyphFromCharcode(int fallbackFont, uint32_t charcode) {
-  if (!fxcrt::IndexInBounds(font_fallbacks_, fallbackFont)) {
+  CFX_Font* font = GetFontFallback(fallbackFont);
+  if (!font) {
+    return -1;
+  }
+
+  RetainPtr<CFX_Face> face = font->GetFace();
+  if (!face) {
     return -1;
   }
 
   WideString str = UnicodeFromCharCode(charcode);
   uint32_t unicode = !str.IsEmpty() ? str[0] : charcode;
-  int glyph = font_fallbacks_[fallbackFont]->GetFace()->GetCharIndex(unicode);
+  int glyph = face->GetCharIndex(unicode);
   if (glyph == 0) {
     return -1;
   }

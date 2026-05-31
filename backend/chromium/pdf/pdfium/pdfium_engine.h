@@ -49,6 +49,7 @@
 #include "third_party/pdfium/public/fpdfview.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
+#include "ui/base/window_open_disposition.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
@@ -147,6 +148,12 @@ class PDFiumEngine : public DocumentLoader::Client,
                      public PdfAnnotationAgent::Container,
                      public PdfCaretClient {
  public:
+  struct VimbrowserHintLink {
+    uint32_t page_index = 0;
+    uint32_t link_index = 0;
+    gfx::Rect rect;
+  };
+
   // Maximum number of parameters a nameddest view can contain.
   static constexpr size_t kMaxViewParams = 4;
 
@@ -316,6 +323,15 @@ class PDFiumEngine : public DocumentLoader::Client,
   // Returns a page's rect in screen coordinates, as well as its surrounding
   // border areas and bottom separator.
   virtual gfx::Rect GetPageScreenRect(int page_index) const;
+
+  // Returns currently-visible PDF link annotations in plugin viewport
+  // coordinates for vimbrowser's native hint overlay.
+  std::vector<VimbrowserHintLink> GetVimbrowserHintLinks();
+
+  // Activates a link returned by GetVimbrowserHintLinks().
+  bool ActivateVimbrowserHintLink(uint32_t page_index,
+                                  uint32_t link_index,
+                                  WindowOpenDisposition disposition);
 
   // Set color / grayscale rendering modes.
   virtual void SetGrayscale(bool grayscale);

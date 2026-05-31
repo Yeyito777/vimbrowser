@@ -955,6 +955,11 @@ constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
+// Private CEF mouse-event modifier: the wheel point came from a native hint
+// activation. The CEF Aura delegate uses this before event translation to route
+// synthetic scroll gestures to the currently-focused renderer frame/guest
+// instead of always to the root WebContents widget.
+constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
 // Private CEF mouse-event modifier: Chromium masks this off as an unknown UI
 // flag, but our CEF Aura delegate reads it before translation to decide whether
 // synthetic smooth-scroll gestures should target the viewport or the element

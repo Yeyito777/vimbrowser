@@ -625,7 +625,9 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   int GetContentRestrictions() const;
 
   // Message handlers.
+  void HandleActivateVimbrowserHintLinkMessage(const base::DictValue& message);
   void HandleDisplayAnnotationsMessage(const base::DictValue& message);
+  void HandleGetVimbrowserHintLinksMessage(const base::DictValue& message);
   void HandleGetNamedDestinationMessage(const base::DictValue& message);
   void HandleGetPageBoundingBoxMessage(const base::DictValue& message);
   void HandleGetPasswordCompleteMessage(const base::DictValue& message);

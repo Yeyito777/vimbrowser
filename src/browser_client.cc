@@ -625,14 +625,21 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
         const long y = std::strtol(end + 1, &y_end, 10);
         if (y_end != end + 1) {
           bool is_page_scroller = false;
+          bool is_pdf_viewport = false;
           if (*y_end == ',') {
             char* page_end = nullptr;
             const long page = std::strtol(y_end + 1, &page_end, 10);
             is_page_scroller = page_end != y_end + 1 && page != 0;
+            if (page_end && *page_end == ',') {
+              char* pdf_end = nullptr;
+              const long pdf = std::strtol(page_end + 1, &pdf_end, 10);
+              is_pdf_viewport = pdf_end != page_end + 1 && pdf != 0;
+            }
           }
           owner_->OnNativeHintScrollTarget(this, static_cast<int>(x),
                                           static_cast<int>(y),
-                                          is_page_scroller);
+                                          is_page_scroller,
+                                          is_pdf_viewport);
         }
       }
     }

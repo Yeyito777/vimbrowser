@@ -96,6 +96,10 @@ bool IsDocumentScroller(Element& element) {
          document.documentElement() == &element || document.body() == &element;
 }
 
+bool IsVimbrowserPdfScrollTarget(Element& element) {
+  return element.hasAttribute(AtomicString("data-vimbrowser-pdf-scroll-target"));
+}
+
 void NotifyBrowserHintsStopped(LocalFrame* frame) {
   if (!frame) {
     return;
@@ -116,6 +120,7 @@ void NotifyBrowserScrollTarget(LocalFrame* frame,
   const int x = std::max(1, static_cast<int>(rect.x() + rect.width() / 2.0f));
   const int y = std::max(1, static_cast<int>(rect.y() + rect.height() / 2.0f));
   const bool is_page_scroller = IsDocumentScroller(element);
+  const bool is_pdf_scroll_target = IsVimbrowserPdfScrollTarget(element);
   StringBuilder message;
   message.Append("__vimbrowser_native_hint_scroll_target__");
   message.AppendNumber(x);
@@ -123,6 +128,8 @@ void NotifyBrowserScrollTarget(LocalFrame* frame,
   message.AppendNumber(y);
   message.Append(',');
   message.AppendNumber(is_page_scroller ? 1 : 0);
+  message.Append(',');
+  message.AppendNumber(is_pdf_scroll_target ? 1 : 0);
   frame->Console().AddMessage(MakeGarbageCollected<ConsoleMessage>(
       mojom::blink::ConsoleMessageSource::kOther,
       mojom::blink::ConsoleMessageLevel::kInfo, message.ToString()));

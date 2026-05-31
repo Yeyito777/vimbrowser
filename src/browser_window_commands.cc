@@ -7,6 +7,7 @@
 #include <sstream>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "config.h"
 #include "include/cef_browser.h"
@@ -29,6 +30,7 @@ CefMouseEvent ScrollTargetMouseEvent(Tab* tab, CefRefPtr<CefWindow> window) {
   if (tab && tab->has_scroll_target) {
     event.x = tab->scroll_target_x;
     event.y = tab->scroll_target_y;
+    event.modifiers |= kVimbrowserHintScrollTargetCefModifier;
     if (!tab->scroll_target_is_page) {
       event.modifiers |= kVimbrowserScrollTargetElementCefModifier;
     }
@@ -49,6 +51,42 @@ void SendScrollWheel(CefRefPtr<CefBrowser> browser,
                      int dy) {
   // CEF/Chromium wheel deltas use negative Y to scroll page content down.
   browser->GetHost()->SendMouseWheelEvent(event, 0, -dy);
+}
+
+void ExecuteJavaScriptInAllFrames(CefRefPtr<CefBrowser> browser,
+                                  const std::string& script) {
+  if (!browser) {
+    return;
+  }
+
+  std::vector<CefString> frame_ids;
+  browser->GetFrameIdentifiers(frame_ids);
+  if (frame_ids.empty() && browser->GetMainFrame()) {
+    frame_ids.push_back(browser->GetMainFrame()->GetIdentifier());
+  }
+
+  for (const CefString& frame_id : frame_ids) {
+    CefRefPtr<CefFrame> frame = browser->GetFrameByIdentifier(frame_id);
+    if (!frame || !frame->IsValid()) {
+      continue;
+    }
+    frame->ExecuteJavaScript(script, frame->GetURL(), 0);
+  }
+}
+
+void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser,
+                             int dy,
+                             bool instant = false) {
+  std::ostringstream script;
+  script << "(()=>{"
+            "if(location.href.indexOf('chrome-extension://"
+            "mhjfbmdgcfjbbpaeojofohoefgiehjai/')!==0&&"
+            "!document.querySelector('pdf-viewer'))return;"
+            "const f=window.__vimbrowserPdfScrollBy;"
+            "if(typeof f==='function'){try{f("
+         << dy
+         << "," << (instant ? "true" : "false") << ");}catch(e){}}})();";
+  ExecuteJavaScriptInAllFrames(browser, script.str());
 }
 
 }  // namespace
@@ -391,7 +429,12 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
     return;
   }
 
-  SendScrollWheel(browser, ScrollTargetMouseEvent(ActiveTab(), window_), dy);
+  Tab* tab = ActiveTab();
+  SendPdfViewerScrollHook(browser, dy);
+  if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
+    return;
+  }
+  SendScrollWheel(browser, ScrollTargetMouseEvent(tab, window_), dy);
 }
 
 void BrowserWindow::ScrollActivePageToTop() {
@@ -399,8 +442,13 @@ void BrowserWindow::ScrollActivePageToTop() {
   if (!browser) {
     return;
   }
-  CefMouseEvent event = ScrollTargetMouseEvent(ActiveTab(), window_);
+  Tab* tab = ActiveTab();
+  CefMouseEvent event = ScrollTargetMouseEvent(tab, window_);
   event.modifiers |= kVimbrowserInstantScrollCefModifier;
+  SendPdfViewerScrollHook(browser, -kScrollToEdgePx, true);
+  if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
+    return;
+  }
   SendScrollWheel(browser, event, -kScrollToEdgePx);
 }
 
@@ -409,8 +457,13 @@ void BrowserWindow::ScrollActivePageToBottom() {
   if (!browser) {
     return;
   }
-  CefMouseEvent event = ScrollTargetMouseEvent(ActiveTab(), window_);
+  Tab* tab = ActiveTab();
+  CefMouseEvent event = ScrollTargetMouseEvent(tab, window_);
   event.modifiers |= kVimbrowserInstantScrollCefModifier;
+  SendPdfViewerScrollHook(browser, kScrollToEdgePx, true);
+  if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
+    return;
+  }
   SendScrollWheel(browser, event, kScrollToEdgePx);
 }
 

@@ -3911,6 +3911,59 @@ gfx::Rect PDFiumEngine::GetPageScreenRect(int page_index) const {
       DocumentLayout::kBottomSeparator));
 }
 
+std::vector<PDFiumEngine::VimbrowserHintLink>
+PDFiumEngine::GetVimbrowserHintLinks() {
+  std::vector<VimbrowserHintLink> hint_links;
+  if (!plugin_size_.has_value()) {
+    return hint_links;
+  }
+
+  const gfx::Rect plugin_viewport(gfx::Point(), *plugin_size_);
+  const gfx::Rect visible_document_rect = GetVisibleRect();
+  for (uint32_t page_index : visible_pages_) {
+    PDFiumPage* page = GetPage(page_index);
+    if (!page) {
+      continue;
+    }
+
+    for (const PDFiumPage::VimbrowserLinkRect& link_rect :
+         page->GetVimbrowserLinkRects()) {
+      gfx::Rect document_rect = link_rect.rect;
+      if (document_rect.IsEmpty() ||
+          !document_rect.Intersects(visible_document_rect)) {
+        continue;
+      }
+
+      gfx::Rect viewport_rect = GetScreenRect(document_rect);
+      viewport_rect.Intersect(plugin_viewport);
+      if (viewport_rect.IsEmpty()) {
+        continue;
+      }
+
+      hint_links.push_back(VimbrowserHintLink{
+          .page_index = page_index,
+          .link_index = link_rect.index_in_page,
+          .rect = viewport_rect,
+      });
+    }
+  }
+  return hint_links;
+}
+
+bool PDFiumEngine::ActivateVimbrowserHintLink(
+    uint32_t page_index,
+    uint32_t link_index,
+    WindowOpenDisposition disposition) {
+  PDFiumPage* page = GetPage(page_index);
+  if (!page) {
+    return false;
+  }
+
+  PDFiumPage::LinkTarget target;
+  PDFiumPage::Area area = page->GetLinkTargetAtIndex(link_index, &target);
+  return NavigateToLinkDestination(area, target, disposition);
+}
+
 gfx::Rect PDFiumEngine::GetScreenRect(const gfx::Rect& rect) const {
   return draw_utils::GetScreenRect(rect, position_, current_zoom_);
 }

@@ -897,6 +897,30 @@ std::vector<AccessibilityLinkInfo> PDFiumPage::GetLinkInfo() {
   return link_info;
 }
 
+std::vector<PDFiumPage::VimbrowserLinkRect>
+PDFiumPage::GetVimbrowserLinkRects() {
+  std::vector<VimbrowserLinkRect> link_rects;
+  if (!available_)
+    return link_rects;
+
+  CalculateLinks();
+
+  for (size_t i = 0; i < links_.size(); ++i) {
+    const Link& link = links_[i];
+    for (const gfx::Rect& rect : link.bounding_rects) {
+      if (rect.IsEmpty()) {
+        continue;
+      }
+      link_rects.push_back(VimbrowserLinkRect{
+          .index_in_page = static_cast<uint32_t>(i),
+          .rect = rect,
+      });
+    }
+  }
+
+  return link_rects;
+}
+
 std::vector<AccessibilityImageInfo> PDFiumPage::GetImageInfo() {
   std::vector<AccessibilityImageInfo> image_info;
   if (!available_)

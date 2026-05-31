@@ -35,6 +35,10 @@ constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
 // Private CEF-side bit set by vimbrowser shell before event translation. It is
 // intentionally outside CEF's public modifier range and is not forwarded as a
 // Chromium ui::Event flag.
+constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
+// Private CEF-side bit set by vimbrowser shell before event translation. It is
+// intentionally outside CEF's public modifier range and is not forwarded as a
+// Chromium ui::Event flag.
 constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
 constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 
@@ -185,7 +189,10 @@ void CefBrowserPlatformDelegateNativeAura::SendKeyEvent(
 
 void CefBrowserPlatformDelegateNativeAura::SendVimbrowserBrowserCommandKeyEvent(
     const CefKeyEvent& event) {
-  auto* frame = web_contents_ ? web_contents_->GetPrimaryMainFrame() : nullptr;
+  auto* frame = web_contents_ ? web_contents_->GetFocusedFrame() : nullptr;
+  if (!frame) {
+    frame = web_contents_ ? web_contents_->GetPrimaryMainFrame() : nullptr;
+  }
   auto* host = frame ? frame->GetRenderWidgetHost() : nullptr;
   if (!host) {
     return;
@@ -252,8 +259,14 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
     const CefMouseEvent& event,
     int deltaX,
     int deltaY) {
+  const bool from_hint_target =
+      event.modifiers & kVimbrowserHintScrollTargetCefModifier;
   const bool target_viewport =
       !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
+  if (smooth_scroll_scrolling_ &&
+      smooth_scroll_from_hint_target_ != from_hint_target) {
+    AbortSmoothScroll();
+  }
   if (smooth_scroll_scrolling_ &&
       smooth_scroll_target_viewport_ != target_viewport) {
     AbortSmoothScroll();
@@ -264,6 +277,7 @@ void CefBrowserPlatformDelegateNativeAura::SendMouseWheelEvent(
   }
 
   smooth_scroll_event_ = event;
+  smooth_scroll_from_hint_target_ = from_hint_target;
   smooth_scroll_target_viewport_ = target_viewport;
   // CEF wheel deltas have the opposite sign from the qutebrowser smooth
   // scroller's content-space deltas: a negative wheel Y scrolls page content
@@ -351,13 +365,30 @@ void CefBrowserPlatformDelegateNativeAura::ResetSmoothScrollState() {
   smooth_scroll_subpixel_y_ = 0.0;
   smooth_scroll_scrolling_ = false;
   smooth_scroll_sent_begin_ = false;
+  smooth_scroll_from_hint_target_ = false;
   smooth_scroll_target_viewport_ = true;
 }
 
 content::RenderWidgetHost*
-CefBrowserPlatformDelegateNativeAura::CurrentSmoothScrollHost() const {
+CefBrowserPlatformDelegateNativeAura::RootSmoothScrollHost() const {
   auto* view = GetHostView();
   return view ? view->host() : nullptr;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNativeAura::FocusedFrameSmoothScrollHost() const {
+  auto* frame = web_contents_ ? web_contents_->GetFocusedFrame() : nullptr;
+  return frame ? frame->GetRenderWidgetHost() : nullptr;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNativeAura::CurrentSmoothScrollHost() const {
+  if (smooth_scroll_from_hint_target_) {
+    if (auto* host = FocusedFrameSmoothScrollHost()) {
+      return host;
+    }
+  }
+  return RootSmoothScrollHost();
 }
 
 void CefBrowserPlatformDelegateNativeAura::SendInstantGestureScroll(
@@ -371,6 +402,8 @@ void CefBrowserPlatformDelegateNativeAura::SendInstantGestureScroll(
   }
 
   smooth_scroll_event_ = event;
+  smooth_scroll_from_hint_target_ =
+      event.modifiers & kVimbrowserHintScrollTargetCefModifier;
   smooth_scroll_target_viewport_ =
       !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
 
@@ -390,8 +423,7 @@ void CefBrowserPlatformDelegateNativeAura::SendInstantGestureScroll(
 bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
     float deltaXHint,
     float deltaYHint) {
-  auto* view = GetHostView();
-  auto* host = view ? view->host() : nullptr;
+  auto* host = CurrentSmoothScrollHost();
   if (!host) {
     return false;
   }
@@ -412,8 +444,7 @@ bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollBegin(
 
 bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollUpdate(int stepX,
                                                                    int stepY) {
-  auto* view = GetHostView();
-  auto* host = view ? view->host() : nullptr;
+  auto* host = CurrentSmoothScrollHost();
   if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
       smooth_scroll_host_ != host) {
     return false;
@@ -431,8 +462,7 @@ bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollUpdate(int stepX,
 }
 
 bool CefBrowserPlatformDelegateNativeAura::SendGestureScrollEnd() {
-  auto* view = GetHostView();
-  auto* host = view ? view->host() : nullptr;
+  auto* host = CurrentSmoothScrollHost();
   if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
       smooth_scroll_host_ != host) {
     return false;

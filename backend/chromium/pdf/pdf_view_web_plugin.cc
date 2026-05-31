@@ -1818,6 +1818,8 @@ void PdfViewWebPlugin::OnMessage(const base::DictValue& message) {
 
   static constexpr auto kMessageHandlers =
       base::MakeFixedFlatMap<std::string_view, MessageHandler>({
+          {"activateVimbrowserHintLink",
+           &PdfViewWebPlugin::HandleActivateVimbrowserHintLinkMessage},
           {"displayAnnotations",
            &PdfViewWebPlugin::HandleDisplayAnnotationsMessage},
           {"getNamedDestination",
@@ -1832,6 +1834,8 @@ void PdfViewWebPlugin::OnMessage(const base::DictValue& message) {
           {"getSuggestedFileName",
            &PdfViewWebPlugin::HandleGetSuggestedFileName},
           {"getThumbnail", &PdfViewWebPlugin::HandleGetThumbnailMessage},
+          {"getVimbrowserHintLinks",
+           &PdfViewWebPlugin::HandleGetVimbrowserHintLinksMessage},
           {"highlightTextFragments",
            &PdfViewWebPlugin::HandleHighlightTextFragmentsMessage},
           {"print", &PdfViewWebPlugin::HandlePrintMessage},
@@ -1859,9 +1863,41 @@ void PdfViewWebPlugin::OnMessage(const base::DictValue& message) {
   (this->*handler)(message);
 }
 
+void PdfViewWebPlugin::HandleActivateVimbrowserHintLinkMessage(
+    const base::DictValue& message) {
+  const int page_index = message.FindInt("pageIndex").value();
+  const int link_index = message.FindInt("linkIndex").value();
+  const int disposition = message.FindInt("disposition").value_or(
+      static_cast<int>(WindowOpenDisposition::CURRENT_TAB));
+  if (page_index < 0 || link_index < 0) {
+    return;
+  }
+
+  engine_->ActivateVimbrowserHintLink(
+      static_cast<uint32_t>(page_index), static_cast<uint32_t>(link_index),
+      static_cast<WindowOpenDisposition>(disposition));
+}
+
 void PdfViewWebPlugin::HandleDisplayAnnotationsMessage(
     const base::DictValue& message) {
   engine_->DisplayAnnotations(message.FindBool("display").value());
+}
+
+void PdfViewWebPlugin::HandleGetVimbrowserHintLinksMessage(
+    const base::DictValue& message) {
+  base::ListValue links;
+  for (const PDFiumEngine::VimbrowserHintLink& link :
+       engine_->GetVimbrowserHintLinks()) {
+    links.Append(base::DictValue()
+                     .Set("pageIndex", base::checked_cast<int>(link.page_index))
+                     .Set("linkIndex", base::checked_cast<int>(link.link_index))
+                     .Set("x", link.rect.x())
+                     .Set("y", link.rect.y())
+                     .Set("width", link.rect.width())
+                     .Set("height", link.rect.height()));
+  }
+  client_->PostMessage(
+      PrepareReplyMessage(message).Set("links", std::move(links)));
 }
 
 void PdfViewWebPlugin::HandleGetNamedDestinationMessage(

@@ -69,7 +69,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnNativeHintScrollTarget(BrowserClient* client,
                                 int x,
                                 int y,
-                                bool is_page_scroller);
+                                bool is_page_scroller,
+                                bool is_pdf_viewport);
   void OnNativeHintFocusedEditable(BrowserClient* client);
   void OnNativeHintsStopped(BrowserClient* client);
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);

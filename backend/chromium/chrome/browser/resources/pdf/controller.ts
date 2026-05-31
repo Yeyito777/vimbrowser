@@ -80,6 +80,26 @@ interface FinishTextAnnotationMessage {
 }
 // </if>
 
+export interface VimbrowserHintLink {
+  pageIndex: number;
+  linkIndex: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface VimbrowserHintLinksMessageData extends MessageData {
+  links: VimbrowserHintLink[];
+}
+
+interface ActivateVimbrowserHintLinkMessage extends MessageData {
+  type: 'activateVimbrowserHintLink';
+  pageIndex: number;
+  linkIndex: number;
+  disposition: number;
+}
+
 /**
  * Creates a cryptographically secure pseudorandom 128-bit token.
  * @return The generated token as a hex string.
@@ -394,6 +414,21 @@ export class PluginController implements ContentController {
 
   getSelectedText(): Promise<{selectedText: string}> {
     return this.postMessageWithReply_({type: 'getSelectedText'});
+  }
+
+  getVimbrowserHintLinks(): Promise<VimbrowserHintLinksMessageData> {
+    return this.postMessageWithReply_({type: 'getVimbrowserHintLinks'});
+  }
+
+  activateVimbrowserHintLink(
+      pageIndex: number, linkIndex: number, disposition: number) {
+    const message: ActivateVimbrowserHintLinkMessage = {
+      type: 'activateVimbrowserHintLink',
+      pageIndex,
+      linkIndex,
+      disposition,
+    };
+    this.postMessage_(message);
   }
 
   /**

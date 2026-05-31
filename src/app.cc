@@ -240,7 +240,14 @@ void App::OnBeforeCommandLineProcessing(
 
   // Keep the shell minimal and deterministic. These are Chromium switches, not
   // external UI toolkits.
-  command_line->AppendSwitch("disable-extensions");
+  //
+  // Do not use --disable-extensions here: Chromium's built-in PDF viewer is a
+  // privileged component extension (chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai).
+  // Disabling the extension subsystem leaves direct PDF navigations stuck on the
+  // empty PDF embedder shell. Instead only suppress component extensions that run
+  // background pages; the PDF viewer component has no background page and remains
+  // available for application/pdf MIME handling.
+  command_line->AppendSwitch("disable-component-extensions-with-background-pages");
   command_line->AppendSwitch("disable-background-networking");
   command_line->AppendSwitch("disable-sync");
   command_line->AppendSwitch("no-default-browser-check");

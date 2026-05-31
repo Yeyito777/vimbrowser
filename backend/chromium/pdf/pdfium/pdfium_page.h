@@ -125,6 +125,17 @@ class PDFiumPage {
   // bounding boxes.
   std::vector<AccessibilityLinkInfo> GetLinkInfo();
 
+  struct VimbrowserLinkRect {
+    uint32_t index_in_page;
+    gfx::Rect rect;
+  };
+
+  // Returns one rectangle per PDF link quad/annotation rectangle in document
+  // coordinates. Unlike `GetLinkInfo()`, this intentionally does not union
+  // multi-rect links, because hint labels must sit on the actual clickable text
+  // fragment instead of the top-left corner of a large bounding union.
+  std::vector<VimbrowserLinkRect> GetVimbrowserLinkRects();
+
   // For all the images on the page, get their alt texts and bounding boxes. If
   // the alt text is empty or unavailable, and if the user has requested that
   // the OCR service tag the PDF so that it is made accessible, transfer the raw

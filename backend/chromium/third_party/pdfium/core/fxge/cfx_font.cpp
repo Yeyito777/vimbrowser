@@ -211,6 +211,23 @@ void CFX_Font::LoadSubstFace(const ByteString& face_name,
   face_ = CFX_GEModule::Get()->GetFontMgr()->GetBuiltinMapper()->FindSubstFace(
       face_name, bTrueType, flags, weight, italic_angle, code_page,
       subst_font_.get());
+
+  // In Chromium's PDF renderer the platform/system-font mapper can fail after
+  // selecting an external substitute (for example when the sandboxed renderer
+  // cannot read the selected font data).  Leave callers with a usable internal
+  // face instead of a substitution font whose CFX_Face is null; the latter trips
+  // PDFium's normal fallback-glyph rendering path.
+  if (!face_) {
+    subst_font_->SetIsBuiltInGenericFont();
+    subst_font_->family_ = "Chrome Sans";
+    if (weight) {
+      subst_font_->weight_ = weight;
+    }
+    subst_font_->italic_angle_ = italic_angle;
+    face_ = CFX_Face::New(CFX_GEModule::Get()->GetFontMgr(), nullptr,
+                          CFX_FontMgr::GetGenericSansFont(), 0);
+  }
+
   if (face_) {
     font_data_ = face_->GetData();
   }

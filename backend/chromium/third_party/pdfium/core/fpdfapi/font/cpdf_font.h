@@ -119,7 +119,7 @@ class CPDF_Font : public Retainable, public Observable {
   int GetTypeAscent() const { return ascent_; }
   int GetTypeDescent() const { return descent_; }
   int GetStringWidth(ByteStringView pString);
-  uint32_t FallbackFontFromCharcode(uint32_t charcode);
+  int FallbackFontFromCharcode(uint32_t charcode);
   int FallbackGlyphFromCharcode(int fallbackFont, uint32_t charcode);
   int GetFontFlags() const { return flags_; }
   int GetItalicAngle() const { return italic_angle_; }

@@ -126,6 +126,8 @@ class CefBrowserPlatformDelegateNativeAura
   void StopSmoothScrollAnimation();
   void AbortSmoothScroll();
   void ResetSmoothScrollState();
+  content::RenderWidgetHost* RootSmoothScrollHost() const;
+  content::RenderWidgetHost* FocusedFrameSmoothScrollHost() const;
   content::RenderWidgetHost* CurrentSmoothScrollHost() const;
   gfx::PointF SmoothScrollPosition() const;
   void SendInstantGestureScroll(const CefMouseEvent& event,
@@ -147,6 +149,7 @@ class CefBrowserPlatformDelegateNativeAura
   base::TimeTicks smooth_scroll_last_tick_;
   bool smooth_scroll_scrolling_ = false;
   bool smooth_scroll_sent_begin_ = false;
+  bool smooth_scroll_from_hint_target_ = false;
   bool smooth_scroll_target_viewport_ = true;
   raw_ptr<ui::Compositor> fps_observed_compositor_ = nullptr;
   int fps_frame_count_ = 0;

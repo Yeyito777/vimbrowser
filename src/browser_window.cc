@@ -126,6 +126,7 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
         tab.focused_editable_node = false;
       }
       tab.has_scroll_target = false;
+      tab.scroll_target_is_pdf_viewport = false;
       if (url != "about:blank") {
         last_tab_close_placeholder_ = false;
       }
@@ -324,7 +325,8 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
 void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
                                              int x,
                                              int y,
-                                             bool is_page_scroller) {
+                                             bool is_page_scroller,
+                                             bool is_pdf_viewport) {
   Tab* tab = ActiveTab();
   if (!tab || tab->client.get() != client) {
     return;
@@ -334,6 +336,7 @@ void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
   tab->scroll_target_x = std::max(1, x);
   tab->scroll_target_y = std::max(1, y);
   tab->scroll_target_is_page = is_page_scroller;
+  tab->scroll_target_is_pdf_viewport = is_pdf_viewport;
 }
 
 void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient* client) {

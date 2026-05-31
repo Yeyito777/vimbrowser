@@ -44,7 +44,7 @@ import {FittingType, FormFieldFocusType} from './constants.js';
 // <if expr="enable_pdf_save_to_drive">
 import {SaveToDriveBubbleRequestType, SaveToDriveState} from './constants.js';
 // </if> enable_pdf_save_to_drive
-import type {MessageData} from './controller.js';
+import type {MessageData, VimbrowserHintLink} from './controller.js';
 import {PluginController} from './controller.js';
 // <if expr="enable_pdf_ink2">
 import {PluginControllerEventType} from './controller.js';
@@ -126,6 +126,12 @@ interface ZoomBounds {
   min: number;
   max: number;
 }
+
+interface VimbrowserPdfWindow extends Window {
+  __vimbrowserPdfScrollBy?: (dy: number, instant?: boolean) => boolean;
+}
+
+const VIMBROWSER_PDF_SMOOTH_SCROLL_FACTOR: number = 0.3;
 
 /**
  * Return the filename component of a URL, percent decoded if possible.
@@ -383,6 +389,16 @@ export class PdfViewerElement extends PdfViewerBaseElement {
   private pdfSearchifySaveEnabled_: boolean = false;
   private pdfUseShowSaveFilePicker_: boolean = false;
   private pluginController_: PluginController = PluginController.getInstance();
+  private vimbrowserHintOverlay_: HTMLElement|null = null;
+  private vimbrowserHintScrollTarget_: HTMLElement|null = null;
+  private vimbrowserHintOverlayGeneration_: number = 0;
+  private vimbrowserHintOverlayUpdateRequest_: number|null = null;
+  private vimbrowserPdfScrollByHook_:
+      ((dy: number, instant?: boolean) => boolean)|null = null;
+  private vimbrowserSmoothScrollAnimationRequest_: number|null = null;
+  private vimbrowserSmoothScrollDy_: number = 0;
+  private vimbrowserSmoothScrollLastTimestamp_: number|null = null;
+  private vimbrowserSmoothScrollSubpixelY_: number = 0;
   // <if expr="enable_pdf_ink2">
   private restoreAnnotationMode_: AnnotationMode = AnnotationMode.OFF;
   // </if>
@@ -527,6 +543,9 @@ export class PdfViewerElement extends PdfViewerBaseElement {
       // immediately.
       window.focus();
     }
+
+    this.ensureVimbrowserHintOverlay_();
+    this.installVimbrowserPdfHooks_();
   }
 
   handleKeyEvent(e: KeyboardEvent) {
@@ -843,6 +862,8 @@ export class PdfViewerElement extends PdfViewerBaseElement {
     }
     super.updateProgress(progress);
 
+    this.scheduleVimbrowserHintOverlayUpdate_();
+
     // Text fragment directives should be handled after the document is set to
     // finished loading.
     if (progress === 100) {
@@ -906,6 +927,284 @@ export class PdfViewerElement extends PdfViewerBaseElement {
       Ink2Manager.getInstance().viewportChanged();
     }
     // </if>
+    this.scheduleVimbrowserHintOverlayUpdate_();
+  }
+
+  private ensureVimbrowserHintOverlay_(): HTMLElement {
+    if (this.vimbrowserHintOverlay_) {
+      return this.vimbrowserHintOverlay_;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'vimbrowser-pdf-hint-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.position = 'absolute';
+    overlay.style.left = '0';
+    overlay.style.top = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.zIndex = '1';
+    this.$.content.appendChild(overlay);
+    this.vimbrowserHintOverlay_ = overlay;
+    return overlay;
+  }
+
+  private updateVimbrowserHintOverlayGeometry_(overlay: HTMLElement) {
+    const plugin =
+        this.shadowRoot.querySelector<HTMLEmbedElement>('#plugin');
+    if (!plugin) {
+      overlay.style.left = '0';
+      overlay.style.top = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      return;
+    }
+
+    // The rectangles returned by the PDF plugin are in the plugin viewport's
+    // coordinate space. The <embed> itself can be horizontally centered inside
+    // #content when the document is narrower than the available viewport. Anchor
+    // our DOM overlay to the actual embed box instead of #content so hint labels
+    // land on the painted PDF pixels.
+    const contentRect = this.$.content.getBoundingClientRect();
+    const pluginRect = plugin.getBoundingClientRect();
+    overlay.style.left = `${pluginRect.left - contentRect.left}px`;
+    overlay.style.top = `${pluginRect.top - contentRect.top}px`;
+    overlay.style.width = `${pluginRect.width}px`;
+    overlay.style.height = `${pluginRect.height}px`;
+  }
+
+  private getVimbrowserPdfDocumentHorizontalOffset_(): number {
+    const scrollbarWidth = this.viewport.documentHasScrollbars().vertical ?
+        this.viewport.scrollbarWidth :
+        0;
+    const viewportContentWidth = this.viewport.size.width - scrollbarWidth;
+    const unusedWidth = viewportContentWidth - this.viewport.contentSize.width;
+    return unusedWidth > 0 ? unusedWidth / 2 : 0;
+  }
+
+  private ensureVimbrowserHintScrollTarget_(): HTMLElement {
+    if (this.vimbrowserHintScrollTarget_) {
+      return this.vimbrowserHintScrollTarget_;
+    }
+
+    const element = document.createElement('div');
+    element.id = 'vimbrowser-pdf-scroll-target';
+    element.setAttribute('aria-label', 'PDF document');
+    element.setAttribute('data-vimbrowser-pdf-scroll-target', '1');
+    element.setAttribute('tabindex', '-1');
+    element.style.position = 'absolute';
+    element.style.left = '0';
+    element.style.top = '0';
+    element.style.width = '100%';
+    element.style.height = '100%';
+    element.style.margin = '0';
+    element.style.padding = '0';
+    element.style.border = '0';
+    element.style.background = 'rgba(255, 255, 255, 0.001)';
+    element.style.outline = 'none';
+    element.style.pointerEvents = 'none';
+    element.style.zIndex = '0';
+    this.vimbrowserHintScrollTarget_ = element;
+    return element;
+  }
+
+  private installVimbrowserPdfHooks_() {
+    if (!this.vimbrowserPdfScrollByHook_) {
+      this.vimbrowserPdfScrollByHook_ =
+          (dy: number, instant: boolean = false) =>
+              this.vimbrowserScrollBy_(dy, instant);
+    }
+    (window as VimbrowserPdfWindow).__vimbrowserPdfScrollBy =
+        this.vimbrowserPdfScrollByHook_;
+  }
+
+  private findVimbrowserScrollTarget_(root: ParentNode): Element|null {
+    const direct = root.querySelector('[data-vimbrowser-scroll-target]');
+    if (direct) {
+      return direct;
+    }
+
+    for (const element of root.querySelectorAll('*')) {
+      const shadowRoot = (element as HTMLElement).shadowRoot;
+      if (!shadowRoot) {
+        continue;
+      }
+      const nested = this.findVimbrowserScrollTarget_(shadowRoot);
+      if (nested) {
+        return nested;
+      }
+    }
+    return null;
+  }
+
+  private isVimbrowserPdfViewportTarget_(element: Element): boolean {
+    return element === this.vimbrowserHintScrollTarget_ ||
+        element === this.$.scroller || element === this.$.content ||
+        element === this.$.sizer || element.id === 'vimbrowser-pdf-scroll-target';
+  }
+
+  private vimbrowserCancelSmoothScroll_() {
+    if (this.vimbrowserSmoothScrollAnimationRequest_ !== null) {
+      window.cancelAnimationFrame(this.vimbrowserSmoothScrollAnimationRequest_);
+      this.vimbrowserSmoothScrollAnimationRequest_ = null;
+    }
+    this.vimbrowserSmoothScrollDy_ = 0;
+    this.vimbrowserSmoothScrollSubpixelY_ = 0;
+    this.vimbrowserSmoothScrollLastTimestamp_ = null;
+  }
+
+  private vimbrowserScheduleSmoothScrollTick_() {
+    if (this.vimbrowserSmoothScrollAnimationRequest_ !== null) {
+      return;
+    }
+    this.vimbrowserSmoothScrollAnimationRequest_ =
+        window.requestAnimationFrame(timestamp => {
+          this.vimbrowserSmoothScrollAnimationRequest_ = null;
+          this.vimbrowserTickSmoothScroll_(timestamp);
+        });
+  }
+
+  private vimbrowserTickSmoothScroll_(timestamp: number) {
+    if (Math.abs(this.vimbrowserSmoothScrollDy_) < 0.01) {
+      this.vimbrowserCancelSmoothScroll_();
+      return;
+    }
+
+    if (this.vimbrowserSmoothScrollLastTimestamp_ === null) {
+      this.vimbrowserSmoothScrollLastTimestamp_ = timestamp;
+    }
+    const elapsed = timestamp - this.vimbrowserSmoothScrollLastTimestamp_;
+    this.vimbrowserSmoothScrollLastTimestamp_ = timestamp;
+    const dt = Math.max(1.0, elapsed);
+    const effectiveFactor = 1.0 - Math.pow(
+        1.0 - VIMBROWSER_PDF_SMOOTH_SCROLL_FACTOR, dt / 16.0);
+
+    const fracStepY = this.vimbrowserSmoothScrollDy_ * effectiveFactor;
+    this.vimbrowserSmoothScrollSubpixelY_ += fracStepY;
+    const stepY = Math.trunc(this.vimbrowserSmoothScrollSubpixelY_);
+    this.vimbrowserSmoothScrollSubpixelY_ -= stepY;
+    this.vimbrowserSmoothScrollDy_ -= fracStepY;
+
+    if (stepY !== 0) {
+      this.viewport.scrollBy({x: 0, y: stepY});
+      this.scheduleVimbrowserHintOverlayUpdate_();
+    }
+
+    if (Math.abs(this.vimbrowserSmoothScrollDy_) < 0.01) {
+      this.vimbrowserCancelSmoothScroll_();
+      return;
+    }
+    this.vimbrowserScheduleSmoothScrollTick_();
+  }
+
+  private vimbrowserScrollBy_(dy: number, instant: boolean = false): boolean {
+    const amount = Number(dy);
+    if (!Number.isFinite(amount) || !this.currentController) {
+      return false;
+    }
+
+    const marker = this.shadowRoot ?
+        this.findVimbrowserScrollTarget_(this.shadowRoot) :
+        null;
+    if (marker && !this.isVimbrowserPdfViewportTarget_(marker)) {
+      // A different viewer widget (for example the thumbnails side panel) was
+      // selected with scrollable hints. Let the normal CEF wheel path handle it.
+      return false;
+    }
+
+    if (instant) {
+      this.vimbrowserCancelSmoothScroll_();
+      this.viewport.scrollBy({x: 0, y: amount});
+      this.scheduleVimbrowserHintOverlayUpdate_();
+      return true;
+    }
+
+    const wasScrolling = this.vimbrowserSmoothScrollAnimationRequest_ !== null ||
+        this.vimbrowserSmoothScrollLastTimestamp_ !== null;
+    this.vimbrowserSmoothScrollDy_ += amount;
+    if (!wasScrolling) {
+      this.vimbrowserSmoothScrollSubpixelY_ = 0;
+      this.vimbrowserSmoothScrollLastTimestamp_ = performance.now();
+      this.vimbrowserTickSmoothScroll_(this.vimbrowserSmoothScrollLastTimestamp_);
+    } else {
+      this.vimbrowserScheduleSmoothScrollTick_();
+    }
+    return true;
+  }
+
+  private scheduleVimbrowserHintOverlayUpdate_() {
+    if (this.vimbrowserHintOverlayUpdateRequest_ !== null) {
+      return;
+    }
+    this.vimbrowserHintOverlayUpdateRequest_ = window.requestAnimationFrame(() => {
+      this.vimbrowserHintOverlayUpdateRequest_ = null;
+      this.updateVimbrowserHintOverlay_();
+    });
+  }
+
+  private async updateVimbrowserHintOverlay_() {
+    const generation = ++this.vimbrowserHintOverlayGeneration_;
+    const overlay = this.ensureVimbrowserHintOverlay_();
+    this.updateVimbrowserHintOverlayGeometry_(overlay);
+    if (this.loadProgress_ !== 100 || !this.currentController) {
+      overlay.replaceChildren();
+      return;
+    }
+
+    let links: VimbrowserHintLink[] = [];
+    try {
+      links = (await this.pluginController_.getVimbrowserHintLinks()).links;
+    } catch (_error) {
+      return;
+    }
+    if (generation !== this.vimbrowserHintOverlayGeneration_) {
+      return;
+    }
+
+    overlay.replaceChildren(this.ensureVimbrowserHintScrollTarget_());
+    for (const link of links) {
+      overlay.appendChild(this.createVimbrowserHintLinkElement_(link));
+    }
+  }
+
+  private createVimbrowserHintLinkElement_(link: VimbrowserHintLink): HTMLElement {
+    const element = document.createElement('button');
+    element.type = 'button';
+    element.className = 'vimbrowser-pdf-link-hint-target';
+    element.setAttribute('aria-label', 'PDF link');
+    element.style.position = 'absolute';
+    element.style.left =
+        `${link.x + this.getVimbrowserPdfDocumentHorizontalOffset_()}px`;
+    element.style.top = `${link.y}px`;
+    element.style.width = `${Math.max(1, link.width)}px`;
+    element.style.height = `${Math.max(1, link.height)}px`;
+    element.style.margin = '0';
+    element.style.padding = '0';
+    element.style.border = '0';
+    element.style.background = 'rgba(255, 255, 255, 0.001)';
+    element.style.cursor = 'pointer';
+    element.style.pointerEvents = 'auto';
+    element.style.zIndex = '1';
+    element.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.pluginController_.activateVimbrowserHintLink(
+          link.pageIndex, link.linkIndex,
+          this.getVimbrowserHintLinkDisposition_(event));
+    });
+    return element;
+  }
+
+  private getVimbrowserHintLinkDisposition_(event: MouseEvent):
+      WindowOpenDisposition {
+    if (event.button === 1 || event.ctrlKey || event.metaKey) {
+      return WindowOpenDisposition.NEW_BACKGROUND_TAB;
+    }
+    if (event.shiftKey) {
+      return WindowOpenDisposition.NEW_FOREGROUND_TAB;
+    }
+    return WindowOpenDisposition.CURRENT_TAB;
   }
 
   override handleStrings(strings: LoadTimeDataRaw) {
