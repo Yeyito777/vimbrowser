@@ -92,6 +92,7 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
 
   CefBrowserSettings browser_settings;
   browser_settings.background_color = theme::kAppBg;
+  browser_settings.tab_to_links = STATE_ENABLED;
   ++tab_client_count_;
   tab.client = new BrowserClient(this);
   const std::string browser_url = load_deferred_now && tab.deferred_load

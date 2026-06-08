@@ -570,6 +570,8 @@ bool BrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
     return true;
   }
 
+  settings.tab_to_links = STATE_ENABLED;
+
   CefRefPtr<BrowserClient> popup_client = new BrowserClient(owner_);
   client = popup_client;
   const bool activate = target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;

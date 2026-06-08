@@ -772,6 +772,22 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
     }
   }
+  if (mode_ == Mode::kNormal && focus_area_ == FocusArea::kWebView &&
+      !native_hints_active_ &&
+      (command_id == kAcceleratorCommandTab ||
+       command_id == kAcceleratorCommandBacktab)) {
+    CefKeyEvent event;
+    event.type = KEYEVENT_RAWKEYDOWN;
+    event.windows_key_code = 0x09;
+    event.native_key_code = 23;
+    event.character = 0;
+    event.unmodified_character = 0;
+    event.modifiers = command_id == kAcceleratorCommandBacktab
+                          ? EVENTFLAG_SHIFT_DOWN
+                          : 0;
+    ForwardKeyToActivePage(event);
+    return true;
+  }
   if (mode_ == Mode::kNormal && !native_hints_active_ &&
       !(focus_area_ == FocusArea::kWebView &&
         website_mode_ == vim::Mode::kInsert)) {
@@ -1714,6 +1730,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
       UpdateModeIndicator();
       return true;
+    }
+
+    if (IsTabKey(event) && PageHasFocusedEditable(event) &&
+        !(event.modifiers & (EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN |
+                             EVENTFLAG_COMMAND_DOWN))) {
+      ResetWebsitePendingKeys();
+      return false;
     }
 
     if (website_mode_ == vim::Mode::kInsert &&
