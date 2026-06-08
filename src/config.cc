@@ -33,17 +33,34 @@ bool ParseBoolSetting(std::string value, bool fallback) {
   return fallback;
 }
 
-bool LooksLikeUrl(std::string_view text) {
-  return StartsWith(text, "http://") || StartsWith(text, "https://") ||
-         StartsWith(text, "file://") || StartsWith(text, "data:") ||
-         StartsWith(text, "about:") || StartsWith(text, "chrome://") ||
-         text.find('.') != std::string_view::npos || StartsWith(text, "localhost");
+bool ContainsAsciiWhitespace(std::string_view text) {
+  return std::any_of(text.begin(), text.end(), [](unsigned char c) {
+    return std::isspace(c);
+  });
 }
 
 bool HasHandledUrlScheme(std::string_view text) {
   return StartsWith(text, "http://") || StartsWith(text, "https://") ||
          StartsWith(text, "file://") || StartsWith(text, "data:") ||
          StartsWith(text, "about:") || StartsWith(text, "chrome://");
+}
+
+bool LooksLikeUrl(std::string_view text) {
+  if (HasHandledUrlScheme(text)) {
+    return true;
+  }
+
+  // Bare host detection must be conservative.  Users often type searches with
+  // dots in them ("gpt5.5 scores", "foo.bar error"), and treating the whole
+  // string as a hostname makes Chromium percent-encode the spaces into the
+  // host and navigate to e.g. https://gpt5.5%20scores/.  If a bare input has
+  // whitespace, it is a search query; explicit schemes and local paths are
+  // handled separately.
+  if (ContainsAsciiWhitespace(text)) {
+    return false;
+  }
+
+  return text.find('.') != std::string_view::npos || StartsWith(text, "localhost");
 }
 
 std::string PercentEncode(std::string_view text) {
