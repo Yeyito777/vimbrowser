@@ -764,12 +764,7 @@ void BrowserWindow::BuildChrome() {
   sidebar_panel_ = CefPanel::CreatePanel(this);
   sidebar_panel_->SetID(kSidebarPanelId);
   sidebar_panel_->SetBackgroundColor(theme::kSidebarBg);
-  CefBoxLayoutSettings sidebar_settings = {};
-  sidebar_settings.size = sizeof(sidebar_settings);
-  sidebar_settings.horizontal = true;
-  sidebar_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  CefRefPtr<CefBoxLayout> sidebar_layout =
-      sidebar_panel_->SetToBoxLayout(sidebar_settings);
+  sidebar_panel_->SetToFillLayout();
   main_panel_->AddChildView(sidebar_panel_);
 
   sidebar_content_panel_ = CefPanel::CreatePanel(nullptr);
@@ -781,24 +776,36 @@ void BrowserWindow::BuildChrome() {
   sidebar_content_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
   sidebar_content_panel_->SetToBoxLayout(sidebar_content_settings);
   sidebar_panel_->AddChildView(sidebar_content_panel_);
-  sidebar_layout->SetFlexForView(sidebar_content_panel_, 1);
-
-  sidebar_border_panel_ = CefPanel::CreatePanel(nullptr);
-  sidebar_border_panel_->SetID(kSidebarBorderPanelId);
-  sidebar_border_panel_->SetBackgroundColor(theme::kAccent);
-  sidebar_panel_->AddChildView(sidebar_border_panel_);
 
   content_panel_ = CefPanel::CreatePanel(nullptr);
   content_panel_->SetID(kContentPanelId);
+  // The sidebar's right-hand separator intentionally lives inside the BrowserView
+  // parent panel, immediately before content_inner_panel_. CEF BrowserViews are
+  // native child surfaces on Linux and can repaint above sibling Views during
+  // tab/page activation; when the active page is white that race made the old
+  // main-panel-level sidebar_border_panel_ appear as #ffffff. Keeping the
+  // separator in the BrowserView parent clips the native page to its right.
   content_panel_->SetBackgroundColor(theme::kAppBg);
+  CefBoxLayoutSettings content_settings = {};
+  content_settings.size = sizeof(content_settings);
+  content_settings.horizontal = true;
+  content_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  CefRefPtr<CefBoxLayout> content_layout =
+      content_panel_->SetToBoxLayout(content_settings);
   main_panel_->AddChildView(content_panel_);
   main_layout->SetFlexForView(content_panel_, 1);
+
+  sidebar_border_panel_ = CefPanel::CreatePanel(nullptr);
+  sidebar_border_panel_->SetID(kSidebarBorderPanelId);
+  sidebar_border_panel_->SetBackgroundColor(SidebarBorderColor());
+  content_panel_->AddChildView(sidebar_border_panel_);
 
   content_inner_panel_ = CefPanel::CreatePanel(nullptr);
   content_inner_panel_->SetID(kContentInnerPanelId);
   content_inner_panel_->SetBackgroundColor(theme::kAppBg);
   content_inner_panel_->SetToFillLayout();
   content_panel_->AddChildView(content_inner_panel_);
+  content_layout->SetFlexForView(content_inner_panel_, 1);
 
   devtools_panel_ = CefPanel::CreatePanel(this);
   devtools_panel_->SetID(kDevToolsPanelId);
@@ -1412,13 +1419,13 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
   if (id == kSidebarPanelId) {
-    return CefSize(kSidebarWidth, 1);
+    return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kSidebarContentPanelId) {
-    return CefSize(kSidebarWidth - 1, 1);
+    return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kSidebarBorderPanelId) {
-    return CefSize(1, 1);
+    return CefSize(sidebar_visible_ ? kSidebarBorderWidth : 0, 1);
   }
   if (id == kMainPanelId || id == kRootPanelId) {
     return CefSize(1200, 800);
@@ -1463,7 +1470,8 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(1200, kStatusBarHeight);
   }
   if (id == kStatusSidebarSpacerPanelId) {
-    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+    return CefSize(sidebar_visible_ ? kSidebarContentWidth : 0,
+                   kStatusBarHeight);
   }
   if (id == kStatusContentPanelId) {
     return CefSize(1200, kStatusBarHeight);
@@ -1498,10 +1506,10 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(1200, kStatusBarHeight);
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
-    return CefSize(kSidebarWidth - 1, kSidebarRowHeight);
+    return CefSize(kSidebarContentWidth, kSidebarRowHeight);
   }
   if (id == kSidebarSpacerId) {
-    return CefSize(kSidebarWidth - 1, 1);
+    return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kCommandFieldId) {
     return CefSize(1200, kCommandHeight);
@@ -1522,13 +1530,13 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
 CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
   if (id == kSidebarPanelId) {
-    return CefSize(kSidebarWidth, 1);
+    return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kSidebarContentPanelId) {
-    return CefSize(kSidebarWidth - 1, 1);
+    return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kSidebarBorderPanelId) {
-    return CefSize(1, 1);
+    return CefSize(sidebar_visible_ ? kSidebarBorderWidth : 0, 1);
   }
   if (id == kCommandPanelId) {
     return CefSize(1, kCommandHeight + 1);
@@ -1552,7 +1560,8 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(1, kStatusBarHeight);
   }
   if (id == kStatusSidebarSpacerPanelId) {
-    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+    return CefSize(sidebar_visible_ ? kSidebarContentWidth : 0,
+                   kStatusBarHeight);
   }
   if (id == kStatusContentPanelId) {
     return CefSize(1, kStatusBarHeight);
@@ -1606,7 +1615,8 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
     return CefSize(0, kStatusBarHeight);
   }
   if (id == kStatusSidebarSpacerPanelId) {
-    return CefSize(sidebar_visible_ ? kSidebarWidth - 1 : 0, kStatusBarHeight);
+    return CefSize(sidebar_visible_ ? kSidebarContentWidth : 0,
+                   kStatusBarHeight);
   }
   if (id == kStatusContentPanelId) {
     return CefSize(0, kStatusBarHeight);
@@ -1721,6 +1731,9 @@ void BrowserWindow::Layout() {
   const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
   const int main_height =
       std::max(1, height - (show_statusline_ ? kStatusBarHeight : 0));
+  const int sidebar_content_width = sidebar_visible_ ? kSidebarContentWidth : 0;
+  const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
+  const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   if (command_overlay_) {
     command_overlay_->SetVisible(mode_ != Mode::kNormal);
   }
@@ -1761,10 +1774,13 @@ void BrowserWindow::Layout() {
   RestyleView(fps_indicator_panel_);
   RestyleView(fps_indicator_label_);
   main_panel_->SetSize(CefSize(width, main_height));
-  sidebar_panel_->SetSize(CefSize(sidebar_visible_ ? kSidebarWidth : 0, main_height));
-  sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
-  sidebar_border_panel_->SetSize(CefSize(1, main_height));
-  const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
+  sidebar_panel_->SetSize(CefSize(sidebar_content_width, main_height));
+  sidebar_content_panel_->SetSize(CefSize(sidebar_content_width, main_height));
+  if (sidebar_border_panel_) {
+    sidebar_border_panel_->SetVisible(sidebar_visible_);
+    sidebar_border_panel_->SetSize(CefSize(sidebar_border_width, main_height));
+    sidebar_border_panel_->SetBackgroundColor(SidebarBorderColor());
+  }
   const int available_content_width = std::max(1, width - content_x);
   const bool devtools_docked = devtools_visible_ && devtools_browser_view_;
   const int devtools_border_width = devtools_docked ? kDevToolsBorderWidth : 0;
@@ -1786,8 +1802,11 @@ void BrowserWindow::Layout() {
       1, available_content_width - devtools_border_width - devtools_width);
   const bool content_size_changed = content_inner_width != laid_out_content_width_ ||
                                     main_height != laid_out_content_height_;
-  content_panel_->SetSize(CefSize(content_inner_width, main_height));
-  content_inner_panel_->SetBounds(CefRect(0, 0, content_inner_width, main_height));
+  content_panel_->SetSize(
+      CefSize(sidebar_border_width + content_inner_width, main_height));
+  content_panel_->SetBackgroundColor(theme::kAppBg);
+  content_inner_panel_->SetBounds(
+      CefRect(sidebar_border_width, 0, content_inner_width, main_height));
   if (devtools_panel_) {
     devtools_panel_->SetVisible(devtools_docked);
     devtools_panel_->SetSize(CefSize(
@@ -1869,13 +1888,20 @@ void BrowserWindow::Layout() {
   // child bounds assignment. Re-apply split bounds afterwards so the page and
   // DevTools stay as siblings at the main-panel level.
   const int actual_content_width =
-      std::max(1, content_panel_->GetBounds().width);
+      std::max(1, content_panel_->GetBounds().width - sidebar_border_width);
   const int actual_devtools_content_width =
       devtools_panel_ && devtools_docked
           ? std::max(1, devtools_panel_->GetBounds().width - kDevToolsBorderWidth)
           : std::max(1, devtools_width);
+  content_panel_->SetBackgroundColor(theme::kAppBg);
+  if (sidebar_border_panel_) {
+    sidebar_border_panel_->SetVisible(sidebar_visible_);
+    sidebar_border_panel_->SetBounds(
+        CefRect(0, 0, sidebar_border_width, main_height));
+    sidebar_border_panel_->SetBackgroundColor(SidebarBorderColor());
+  }
   content_inner_panel_->SetBounds(
-      CefRect(0, 0, actual_content_width, main_height));
+      CefRect(sidebar_border_width, 0, actual_content_width, main_height));
   if (devtools_panel_) {
     devtools_panel_->SetBackgroundColor(
         focus_area_ == FocusArea::kDevTools ? theme::kAccent
@@ -1893,11 +1919,6 @@ void BrowserWindow::Layout() {
     devtools_browser_view_->SetBounds(
         CefRect(0, 0, actual_devtools_content_width, main_height));
   }
-  sidebar_border_panel_->SetSize(CefSize(1, main_height));
-  sidebar_border_panel_->SetBounds(CefRect(kSidebarWidth - 1, 0, 1, main_height));
-  sidebar_border_panel_->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
-                                                ? theme::kAccent
-                                                : theme::kBorderUnfocused);
   if (command_field_) {
     command_field_->SetBounds(CefRect(kCommandTextInsetX, 0,
                                       std::max(1, width - kCommandTextInsetX),
@@ -1912,7 +1933,7 @@ void BrowserWindow::Layout() {
                     static_cast<int>(i) * kCommandAutocompleteRowHeight,
                 autocomplete_row_width, kCommandAutocompleteRowHeight));
   }
-  if (content_size_changed && content_panel_->GetLayout()) {
+  if (content_panel_->GetLayout()) {
     content_panel_->Layout();
   }
   if (content_size_changed && content_inner_panel_->GetLayout()) {
@@ -1924,8 +1945,7 @@ void BrowserWindow::Layout() {
   if (status_sidebar_spacer_panel_) {
     status_sidebar_spacer_panel_->SetVisible(sidebar_visible_);
     status_sidebar_spacer_panel_->SetBounds(
-        CefRect(0, 0, sidebar_visible_ ? kSidebarWidth - 1 : 0,
-                kStatusBarHeight));
+        CefRect(0, 0, sidebar_content_width, kStatusBarHeight));
     status_sidebar_spacer_panel_->SetBackgroundColor(theme::kSidebarBg);
   }
   if (status_content_panel_) {
@@ -1936,11 +1956,9 @@ void BrowserWindow::Layout() {
   if (status_border_panel_) {
     status_border_panel_->SetVisible(sidebar_visible_);
     status_border_panel_->SetBounds(
-        CefRect(sidebar_visible_ ? kSidebarWidth - 1 : 0, 0,
-                sidebar_visible_ ? 1 : 0, kStatusBarHeight));
-    status_border_panel_->SetBackgroundColor(
-        focus_area_ == FocusArea::kTabSidebar ? theme::kAccent
-                                              : theme::kBorderUnfocused);
+        CefRect(sidebar_content_width, 0, sidebar_border_width,
+                kStatusBarHeight));
+    status_border_panel_->SetBackgroundColor(SidebarBorderColor());
   }
   if (status_output_field_) {
     status_output_field_->SetVisible(!status_output_text_.empty());
@@ -2867,9 +2885,7 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
                      "monospace, 12px");
     }
   } else if (id == kSidebarBorderPanelId) {
-    view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
-                                 ? theme::kAccent
-                                 : theme::kBorderUnfocused);
+    view->SetBackgroundColor(SidebarBorderColor());
   } else if (id == kCommandPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kCommandContentPanelId) {
@@ -2897,9 +2913,7 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
   } else if (id == kStatusContentPanelId) {
     view->SetBackgroundColor(StatusBarBackgroundColor());
   } else if (id == kStatusBorderPanelId) {
-    view->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
-                                 ? theme::kAccent
-                                 : theme::kBorderUnfocused);
+    view->SetBackgroundColor(SidebarBorderColor());
   } else if (id == kStatusOutputFieldId && status_output_field_) {
     StyleTextfield(status_output_field_, theme::kText,
                    StatusBarBackgroundColor(), "monospace, 12px");
@@ -2980,9 +2994,7 @@ void BrowserWindow::UpdateStatusBar() {
     status_content_panel_->SetBackgroundColor(background);
   }
   if (status_border_panel_) {
-    status_border_panel_->SetBackgroundColor(
-        focus_area_ == FocusArea::kTabSidebar ? theme::kAccent
-                                              : theme::kBorderUnfocused);
+    status_border_panel_->SetBackgroundColor(SidebarBorderColor());
   }
   if (status_output_field_) {
     status_output_field_->SetText(status_output_text_.empty()
@@ -3215,6 +3227,11 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
       return theme::kVimVisual;
   }
   return theme::kVimNormal;
+}
+
+cef_color_t BrowserWindow::SidebarBorderColor() const {
+  return focus_area_ == FocusArea::kTabSidebar ? theme::kAccent
+                                               : theme::kBorderUnfocused;
 }
 
 cef_color_t BrowserWindow::StatusBarBackgroundColor() const {

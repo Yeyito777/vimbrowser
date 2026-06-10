@@ -48,6 +48,8 @@ inline constexpr const char kBlurActiveElementScript[] = R"JS(
 })();
 )JS";
 inline constexpr int kSidebarWidth = 175;
+inline constexpr int kSidebarBorderWidth = 1;
+inline constexpr int kSidebarContentWidth = kSidebarWidth - kSidebarBorderWidth;
 inline constexpr int kCommandHeight = 28;
 inline constexpr int kCommandAutocompleteRowHeight = 24;
 inline constexpr int kCommandAutocompleteMaxVisible = 10;

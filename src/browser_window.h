@@ -314,6 +314,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void RebuildAutocompleteRows();
   std::string ModeIndicatorText() const;
   cef_color_t ModeIndicatorColor() const;
+  cef_color_t SidebarBorderColor() const;
   cef_color_t StatusBarBackgroundColor() const;
   bool HandleNormalModeKey(const CefKeyEvent& event);
   bool AllTabBrowsersClosed() const;
