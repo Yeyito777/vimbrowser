@@ -342,6 +342,10 @@ void BrowserWindow::ClearForwardingKeyGuard() {
   forwarding_key_to_page_ = false;
 }
 
+void BrowserWindow::ClearForwardingDevToolsKeyGuard() {
+  forwarding_key_to_devtools_ = false;
+}
+
 void BrowserWindow::MoveActiveTab(int delta) {
   if (tabs_.size() < 2) {
     return;

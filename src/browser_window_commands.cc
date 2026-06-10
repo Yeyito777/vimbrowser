@@ -462,6 +462,38 @@ void BrowserWindow::ScrollDevToolsBy(int dy) {
   SendScrollWheel(devtools_browser_view_->GetBrowser(), event, dy);
 }
 
+void BrowserWindow::CycleDevToolsPanel(int delta) {
+  if (!devtools_browser_view_ || !devtools_browser_view_->GetBrowser()) {
+    return;
+  }
+
+  CefRefPtr<CefBrowserHost> host =
+      devtools_browser_view_->GetBrowser()->GetHost();
+  if (!host) {
+    return;
+  }
+
+  // Chrome DevTools already exposes first-class global actions for switching
+  // main panels (Elements, Console, Sources, Network, ...): Ctrl+[ and Ctrl+].
+  // DevTools normal mode maps h/l to those actions by sending the same key events
+  // directly to the DevTools renderer. This keeps panel ordering/customization in
+  // DevTools itself instead of duplicating frontend state in vimbrowser chrome.
+  CefKeyEvent event;
+  event.type = KEYEVENT_RAWKEYDOWN;
+  event.windows_key_code = delta > 0 ? 0xDD : 0xDB;  // VKEY_OEM_6 / VKEY_OEM_4.
+  event.native_key_code = delta > 0 ? 35 : 34;       // X11 ] / [ keycodes.
+  event.character = 0;
+  event.unmodified_character = delta > 0 ? ']' : '[';
+  event.modifiers = EVENTFLAG_CONTROL_DOWN;
+  forwarding_key_to_devtools_ = true;
+  host->SendKeyEvent(event);
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::ClearForwardingDevToolsKeyGuard,
+                                    self),
+                     50);
+}
+
 void BrowserWindow::ScrollActivePageToTop() {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
   if (!browser) {

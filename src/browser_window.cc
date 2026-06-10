@@ -74,6 +74,11 @@ class DevToolsClient final : public CefClient,
       return true;
     }
 
+    if (text == "__vimbrowser_native_hint_focused_editable__") {
+      owner_->OnDevToolsNativeHintFocusedEditable();
+      return true;
+    }
+
     constexpr std::string_view kScrollTargetPrefix =
         "__vimbrowser_native_hint_scroll_target__";
     if (text.rfind(kScrollTargetPrefix, 0) == 0) {
@@ -643,11 +648,25 @@ void BrowserWindow::OnDevToolsNativeHintOpenTab(const std::string& url) {
   UpdateModeIndicator();
 }
 
+void BrowserWindow::OnDevToolsNativeHintFocusedEditable() {
+  if (!native_hints_active_ || focus_area_ != FocusArea::kDevTools ||
+      mode_ != Mode::kNormal) {
+    return;
+  }
+
+  devtools_mode_ = vim::Mode::kInsert;
+  suppress_next_devtools_char_.reset();
+  ResetWebsitePendingKeys();
+  UpdateModeIndicator();
+}
+
 void BrowserWindow::OnDevToolsNativeHintsStopped() {
   if (focus_area_ != FocusArea::kDevTools) {
     return;
   }
   native_hints_active_ = false;
+  devtools_mode_ = devtools_mode_ == vim::Mode::kInsert ? vim::Mode::kInsert
+                                                        : vim::Mode::kNormal;
   ResetWebsitePendingKeys();
   UpdateModeIndicator();
 }
@@ -1138,7 +1157,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   }
   if (mode_ == Mode::kNormal && !native_hints_active_ &&
       !(focus_area_ == FocusArea::kWebView &&
-        website_mode_ == vim::Mode::kInsert)) {
+        website_mode_ == vim::Mode::kInsert) &&
+      !(focus_area_ == FocusArea::kDevTools &&
+        devtools_mode_ == vim::Mode::kInsert)) {
     if ((command_id == kAcceleratorHintRightClick ||
          command_id == kAcceleratorHintHover) &&
         focus_area_ == FocusArea::kDevTools) {
@@ -1191,6 +1212,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
+  if (forwarding_key_to_devtools_) {
+    return false;
+  }
   if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
     return false;
   }
@@ -2107,6 +2131,7 @@ void BrowserWindow::RefreshAudibleTabs() {
 
 void BrowserWindow::SetFocusArea(FocusArea area) {
   ResetWebsitePendingKeys();
+  suppress_next_devtools_char_.reset();
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
   }
@@ -2625,20 +2650,64 @@ bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
   }
 
   if (IsCharEvent(event)) {
-    // Suppress follow-up CHAR events for raw keydowns that we consume below.
-    if ((IsPlainLetterKey(event, 'j') || IsPlainLetterKey(event, 'k')) ||
-        (HasOnlyControlModifier(event) && IsSpaceKey(event))) {
+    if (suppress_next_devtools_char_) {
+      const std::optional<char> suppressed = suppress_next_devtools_char_;
+      suppress_next_devtools_char_.reset();
+      if (const char key = PlainKeyChar(event);
+          key && LowerAsciiChar(key) == *suppressed) {
+        return true;
+      }
+    }
+    if (devtools_mode_ == vim::Mode::kInsert) {
+      return false;
+    }
+    if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
+      devtools_mode_ = vim::Mode::kInsert;
+      UpdateModeIndicator();
       return true;
     }
-    return false;
+    // DevTools normal mode owns printable keys just like website normal mode.
+    return true;
   }
 
   if (!IsRawKeyDown(event)) {
     return false;
   }
 
+  suppress_next_devtools_char_.reset();
+
+  if (IsEscapeKey(event)) {
+    if (devtools_mode_ == vim::Mode::kInsert) {
+      devtools_mode_ = vim::Mode::kNormal;
+      UpdateModeIndicator();
+      return true;
+    }
+    UpdateModeIndicator();
+    return true;
+  }
+
+  if (devtools_mode_ == vim::Mode::kInsert) {
+    return false;
+  }
+
+  if (PlainKeyChar(event) == ':') {
+    BeginCommandText(":");
+    return true;
+  }
+
   if (StartDevToolsNativeHints(event)) {
     return true;
+  }
+
+  const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+  const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+  if (ctrl && !shift) {
+    if (IsCtrlKey(event, 'E')) { ScrollDevToolsBy(kSmallScrollPx); return true; }
+    if (IsCtrlKey(event, 'Y')) { ScrollDevToolsBy(-kSmallScrollPx); return true; }
+    if (IsCtrlKey(event, 'D')) { ScrollDevToolsBy(560); return true; }
+    if (IsCtrlKey(event, 'U')) { ScrollDevToolsBy(-560); return true; }
+    if (IsCtrlKey(event, 'F')) { ScrollDevToolsBy(1120); return true; }
+    if (IsCtrlKey(event, 'B')) { ScrollDevToolsBy(-1120); return true; }
   }
 
   if (IsPlainLetterKey(event, 'j')) {
@@ -2649,8 +2718,29 @@ bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
     ScrollDevToolsBy(-kLineScrollPx);
     return true;
   }
+  if (IsPlainLetterKey(event, 'h')) {
+    CycleDevToolsPanel(-1);
+    return true;
+  }
+  if (IsPlainLetterKey(event, 'l')) {
+    CycleDevToolsPanel(1);
+    return true;
+  }
 
-  return false;
+  if (IsPlainLetterKey(event, 'i') || IsPlainLetterKey(event, 'a')) {
+    devtools_mode_ = vim::Mode::kInsert;
+    if (const char key = PlainKeyChar(event)) {
+      suppress_next_devtools_char_ = LowerAsciiChar(key);
+    }
+    UpdateModeIndicator();
+    return true;
+  }
+
+  if (IsPlainPrintableKey(event)) {
+    return true;
+  }
+
+  return true;
 }
 
 bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
@@ -3066,11 +3156,11 @@ std::string BrowserWindow::ModeIndicatorText() const {
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";
   }
-  if (focus_area_ == FocusArea::kDevTools) {
-    return "DEVTOOLS";
-  }
   if (native_hints_active_) {
     return "HINT";
+  }
+  if (focus_area_ == FocusArea::kDevTools) {
+    return devtools_mode_ == vim::Mode::kInsert ? "DEV-I" : "DEV-N";
   }
 
   switch (website_mode_) {
@@ -3093,11 +3183,12 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
   if (focus_area_ == FocusArea::kTabSidebar) {
     return theme::kBorderFocused;
   }
-  if (focus_area_ == FocusArea::kDevTools) {
-    return theme::kAccent;
-  }
   if (native_hints_active_) {
     return theme::kAccent;
+  }
+  if (focus_area_ == FocusArea::kDevTools) {
+    return devtools_mode_ == vim::Mode::kInsert ? theme::kVimInsert
+                                                : theme::kVimNormal;
   }
 
   switch (website_mode_) {
@@ -3121,6 +3212,10 @@ cef_color_t BrowserWindow::StatusBarBackgroundColor() const {
     if (website_mode_ == vim::Mode::kNormal) {
       return theme::kSidebarSelBg;
     }
+  }
+  if (mode_ == Mode::kNormal && focus_area_ == FocusArea::kDevTools) {
+    return devtools_mode_ == vim::Mode::kInsert ? theme::kAccent
+                                                : theme::kSidebarSelBg;
   }
   return theme::kSidebarBg;
 }

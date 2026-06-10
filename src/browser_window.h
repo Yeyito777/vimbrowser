@@ -78,6 +78,7 @@ class BrowserWindow final : public CefWindowDelegate,
                                         bool is_page_scroller,
                                         bool is_pdf_viewport);
   void OnDevToolsNativeHintOpenTab(const std::string& url);
+  void OnDevToolsNativeHintFocusedEditable();
   void OnDevToolsNativeHintsStopped();
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   void ShowDevToolsForClient(BrowserClient* client);
@@ -197,6 +198,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void BlurPageFocus(CefRefPtr<CefBrowser> browser);
   void ForwardKeyToActivePage(const CefKeyEvent& event);
   void ClearForwardingKeyGuard();
+  void ClearForwardingDevToolsKeyGuard();
   void MoveActiveTab(int delta);
   bool MoveTabToIndex(size_t from, size_t to);
   CefRefPtr<CefBrowser> BrowserForTabId(uint64_t tab_id,
@@ -280,6 +282,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool StartDevToolsNativeHints(const CefKeyEvent& event);
   void ScrollActivePageBy(int dy);
   void ScrollDevToolsBy(int dy);
+  void CycleDevToolsPanel(int delta);
   void ScrollActivePageToTop();
   void ScrollActivePageToBottom();
   void OpenClipboard(bool new_tab);
@@ -333,7 +336,9 @@ class BrowserWindow final : public CefWindowDelegate,
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
   vim::Mode website_mode_ = vim::Mode::kWebsiteNormal;
+  vim::Mode devtools_mode_ = vim::Mode::kNormal;
   std::optional<char> suppress_next_website_char_;
+  std::optional<char> suppress_next_devtools_char_;
   bool suppress_next_char_event_ = false;
   bool sidebar_visible_ = true;
   bool bulk_tab_update_ = false;
@@ -342,6 +347,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_statusline_ = true;
   bool shader_enabled_ = true;
   bool forwarding_key_to_page_ = false;
+  bool forwarding_key_to_devtools_ = false;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool devtools_has_scroll_target_ = false;
