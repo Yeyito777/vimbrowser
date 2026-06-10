@@ -77,6 +77,7 @@ class BrowserWindow final : public CefWindowDelegate,
                                         int y,
                                         bool is_page_scroller,
                                         bool is_pdf_viewport);
+  void OnDevToolsNativeHintOpenTab(const std::string& url);
   void OnDevToolsNativeHintsStopped();
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
   void ShowDevToolsForClient(BrowserClient* client);

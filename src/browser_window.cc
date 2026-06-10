@@ -67,6 +67,13 @@ class DevToolsClient final : public CefClient,
     }
 
     const std::string text = message.ToString();
+    constexpr std::string_view kOpenTabPrefix =
+        "__vimbrowser_native_hint_open_tab__";
+    if (text.rfind(kOpenTabPrefix, 0) == 0) {
+      owner_->OnDevToolsNativeHintOpenTab(text.substr(kOpenTabPrefix.size()));
+      return true;
+    }
+
     constexpr std::string_view kScrollTargetPrefix =
         "__vimbrowser_native_hint_scroll_target__";
     if (text.rfind(kScrollTargetPrefix, 0) == 0) {
@@ -624,6 +631,18 @@ void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x,
   devtools_scroll_target_is_page_ = is_page_scroller || is_pdf_viewport;
 }
 
+void BrowserWindow::OnDevToolsNativeHintOpenTab(const std::string& url) {
+  if (!native_hints_active_ || focus_area_ != FocusArea::kDevTools ||
+      url.empty()) {
+    return;
+  }
+
+  native_hints_active_ = false;
+  ResetWebsitePendingKeys();
+  AddTabAfterActive(url, true);
+  UpdateModeIndicator();
+}
+
 void BrowserWindow::OnDevToolsNativeHintsStopped() {
   if (focus_area_ != FocusArea::kDevTools) {
     return;
@@ -1120,6 +1139,20 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   if (mode_ == Mode::kNormal && !native_hints_active_ &&
       !(focus_area_ == FocusArea::kWebView &&
         website_mode_ == vim::Mode::kInsert)) {
+    if ((command_id == kAcceleratorHintRightClick ||
+         command_id == kAcceleratorHintHover) &&
+        focus_area_ == FocusArea::kDevTools) {
+      CefKeyEvent event;
+      event.type = KEYEVENT_RAWKEYDOWN;
+      event.windows_key_code =
+          command_id == kAcceleratorHintRightClick ? 'L' : 'H';
+      event.native_key_code = event.windows_key_code;
+      event.character = 0;
+      event.unmodified_character =
+          command_id == kAcceleratorHintRightClick ? 'l' : 'h';
+      event.modifiers = EVENTFLAG_CONTROL_DOWN;
+      return StartDevToolsNativeHints(event);
+    }
     if ((command_id == kAcceleratorHintRightClick ||
          command_id == kAcceleratorHintHover) &&
         focus_area_ == FocusArea::kWebView) {
@@ -2532,31 +2565,52 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
 }
 
 bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
-  if (!IsRawKeyDown(event) || !HasOnlyControlModifier(event) ||
-      !devtools_browser_view_ ||
+  if (!IsRawKeyDown(event) || !devtools_browser_view_ ||
       !devtools_browser_view_->GetBrowser()) {
     return false;
   }
 
-  const bool scrollable_hints = IsSpaceKey(event) ||
-                                event.windows_key_code == 0 ||
-                                event.native_key_code == 65;
-  if (!scrollable_hints) {
+  const bool ctrl_only = HasOnlyControlModifier(event);
+  const bool click_hints = IsPlainLetterKey(event, 'f');
+  const bool right_click_hints = ctrl_only && IsCtrlKey(event, 'L');
+  const bool hover_hints = ctrl_only && IsCtrlKey(event, 'H');
+  const bool scrollable_hints =
+      ctrl_only && (IsSpaceKey(event) || event.windows_key_code == 0 ||
+                    event.native_key_code == 65);
+  if (!click_hints && !right_click_hints && !hover_hints &&
+      !scrollable_hints) {
     return false;
   }
 
   native_hints_active_ = true;
-  devtools_has_scroll_target_ = false;
+  if (scrollable_hints) {
+    devtools_has_scroll_target_ = false;
+  }
   ResetWebsitePendingKeys();
   UpdateModeIndicator();
 
   CefKeyEvent browser_event = event;
-  // Keep this exactly parallel to Ctrl+Space scrollable hints for normal pages:
-  // toolkit/X11 paths can report Ctrl+Space as a control character, while Blink's
-  // native hint dispatcher keys off VK_SPACE after CEF translates this synthetic
-  // browser-command event back into a WebKeyboardEvent.
-  browser_event.windows_key_code = 0x20;
-  browser_event.unmodified_character = 0x20;
+  if (click_hints) {
+    // Normalize toolkit-specific lower/upper keycodes to the Windows virtual-key
+    // code that Blink's native hint dispatcher expects.
+    browser_event.windows_key_code = 'F';
+  }
+  if (right_click_hints) {
+    browser_event.windows_key_code = 'L';
+    browser_event.unmodified_character = 'l';
+  }
+  if (hover_hints) {
+    browser_event.windows_key_code = 'H';
+    browser_event.unmodified_character = 'h';
+  }
+  if (scrollable_hints) {
+    // Keep this exactly parallel to Ctrl+Space scrollable hints for normal pages:
+    // toolkit/X11 paths can report Ctrl+Space as a control character, while
+    // Blink's native hint dispatcher keys off VK_SPACE after CEF translates this
+    // synthetic browser-command event back into a WebKeyboardEvent.
+    browser_event.windows_key_code = 0x20;
+    browser_event.unmodified_character = 0x20;
+  }
   vimbrowser_send_browser_command_key_event(
       devtools_browser_view_->GetBrowser()->GetIdentifier(), &browser_event);
   return true;
