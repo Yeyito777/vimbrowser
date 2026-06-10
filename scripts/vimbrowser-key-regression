@@ -622,6 +622,28 @@ def test_website_keybinds_do_not_type(h: Harness) -> None:
             "website-mode keybindings generated input events", snap)
 
 
+def test_sidebar_jk_moves_tab_cursor(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url])
+    h.ipc(["open-tab", h.initial_url])
+    tabs = h.ipc(["tabs"])["tabs"]
+    h.ipc(["tab-focus", str(tabs[0]["id"])])
+    h.reset(focus_input=False)
+    h.focus_sidebar()
+    before = h.ipc(["status"])
+    require(before.get("mode") == "SIDEBAR" and before.get("active_index") == 0,
+            "could not focus sidebar with first tab selected", before)
+
+    h.key("j", pause=0.25)
+    after_j = h.ipc(["status"])
+    require(after_j.get("active_index") == 1,
+            "sidebar j did not move the tab cursor down", after_j)
+
+    h.key("k", pause=0.25)
+    after_k = h.ipc(["status"])
+    require(after_k.get("active_index") == 0,
+            "sidebar k did not move the tab cursor up", after_k)
+
+
 def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
     h.reset(focus_input=True)
     h.focus_sidebar()
@@ -882,6 +904,7 @@ TESTS = [
     test_insert_escape_exits_without_passthrough,
     test_normal_escape_returns_to_website_mode,
     test_website_keybinds_do_not_type,
+    test_sidebar_jk_moves_tab_cursor,
     test_sidebar_keybinds_do_not_type,
     test_ctrl_jk_cycle_focus_not_hints,
     test_ctrl_lh_start_right_click_and_hover_hints,

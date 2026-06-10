@@ -1283,6 +1283,19 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     return true;
   }
 
+  if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
+    switch (PlainKeyChar(event)) {
+      case 'j':
+        ResetWebsitePendingKeys();
+        ActivateRelative(1);
+        return true;
+      case 'k':
+        ResetWebsitePendingKeys();
+        ActivateRelative(-1);
+        return true;
+    }
+  }
+
   if (HandleWebsiteCommandKey(event)) {
     return true;
   }
