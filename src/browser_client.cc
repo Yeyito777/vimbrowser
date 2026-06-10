@@ -532,6 +532,14 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                              CefRefPtr<CefFrame> frame,
+                              int httpStatusCode) {
+  if (owner_ && frame && frame->IsMain()) {
+    owner_->OnClientLoadEnd(this);
+  }
+}
+
 void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
                                     CefRefPtr<CefFrame> frame,
                                     const CefString& url) {

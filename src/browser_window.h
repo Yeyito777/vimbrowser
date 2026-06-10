@@ -52,6 +52,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
+  void OnClientLoadEnd(BrowserClient* client);
   void OnClientAddressChange(BrowserClient* client, const std::string& url);
   bool OnClientProcessMessage(BrowserClient* client,
                               CefRefPtr<CefBrowser> browser,
@@ -278,6 +279,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::optional<bool> HandlePageShortcut(const CefKeyEvent& event,
                                          bool allow_forward_to_page);
   void ResetWebsitePendingKeys();
+  bool StopPageNativeHintsForClient(BrowserClient* client);
   bool StartNativeHints(const CefKeyEvent& event);
   bool StartDevToolsNativeHints(const CefKeyEvent& event);
   void ScrollActivePageBy(int dy);

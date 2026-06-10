@@ -225,7 +225,16 @@ bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
+  // Native hints are bound to the renderer document that collected their
+  // candidates. A main-frame navigation can destroy that document before Blink's
+  // console-based "hints stopped" signal reaches the browser process, so clear
+  // the browser-side latch at document boundaries too.
+  StopPageNativeHintsForClient(client);
   UpdateClientUrl(client, url, true);
+}
+
+void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
+  StopPageNativeHintsForClient(client);
 }
 
 void BrowserWindow::OnClientAddressChange(BrowserClient* client,
@@ -611,15 +620,7 @@ void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient* client) {
 }
 
 void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
-  if (Tab* tab = ActiveTab(); !tab || tab->client.get() != client) {
-    return;
-  }
-  native_hints_active_ = false;
-  website_mode_ = website_mode_ == vim::Mode::kInsert
-                      ? vim::Mode::kInsert
-                      : vim::Mode::kWebsiteNormal;
-  ResetWebsitePendingKeys();
-  UpdateModeIndicator();
+  StopPageNativeHintsForClient(client);
 }
 
 void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x,
@@ -2565,6 +2566,22 @@ void BrowserWindow::ResetWebsitePendingKeys() {
   website_pending_keys_.clear();
 }
 
+bool BrowserWindow::StopPageNativeHintsForClient(BrowserClient* client) {
+  Tab* tab = ActiveTab();
+  if (!native_hints_active_ || !tab || tab->client.get() != client ||
+      focus_area_ != FocusArea::kWebView) {
+    return false;
+  }
+
+  native_hints_active_ = false;
+  website_mode_ = website_mode_ == vim::Mode::kInsert
+                      ? vim::Mode::kInsert
+                      : vim::Mode::kWebsiteNormal;
+  ResetWebsitePendingKeys();
+  UpdateModeIndicator();
+  return true;
+}
+
 bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   if (!IsRawKeyDown(event)) {
     return false;
@@ -2584,6 +2601,15 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   Tab* tab = ActiveTab();
   if (!tab || !tab->client || !tab->client->browser()) {
     return false;
+  }
+
+  if (tab->client->browser()->IsLoading()) {
+    // Starting hints while a reload/navigation is replacing the document leaves
+    // us with labels owned by a dying renderer frame. Consume the hint command
+    // but keep the shell in normal/website mode; the user can press f again once
+    // loading completes.
+    ResetWebsitePendingKeys();
+    return true;
   }
 
   ResetWebsitePendingKeys();
