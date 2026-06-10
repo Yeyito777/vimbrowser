@@ -537,6 +537,9 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
 }
 
 void BrowserWindow::CloseTabBackend(Tab& tab) {
+  if (tab.id != 0 && tab.id == devtools_opener_tab_id_) {
+    CloseDevTools();
+  }
   if (tab.view) {
     tab.view->SetVisible(false);
     if (content_inner_panel_) {

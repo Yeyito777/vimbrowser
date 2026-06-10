@@ -73,7 +73,13 @@ class BrowserWindow final : public CefWindowDelegate,
                                 bool is_pdf_viewport);
   void OnNativeHintFocusedEditable(BrowserClient* client);
   void OnNativeHintsStopped(BrowserClient* client);
+  void OnDevToolsNativeHintScrollTarget(int x,
+                                        int y,
+                                        bool is_page_scroller,
+                                        bool is_pdf_viewport);
+  void OnDevToolsNativeHintsStopped();
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
+  void ShowDevToolsForClient(BrowserClient* client);
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
@@ -84,7 +90,14 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
                              const CefRect& new_bounds) override;
   void OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
-                        CefRefPtr<CefBrowser> browser) override {}
+                        CefRefPtr<CefBrowser> browser) override;
+  void OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
+                          CefRefPtr<CefBrowser> browser) override;
+  CefRefPtr<CefBrowserViewDelegate> GetDelegateForPopupBrowserView(
+      CefRefPtr<CefBrowserView> browser_view,
+      const CefBrowserSettings& settings,
+      CefRefPtr<CefClient> client,
+      bool is_devtools) override;
   bool OnPopupBrowserViewCreated(
       CefRefPtr<CefBrowserView> browser_view,
       CefRefPtr<CefBrowserView> popup_browser_view,
@@ -114,6 +127,7 @@ class BrowserWindow final : public CefWindowDelegate,
   enum class FocusArea {
     kTabSidebar,
     kWebView,
+    kDevTools,
     kCommandLine,
   };
 
@@ -249,15 +263,22 @@ class BrowserWindow final : public CefWindowDelegate,
   void RefreshSidebarRow(size_t index);
   void RefreshAudibleTabs();
   void SetFocusArea(FocusArea area);
+  void FocusRelative(int delta);
   void ToggleSidebar();
+  void ToggleDevTools();
+  void CloseDevTools();
+  bool FocusAreaAvailable(FocusArea area) const;
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   bool HandleWebsiteCommandKey(const CefKeyEvent& event);
+  bool HandleDevToolsModeKey(const CefKeyEvent& event);
   std::optional<bool> HandlePageShortcut(const CefKeyEvent& event,
                                          bool allow_forward_to_page);
   void ResetWebsitePendingKeys();
   bool StartNativeHints(const CefKeyEvent& event);
+  bool StartDevToolsNativeHints(const CefKeyEvent& event);
   void ScrollActivePageBy(int dy);
+  void ScrollDevToolsBy(int dy);
   void ScrollActivePageToTop();
   void ScrollActivePageToBottom();
   void OpenClipboard(bool new_tab);
@@ -322,6 +343,10 @@ class BrowserWindow final : public CefWindowDelegate,
   bool forwarding_key_to_page_ = false;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
+  bool devtools_has_scroll_target_ = false;
+  int devtools_scroll_target_x_ = 1;
+  int devtools_scroll_target_y_ = 1;
+  bool devtools_scroll_target_is_page_ = true;
   bool last_tab_close_placeholder_ = false;
   bool window_close_pending_ = false;
   bool window_close_allowed_ = false;
@@ -351,6 +376,11 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefTextfield> sidebar_spacer_;
   CefRefPtr<CefPanel> content_panel_;
   CefRefPtr<CefPanel> content_inner_panel_;
+  CefRefPtr<CefPanel> devtools_panel_;
+  CefRefPtr<CefPanel> devtools_content_panel_;
+  CefRefPtr<CefBrowserView> devtools_browser_view_;
+  CefRefPtr<CefBrowserViewDelegate> devtools_browser_view_delegate_;
+  CefRefPtr<CefClient> devtools_client_;
   CefRefPtr<CefPanel> status_bar_panel_;
   CefRefPtr<CefPanel> status_sidebar_spacer_panel_;
   CefRefPtr<CefPanel> status_border_panel_;
@@ -374,6 +404,8 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefLabelButton> fps_indicator_label_;
   CefRefPtr<CefOverlayController> fps_indicator_overlay_;
   std::unique_ptr<IpcServer> ipc_server_;
+  uint64_t devtools_opener_tab_id_ = 0;
+  bool devtools_visible_ = false;
 
   IMPLEMENT_REFCOUNTING(BrowserWindow);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);

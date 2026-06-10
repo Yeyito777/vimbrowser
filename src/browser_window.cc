@@ -2,6 +2,7 @@
 #include "browser_window_internal.h"
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <charconv>
 #include <cctype>
@@ -14,6 +15,7 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 
@@ -38,7 +40,118 @@
 #include "shortcuts.h"
 #include "theme.h"
 
+extern "C" void vimbrowser_send_browser_command_key_event(
+    int browser_id,
+    const CefKeyEvent* event);
+
 namespace vimbrowser {
+
+namespace {
+
+class DevToolsClient final : public CefClient,
+                             public CefDisplayHandler,
+                             public CefKeyboardHandler {
+ public:
+  explicit DevToolsClient(BrowserWindow* owner) : owner_(owner) {}
+
+  CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+  CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
+
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
+                        const CefString& message,
+                        const CefString& source,
+                        int line) override {
+    if (!owner_) {
+      return false;
+    }
+
+    const std::string text = message.ToString();
+    constexpr std::string_view kScrollTargetPrefix =
+        "__vimbrowser_native_hint_scroll_target__";
+    if (text.rfind(kScrollTargetPrefix, 0) == 0) {
+      const std::string payload = text.substr(kScrollTargetPrefix.size());
+      char* end = nullptr;
+      const long x = std::strtol(payload.c_str(), &end, 10);
+      if (end && *end == ',') {
+        char* y_end = nullptr;
+        const long y = std::strtol(end + 1, &y_end, 10);
+        if (y_end != end + 1) {
+          bool is_page_scroller = false;
+          bool is_pdf_viewport = false;
+          if (*y_end == ',') {
+            char* page_end = nullptr;
+            const long page = std::strtol(y_end + 1, &page_end, 10);
+            is_page_scroller = page_end != y_end + 1 && page != 0;
+            if (page_end && *page_end == ',') {
+              char* pdf_end = nullptr;
+              const long pdf = std::strtol(page_end + 1, &pdf_end, 10);
+              is_pdf_viewport = pdf_end != page_end + 1 && pdf != 0;
+            }
+          }
+          owner_->OnDevToolsNativeHintScrollTarget(
+              static_cast<int>(x), static_cast<int>(y), is_page_scroller,
+              is_pdf_viewport);
+        }
+      }
+      return true;
+    }
+
+    if (text == "__vimbrowser_native_hints_stopped__") {
+      owner_->OnDevToolsNativeHintsStopped();
+      return true;
+    }
+
+    return false;
+  }
+
+  bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
+                     const CefKeyEvent& event,
+                     CefEventHandle os_event,
+                     bool* is_keyboard_shortcut) override {
+    return owner_ && owner_->HandleBrowserKeyEvent(event);
+  }
+
+ private:
+  BrowserWindow* owner_ = nullptr;
+
+  IMPLEMENT_REFCOUNTING(DevToolsClient);
+  DISALLOW_COPY_AND_ASSIGN(DevToolsClient);
+};
+
+class DevToolsBrowserViewDelegate final : public CefBrowserViewDelegate {
+ public:
+  explicit DevToolsBrowserViewDelegate(BrowserWindow* owner) : owner_(owner) {}
+
+  void OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
+                        CefRefPtr<CefBrowser> browser) override {
+    if (owner_) {
+      owner_->OnBrowserCreated(browser_view, browser);
+    }
+  }
+
+  void OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
+                          CefRefPtr<CefBrowser> browser) override {
+    if (owner_) {
+      owner_->OnBrowserDestroyed(browser_view, browser);
+    }
+  }
+
+  cef_runtime_style_t GetBrowserRuntimeStyle() override {
+    // CEF DevTools popups are always Chrome-style. The normal page BrowserViews
+    // still use BrowserWindow as their delegate and remain Alloy-style.
+    return CEF_RUNTIME_STYLE_CHROME;
+  }
+
+ private:
+  BrowserWindow* owner_ = nullptr;
+
+  IMPLEMENT_REFCOUNTING(DevToolsBrowserViewDelegate);
+  DISALLOW_COPY_AND_ASSIGN(DevToolsBrowserViewDelegate);
+};
+
+}  // namespace
+
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              size_t active_index,
                              bool show_mode_indicator,
@@ -250,7 +363,36 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
     CefRefPtr<CefBrowserView> browser_view,
     CefRefPtr<CefBrowserView> popup_browser_view,
     bool is_devtools) {
-  if (is_devtools || !popup_browser_view) {
+  if (is_devtools) {
+    if (!popup_browser_view || !content_panel_) {
+      return false;
+    }
+
+    uint64_t opener_tab_id = 0;
+    for (const Tab& tab : tabs_) {
+      if (tab.view && browser_view && tab.view->IsSame(browser_view)) {
+        opener_tab_id = tab.id;
+        break;
+      }
+    }
+
+    devtools_browser_view_ = popup_browser_view;
+    devtools_browser_view_->SetID(kDevToolsBrowserViewId);
+    devtools_browser_view_->SetPreferAccelerators(true);
+    devtools_browser_view_->SetVisible(true);
+    devtools_opener_tab_id_ = opener_tab_id;
+    devtools_visible_ = true;
+    if (devtools_panel_ && devtools_content_panel_) {
+      devtools_panel_->SetVisible(true);
+      if (!devtools_browser_view_->GetParentView()) {
+        devtools_content_panel_->AddChildView(devtools_browser_view_);
+      }
+    }
+    SetFocusArea(FocusArea::kDevTools);
+    return true;
+  }
+
+  if (!popup_browser_view) {
     return false;
   }
 
@@ -302,6 +444,109 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
                  insert_index, activate);
   UpdateModeIndicator();
   return true;
+}
+
+void BrowserWindow::OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
+                                     CefRefPtr<CefBrowser> browser) {
+  if (!browser_view || !devtools_browser_view_ ||
+      !browser_view->IsSame(devtools_browser_view_)) {
+    return;
+  }
+
+  Layout();
+  if (focus_area_ == FocusArea::kDevTools) {
+    devtools_browser_view_->RequestFocus();
+  }
+}
+
+void BrowserWindow::OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
+                                       CefRefPtr<CefBrowser> browser) {
+  if (!browser_view || browser_view->GetID() != kDevToolsBrowserViewId) {
+    return;
+  }
+
+  if (devtools_browser_view_ && devtools_browser_view_->IsSame(browser_view)) {
+    if (devtools_content_panel_ && browser_view->GetParentView()) {
+      devtools_content_panel_->RemoveChildView(browser_view);
+    }
+    if (devtools_panel_) {
+      devtools_panel_->SetVisible(false);
+    }
+    devtools_browser_view_ = nullptr;
+    devtools_browser_view_delegate_ = nullptr;
+    devtools_client_ = nullptr;
+    devtools_opener_tab_id_ = 0;
+    devtools_visible_ = false;
+    if (focus_area_ == FocusArea::kDevTools) {
+      focus_area_ = FocusArea::kWebView;
+      if (Tab* tab = ActiveTab(); tab && tab->view) {
+        tab->view->RequestFocus();
+      }
+    }
+    UpdateModeIndicator();
+    Layout();
+  }
+}
+
+CefRefPtr<CefBrowserViewDelegate> BrowserWindow::GetDelegateForPopupBrowserView(
+    CefRefPtr<CefBrowserView> browser_view,
+    const CefBrowserSettings& settings,
+    CefRefPtr<CefClient> client,
+    bool is_devtools) {
+  if (!is_devtools) {
+    return this;
+  }
+
+  if (!devtools_browser_view_delegate_) {
+    devtools_browser_view_delegate_ = new DevToolsBrowserViewDelegate(this);
+  }
+  return devtools_browser_view_delegate_;
+}
+
+void BrowserWindow::ShowDevToolsForClient(BrowserClient* client) {
+  if (!client || !client->browser() || !client->browser()->GetHost()) {
+    return;
+  }
+
+  uint64_t opener_tab_id = 0;
+  for (const Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      opener_tab_id = tab.id;
+      break;
+    }
+  }
+
+  CefRefPtr<CefBrowser> browser = client->browser();
+  if (!devtools_client_) {
+    devtools_client_ = new DevToolsClient(this);
+  }
+
+  CefWindowInfo window_info;
+  // Leave CefWindowInfo unparented here so the DevTools popup stays in the CEF
+  // Views hierarchy via OnPopupBrowserViewCreated(). Native child-window hosting
+  // sits above the Views compositor, hides separator panels, and flickers on
+  // focus transitions. Keeping DevTools as a BrowserView sibling of the main
+  // content puts it at the same UI level as the sidebar.
+  CefBrowserSettings settings;
+  settings.background_color = theme::kAppBg;
+  browser->GetHost()->ShowDevTools(window_info, devtools_client_, settings,
+                                   CefPoint());
+
+  // ShowDevTools focuses an already-open DevTools browser without recreating its
+  // BrowserView. Re-attach the existing docked view to the carousel in that path.
+  if (devtools_browser_view_ &&
+      (devtools_opener_tab_id_ == 0 || devtools_opener_tab_id_ == opener_tab_id)) {
+    devtools_opener_tab_id_ = opener_tab_id;
+    devtools_visible_ = true;
+    devtools_browser_view_->SetVisible(true);
+    if (devtools_panel_ && devtools_content_panel_) {
+      devtools_panel_->SetVisible(true);
+      if (!devtools_browser_view_->GetParentView()) {
+        devtools_content_panel_->AddChildView(devtools_browser_view_);
+      }
+    }
+    SetFocusArea(FocusArea::kDevTools);
+  }
 }
 
 void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
@@ -365,6 +610,29 @@ void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
   UpdateModeIndicator();
 }
 
+void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x,
+                                                     int y,
+                                                     bool is_page_scroller,
+                                                     bool is_pdf_viewport) {
+  if (focus_area_ != FocusArea::kDevTools || !devtools_browser_view_) {
+    return;
+  }
+
+  devtools_has_scroll_target_ = true;
+  devtools_scroll_target_x_ = std::max(1, x);
+  devtools_scroll_target_y_ = std::max(1, y);
+  devtools_scroll_target_is_page_ = is_page_scroller || is_pdf_viewport;
+}
+
+void BrowserWindow::OnDevToolsNativeHintsStopped() {
+  if (focus_area_ != FocusArea::kDevTools) {
+    return;
+  }
+  native_hints_active_ = false;
+  ResetWebsitePendingKeys();
+  UpdateModeIndicator();
+}
+
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_ = window;
   window_->SetTitle("vimbrowser");
@@ -405,6 +673,13 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetAccelerator(kAcceleratorHintRightClick, 'L', false, true, false,
                           true);
   window_->SetAccelerator(kAcceleratorHintHover, 'H', false, true, false, true);
+  window_->SetAccelerator(kAcceleratorFocusNext, 'J', false, true, false, true);
+  window_->SetAccelerator(kAcceleratorFocusPrevious, 'K', false, true, false,
+                          true);
+  window_->SetAccelerator(kAcceleratorToggleDevToolsSemicolon, ';', false, true,
+                          false, true);
+  window_->SetAccelerator(kAcceleratorToggleDevToolsOem1, 0xBA, false, true,
+                          false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -486,6 +761,30 @@ void BrowserWindow::BuildChrome() {
   content_inner_panel_->SetBackgroundColor(theme::kAppBg);
   content_inner_panel_->SetToFillLayout();
   content_panel_->AddChildView(content_inner_panel_);
+
+  devtools_panel_ = CefPanel::CreatePanel(this);
+  devtools_panel_->SetID(kDevToolsPanelId);
+  devtools_panel_->SetBackgroundColor(theme::kBorderUnfocused);
+  CefBoxLayoutSettings devtools_settings = {};
+  devtools_settings.size = sizeof(devtools_settings);
+  devtools_settings.horizontal = true;
+  devtools_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  // The left border is the outer panel's background exposed by this inset. That
+  // makes the separator part of the DevTools pane itself, so a Chrome-style
+  // BrowserView can never overlap or intermittently cover it.
+  devtools_settings.inside_border_insets =
+      CefInsets(0, kDevToolsBorderWidth, 0, 0);
+  CefRefPtr<CefBoxLayout> devtools_layout =
+      devtools_panel_->SetToBoxLayout(devtools_settings);
+  devtools_panel_->SetVisible(false);
+  main_panel_->AddChildView(devtools_panel_);
+
+  devtools_content_panel_ = CefPanel::CreatePanel(nullptr);
+  devtools_content_panel_->SetID(kDevToolsContentPanelId);
+  devtools_content_panel_->SetBackgroundColor(theme::kAppBg);
+  devtools_content_panel_->SetToFillLayout();
+  devtools_panel_->AddChildView(devtools_content_panel_);
+  devtools_layout->SetFlexForView(devtools_content_panel_, 1);
 
   status_bar_panel_ = CefPanel::CreatePanel(this);
   status_bar_panel_->SetID(kStatusBarPanelId);
@@ -656,6 +955,11 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   fps_indicator_panel_ = nullptr;
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
+  devtools_browser_view_delegate_ = nullptr;
+  devtools_client_ = nullptr;
+  devtools_browser_view_ = nullptr;
+  devtools_content_panel_ = nullptr;
+  devtools_panel_ = nullptr;
   autocomplete_rows_.clear();
   autocomplete_panel_ = nullptr;
   command_field_ = nullptr;
@@ -730,7 +1034,8 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return HandleCommandModeKey(event);
   }
 
-  if (native_hints_active_ && focus_area_ == FocusArea::kWebView) {
+  if (native_hints_active_ &&
+      (focus_area_ == FocusArea::kWebView || focus_area_ == FocusArea::kDevTools)) {
     // Native hints live in Blink and own the full key stream until they stop.
     // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
     // label matcher.
@@ -743,6 +1048,10 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 
   if (focus_area_ == FocusArea::kWebView) {
     return HandleWebsiteModeKey(event);
+  }
+
+  if (focus_area_ == FocusArea::kDevTools) {
+    return HandleDevToolsModeKey(event);
   }
 
   if (focus_area_ == FocusArea::kTabSidebar &&
@@ -771,6 +1080,26 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
         command_id == kAcceleratorCommandBacktab) {
       return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
     }
+  }
+  if (mode_ == Mode::kNormal && !native_hints_active_) {
+    if (command_id == kAcceleratorFocusNext) {
+      FocusRelative(1);
+      return true;
+    }
+    if (command_id == kAcceleratorFocusPrevious) {
+      FocusRelative(-1);
+      return true;
+    }
+    if (command_id == kAcceleratorToggleDevToolsSemicolon ||
+        command_id == kAcceleratorToggleDevToolsOem1) {
+      ToggleDevTools();
+      return true;
+    }
+  }
+  if (focus_area_ == FocusArea::kDevTools &&
+      (command_id == kAcceleratorTabNext ||
+       command_id == kAcceleratorTabPrevious)) {
+    return false;
   }
   if (mode_ == Mode::kNormal && focus_area_ == FocusArea::kWebView &&
       !native_hints_active_ &&
@@ -836,7 +1165,8 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
     return HandleCommandModeKey(event);
   }
 
-  if (native_hints_active_ && focus_area_ == FocusArea::kWebView) {
+  if (native_hints_active_ &&
+      (focus_area_ == FocusArea::kWebView || focus_area_ == FocusArea::kDevTools)) {
     // Native hints live in Blink and own the full key stream until they stop.
     // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
     // label matcher.
@@ -849,6 +1179,10 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
 
   if (focus_area_ == FocusArea::kWebView) {
     return HandleWebsiteModeKey(event);
+  }
+
+  if (focus_area_ == FocusArea::kDevTools) {
+    return HandleDevToolsModeKey(event);
   }
 
   if (focus_area_ == FocusArea::kTabSidebar &&
@@ -1019,6 +1353,29 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (id == kMainPanelId || id == kRootPanelId) {
     return CefSize(1200, 800);
   }
+  if (id == kDevToolsPanelId) {
+    if (!devtools_visible_) {
+      return CefSize(0, 800);
+    }
+    const int window_width = window_ ? window_->GetBounds().width : 1200;
+    const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
+    const int available_content_width = std::max(1, window_width - content_x);
+    const int desired_width = std::max(
+        kDevToolsMinWidth,
+        available_content_width * kDevToolsDefaultWidthPercent / 100);
+    const int max_width = std::max(
+        1, available_content_width - kDevToolsBorderWidth -
+               kDevToolsMinPageWidth);
+    int devtools_width = std::min(desired_width, max_width);
+    if (available_content_width <=
+        kDevToolsMinPageWidth + kDevToolsBorderWidth + 1) {
+      devtools_width = std::max(1, available_content_width / 2);
+    }
+    return CefSize(kDevToolsBorderWidth + std::max(1, devtools_width), 800);
+  }
+  if (id == kDevToolsContentPanelId) {
+    return CefSize(800, 800);
+  }
   if (id == kCommandPanelId) {
     return CefSize(1200, kCommandHeight + 1);
   }
@@ -1115,6 +1472,12 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kCommandAutocompletePanelId) {
     return CefSize(1, 1);
   }
+  if (id == kDevToolsPanelId) {
+    return CefSize(devtools_visible_ ? 1 : 0, 1);
+  }
+  if (id == kDevToolsContentPanelId) {
+    return CefSize(1, 1);
+  }
   if (id == kStatusBarPanelId) {
     return CefSize(1, kStatusBarHeight);
   }
@@ -1163,6 +1526,12 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   if (id == kCommandAutocompletePanelId) {
     return CefSize(0, 0);
   }
+  if (id == kDevToolsPanelId) {
+    return CefSize(0, 0);
+  }
+  if (id == kDevToolsContentPanelId) {
+    return CefSize(0, 0);
+  }
   if (id == kStatusBarPanelId) {
     return CefSize(0, kStatusBarHeight);
   }
@@ -1196,7 +1565,10 @@ void BrowserWindow::OnThemeChanged(CefRefPtr<CefView> view) {
 }
 
 cef_runtime_style_t BrowserWindow::GetWindowRuntimeStyle() {
-  return CEF_RUNTIME_STYLE_ALLOY;
+  // DevTools BrowserViews are Chrome-style in CEF. A Chrome-style Window can
+  // still host our normal Alloy BrowserViews, and it is the only supported
+  // single-window host for a docked Chrome DevTools BrowserView.
+  return CEF_RUNTIME_STYLE_CHROME;
 }
 
 cef_runtime_style_t BrowserWindow::GetBrowserRuntimeStyle() {
@@ -1301,6 +1673,8 @@ void BrowserWindow::Layout() {
   RestyleView(sidebar_border_panel_);
   RestyleView(content_panel_);
   RestyleView(content_inner_panel_);
+  RestyleView(devtools_panel_);
+  RestyleView(devtools_content_panel_);
   RestyleView(command_panel_);
   RestyleView(command_content_panel_);
   RestyleView(command_separator_panel_);
@@ -1321,11 +1695,48 @@ void BrowserWindow::Layout() {
   sidebar_content_panel_->SetSize(CefSize(kSidebarWidth - 1, main_height));
   sidebar_border_panel_->SetSize(CefSize(1, main_height));
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
-  const int content_width = std::max(1, width - content_x);
-  const int content_inner_height = main_height;
-  const bool content_size_changed = content_width != laid_out_content_width_ ||
-                                    content_inner_height != laid_out_content_height_;
-  content_inner_panel_->SetBounds(CefRect(0, 0, content_width, content_inner_height));
+  const int available_content_width = std::max(1, width - content_x);
+  const bool devtools_docked = devtools_visible_ && devtools_browser_view_;
+  const int devtools_border_width = devtools_docked ? kDevToolsBorderWidth : 0;
+  int devtools_width = 0;
+  if (devtools_docked) {
+    const int desired_width = std::max(
+        kDevToolsMinWidth,
+        available_content_width * kDevToolsDefaultWidthPercent / 100);
+    const int max_width = std::max(
+        1, available_content_width - devtools_border_width -
+               kDevToolsMinPageWidth);
+    devtools_width = std::min(desired_width, max_width);
+    if (available_content_width <=
+        kDevToolsMinPageWidth + devtools_border_width + 1) {
+      devtools_width = std::max(1, available_content_width / 2);
+    }
+  }
+  const int content_inner_width = std::max(
+      1, available_content_width - devtools_border_width - devtools_width);
+  const bool content_size_changed = content_inner_width != laid_out_content_width_ ||
+                                    main_height != laid_out_content_height_;
+  content_panel_->SetSize(CefSize(content_inner_width, main_height));
+  content_inner_panel_->SetBounds(CefRect(0, 0, content_inner_width, main_height));
+  if (devtools_panel_) {
+    devtools_panel_->SetVisible(devtools_docked);
+    devtools_panel_->SetSize(CefSize(
+        devtools_border_width + std::max(1, devtools_width), main_height));
+    devtools_panel_->SetBackgroundColor(
+        focus_area_ == FocusArea::kDevTools ? theme::kAccent
+                                            : theme::kBorderUnfocused);
+  }
+  if (devtools_content_panel_) {
+    devtools_content_panel_->SetSize(
+        CefSize(std::max(1, devtools_width), main_height));
+  }
+  if (devtools_browser_view_) {
+    devtools_browser_view_->SetVisible(devtools_docked);
+    if (devtools_docked) {
+      devtools_browser_view_->SetBounds(
+          CefRect(0, 0, std::max(1, devtools_width), main_height));
+    }
+  }
   if (status_bar_panel_) {
     status_bar_panel_->SetVisible(show_statusline_);
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
@@ -1384,6 +1795,34 @@ void BrowserWindow::Layout() {
   if (sidebar_content_panel_->GetLayout()) {
     sidebar_content_panel_->Layout();
   }
+  // Parent box layouts above can resize the docked panes after the initial
+  // child bounds assignment. Re-apply split bounds afterwards so the page and
+  // DevTools stay as siblings at the main-panel level.
+  const int actual_content_width =
+      std::max(1, content_panel_->GetBounds().width);
+  const int actual_devtools_content_width =
+      devtools_panel_ && devtools_docked
+          ? std::max(1, devtools_panel_->GetBounds().width - kDevToolsBorderWidth)
+          : std::max(1, devtools_width);
+  content_inner_panel_->SetBounds(
+      CefRect(0, 0, actual_content_width, main_height));
+  if (devtools_panel_) {
+    devtools_panel_->SetBackgroundColor(
+        focus_area_ == FocusArea::kDevTools ? theme::kAccent
+                                            : theme::kBorderUnfocused);
+  }
+  if (devtools_panel_ && devtools_panel_->GetLayout()) {
+    devtools_panel_->Layout();
+  }
+  if (devtools_content_panel_) {
+    devtools_content_panel_->SetBounds(
+        CefRect(kDevToolsBorderWidth, 0, actual_devtools_content_width,
+                main_height));
+  }
+  if (devtools_browser_view_ && devtools_docked) {
+    devtools_browser_view_->SetBounds(
+        CefRect(0, 0, actual_devtools_content_width, main_height));
+  }
   sidebar_border_panel_->SetSize(CefSize(1, main_height));
   sidebar_border_panel_->SetBounds(CefRect(kSidebarWidth - 1, 0, 1, main_height));
   sidebar_border_panel_->SetBackgroundColor(focus_area_ == FocusArea::kTabSidebar
@@ -1421,7 +1860,7 @@ void BrowserWindow::Layout() {
   }
   if (status_content_panel_) {
     status_content_panel_->SetBounds(
-        CefRect(content_x, 0, content_width, kStatusBarHeight));
+        CefRect(content_x, 0, available_content_width, kStatusBarHeight));
     status_content_panel_->SetBackgroundColor(StatusBarBackgroundColor());
   }
   if (status_border_panel_) {
@@ -1440,8 +1879,8 @@ void BrowserWindow::Layout() {
     status_content_panel_->Layout();
   }
   UpdateStatusBar();
-  laid_out_content_width_ = content_width;
-  laid_out_content_height_ = content_inner_height;
+  laid_out_content_width_ = actual_content_width;
+  laid_out_content_height_ = main_height;
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
   }
@@ -1638,15 +2077,60 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
   }
+  if (area == FocusArea::kDevTools && !FocusAreaAvailable(FocusArea::kDevTools)) {
+    area = FocusArea::kWebView;
+  }
   focus_area_ = area;
   if (focus_area_ == FocusArea::kWebView) {
-    if (Tab* tab = ActiveTab(); tab) {
+    if (Tab* tab = ActiveTab(); tab && tab->view) {
       tab->view->RequestFocus();
     }
+  } else if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_) {
+    devtools_browser_view_->RequestFocus();
   }
   RefreshSidebar();
   UpdateModeIndicator();
   Layout();
+}
+
+bool BrowserWindow::FocusAreaAvailable(FocusArea area) const {
+  switch (area) {
+    case FocusArea::kTabSidebar:
+      return sidebar_visible_;
+    case FocusArea::kWebView:
+      return !tabs_.empty() && active_index_ < tabs_.size();
+    case FocusArea::kDevTools:
+      return devtools_visible_ && devtools_browser_view_;
+    case FocusArea::kCommandLine:
+      return mode_ != Mode::kNormal;
+  }
+  return false;
+}
+
+void BrowserWindow::FocusRelative(int delta) {
+  if (delta == 0) {
+    return;
+  }
+
+  constexpr std::array<FocusArea, 3> kFocusOrder = {
+      FocusArea::kTabSidebar, FocusArea::kWebView, FocusArea::kDevTools};
+  int current = 1;
+  for (size_t i = 0; i < kFocusOrder.size(); ++i) {
+    if (kFocusOrder[i] == focus_area_) {
+      current = static_cast<int>(i);
+      break;
+    }
+  }
+
+  const int direction = delta > 0 ? 1 : -1;
+  const int count = static_cast<int>(kFocusOrder.size());
+  for (int step = 1; step <= count; ++step) {
+    const int next = (current + direction * step + count * step) % count;
+    if (FocusAreaAvailable(kFocusOrder[next])) {
+      SetFocusArea(kFocusOrder[next]);
+      return;
+    }
+  }
 }
 
 void BrowserWindow::ToggleSidebar() {
@@ -1657,6 +2141,47 @@ void BrowserWindow::ToggleSidebar() {
     focus_area_ = FocusArea::kTabSidebar;
   }
   SetFocusArea(focus_area_);
+}
+
+void BrowserWindow::CloseDevTools() {
+  // Treat Ctrl+; as a dock visibility toggle, not as destruction of the
+  // underlying Chromium DevTools WebContents. Destroying a Chrome-style
+  // BrowserView while it is embedded in our Views hierarchy is fragile and can
+  // race focus/accelerator dispatch. Hiding the sibling pane is instant,
+  // flicker-free, and ShowDevToolsForClient() will re-show/focus the existing
+  // DevTools view on the next toggle.
+  devtools_visible_ = false;
+  if (devtools_browser_view_) {
+    devtools_browser_view_->SetVisible(false);
+  }
+  if (devtools_panel_) {
+    devtools_panel_->SetVisible(false);
+  }
+  if (focus_area_ == FocusArea::kDevTools) {
+    focus_area_ = FocusArea::kWebView;
+    if (Tab* tab = ActiveTab(); tab && tab->view) {
+      tab->view->RequestFocus();
+    }
+  }
+  UpdateModeIndicator();
+  Layout();
+}
+
+void BrowserWindow::ToggleDevTools() {
+  Tab* tab = ActiveTab();
+  if (!tab || !tab->client || !tab->client->browser()) {
+    return;
+  }
+
+  if (devtools_visible_ && devtools_opener_tab_id_ == tab->id) {
+    CloseDevTools();
+    return;
+  }
+
+  if (devtools_visible_) {
+    CloseDevTools();
+  }
+  ShowDevToolsForClient(tab->client.get());
 }
 
 bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
@@ -1674,18 +2199,18 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
     return true;
   }
 
+  if (IsCtrlSemicolonKey(event)) {
+    ToggleDevTools();
+    return true;
+  }
+
   if (IsCtrlKey(event, 'M')) {
     ToggleSidebar();
     return true;
   }
 
   if (IsCtrlKey(event, 'J') || IsCtrlKey(event, 'K')) {
-    if (!sidebar_visible_) {
-      SetFocusArea(FocusArea::kWebView);
-      return true;
-    }
-    SetFocusArea(focus_area_ == FocusArea::kTabSidebar ? FocusArea::kWebView
-                                                       : FocusArea::kTabSidebar);
+    FocusRelative(IsCtrlKey(event, 'J') ? 1 : -1);
     return true;
   }
 
@@ -2006,6 +2531,74 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   return true;
 }
 
+bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event) || !HasOnlyControlModifier(event) ||
+      !devtools_browser_view_ ||
+      !devtools_browser_view_->GetBrowser()) {
+    return false;
+  }
+
+  const bool scrollable_hints = IsSpaceKey(event) ||
+                                event.windows_key_code == 0 ||
+                                event.native_key_code == 65;
+  if (!scrollable_hints) {
+    return false;
+  }
+
+  native_hints_active_ = true;
+  devtools_has_scroll_target_ = false;
+  ResetWebsitePendingKeys();
+  UpdateModeIndicator();
+
+  CefKeyEvent browser_event = event;
+  // Keep this exactly parallel to Ctrl+Space scrollable hints for normal pages:
+  // toolkit/X11 paths can report Ctrl+Space as a control character, while Blink's
+  // native hint dispatcher keys off VK_SPACE after CEF translates this synthetic
+  // browser-command event back into a WebKeyboardEvent.
+  browser_event.windows_key_code = 0x20;
+  browser_event.unmodified_character = 0x20;
+  vimbrowser_send_browser_command_key_event(
+      devtools_browser_view_->GetBrowser()->GetIdentifier(), &browser_event);
+  return true;
+}
+
+bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
+  if (native_hints_active_) {
+    // DevTools native hints are implemented in Blink just like page hints. Once
+    // active, Blink owns hint-label characters and Escape until it reports that
+    // hint mode stopped through DevToolsClient::OnConsoleMessage().
+    return false;
+  }
+
+  if (IsCharEvent(event)) {
+    // Suppress follow-up CHAR events for raw keydowns that we consume below.
+    if ((IsPlainLetterKey(event, 'j') || IsPlainLetterKey(event, 'k')) ||
+        (HasOnlyControlModifier(event) && IsSpaceKey(event))) {
+      return true;
+    }
+    return false;
+  }
+
+  if (!IsRawKeyDown(event)) {
+    return false;
+  }
+
+  if (StartDevToolsNativeHints(event)) {
+    return true;
+  }
+
+  if (IsPlainLetterKey(event, 'j')) {
+    ScrollDevToolsBy(kLineScrollPx);
+    return true;
+  }
+  if (IsPlainLetterKey(event, 'k')) {
+    ScrollDevToolsBy(-kLineScrollPx);
+    return true;
+  }
+
+  return false;
+}
+
 bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   if (!IsRawKeyDown(event)) {
     return false;
@@ -2133,6 +2726,12 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
   } else if (id == kContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kContentInnerPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kDevToolsPanelId) {
+    view->SetBackgroundColor(focus_area_ == FocusArea::kDevTools
+                                 ? theme::kAccent
+                                 : theme::kBorderUnfocused);
+  } else if (id == kDevToolsContentPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kStatusBarPanelId) {
     view->SetBackgroundColor(theme::kSidebarBg);
@@ -2413,6 +3012,9 @@ std::string BrowserWindow::ModeIndicatorText() const {
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";
   }
+  if (focus_area_ == FocusArea::kDevTools) {
+    return "DEVTOOLS";
+  }
   if (native_hints_active_) {
     return "HINT";
   }
@@ -2436,6 +3038,9 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
   }
   if (focus_area_ == FocusArea::kTabSidebar) {
     return theme::kBorderFocused;
+  }
+  if (focus_area_ == FocusArea::kDevTools) {
+    return theme::kAccent;
   }
   if (native_hints_active_) {
     return theme::kAccent;

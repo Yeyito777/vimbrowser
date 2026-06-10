@@ -420,6 +420,9 @@ void BrowserWindow::CancelCommand() {
       tab->view->RequestFocus();
     }
   }
+  if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_) {
+    devtools_browser_view_->RequestFocus();
+  }
   Layout();
 }
 
@@ -435,6 +438,28 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
     return;
   }
   SendScrollWheel(browser, ScrollTargetMouseEvent(tab, window_), dy);
+}
+
+void BrowserWindow::ScrollDevToolsBy(int dy) {
+  if (!devtools_browser_view_ || !devtools_browser_view_->GetBrowser()) {
+    return;
+  }
+
+  CefMouseEvent event;
+  event.modifiers = 0;
+  if (devtools_has_scroll_target_) {
+    event.x = devtools_scroll_target_x_;
+    event.y = devtools_scroll_target_y_;
+    event.modifiers |= kVimbrowserHintScrollTargetCefModifier;
+    if (!devtools_scroll_target_is_page_) {
+      event.modifiers |= kVimbrowserScrollTargetElementCefModifier;
+    }
+  } else {
+    const CefRect bounds = devtools_browser_view_->GetBounds();
+    event.x = std::max(1, bounds.width / 2);
+    event.y = std::max(1, bounds.height / 2);
+  }
+  SendScrollWheel(devtools_browser_view_->GetBrowser(), event, dy);
 }
 
 void BrowserWindow::ScrollActivePageToTop() {

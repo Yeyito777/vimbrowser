@@ -366,6 +366,17 @@ bool IsCtrlKey(const CefKeyEvent& event, char key) {
          event.unmodified_character == key + ('a' - 'A');
 }
 
+bool IsCtrlSemicolonKey(const CefKeyEvent& event) {
+  if (!HasOnlyControlModifier(event)) {
+    return false;
+  }
+  // Chromium reports ';' as VKEY_OEM_1 (0xBA) on common XKB layouts, while
+  // CEF character fields preserve the literal ASCII semicolon on some paths.
+  return event.windows_key_code == ';' || event.windows_key_code == 0xBA ||
+         event.character == ';' || event.unmodified_character == ';' ||
+         event.native_key_code == 47;
+}
+
 bool IsCommonCtrlEditingKey(const CefKeyEvent& event) {
   return IsCtrlKey(event, 'a') || IsCtrlKey(event, 'c') ||
          IsCtrlKey(event, 'v') || IsCtrlKey(event, 'x') ||
