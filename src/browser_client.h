@@ -25,7 +25,8 @@ class BrowserClient final : public CefClient,
                             public CefLoadHandler,
                             public CefKeyboardHandler,
                             public CefRequestHandler,
-                            public CefResourceRequestHandler {
+                            public CefResourceRequestHandler,
+                            public CefPermissionHandler {
  public:
   explicit BrowserClient(BrowserWindow* owner = nullptr);
 
@@ -34,6 +35,7 @@ class BrowserClient final : public CefClient,
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+  CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
 
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
@@ -81,6 +83,13 @@ class BrowserClient final : public CefClient,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
+
+  bool OnRequestMediaAccessPermission(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      const CefString& requesting_origin,
+      uint32_t requested_permissions,
+      CefRefPtr<CefMediaAccessCallback> callback) override;
 
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,

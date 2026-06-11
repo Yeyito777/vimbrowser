@@ -68,6 +68,13 @@ class BrowserWindow final : public CefWindowDelegate,
                            const std::string& target_url,
                            bool activate);
   void OnClientBeforePopupAborted(BrowserClient* client, int popup_id);
+  bool OnClientMediaAccessRequest(
+      BrowserClient* client,
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      const CefString& requesting_origin,
+      uint32_t requested_permissions,
+      CefRefPtr<CefMediaAccessCallback> callback);
   void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
   void OnNativeHintScrollTarget(BrowserClient* client,
                                 int x,
@@ -170,6 +177,14 @@ class BrowserWindow final : public CefWindowDelegate,
     bool activate = true;
     uint64_t opener_tab_id = 0;
     bool insert_after_opener = false;
+  };
+
+  struct MediaPermissionRequest {
+    BrowserClient* client = nullptr;
+    std::string origin;
+    uint32_t requested_permissions = CEF_MEDIA_PERMISSION_NONE;
+    CefRefPtr<CefMediaAccessCallback> callback;
+    bool mock = false;
   };
 
   void BuildChrome();
@@ -329,6 +344,14 @@ class BrowserWindow final : public CefWindowDelegate,
   bool AllTabBrowsersClosed() const;
   Tab* ActiveTab();
   bool PageHasFocusedEditable(const CefKeyEvent& event);
+  void ShowNextMediaPermissionRequest();
+  void ShowMockMediaPermissionPrompt();
+  void UpdateMediaPermissionPrompt();
+  void ResolveActiveMediaPermissionRequest(bool allow, bool remember);
+  void DismissActiveMediaPermissionRequest();
+  void CancelMediaPermissionRequestsForClient(BrowserClient* client);
+  void CancelAllMediaPermissionRequests();
+  bool HandleMediaPermissionPromptKey(const CefKeyEvent& event);
 
   std::vector<std::string> initial_urls_;
   std::string state_path_;
@@ -337,11 +360,15 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string status_output_text_;
   std::vector<std::string> open_history_;
   std::map<std::string, std::vector<std::string>> search_history_;
+  std::unordered_map<std::string, uint32_t> media_permission_grants_;
+  std::unordered_map<std::string, uint32_t> media_permission_denials_;
   std::string website_pending_keys_;
   std::vector<ClosedTab> closed_tabs_;
   vim::LineEditState command_vim_;
   CommandAutocompleteState command_autocomplete_;
   std::vector<PendingPopup> pending_popups_;
+  std::vector<MediaPermissionRequest> queued_media_permissions_;
+  std::optional<MediaPermissionRequest> active_media_permission_;
   Mode mode_ = Mode::kNormal;
   FocusArea focus_area_ = FocusArea::kWebView;
   FocusArea previous_focus_area_ = FocusArea::kWebView;
@@ -429,6 +456,24 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefLabelButton> fps_indicator_label_;
   CefRefPtr<CefOverlayController> fps_indicator_overlay_;
   CefRefPtr<CefOverlayController> sidebar_border_overlay_;
+  CefRefPtr<CefPanel> media_permission_panel_;
+  CefRefPtr<CefPanel> media_permission_top_border_panel_;
+  CefRefPtr<CefPanel> media_permission_bottom_border_panel_;
+  CefRefPtr<CefPanel> media_permission_left_border_panel_;
+  CefRefPtr<CefPanel> media_permission_right_border_panel_;
+  CefRefPtr<CefPanel> media_permission_content_panel_;
+  CefRefPtr<CefTextfield> media_permission_title_field_;
+  CefRefPtr<CefTextfield> media_permission_origin_field_;
+  CefRefPtr<CefTextfield> media_permission_body_field_;
+  CefRefPtr<CefTextfield> media_permission_hint_field_;
+  CefRefPtr<CefPanel> media_permission_button_panel_;
+  CefRefPtr<CefLabelButton> media_permission_allow_button_;
+  CefRefPtr<CefLabelButton> media_permission_deny_button_;
+  CefRefPtr<CefOverlayController> media_permission_overlay_;
+  CefRefPtr<CefOverlayController> media_permission_top_border_overlay_;
+  CefRefPtr<CefOverlayController> media_permission_bottom_border_overlay_;
+  CefRefPtr<CefOverlayController> media_permission_left_border_overlay_;
+  CefRefPtr<CefOverlayController> media_permission_right_border_overlay_;
   std::thread sidebar_mouse_thread_;
   std::unique_ptr<IpcServer> ipc_server_;
   uint64_t devtools_opener_tab_id_ = 0;

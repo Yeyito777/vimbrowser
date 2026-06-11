@@ -205,6 +205,31 @@ std::string UnescapeStateValue(std::string_view value) {
   return out;
 }
 
+void ReadPermissionDecision(std::string_view payload,
+                            std::map<std::string, uint32_t>* decisions) {
+  if (!decisions) {
+    return;
+  }
+  const size_t tab = payload.find('\t');
+  if (tab == std::string_view::npos) {
+    return;
+  }
+
+  const std::string mask_text(payload.substr(0, tab));
+  char* end = nullptr;
+  const unsigned long mask = std::strtoul(mask_text.c_str(), &end, 10);
+  if (end == mask_text.c_str() || (end && *end != '\0') ||
+      mask > 0xffffffffUL) {
+    return;
+  }
+
+  const std::string origin = UnescapeStateValue(payload.substr(tab + 1));
+  if (origin.empty()) {
+    return;
+  }
+  (*decisions)[origin] |= static_cast<uint32_t>(mask);
+}
+
 std::string ValueAfter(std::string_view arg, std::string_view prefix) {
   return std::string(arg.substr(prefix.size()));
 }
@@ -295,6 +320,12 @@ AppState ReadAppState(const std::string& state_path) {
           state.search_history[engine].push_back(entry);
         }
       }
+    } else if (StartsWith(line, "media_permission_grant=")) {
+      ReadPermissionDecision(std::string_view(line).substr(23),
+                             &state.media_permission_grants);
+    } else if (StartsWith(line, "media_permission_deny=")) {
+      ReadPermissionDecision(std::string_view(line).substr(22),
+                             &state.media_permission_denials);
     } else if (StartsWith(line, "active=")) {
       const std::string value = line.substr(7);
       char* end = nullptr;
@@ -387,6 +418,18 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
           file << "search_history_" << engine.name << "="
                << EscapeStateValue(history[i]) << '\n';
         }
+      }
+    }
+    for (const auto& [origin, mask] : state.media_permission_grants) {
+      if (!origin.empty() && mask != 0) {
+        file << "media_permission_grant=" << mask << '\t'
+             << EscapeStateValue(origin) << '\n';
+      }
+    }
+    for (const auto& [origin, mask] : state.media_permission_denials) {
+      if (!origin.empty() && mask != 0) {
+        file << "media_permission_deny=" << mask << '\t'
+             << EscapeStateValue(origin) << '\n';
       }
     }
   }

@@ -671,11 +671,29 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
 }
 
 bool BrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                             CefRefPtr<CefFrame> frame,
-                                             CefProcessId source_process,
-                                             CefRefPtr<CefProcessMessage> message) {
+                                              CefRefPtr<CefFrame> frame,
+                                              CefProcessId source_process,
+                                              CefRefPtr<CefProcessMessage> message) {
   return owner_ && owner_->OnClientProcessMessage(this, browser, frame,
                                                   source_process, message);
+}
+
+bool BrowserClient::OnRequestMediaAccessPermission(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    const CefString& requesting_origin,
+    uint32_t requested_permissions,
+    CefRefPtr<CefMediaAccessCallback> callback) {
+  CefRefPtr<BrowserClient> keep_alive(this);
+  if (owner_) {
+    return owner_->OnClientMediaAccessRequest(
+        this, browser, frame, requesting_origin, requested_permissions, callback);
+  }
+
+  if (callback) {
+    callback->Continue(CEF_MEDIA_PERMISSION_NONE);
+  }
+  return true;
 }
 
 bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,

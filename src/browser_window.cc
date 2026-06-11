@@ -170,6 +170,66 @@ class DevToolsBrowserViewDelegate final : public CefBrowserViewDelegate {
   DISALLOW_COPY_AND_ASSIGN(DevToolsBrowserViewDelegate);
 };
 
+std::string MediaPermissionNameList(uint32_t permissions) {
+  std::vector<std::string> names;
+  if (permissions & CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE) {
+    names.emplace_back("microphone");
+  }
+  if (permissions & CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE) {
+    names.emplace_back("camera");
+  }
+  if (permissions & CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE) {
+    names.emplace_back("screen audio");
+  }
+  if (permissions & CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE) {
+    names.emplace_back("screen video");
+  }
+  if (names.empty()) {
+    return "media devices";
+  }
+  if (names.size() == 1) {
+    return names.front();
+  }
+
+  std::string out;
+  for (size_t i = 0; i < names.size(); ++i) {
+    if (i > 0) {
+      out += i + 1 == names.size() ? " and " : ", ";
+    }
+    out += names[i];
+  }
+  return out;
+}
+
+std::string DisplayMediaPermissionOrigin(const std::string& origin) {
+  if (origin.empty()) {
+    return "this page";
+  }
+  std::string display = origin;
+  while (display.size() > 1 && display.back() == '/') {
+    display.pop_back();
+  }
+  return display;
+}
+
+void StylePermissionButton(CefRefPtr<CefLabelButton> button,
+                           cef_color_t text,
+                           cef_color_t background) {
+  if (!button) {
+    return;
+  }
+  button->SetFontList("monospace, 12px");
+  button->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+  button->SetFocusable(false);
+  button->SetInkDropEnabled(false);
+  button->SetBackgroundColor(background);
+  button->SetEnabledTextColors(text);
+  button->SetTextColor(CEF_BUTTON_STATE_NORMAL, text);
+  button->SetTextColor(CEF_BUTTON_STATE_HOVERED, text);
+  button->SetTextColor(CEF_BUTTON_STATE_PRESSED, text);
+  button->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
@@ -189,6 +249,10 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   const AppState state = ReadAppState(state_path_);
   open_history_ = state.open_history;
   search_history_ = state.search_history;
+  media_permission_grants_.insert(state.media_permission_grants.begin(),
+                                  state.media_permission_grants.end());
+  media_permission_denials_.insert(state.media_permission_denials.begin(),
+                                   state.media_permission_denials.end());
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
@@ -205,7 +269,8 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
 }
 
-void BrowserWindow::OnClientBeforeClose(BrowserClient*) {
+void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
+  CancelMediaPermissionRequestsForClient(client);
   if (!window_close_pending_ || !AllTabBrowsersClosed()) {
     return;
   }
@@ -386,6 +451,54 @@ void BrowserWindow::OnClientBeforePopupAborted(BrowserClient*, int popup_id) {
                        return popup.popup_id == popup_id;
                      }),
       pending_popups_.end());
+}
+
+bool BrowserWindow::OnClientMediaAccessRequest(
+    BrowserClient* client,
+    CefRefPtr<CefBrowser>,
+    CefRefPtr<CefFrame> frame,
+    const CefString& requesting_origin,
+    uint32_t requested_permissions,
+    CefRefPtr<CefMediaAccessCallback> callback) {
+  if (!callback) {
+    return true;
+  }
+
+  if (requested_permissions == CEF_MEDIA_PERMISSION_NONE) {
+    callback->Continue(CEF_MEDIA_PERMISSION_NONE);
+    return true;
+  }
+
+  std::string origin = requesting_origin.ToString();
+  if (origin.empty() && frame && frame->IsValid()) {
+    origin = frame->GetURL().ToString();
+  }
+  if (origin.empty()) {
+    origin = ActiveTabUrl();
+  }
+
+  if (const auto granted = media_permission_grants_.find(origin);
+      granted != media_permission_grants_.end() &&
+      (granted->second & requested_permissions) == requested_permissions) {
+    callback->Continue(requested_permissions);
+    return true;
+  }
+  if (const auto denied = media_permission_denials_.find(origin);
+      denied != media_permission_denials_.end() &&
+      (denied->second & requested_permissions) == requested_permissions) {
+    callback->Continue(CEF_MEDIA_PERMISSION_NONE);
+    return true;
+  }
+
+  if (!window_ || window_close_pending_) {
+    callback->Cancel();
+    return true;
+  }
+
+  queued_media_permissions_.push_back(
+      {client, origin, requested_permissions, callback});
+  ShowNextMediaPermissionRequest();
+  return true;
 }
 
 bool BrowserWindow::OnPopupBrowserViewCreated(
@@ -1003,6 +1116,121 @@ void BrowserWindow::BuildChrome() {
   sidebar_border_overlay_ = window_->AddOverlayView(
       sidebar_border_overlay_panel_, CEF_DOCKING_MODE_CUSTOM, false);
   sidebar_border_overlay_->SetVisible(false);
+
+  media_permission_panel_ = CefPanel::CreatePanel(this);
+  media_permission_panel_->SetID(kMediaPermissionPromptPanelId);
+  media_permission_panel_->SetBackgroundColor(theme::kAccent);
+
+  media_permission_top_border_panel_ = CefPanel::CreatePanel(this);
+  media_permission_top_border_panel_->SetID(kMediaPermissionBorderTopPanelId);
+  media_permission_top_border_panel_->SetBackgroundColor(theme::kAccent);
+
+  media_permission_bottom_border_panel_ = CefPanel::CreatePanel(this);
+  media_permission_bottom_border_panel_->SetID(kMediaPermissionBorderBottomPanelId);
+  media_permission_bottom_border_panel_->SetBackgroundColor(theme::kAccent);
+
+  media_permission_left_border_panel_ = CefPanel::CreatePanel(this);
+  media_permission_left_border_panel_->SetID(kMediaPermissionBorderLeftPanelId);
+  media_permission_left_border_panel_->SetBackgroundColor(theme::kAccent);
+
+  media_permission_right_border_panel_ = CefPanel::CreatePanel(this);
+  media_permission_right_border_panel_->SetID(kMediaPermissionBorderRightPanelId);
+  media_permission_right_border_panel_->SetBackgroundColor(theme::kAccent);
+
+  media_permission_content_panel_ = CefPanel::CreatePanel(this);
+  media_permission_content_panel_->SetID(kMediaPermissionPromptContentPanelId);
+  media_permission_content_panel_->SetBackgroundColor(theme::kAppBg);
+  CefBoxLayoutSettings media_permission_content_settings = {};
+  media_permission_content_settings.size = sizeof(media_permission_content_settings);
+  media_permission_content_settings.horizontal = false;
+  media_permission_content_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  media_permission_content_settings.inside_border_insets = CefInsets(8, 12, 8, 12);
+  media_permission_content_settings.between_child_spacing = 2;
+  media_permission_content_panel_->SetToBoxLayout(
+      media_permission_content_settings);
+  media_permission_panel_->AddChildView(media_permission_content_panel_);
+
+  media_permission_title_field_ = CefTextfield::CreateTextfield(this);
+  media_permission_title_field_->SetID(kMediaPermissionTitleFieldId);
+  StyleTextfield(media_permission_title_field_, theme::kCommand, theme::kAppBg,
+                 "monospace, 13px");
+  media_permission_title_field_->SetAccessibleName(
+      "vimbrowser media permission title");
+  media_permission_content_panel_->AddChildView(media_permission_title_field_);
+
+  media_permission_origin_field_ = CefTextfield::CreateTextfield(this);
+  media_permission_origin_field_->SetID(kMediaPermissionOriginFieldId);
+  StyleTextfield(media_permission_origin_field_, theme::kMuted, theme::kAppBg,
+                 "monospace, 12px");
+  media_permission_origin_field_->SetAccessibleName(
+      "vimbrowser media permission origin");
+  media_permission_content_panel_->AddChildView(media_permission_origin_field_);
+
+  media_permission_body_field_ = CefTextfield::CreateTextfield(this);
+  media_permission_body_field_->SetID(kMediaPermissionBodyFieldId);
+  StyleTextfield(media_permission_body_field_, theme::kText, theme::kAppBg,
+                 "monospace, 12px");
+  media_permission_body_field_->SetAccessibleName(
+      "vimbrowser media permission request");
+  media_permission_content_panel_->AddChildView(media_permission_body_field_);
+
+  media_permission_hint_field_ = CefTextfield::CreateTextfield(this);
+  media_permission_hint_field_->SetID(kMediaPermissionHintFieldId);
+  StyleTextfield(media_permission_hint_field_, theme::kMuted, theme::kAppBg,
+                 "monospace, 12px");
+  media_permission_hint_field_->SetAccessibleName(
+      "vimbrowser media permission shortcuts");
+
+  media_permission_button_panel_ = CefPanel::CreatePanel(this);
+  media_permission_button_panel_->SetID(kMediaPermissionButtonPanelId);
+  media_permission_button_panel_->SetBackgroundColor(theme::kAppBg);
+  CefBoxLayoutSettings media_permission_button_settings = {};
+  media_permission_button_settings.size = sizeof(media_permission_button_settings);
+  media_permission_button_settings.horizontal = true;
+  media_permission_button_settings.main_axis_alignment = CEF_AXIS_ALIGNMENT_END;
+  media_permission_button_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  media_permission_button_settings.between_child_spacing = 8;
+  media_permission_button_panel_->SetToBoxLayout(media_permission_button_settings);
+  media_permission_content_panel_->AddChildView(media_permission_button_panel_);
+
+  media_permission_allow_button_ =
+      CefLabelButton::CreateLabelButton(this, "[a] allow");
+  media_permission_allow_button_->SetID(kMediaPermissionAllowButtonId);
+  StylePermissionButton(media_permission_allow_button_, theme::kText,
+                        theme::kAccent);
+  media_permission_allow_button_->SetAccessibleName(
+      "allow media permission for this origin");
+  media_permission_button_panel_->AddChildView(media_permission_allow_button_);
+
+  media_permission_deny_button_ =
+      CefLabelButton::CreateLabelButton(this, "[d] deny");
+  media_permission_deny_button_->SetID(kMediaPermissionDenyButtonId);
+  StylePermissionButton(media_permission_deny_button_, theme::kText,
+                        theme::kSidebarSelBg);
+  media_permission_deny_button_->SetAccessibleName(
+      "deny media permission for this origin");
+  media_permission_button_panel_->AddChildView(media_permission_deny_button_);
+
+  media_permission_overlay_ = window_->AddOverlayView(
+      media_permission_panel_, CEF_DOCKING_MODE_CUSTOM, true);
+  media_permission_overlay_->SetVisible(false);
+
+  // Keep the accent border as independent window overlays instead of child
+  // panels inside the prompt. CEF can relayout/repaint custom overlay children
+  // during activation changes in a way that clips non-layout children; separate
+  // overlays have stable absolute window bounds and z-order above the prompt.
+  media_permission_top_border_overlay_ = window_->AddOverlayView(
+      media_permission_top_border_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+  media_permission_bottom_border_overlay_ = window_->AddOverlayView(
+      media_permission_bottom_border_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+  media_permission_left_border_overlay_ = window_->AddOverlayView(
+      media_permission_left_border_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+  media_permission_right_border_overlay_ = window_->AddOverlayView(
+      media_permission_right_border_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+  media_permission_top_border_overlay_->SetVisible(false);
+  media_permission_bottom_border_overlay_->SetVisible(false);
+  media_permission_left_border_overlay_->SetVisible(false);
+  media_permission_right_border_overlay_->SetVisible(false);
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
@@ -1010,12 +1238,18 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   ++active_browser_sync_generation_;
   ++state_save_generation_;
   SaveState();
+  CancelAllMediaPermissionRequests();
   if (ipc_server_) {
     ipc_server_->Stop();
     ipc_server_.reset();
   }
   tabs_.clear();
+  media_permission_right_border_overlay_ = nullptr;
+  media_permission_left_border_overlay_ = nullptr;
+  media_permission_bottom_border_overlay_ = nullptr;
+  media_permission_top_border_overlay_ = nullptr;
   sidebar_border_overlay_ = nullptr;
+  media_permission_overlay_ = nullptr;
   fps_indicator_overlay_ = nullptr;
   mode_indicator_overlay_ = nullptr;
   autocomplete_overlay_ = nullptr;
@@ -1023,6 +1257,19 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_overlay_ = nullptr;
   fps_indicator_label_ = nullptr;
   fps_indicator_panel_ = nullptr;
+  media_permission_deny_button_ = nullptr;
+  media_permission_allow_button_ = nullptr;
+  media_permission_hint_field_ = nullptr;
+  media_permission_body_field_ = nullptr;
+  media_permission_origin_field_ = nullptr;
+  media_permission_title_field_ = nullptr;
+  media_permission_button_panel_ = nullptr;
+  media_permission_content_panel_ = nullptr;
+  media_permission_right_border_panel_ = nullptr;
+  media_permission_left_border_panel_ = nullptr;
+  media_permission_bottom_border_panel_ = nullptr;
+  media_permission_top_border_panel_ = nullptr;
+  media_permission_panel_ = nullptr;
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
   sidebar_border_overlay_panel_ = nullptr;
@@ -1097,6 +1344,9 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  if (HandleMediaPermissionPromptKey(event)) {
+    return true;
+  }
   if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
     return false;
   }
@@ -1145,6 +1395,9 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
+  if (active_media_permission_) {
+    return true;
+  }
   if (forwarding_key_to_page_) {
     return false;
   }
@@ -1247,6 +1500,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
+  if (HandleMediaPermissionPromptKey(event)) {
+    return true;
+  }
   if (forwarding_key_to_devtools_) {
     return false;
   }
@@ -1432,12 +1688,23 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
     }
     return;
   }
+  if (id == kMediaPermissionAllowButtonId) {
+    ResolveActiveMediaPermissionRequest(true, true);
+    return;
+  }
+  if (id == kMediaPermissionDenyButtonId) {
+    ResolveActiveMediaPermissionRequest(false, true);
+    return;
+  }
   // The mode indicator is implemented as a CefLabelButton because CEF exposes
   // centering for labels/buttons but not textfields. It is display-only.
 }
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                                const CefKeyEvent& event) {
+  if (HandleMediaPermissionPromptKey(event)) {
+    return true;
+  }
   if (textfield != command_field_ || mode_ == Mode::kNormal) {
     return false;
   }
@@ -1555,6 +1822,38 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (id == kModeIndicatorFieldId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
+  if (id == kMediaPermissionPromptPanelId) {
+    return CefSize(kMediaPermissionPromptWidth, kMediaPermissionPromptHeight);
+  }
+  if (id == kMediaPermissionBorderTopPanelId ||
+      id == kMediaPermissionBorderBottomPanelId) {
+    return CefSize(kMediaPermissionPromptWidth,
+                   kMediaPermissionPromptBorderWidth);
+  }
+  if (id == kMediaPermissionBorderLeftPanelId ||
+      id == kMediaPermissionBorderRightPanelId) {
+    return CefSize(kMediaPermissionPromptBorderWidth,
+                   kMediaPermissionPromptHeight);
+  }
+  if (id == kMediaPermissionPromptContentPanelId) {
+    return CefSize(kMediaPermissionPromptWidth -
+                       2 * kMediaPermissionPromptBorderWidth,
+                   kMediaPermissionPromptHeight -
+                       2 * kMediaPermissionPromptBorderWidth);
+  }
+  if (id == kMediaPermissionTitleFieldId ||
+      id == kMediaPermissionOriginFieldId ||
+      id == kMediaPermissionBodyFieldId ||
+      id == kMediaPermissionHintFieldId) {
+    return CefSize(1, 20);
+  }
+  if (id == kMediaPermissionButtonPanelId) {
+    return CefSize(1, 24);
+  }
+  if (id == kMediaPermissionAllowButtonId ||
+      id == kMediaPermissionDenyButtonId) {
+    return CefSize(112, 24);
+  }
   return CefSize(1200, 800);
 }
 
@@ -1622,6 +1921,32 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
       id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
   }
+  if (id == kMediaPermissionPromptPanelId) {
+    return CefSize(kMediaPermissionPromptWidth, kMediaPermissionPromptHeight);
+  }
+  if (id == kMediaPermissionBorderTopPanelId ||
+      id == kMediaPermissionBorderBottomPanelId ||
+      id == kMediaPermissionBorderLeftPanelId ||
+      id == kMediaPermissionBorderRightPanelId) {
+    return CefSize(kMediaPermissionPromptBorderWidth,
+                   kMediaPermissionPromptBorderWidth);
+  }
+  if (id == kMediaPermissionPromptContentPanelId) {
+    return CefSize(1, 1);
+  }
+  if (id == kMediaPermissionTitleFieldId ||
+      id == kMediaPermissionOriginFieldId ||
+      id == kMediaPermissionBodyFieldId ||
+      id == kMediaPermissionHintFieldId) {
+    return CefSize(1, 20);
+  }
+  if (id == kMediaPermissionButtonPanelId) {
+    return CefSize(1, 24);
+  }
+  if (id == kMediaPermissionAllowButtonId ||
+      id == kMediaPermissionDenyButtonId) {
+    return CefSize(112, 24);
+  }
   return CefSize();
 }
 
@@ -1670,6 +1995,28 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId ||
       id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
+  }
+  if (id == kMediaPermissionPromptPanelId) {
+    return CefSize(kMediaPermissionPromptWidth, kMediaPermissionPromptHeight);
+  }
+  if (id == kMediaPermissionBorderTopPanelId ||
+      id == kMediaPermissionBorderBottomPanelId ||
+      id == kMediaPermissionBorderLeftPanelId ||
+      id == kMediaPermissionBorderRightPanelId) {
+    return CefSize(0, 0);
+  }
+  if (id == kMediaPermissionTitleFieldId ||
+      id == kMediaPermissionOriginFieldId ||
+      id == kMediaPermissionBodyFieldId ||
+      id == kMediaPermissionHintFieldId) {
+    return CefSize(0, 20);
+  }
+  if (id == kMediaPermissionButtonPanelId) {
+    return CefSize(0, 24);
+  }
+  if (id == kMediaPermissionAllowButtonId ||
+      id == kMediaPermissionDenyButtonId) {
+    return CefSize(112, 24);
   }
   return CefSize();
 }
@@ -1722,6 +2069,244 @@ bool BrowserWindow::AllTabBrowsersClosed() const {
     }
   }
   return true;
+}
+
+void BrowserWindow::ShowNextMediaPermissionRequest() {
+  if (active_media_permission_ || !window_ || window_close_pending_) {
+    return;
+  }
+
+  while (!queued_media_permissions_.empty()) {
+    MediaPermissionRequest request = std::move(queued_media_permissions_.front());
+    queued_media_permissions_.erase(queued_media_permissions_.begin());
+    if (!request.callback) {
+      continue;
+    }
+
+    if (const auto granted = media_permission_grants_.find(request.origin);
+        granted != media_permission_grants_.end() &&
+        (granted->second & request.requested_permissions) ==
+            request.requested_permissions) {
+      request.callback->Continue(request.requested_permissions);
+      continue;
+    }
+    if (const auto denied = media_permission_denials_.find(request.origin);
+        denied != media_permission_denials_.end() &&
+        (denied->second & request.requested_permissions) ==
+            request.requested_permissions) {
+      request.callback->Continue(CEF_MEDIA_PERMISSION_NONE);
+      continue;
+    }
+
+    active_media_permission_ = std::move(request);
+    break;
+  }
+
+  UpdateMediaPermissionPrompt();
+  Layout();
+}
+
+void BrowserWindow::ShowMockMediaPermissionPrompt() {
+  if (active_media_permission_ && !active_media_permission_->mock) {
+    SetStatusOutput("test permission modal: real permission request is active");
+    return;
+  }
+
+  active_media_permission_ = MediaPermissionRequest{
+      nullptr,
+      "vimbrowser://test/permission-modal",
+      CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE |
+          CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE,
+      nullptr,
+      true,
+  };
+  UpdateMediaPermissionPrompt();
+  Layout();
+}
+
+void BrowserWindow::UpdateMediaPermissionPrompt() {
+  const bool visible = active_media_permission_.has_value();
+  if (media_permission_overlay_) {
+    media_permission_overlay_->SetVisible(visible);
+  }
+  if (media_permission_panel_) {
+    media_permission_panel_->SetVisible(visible);
+  }
+  if (media_permission_content_panel_) {
+    media_permission_content_panel_->SetVisible(visible);
+  }
+  if (!visible) {
+    return;
+  }
+
+  const MediaPermissionRequest& request = *active_media_permission_;
+  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const std::string origin = DisplayMediaPermissionOrigin(request.origin);
+  const std::string short_origin = Ellipsize(origin, 76);
+
+  if (media_permission_title_field_) {
+    media_permission_title_field_->SetText(
+        request.mock ? "test: permission modal" : "permission: " + devices);
+  }
+  if (media_permission_origin_field_) {
+    media_permission_origin_field_->SetText("origin: " + short_origin);
+  }
+  if (media_permission_body_field_) {
+    media_permission_body_field_->SetText(Ellipsize(
+        request.mock ? "mock page wants to use " + devices + "."
+                     : origin + " wants to use " + devices + ".",
+        84));
+  }
+  if (media_permission_allow_button_) {
+    media_permission_allow_button_->SetText("[a] allow");
+  }
+  if (media_permission_deny_button_) {
+    media_permission_deny_button_->SetText("[d] deny");
+  }
+}
+
+void BrowserWindow::ResolveActiveMediaPermissionRequest(bool allow,
+                                                       bool remember) {
+  if (!active_media_permission_) {
+    return;
+  }
+
+  MediaPermissionRequest request = std::move(*active_media_permission_);
+  active_media_permission_.reset();
+  UpdateMediaPermissionPrompt();
+
+  if (remember && !request.mock) {
+    auto& decisions = allow ? media_permission_grants_ : media_permission_denials_;
+    auto& opposite = allow ? media_permission_denials_ : media_permission_grants_;
+    decisions[request.origin] |= request.requested_permissions;
+    if (auto it = opposite.find(request.origin); it != opposite.end()) {
+      it->second &= ~request.requested_permissions;
+      if (it->second == 0) {
+        opposite.erase(it);
+      }
+    }
+    SaveState();
+  }
+
+  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const std::string origin = DisplayMediaPermissionOrigin(request.origin);
+  SetStatusOutput(std::string(request.mock ? "test permission modal: "
+                                           : "media permission: ") +
+                  (allow ? "allowed " : "denied ") + devices +
+                  (request.mock ? "" : " for " + Ellipsize(origin, 72)));
+
+  if (request.callback) {
+    request.callback->Continue(allow ? request.requested_permissions
+                                     : CEF_MEDIA_PERMISSION_NONE);
+  }
+  ShowNextMediaPermissionRequest();
+}
+
+void BrowserWindow::DismissActiveMediaPermissionRequest() {
+  if (!active_media_permission_) {
+    return;
+  }
+
+  MediaPermissionRequest request = std::move(*active_media_permission_);
+  active_media_permission_.reset();
+  UpdateMediaPermissionPrompt();
+
+  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const std::string origin = DisplayMediaPermissionOrigin(request.origin);
+  SetStatusOutput(std::string(request.mock ? "test permission modal: dismissed "
+                                           : "media permission: dismissed ") +
+                  devices +
+                  (request.mock ? "" : " for " + Ellipsize(origin, 72)));
+
+  if (request.callback) {
+    request.callback->Cancel();
+  }
+  ShowNextMediaPermissionRequest();
+}
+
+void BrowserWindow::CancelMediaPermissionRequestsForClient(BrowserClient* client) {
+  if (!client) {
+    return;
+  }
+
+  std::vector<CefRefPtr<CefMediaAccessCallback>> callbacks;
+  if (active_media_permission_ && active_media_permission_->client == client) {
+    callbacks.push_back(active_media_permission_->callback);
+    active_media_permission_.reset();
+  }
+
+  std::vector<MediaPermissionRequest> kept;
+  kept.reserve(queued_media_permissions_.size());
+  for (MediaPermissionRequest& request : queued_media_permissions_) {
+    if (request.client == client) {
+      callbacks.push_back(request.callback);
+    } else {
+      kept.push_back(std::move(request));
+    }
+  }
+  queued_media_permissions_ = std::move(kept);
+
+  if (!callbacks.empty()) {
+    UpdateMediaPermissionPrompt();
+  }
+  for (CefRefPtr<CefMediaAccessCallback> callback : callbacks) {
+    if (callback) {
+      callback->Cancel();
+    }
+  }
+  if (!callbacks.empty()) {
+    ShowNextMediaPermissionRequest();
+  }
+}
+
+void BrowserWindow::CancelAllMediaPermissionRequests() {
+  std::vector<CefRefPtr<CefMediaAccessCallback>> callbacks;
+  if (active_media_permission_) {
+    callbacks.push_back(active_media_permission_->callback);
+    active_media_permission_.reset();
+  }
+  for (MediaPermissionRequest& request : queued_media_permissions_) {
+    callbacks.push_back(request.callback);
+  }
+  queued_media_permissions_.clear();
+  UpdateMediaPermissionPrompt();
+  for (CefRefPtr<CefMediaAccessCallback> callback : callbacks) {
+    if (callback) {
+      callback->Cancel();
+    }
+  }
+}
+
+bool BrowserWindow::HandleMediaPermissionPromptKey(const CefKeyEvent& event) {
+  if (!active_media_permission_) {
+    return false;
+  }
+  if (!IsRawKeyDown(event)) {
+    return true;
+  }
+
+  if (IsEscapeKey(event)) {
+    DismissActiveMediaPermissionRequest();
+    return true;
+  }
+  if (IsEnterKey(event)) {
+    ResolveActiveMediaPermissionRequest(true, true);
+    return true;
+  }
+
+  const char key = LowerAsciiChar(PlainKeyChar(event));
+  switch (key) {
+    case 'a':
+    case 'y':
+      ResolveActiveMediaPermissionRequest(true, true);
+      return true;
+    case 'd':
+    case 'n':
+      ResolveActiveMediaPermissionRequest(false, true);
+      return true;
+    default:
+      return true;
+  }
 }
 
 std::string BrowserWindow::ActiveTabUrl() const {
@@ -1810,6 +2395,19 @@ void BrowserWindow::Layout() {
   RestyleView(mode_indicator_label_);
   RestyleView(fps_indicator_panel_);
   RestyleView(fps_indicator_label_);
+  RestyleView(media_permission_panel_);
+  RestyleView(media_permission_top_border_panel_);
+  RestyleView(media_permission_bottom_border_panel_);
+  RestyleView(media_permission_left_border_panel_);
+  RestyleView(media_permission_right_border_panel_);
+  RestyleView(media_permission_content_panel_);
+  RestyleView(media_permission_title_field_);
+  RestyleView(media_permission_origin_field_);
+  RestyleView(media_permission_body_field_);
+  RestyleView(media_permission_hint_field_);
+  RestyleView(media_permission_button_panel_);
+  RestyleView(media_permission_allow_button_);
+  RestyleView(media_permission_deny_button_);
   main_panel_->SetSize(CefSize(width, main_height));
   sidebar_panel_->SetSize(CefSize(sidebar_content_width, main_height));
   sidebar_content_panel_->SetSize(CefSize(sidebar_content_width, main_height));
@@ -1926,6 +2524,111 @@ void BrowserWindow::Layout() {
     fps_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
     fps_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
                                             kModeIndicatorHeight));
+  }
+
+  if (media_permission_overlay_ && media_permission_panel_ &&
+      media_permission_content_panel_) {
+    const bool prompt_visible = active_media_permission_.has_value();
+    media_permission_overlay_->SetVisible(prompt_visible);
+    media_permission_panel_->SetVisible(prompt_visible);
+    if (media_permission_top_border_overlay_) {
+      media_permission_top_border_overlay_->SetVisible(prompt_visible);
+    }
+    if (media_permission_bottom_border_overlay_) {
+      media_permission_bottom_border_overlay_->SetVisible(prompt_visible);
+    }
+    if (media_permission_left_border_overlay_) {
+      media_permission_left_border_overlay_->SetVisible(prompt_visible);
+    }
+    if (media_permission_right_border_overlay_) {
+      media_permission_right_border_overlay_->SetVisible(prompt_visible);
+    }
+    if (media_permission_top_border_panel_) {
+      media_permission_top_border_panel_->SetVisible(prompt_visible);
+    }
+    if (media_permission_bottom_border_panel_) {
+      media_permission_bottom_border_panel_->SetVisible(prompt_visible);
+    }
+    if (media_permission_left_border_panel_) {
+      media_permission_left_border_panel_->SetVisible(prompt_visible);
+    }
+    if (media_permission_right_border_panel_) {
+      media_permission_right_border_panel_->SetVisible(prompt_visible);
+    }
+    media_permission_content_panel_->SetVisible(prompt_visible);
+    if (prompt_visible) {
+      const int prompt_width = std::max(
+          1, std::min(kMediaPermissionPromptWidth, std::max(1, width - 32)));
+      const int prompt_height = std::min(kMediaPermissionPromptHeight,
+                                         std::max(1, height - 32));
+      const int prompt_x = std::max(0, (width - prompt_width) / 2);
+      const int prompt_bottom_margin = 8 + (show_statusline_ ? kStatusBarHeight : 0);
+      const int prompt_y = std::max(
+          0, height - prompt_height - prompt_bottom_margin);
+      const int content_width = std::max(
+          1, prompt_width - 2 * kMediaPermissionPromptBorderWidth);
+      const int content_height = std::max(
+          1, prompt_height - 2 * kMediaPermissionPromptBorderWidth);
+
+      media_permission_panel_->SetBackgroundColor(theme::kAppBg);
+      media_permission_panel_->SetSize(CefSize(content_width, content_height));
+      media_permission_overlay_->SetBounds(CefRect(
+          prompt_x + kMediaPermissionPromptBorderWidth,
+          prompt_y + kMediaPermissionPromptBorderWidth,
+          content_width, content_height));
+      if (media_permission_top_border_panel_ &&
+          media_permission_top_border_overlay_) {
+        media_permission_top_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_top_border_panel_->SetSize(
+            CefSize(prompt_width, kMediaPermissionPromptBorderWidth));
+        media_permission_top_border_overlay_->SetBounds(CefRect(
+            prompt_x, prompt_y, prompt_width,
+            kMediaPermissionPromptBorderWidth));
+      }
+      if (media_permission_bottom_border_panel_ &&
+          media_permission_bottom_border_overlay_) {
+        media_permission_bottom_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_bottom_border_panel_->SetSize(
+            CefSize(prompt_width, kMediaPermissionPromptBorderWidth));
+        media_permission_bottom_border_overlay_->SetBounds(CefRect(
+            prompt_x,
+            prompt_y + std::max(0, prompt_height -
+                                       kMediaPermissionPromptBorderWidth),
+            prompt_width, kMediaPermissionPromptBorderWidth));
+      }
+      if (media_permission_left_border_panel_ &&
+          media_permission_left_border_overlay_) {
+        media_permission_left_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_left_border_panel_->SetSize(
+            CefSize(kMediaPermissionPromptBorderWidth, prompt_height));
+        media_permission_left_border_overlay_->SetBounds(CefRect(
+            prompt_x, prompt_y, kMediaPermissionPromptBorderWidth,
+            prompt_height));
+      }
+      if (media_permission_right_border_panel_ &&
+          media_permission_right_border_overlay_) {
+        media_permission_right_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_right_border_panel_->SetSize(
+            CefSize(kMediaPermissionPromptBorderWidth, prompt_height));
+        media_permission_right_border_overlay_->SetBounds(CefRect(
+            prompt_x + std::max(0, prompt_width -
+                                       kMediaPermissionPromptBorderWidth),
+            prompt_y, kMediaPermissionPromptBorderWidth, prompt_height));
+      }
+      media_permission_content_panel_->SetBackgroundColor(theme::kAppBg);
+      media_permission_content_panel_->SetBounds(
+          CefRect(0, 0, content_width, content_height));
+      if (media_permission_button_panel_) {
+        media_permission_button_panel_->SetBackgroundColor(theme::kAppBg);
+      }
+      if (media_permission_content_panel_->GetLayout()) {
+        media_permission_content_panel_->Layout();
+      }
+      if (media_permission_button_panel_ &&
+          media_permission_button_panel_->GetLayout()) {
+        media_permission_button_panel_->Layout();
+      }
+    }
   }
 
   if (root_panel_->GetLayout()) {
@@ -3035,6 +3738,41 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     fps_indicator_label_->SetBackgroundColor(theme::kUserBg);
     fps_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
     UpdateFpsIndicator();
+  } else if (id == kMediaPermissionPromptPanelId) {
+    view->SetBackgroundColor(theme::kAccent);
+  } else if (id == kMediaPermissionBorderTopPanelId ||
+             id == kMediaPermissionBorderBottomPanelId ||
+             id == kMediaPermissionBorderLeftPanelId ||
+             id == kMediaPermissionBorderRightPanelId) {
+    view->SetBackgroundColor(theme::kAccent);
+  } else if (id == kMediaPermissionPromptContentPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kMediaPermissionTitleFieldId &&
+             media_permission_title_field_) {
+    StyleTextfield(media_permission_title_field_, theme::kCommand,
+                   theme::kAppBg, "monospace, 13px");
+  } else if (id == kMediaPermissionOriginFieldId &&
+             media_permission_origin_field_) {
+    StyleTextfield(media_permission_origin_field_, theme::kMuted,
+                   theme::kAppBg, "monospace, 12px");
+  } else if (id == kMediaPermissionBodyFieldId &&
+             media_permission_body_field_) {
+    StyleTextfield(media_permission_body_field_, theme::kText,
+                   theme::kAppBg, "monospace, 12px");
+  } else if (id == kMediaPermissionHintFieldId &&
+             media_permission_hint_field_) {
+    StyleTextfield(media_permission_hint_field_, theme::kMuted,
+                   theme::kAppBg, "monospace, 12px");
+  } else if (id == kMediaPermissionButtonPanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kMediaPermissionAllowButtonId &&
+             media_permission_allow_button_) {
+    StylePermissionButton(media_permission_allow_button_, theme::kText,
+                          theme::kAccent);
+  } else if (id == kMediaPermissionDenyButtonId &&
+             media_permission_deny_button_) {
+    StylePermissionButton(media_permission_deny_button_, theme::kText,
+                          theme::kSidebarSelBg);
   }
 }
 
@@ -3486,6 +4224,10 @@ void BrowserWindow::SaveState() const {
   state.shader_enabled = shader_enabled_;
   state.open_history = open_history_;
   state.search_history = search_history_;
+  state.media_permission_grants.insert(media_permission_grants_.begin(),
+                                       media_permission_grants_.end());
+  state.media_permission_denials.insert(media_permission_denials_.begin(),
+                                        media_permission_denials_.end());
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {
       state.tabs.push_back(tab.url);

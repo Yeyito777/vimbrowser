@@ -195,6 +195,7 @@ const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
       {":tab-focus", "focus tab by number/title/url"},
+      {":test", "open deterministic internal test fixtures"},
       {":shader", "toggle native page color shader"},
       {":showmode", "toggle top-right vim mode display"},
       {":showfps", "toggle current page fps display"},
@@ -219,10 +220,18 @@ const std::vector<CompletionItem>& OpenArgList() {
   return args;
 }
 
+const std::vector<CompletionItem>& TestArgList() {
+  static const std::vector<CompletionItem> args = {
+      {"permission-modal", "show a mock media permission prompt"},
+  };
+  return args;
+}
+
 bool CommandTakesArguments(const std::string& command) {
   return command == ":open" || command == ":tab-focus" ||
          command == ":shader" || command == ":showmode" ||
-         command == ":showfps" || command == ":showstatusline";
+         command == ":showfps" || command == ":showstatusline" ||
+         command == ":test";
 }
 
 bool IsRawKeyDown(const CefKeyEvent& event) {

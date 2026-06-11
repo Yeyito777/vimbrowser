@@ -227,6 +227,23 @@ void BrowserWindow::CommitCommand() {
       return;
     }
 
+    if (command == ":test") {
+      std::vector<std::string> argv = SplitArgs(args);
+      for (std::string& arg : argv) {
+        arg = ToLowerAscii(arg);
+      }
+
+      if (argv.size() == 1 && argv[0] == "permission-modal") {
+        CancelCommand();
+        ShowMockMediaPermissionPrompt();
+        return;
+      }
+
+      CancelCommand();
+      SetStatusOutput("usage: :test permission-modal");
+      return;
+    }
+
     if (command != ":open" && command != ":tab-focus") {
       if (!args.empty()) {
         CancelCommand();

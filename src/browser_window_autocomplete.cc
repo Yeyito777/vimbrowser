@@ -238,6 +238,23 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     if (completing_new_arg || !arg_prefix.empty()) {
       AppendTabFocusMatches(arg_prefix, matches);
     }
+  } else if (StartsWithCaseInsensitive(typed_command, ":test") &&
+             IsTokenBoundary(typed_command, 5)) {
+    const size_t arg_start = after_command.find_last_of(" \t");
+    const std::string arg_prefix = arg_start == std::string::npos
+                                       ? after_command
+                                       : after_command.substr(arg_start + 1);
+    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
+                                    (!after_command.empty() &&
+                                     std::isspace(static_cast<unsigned char>(
+                                         after_command.back())));
+    if (completing_new_arg || !arg_prefix.empty()) {
+      for (const CompletionItem& item : TestArgList()) {
+        if (StartsWithCaseInsensitive(item.name, arg_prefix)) {
+          matches.push_back(item);
+        }
+      }
+    }
   } else if ((StartsWithCaseInsensitive(typed_command, ":showmode") &&
               IsTokenBoundary(typed_command, 9)) ||
              (StartsWithCaseInsensitive(typed_command, ":showfps") &&

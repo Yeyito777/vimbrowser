@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
@@ -34,6 +35,8 @@ struct AppState {
   std::vector<std::string> tabs;
   std::vector<std::string> open_history;
   std::map<std::string, std::vector<std::string>> search_history;
+  std::map<std::string, uint32_t> media_permission_grants;
+  std::map<std::string, uint32_t> media_permission_denials;
   size_t active_index = 0;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
