@@ -79,6 +79,7 @@ inline constexpr int kStatusContentPanelId = 121;
 inline constexpr int kStatusOutputFieldId = 122;
 inline constexpr int kStatusBorderPanelId = 123;
 inline constexpr int kStatusSidebarSpacerPanelId = 124;
+inline constexpr int kSidebarBorderOverlayPanelId = 125;
 inline constexpr int kDevToolsBrowserViewId = 126;
 inline constexpr int kDevToolsPanelId = 127;
 inline constexpr int kDevToolsContentPanelId = 128;

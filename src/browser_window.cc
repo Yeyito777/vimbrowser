@@ -990,6 +990,19 @@ void BrowserWindow::BuildChrome() {
         fps_indicator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
     fps_indicator_overlay_->SetVisible(show_fps_indicator_);
   }
+
+  // Draw the sidebar/page separator as a Window overlay, above Chromium's
+  // native BrowserView surface.  The in-layout separator reserves the pixel so
+  // content geometry stays correct, but tab activation/new-tab BrowserView
+  // remapping can momentarily repaint that native surface over sibling Views.
+  // Keeping an overlay copy on top makes the separator immune to that native
+  // child-window/compositor race.
+  sidebar_border_overlay_panel_ = CefPanel::CreatePanel(this);
+  sidebar_border_overlay_panel_->SetID(kSidebarBorderOverlayPanelId);
+  sidebar_border_overlay_panel_->SetBackgroundColor(SidebarBorderColor());
+  sidebar_border_overlay_ = window_->AddOverlayView(
+      sidebar_border_overlay_panel_, CEF_DOCKING_MODE_CUSTOM, false);
+  sidebar_border_overlay_->SetVisible(false);
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
@@ -1002,6 +1015,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
     ipc_server_.reset();
   }
   tabs_.clear();
+  sidebar_border_overlay_ = nullptr;
   fps_indicator_overlay_ = nullptr;
   mode_indicator_overlay_ = nullptr;
   autocomplete_overlay_ = nullptr;
@@ -1011,6 +1025,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   fps_indicator_panel_ = nullptr;
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
+  sidebar_border_overlay_panel_ = nullptr;
   devtools_browser_view_delegate_ = nullptr;
   devtools_client_ = nullptr;
   devtools_browser_view_ = nullptr;
@@ -1440,6 +1455,9 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   if (id == kSidebarBorderPanelId) {
     return CefSize(sidebar_visible_ ? kSidebarBorderWidth : 0, 1);
   }
+  if (id == kSidebarBorderOverlayPanelId) {
+    return CefSize(kSidebarBorderWidth, 1);
+  }
   if (id == kMainPanelId || id == kRootPanelId) {
     return CefSize(1200, 800);
   }
@@ -1550,6 +1568,9 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   }
   if (id == kSidebarBorderPanelId) {
     return CefSize(sidebar_visible_ ? kSidebarBorderWidth : 0, 1);
+  }
+  if (id == kSidebarBorderOverlayPanelId) {
+    return CefSize(kSidebarBorderWidth, 1);
   }
   if (id == kCommandPanelId) {
     return CefSize(1, kCommandHeight + 1);
@@ -1747,16 +1768,18 @@ void BrowserWindow::Layout() {
   const int sidebar_content_width = sidebar_visible_ ? kSidebarContentWidth : 0;
   const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
+  const bool command_active = mode_ != Mode::kNormal;
+  const bool autocomplete_visible =
+      command_active && command_autocomplete_.active &&
+      !command_autocomplete_.matches.empty();
   if (command_overlay_) {
-    command_overlay_->SetVisible(mode_ != Mode::kNormal);
+    command_overlay_->SetVisible(command_active);
   }
   if (command_separator_overlay_) {
-    command_separator_overlay_->SetVisible(mode_ != Mode::kNormal);
+    command_separator_overlay_->SetVisible(command_active);
   }
   if (autocomplete_overlay_) {
-    autocomplete_overlay_->SetVisible(mode_ != Mode::kNormal &&
-                                      command_autocomplete_.active &&
-                                      !command_autocomplete_.matches.empty());
+    autocomplete_overlay_->SetVisible(autocomplete_visible);
   }
   sidebar_panel_->SetVisible(sidebar_visible_);
 
@@ -1767,6 +1790,7 @@ void BrowserWindow::Layout() {
   RestyleView(sidebar_content_panel_);
   RestyleView(sidebar_spacer_);
   RestyleView(sidebar_border_panel_);
+  RestyleView(sidebar_border_overlay_panel_);
   RestyleView(content_panel_);
   RestyleView(content_inner_panel_);
   RestyleView(devtools_panel_);
@@ -1862,6 +1886,25 @@ void BrowserWindow::Layout() {
     autocomplete_overlay_->SetBounds(
         CefRect(0, std::max(0, height - command_total_height - autocomplete_height),
                 autocomplete_width, std::max(1, autocomplete_height)));
+  }
+  if (sidebar_border_overlay_ && sidebar_border_overlay_panel_) {
+    int overlay_height = main_height;
+    if (command_active) {
+      overlay_height = std::min(
+          overlay_height,
+          std::max(0, height - command_total_height -
+                          (autocomplete_visible ? autocomplete_height : 0)));
+    }
+    const bool show_sidebar_border_overlay =
+        sidebar_visible_ && sidebar_border_width > 0 && overlay_height > 0;
+    sidebar_border_overlay_->SetVisible(show_sidebar_border_overlay);
+    sidebar_border_overlay_panel_->SetVisible(show_sidebar_border_overlay);
+    sidebar_border_overlay_panel_->SetBackgroundColor(SidebarBorderColor());
+    sidebar_border_overlay_panel_->SetSize(
+        CefSize(kSidebarBorderWidth, std::max(1, overlay_height)));
+    sidebar_border_overlay_->SetBounds(CefRect(
+        kSidebarContentWidth, 0, kSidebarBorderWidth,
+        std::max(1, overlay_height)));
   }
   if (mode_indicator_overlay_ && mode_indicator_panel_ && mode_indicator_label_) {
     mode_indicator_overlay_->SetVisible(show_mode_indicator_);
@@ -2923,7 +2966,8 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
       StyleTextfield(sidebar_spacer_, theme::kText, theme::kSidebarBg,
                      "monospace, 12px");
     }
-  } else if (id == kSidebarBorderPanelId) {
+  } else if (id == kSidebarBorderPanelId ||
+             id == kSidebarBorderOverlayPanelId) {
     view->SetBackgroundColor(SidebarBorderColor());
   } else if (id == kCommandPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
@@ -3271,6 +3315,9 @@ void BrowserWindow::UpdateStatusBar() {
   }
   if (status_border_panel_) {
     status_border_panel_->SetBackgroundColor(SidebarBorderColor());
+  }
+  if (sidebar_border_overlay_panel_) {
+    sidebar_border_overlay_panel_->SetBackgroundColor(SidebarBorderColor());
   }
   if (status_output_field_) {
     status_output_field_->SetText(status_output_text_.empty()

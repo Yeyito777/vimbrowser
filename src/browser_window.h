@@ -396,6 +396,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> sidebar_panel_;
   CefRefPtr<CefPanel> sidebar_content_panel_;
   CefRefPtr<CefPanel> sidebar_border_panel_;
+  CefRefPtr<CefPanel> sidebar_border_overlay_panel_;
   std::vector<SidebarRowViews> sidebar_rows_;
   CefRefPtr<CefTextfield> sidebar_spacer_;
   CefRefPtr<CefPanel> content_panel_;
@@ -427,6 +428,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> fps_indicator_panel_;
   CefRefPtr<CefLabelButton> fps_indicator_label_;
   CefRefPtr<CefOverlayController> fps_indicator_overlay_;
+  CefRefPtr<CefOverlayController> sidebar_border_overlay_;
   std::thread sidebar_mouse_thread_;
   std::unique_ptr<IpcServer> ipc_server_;
   uint64_t devtools_opener_tab_id_ = 0;

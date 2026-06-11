@@ -105,6 +105,7 @@ constexpr int kStatusContentPanelId = 121;
 constexpr int kStatusOutputFieldId = 122;
 constexpr int kStatusBorderPanelId = 123;
 constexpr int kStatusSidebarSpacerPanelId = 124;
+constexpr int kSidebarBorderOverlayPanelId = 125;
 constexpr int kAcceleratorCommandTab = 5000;
 constexpr int kAcceleratorCommandBacktab = 5001;
 constexpr int kAcceleratorTabNext = 5002;

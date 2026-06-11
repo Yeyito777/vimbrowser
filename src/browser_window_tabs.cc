@@ -235,6 +235,10 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
     if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
       content_inner_panel_->Layout();
     }
+    // Showing a different BrowserView remaps Chromium's native page surface
+    // after the previous chrome layout. Refresh the top-level layout now so the
+    // sidebar separator overlay is repainted above the newly-active surface.
+    Layout();
     if (focus_area_ == FocusArea::kWebView) {
       tab.view->RequestFocus();
     }
