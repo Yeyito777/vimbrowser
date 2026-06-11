@@ -65,6 +65,10 @@ target_link_libraries(vimbrowser PRIVATE
   ${CEF_STANDARD_LIBS}
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_libraries(vimbrowser PRIVATE Xi)
+endif()
+
 target_compile_definitions(vimbrowser-ipc PRIVATE
   VIMBROWSER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )

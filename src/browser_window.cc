@@ -19,6 +19,14 @@
 #include <unordered_set>
 #include <utility>
 
+#if defined(__linux__)
+#include <sys/select.h>
+
+#include <X11/cursorfont.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/XInput2.h>
+#endif
+
 #include "config.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
@@ -737,6 +745,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->Show();
   Layout();
   SetFocusArea(FocusArea::kWebView);
+  StartSidebarMouseWatcher();
   ScheduleFpsIndicatorUpdate();
 }
 
@@ -984,6 +993,7 @@ void BrowserWindow::BuildChrome() {
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
+  StopSidebarMouseWatcher();
   ++active_browser_sync_generation_;
   ++state_save_generation_;
   SaveState();
@@ -1039,6 +1049,7 @@ void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
 
 bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
   if (window_close_allowed_ || AllTabBrowsersClosed()) {
+    StopSidebarMouseWatcher();
     window_close_allowed_ = true;
     return true;
   }
@@ -1048,6 +1059,7 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
     ++active_browser_sync_generation_;
     ++state_save_generation_;
     SaveState();
+    StopSidebarMouseWatcher();
     if (ipc_server_) {
       ipc_server_->Stop();
       ipc_server_.reset();
@@ -1970,6 +1982,7 @@ void BrowserWindow::Layout() {
   UpdateStatusBar();
   laid_out_content_width_ = actual_content_width;
   laid_out_content_height_ = main_height;
+  UpdateSidebarMouseBounds();
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
   }
@@ -2979,6 +2992,243 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     fps_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
     UpdateFpsIndicator();
   }
+}
+
+void BrowserWindow::StartSidebarMouseWatcher() {
+#if defined(__linux__)
+  if (sidebar_mouse_watcher_running_.exchange(true)) {
+    return;
+  }
+  UpdateSidebarMouseBounds();
+  sidebar_mouse_thread_ = std::thread(&BrowserWindow::RunSidebarMouseWatcher, this);
+#endif
+}
+
+void BrowserWindow::StopSidebarMouseWatcher() {
+#if defined(__linux__)
+  sidebar_mouse_watcher_running_.store(false);
+  sidebar_mouse_width_.store(0);
+  sidebar_mouse_height_.store(0);
+  sidebar_mouse_row_count_.store(0);
+  sidebar_mouse_window_.store(0);
+  if (sidebar_mouse_thread_.joinable() &&
+      sidebar_mouse_thread_.get_id() != std::this_thread::get_id()) {
+    sidebar_mouse_thread_.join();
+  }
+#endif
+}
+
+void BrowserWindow::RunSidebarMouseWatcher() {
+#if defined(__linux__)
+  Display* display = XOpenDisplay(nullptr);
+  if (!display) {
+    sidebar_mouse_watcher_running_.store(false);
+    return;
+  }
+
+  int xi_opcode = 0;
+  int xi_event = 0;
+  int xi_error = 0;
+  if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &xi_event,
+                       &xi_error)) {
+    XCloseDisplay(display);
+    sidebar_mouse_watcher_running_.store(false);
+    return;
+  }
+
+  int xi_major = 2;
+  int xi_minor = 0;
+  if (XIQueryVersion(display, &xi_major, &xi_minor) != Success) {
+    XCloseDisplay(display);
+    sidebar_mouse_watcher_running_.store(false);
+    return;
+  }
+
+  Window root = DefaultRootWindow(display);
+  Cursor hand_cursor = XCreateFontCursor(display, XC_hand2);
+  Window hand_cursor_window = 0;
+
+  auto toplevel_for_window = [display, root](Window window) {
+    Window current = window;
+    while (current != 0 && current != root) {
+      Window query_root = 0;
+      Window parent = 0;
+      Window* children = nullptr;
+      unsigned int child_count = 0;
+      if (!XQueryTree(display, current, &query_root, &parent, &children,
+                      &child_count)) {
+        return Window{0};
+      }
+      if (children) {
+        XFree(children);
+      }
+      if (parent == root || parent == 0) {
+        return current;
+      }
+      current = parent;
+    }
+    return current;
+  };
+
+  struct SidebarMouseHit {
+    bool inside_sidebar = false;
+    bool over_clickable_row = false;
+    size_t row_index = 0;
+    Window browser_toplevel = 0;
+  };
+
+  auto sidebar_hit_test = [&]() {
+    SidebarMouseHit hit;
+    Window root_return = 0;
+    Window child_return = 0;
+    int root_x = 0;
+    int root_y = 0;
+    int win_x = 0;
+    int win_y = 0;
+    unsigned int buttons = 0;
+    if (!XQueryPointer(display, root, &root_return, &child_return, &root_x,
+                       &root_y, &win_x, &win_y, &buttons)) {
+      return hit;
+    }
+
+    const Window browser_window =
+        static_cast<Window>(sidebar_mouse_window_.load());
+    hit.browser_toplevel =
+        browser_window ? toplevel_for_window(browser_window) : Window{0};
+    const int sidebar_x = sidebar_mouse_screen_x_.load();
+    const int sidebar_y = sidebar_mouse_screen_y_.load();
+    const int sidebar_width = sidebar_mouse_width_.load();
+    const int sidebar_height = sidebar_mouse_height_.load();
+    if (hit.browser_toplevel == 0 || child_return != hit.browser_toplevel ||
+        sidebar_width <= 0 || sidebar_height <= 0 || root_x < sidebar_x ||
+        root_x >= sidebar_x + sidebar_width || root_y < sidebar_y ||
+        root_y >= sidebar_y + sidebar_height) {
+      hit.browser_toplevel = 0;
+      return hit;
+    }
+
+    hit.inside_sidebar = true;
+    hit.row_index = static_cast<size_t>((root_y - sidebar_y) / kSidebarRowHeight);
+    const int row_count = sidebar_mouse_row_count_.load();
+    hit.over_clickable_row =
+        row_count > 0 && hit.row_index < static_cast<size_t>(row_count);
+    return hit;
+  };
+
+  auto clear_hand_cursor = [&]() {
+    if (hand_cursor_window != 0) {
+      XUndefineCursor(display, hand_cursor_window);
+      hand_cursor_window = 0;
+      XFlush(display);
+    }
+  };
+
+  auto update_hover_cursor = [&]() {
+    SidebarMouseHit hit = sidebar_hit_test();
+    if (hit.over_clickable_row && hand_cursor != None) {
+      if (hand_cursor_window != hit.browser_toplevel) {
+        clear_hand_cursor();
+        XDefineCursor(display, hit.browser_toplevel, hand_cursor);
+        hand_cursor_window = hit.browser_toplevel;
+        XFlush(display);
+      }
+    } else {
+      clear_hand_cursor();
+    }
+    return hit;
+  };
+
+  unsigned char mask[XIMaskLen(XI_LASTEVENT)] = {};
+  XISetMask(mask, XI_RawButtonPress);
+  XISetMask(mask, XI_RawMotion);
+  XIEventMask event_mask = {};
+  event_mask.deviceid = XIAllMasterDevices;
+  event_mask.mask_len = sizeof(mask);
+  event_mask.mask = mask;
+  XISelectEvents(display, root, &event_mask, 1);
+  XFlush(display);
+
+  const int fd = ConnectionNumber(display);
+  while (sidebar_mouse_watcher_running_.load()) {
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(fd, &readfds);
+    timeval timeout = {};
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 250000;
+    const int ready = select(fd + 1, &readfds, nullptr, nullptr, &timeout);
+    if (ready <= 0) {
+      update_hover_cursor();
+      continue;
+    }
+
+    while (sidebar_mouse_watcher_running_.load() && XPending(display) > 0) {
+      XEvent xevent;
+      XNextEvent(display, &xevent);
+      if (xevent.xcookie.type != GenericEvent ||
+          xevent.xcookie.extension != xi_opcode ||
+          !XGetEventData(display, &xevent.xcookie)) {
+        continue;
+      }
+
+      if (xevent.xcookie.evtype == XI_RawMotion) {
+        update_hover_cursor();
+      } else if (xevent.xcookie.evtype == XI_RawButtonPress) {
+        auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
+        if (raw && raw->detail == 1) {
+          SidebarMouseHit hit = update_hover_cursor();
+          if (hit.inside_sidebar) {
+            CefRefPtr<BrowserWindow> self = this;
+            CefPostTask(TID_UI,
+                        base::BindOnce(&BrowserWindow::HandleSidebarMouseRowClick,
+                                       self, hit.row_index));
+          }
+        }
+      }
+      XFreeEventData(display, &xevent.xcookie);
+    }
+  }
+
+  clear_hand_cursor();
+  if (hand_cursor != None) {
+    XFreeCursor(display, hand_cursor);
+  }
+  XCloseDisplay(display);
+#endif
+}
+
+void BrowserWindow::UpdateSidebarMouseBounds() {
+  if (!window_ || !sidebar_visible_) {
+    sidebar_mouse_width_.store(0);
+    sidebar_mouse_height_.store(0);
+    sidebar_mouse_row_count_.store(0);
+    sidebar_mouse_window_.store(0);
+    return;
+  }
+
+  const CefRect bounds = window_->GetClientAreaBoundsInScreen();
+  const int main_height = std::max(
+      0, bounds.height - (show_statusline_ ? kStatusBarHeight : 0));
+  sidebar_mouse_screen_x_.store(bounds.x);
+  sidebar_mouse_screen_y_.store(bounds.y);
+  sidebar_mouse_width_.store(kSidebarContentWidth);
+  sidebar_mouse_height_.store(main_height);
+  sidebar_mouse_row_count_.store(static_cast<int>(sidebar_rows_.size()));
+  sidebar_mouse_window_.store(static_cast<unsigned long>(window_->GetWindowHandle()));
+}
+
+void BrowserWindow::HandleSidebarMouseRowClick(size_t row_index) {
+  if (!window_ || !sidebar_visible_) {
+    return;
+  }
+
+  if (row_index < sidebar_rows_.size()) {
+    const size_t index = sidebar_rows_[row_index].tab_index;
+    if (index < tabs_.size()) {
+      ActivateTab(index);
+    }
+  }
+  SetFocusArea(FocusArea::kTabSidebar);
 }
 
 void BrowserWindow::UpdateModeIndicator() {

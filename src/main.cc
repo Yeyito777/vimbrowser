@@ -11,6 +11,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#endif
+
 #include "app.h"
 #include "config.h"
 #include "include/cef_app.h"
@@ -289,6 +293,10 @@ bool ShouldExitForExistingProfile(const std::string& root_cache_path,
 }  // namespace
 
 VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
+#if defined(__linux__)
+  XInitThreads();
+#endif
+
   const std::string exe_path = ExecutablePath();
   const std::string exe_dir = Dirname(exe_path);
   if (const char* launch_cwd = std::getenv("VIMBROWSER_LAUNCH_CWD");

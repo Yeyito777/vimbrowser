@@ -1,12 +1,14 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -301,6 +303,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void ClearStatusOutputForGeneration(uint64_t generation);
   void UpdateStatusBar();
   void UpdateCommandView();
+  void StartSidebarMouseWatcher();
+  void StopSidebarMouseWatcher();
+  void RunSidebarMouseWatcher();
+  void UpdateSidebarMouseBounds();
+  void HandleSidebarMouseRowClick(size_t row_index);
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
   void UpdateFpsIndicator();
@@ -367,6 +374,13 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t status_output_generation_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
+  std::atomic<bool> sidebar_mouse_watcher_running_{false};
+  std::atomic<int> sidebar_mouse_screen_x_{0};
+  std::atomic<int> sidebar_mouse_screen_y_{0};
+  std::atomic<int> sidebar_mouse_width_{0};
+  std::atomic<int> sidebar_mouse_height_{0};
+  std::atomic<int> sidebar_mouse_row_count_{0};
+  std::atomic<unsigned long> sidebar_mouse_window_{0};
   size_t tab_client_count_ = 0;
   mutable std::array<uint64_t, 4> cached_tab_lookup_ids_{};
   mutable std::array<size_t, 4> cached_tab_lookup_indexes_{};
@@ -413,6 +427,7 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> fps_indicator_panel_;
   CefRefPtr<CefLabelButton> fps_indicator_label_;
   CefRefPtr<CefOverlayController> fps_indicator_overlay_;
+  std::thread sidebar_mouse_thread_;
   std::unique_ptr<IpcServer> ipc_server_;
   uint64_t devtools_opener_tab_id_ = 0;
   bool devtools_visible_ = false;
