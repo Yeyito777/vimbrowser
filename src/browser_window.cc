@@ -645,7 +645,8 @@ CefRefPtr<CefBrowserViewDelegate> BrowserWindow::GetDelegateForPopupBrowserView(
   return devtools_browser_view_delegate_;
 }
 
-void BrowserWindow::ShowDevToolsForClient(BrowserClient* client) {
+void BrowserWindow::ShowDevToolsForClient(BrowserClient* client,
+                                          const CefPoint& inspect_element_at) {
   if (!client || !client->browser() || !client->browser()->GetHost()) {
     return;
   }
@@ -672,7 +673,7 @@ void BrowserWindow::ShowDevToolsForClient(BrowserClient* client) {
   CefBrowserSettings settings;
   settings.background_color = theme::kAppBg;
   browser->GetHost()->ShowDevTools(window_info, devtools_client_, settings,
-                                   CefPoint());
+                                   inspect_element_at);
 
   // ShowDevTools focuses an already-open DevTools browser without recreating its
   // BrowserView. Re-attach the existing docked view to the carousel in that path.
@@ -1234,6 +1235,7 @@ void BrowserWindow::BuildChrome() {
 }
 
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
+  CancelNativeContextMenu();
   StopSidebarMouseWatcher();
   ++active_browser_sync_generation_;
   ++state_save_generation_;
@@ -1344,6 +1346,9 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  if (HandleNativeContextMenuKey(event)) {
+    return true;
+  }
   if (HandleMediaPermissionPromptKey(event)) {
     return true;
   }
@@ -1395,6 +1400,9 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
+  if (native_context_menu_) {
+    return true;
+  }
   if (active_media_permission_) {
     return true;
   }
@@ -1500,6 +1508,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
+  if (HandleNativeContextMenuKey(event)) {
+    return true;
+  }
   if (HandleMediaPermissionPromptKey(event)) {
     return true;
   }
@@ -1670,6 +1681,14 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
 
 void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   const int id = button ? button->GetID() : 0;
+  if (id == kContextMenuBackdropButtonId) {
+    CancelNativeContextMenu();
+    return;
+  }
+  if (InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    ActivateNativeContextMenuRow(static_cast<size_t>(id - kContextMenuRowBaseId));
+    return;
+  }
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     const size_t row_index = static_cast<size_t>(id - kSidebarRowBaseId);
     if (row_index < sidebar_rows_.size()) {
@@ -1700,8 +1719,23 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   // centering for labels/buttons but not textfields. It is display-only.
 }
 
+void BrowserWindow::OnButtonStateChanged(CefRefPtr<CefButton> button) {
+  const int id = button ? button->GetID() : 0;
+  if (!native_context_menu_ || !InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    return;
+  }
+
+  const cef_button_state_t state = button->GetState();
+  if (state == CEF_BUTTON_STATE_HOVERED || state == CEF_BUTTON_STATE_PRESSED) {
+    HoverNativeContextMenuRow(static_cast<size_t>(id - kContextMenuRowBaseId));
+  }
+}
+
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                                const CefKeyEvent& event) {
+  if (HandleNativeContextMenuKey(event)) {
+    return true;
+  }
   if (HandleMediaPermissionPromptKey(event)) {
     return true;
   }
@@ -1854,6 +1888,18 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
       id == kMediaPermissionDenyButtonId) {
     return CefSize(112, 24);
   }
+  if (id == kContextMenuBackdropButtonId) {
+    const CefRect bounds = window_ ? window_->GetBounds() : CefRect(0, 0, 1, 1);
+    return CefSize(std::max(1, bounds.width), std::max(1, bounds.height));
+  }
+  if (id == kContextMenuPanelId) {
+    return CefSize(std::max(1, NativeContextMenuWidth()),
+                   std::max(1, NativeContextMenuHeight()));
+  }
+  if (InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    return CefSize(std::max(1, NativeContextMenuWidth()),
+                   kContextMenuRowHeight);
+  }
   return CefSize(1200, 800);
 }
 
@@ -1947,6 +1993,10 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
       id == kMediaPermissionDenyButtonId) {
     return CefSize(112, 24);
   }
+  if (id == kContextMenuBackdropButtonId || id == kContextMenuPanelId ||
+      InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    return CefSize(1, 1);
+  }
   return CefSize();
 }
 
@@ -2017,6 +2067,10 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   if (id == kMediaPermissionAllowButtonId ||
       id == kMediaPermissionDenyButtonId) {
     return CefSize(112, 24);
+  }
+  if (id == kContextMenuBackdropButtonId || id == kContextMenuPanelId ||
+      InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    return CefSize(0, 0);
   }
   return CefSize();
 }
@@ -2630,6 +2684,8 @@ void BrowserWindow::Layout() {
       }
     }
   }
+
+  LayoutNativeContextMenu(width, height);
 
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
@@ -3773,6 +3829,13 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
              media_permission_deny_button_) {
     StylePermissionButton(media_permission_deny_button_, theme::kText,
                           theme::kSidebarSelBg);
+  } else if (id == kContextMenuBackdropButtonId &&
+             context_menu_backdrop_button_) {
+    context_menu_backdrop_button_->SetBackgroundColor(theme::kTransparent);
+  } else if (id == kContextMenuPanelId) {
+    view->SetBackgroundColor(theme::kAccent);
+  } else if (InIdRange(id, kContextMenuRowBaseId, 1000)) {
+    UpdateNativeContextMenuSelection();
   }
 }
 
@@ -3859,6 +3922,19 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     Window browser_toplevel = 0;
   };
 
+  struct ContextMenuMouseHit {
+    bool menu_visible = false;
+    bool inside_menu = false;
+    bool over_row = false;
+    size_t row_index = 0;
+    Window browser_toplevel = 0;
+  };
+
+  struct ChromeMouseHits {
+    ContextMenuMouseHit context_menu;
+    SidebarMouseHit sidebar;
+  };
+
   auto sidebar_hit_test = [&]() {
     SidebarMouseHit hit;
     Window root_return = 0;
@@ -3897,6 +3973,50 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     return hit;
   };
 
+  auto context_menu_hit_test = [&]() {
+    ContextMenuMouseHit hit;
+    const Window browser_window =
+        static_cast<Window>(context_menu_mouse_window_.load());
+    const int menu_x = context_menu_mouse_screen_x_.load();
+    const int menu_y = context_menu_mouse_screen_y_.load();
+    const int menu_width = context_menu_mouse_width_.load();
+    const int menu_height = context_menu_mouse_height_.load();
+    const int row_count = context_menu_mouse_row_count_.load();
+    hit.menu_visible = browser_window != 0 && menu_width > 0 &&
+                       menu_height > 0 && row_count > 0;
+    if (!hit.menu_visible) {
+      return hit;
+    }
+
+    Window root_return = 0;
+    Window child_return = 0;
+    int root_x = 0;
+    int root_y = 0;
+    int win_x = 0;
+    int win_y = 0;
+    unsigned int buttons = 0;
+    if (!XQueryPointer(display, root, &root_return, &child_return, &root_x,
+                       &root_y, &win_x, &win_y, &buttons)) {
+      return hit;
+    }
+
+    hit.browser_toplevel = toplevel_for_window(browser_window);
+    if (hit.browser_toplevel == 0 || child_return != hit.browser_toplevel ||
+        root_x < menu_x || root_x >= menu_x + menu_width || root_y < menu_y ||
+        root_y >= menu_y + menu_height) {
+      return hit;
+    }
+
+    hit.inside_menu = true;
+    const int row_area_y = root_y - menu_y - kContextMenuBorderWidth;
+    if (row_area_y < 0) {
+      return hit;
+    }
+    hit.row_index = static_cast<size_t>(row_area_y / kContextMenuRowHeight);
+    hit.over_row = hit.row_index < static_cast<size_t>(row_count);
+    return hit;
+  };
+
   auto clear_hand_cursor = [&]() {
     if (hand_cursor_window != 0) {
       XUndefineCursor(display, hand_cursor_window);
@@ -3906,18 +4026,31 @@ void BrowserWindow::RunSidebarMouseWatcher() {
   };
 
   auto update_hover_cursor = [&]() {
-    SidebarMouseHit hit = sidebar_hit_test();
-    if (hit.over_clickable_row && hand_cursor != None) {
-      if (hand_cursor_window != hit.browser_toplevel) {
+    ChromeMouseHits hits;
+    hits.context_menu = context_menu_hit_test();
+
+    bool use_hand_cursor = false;
+    Window target_window = 0;
+    if (hits.context_menu.menu_visible) {
+      use_hand_cursor = hits.context_menu.over_row;
+      target_window = hits.context_menu.browser_toplevel;
+    } else {
+      hits.sidebar = sidebar_hit_test();
+      use_hand_cursor = hits.sidebar.over_clickable_row;
+      target_window = hits.sidebar.browser_toplevel;
+    }
+
+    if (use_hand_cursor && target_window != 0 && hand_cursor != None) {
+      if (hand_cursor_window != target_window) {
         clear_hand_cursor();
-        XDefineCursor(display, hit.browser_toplevel, hand_cursor);
-        hand_cursor_window = hit.browser_toplevel;
+        XDefineCursor(display, target_window, hand_cursor);
+        hand_cursor_window = target_window;
         XFlush(display);
       }
     } else {
       clear_hand_cursor();
     }
-    return hit;
+    return hits;
   };
 
   unsigned char mask[XIMaskLen(XI_LASTEVENT)] = {};
@@ -3954,16 +4087,33 @@ void BrowserWindow::RunSidebarMouseWatcher() {
       }
 
       if (xevent.xcookie.evtype == XI_RawMotion) {
-        update_hover_cursor();
+        ChromeMouseHits hits = update_hover_cursor();
+        if (hits.context_menu.over_row) {
+          CefRefPtr<BrowserWindow> self = this;
+          CefPostTask(TID_UI,
+                      base::BindOnce(&BrowserWindow::HoverNativeContextMenuRow,
+                                     self, hits.context_menu.row_index));
+        }
       } else if (xevent.xcookie.evtype == XI_RawButtonPress) {
         auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
         if (raw && raw->detail == 1) {
-          SidebarMouseHit hit = update_hover_cursor();
-          if (hit.inside_sidebar) {
+          ChromeMouseHits hits = update_hover_cursor();
+          if (hits.context_menu.menu_visible) {
+            CefRefPtr<BrowserWindow> self = this;
+            if (hits.context_menu.over_row) {
+              CefPostTask(TID_UI,
+                          base::BindOnce(&BrowserWindow::ActivateNativeContextMenuRow,
+                                         self, hits.context_menu.row_index));
+            } else if (!hits.context_menu.inside_menu) {
+              CefPostTask(TID_UI,
+                          base::BindOnce(&BrowserWindow::CancelNativeContextMenu,
+                                         self));
+            }
+          } else if (hits.sidebar.inside_sidebar) {
             CefRefPtr<BrowserWindow> self = this;
             CefPostTask(TID_UI,
                         base::BindOnce(&BrowserWindow::HandleSidebarMouseRowClick,
-                                       self, hit.row_index));
+                                       self, hits.sidebar.row_index));
           }
         }
       }

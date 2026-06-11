@@ -68,6 +68,19 @@ class BrowserWindow final : public CefWindowDelegate,
                            const std::string& target_url,
                            bool activate);
   void OnClientBeforePopupAborted(BrowserClient* client, int popup_id);
+  bool RunNativeContextMenu(
+      BrowserClient* client,
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefContextMenuParams> params,
+      CefRefPtr<CefRunContextMenuCallback> callback);
+  bool OnNativeContextMenuCommand(BrowserClient* client,
+                                  CefRefPtr<CefBrowser> browser,
+                                  CefRefPtr<CefFrame> frame,
+                                  CefRefPtr<CefContextMenuParams> params,
+                                  int command_id,
+                                  cef_event_flags_t event_flags);
+  void OnNativeContextMenuDismissed(BrowserClient* client);
   bool OnClientMediaAccessRequest(
       BrowserClient* client,
       CefRefPtr<CefBrowser> browser,
@@ -91,7 +104,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnDevToolsNativeHintFocusedEditable();
   void OnDevToolsNativeHintsStopped();
   bool HandleBrowserKeyEvent(const CefKeyEvent& event);
-  void ShowDevToolsForClient(BrowserClient* client);
+  void ShowDevToolsForClient(
+      BrowserClient* client,
+      const CefPoint& inspect_element_at = CefPoint());
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
@@ -128,6 +143,7 @@ class BrowserWindow final : public CefWindowDelegate,
                   const CefKeyEvent& event) override;
   void OnAfterUserAction(CefRefPtr<CefTextfield> textfield) override;
   void OnButtonPressed(CefRefPtr<CefButton> button) override;
+  void OnButtonStateChanged(CefRefPtr<CefButton> button) override;
 
  private:
   enum class Mode {
@@ -187,6 +203,45 @@ class BrowserWindow final : public CefWindowDelegate,
     bool mock = false;
   };
 
+ public:
+  struct ContextMenuItem {
+    int command_id = 0;
+    std::string label;
+    std::string detail;
+    char key = 0;
+    bool enabled = true;
+    bool separator = false;
+  };
+
+  struct NativeContextMenu {
+    BrowserClient* client = nullptr;
+    CefRefPtr<CefBrowser> browser;
+    CefRefPtr<CefFrame> frame;
+    CefRefPtr<CefRunContextMenuCallback> callback;
+    int x = 0;
+    int y = 0;
+    int selected_index = -1;
+    cef_context_menu_type_flags_t type_flags = CM_TYPEFLAG_NONE;
+    cef_context_menu_media_type_t media_type = CM_MEDIATYPE_NONE;
+    cef_context_menu_media_state_flags_t media_state_flags = CM_MEDIAFLAG_NONE;
+    cef_context_menu_edit_state_flags_t edit_state_flags = CM_EDITFLAG_NONE;
+    bool has_image_contents = false;
+    bool editable = false;
+    bool spellcheck_enabled = false;
+    bool closing = false;
+    std::string page_url;
+    std::string frame_url;
+    std::string link_url;
+    std::string unfiltered_link_url;
+    std::string source_url;
+    std::string title_text;
+    std::string selection_text;
+    std::string misspelled_word;
+    std::vector<std::string> dictionary_suggestions;
+    std::vector<ContextMenuItem> items;
+  };
+
+ private:
   void BuildChrome();
   void AddTab(std::string url, bool activate);
   void AddTabAfterActive(std::string url, bool activate);
@@ -352,6 +407,24 @@ class BrowserWindow final : public CefWindowDelegate,
   void CancelMediaPermissionRequestsForClient(BrowserClient* client);
   void CancelAllMediaPermissionRequests();
   bool HandleMediaPermissionPromptKey(const CefKeyEvent& event);
+  void EnsureContextMenuViews();
+  void BuildNativeContextMenuItems(NativeContextMenu* menu);
+  void RebuildNativeContextMenuRows();
+  void LayoutNativeContextMenu(int window_width, int window_height);
+  bool HandleNativeContextMenuKey(const CefKeyEvent& event);
+  void SelectNativeContextMenuRelative(int delta);
+  void UpdateNativeContextMenuSelection();
+  void ActivateNativeContextMenuRow(size_t row_index);
+  void HoverNativeContextMenuRow(size_t row_index);
+  void CompleteNativeContextMenu(int command_id);
+  void CancelNativeContextMenu();
+  void HideNativeContextMenuViews();
+  int NativeContextMenuWidth() const;
+  int NativeContextMenuHeight() const;
+  void UpdateContextMenuMouseBounds(int x, int y, int width, int height);
+  void ClearContextMenuMouseBounds();
+  void CopyContextImageToClipboard(CefRefPtr<CefBrowser> browser,
+                                   const std::string& image_url);
 
   std::vector<std::string> initial_urls_;
   std::string state_path_;
@@ -408,6 +481,12 @@ class BrowserWindow final : public CefWindowDelegate,
   std::atomic<int> sidebar_mouse_height_{0};
   std::atomic<int> sidebar_mouse_row_count_{0};
   std::atomic<unsigned long> sidebar_mouse_window_{0};
+  std::atomic<int> context_menu_mouse_screen_x_{0};
+  std::atomic<int> context_menu_mouse_screen_y_{0};
+  std::atomic<int> context_menu_mouse_width_{0};
+  std::atomic<int> context_menu_mouse_height_{0};
+  std::atomic<int> context_menu_mouse_row_count_{0};
+  std::atomic<unsigned long> context_menu_mouse_window_{0};
   size_t tab_client_count_ = 0;
   mutable std::array<uint64_t, 4> cached_tab_lookup_ids_{};
   mutable std::array<size_t, 4> cached_tab_lookup_indexes_{};
@@ -474,6 +553,12 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefOverlayController> media_permission_bottom_border_overlay_;
   CefRefPtr<CefOverlayController> media_permission_left_border_overlay_;
   CefRefPtr<CefOverlayController> media_permission_right_border_overlay_;
+  std::optional<NativeContextMenu> native_context_menu_;
+  CefRefPtr<CefLabelButton> context_menu_backdrop_button_;
+  CefRefPtr<CefOverlayController> context_menu_backdrop_overlay_;
+  CefRefPtr<CefPanel> context_menu_panel_;
+  std::vector<CefRefPtr<CefLabelButton>> context_menu_rows_;
+  CefRefPtr<CefOverlayController> context_menu_overlay_;
   std::thread sidebar_mouse_thread_;
   std::unique_ptr<IpcServer> ipc_server_;
   uint64_t devtools_opener_tab_id_ = 0;

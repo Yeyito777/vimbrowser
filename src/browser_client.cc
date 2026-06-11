@@ -720,6 +720,55 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
+void BrowserClient::OnBeforeContextMenu(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefContextMenuParams> params,
+    CefRefPtr<CefMenuModel> model) {
+  if (!owner_ || !model) {
+    return;
+  }
+
+  // Replace Chromium/CEF's default Views MenuRunner popup with vimbrowser's
+  // own chrome overlay. Keep a tiny placeholder model so CEF still calls
+  // RunContextMenu(), but never let the default native menu display.
+  model->Clear();
+  model->AddItem(MENU_ID_USER_FIRST, "vimbrowser native context menu");
+}
+
+bool BrowserClient::RunContextMenu(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefContextMenuParams> params,
+    CefRefPtr<CefMenuModel> model,
+    CefRefPtr<CefRunContextMenuCallback> callback) {
+  if (!owner_) {
+    if (callback) {
+      callback->Cancel();
+    }
+    return true;
+  }
+
+  return owner_->RunNativeContextMenu(this, browser, frame, params, callback);
+}
+
+bool BrowserClient::OnContextMenuCommand(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefContextMenuParams> params,
+    int command_id,
+    cef_event_flags_t event_flags) {
+  return owner_ && owner_->OnNativeContextMenuCommand(
+                       this, browser, frame, params, command_id, event_flags);
+}
+
+void BrowserClient::OnContextMenuDismissed(CefRefPtr<CefBrowser> browser,
+                                           CefRefPtr<CefFrame> frame) {
+  if (owner_) {
+    owner_->OnNativeContextMenuDismissed(this);
+  }
+}
+
 CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
