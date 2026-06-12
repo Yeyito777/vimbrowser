@@ -220,6 +220,7 @@ App::App(std::vector<std::string> initial_urls,
          bool show_statusline,
          bool shader_enabled,
          std::string state_path,
+         std::string dwm_save_argv,
          bool disable_gpu)
     : initial_urls_(std::move(initial_urls)),
       active_index_(active_index),
@@ -228,6 +229,7 @@ App::App(std::vector<std::string> initial_urls,
       show_statusline_(show_statusline),
       shader_enabled_(shader_enabled),
       state_path_(std::move(state_path)),
+      dwm_save_argv_(std::move(dwm_save_argv)),
       disable_gpu_(disable_gpu) {}
 
 void App::OnBeforeCommandLineProcessing(
@@ -280,7 +282,8 @@ void App::OnContextInitialized() {
                                                     show_mode_indicator_,
                                                     show_fps_indicator_,
                                                     show_statusline_,
-                                                    shader_enabled_, state_path_));
+                                                    shader_enabled_, state_path_,
+                                                    dwm_save_argv_));
   window->Create();
 }
 

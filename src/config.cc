@@ -5,7 +5,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string_view>
+#include <utility>
 #include <unistd.h>
 
 namespace vimbrowser {
@@ -241,6 +243,41 @@ std::string AbsolutePath(std::string path) {
   return std::filesystem::absolute(std::filesystem::path(path))
       .lexically_normal()
       .string();
+}
+
+std::string ShellQuote(std::string_view value) {
+  std::string out;
+  out.reserve(value.size() + 2);
+  out.push_back('\'');
+  for (char c : value) {
+    if (c == '\'') {
+      out += "'\\''";
+    } else {
+      out.push_back(c);
+    }
+  }
+  out.push_back('\'');
+  return out;
+}
+
+bool IsDisabledDwmSaveValue(std::string value) {
+  value = ToLowerAscii(std::move(value));
+  return value == "0" || value == "false" || value == "off" ||
+         value == "no" || value == "none" || value == "disabled";
+}
+
+std::string BuildDefaultDwmSaveArgv(const Config& config) {
+  // vimbrowser's normal installed entrypoint is the ~/.local/bin/vimbrowser
+  // wrapper.  Save that stable command (rather than ./vimbrowser from the build
+  // directory) and include the persistent profile so dwm restore opens the same
+  // browser state qutebrowser restores via its --basedir registration.
+  if (!config.explicit_profile_dir || config.profile_dir.empty()) {
+    return {};
+  }
+
+  std::ostringstream command;
+  command << "vimbrowser --profile-dir " << ShellQuote(config.profile_dir);
+  return command.str();
 }
 
 void ApplyProfileDir(Config& config, std::string profile_dir) {
@@ -480,6 +517,14 @@ Config ParseConfig(int argc, char* argv[]) {
   Config config;
   config.cache_path = DefaultInstanceCachePath();
   config.state_path = DefaultStatePath();
+  bool dwm_save_disabled = false;
+  if (const char* dwm_save_argv = std::getenv("VIMBROWSER_DWM_SAVE_ARGV")) {
+    if (*dwm_save_argv && !IsDisabledDwmSaveValue(dwm_save_argv)) {
+      config.dwm_save_argv = dwm_save_argv;
+    } else {
+      dwm_save_disabled = true;
+    }
+  }
   if (const char* state_path = std::getenv("VIMBROWSER_STATE_PATH");
       state_path && *state_path) {
     config.state_path = AbsolutePath(state_path);
@@ -550,6 +595,10 @@ Config ParseConfig(int argc, char* argv[]) {
     config.initial_url = config.initial_urls[config.active_index];
   } else {
     config.initial_urls.push_back(config.initial_url);
+  }
+
+  if (!dwm_save_disabled && config.dwm_save_argv.empty()) {
+    config.dwm_save_argv = BuildDefaultDwmSaveArgv(config);
   }
 
   if (!is_subprocess) {

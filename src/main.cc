@@ -331,8 +331,9 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
                                                       config.show_fps_indicator,
                                                       config.show_statusline,
                                                       config.shader_enabled,
-                                                     config.state_path,
-                                                     config.disable_gpu));
+                                                      config.state_path,
+                                                      config.dwm_save_argv,
+                                                      config.disable_gpu));
 
   const int sub_process_exit_code = CefExecuteProcess(main_args, app, nullptr);
   if (sub_process_exit_code >= 0) {

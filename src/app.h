@@ -20,6 +20,7 @@ class App final : public CefApp,
       bool show_statusline,
       bool shader_enabled,
       std::string state_path,
+      std::string dwm_save_argv,
       bool disable_gpu);
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
@@ -52,6 +53,7 @@ class App final : public CefApp,
   bool show_statusline_;
   bool shader_enabled_;
   std::string state_path_;
+  std::string dwm_save_argv_;
   bool disable_gpu_;
 
   IMPLEMENT_REFCOUNTING(App);

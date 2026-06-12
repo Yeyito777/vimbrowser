@@ -18,6 +18,7 @@ struct Config {
   std::string profile_dir;
   std::string cache_path;
   std::string state_path;
+  std::string dwm_save_argv;
   size_t active_index = 0;
   int remote_debugging_port = 0;
   bool disable_gpu = false;

@@ -238,9 +238,11 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              bool show_fps_indicator,
                              bool show_statusline,
                              bool shader_enabled,
-                             std::string state_path)
+                             std::string state_path,
+                             std::string dwm_save_argv)
     : initial_urls_(std::move(initial_urls)),
       state_path_(std::move(state_path)),
+      dwm_save_argv_(std::move(dwm_save_argv)),
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
@@ -857,10 +859,39 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
 
   window_->CenterWindow(CefSize(1200, 800));
   window_->Show();
+  RegisterDwmSaveArgv();
   Layout();
   SetFocusArea(FocusArea::kWebView);
   StartSidebarMouseWatcher();
   ScheduleFpsIndicatorUpdate();
+}
+
+void BrowserWindow::RegisterDwmSaveArgv() {
+  if (dwm_save_registered_ || dwm_save_argv_.empty() || !window_) {
+    return;
+  }
+  dwm_save_registered_ = true;
+
+#if defined(__linux__)
+  const CefWindowHandle handle = window_->GetWindowHandle();
+  if (!handle) {
+    return;
+  }
+
+  Display* display = XOpenDisplay(nullptr);
+  if (!display) {
+    return;
+  }
+
+  Atom save_atom = XInternAtom(display, "_DWM_SAVE_ARGV", False);
+  Atom utf8_atom = XInternAtom(display, "UTF8_STRING", False);
+  XChangeProperty(display, static_cast<Window>(handle), save_atom, utf8_atom, 8,
+                  PropModeReplace,
+                  reinterpret_cast<const unsigned char*>(dwm_save_argv_.data()),
+                  static_cast<int>(dwm_save_argv_.size()));
+  XFlush(display);
+  XCloseDisplay(display);
+#endif
 }
 
 void BrowserWindow::BuildChrome() {

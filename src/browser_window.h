@@ -48,7 +48,8 @@ class BrowserWindow final : public CefWindowDelegate,
                 bool show_fps_indicator,
                 bool show_statusline,
                 bool shader_enabled,
-                std::string state_path);
+                std::string state_path,
+                std::string dwm_save_argv);
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
@@ -243,6 +244,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
  private:
   void BuildChrome();
+  void RegisterDwmSaveArgv();
   void AddTab(std::string url, bool activate);
   void AddTabAfterActive(std::string url, bool activate);
   void InsertTab(std::string url,
@@ -428,6 +430,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
   std::vector<std::string> initial_urls_;
   std::string state_path_;
+  std::string dwm_save_argv_;
   size_t initial_active_index_ = 0;
   std::string command_text_;
   std::string status_output_text_;
@@ -456,6 +459,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_fps_indicator_ = false;
   bool show_statusline_ = true;
   bool shader_enabled_ = true;
+  bool dwm_save_registered_ = false;
   bool forwarding_key_to_page_ = false;
   bool forwarding_key_to_devtools_ = false;
   bool fps_update_scheduled_ = false;
