@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -81,6 +82,34 @@ std::string PercentEncode(std::string_view text) {
     }
   }
   return out;
+}
+
+std::string HexEncodeBytes(const unsigned char* bytes, size_t size) {
+  static constexpr char kHex[] = "0123456789abcdef";
+  std::string out;
+  out.reserve(size * 2);
+  for (size_t i = 0; i < size; ++i) {
+    out.push_back(kHex[(bytes[i] >> 4) & 0xF]);
+    out.push_back(kHex[bytes[i] & 0xF]);
+  }
+  return out;
+}
+
+std::string GenerateChatgptAutosendToken() {
+  unsigned char bytes[16] = {};
+  std::ifstream urandom("/dev/urandom", std::ios::binary);
+  if (urandom.read(reinterpret_cast<char*>(bytes), sizeof(bytes))) {
+    return HexEncodeBytes(bytes, sizeof(bytes));
+  }
+
+  // Extremely defensive fallback for unusual systems without /dev/urandom.  The
+  // token is only used to keep arbitrary ChatGPT links from triggering the local
+  // auto-submit automation path.
+  std::ostringstream fallback;
+  fallback << std::hex << static_cast<unsigned long long>(::getpid())
+           << static_cast<unsigned long long>(
+                  std::chrono::steady_clock::now().time_since_epoch().count());
+  return fallback.str();
 }
 
 std::string PercentEncodeFilePath(std::string_view text) {
@@ -297,8 +326,14 @@ const std::vector<SearchEngine>& SearchEngines() {
   static const std::vector<SearchEngine> engines = {
       {"yt", "https://www.youtube.com/results?search_query={}"},
       {"gh", "https://github.com/search?q={}"},
+      {"ai", "https://chatgpt.com/?q={}&vimbrowser_autosend={vimbrowser_autosend_token}"},
   };
   return engines;
+}
+
+const std::string& ChatgptAutosendToken() {
+  static const std::string token = GenerateChatgptAutosendToken();
+  return token;
 }
 
 const SearchEngine* FindSearchEngine(std::string_view name) {
@@ -325,6 +360,13 @@ std::string ResolveSearchEngineUrl(std::string_view name,
     return url + encoded;
   }
   url.replace(placeholder, 2, encoded);
+  constexpr std::string_view kChatgptTokenPlaceholder =
+      "{vimbrowser_autosend_token}";
+  const size_t token_placeholder = url.find(kChatgptTokenPlaceholder);
+  if (token_placeholder != std::string::npos) {
+    url.replace(token_placeholder, kChatgptTokenPlaceholder.size(),
+                ChatgptAutosendToken());
+  }
   return url;
 }
 

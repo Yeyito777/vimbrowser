@@ -80,6 +80,9 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
   shared per-engine query history
 - [x] `:open gh <query>` / `:open tab gh <query>` — search GitHub with a shared
   per-engine query history
+- [x] `:open ai <query>` / `:open tab ai <query>` — ask ChatGPT through its
+  `q` URL parameter and auto-submit the composer with a shared per-engine query
+  history
 
 ## Explicitly not part of this batch
 

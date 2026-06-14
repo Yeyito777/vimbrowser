@@ -165,6 +165,9 @@ class BrowserClient final : public CefClient,
 
   BrowserWindow* owner_ = nullptr;
   CefRefPtr<CefBrowser> browser_;
+  std::string pending_chatgpt_autosubmit_prompt_;
+  std::string pending_chatgpt_autosubmit_key_;
+  uint64_t chatgpt_autosubmit_sequence_ = 0;
   mutable std::mutex network_mutex_;
   uint64_t next_network_request_id_ = 1;
   std::vector<std::shared_ptr<NetworkRequestRecord>> network_log_;

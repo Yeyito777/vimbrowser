@@ -246,9 +246,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - `:open` / `:open tab` autocomplete includes the last 1000 command-opened
   entries, shortest matching URLs first; long history entries are ellipsized in
   the popup while still completing to the full text. `:open tab` inserts the new
-  tab immediately below the currently focused tab. `:open yt <query>` and
-  `:open gh <query>` search YouTube and GitHub respectively; each engine keeps
-  its own shared current-tab/new-tab query history.
+  tab immediately below the currently focused tab. `:open yt <query>`,
+  `:open gh <query>`, and `:open ai <query>` search YouTube, GitHub, and
+  ChatGPT respectively; the ChatGPT engine fills and submits the prompt on page
+  load. Each engine keeps its own shared current-tab/new-tab query history.
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
 - `:shader [on|off]` toggles the native Blink page color shader; with the

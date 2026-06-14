@@ -58,6 +58,7 @@ std::string ResolveUrlOrSearch(std::string input);
 const std::vector<SearchEngine>& SearchEngines();
 const SearchEngine* FindSearchEngine(std::string_view name);
 std::string ResolveSearchEngineUrl(std::string_view name, std::string_view query);
+const std::string& ChatgptAutosendToken();
 std::string DisplayUrl(std::string url);
 
 }  // namespace vimbrowser

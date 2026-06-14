@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "browser_window.h"
+#include "config.h"
 #include "include/cef_app.h"
 #include "include/cef_callback.h"
 #include "include/cef_response.h"
@@ -117,6 +118,15 @@ bool NativeNetworkCaptureEnabled() {
   return enabled;
 }
 
+bool HostIsOrSubdomain(std::string_view host, std::string_view domain) {
+  if (host == domain) {
+    return true;
+  }
+  return host.size() > domain.size() &&
+         host.compare(host.size() - domain.size(), domain.size(), domain) == 0 &&
+         host[host.size() - domain.size() - 1] == '.';
+}
+
 std::string HostFromUrl(std::string_view url) {
   size_t start = 0;
   if (const size_t scheme = url.find("://"); scheme != std::string_view::npos) {
@@ -143,6 +153,120 @@ std::string HostFromUrl(std::string_view url) {
     authority.remove_suffix(1);
   }
   return LowerAscii(std::string(authority));
+}
+
+bool IsChatgptUrl(std::string_view url) {
+  const std::string host = HostFromUrl(url);
+  return HostIsOrSubdomain(host, "chatgpt.com") ||
+         HostIsOrSubdomain(host, "chat.openai.com");
+}
+
+bool IsChatgptAuthUrl(std::string_view url) {
+  const std::string host = HostFromUrl(url);
+  return HostIsOrSubdomain(host, "auth.openai.com");
+}
+
+int HexValue(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+  if (c >= 'a' && c <= 'f') {
+    return c - 'a' + 10;
+  }
+  if (c >= 'A' && c <= 'F') {
+    return c - 'A' + 10;
+  }
+  return -1;
+}
+
+std::string UrlDecodeQueryComponent(std::string_view value) {
+  std::string out;
+  out.reserve(value.size());
+  for (size_t i = 0; i < value.size(); ++i) {
+    const char c = value[i];
+    if (c == '+') {
+      out.push_back(' ');
+      continue;
+    }
+    if (c == '%' && i + 2 < value.size()) {
+      const int hi = HexValue(value[i + 1]);
+      const int lo = HexValue(value[i + 2]);
+      if (hi >= 0 && lo >= 0) {
+        out.push_back(static_cast<char>((hi << 4) | lo));
+        i += 2;
+        continue;
+      }
+    }
+    out.push_back(c);
+  }
+  return out;
+}
+
+bool UrlQueryParam(std::string_view url,
+                   std::string_view name,
+                   std::string* value_out) {
+  const size_t question = url.find('?');
+  if (question == std::string_view::npos) {
+    return false;
+  }
+  const size_t fragment = url.find('#', question + 1);
+  const std::string_view query =
+      fragment == std::string_view::npos
+          ? url.substr(question + 1)
+          : url.substr(question + 1, fragment - question - 1);
+  size_t pos = 0;
+  while (pos <= query.size()) {
+    const size_t amp = query.find('&', pos);
+    const std::string_view part =
+        amp == std::string_view::npos ? query.substr(pos)
+                                      : query.substr(pos, amp - pos);
+    const size_t equals = part.find('=');
+    const std::string decoded_name = UrlDecodeQueryComponent(
+        equals == std::string_view::npos ? part : part.substr(0, equals));
+    if (decoded_name == name) {
+      if (value_out) {
+        *value_out = UrlDecodeQueryComponent(
+            equals == std::string_view::npos ? std::string_view()
+                                             : part.substr(equals + 1));
+      }
+      return true;
+    }
+    if (amp == std::string_view::npos) {
+      break;
+    }
+    pos = amp + 1;
+  }
+  return false;
+}
+
+bool HasNonWhitespace(std::string_view value) {
+  return std::any_of(value.begin(), value.end(), [](unsigned char c) {
+    return !std::isspace(c);
+  });
+}
+
+bool ExtractChatgptAutosubmitPrompt(std::string_view url, std::string* prompt) {
+  if (!IsChatgptUrl(url)) {
+    return false;
+  }
+
+  std::string token;
+  if (!UrlQueryParam(url, "vimbrowser_autosend", &token) ||
+      token != ChatgptAutosendToken()) {
+    return false;
+  }
+
+  std::string value;
+  if ((!UrlQueryParam(url, "q", &value) &&
+       !UrlQueryParam(url, "prompt", &value)) ||
+      !HasNonWhitespace(value)) {
+    return false;
+  }
+
+  if (prompt) {
+    *prompt = std::move(value);
+  }
+  return true;
 }
 
 bool IsTrackerHost(std::string_view host) {
@@ -267,6 +391,163 @@ std::string JsonEscape(std::string_view text) {
     }
   }
   return out;
+}
+
+std::string BuildChatgptAutoSubmitScript(std::string_view prompt,
+                                         std::string_view key) {
+  std::ostringstream script;
+  script << "(()=>{\n"
+         << "'use strict';\n"
+         << "const prompt=\"" << JsonEscape(prompt) << "\";\n"
+         << "const key=\"" << JsonEscape(key) << "\";\n"
+         << R"JS(
+const doneKey='vimbrowser:chatgpt-autosubmit:done:'+key;
+if(!prompt||sessionStorage.getItem(doneKey)==='1'||window.__vimbrowserChatgptAutoSubmitKey===key)return;
+window.__vimbrowserChatgptAutoSubmitKey=key;
+let attempts=0;
+let composerFilled=false;
+function visible(el){
+  if(!el||!el.isConnected)return false;
+  const style=getComputedStyle(el);
+  if(style.display==='none'||style.visibility==='hidden')return false;
+  const rect=el.getBoundingClientRect();
+  return rect.width>0&&rect.height>0;
+}
+function disabled(el){return !el||el.disabled||el.getAttribute('aria-disabled')==='true';}
+function firstVisible(selectors,root){
+  root=root||document;
+  for(const selector of selectors){
+    for(const el of root.querySelectorAll(selector)){
+      if(visible(el)&&!disabled(el)&&!el.readOnly)return el;
+    }
+  }
+  return null;
+}
+function findComposer(){
+  return firstVisible([
+    'textarea#prompt-textarea',
+    'textarea[data-testid="prompt-textarea"]',
+    'textarea[placeholder*="Message"]',
+    '#prompt-textarea[contenteditable="true"]',
+    '[data-testid="prompt-textarea"][contenteditable="true"]',
+    '[contenteditable="true"][aria-label*="Message"]',
+    '[contenteditable="true"][role="textbox"]'
+  ],document);
+}
+function readComposer(el){
+  if(!el)return '';
+  if('value' in el)return el.value||'';
+  return el.innerText||el.textContent||'';
+}
+function fireInput(el,data){
+  let event;
+  try{event=new InputEvent('input',{bubbles:true,composed:true,inputType:'insertText',data});}
+  catch(_){event=new Event('input',{bubbles:true});}
+  el.dispatchEvent(event);
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function setNativeValue(el,value){
+  const proto=Object.getPrototypeOf(el);
+  const descriptor=Object.getOwnPropertyDescriptor(proto,'value')||
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')||
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  if(descriptor&&descriptor.set)descriptor.set.call(el,value);
+  else el.value=value;
+}
+function fillComposer(el,value){
+  el.focus({preventScroll:false});
+  if('value' in el){
+    setNativeValue(el,value);
+    fireInput(el,value);
+    return;
+  }
+  const selection=getSelection();
+  const range=document.createRange();
+  range.selectNodeContents(el);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  let inserted=false;
+  try{inserted=document.execCommand('insertText',false,value);}catch(_){}
+  if(!inserted){
+    while(el.firstChild)el.removeChild(el.firstChild);
+    for(const line of value.split('\n')){
+      const p=document.createElement('p');
+      if(line)p.textContent=line;
+      else p.appendChild(document.createElement('br'));
+      el.appendChild(p);
+    }
+  }
+  fireInput(el,value);
+}
+function uniqueRoots(composer){
+  const roots=[];
+  const add=(el)=>{if(el&&!roots.includes(el))roots.push(el);};
+  add(composer&&composer.closest('form'));
+  add(composer&&composer.closest('[data-testid*="composer"]'));
+  let node=composer;
+  for(let i=0;node&&i<8;++i,node=node.parentElement)add(node);
+  add(document);
+  return roots;
+}
+function findSendButton(composer){
+  const selectors=[
+    'button[data-testid="send-button"]',
+    'button[data-testid="composer-submit-button"]',
+    'button[aria-label="Send prompt"]',
+    'button[aria-label="Send message"]',
+    'button[aria-label*="Send"]',
+    'button[type="submit"]'
+  ];
+  for(const root of uniqueRoots(composer)){
+    const button=firstVisible(selectors,root);
+    if(button)return button;
+  }
+  for(const button of document.querySelectorAll('button')){
+    const label=(button.getAttribute('aria-label')||button.title||button.textContent||'').toLowerCase();
+    if(label.includes('send')&&visible(button)&&!disabled(button))return button;
+  }
+  return null;
+}
+function scrubUrl(){
+  try{
+    const url=new URL(location.href);
+    if(!url.searchParams.has('vimbrowser_autosend'))return;
+    url.searchParams.delete('q');
+    url.searchParams.delete('prompt');
+    url.searchParams.delete('vimbrowser_autosend');
+    history.replaceState(history.state,document.title,url.pathname+url.search+url.hash);
+  }catch(_){}
+}
+function markDone(){
+  sessionStorage.setItem(doneKey,'1');
+  scrubUrl();
+}
+function attempt(){
+  ++attempts;
+  const composer=findComposer();
+  if(!composer)return false;
+  if(!composerFilled||readComposer(composer).trim()!==prompt.trim()){
+    fillComposer(composer,prompt);
+    composerFilled=true;
+  }
+  const button=findSendButton(composer);
+  if(button){
+    button.click();
+    markDone();
+    return true;
+  }
+  const form=composer.closest('form');
+  if(form&&attempts>8){
+    try{if(typeof form.requestSubmit==='function'){form.requestSubmit();markDone();return true;}}catch(_){}
+    try{if(form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))){markDone();return true;}}catch(_){}
+  }
+  return false;
+}
+const timer=setInterval(()=>{if(attempt()||attempts>=360)clearInterval(timer);},250);
+setTimeout(()=>{if(attempt())clearInterval(timer);},50);
+})();
+)JS";
+  return script.str();
 }
 
 std::string ResourceTypeName(cef_resource_type_t type) {
@@ -527,16 +808,38 @@ void BrowserClient::DetachOwner() {
 void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 TransitionType transition_type) {
-  if (owner_ && frame && frame->IsMain()) {
-    owner_->OnClientLoadStart(this, frame->GetURL().ToString());
+  if (frame && frame->IsMain()) {
+    const std::string url = frame->GetURL().ToString();
+    std::string prompt;
+    if (ExtractChatgptAutosubmitPrompt(url, &prompt)) {
+      pending_chatgpt_autosubmit_prompt_ = std::move(prompt);
+      pending_chatgpt_autosubmit_key_ =
+          "chatgpt:" + std::to_string(++chatgpt_autosubmit_sequence_);
+    } else if (!IsChatgptUrl(url) && !IsChatgptAuthUrl(url)) {
+      pending_chatgpt_autosubmit_prompt_.clear();
+      pending_chatgpt_autosubmit_key_.clear();
+    }
+    if (owner_) {
+      owner_->OnClientLoadStart(this, url);
+    }
   }
 }
 
 void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode) {
-  if (owner_ && frame && frame->IsMain()) {
-    owner_->OnClientLoadEnd(this);
+  if (frame && frame->IsMain()) {
+    if (browser && !pending_chatgpt_autosubmit_prompt_.empty() &&
+        !pending_chatgpt_autosubmit_key_.empty() &&
+        IsChatgptUrl(frame->GetURL().ToString())) {
+      frame->ExecuteJavaScript(
+          BuildChatgptAutoSubmitScript(pending_chatgpt_autosubmit_prompt_,
+                                       pending_chatgpt_autosubmit_key_),
+          frame->GetURL(), 0);
+    }
+    if (owner_) {
+      owner_->OnClientLoadEnd(this);
+    }
   }
 }
 
