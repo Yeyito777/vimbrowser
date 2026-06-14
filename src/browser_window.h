@@ -29,10 +29,18 @@
 
 namespace vimbrowser {
 
+enum class CompletionSource {
+  kStatic,
+  kOpenHistory,
+  kSearchHistory,
+};
+
 struct CompletionItem {
   std::string name;
   std::string description;
   std::string insert_text;
+  CompletionSource source = CompletionSource::kStatic;
+  std::string source_key;
 };
 
 using IpcReplyCallback = std::function<void(std::string)>;
@@ -327,6 +335,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void AppendTabFocusMatches(const std::string& prefix,
                              std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
+  bool DeleteSelectedCommandAutocomplete();
   void FillCommandAutocomplete(const CompletionItem& item);
   int CommandAutocompleteVisibleRows() const;
   int CommandAutocompleteHeight() const;

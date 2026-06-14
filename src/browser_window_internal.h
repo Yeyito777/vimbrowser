@@ -109,6 +109,7 @@ inline constexpr int kAcceleratorFocusNext = 5007;
 inline constexpr int kAcceleratorFocusPrevious = 5008;
 inline constexpr int kAcceleratorToggleDevToolsSemicolon = 5009;
 inline constexpr int kAcceleratorToggleDevToolsOem1 = 5010;
+inline constexpr int kAcceleratorCommandDeleteCompletion = 5011;
 inline constexpr int kSidebarRowBaseId = 2000;
 inline constexpr int kAutocompleteRowBaseId = 6000;
 inline constexpr int kContextMenuRowBaseId = 7000;

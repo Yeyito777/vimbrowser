@@ -843,6 +843,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
                           false, true);
   window_->SetAccelerator(kAcceleratorToggleDevToolsOem1, 0xBA, false, true,
                           false, true);
+  window_->SetAccelerator(kAcceleratorCommandDeleteCompletion, 'X', false, true,
+                          false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -1444,6 +1446,10 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
     if (command_id == kAcceleratorCommandTab ||
         command_id == kAcceleratorCommandBacktab) {
       return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
+    }
+    if (command_id == kAcceleratorCommandDeleteCompletion) {
+      DeleteSelectedCommandAutocomplete();
+      return true;
     }
   }
   if (mode_ == Mode::kNormal && !native_hints_active_) {

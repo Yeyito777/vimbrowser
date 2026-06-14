@@ -13,6 +13,31 @@
 
 namespace vimbrowser {
 
+namespace {
+
+bool EraseCaseInsensitive(std::vector<std::string>& values,
+                          const std::string& value) {
+  if (value.empty()) {
+    return false;
+  }
+
+  const std::string folded = ToLowerAscii(value);
+  const size_t old_size = values.size();
+  values.erase(std::remove_if(values.begin(), values.end(),
+                              [&](const std::string& existing) {
+                                return ToLowerAscii(existing) == folded;
+                              }),
+               values.end());
+  return values.size() != old_size;
+}
+
+bool SameHistoryCompletionSource(const CompletionItem& a,
+                                 const CompletionItem& b) {
+  return a.source == b.source && a.source_key == b.source_key;
+}
+
+}  // namespace
+
 void BrowserWindow::ClearCommandAutocomplete() {
   command_autocomplete_ = CommandAutocompleteState{};
   UpdateAutocompleteView();
@@ -49,7 +74,8 @@ void BrowserWindow::AppendOpenHistoryMatches(
 
     ranked.push_back(
         {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
-                        "open history", entry},
+                        "open history", entry,
+                        CompletionSource::kOpenHistory},
          open_history_.size() - 1 - index});
   }
 
@@ -103,7 +129,8 @@ void BrowserWindow::AppendSearchHistoryMatches(
 
     ranked.push_back(
         {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
-                        folded_engine + " search history", entry},
+                        folded_engine + " search history", entry,
+                        CompletionSource::kSearchHistory, folded_engine},
          history_it->second.size() - 1 - index});
   }
 
@@ -386,6 +413,83 @@ bool BrowserWindow::CycleCommandAutocomplete(int direction) {
   return true;
 }
 
+bool BrowserWindow::DeleteSelectedCommandAutocomplete() {
+  if (!command_autocomplete_.active ||
+      command_autocomplete_.selection < 0 ||
+      command_autocomplete_.selection >=
+          static_cast<int>(command_autocomplete_.matches.size())) {
+    return false;
+  }
+
+  const CompletionItem item =
+      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)];
+  const std::string entry = CompletionInsertText(item);
+  bool deleted = false;
+
+  if (item.source == CompletionSource::kOpenHistory) {
+    deleted = EraseCaseInsensitive(open_history_, entry);
+  } else if (item.source == CompletionSource::kSearchHistory) {
+    auto history_it = search_history_.find(ToLowerAscii(item.source_key));
+    if (history_it != search_history_.end()) {
+      deleted = EraseCaseInsensitive(history_it->second, entry);
+      if (history_it->second.empty()) {
+        search_history_.erase(history_it);
+      }
+    }
+  } else {
+    return true;
+  }
+
+  if (!deleted) {
+    return true;
+  }
+
+  const std::string prefix = command_autocomplete_.prefix;
+  const int old_selection = command_autocomplete_.selection;
+
+  // Cycling through completions keeps |prefix| as the original typed text while
+  // rendering the selected completion into the command field. After removing a
+  // history row, rebuild from that original prefix so the deleted text does not
+  // remain in the command line, then keep the highlight on the next/previous
+  // remaining history row instead of falling back to static rows like "tab".
+  command_text_ = prefix;
+  command_vim_.cursor = command_text_.size();
+  vim::Clamp(command_vim_, command_text_);
+  UpdateCommandAutocomplete();
+
+  int next_selection = -1;
+  if (command_autocomplete_.active &&
+      !command_autocomplete_.matches.empty()) {
+    const int size = static_cast<int>(command_autocomplete_.matches.size());
+    const int start = std::min(old_selection, size - 1);
+    for (int i = start; i < size; ++i) {
+      if (SameHistoryCompletionSource(command_autocomplete_.matches[static_cast<size_t>(i)],
+                                      item)) {
+        next_selection = i;
+        break;
+      }
+    }
+    for (int i = start; next_selection < 0 && i >= 0; --i) {
+      if (SameHistoryCompletionSource(command_autocomplete_.matches[static_cast<size_t>(i)],
+                                      item)) {
+        next_selection = i;
+        break;
+      }
+    }
+  }
+
+  if (next_selection >= 0) {
+    command_autocomplete_.selection = next_selection;
+    FillCommandAutocomplete(
+        command_autocomplete_.matches[static_cast<size_t>(next_selection)]);
+  }
+
+  SaveState();
+  SetCommandText(command_text_);
+  Layout();
+  return true;
+}
+
 bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   if (mode_ == Mode::kNormal) {
     return false;
@@ -453,6 +557,10 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
 
   const bool key_down = IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN;
   if (key_down) {
+    if (HasOnlyControlModifier(event) && IsCtrlKey(event, 'X')) {
+      DeleteSelectedCommandAutocomplete();
+      return true;
+    }
     if (IsEnterKey(event)) {
       return process_key({vim::KeyType::kEnter}, false);
     }
