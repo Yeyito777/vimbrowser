@@ -1624,6 +1624,16 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 
   if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
     switch (PlainKeyChar(event)) {
+      case 'i':
+      case 'I':
+        ResetWebsitePendingKeys();
+        website_mode_ = vim::Mode::kInsert;
+        // The sidebar owns the mode-entry key. If the toolkit still emits a
+        // trailing CHAR after focus moves to the page, consume only that CHAR so
+        // `i` does not type into the newly-focused webview.
+        suppress_next_website_char_ = 'i';
+        SetFocusArea(FocusArea::kWebView);
+        return true;
       case 'j':
         ResetWebsitePendingKeys();
         ActivateRelative(1);

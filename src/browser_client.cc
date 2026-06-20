@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "browser_font_settings.h"
 #include "browser_window.h"
 #include "config.h"
 #include "include/cef_app.h"
@@ -882,6 +883,7 @@ bool BrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
   }
 
   settings.tab_to_links = STATE_ENABLED;
+  ApplyBrowserFontSettings(settings);
 
   CefRefPtr<BrowserClient> popup_client = new BrowserClient(owner_);
   client = popup_client;

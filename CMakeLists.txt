@@ -21,6 +21,7 @@ SET_CEF_TARGET_OUT_DIR()
 add_executable(vimbrowser
   src/app.cc
   src/app.h
+  src/browser_font_settings.h
   src/browser_client.cc
   src/browser_client.h
   src/browser_window_autocomplete.cc

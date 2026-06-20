@@ -747,6 +747,31 @@ def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
             "sidebar keybindings generated input events", snap)
 
 
+def test_sidebar_i_focuses_webview_insert_without_typing(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=True)
+    h.focus_sidebar()
+    before = h.ipc(["status"])
+    require(before.get("mode") == "SIDEBAR",
+            "could not focus sidebar before testing sidebar i", before)
+
+    h.clear()
+    h.key("i", pause=0.25)
+    status = h.wait_for_mode("INSERT")
+    after_i = h.snapshot()
+    require(after_i["value"] == "",
+            "sidebar i leaked into the focused input while entering insert mode",
+            {"status": status, "snapshot": after_i})
+    require(not any(e.get("type") == "input" for e in after_i["events"]),
+            "sidebar i generated an input event while entering insert mode",
+            {"status": status, "snapshot": after_i})
+
+    h.key("x", pause=0.2)
+    after_x = h.snapshot()
+    require(after_x["value"] == "x",
+            "sidebar i did not focus the webview in insert mode for following text",
+            {"status": status, "snapshot": after_x})
+
+
 def test_ctrl_jk_cycle_focus_not_hints(h: Harness) -> None:
     reset_to_website_mode(h, focus_input=True)
     h.clear()
@@ -1042,6 +1067,7 @@ TESTS = [
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_tab_cursor,
     test_sidebar_keybinds_do_not_type,
+    test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,
     test_ctrl_lh_start_right_click_and_hover_hints,
     test_reload_then_hint_key_does_not_softlock,
