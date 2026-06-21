@@ -258,7 +258,8 @@ bool ExtractChatgptAutosubmitPrompt(std::string_view url, std::string* prompt) {
   }
 
   std::string value;
-  if ((!UrlQueryParam(url, "q", &value) &&
+  if ((!UrlQueryParam(url, "vimbrowser_prompt", &value) &&
+       !UrlQueryParam(url, "q", &value) &&
        !UrlQueryParam(url, "prompt", &value)) ||
       !HasNonWhitespace(value)) {
     return false;
@@ -266,6 +267,69 @@ bool ExtractChatgptAutosubmitPrompt(std::string_view url, std::string* prompt) {
 
   if (prompt) {
     *prompt = std::move(value);
+  }
+  return true;
+}
+
+bool IsChatgptAutosubmitQueryParam(std::string_view encoded_name) {
+  const std::string name = UrlDecodeQueryComponent(encoded_name);
+  return name == "vimbrowser_prompt" || name == "vimbrowser_autosend" ||
+         name == "q" || name == "prompt";
+}
+
+bool StripChatgptAutosubmitQueryParams(std::string_view url,
+                                       std::string* stripped_url) {
+  const size_t question = url.find('?');
+  if (question == std::string_view::npos) {
+    return false;
+  }
+  const size_t fragment = url.find('#', question + 1);
+  const std::string_view query =
+      fragment == std::string_view::npos
+          ? url.substr(question + 1)
+          : url.substr(question + 1, fragment - question - 1);
+
+  bool removed = false;
+  std::string kept_query;
+  size_t pos = 0;
+  while (pos <= query.size()) {
+    const size_t amp = query.find('&', pos);
+    const std::string_view part =
+        amp == std::string_view::npos ? query.substr(pos)
+                                      : query.substr(pos, amp - pos);
+    const size_t equals = part.find('=');
+    const std::string_view name =
+        equals == std::string_view::npos ? part : part.substr(0, equals);
+
+    if (IsChatgptAutosubmitQueryParam(name)) {
+      removed = true;
+    } else if (!part.empty()) {
+      if (!kept_query.empty()) {
+        kept_query.push_back('&');
+      }
+      kept_query.append(part.data(), part.size());
+    }
+
+    if (amp == std::string_view::npos) {
+      break;
+    }
+    pos = amp + 1;
+  }
+
+  if (!removed) {
+    return false;
+  }
+
+  std::string out(url.substr(0, question));
+  if (!kept_query.empty()) {
+    out.push_back('?');
+    out += kept_query;
+  }
+  if (fragment != std::string_view::npos) {
+    out.append(url.substr(fragment));
+  }
+  if (stripped_url) {
+    *stripped_url = std::move(out);
   }
   return true;
 }
@@ -440,9 +504,9 @@ function readComposer(el){
   if('value' in el)return el.value||'';
   return el.innerText||el.textContent||'';
 }
-function fireInput(el,data){
+function fireInput(el,data,inputType){
   let event;
-  try{event=new InputEvent('input',{bubbles:true,composed:true,inputType:'insertText',data});}
+  try{event=new InputEvent('input',{bubbles:true,composed:true,inputType:inputType||'insertText',data});}
   catch(_){event=new Event('input',{bubbles:true});}
   el.dispatchEvent(event);
   el.dispatchEvent(new Event('change',{bubbles:true}));
@@ -480,6 +544,29 @@ function fillComposer(el,value){
   }
   fireInput(el,value);
 }
+function clearComposer(el){
+  if(!el)return;
+  el.focus({preventScroll:true});
+  if('value' in el){
+    setNativeValue(el,'');
+    fireInput(el,'','deleteContentBackward');
+    return;
+  }
+  const selection=getSelection();
+  const range=document.createRange();
+  range.selectNodeContents(el);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  let deleted=false;
+  try{deleted=document.execCommand('delete',false,null);}catch(_){ }
+  if(!deleted){
+    while(el.firstChild)el.removeChild(el.firstChild);
+    const p=document.createElement('p');
+    p.appendChild(document.createElement('br'));
+    el.appendChild(p);
+  }
+  fireInput(el,'','deleteContentBackward');
+}
 function uniqueRoots(composer){
   const roots=[];
   const add=(el)=>{if(el&&!roots.includes(el))roots.push(el);};
@@ -515,13 +602,30 @@ function scrubUrl(){
     if(!url.searchParams.has('vimbrowser_autosend'))return;
     url.searchParams.delete('q');
     url.searchParams.delete('prompt');
+    url.searchParams.delete('vimbrowser_prompt');
     url.searchParams.delete('vimbrowser_autosend');
     history.replaceState(history.state,document.title,url.pathname+url.search+url.hash);
   }catch(_){}
 }
+let postSubmitScrubberStarted=false;
+function startPostSubmitScrubber(){
+  if(postSubmitScrubberStarted)return;
+  postSubmitScrubberStarted=true;
+  const expected=prompt.trim();
+  const deadline=Date.now()+15000;
+  let timer=0;
+  const clean=()=>{
+    const composer=findComposer();
+    if(composer&&readComposer(composer).trim()===expected)clearComposer(composer);
+    if(Date.now()>=deadline&&timer)clearInterval(timer);
+  };
+  setTimeout(clean,500);
+  timer=setInterval(clean,500);
+}
 function markDone(){
   sessionStorage.setItem(doneKey,'1');
   scrubUrl();
+  startPostSubmitScrubber();
 }
 function attempt(){
   ++attempts;
@@ -981,6 +1085,39 @@ bool BrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                               CefRefPtr<CefProcessMessage> message) {
   return owner_ && owner_->OnClientProcessMessage(this, browser, frame,
                                                   source_process, message);
+}
+
+bool BrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                                   CefRefPtr<CefFrame> frame,
+                                   CefRefPtr<CefRequest> request,
+                                   bool user_gesture,
+                                   bool is_redirect) {
+  (void)browser;
+  (void)user_gesture;
+  (void)is_redirect;
+
+  if (!frame || !frame->IsMain() || !request) {
+    return false;
+  }
+
+  const std::string url = request->GetURL().ToString();
+  std::string prompt;
+  if (!ExtractChatgptAutosubmitPrompt(url, &prompt)) {
+    return false;
+  }
+
+  pending_chatgpt_autosubmit_prompt_ = std::move(prompt);
+  pending_chatgpt_autosubmit_key_ =
+      "chatgpt:" + std::to_string(++chatgpt_autosubmit_sequence_);
+
+  std::string stripped_url;
+  if (!StripChatgptAutosubmitQueryParams(url, &stripped_url) ||
+      stripped_url == url) {
+    return false;
+  }
+
+  frame->LoadURL(stripped_url);
+  return true;
 }
 
 bool BrowserClient::OnRequestMediaAccessPermission(

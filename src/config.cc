@@ -326,7 +326,8 @@ const std::vector<SearchEngine>& SearchEngines() {
   static const std::vector<SearchEngine> engines = {
       {"yt", "https://www.youtube.com/results?search_query={}"},
       {"gh", "https://github.com/search?q={}"},
-      {"ai", "https://chatgpt.com/?q={}&vimbrowser_autosend={vimbrowser_autosend_token}"},
+      {"ai", "https://chatgpt.com/?vimbrowser_prompt={}"
+             "&vimbrowser_autosend={vimbrowser_autosend_token}"},
   };
   return engines;
 }

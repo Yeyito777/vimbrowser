@@ -85,6 +85,11 @@ class BrowserClient final : public CefClient,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request,
+                      bool user_gesture,
+                      bool is_redirect) override;
 
   bool OnRequestMediaAccessPermission(
       CefRefPtr<CefBrowser> browser,
