@@ -839,9 +839,8 @@ Color LayoutTheme::PlatformTextSearchHighlightColor(
       return GetTheme().SystemColor(CSSValueID::kHighlight, color_scheme,
                                     color_provider, is_in_web_app_scope);
     }
-    return Color(255, 150, 50);  // Orange.
   }
-  return Color(255, 255, 0);  // Yellow.
+  return Color(252, 224, 148);  // #fce094, vimbrowser find highlight.
 }
 
 Color LayoutTheme::PlatformTextSearchColor(

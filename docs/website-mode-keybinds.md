@@ -71,6 +71,13 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `ym` — copy markdown link: `[title](url)`
 - [x] `Ctrl-Shift-Y` — yank DOM
 
+## Find in page
+
+- [x] `/` — search forward in the current page
+- [x] `?` — search backward in the current page
+- [x] `n` / `N` — repeat current page search in same / opposite direction
+- [x] `:noh` — clear current page search highlights
+
 ## Already implemented / keep
 
 - [x] `:` — command line prefilled with `:`

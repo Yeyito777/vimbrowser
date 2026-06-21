@@ -118,8 +118,17 @@ void BrowserWindow::BeginCommandText(std::string text) {
 }
 
 void BrowserWindow::CommitCommand() {
+  const std::string raw_text = command_text_;
   std::string text = Trim(command_text_);
   bool open_in_new_tab = mode_ == Mode::kCommandOpenNext;
+
+  if (!raw_text.empty() && (raw_text[0] == '/' || raw_text[0] == '?')) {
+    const bool forward = raw_text[0] == '/';
+    text = raw_text.substr(1);
+    CancelCommand();
+    StartPageSearch(std::move(text), forward);
+    return;
+  }
 
   if (!text.empty() && text[0] == ':') {
     const size_t first_space = text.find_first_of(" \t");
@@ -134,6 +143,15 @@ void BrowserWindow::CommitCommand() {
       action();
       return;
     };
+
+    if (command == ":noh" || command == ":nohlsearch") {
+      if (!args.empty()) {
+        CancelCommand();
+        return;
+      }
+      finish([&] { ClearPageSearchHighlights(); });
+      return;
+    }
 
     if (command == ":showmode") {
       std::vector<std::string> argv = SplitArgs(args);
@@ -539,6 +557,59 @@ void BrowserWindow::ScrollActivePageToBottom() {
     return;
   }
   SendScrollWheel(browser, event, kScrollToEdgePx);
+}
+
+void BrowserWindow::StartPageSearch(std::string text, bool forward) {
+  if (text.empty()) {
+    if (page_search_text_.empty()) {
+      SetStatusOutput("no previous search", 1500);
+      return;
+    }
+    page_search_forward_ = forward;
+    FindNextPageSearch(false);
+    return;
+  }
+
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetHost()) {
+    return;
+  }
+
+  page_search_text_ = std::move(text);
+  page_search_forward_ = forward;
+  page_search_highlights_visible_ = true;
+  page_search_browser_id_ = browser->GetIdentifier();
+  browser->GetHost()->Find(page_search_text_, forward, false, false);
+}
+
+void BrowserWindow::FindNextPageSearch(bool reverse_direction) {
+  if (page_search_text_.empty()) {
+    SetStatusOutput("no previous search", 1500);
+    return;
+  }
+
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetHost()) {
+    return;
+  }
+
+  const bool forward = reverse_direction ? !page_search_forward_
+                                         : page_search_forward_;
+  const bool same_browser = page_search_browser_id_ == browser->GetIdentifier();
+  const bool find_next = same_browser && page_search_highlights_visible_;
+  page_search_highlights_visible_ = true;
+  page_search_browser_id_ = browser->GetIdentifier();
+  browser->GetHost()->Find(page_search_text_, forward, false, find_next);
+}
+
+void BrowserWindow::ClearPageSearchHighlights() {
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (browser && browser->GetHost()) {
+    browser->GetHost()->StopFinding(true);
+    page_search_browser_id_ = browser->GetIdentifier();
+  }
+  page_search_highlights_visible_ = false;
+  SetStatusOutput("search highlights cleared", 1500);
 }
 
 void BrowserWindow::OpenClipboard(bool new_tab) {

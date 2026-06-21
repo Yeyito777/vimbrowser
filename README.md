@@ -223,6 +223,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - in website-normal/normal web modes, `Ctrl+Space` starts native backend
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it
+- in website-normal/normal web modes, `/` opens a forward in-page search prompt,
+  `?` opens a backward in-page search prompt, and `n` / `N` repeat the last page
+  search in the same/opposite direction; `:noh` clears the current page search
+  highlights while keeping the last search term available for repeat
 - in website-normal/normal web modes, `p` opens the clipboard in the current tab
   and `P` opens the clipboard in a new tab
 - in website-normal/normal web modes, `d` closes the current tab and `D` closes

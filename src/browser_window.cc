@@ -3713,6 +3713,25 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
     return true;
   }
 
+  if (focus_area_ == FocusArea::kWebView) {
+    if (key == '/') {
+      BeginCommandText("/");
+      return true;
+    }
+    if (key == '?') {
+      BeginCommandText("?");
+      return true;
+    }
+    if (key == 'n') {
+      FindNextPageSearch(false);
+      return true;
+    }
+    if (key == 'N') {
+      FindNextPageSearch(true);
+      return true;
+    }
+  }
+
   if (std::optional<bool> shortcut = HandlePageShortcut(event, false)) {
     return *shortcut;
   }

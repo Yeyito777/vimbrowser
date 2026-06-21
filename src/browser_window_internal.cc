@@ -200,6 +200,7 @@ const std::vector<CompletionItem>& CommandList() {
       {":showmode", "toggle top-right vim mode display"},
       {":showfps", "toggle current page fps display"},
       {":showstatusline", "toggle bottom statusline display"},
+      {":noh", "clear page search highlights"},
   };
   return commands;
 }

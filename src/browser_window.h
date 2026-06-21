@@ -370,6 +370,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void CycleDevToolsPanel(int delta);
   void ScrollActivePageToTop();
   void ScrollActivePageToBottom();
+  void StartPageSearch(std::string text, bool forward);
+  void FindNextPageSearch(bool reverse_direction);
+  void ClearPageSearchHighlights();
   void OpenClipboard(bool new_tab);
   void RecordOpenHistory(const std::string& text);
   void RecordSearchHistory(const std::string& engine,
@@ -443,6 +446,7 @@ class BrowserWindow final : public CefWindowDelegate,
   size_t initial_active_index_ = 0;
   std::string command_text_;
   std::string status_output_text_;
+  std::string page_search_text_;
   std::vector<std::string> open_history_;
   std::map<std::string, std::vector<std::string>> search_history_;
   std::unordered_map<std::string, uint32_t> media_permission_grants_;
@@ -473,6 +477,8 @@ class BrowserWindow final : public CefWindowDelegate,
   bool forwarding_key_to_devtools_ = false;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
+  bool page_search_forward_ = true;
+  bool page_search_highlights_visible_ = false;
   bool devtools_has_scroll_target_ = false;
   int devtools_scroll_target_x_ = 1;
   int devtools_scroll_target_y_ = 1;
@@ -487,6 +493,7 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t status_output_generation_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
+  int page_search_browser_id_ = 0;
   std::atomic<bool> sidebar_mouse_watcher_running_{false};
   std::atomic<int> sidebar_mouse_screen_x_{0};
   std::atomic<int> sidebar_mouse_screen_y_{0};
