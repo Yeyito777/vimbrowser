@@ -737,6 +737,29 @@ def test_sidebar_jk_moves_tab_cursor(h: Harness) -> None:
             "sidebar k did not move the tab cursor up", after_k)
 
 
+def test_sidebar_gg_and_G_jump_to_tab_ends(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url])
+    h.ipc(["open-tab", h.initial_url])
+    tabs = h.ipc(["tabs"])["tabs"]
+    h.ipc(["tab-focus", str(tabs[1]["id"])])
+    h.reset(focus_input=False)
+    h.focus_sidebar()
+    before = h.ipc(["status"])
+    require(before.get("mode") == "SIDEBAR" and before.get("active_index") == 1,
+            "could not focus sidebar with middle tab selected", before)
+
+    h.key("g", "g", pause=0.25)
+    after_gg = h.ipc(["status"])
+    require(after_gg.get("mode") == "SIDEBAR" and after_gg.get("active_index") == 0,
+            "sidebar gg did not move the tab cursor to the top", after_gg)
+
+    h.key("shift+g", pause=0.25)
+    after_G = h.ipc(["status"])
+    require(after_G.get("mode") == "SIDEBAR" and
+            after_G.get("active_index") == len(tabs) - 1,
+            "sidebar G did not move the tab cursor to the bottom", after_G)
+
+
 def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
     h.reset(focus_input=True)
     h.focus_sidebar()
@@ -1066,6 +1089,7 @@ TESTS = [
     test_normal_escape_returns_to_website_mode,
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_tab_cursor,
+    test_sidebar_gg_and_G_jump_to_tab_ends,
     test_sidebar_keybinds_do_not_type,
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,

@@ -3699,7 +3699,14 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
 
   if (website_pending_keys_ == "g") {
     ResetWebsitePendingKeys();
-    if (key == 'g') { ScrollActivePageToTop(); return true; }
+    if (key == 'g') {
+      if (focus_area_ == FocusArea::kTabSidebar) {
+        ActivateFirstTab();
+      } else {
+        ScrollActivePageToTop();
+      }
+      return true;
+    }
     if (key == '0') { ActivateFirstTab(); return true; }
     if (key == '$') { ActivateLastTab(); return true; }
     return true;
@@ -3739,7 +3746,13 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   switch (key) {
     case 'j': ScrollActivePageBy(kLineScrollPx); return true;
     case 'k': ScrollActivePageBy(-kLineScrollPx); return true;
-    case 'G': ScrollActivePageToBottom(); return true;
+    case 'G':
+      if (focus_area_ == FocusArea::kTabSidebar) {
+        ActivateLastTab();
+      } else {
+        ScrollActivePageToBottom();
+      }
+      return true;
     case 'H':
       if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) browser->GoBack();
       return true;
