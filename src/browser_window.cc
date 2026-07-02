@@ -269,6 +269,48 @@ void BrowserWindow::Create() {
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
+  if (client && client->browser() && client->browser()->GetHost()) {
+    client->browser()->GetHost()->NotifyScreenInfoChanged();
+  }
+}
+
+bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient* client,
+                                                     CefRect& rect) const {
+  if (!client || !content_inner_panel_) {
+    return false;
+  }
+
+  bool owns_client = false;
+  for (const Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      owns_client = true;
+      break;
+    }
+  }
+  if (!owns_client) {
+    return false;
+  }
+
+  // Vimbrowser hosts its tab sidebar/status UI inside the same top-level
+  // CefWindow as the page BrowserView. Reporting that whole root window to
+  // Blink makes JavaScript window.outerWidth/outerHeight include browser chrome
+  // that is not part of the web page. Some sites, notably Discord, treat a
+  // large outerWidth-innerWidth delta as docked DevTools and deliberately hide
+  // authentication tokens from persistent storage. The browser page's root
+  // window for web-observable geometry is the content pane, not vimbrowser's
+  // chrome shell.
+  rect = content_inner_panel_->GetBoundsInScreen();
+  if (rect.width > 0 && rect.height > 0) {
+    return true;
+  }
+
+  CefRect local_bounds = content_inner_panel_->GetBounds();
+  CefPoint origin(0, 0);
+  if (!content_inner_panel_->ConvertPointToScreen(origin)) {
+    return false;
+  }
+  rect = CefRect(origin.x, origin.y, local_bounds.width, local_bounds.height);
+  return rect.width > 0 && rect.height > 0;
 }
 
 void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
@@ -2831,6 +2873,14 @@ void BrowserWindow::Layout() {
   UpdateStatusBar();
   laid_out_content_width_ = actual_content_width;
   laid_out_content_height_ = main_height;
+  if (content_size_changed) {
+    for (const Tab& tab : tabs_) {
+      if (tab.client && tab.client->browser() &&
+          tab.client->browser()->GetHost()) {
+        tab.client->browser()->GetHost()->NotifyScreenInfoChanged();
+      }
+    }
+  }
   UpdateSidebarMouseBounds();
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();

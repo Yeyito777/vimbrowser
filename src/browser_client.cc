@@ -956,6 +956,13 @@ void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
   }
 }
 
+#if CEF_API_ADDED(13700)
+bool BrowserClient::GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
+                                            CefRect& rect) {
+  return owner_ && owner_->GetRootWindowScreenRectForClient(this, rect);
+}
+#endif
+
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode error_code,

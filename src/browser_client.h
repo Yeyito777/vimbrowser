@@ -47,6 +47,10 @@ class BrowserClient final : public CefClient,
   void OnAddressChange(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefFrame> frame,
                        const CefString& url) override;
+#if CEF_API_ADDED(13700)
+  bool GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
+                               CefRect& rect) override;
+#endif
   void OnLoadError(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefFrame> frame,
                    ErrorCode error_code,

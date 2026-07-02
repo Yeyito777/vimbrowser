@@ -97,6 +97,8 @@ class BrowserWindow final : public CefWindowDelegate,
       const CefString& requesting_origin,
       uint32_t requested_permissions,
       CefRefPtr<CefMediaAccessCallback> callback);
+  bool GetRootWindowScreenRectForClient(BrowserClient* client,
+                                        CefRect& rect) const;
   void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
   void OnNativeHintScrollTarget(BrowserClient* client,
                                 int x,
