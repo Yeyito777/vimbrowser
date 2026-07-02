@@ -19,6 +19,7 @@
 #include "browser_window.h"
 #include "include/cef_task.h"
 #include "include/wrapper/cef_closure_task.h"
+#include "platform_compat.h"
 
 namespace vimbrowser {
 namespace {

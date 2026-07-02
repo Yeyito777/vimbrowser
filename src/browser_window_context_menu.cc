@@ -722,8 +722,13 @@ void BrowserWindow::UpdateContextMenuMouseBounds(int x,
   context_menu_mouse_height_.store(std::max(0, height));
   context_menu_mouse_row_count_.store(
       static_cast<int>(native_context_menu_->items.size()));
+#if defined(__linux__)
+  // Only the X11 context-menu mouse watcher consumes this window id.
   context_menu_mouse_window_.store(
       static_cast<unsigned long>(window_->GetWindowHandle()));
+#else
+  context_menu_mouse_window_.store(0);
+#endif
 }
 
 void BrowserWindow::ClearContextMenuMouseBounds() {

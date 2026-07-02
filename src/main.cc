@@ -15,10 +15,23 @@
 #include <X11/Xlib.h>
 #endif
 
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 #include "app.h"
 #include "config.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
+#include "platform_compat.h"
+
+#if defined(__APPLE__)
+#include "include/wrapper/cef_library_loader.h"
+
+// Defined in mac/main_mac.mm; installs the CefAppProtocol-conforming
+// NSApplication before CefInitialize().
+extern "C" void VimbrowserInitMacApplication();
+#endif
 
 // Chromium/CEF zygote subprocesses are launched through the embedder executable
 // and can run with --change-stack-guard-on-fork=enable. The zygote changes the
@@ -40,6 +53,18 @@ void SetCefString(cef_string_t* target, const std::string& value) {
 }
 
 std::string ExecutablePath() {
+#if defined(__APPLE__)
+  char path[PATH_MAX];
+  uint32_t size = sizeof(path);
+  if (_NSGetExecutablePath(path, &size) != 0) {
+    return {};
+  }
+  char resolved[PATH_MAX];
+  if (realpath(path, resolved)) {
+    return resolved;
+  }
+  return path;
+#else
   char path[PATH_MAX];
   const ssize_t length = readlink("/proc/self/exe", path, sizeof(path) - 1);
   if (length <= 0) {
@@ -47,6 +72,7 @@ std::string ExecutablePath() {
   }
   path[length] = '\0';
   return path;
+#endif
 }
 
 std::string Dirname(const std::string& path) {
@@ -297,6 +323,16 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   XInitThreads();
 #endif
 
+#if defined(__APPLE__)
+  // Load the CEF framework from the app bundle before any other CEF call.
+  // Subprocesses run through the separate Helper app bundles, not this binary.
+  CefScopedLibraryLoader library_loader;
+  if (!library_loader.LoadInMain()) {
+    std::cerr << "vimbrowser: failed to load the CEF framework" << std::endl;
+    return 1;
+  }
+#endif
+
   const std::string exe_path = ExecutablePath();
   const std::string exe_dir = Dirname(exe_path);
   if (const char* launch_cwd = std::getenv("VIMBROWSER_LAUNCH_CWD");
@@ -321,6 +357,17 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   command_line->InitFromArgv(argc, argv);
 
   vimbrowser::Config config = vimbrowser::ParseConfig(argc, argv);
+  if (!config.cache_path.empty()) {
+    // CEF requires cache_path to be a child of root_cache_path after path
+    // canonicalization; on macOS /tmp is a symlink to /private/tmp, so resolve
+    // symlinks up front to keep the derived "<cache>/default" path consistent.
+    std::error_code cache_ec;
+    const std::filesystem::path canonical_cache =
+        std::filesystem::weakly_canonical(config.cache_path, cache_ec);
+    if (!cache_ec && !canonical_cache.empty()) {
+      config.cache_path = canonical_cache.string();
+    }
+  }
   if (!config.state_path.empty()) {
     setenv("VIMBROWSER_STATE_PATH", config.state_path.c_str(), 1);
   }
@@ -340,10 +387,14 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
                                                       config.disable_gpu,
                                                       config.a26_shell));
 
+#if !defined(__APPLE__)
+  // On macOS subprocesses are launched through the Helper app bundles and
+  // never reach this executable's main().
   const int sub_process_exit_code = CefExecuteProcess(main_args, app, nullptr);
   if (sub_process_exit_code >= 0) {
     return sub_process_exit_code;
   }
+#endif
 
   if (ShouldExitForExistingProfile(config.cache_path, config.state_path,
                                    config.explicit_initial_urls)) {
@@ -364,6 +415,9 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   SetCefString(&settings.root_cache_path, config.cache_path);
   SetCefString(&settings.cache_path, config.cache_path + "/default");
 
+#if !defined(__APPLE__)
+  // On macOS the subprocess path and resource/locale directories are resolved
+  // from the app bundle and framework layout instead.
   if (!exe_path.empty()) {
     SetCefString(&settings.browser_subprocess_path, exe_path);
   }
@@ -371,6 +425,11 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
     SetCefString(&settings.resources_dir_path, exe_dir);
     SetCefString(&settings.locales_dir_path, exe_dir + "/locales");
   }
+#endif
+
+#if defined(__APPLE__)
+  VimbrowserInitMacApplication();
+#endif
 
   if (!CefInitialize(main_args, settings, app, nullptr)) {
     const int exit_code = CefGetExitCode();

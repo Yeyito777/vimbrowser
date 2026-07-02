@@ -1067,7 +1067,10 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
   window_->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
   window_->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
+#if defined(__linux__)
+  // Linux-only color id in stock CEF headers.
   window_->SetThemeColor(CEF_ColorNativeTextfieldBorderUnfocused, theme::kAppBg);
+#endif
   window_->SetThemeColor(CEF_ColorLabelForeground, theme::kText);
   window_->SetThemeColor(CEF_ColorButtonBackground, theme::kSidebarBg);
   window_->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
@@ -5537,7 +5540,13 @@ void BrowserWindow::UpdateSidebarMouseBounds() {
   sidebar_mouse_width_.store(kSidebarContentWidth);
   sidebar_mouse_height_.store(main_height);
   sidebar_mouse_row_count_.store(static_cast<int>(sidebar_rows_.size()));
+#if defined(__linux__)
+  // Only the X11 sidebar mouse watcher consumes this window id; on other
+  // platforms the native handle is a pointer and the watcher never runs.
   sidebar_mouse_window_.store(static_cast<unsigned long>(window_->GetWindowHandle()));
+#else
+  sidebar_mouse_window_.store(0);
+#endif
 }
 
 void BrowserWindow::UpdateA26MouseBounds() {
