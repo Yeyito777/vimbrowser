@@ -279,9 +279,22 @@ Exceptions return `{"ok":false,...}`. Promise values are reported synchronously 
 
 Reads JavaScript from a local file in the browser process and evaluates it with the same renderer bridge as `js`.
 
-#### `cookies <tabid>`
+#### `cookies-url <url>`
 
-Lists cookies visible for the tab URL using the tab's backend `CefCookieManager`, including HttpOnly cookies:
+Atomically lists cookies visible for an explicit URL using the profile's global
+backend `CefCookieManager`, including HttpOnly cookies. This form does not
+require, focus, load, or mutate any tab and is preferred for external tools that
+only need site cookies:
+
+```json
+{"cookies":[{"name":"sid","value":"...","domain":"example.com","path":"/","secure":true,"httponly":true,"same_site":"lax","creation":0,"last_access":0,"has_expires":false,"expires":0}]}
+```
+
+#### `cookies <tabid> [url]`
+
+Lists cookies visible for the tab URL, or for an explicit URL when `url` is
+provided, using the tab's backend `CefCookieManager`, including HttpOnly
+cookies. This form is kept for tab-scoped inspection and for compatibility:
 
 ```json
 {"cookies":[{"name":"sid","value":"...","domain":"example.com","path":"/","secure":true,"httponly":true,"same_site":"lax","creation":0,"last_access":0,"has_expires":false,"expires":0}]}

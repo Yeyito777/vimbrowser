@@ -135,6 +135,25 @@ class CookieSetCallback final : public CefSetCookieCallback {
   DISALLOW_COPY_AND_ASSIGN(CookieSetCallback);
 };
 
+void VisitCookiesForUrl(CefRefPtr<CefCookieManager> manager,
+                        const std::string& url,
+                        IpcReplyCallback reply) {
+  if (url.empty()) {
+    reply("ERR cookie URL is empty\n");
+    return;
+  }
+  if (!manager) {
+    reply("ERR no cookie manager\n");
+    return;
+  }
+  CefRefPtr<CookieListVisitor> visitor(new CookieListVisitor(std::move(reply)));
+  if (!manager->VisitUrlCookies(url, true, visitor)) {
+    visitor->Finish();
+    return;
+  }
+  CefPostDelayedTask(TID_UI, base::BindOnce(&CookieListVisitor::Finish, visitor), 1500);
+}
+
 class URLRequestReplayClient final : public CefURLRequestClient {
  public:
   explicit URLRequestReplayClient(IpcReplyCallback reply)
@@ -420,16 +439,20 @@ void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
       10000);
 }
 
-void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id, IpcReplyCallback reply) {
+void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id,
+                                            std::string url_override,
+                                            IpcReplyCallback reply) {
   std::string error;
   CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error);
   if (!browser) {
     reply(error);
     return;
   }
-  const std::string url = browser->GetMainFrame()
-                              ? browser->GetMainFrame()->GetURL().ToString()
-                              : std::string();
+  std::string url = std::move(url_override);
+  if (url.empty()) {
+    url = browser->GetMainFrame() ? browser->GetMainFrame()->GetURL().ToString()
+                                  : std::string();
+  }
   if (url.empty()) {
     reply("ERR tab has no url\n");
     return;
@@ -439,16 +462,13 @@ void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id, IpcReplyCallback re
                                              : nullptr;
   CefRefPtr<CefCookieManager> manager = context ? context->GetCookieManager(nullptr)
                                                 : nullptr;
-  if (!manager) {
-    reply("ERR no cookie manager\n");
-    return;
-  }
-  CefRefPtr<CookieListVisitor> visitor(new CookieListVisitor(std::move(reply)));
-  if (!manager->VisitUrlCookies(url, true, visitor)) {
-    visitor->Finish();
-    return;
-  }
-  CefPostDelayedTask(TID_UI, base::BindOnce(&CookieListVisitor::Finish, visitor), 1500);
+  VisitCookiesForUrl(manager, url, std::move(reply));
+}
+
+void BrowserWindow::HandleCookiesForUrlIpcCommand(std::string url,
+                                                  IpcReplyCallback reply) {
+  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
+  VisitCookiesForUrl(manager, url, std::move(reply));
 }
 
 void BrowserWindow::HandleCookieDeleteIpcCommand(uint64_t tab_id,
@@ -1107,7 +1127,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  screenshot <tabid>\n"
            "  js <tabid> <javascript>\n"
            "  js-file <tabid> <path>\n"
-           "  cookies <tabid>\n"
+           "  cookies <tabid> [url]\n"
+           "  cookies-url <url>\n"
            "  cookie-delete <tabid> <name>\n"
            "  cookie-set <tabid> <name> <value> [domain] [path]\n"
            "  network <tabid> list\n"
@@ -1208,15 +1229,26 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
   }
 
   if (command == "cookies") {
-    if (argv.size() != 2) {
-      reply("ERR usage: cookies <tabid>\n");
+    if (argv.size() < 2) {
+      reply("ERR usage: cookies <tabid> [url]\n");
       return;
     }
     uint64_t tab_id = 0;
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    HandleCookiesIpcCommand(tab_id, std::move(reply));
+    HandleCookiesIpcCommand(tab_id,
+                            argv.size() >= 3 ? JoinArgs(argv, 2) : std::string(),
+                            std::move(reply));
+    return;
+  }
+
+  if (command == "cookies-url") {
+    if (argv.size() < 2) {
+      reply("ERR usage: cookies-url <url>\n");
+      return;
+    }
+    HandleCookiesForUrlIpcCommand(JoinArgs(argv, 1), std::move(reply));
     return;
   }
 

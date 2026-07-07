@@ -305,7 +305,10 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleJsIpcCommand(uint64_t tab_id,
                           std::string code,
                           IpcReplyCallback reply);
-  void HandleCookiesIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
+  void HandleCookiesIpcCommand(uint64_t tab_id,
+                               std::string url_override,
+                               IpcReplyCallback reply);
+  void HandleCookiesForUrlIpcCommand(std::string url, IpcReplyCallback reply);
   void HandleCookieDeleteIpcCommand(uint64_t tab_id,
                                     std::string name,
                                     IpcReplyCallback reply);
