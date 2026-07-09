@@ -1,8 +1,10 @@
 /build/
+/build-mac/
 /build-source/
 /build-a26-arm64/
 /third_party/cef/
 /third_party/cef-a26-arm64/
+/third_party/cef-mac/
 /third_party/downloads/
 /third_party/.cef-extract.*/
 *.o

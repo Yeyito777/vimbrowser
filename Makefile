@@ -1,4 +1,4 @@
-.PHONY: all bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime source-distrib backend-dev build-shell build install-wrapper install benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: all bootstrap-cef bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime source-distrib backend-dev build-shell build mac-build mac-install install-wrapper install benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build-source
 JOBS ?= 12
@@ -11,8 +11,16 @@ WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
 CEF_ROOT ?= $(SOURCE_CEF_ROOT)
 BENCH_BINARY ?= $(abspath $(BUILD_DIR))/Release/vimbrowser
+MAC_BUILD_DIR ?= build-mac
+MAC_CEF_ROOT ?= $(CURDIR)/third_party/cef-mac
+MAC_APP ?= $(abspath $(MAC_BUILD_DIR))/Release/vimbrowser.app
+MAC_INSTALL_APP ?= $(HOME)/Applications/vimbrowser.app
+MAC_PROFILE_DIR ?= $(HOME)/.runtime/vimbrowser-$(USER)
 
 all: build
+
+bootstrap-cef:
+	./scripts/bootstrap-cef.sh
 
 bootstrap-chromium:
 	./scripts/bootstrap-chromium-source.sh
@@ -41,6 +49,29 @@ build-shell:
 	./scripts/slim-cef-runtime.sh "$(abspath $(BUILD_DIR))/Release"
 
 build: backend-dev
+
+mac-build: bootstrap-cef
+	cmake -S . -B "$(MAC_BUILD_DIR)" -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$(MAC_CEF_ROOT)"
+	cmake --build "$(MAC_BUILD_DIR)" -j$(JOBS)
+
+mac-install: mac-build
+	mkdir -p "$(dir $(MAC_INSTALL_APP))" "$(dir $(INSTALL_BIN))"
+	rm -rf "$(MAC_INSTALL_APP)"
+	ditto "$(MAC_APP)" "$(MAC_INSTALL_APP)"
+	printf '%s\n' '#!/usr/bin/env bash' \
+	  'set -euo pipefail' \
+	  'log_dir="$${XDG_CACHE_HOME:-$$HOME/.cache}/vimbrowser"' \
+	  'profile_dir="$${VIMBROWSER_PROFILE_DIR:-$(MAC_PROFILE_DIR)}"' \
+	  'mkdir -p "$$log_dir" "$$profile_dir"' \
+	  'exec "$(MAC_INSTALL_APP)/Contents/MacOS/vimbrowser" --profile-dir="$$profile_dir" "$$@" >> "$$log_dir/vimbrowser.log" 2>&1' > "$(INSTALL_BIN)"
+	chmod +x "$(INSTALL_BIN)"
+	cp "$(abspath $(MAC_BUILD_DIR))/Release/vimbrowser-ipc" "$(INSTALL_IPC_BIN)"
+	chmod +x "$(INSTALL_IPC_BIN)"
+	@if [ -x /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister ]; then \
+	  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$(MAC_INSTALL_APP)"; \
+	fi
+	@echo 'installed $(MAC_INSTALL_APP)'
+	@echo 'installed $(INSTALL_BIN) and $(INSTALL_IPC_BIN)'
 
 install-wrapper:
 	mkdir -p $(dir $(INSTALL_BIN))

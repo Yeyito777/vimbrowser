@@ -326,24 +326,27 @@ backgrounds, and `#ffffff` for normal non-dimmed text.
 
 MIT. See `LICENSE`.
 
-## macOS build (mac-port branch)
+## macOS build
 
 The shell builds against a stock CEF macOS binary distribution (no patched
 Chromium backend). Features implemented inside the patched Blink tree are
 unavailable on this build: native hints (`f`/`F`, `Ctrl+l`, `Ctrl+h`,
 `Ctrl+Space`), the page color shader, FPS sampling, the audible-tab icon, and
 native content blocking/network capture. Everything else — tabs, vim modes,
-command line, IPC, CDP, persistent profiles — works.
+command line, IPC, CDP, persistent profiles — works. The build targets Apple
+silicon and macOS 13.3 or newer.
 
 ```bash
-curl -L -o third_party/downloads/cef_mac.tar.bz2 \
-  "https://cef-builds.spotifycdn.com/cef_binary_147.0.10%2Bgd58e84d%2Bchromium-147.0.7727.118_macosarm64_minimal.tar.bz2"
-tar -xjf third_party/downloads/cef_mac.tar.bz2 -C third_party
-mv third_party/cef_binary_*_macosarm64_minimal third_party/cef-mac
-cmake -S . -B build-mac -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$PWD/third_party/cef-mac"
-cmake --build build-mac -j12
-./build-mac/Release/vimbrowser.app/Contents/MacOS/vimbrowser https://example.com
+make mac-build
+make mac-install
+vimbrowser https://example.com
 ```
+
+`mac-build` downloads and verifies the pinned CEF macOS arm64 distribution,
+then produces an ad-hoc signed app bundle in
+`build-mac/Release/vimbrowser.app`. `mac-install` copies the bundle to
+`~/Applications/vimbrowser.app`, registers it with LaunchServices, and installs
+the `vimbrowser` and `vimbrowser-ipc` commands under `~/.local/bin`.
 
 Subprocesses run through the `vimbrowser Helper*.app` bundles inside
 `vimbrowser.app/Contents/Frameworks/`; the renderer helper embeds the same

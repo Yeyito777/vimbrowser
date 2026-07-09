@@ -136,6 +136,18 @@ if(OS_MAC)
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist.in"
   )
 
+  # CEF's COPY_MAC_FRAMEWORK macro recreates framework symlinks with `ln -sf`.
+  # On a repeat build, BSD ln follows the existing directory symlink and
+  # creates self-referential entries inside Versions/A. Remove only the copied
+  # framework first so bundle assembly is idempotent.
+  set(VIMBROWSER_CEF_FRAMEWORK
+      "${VIMBROWSER_APP}/Contents/Frameworks/Chromium Embedded Framework.framework")
+  add_custom_command(
+    TARGET vimbrowser
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${VIMBROWSER_CEF_FRAMEWORK}"
+    VERBATIM
+  )
   COPY_MAC_FRAMEWORK("vimbrowser" "${CEF_BINARY_DIR}" "${VIMBROWSER_APP}")
 
   # Helper app bundles: subprocesses (renderer/GPU/plugin/alerts) run through
@@ -186,6 +198,18 @@ if(OS_MAC)
       VERBATIM
     )
   endforeach()
+
+  # CMake/linker ad-hoc signs the main executable before the framework and
+  # helper bundles are copied. Re-sign the completed bundle so Gatekeeper and
+  # codesign verification see a coherent application instead of modified
+  # signed resources.
+  find_program(CODESIGN_EXECUTABLE codesign REQUIRED)
+  add_custom_command(
+    TARGET vimbrowser
+    POST_BUILD
+    COMMAND ${CODESIGN_EXECUTABLE} --force --deep --sign - "${VIMBROWSER_APP}"
+    VERBATIM
+  )
 else()
   add_executable(vimbrowser ${VIMBROWSER_SRCS})
   VIMBROWSER_TARGET_COMMON(vimbrowser)
