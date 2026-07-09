@@ -374,6 +374,7 @@ bool IsEnterKey(const CefKeyEvent& event) {
 
 bool IsEscapeKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x1B || event.native_key_code == 9 ||
+         event.native_key_code == 53 ||
          event.character == 0x1B || event.unmodified_character == 0x1B;
 }
 

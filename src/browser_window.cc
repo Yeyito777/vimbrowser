@@ -1181,6 +1181,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
   window_->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
   window_->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorFocusableBorderFocused, theme::kAppBg);
+  window_->SetThemeColor(CEF_ColorFocusableBorderUnfocused, theme::kAppBg);
 #if defined(__linux__)
   // Linux-only color id in stock CEF headers.
   window_->SetThemeColor(CEF_ColorNativeTextfieldBorderUnfocused, theme::kAppBg);
@@ -1207,6 +1209,13 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
                           false, true);
   window_->SetAccelerator(kAcceleratorCommandDeleteCompletion, 'X', false, true,
                           false, true);
+  // Focused Views textfields may consume Return/Escape before their delegate on
+  // macOS. Window accelerators run first and keep command submission/canceling
+  // deterministic on both supported platforms.
+  window_->SetAccelerator(kAcceleratorCommandEnter, 0x0D, false, false, false,
+                          true);
+  window_->SetAccelerator(kAcceleratorCommandEscape, 0x1B, false, false, false,
+                          true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -1994,6 +2003,16 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   }
   if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
     return false;
+  }
+  if (mode_ != Mode::kNormal &&
+      (command_id == kAcceleratorCommandEnter ||
+       command_id == kAcceleratorCommandEscape)) {
+    CefKeyEvent event;
+    event.type = KEYEVENT_RAWKEYDOWN;
+    event.windows_key_code =
+        command_id == kAcceleratorCommandEnter ? 0x0D : 0x1B;
+    event.native_key_code = event.windows_key_code;
+    return HandleCommandModeKey(event);
   }
   if (mode_ == Mode::kNormal && !native_hints_active_) {
     if (command_id == kAcceleratorFocusNext) {
