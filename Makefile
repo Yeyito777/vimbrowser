@@ -7,11 +7,12 @@ INSTALL_IPC_BIN ?= $(HOME)/.local/bin/vimbrowser-ipc
 INSTALL_IPC_SCREENSHOT_BIN ?= $(HOME)/.local/bin/vimbrowser-ipc-screenshot
 INSTALL_XDG_BIN ?= $(HOME)/.local/bin/vimbrowser-xdg-open
 INSTALL_DESKTOP ?= $(HOME)/.local/share/applications/vimbrowser.desktop
+INSTALL_ICON ?= $(HOME)/.local/share/icons/vimbrowser.png
 WRAPPER_PROFILE_DIR ?= /home/yeyito/.runtime/vimbrowser-yeyito
 SOURCE_CEF_ROOT ?= $(shell ls -d $(CURDIR)/backend/chromium/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1)
 CEF_ROOT ?= $(SOURCE_CEF_ROOT)
 BENCH_BINARY ?= $(abspath $(BUILD_DIR))/Release/vimbrowser
-MAC_BUILD_DIR ?= build-mac
+MAC_BUILD_DIR ?= build-mac.noindex
 MAC_CEF_ROOT ?= $(CURDIR)/third_party/cef-mac
 MAC_APP ?= $(abspath $(MAC_BUILD_DIR))/Release/vimbrowser.app
 MAC_INSTALL_APP ?= $(HOME)/Applications/vimbrowser.app
@@ -93,7 +94,8 @@ install-wrapper:
 	  cp scripts/vimbrowser-ipc-screenshot $(INSTALL_IPC_SCREENSHOT_BIN); \
 	  chmod +x $(INSTALL_IPC_SCREENSHOT_BIN); \
 	fi
-	mkdir -p $(dir $(INSTALL_XDG_BIN)) $(dir $(INSTALL_DESKTOP))
+	mkdir -p $(dir $(INSTALL_XDG_BIN)) $(dir $(INSTALL_DESKTOP)) $(dir $(INSTALL_ICON))
+	cp assets/vimbrowser.png $(INSTALL_ICON)
 	rm -f $(INSTALL_XDG_BIN)
 	printf '%s\n' '#!/usr/bin/env bash' \
 	  'set -euo pipefail' \
@@ -108,7 +110,7 @@ install-wrapper:
 	  'Exec=$(INSTALL_XDG_BIN) %u' \
 	  'Terminal=false' \
 	  'Type=Application' \
-	  'Icon=web-browser' \
+	  'Icon=$(INSTALL_ICON)' \
 	  'Categories=Network;WebBrowser;' \
 	  'StartupNotify=true' \
 	  'MimeType=x-scheme-handler/unknown;x-scheme-handler/about;text/html;text/xml;application/xhtml+xml;application/xml;application/rdf+xml;application/pdf;image/gif;image/jpeg;image/png;image/webp;video/mp4;x-scheme-handler/http;x-scheme-handler/https;' > $(INSTALL_DESKTOP)

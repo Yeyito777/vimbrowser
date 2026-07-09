@@ -344,7 +344,9 @@ vimbrowser https://example.com
 
 `mac-build` downloads and verifies the pinned CEF macOS arm64 distribution,
 then produces an ad-hoc signed app bundle in
-`build-mac/Release/vimbrowser.app`. `mac-install` copies the bundle to
+`build-mac.noindex/Release/vimbrowser.app`. The `.noindex` build directory and
+hidden helper staging directory keep Chromium's GPU/Renderer helper apps out of
+Spotlight results. `mac-install` copies the main bundle to
 `~/Applications/vimbrowser.app`, registers it with LaunchServices, and installs
 the `vimbrowser` and `vimbrowser-ipc` commands under `~/.local/bin`.
 

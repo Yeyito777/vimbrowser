@@ -1,5 +1,6 @@
 /build/
 /build-mac/
+/build-mac.noindex/
 /build-source/
 /build-a26-arm64/
 /third_party/cef/

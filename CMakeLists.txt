@@ -121,12 +121,16 @@ endmacro()
 
 if(OS_MAC)
   set(VIMBROWSER_APP "${CEF_TARGET_OUT_DIR}/vimbrowser.app")
+  set(VIMBROWSER_ICON "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/vimbrowser.icns")
+  set_source_files_properties(${VIMBROWSER_ICON} PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+  )
 
   # Referenced from Info.plist.in.
   set(EXECUTABLE_NAME "vimbrowser")
   set(PRODUCT_NAME "vimbrowser")
 
-  add_executable(vimbrowser MACOSX_BUNDLE ${VIMBROWSER_SRCS})
+  add_executable(vimbrowser MACOSX_BUNDLE ${VIMBROWSER_SRCS} ${VIMBROWSER_ICON})
   VIMBROWSER_TARGET_COMMON(vimbrowser)
   target_link_libraries(vimbrowser PRIVATE
     libcef_dll_wrapper
@@ -162,6 +166,14 @@ if(OS_MAC)
 
     set(_helper_target "vimbrowser_helper${_target_suffix}")
     set(_helper_output_name "vimbrowser Helper${_name_suffix}")
+    set(_helper_output_dir "${CEF_TARGET_OUT_DIR}/.helpers")
+
+    # Older builds emitted helper bundles beside the main app, so Spotlight
+    # presented GPU/Renderer/etc. as applications the user could launch.
+    # Remove those legacy outputs and keep build-only helper bundles under a
+    # hidden staging directory. Installed helpers still live in the standard
+    # Contents/Frameworks location inside vimbrowser.app.
+    file(REMOVE_RECURSE "${CEF_TARGET_OUT_DIR}/${_helper_output_name}.app")
 
     # Substitute plist variables manually: MACOSX_BUNDLE_INFO_PLIST's own
     # configure step uses global variables and would reuse one helper's values
@@ -185,6 +197,7 @@ if(OS_MAC)
     set_target_properties(${_helper_target} PROPERTIES
       MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
       OUTPUT_NAME ${_helper_output_name}
+      RUNTIME_OUTPUT_DIRECTORY ${_helper_output_dir}
     )
 
     add_dependencies(vimbrowser "${_helper_target}")
@@ -193,7 +206,7 @@ if(OS_MAC)
       TARGET vimbrowser
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_directory
-              "${CEF_TARGET_OUT_DIR}/${_helper_output_name}.app"
+              "${_helper_output_dir}/${_helper_output_name}.app"
               "${VIMBROWSER_APP}/Contents/Frameworks/${_helper_output_name}.app"
       VERBATIM
     )
