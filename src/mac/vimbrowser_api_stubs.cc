@@ -1,10 +1,9 @@
 // The Linux build links a patched libcef that exports these vimbrowser_*
 // functions (see backend/chromium/cef/libcef/browser/vimbrowser_browser_api.cc).
 // Stock CEF binary distributions used for the macOS build do not implement
-// them, so the shell degrades gracefully: no FPS samples, no audible-tab
-// sidebar indicator, and no native Blink hint dispatch (f / F / Ctrl+l /
-// Ctrl+h / Ctrl+Space hints are implemented inside the patched Blink tree and
-// are unavailable against stock CEF).
+// them. The macOS shell supplies portable CEF fallbacks for the corresponding
+// user-facing features; these symbols remain only to satisfy code paths that
+// are compiled but bypassed on macOS.
 #include "include/internal/cef_types_wrappers.h"
 
 extern "C" bool vimbrowser_browser_has_fps_sample(int /*browser_id*/) {

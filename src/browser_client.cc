@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cctype>
+#include <cmath>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
@@ -20,6 +21,9 @@
 #include "include/cef_callback.h"
 #include "include/cef_response.h"
 #include "include/cef_response_filter.h"
+#if defined(__APPLE__)
+#include "mac/browser_features_mac.h"
+#endif
 
 extern "C" bool vimbrowser_browser_has_fps_sample(int browser_id);
 extern "C" double vimbrowser_get_browser_fps(int browser_id);
@@ -941,6 +945,11 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 TransitionType transition_type) {
   if (frame && frame->IsMain()) {
+#if defined(__APPLE__)
+    fps_has_sample_.store(false, std::memory_order_relaxed);
+    fps_.store(0.0, std::memory_order_relaxed);
+    refresh_rate_.store(0.0, std::memory_order_relaxed);
+#endif
     const std::string url = frame->GetURL().ToString();
     std::string prompt;
     if (ExtractChatgptAutosubmitPrompt(url, &prompt)) {
@@ -971,6 +980,9 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode) {
   if (frame && frame->IsMain()) {
+#if defined(__APPLE__)
+    frame->ExecuteJavaScript(mac::kFpsMonitorScript, frame->GetURL(), 0);
+#endif
     if (browser && !pending_chatgpt_autosubmit_prompt_.empty() &&
         !pending_chatgpt_autosubmit_key_.empty() &&
         IsChatgptUrl(frame->GetURL().ToString())) {
@@ -1068,6 +1080,26 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                                      const CefString& source,
                                      int line) {
   const std::string text = message.ToString();
+#if defined(__APPLE__)
+  constexpr std::string_view kFpsPrefix = "__vimbrowser_mac_fps__";
+  if (text.rfind(kFpsPrefix, 0) == 0) {
+    char* end = nullptr;
+    const char* start = text.c_str() + kFpsPrefix.size();
+    const double sample = std::strtod(start, &end);
+    if (end != start && std::isfinite(sample) && sample > 0.0) {
+      fps_.store(sample, std::memory_order_relaxed);
+      if (*end == ',') {
+        char* refresh_end = nullptr;
+        const double refresh = std::strtod(end + 1, &refresh_end);
+        if (refresh_end != end + 1 && std::isfinite(refresh) && refresh > 0.0) {
+          refresh_rate_.store(refresh, std::memory_order_relaxed);
+        }
+      }
+      fps_has_sample_.store(true, std::memory_order_relaxed);
+    }
+    return true;
+  }
+#endif
   if (!source.ToString().empty()) {
     return false;
   }
@@ -1185,6 +1217,28 @@ bool BrowserClient::OnRequestMediaAccessPermission(
   }
   return true;
 }
+
+#if defined(__APPLE__)
+void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser>,
+                                         const CefAudioParameters&,
+                                         int) {
+  audible_.store(true, std::memory_order_relaxed);
+}
+
+void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser>,
+                                        const float**,
+                                        int,
+                                        int64_t) {}
+
+void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser>) {
+  audible_.store(false, std::memory_order_relaxed);
+}
+
+void BrowserClient::OnAudioStreamError(CefRefPtr<CefBrowser>,
+                                       const CefString&) {
+  audible_.store(false, std::memory_order_relaxed);
+}
+#endif
 
 bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                                   const CefKeyEvent& event,
@@ -1399,21 +1453,37 @@ void BrowserClient::ShowDevTools() {
 }
 
 double BrowserClient::current_fps() const {
+#if defined(__APPLE__)
+  return fps_.load(std::memory_order_relaxed);
+#else
   return browser_ ? vimbrowser_get_browser_fps(browser_->GetIdentifier()) : 0.0;
+#endif
 }
 
 bool BrowserClient::fps_has_sample() const {
+#if defined(__APPLE__)
+  return fps_has_sample_.load(std::memory_order_relaxed);
+#else
   return browser_ && vimbrowser_browser_has_fps_sample(browser_->GetIdentifier());
+#endif
 }
 
 double BrowserClient::compositor_refresh_rate() const {
+#if defined(__APPLE__)
+  return refresh_rate_.load(std::memory_order_relaxed);
+#else
   return browser_ ? vimbrowser_get_browser_refresh_rate(browser_->GetIdentifier())
                   : 0.0;
+#endif
 }
 
 bool BrowserClient::is_currently_audible() const {
+#if defined(__APPLE__)
+  return audible_.load(std::memory_order_relaxed);
+#else
   return browser_ &&
          vimbrowser_browser_is_currently_audible(browser_->GetIdentifier());
+#endif
 }
 
 void BrowserClient::SendBrowserCommandKeyEvent(const CefKeyEvent& event) {

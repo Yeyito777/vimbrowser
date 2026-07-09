@@ -50,6 +50,9 @@
 #include "ipc_server.h"
 #include "shortcuts.h"
 #include "theme.h"
+#if defined(__APPLE__)
+#include "mac/browser_features_mac.h"
+#endif
 
 extern "C" void vimbrowser_send_browser_command_key_event(
     int browser_id,
@@ -134,6 +137,53 @@ class DevToolsClient final : public CefClient,
                      bool* is_keyboard_shortcut) override {
     return owner_ && owner_->HandleBrowserKeyEvent(event);
   }
+
+#if defined(__APPLE__)
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame>,
+                                CefProcessId,
+                                CefRefPtr<CefProcessMessage> message) override {
+    if (!owner_ || !browser || !message ||
+        message->GetName().ToString() != kMacPageEventMessage) {
+      return false;
+    }
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    const std::string event = args && args->GetSize() >= 1
+                                  ? args->GetString(0).ToString()
+                                  : std::string();
+    const std::string payload = args && args->GetSize() >= 2
+                                    ? args->GetString(1).ToString()
+                                    : std::string();
+    if (event == "open-tab") {
+      owner_->OnDevToolsNativeHintOpenTab(payload);
+    } else if (event == "focused-editable") {
+      owner_->OnDevToolsNativeHintFocusedEditable();
+    } else if (event == "stopped") {
+      owner_->OnDevToolsNativeHintsStopped();
+    } else if ((event == "context-at" || event == "hover-at") &&
+               browser->GetHost()) {
+      char* x_end = nullptr;
+      const double x = std::strtod(payload.c_str(), &x_end);
+      if (x_end && *x_end == ',') {
+        char* y_end = nullptr;
+        const double y = std::strtod(x_end + 1, &y_end);
+        if (y_end != x_end + 1 && std::isfinite(x) && std::isfinite(y)) {
+          CefMouseEvent mouse_event;
+          mouse_event.x = std::max(0, static_cast<int>(std::lround(x)));
+          mouse_event.y = std::max(0, static_cast<int>(std::lround(y)));
+          browser->GetHost()->SendMouseMoveEvent(mouse_event, false);
+          if (event == "context-at") {
+            browser->GetHost()->SendMouseClickEvent(
+                mouse_event, MBT_RIGHT, false, 1);
+            browser->GetHost()->SendMouseClickEvent(
+                mouse_event, MBT_RIGHT, true, 1);
+          }
+        }
+      }
+    }
+    return true;
+  }
+#endif
 
  private:
   BrowserWindow* owner_ = nullptr;
@@ -483,6 +533,15 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   UpdateClientUrl(client, url, true);
 }
 
+void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
+  StopPageNativeHintsForClient(client);
+#if defined(__APPLE__)
+  // The stock CEF macOS build has no patched Blink shader. Apply the equivalent
+  // DevTools auto-dark override after each main-frame navigation instead.
+  BroadcastShaderState();
+#endif
+}
+
 void BrowserWindow::OnClientAddressChange(BrowserClient* client,
                                           const std::string& url) {
   UpdateClientUrl(client, url, false);
@@ -622,6 +681,49 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
     }
     return true;
   }
+
+#if defined(__APPLE__)
+  if (name == kMacPageEventMessage) {
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    const std::string event = args && args->GetSize() >= 1
+                                  ? args->GetString(0).ToString()
+                                  : std::string();
+    const std::string payload = args && args->GetSize() >= 2
+                                    ? args->GetString(1).ToString()
+                                    : std::string();
+    if (event == "open-tab") {
+      OnNativeHintOpenTab(client, payload);
+    } else if (event == "context-at" || event == "hover-at") {
+      Tab* tab = ActiveTab();
+      if (native_hints_active_ && tab && tab->client.get() == client &&
+          focus_area_ == FocusArea::kWebView && client->browser() &&
+          client->browser()->GetHost()) {
+        char* x_end = nullptr;
+        const double x = std::strtod(payload.c_str(), &x_end);
+        if (x_end && *x_end == ',') {
+          char* y_end = nullptr;
+          const double y = std::strtod(x_end + 1, &y_end);
+          if (y_end != x_end + 1 && std::isfinite(x) && std::isfinite(y)) {
+            CefMouseEvent mouse_event;
+            mouse_event.x = std::max(0, static_cast<int>(std::lround(x)));
+            mouse_event.y = std::max(0, static_cast<int>(std::lround(y)));
+            CefRefPtr<CefBrowserHost> host = client->browser()->GetHost();
+            host->SendMouseMoveEvent(mouse_event, false);
+            if (event == "context-at") {
+              host->SendMouseClickEvent(mouse_event, MBT_RIGHT, false, 1);
+              host->SendMouseClickEvent(mouse_event, MBT_RIGHT, true, 1);
+            }
+          }
+        }
+      }
+    } else if (event == "focused-editable") {
+      OnNativeHintFocusedEditable(client);
+    } else if (event == "stopped") {
+      OnNativeHintsStopped(client);
+    }
+    return true;
+  }
+#endif
 
   if (name != kJsResultMessage) {
     return false;
@@ -4394,7 +4496,27 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
     browser_event.windows_key_code = 0x20;
     browser_event.unmodified_character = 0x20;
   }
+#if defined(__APPLE__)
+  std::string_view hint_mode = "click";
+  if (click_hints && (event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+    hint_mode = "new-tab";
+  } else if (right_click_hints) {
+    hint_mode = "context";
+  } else if (hover_hints) {
+    hint_mode = "hover";
+  } else if (scrollable_hints) {
+    hint_mode = "scroll";
+  }
+  CefRefPtr<CefFrame> frame = tab->client->browser()->GetMainFrame();
+  if (!frame || !frame->IsValid()) {
+    native_hints_active_ = false;
+    UpdateModeIndicator();
+    return true;
+  }
+  frame->ExecuteJavaScript(mac::BuildHintScript(hint_mode), frame->GetURL(), 0);
+#else
   tab->client->SendBrowserCommandKeyEvent(browser_event);
+#endif
   return true;
 }
 
@@ -4445,8 +4567,29 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
     browser_event.windows_key_code = 0x20;
     browser_event.unmodified_character = 0x20;
   }
+#if defined(__APPLE__)
+  CefRefPtr<CefFrame> frame =
+      devtools_browser_view_->GetBrowser()->GetMainFrame();
+  if (!frame || !frame->IsValid()) {
+    native_hints_active_ = false;
+    UpdateModeIndicator();
+    return true;
+  }
+  std::string_view hint_mode = "click";
+  if (click_hints && (event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+    hint_mode = "new-tab";
+  } else if (right_click_hints) {
+    hint_mode = "context";
+  } else if (hover_hints) {
+    hint_mode = "hover";
+  } else if (scrollable_hints) {
+    hint_mode = "scroll";
+  }
+  frame->ExecuteJavaScript(mac::BuildHintScript(hint_mode), frame->GetURL(), 0);
+#else
   vimbrowser_send_browser_command_key_event(
       devtools_browser_view_->GetBrowser()->GetIdentifier(), &browser_event);
+#endif
   return true;
 }
 
@@ -5993,6 +6136,12 @@ void BrowserWindow::BroadcastShaderState() {
       continue;
     }
     CefRefPtr<CefBrowser> browser = tab.client->browser();
+#if defined(__APPLE__)
+    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+    params->SetBool("enabled", shader_enabled_);
+    browser->GetHost()->ExecuteDevToolsMethod(
+        0, "Emulation.setAutoDarkModeOverride", params);
+#else
     std::vector<CefString> frame_ids;
     browser->GetFrameIdentifiers(frame_ids);
     if (frame_ids.empty() && browser->GetMainFrame()) {
@@ -6005,6 +6154,7 @@ void BrowserWindow::BroadcastShaderState() {
       }
       frame->ExecuteJavaScript(kShaderRefreshScript, frame->GetURL(), 0);
     }
+#endif
   }
 }
 

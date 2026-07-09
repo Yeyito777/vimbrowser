@@ -355,6 +355,13 @@ Scrolls the active page by `dy` pixels, repeated `count` times. Returns `status`
 
 Scrolls a specific tab by stable ID. Returns `tabs` JSON.
 
+#### `key <[ctrl+][shift+][alt+][cmd+]key>`
+
+Sends a synthetic key through vimbrowser's normal key handling path for the
+active browser surface. This is intended for portable regression
+tests and local automation. Examples: `key j`, `key shift+f`, `key ctrl+l`,
+`key ctrl+shift+i`, `key escape`, and `key space`. Returns `status` JSON.
+
 ### Existing scalar/toggle commands
 
 #### `fps`

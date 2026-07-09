@@ -935,6 +935,7 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"scroll-tab", "scroll-tab <tabid> <dy> [count]", "scroll a tab by stable id", "json"},
       {"frame-tree", "frame-tree <tabid>", "list the current main/child frame tree with opaque frame ids", "json"},
       {"inspect-controls", "inspect-controls <tabid> <base64-v1-json-query>", "inspect controls in one exact frame and mint short-lived exact-node handles", "json"},
+      {"key", "key <[ctrl+][shift+][alt+][cmd+]key>", "send a synthetic key through the active browser", "json"},
       {"html", "html <tabid>", "return current document HTML via native CEF frame source", "text/html"},
       {"text", "text <tabid>", "return current document text via native CEF frame text", "text/plain"},
       {"frame-html", "frame-html <tabid> <frameid>", "return HTML for one exact current child frame", "text/html"},

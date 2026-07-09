@@ -743,6 +743,73 @@ int NextScreenshotDevToolsMessageId() {
   return next_message_id++;
 }
 
+bool ParseSyntheticKeySpec(const std::string& spec, CefKeyEvent* event) {
+  if (!event || spec.empty()) {
+    return false;
+  }
+  std::string key;
+  size_t start = 0;
+  while (start <= spec.size()) {
+    const size_t plus = spec.find('+', start);
+    const std::string part = ToLowerAscii(
+        spec.substr(start, plus == std::string::npos ? std::string::npos
+                                                     : plus - start));
+    if (part == "ctrl" || part == "control") {
+      event->modifiers |= EVENTFLAG_CONTROL_DOWN;
+    } else if (part == "shift") {
+      event->modifiers |= EVENTFLAG_SHIFT_DOWN;
+    } else if (part == "alt" || part == "option") {
+      event->modifiers |= EVENTFLAG_ALT_DOWN;
+    } else if (part == "cmd" || part == "command" || part == "meta") {
+      event->modifiers |= EVENTFLAG_COMMAND_DOWN;
+    } else if (!part.empty()) {
+      if (!key.empty()) {
+        return false;
+      }
+      key = part;
+    }
+    if (plus == std::string::npos) {
+      break;
+    }
+    start = plus + 1;
+  }
+  int key_code = 0;
+  char16_t character = 0;
+  char16_t unmodified = 0;
+  if (key == "escape" || key == "esc") {
+    key_code = 0x1b;
+  } else if (key == "space") {
+    key_code = 0x20;
+    character = unmodified = u' ';
+  } else if (key == "tab") {
+    key_code = 0x09;
+    character = unmodified = u'\t';
+  } else if (key == "enter" || key == "return") {
+    key_code = 0x0d;
+    character = unmodified = u'\r';
+  } else if (key == "backspace") {
+    key_code = 0x08;
+    character = unmodified = u'\b';
+  } else if (key.size() == 1) {
+    const unsigned char raw = static_cast<unsigned char>(key[0]);
+    if (raw < 0x20 || raw > 0x7e) {
+      return false;
+    }
+    unmodified = static_cast<char16_t>(raw);
+    character = static_cast<char16_t>(
+        (event->modifiers & EVENTFLAG_SHIFT_DOWN) ? std::toupper(raw) : raw);
+    key_code = std::toupper(raw);
+  } else {
+    return false;
+  }
+  event->type = KEYEVENT_RAWKEYDOWN;
+  event->windows_key_code = key_code;
+  event->native_key_code = 0;
+  event->character = character;
+  event->unmodified_character = unmodified;
+  return true;
+}
+
 class IpcStringVisitor final : public CefStringVisitor {
  public:
   explicit IpcStringVisitor(IpcReplyCallback reply) : reply_(std::move(reply)) {}
@@ -2434,6 +2501,55 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   if (command == "url") {
     return ActiveTabUrl();
   }
+  if (command == "key") {
+    if (argv.size() != 2) {
+      return "ERR usage: key <[ctrl+][shift+][alt+][cmd+]key>\n";
+    }
+    CefRefPtr<CefBrowser> browser = ActiveBrowser();
+    CefKeyEvent event;
+    if (!browser || !browser->GetHost()) {
+      return "ERR active tab has no browser\n";
+    }
+    if (!ParseSyntheticKeySpec(argv[1], &event)) {
+      return "ERR invalid key specification\n";
+    }
+    const bool handled = HandleBrowserKeyEvent(event);
+    CefRefPtr<CefBrowser> key_target = browser;
+    if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_ &&
+        devtools_browser_view_->GetBrowser()) {
+      key_target = devtools_browser_view_->GetBrowser();
+    }
+    if (!handled && key_target && key_target->GetMainFrame()) {
+      std::string dom_key = ToLowerAscii(
+          argv[1].substr(argv[1].find_last_of('+') + 1));
+      if (dom_key == "esc") dom_key = "Escape";
+      else if (dom_key == "escape") dom_key = "Escape";
+      else if (dom_key == "space") dom_key = " ";
+      else if (dom_key == "enter" || dom_key == "return") dom_key = "Enter";
+      else if (dom_key == "tab") dom_key = "Tab";
+      else if (event.modifiers & EVENTFLAG_SHIFT_DOWN && dom_key.size() == 1) {
+        dom_key[0] = static_cast<char>(std::toupper(
+            static_cast<unsigned char>(dom_key[0])));
+      }
+      std::ostringstream script;
+      script << "(()=>{const target=document.activeElement||document;"
+                "for(const type of ['keydown','keyup'])target.dispatchEvent("
+                "new KeyboardEvent(type,{key:"
+             << '"' << JsonEscape(dom_key) << '"'
+             << ",bubbles:true,cancelable:true,ctrlKey:"
+             << ((event.modifiers & EVENTFLAG_CONTROL_DOWN) ? "true" : "false")
+             << ",shiftKey:"
+             << ((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? "true" : "false")
+             << ",altKey:"
+             << ((event.modifiers & EVENTFLAG_ALT_DOWN) ? "true" : "false")
+             << ",metaKey:"
+             << ((event.modifiers & EVENTFLAG_COMMAND_DOWN) ? "true" : "false")
+             << "}));})()";
+      key_target->GetMainFrame()->ExecuteJavaScript(
+          script.str(), key_target->GetMainFrame()->GetURL(), 0);
+    }
+    return IpcStatusJson();
+  }
   auto find_tab_index_arg = [&](const std::string& text,
                                 std::string* error) -> std::optional<size_t> {
     uint64_t tab_id = 0;
@@ -3081,6 +3197,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  scroll-tab <tabid> <dy> [count]\n"
            "  frame-tree <tabid>\n"
            "  inspect-controls <tabid> <base64-v1-json-query>\n"
+           "  key <[ctrl+][shift+][alt+][cmd+]key>\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
            "  frame-html <tabid> <frameid>\n"

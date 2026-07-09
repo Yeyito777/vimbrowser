@@ -255,14 +255,14 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   wraparound
 - in website-normal and regular Vim normal web modes, `i` / `a` enter insert
   mode
-- in website-normal/normal web modes, `f` starts native backend hints and `F`
+- in website-normal/normal web modes, `f` starts browser hints and `F`
   (`Shift-f`) opens hinted links in a new tab immediately after the active tab
-- in website-normal/normal web modes, `Ctrl+l` starts native backend
+- in website-normal/normal web modes, `Ctrl+l` starts browser
   right-click hints; selecting a label dispatches a context-menu/right-click on
   that element
-- in website-normal/normal web modes, `Ctrl+h` starts native backend hover hints;
+- in website-normal/normal web modes, `Ctrl+h` starts browser hover hints;
   selecting a label dispatches a synthetic hover/mouse-move over that element
-- in website-normal/normal web modes, `Ctrl+Space` starts native backend
+- in website-normal/normal web modes, `Ctrl+Space` starts browser
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it
 - in website-normal/normal web modes, `/` opens a forward in-page search prompt,
@@ -304,14 +304,15 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   from history.
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
-- `:shader [on|off]` toggles the native Blink page color shader; with the
-  shader enabled, YouTube's decorative `#cinematics` ambient-mode canvas glow is
-  hidden natively so it cannot leave an unshadered dark square around videos
+- `:shader [on|off]` toggles the page color shader (the patched native Blink
+  shader on Linux and CEF's auto-dark emulation on macOS); with the Linux
+  shader enabled, YouTube's decorative `#cinematics` ambient-mode canvas glow
+  is hidden natively so it cannot leave an unshadered dark square around videos
 - `:mspdf` downloads every page of the current MuseScore score and assembles a
   native PDF in `~/Desktop/musescore-sheets` (override with
-  `MUSESCORE_DOWNLOAD_DIR`). The network transfer and SVG/PNG-to-PDF conversion
-  are implemented in C/C++ with libcurl, librsvg, and Cairo; no qutebrowser
-  userscript, Python process, ImageMagick, or `pdfunite` is involved
+  `MUSESCORE_DOWNLOAD_DIR`). On Linux, the network transfer and SVG/PNG-to-PDF
+  conversion are implemented in C/C++ with libcurl, librsvg, and Cairo; the
+  stock-CEF macOS build currently reports the feature as unavailable
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.
@@ -329,12 +330,12 @@ MIT. See `LICENSE`.
 ## macOS build
 
 The shell builds against a stock CEF macOS binary distribution (no patched
-Chromium backend). Features implemented inside the patched Blink tree are
-unavailable on this build: native hints (`f`/`F`, `Ctrl+l`, `Ctrl+h`,
-`Ctrl+Space`), the page color shader, FPS sampling, the audible-tab icon, and
-native content blocking/network capture. Everything else — tabs, vim modes,
-command line, IPC, CDP, persistent profiles — works. The build targets Apple
-silicon and macOS 13.3 or newer.
+Chromium backend). The macOS shell supplies CEF-based fallbacks for the patched
+backend features: page and docked-DevTools hints (`f`/`F`, `Ctrl+l`, `Ctrl+h`,
+`Ctrl+Space`), Vim scrolling, the page color shader, FPS/refresh sampling, and
+audible-tab state. Content blocking and opt-in network capture use standard CEF
+request handlers and work on both platforms. The build targets Apple silicon
+and macOS 13.3 or newer.
 
 ```bash
 make mac-build

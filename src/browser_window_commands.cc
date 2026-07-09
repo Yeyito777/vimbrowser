@@ -169,6 +169,42 @@ bool ParseMuseScoreMetadata(const std::string& response,
   return true;
 }
 
+#if defined(__APPLE__)
+void ScrollMacPage(CefRefPtr<CefBrowser> browser, int dy) {
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  std::ostringstream script;
+  script << "(()=>{const t=window.__vimbrowserScrollTarget;"
+            "if(t&&t.isConnected){if(typeof t.scrollBy==='function')"
+            "t.scrollBy({top:"
+         << dy
+         << ",behavior:'auto'});else t.scrollTop+=" << dy
+         << ";}else window.scrollBy({top:" << dy
+         << ",behavior:'auto'});})()";
+  browser->GetMainFrame()->ExecuteJavaScript(
+      script.str(), browser->GetMainFrame()->GetURL(), 0);
+}
+
+void ScrollMacPageToEdge(CefRefPtr<CefBrowser> browser, bool bottom) {
+  if (!browser || !browser->GetMainFrame()) {
+    return;
+  }
+  const char* script = bottom
+      ? "(()=>{const t=window.__vimbrowserScrollTarget;"
+        "if(t&&t.isConnected){if(typeof t.scrollTo==='function')"
+        "t.scrollTo({top:t.scrollHeight,behavior:'auto'});else "
+        "t.scrollTop=t.scrollHeight;}else window.scrollTo({top:"
+        "document.documentElement.scrollHeight,behavior:'auto'});})()"
+      : "(()=>{const t=window.__vimbrowserScrollTarget;"
+        "if(t&&t.isConnected){if(typeof t.scrollTo==='function')"
+        "t.scrollTo({top:0,behavior:'auto'});else t.scrollTop=0;}"
+        "else window.scrollTo({top:0,behavior:'auto'});})()";
+  browser->GetMainFrame()->ExecuteJavaScript(
+      script, browser->GetMainFrame()->GetURL(), 0);
+}
+#endif
+
 void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser,
                              int dy,
                              bool instant = false) {
@@ -617,7 +653,11 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
+#if defined(__APPLE__)
+  ScrollMacPage(browser, dy);
+#else
   SendScrollWheel(browser, ScrollTargetMouseEvent(tab, window_), dy);
+#endif
 }
 
 void BrowserWindow::ScrollDevToolsBy(int dy) {
@@ -625,6 +665,9 @@ void BrowserWindow::ScrollDevToolsBy(int dy) {
     return;
   }
 
+#if defined(__APPLE__)
+  ScrollMacPage(devtools_browser_view_->GetBrowser(), dy);
+#else
   CefMouseEvent event;
   event.modifiers = 0;
   if (devtools_has_scroll_target_) {
@@ -640,6 +683,7 @@ void BrowserWindow::ScrollDevToolsBy(int dy) {
     event.y = std::max(1, bounds.height / 2);
   }
   SendScrollWheel(devtools_browser_view_->GetBrowser(), event, dy);
+#endif
 }
 
 void BrowserWindow::CycleDevToolsPanel(int delta) {
@@ -686,7 +730,11 @@ void BrowserWindow::ScrollActivePageToTop() {
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
+#if defined(__APPLE__)
+  ScrollMacPageToEdge(browser, false);
+#else
   SendScrollWheel(browser, event, -kScrollToEdgePx);
+#endif
 }
 
 void BrowserWindow::ScrollActivePageToBottom() {
@@ -701,7 +749,11 @@ void BrowserWindow::ScrollActivePageToBottom() {
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
+#if defined(__APPLE__)
+  ScrollMacPageToEdge(browser, true);
+#else
   SendScrollWheel(browser, event, kScrollToEdgePx);
+#endif
 }
 
 void BrowserWindow::StartPageSearch(std::string text, bool forward) {

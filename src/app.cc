@@ -18,6 +18,41 @@ constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
+#if defined(__APPLE__)
+constexpr const char kMacPageEventMessage[] = "__vimbrowser_mac_page_event__";
+
+class MacPageBridgeHandler final : public CefV8Handler {
+ public:
+  explicit MacPageBridgeHandler(CefRefPtr<CefFrame> frame) : frame_(frame) {}
+
+  bool Execute(const CefString& name,
+               CefRefPtr<CefV8Value> object,
+               const CefV8ValueList& arguments,
+               CefRefPtr<CefV8Value>& retval,
+               CefString& exception) override {
+    if (name.ToString() != "__vimbrowserReport" || arguments.empty() ||
+        !arguments[0]->IsString() || !frame_ || !frame_->IsValid()) {
+      return false;
+    }
+    CefRefPtr<CefProcessMessage> message =
+        CefProcessMessage::Create(kMacPageEventMessage);
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    args->SetString(0, arguments[0]->GetStringValue());
+    args->SetString(1, arguments.size() >= 2 && arguments[1]->IsString()
+                           ? arguments[1]->GetStringValue()
+                           : CefString());
+    frame_->SendProcessMessage(PID_BROWSER, message);
+    retval = CefV8Value::CreateBool(true);
+    return true;
+  }
+
+ private:
+  CefRefPtr<CefFrame> frame_;
+
+  IMPLEMENT_REFCOUNTING(MacPageBridgeHandler);
+  DISALLOW_COPY_AND_ASSIGN(MacPageBridgeHandler);
+};
+#endif
 
 std::string FocusedEditablePurpose(CefRefPtr<CefDOMNode> node) {
   if (!node) {
@@ -331,6 +366,27 @@ void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>,
     frame->SendProcessMessage(PID_BROWSER, message);
   }
 }
+
+#if defined(__APPLE__)
+void App::OnContextCreated(CefRefPtr<CefBrowser>,
+                           CefRefPtr<CefFrame> frame,
+                           CefRefPtr<CefV8Context> context) {
+  if (!frame || !context || !context->IsValid()) {
+    return;
+  }
+  CefRefPtr<CefV8Value> global = context->GetGlobal();
+  if (!global) {
+    return;
+  }
+  const auto attributes = static_cast<CefV8Value::PropertyAttribute>(
+      V8_PROPERTY_ATTRIBUTE_READONLY | V8_PROPERTY_ATTRIBUTE_DONTDELETE);
+  global->SetValue(
+      "__vimbrowserReport",
+      CefV8Value::CreateFunction("__vimbrowserReport",
+                                 new MacPageBridgeHandler(frame)),
+      attributes);
+}
+#endif
 
 bool App::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                    CefRefPtr<CefFrame> frame,

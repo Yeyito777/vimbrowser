@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -15,6 +16,9 @@
 #include "include/cef_request.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_resource_request_handler.h"
+#if defined(__APPLE__)
+#include "include/cef_audio_handler.h"
+#endif
 
 namespace vimbrowser {
 
@@ -29,6 +33,9 @@ class BrowserClient final : public CefClient,
                             public CefContextMenuHandler,
                             public CefRequestHandler,
                             public CefResourceRequestHandler,
+#if defined(__APPLE__)
+                            public CefAudioHandler,
+#endif
                             public CefPermissionHandler {
  public:
   explicit BrowserClient(BrowserWindow* owner = nullptr);
@@ -41,6 +48,9 @@ class BrowserClient final : public CefClient,
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
   CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
+#if defined(__APPLE__)
+  CefRefPtr<CefAudioHandler> GetAudioHandler() override { return this; }
+#endif
 
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
@@ -119,6 +129,19 @@ class BrowserClient final : public CefClient,
       const CefString& requesting_origin,
       uint32_t requested_permissions,
       CefRefPtr<CefMediaAccessCallback> callback) override;
+
+#if defined(__APPLE__)
+  void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser,
+                            const CefAudioParameters& params,
+                            int channels) override;
+  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
+                           const float** data,
+                           int frames,
+                           int64_t pts) override;
+  void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser) override;
+  void OnAudioStreamError(CefRefPtr<CefBrowser> browser,
+                          const CefString& message) override;
+#endif
 
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,
@@ -199,6 +222,12 @@ class BrowserClient final : public CefClient,
   uint64_t next_network_request_id_ = 1;
   std::vector<std::shared_ptr<NetworkRequestRecord>> network_log_;
   std::unordered_map<uint64_t, std::shared_ptr<NetworkRequestRecord>> active_network_by_cef_id_;
+#if defined(__APPLE__)
+  std::atomic<bool> audible_{false};
+  std::atomic<bool> fps_has_sample_{false};
+  std::atomic<double> fps_{0.0};
+  std::atomic<double> refresh_rate_{0.0};
+#endif
 
   IMPLEMENT_REFCOUNTING(BrowserClient);
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
