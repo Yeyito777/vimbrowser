@@ -337,6 +337,12 @@ audible-tab state. Content blocking and opt-in network capture use standard CEF
 request handlers and work on both platforms. The build targets Apple silicon
 and macOS 13.3 or newer.
 
+Because local ad-hoc signatures change on every rebuild, macOS otherwise asks
+for the login keychain password repeatedly to access `Chromium Safe Storage`.
+The macOS build uses Chromium's mock keychain by default to avoid that launch
+dialog. This means browser secrets are not protected by the login keychain; run
+with `--use-system-keychain` to opt back into the system keychain.
+
 ```bash
 make mac-build
 make mac-install

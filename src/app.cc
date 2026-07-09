@@ -291,6 +291,22 @@ void App::OnBeforeCommandLineProcessing(
   command_line->RemoveSwitch("cache-path");
   command_line->RemoveSwitch("a26-shell");
 
+#if defined(__APPLE__)
+  if (process_type.empty()) {
+    // Ad-hoc signatures change whenever this locally built app is rebuilt.
+    // Chromium Safe Storage consequently asks the login keychain to authorize
+    // each new build. Use Chromium's built-in mock keychain by default so a
+    // normal app launch never presents that recurring password dialog. Users
+    // who prefer login-keychain protection can opt back in explicitly.
+    const bool use_system_keychain =
+        command_line->HasSwitch("use-system-keychain");
+    command_line->RemoveSwitch("use-system-keychain");
+    if (!use_system_keychain && !command_line->HasSwitch("use-mock-keychain")) {
+      command_line->AppendSwitch("use-mock-keychain");
+    }
+  }
+#endif
+
   // Keep the shell minimal and deterministic. These are Chromium switches, not
   // external UI toolkits.
   //
