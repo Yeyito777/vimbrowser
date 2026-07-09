@@ -369,7 +369,16 @@ char PlainKeyChar(const CefKeyEvent& event) {
 }
 
 bool IsEnterKey(const CefKeyEvent& event) {
-  return event.windows_key_code == 0x0D || event.native_key_code == 36;
+  if (event.windows_key_code == 0x0D || event.character == '\r' ||
+      event.character == '\n' || event.unmodified_character == '\r' ||
+      event.unmodified_character == '\n') {
+    return true;
+  }
+#if defined(__APPLE__)
+  return event.native_key_code == 36 || event.native_key_code == 76;
+#else
+  return event.native_key_code == 36;
+#endif
 }
 
 bool IsEscapeKey(const CefKeyEvent& event) {
@@ -380,17 +389,31 @@ bool IsEscapeKey(const CefKeyEvent& event) {
 
 bool IsBackspaceKey(const CefKeyEvent& event) {
   return event.windows_key_code == 0x08 || event.windows_key_code == 0xFF08 ||
-         event.native_key_code == 22 || event.character == 0x08 ||
+         event.native_key_code == 22 ||
+#if defined(__APPLE__)
+         event.native_key_code == 51 ||
+#endif
+         event.character == 0x08 ||
          event.unmodified_character == 0x08;
 }
 
 bool IsTabKey(const CefKeyEvent& event) {
-  return event.windows_key_code == 0x09 || event.native_key_code == 23;
+  return event.windows_key_code == 0x09 || event.native_key_code == 23 ||
+#if defined(__APPLE__)
+         event.native_key_code == 48 ||
+#endif
+         event.character == '\t' || event.unmodified_character == '\t';
 }
 
 bool IsDeleteKey(const CefKeyEvent& event) {
-  return event.windows_key_code == 0x2E || event.windows_key_code == 0xFFFF ||
-         event.native_key_code == 119;
+  if (event.windows_key_code == 0x2E || event.windows_key_code == 0xFFFF) {
+    return true;
+  }
+#if defined(__APPLE__)
+  return event.native_key_code == 117;
+#else
+  return event.native_key_code == 119;
+#endif
 }
 
 bool IsNavigationEditingKey(const CefKeyEvent& event) {
@@ -403,8 +426,24 @@ bool IsNavigationEditingKey(const CefKeyEvent& event) {
     case 0x28:  // Down
       return true;
     default:
-      return false;
+      break;
   }
+#if defined(__APPLE__)
+  switch (event.native_key_code) {
+    case 115:  // Home
+    case 116:  // Page Up
+    case 119:  // End
+    case 121:  // Page Down
+    case 123:  // Left
+    case 124:  // Right
+    case 125:  // Down
+    case 126:  // Up
+      return true;
+    default:
+      break;
+  }
+#endif
+  return false;
 }
 
 bool IsCtrlKey(const CefKeyEvent& event, char key) {

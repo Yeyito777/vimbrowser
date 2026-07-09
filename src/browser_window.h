@@ -153,6 +153,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override;
   void OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
                              const CefRect& new_bounds) override;
+  void OnThemeColorsChanged(CefRefPtr<CefWindow> window,
+                            bool chrome_theme) override;
   void OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
                         CefRefPtr<CefBrowser> browser) override;
   void OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,

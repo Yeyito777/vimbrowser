@@ -356,6 +356,47 @@ CefRect WindowClientBounds(CefRefPtr<CefWindow> window) {
   return CefRect(0, 0, std::max(1, outer.width), std::max(1, outer.height));
 }
 
+void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
+  if (!window) {
+    return;
+  }
+  window->SetThemeColor(CEF_ColorPrimaryBackground, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorPrimaryForeground, theme::kText);
+  window->SetThemeColor(CEF_ColorSecondaryForeground, theme::kMuted);
+  window->SetThemeColor(CEF_ColorAccent, theme::kAccent);
+  window->SetThemeColor(CEF_ColorTextfieldBackground, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldBackgroundDisabled, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldFilledBackground, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldForeground, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldFilledForegroundInvalid, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldForegroundIcon, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldForegroundLabel, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholder, theme::kMuted);
+  window->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholderInvalid,
+                        theme::kMuted);
+  window->SetThemeColor(CEF_ColorTextfieldHover, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldSelectionBackground,
+                        theme::kSelectionBg);
+  window->SetThemeColor(CEF_ColorTextfieldSelectionForeground, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldFilledUnderline, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldFilledUnderlineFocused, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorFocusableBorderFocused, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorFocusableBorderUnfocused, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorSysStateFocusRing, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorSysStateFocusRingInverse, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorSysStateFocusHighlight, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorSysStateFocus, theme::kAppBg);
+#if defined(__linux__)
+  window->SetThemeColor(CEF_ColorNativeTextfieldBorderUnfocused, theme::kAppBg);
+#endif
+  window->SetThemeColor(CEF_ColorLabelForeground, theme::kText);
+  window->SetThemeColor(CEF_ColorButtonBackground, theme::kSidebarBg);
+  window->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
@@ -1158,38 +1199,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
     RequestA26Keyboard(A26KeyboardPurpose::kHide);
   }
   window_->SetTitle("vimbrowser");
-  window_->SetThemeColor(CEF_ColorPrimaryBackground, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorPrimaryForeground, theme::kText);
-  window_->SetThemeColor(CEF_ColorSecondaryForeground, theme::kMuted);
-  window_->SetThemeColor(CEF_ColorAccent, theme::kAccent);
-  window_->SetThemeColor(CEF_ColorTextfieldBackground, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldBackgroundDisabled, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldFilledBackground, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldForeground, theme::kText);
-  window_->SetThemeColor(CEF_ColorTextfieldFilledForegroundInvalid, theme::kText);
-  window_->SetThemeColor(CEF_ColorTextfieldForegroundIcon, theme::kText);
-  window_->SetThemeColor(CEF_ColorTextfieldForegroundLabel, theme::kText);
-  window_->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholder, theme::kMuted);
-  window_->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholderInvalid, theme::kMuted);
-  window_->SetThemeColor(CEF_ColorTextfieldHover, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldSelectionBackground, theme::kSelectionBg);
-  window_->SetThemeColor(CEF_ColorTextfieldSelectionForeground, theme::kText);
-  window_->SetThemeColor(CEF_ColorTextfieldFilledUnderline, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldFilledUnderlineFocused, theme::kAppBg);
-  // Hide CEF's rounded textfield outline. We draw a square one-pixel separator
-  // ourselves so command mode remains terminal-esque and has no rounded corners.
-  window_->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorFocusableBorderFocused, theme::kAppBg);
-  window_->SetThemeColor(CEF_ColorFocusableBorderUnfocused, theme::kAppBg);
-#if defined(__linux__)
-  // Linux-only color id in stock CEF headers.
-  window_->SetThemeColor(CEF_ColorNativeTextfieldBorderUnfocused, theme::kAppBg);
-#endif
-  window_->SetThemeColor(CEF_ColorLabelForeground, theme::kText);
-  window_->SetThemeColor(CEF_ColorButtonBackground, theme::kSidebarBg);
-  window_->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
+  ApplyWindowThemeColors(window_);
   window_->ThemeChanged();
   window_->SetToFillLayout();
   window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
@@ -1216,6 +1226,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
                           true);
   window_->SetAccelerator(kAcceleratorCommandEscape, 0x1B, false, false, false,
                           true);
+  window_->SetAccelerator(kAcceleratorCommandShiftEscape, 0x1B, true, false,
+                          false, true);
   ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
@@ -1243,6 +1255,14 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   SetFocusArea(FocusArea::kWebView);
   StartSidebarMouseWatcher();
   ScheduleFpsIndicatorUpdate();
+}
+
+void BrowserWindow::OnThemeColorsChanged(CefRefPtr<CefWindow> window,
+                                         bool) {
+  // Adding the first BrowserView installs its Chrome theme and resets all
+  // per-window overrides. Reapply them here so focused textfields never regain
+  // Chromium's rounded focus halo after startup or a system theme change.
+  ApplyWindowThemeColors(window);
 }
 
 void BrowserWindow::RegisterDwmSaveArgv() {
@@ -1991,11 +2011,16 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   if (forwarding_key_to_page_) {
     return false;
   }
-  if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
-    if (command_id == kAcceleratorCommandTab ||
-        command_id == kAcceleratorCommandBacktab) {
-      return CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
+  if (mode_ != Mode::kNormal &&
+      (command_id == kAcceleratorCommandTab ||
+       command_id == kAcceleratorCommandBacktab)) {
+    if (command_vim_.mode == vim::Mode::kInsert) {
+      CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1
+                                                                        : 1);
     }
+    return true;
+  }
+  if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
     if (command_id == kAcceleratorCommandDeleteCompletion) {
       DeleteSelectedCommandAutocomplete();
       return true;
@@ -2006,12 +2031,16 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   }
   if (mode_ != Mode::kNormal &&
       (command_id == kAcceleratorCommandEnter ||
-       command_id == kAcceleratorCommandEscape)) {
+       command_id == kAcceleratorCommandEscape ||
+       command_id == kAcceleratorCommandShiftEscape)) {
     CefKeyEvent event;
     event.type = KEYEVENT_RAWKEYDOWN;
     event.windows_key_code =
         command_id == kAcceleratorCommandEnter ? 0x0D : 0x1B;
     event.native_key_code = event.windows_key_code;
+    if (command_id == kAcceleratorCommandShiftEscape) {
+      event.modifiers = EVENTFLAG_SHIFT_DOWN;
+    }
     return HandleCommandModeKey(event);
   }
   if (mode_ == Mode::kNormal && !native_hints_active_) {
@@ -2610,7 +2639,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(800, 800);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1200, command_height + (sidebar_search ? 0 : 1));
+    return CefSize(1200, command_height);
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1200, command_height);
@@ -2765,7 +2794,7 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarBorderWidth, 1);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1, command_height + (sidebar_search ? 0 : 1));
+    return CefSize(1, command_height);
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1, command_height);
@@ -2873,7 +2902,7 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
   if (id == kCommandPanelId) {
-    return CefSize(0, command_height + (sidebar_search ? 0 : 1));
+    return CefSize(0, command_height);
   }
   if (id == kCommandContentPanelId) {
     return CefSize(0, command_height);

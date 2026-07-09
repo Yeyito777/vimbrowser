@@ -36,6 +36,42 @@ bool SameHistoryCompletionSource(const CompletionItem& a,
   return a.source == b.source && a.source_key == b.source_key;
 }
 
+bool MatchesAsciiKey(const CefKeyEvent& event, char key) {
+  const char lower =
+      static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
+  const char upper =
+      static_cast<char>(std::toupper(static_cast<unsigned char>(key)));
+  return event.windows_key_code == lower || event.windows_key_code == upper ||
+         event.character == lower || event.character == upper ||
+         event.unmodified_character == lower ||
+         event.unmodified_character == upper;
+}
+
+bool IsNativeCommandEditingShortcut(const CefKeyEvent& event) {
+#if defined(__APPLE__)
+  if (!(event.modifiers & EVENTFLAG_COMMAND_DOWN) ||
+      (event.modifiers & (EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN))) {
+    return false;
+  }
+#else
+  if (!(event.modifiers & EVENTFLAG_CONTROL_DOWN) ||
+      (event.modifiers & (EVENTFLAG_COMMAND_DOWN | EVENTFLAG_ALT_DOWN))) {
+    return false;
+  }
+#endif
+  if (MatchesAsciiKey(event, 'x')) {
+#if defined(__APPLE__)
+    return true;
+#else
+    // Ctrl-X is vimbrowser's delete-selected-history-completion command.
+    return false;
+#endif
+  }
+  return MatchesAsciiKey(event, 'a') || MatchesAsciiKey(event, 'c') ||
+         MatchesAsciiKey(event, 'v') || MatchesAsciiKey(event, 'y') ||
+         MatchesAsciiKey(event, 'z');
+}
+
 }  // namespace
 
 void BrowserWindow::ClearCommandAutocomplete() {
@@ -505,6 +541,28 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return false;
   }
 
+  // Tab belongs exclusively to command completion. Handle it before syncing
+  // the native field so a platform focus traversal/selection can never leak
+  // back into the command model.
+  if (IsTabKey(event)) {
+    if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
+        command_vim_.mode == vim::Mode::kInsert) {
+      CycleCommandAutocomplete((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1
+                                                                        : 1);
+    }
+    return true;
+  }
+
+  // Let the focused textfield perform platform-native cursor movement,
+  // forward-delete, clipboard, and undo/redo operations in insert mode.
+  // OnAfterUserAction synchronizes any resulting text/cursor change back into
+  // the vim line-edit model. Command-control keys above remain shell-owned.
+  if (command_vim_.mode == vim::Mode::kInsert &&
+      (IsNavigationEditingKey(event) || IsDeleteKey(event) ||
+       IsNativeCommandEditingShortcut(event))) {
+    return false;
+  }
+
   // Some platform textfield edit commands are applied natively without reaching
   // our key model. Synchronize those insert-mode edits before handling the next
   // modeled key. In normal mode the vim model is authoritative: the textfield is
@@ -512,14 +570,6 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   // native contents after commands like dd/D/cw just rewrote command_text_.
   if (command_vim_.mode == vim::Mode::kInsert && !suppress_next_char_event_) {
     SyncCommandTextFromField();
-  }
-
-  if (IsTabKey(event)) {
-    if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
-        command_vim_.mode == vim::Mode::kInsert) {
-      CycleCommandAutocomplete((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1 : 1);
-    }
-    return true;
   }
 
   auto apply_result = [&](const vim::LineEditResult& result) {
