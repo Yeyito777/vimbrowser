@@ -130,6 +130,7 @@ inline constexpr int kModeIndicatorHeight = 24;
 inline constexpr int kStatusBarHeight = 16;
 inline constexpr int kStatusModeWidth = 64;
 inline constexpr int kCommandTextInsetX = 0;
+inline constexpr int kCommandFieldBleed = 4;
 inline constexpr int kCommandCharWidth = 8;
 inline constexpr int kLineScrollPx = 280;
 inline constexpr int kSmallScrollPx = 140;

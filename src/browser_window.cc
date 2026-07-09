@@ -344,6 +344,18 @@ std::optional<bool> OpenCommandNewTabForKey(const CefKeyEvent& event) {
   }
 }
 
+CefRect WindowClientBounds(CefRefPtr<CefWindow> window) {
+  if (!window) {
+    return CefRect(0, 0, 1, 1);
+  }
+  const CefRect client = window->GetClientAreaBoundsInScreen();
+  if (client.width > 0 && client.height > 0) {
+    return CefRect(0, 0, client.width, client.height);
+  }
+  const CefRect outer = window->GetBounds();
+  return CefRect(0, 0, std::max(1, outer.width), std::max(1, outer.height));
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
@@ -2559,7 +2571,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     if (!devtools_visible_) {
       return CefSize(0, 800);
     }
-    const int window_width = window_ ? window_->GetBounds().width : 1200;
+    const int window_width = window_ ? WindowClientBounds(window_).width : 1200;
     const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
     const int available_content_width = std::max(1, window_width - content_x);
     const int desired_width = std::max(
@@ -2703,7 +2715,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(112, 24);
   }
   if (id == kContextMenuBackdropButtonId) {
-    const CefRect bounds = window_ ? window_->GetBounds() : CefRect(0, 0, 1, 1);
+    const CefRect bounds = WindowClientBounds(window_);
     return CefSize(std::max(1, bounds.width), std::max(1, bounds.height));
   }
   if (id == kContextMenuPanelId) {
@@ -3291,7 +3303,10 @@ void BrowserWindow::Layout() {
     sidebar_visible_ = false;
   }
 
-  const CefRect bounds = window_->GetBounds();
+  // Child views and overlays use client-area coordinates. CefWindow::GetBounds
+  // includes the native title bar on macOS, which placed the 28px command line
+  // exactly one title-bar height below the visible client area.
+  const CefRect bounds = WindowClientBounds(window_);
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
   const bool sidebar_search = IsSidebarSearchMode();
@@ -3688,10 +3703,14 @@ void BrowserWindow::Layout() {
     // regular full-width commands retain their established 13px editing font.
     command_field_->SetFontList(sidebar_search ? "monospace, 12px"
                                                : "monospace, 13px");
-    command_field_->SetBounds(
-        CefRect(kCommandTextInsetX, 0,
-                std::max(1, command_surface_width - kCommandTextInsetX),
-                command_surface_height));
+    // Bleed the stock CEF textfield outside the clipped command surface so its
+    // rounded focus ring stays hidden for both the full-width command line and
+    // the compact sidebar-search surface.
+    command_field_->SetBounds(CefRect(
+        kCommandTextInsetX - kCommandFieldBleed, -kCommandFieldBleed,
+        std::max(1, command_surface_width - kCommandTextInsetX +
+                        2 * kCommandFieldBleed),
+        command_surface_height + 2 * kCommandFieldBleed));
   }
   const int autocomplete_row_width = std::max(1, autocomplete_width -
                                                 kCommandAutocompleteBorder * 2);
