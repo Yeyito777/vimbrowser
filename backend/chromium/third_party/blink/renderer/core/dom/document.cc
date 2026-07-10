@@ -362,6 +362,7 @@
 #include "third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h"
 #include "third_party/blink/renderer/core/xml_names.h"
 #include "third_party/blink/renderer/core/xmlns_names.h"
+#include "third_party/blink/renderer/core/yeyito_hints/hints.h"
 #include "third_party/blink/renderer/platform/bindings/dom_data_store.h"
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
 #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
@@ -3284,6 +3285,11 @@ void Document::Shutdown() {
 
   if (num_canvases_ > 0)
     UMA_HISTOGRAM_COUNTS_100("Blink.Canvas.NumCanvasesPerPage", num_canvases_);
+
+  // Hint candidates retain elements and geometry from this Document. Tear the
+  // session down while its LocalFrameView is still usable, before replacing the
+  // DOM and before the overlay can be painted over the next Document.
+  Hints::DocumentWillDetach(*GetFrame());
 
   GetViewportData().Shutdown();
 

@@ -89,11 +89,12 @@ RELOAD_HINT_TEST_HTML = """<!doctype html>
 <body tabindex=\"0\" style=\"font:20px sans-serif;padding:20px;height:3000px\">
 <button id=\"button\">button</button>
 <a id=\"link\" href=\"#target\">link</a>
+__SLOW_RESOURCE__
 <script>
 window.reloadGeneration = __GEN__;
 window.events=[];
 window.keys=[];
-for (const t of ['keydown','keypress','keyup','beforeinput','input']) {
+for (const t of ['keydown','keypress','keyup','beforeinput','input','click']) {
   document.addEventListener(t, e => {
     window.events.push({
       type: e.type,
@@ -340,8 +341,9 @@ class StaticHttpsServer:
 
 
 class SlowReloadHttpServer:
-    def __init__(self, delay: float = 1.25):
-        self.delay = delay
+    def __init__(self, document_delay: float = 0.5, resource_delay: float = 2.0):
+        self.document_delay = document_delay
+        self.resource_delay = resource_delay
         self.request_count = 0
         self.lock = threading.Lock()
         self.httpd: http.server.ThreadingHTTPServer | None = None
@@ -353,6 +355,16 @@ class SlowReloadHttpServer:
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self) -> None:
+                if self.path.startswith("/slow-resource"):
+                    time.sleep(outer.resource_delay)
+                    body = b"<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/svg+xml")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if self.path not in ("/", "/index.html"):
                     self.send_response(404)
                     self.end_headers()
@@ -361,8 +373,18 @@ class SlowReloadHttpServer:
                     outer.request_count += 1
                     generation = outer.request_count
                 if generation > 1:
-                    time.sleep(outer.delay)
-                html = RELOAD_HINT_TEST_HTML.replace("__GEN__", str(generation)).encode()
+                    # Leave a deterministic window where the old document is still
+                    # visible while its replacement navigation is pending.
+                    time.sleep(outer.document_delay)
+                slow_resource = (
+                    f'<img src="/slow-resource?generation={generation}" '
+                    'alt="" style="display:none">'
+                    if generation > 1 else ""
+                )
+                html = (RELOAD_HINT_TEST_HTML
+                        .replace("__GEN__", str(generation))
+                        .replace("__SLOW_RESOURCE__", slow_resource)
+                        .encode())
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(html)))
@@ -989,7 +1011,7 @@ def test_ctrl_lh_start_right_click_and_hover_hints(h: Harness) -> None:
             "Ctrl+H did not start hover hints", hover)
 
 
-def test_reload_then_hint_key_does_not_softlock(binary: Path) -> None:
+def test_hints_work_before_full_page_load_and_survive_navigation(binary: Path) -> None:
     with SlowReloadHttpServer() as server:
         h = Harness(binary, initial_url=server.url)
         try:
@@ -997,8 +1019,16 @@ def test_reload_then_hint_key_does_not_softlock(binary: Path) -> None:
                 reset_to_website_mode(h, focus_input=False)
                 h.clear()
                 h.key("r", pause=0.05)
-                h.key("f", pause=0.05)
+                h.key("f", pause=0.1)
 
+                pending_status = h.ipc(["status"])
+                require(pending_status.get("mode") == "HINT",
+                        "hints did not start while replacement navigation was pending",
+                        pending_status)
+
+                # Wait for the replacement document's DOM, but not its deliberately
+                # slow image. This is the normal real-world interval where useful
+                # controls are painted while the browser still reports IsLoading().
                 deadline = time.time() + 8
                 last = None
                 while time.time() < deadline:
@@ -1008,28 +1038,68 @@ def test_reload_then_hint_key_does_not_softlock(binary: Path) -> None:
                             "ready: document.readyState})",
                             timeout=2,
                         )
-                        if last.get("generation", 0) >= 2 and last.get("ready") == "complete":
+                        if (last.get("generation", 0) >= 2 and
+                                last.get("ready") != "complete"):
                             break
                     except Exception as exc:  # The renderer can be between documents.
                         last = repr(exc)
                     time.sleep(0.05)
                 else:
                     raise AssertionError(
-                        f"reload did not complete after pressing f during load; last={last!r}")
+                        "replacement DOM did not become usable before full load; "
+                        f"last={last!r}")
+
+                tabs = h.ipc(["tabs"]).get("tabs", [])
+                active_tab = next((tab for tab in tabs if tab.get("active")), None)
+                require(active_tab and active_tab.get("loading") is True,
+                        "test page was not still loading before the hint command",
+                        {"document": last, "active_tab": active_tab})
+                committed_status = h.ipc(["status"])
+                require(committed_status.get("mode") in ("WEBSITE", "NORMAL"),
+                        "document replacement did not clear old hint mode",
+                        committed_status)
+
+                h.key("f", pause=0.2)
+                hint_status = h.ipc(["status"])
+                require(hint_status.get("mode") == "HINT",
+                        "hints did not start on the partially loaded document",
+                        {"status": hint_status, "active_tab": active_tab})
+
+                # body is label a and the button is label s on this fixture.
+                h.key("s", pause=0.3)
+                clicked = h.snapshot()
+                require(any(e.get("type") == "click" and e.get("target") == "button"
+                            for e in clicked["events"]),
+                        "partially loaded page hint did not activate its button",
+                        clicked)
+
+                deadline = time.time() + 8
+                while time.time() < deadline:
+                    last = h.js(
+                        "JSON.stringify({generation: window.reloadGeneration || 0, "
+                        "ready: document.readyState})",
+                        timeout=2,
+                    )
+                    if last.get("generation", 0) >= 2 and last.get("ready") == "complete":
+                        break
+                    time.sleep(0.05)
+                else:
+                    raise AssertionError(
+                        f"reload did not complete after using hints; last={last!r}")
 
                 status = h.ipc(["status"])
                 require(status.get("mode") in ("WEBSITE", "NORMAL"),
-                        "pressing f during reload left browser stuck in hint mode", status)
+                        "using hints during load left browser stuck in hint mode", status)
                 h.key("j", pause=0.25)
                 snap = h.snapshot()
                 require(snap["scrollY"] > 0,
-                        "normal page keybindings did not recover after reload/hint race",
+                        "normal page keybindings did not recover after loading hints",
                         {"status": status, "snapshot": snap})
         finally:
             h.cleanup()
 
 
-test_reload_then_hint_key_does_not_softlock.owns_harness = True
+test_hints_work_before_full_page_load_and_survive_navigation.owns_harness = True
 
 
 def test_cold_start_launch_url_restores_saved_tabs_at_bottom(binary: Path) -> None:
@@ -1249,7 +1319,7 @@ TESTS = [
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,
     test_ctrl_lh_start_right_click_and_hover_hints,
-    test_reload_then_hint_key_does_not_softlock,
+    test_hints_work_before_full_page_load_and_survive_navigation,
     test_cold_start_launch_url_restores_saved_tabs_at_bottom,
     test_youtube_insert_hjkl_respects_focused_text_input,
     test_youtube_cinematics_hidden_by_shader,

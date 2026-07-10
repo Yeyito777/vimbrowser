@@ -28,6 +28,7 @@ class CORE_EXPORT Hints final : public GarbageCollected<Hints>,
  public:
   static const char kSupplementName[];
   static Hints& From(LocalFrame& frame);
+  static void DocumentWillDetach(LocalFrame& frame);
 
   explicit Hints(LocalFrame& frame);
   Hints(const Hints&) = delete;

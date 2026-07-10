@@ -382,16 +382,11 @@ bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
 }
 
 void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
-  // Native hints are bound to the renderer document that collected their
-  // candidates. A main-frame navigation can destroy that document before Blink's
-  // console-based "hints stopped" signal reaches the browser process, so clear
-  // the browser-side latch at document boundaries too.
+  // Blink tears down the renderer-side hint overlay with the old Document. Clear
+  // the browser-side latch at the same document boundary so a pending navigation
+  // can never leave the shell routing keys to an obsolete hint matcher.
   StopPageNativeHintsForClient(client);
   UpdateClientUrl(client, url, true);
-}
-
-void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
-  StopPageNativeHintsForClient(client);
 }
 
 void BrowserWindow::OnClientAddressChange(BrowserClient* client,
@@ -3705,15 +3700,6 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   Tab* tab = ActiveTab();
   if (!tab || !tab->client || !tab->client->browser()) {
     return false;
-  }
-
-  if (tab->client->browser()->IsLoading()) {
-    // Starting hints while a reload/navigation is replacing the document leaves
-    // us with labels owned by a dying renderer frame. Consume the hint command
-    // but keep the shell in normal/website mode; the user can press f again once
-    // loading completes.
-    ResetWebsitePendingKeys();
-    return true;
   }
 
   ResetWebsitePendingKeys();

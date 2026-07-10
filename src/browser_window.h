@@ -67,7 +67,6 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBrowserCreated(BrowserClient* client);
   void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
-  void OnClientLoadEnd(BrowserClient* client);
   void OnClientAddressChange(BrowserClient* client, const std::string& url);
   bool OnClientProcessMessage(BrowserClient* client,
                               CefRefPtr<CefBrowser> browser,

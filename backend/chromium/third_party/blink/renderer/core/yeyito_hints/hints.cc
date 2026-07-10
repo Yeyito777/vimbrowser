@@ -162,6 +162,17 @@ Hints& Hints::From(LocalFrame& frame) {
   return *hints;
 }
 
+void Hints::DocumentWillDetach(LocalFrame& frame) {
+  auto* hints = Supplement<LocalFrame>::From<Hints>(frame);
+  if (hints && hints->IsActive()) {
+    // The browser process clears its side of hint mode on the matching
+    // main-frame load-start notification. Do not send an asynchronous console
+    // notification from the dying document: it could arrive after hints have
+    // already started in the replacement document and clear that newer session.
+    hints->Stop(false);
+  }
+}
+
 Hints::Hints(LocalFrame& frame) : Supplement<LocalFrame>(frame) {}
 
 void Hints::Dispose() {
