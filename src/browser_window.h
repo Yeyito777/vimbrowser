@@ -377,7 +377,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleHtmlIpcCommand(uint64_t tab_id, bool text, IpcReplyCallback reply);
   void HandleJsIpcCommand(uint64_t tab_id,
                           std::string code,
-                          IpcReplyCallback reply);
+                          IpcReplyCallback reply,
+                          int timeout_ms = 10000);
   void HandleCookiesIpcCommand(uint64_t tab_id,
                                std::string url_override,
                                IpcReplyCallback reply);
@@ -522,6 +523,14 @@ class BrowserWindow final : public CefWindowDelegate,
   void YankActiveTitle();
   void YankActiveMarkdown();
   void YankActiveDom();
+  void StartMuseScorePdfDownload();
+  void OnMuseScoreMetadata(std::string response);
+  void RunMuseScorePdfDownload(std::string title,
+                               std::vector<std::string> urls,
+                               std::string download_directory);
+  void UpdateMuseScorePdfStatus(std::string message);
+  void FinishMuseScorePdfDownload(std::string output_path,
+                                  std::string error);
   void RestyleView(CefRefPtr<CefView> view);
   void SetStatusOutput(std::string message, int timeout_ms = 3000);
   void ClearStatusOutputForGeneration(uint64_t generation);
@@ -634,6 +643,7 @@ class BrowserWindow final : public CefWindowDelegate,
   int devtools_scroll_target_y_ = 1;
   bool devtools_scroll_target_is_page_ = true;
   bool last_tab_close_placeholder_ = false;
+  bool musescore_download_in_progress_ = false;
   bool window_close_pending_ = false;
   bool window_close_allowed_ = false;
   size_t visible_tab_index_ = static_cast<size_t>(-1);

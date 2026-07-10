@@ -292,6 +292,11 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - `:shader [on|off]` toggles the native Blink page color shader; with the
   shader enabled, YouTube's decorative `#cinematics` ambient-mode canvas glow is
   hidden natively so it cannot leave an unshadered dark square around videos
+- `:mspdf` downloads every page of the current MuseScore score and assembles a
+  native PDF in `~/Desktop/musescore-sheets` (override with
+  `MUSESCORE_DOWNLOAD_DIR`). The network transfer and SVG/PNG-to-PDF conversion
+  are implemented in C/C++ with libcurl, librsvg, and Cairo; no qutebrowser
+  userscript, Python process, ImageMagick, or `pdfunite` is involved
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.

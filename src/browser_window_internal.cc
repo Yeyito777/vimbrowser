@@ -198,6 +198,7 @@ const std::vector<CompletionItem>& CommandList() {
       {":folder-create", "create a folder in the current sidebar folder"},
       {":folder-move", "move selected sidebar items to a folder"},
       {":folder-rename", "rename the selected sidebar folder"},
+      {":mspdf", "download the current MuseScore score as a PDF"},
       {":test", "open deterministic internal test fixtures"},
       {":shader", "toggle native page color shader"},
       {":showmode", "toggle top-right vim mode display"},

@@ -11,7 +11,11 @@
 
 #include "config.h"
 #include "include/cef_browser.h"
+#include "include/cef_parser.h"
+#include "include/cef_task.h"
 #include "include/views/cef_textfield.h"
+#include "include/wrapper/cef_closure_task.h"
+#include "musescore_downloader.h"
 #include "theme.h"
 
 namespace vimbrowser {
@@ -72,6 +76,90 @@ void ExecuteJavaScriptInAllFrames(CefRefPtr<CefBrowser> browser,
     }
     frame->ExecuteJavaScript(script, frame->GetURL(), 0);
   }
+}
+
+struct MuseScoreMetadata {
+  std::string title;
+  std::vector<std::string> urls;
+};
+
+bool IsMuseScoreUrl(const std::string& url) {
+  CefURLParts parts;
+  if (!CefParseURL(url, parts)) {
+    return false;
+  }
+  const std::string host = ToLowerAscii(CefString(&parts.host).ToString());
+  return host == "musescore.com" ||
+         (host.size() > 14 && host.ends_with(".musescore.com"));
+}
+
+bool ParseMuseScoreMetadata(const std::string& response,
+                            MuseScoreMetadata* metadata,
+                            std::string* error) {
+  if (!metadata || !error) {
+    return false;
+  }
+  if (response.starts_with("ERR ")) {
+    *error = Trim(response.substr(4));
+    return false;
+  }
+
+  CefRefPtr<CefValue> outer =
+      CefParseJSON(response.data(), response.size(), JSON_PARSER_RFC);
+  if (!outer || outer->GetType() != VTYPE_DICTIONARY) {
+    *error = "invalid renderer response";
+    return false;
+  }
+  CefRefPtr<CefDictionaryValue> outer_dict = outer->GetDictionary();
+  if (!outer_dict || outer_dict->GetType("ok") != VTYPE_BOOL ||
+      !outer_dict->GetBool("ok")) {
+    *error = outer_dict && outer_dict->GetType("error") == VTYPE_STRING
+                 ? outer_dict->GetString("error").ToString()
+                 : "score-page extraction failed";
+    return false;
+  }
+  if (outer_dict->GetType("result") != VTYPE_STRING) {
+    *error = "score-page extraction returned no metadata";
+    return false;
+  }
+
+  const std::string payload = outer_dict->GetString("result").ToString();
+  CefRefPtr<CefValue> inner =
+      CefParseJSON(payload.data(), payload.size(), JSON_PARSER_RFC);
+  if (!inner || inner->GetType() != VTYPE_DICTIONARY) {
+    *error = "invalid score metadata";
+    return false;
+  }
+  CefRefPtr<CefDictionaryValue> dict = inner->GetDictionary();
+  if (!dict || dict->GetType("urls") != VTYPE_LIST) {
+    *error = "score metadata did not contain page URLs";
+    return false;
+  }
+
+  metadata->title = dict->GetType("title") == VTYPE_STRING
+                        ? dict->GetString("title").ToString()
+                        : "musescore-score";
+  CefRefPtr<CefListValue> urls = dict->GetList("urls");
+  if (!urls || urls->GetSize() == 0 || urls->GetSize() > 1000) {
+    *error = "invalid MuseScore page count";
+    return false;
+  }
+  metadata->urls.reserve(urls->GetSize());
+  for (size_t i = 0; i < urls->GetSize(); ++i) {
+    if (urls->GetType(i) != VTYPE_STRING) {
+      *error = "invalid MuseScore page URL";
+      return false;
+    }
+    std::string page_url = urls->GetString(i).ToString();
+    CefURLParts page_parts;
+    if (!CefParseURL(page_url, page_parts) ||
+        ToLowerAscii(CefString(&page_parts.scheme).ToString()) != "https") {
+      *error = "MuseScore returned an unsafe page URL";
+      return false;
+    }
+    metadata->urls.push_back(std::move(page_url));
+  }
+  return true;
 }
 
 void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser,
@@ -329,6 +417,10 @@ void BrowserWindow::CommitCommand() {
       if (command == ":tab-prev") { finish([&] { ActivateRelative(-1); }); return; }
       if (command == ":undo" || command == ":undo-close-tab") {
         finish([&] { UndoCloseTab(); });
+        return;
+      }
+      if (command == ":mspdf") {
+        finish([&] { StartMuseScorePdfDownload(); });
         return;
       }
       if (command == ":yank") { finish([&] { YankActiveUrl(); }); return; }
@@ -733,6 +825,103 @@ void BrowserWindow::YankActiveDom() {
       "if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{});return;}"
       "const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-10000px';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();})()",
       browser->GetMainFrame()->GetURL(), 0);
+}
+
+void BrowserWindow::StartMuseScorePdfDownload() {
+  if (musescore_download_in_progress_) {
+    SetStatusOutput("MuseScore PDF download is already in progress", 3000);
+    return;
+  }
+
+  Tab* tab = ActiveTab();
+  if (!tab || !tab->client || !tab->client->browser()) {
+    SetStatusOutput("MuseScore PDF download failed: current tab has no browser",
+                    6000);
+    return;
+  }
+  const std::string url =
+      tab->client->browser()->GetMainFrame()
+          ? tab->client->browser()->GetMainFrame()->GetURL().ToString()
+          : tab->url;
+  if (!IsMuseScoreUrl(url)) {
+    SetStatusOutput(
+        "MuseScore PDF download failed: current tab is not a MuseScore page",
+        6000);
+    return;
+  }
+
+  musescore_download_in_progress_ = true;
+  SetStatusOutput("MuseScore: extracting score pages...", 0);
+  CefRefPtr<BrowserWindow> self = this;
+  HandleJsIpcCommand(
+      tab->id, MuseScoreMetadataScript(),
+      [self](std::string response) {
+        self->OnMuseScoreMetadata(std::move(response));
+      },
+      120000);
+}
+
+void BrowserWindow::OnMuseScoreMetadata(std::string response) {
+  if (!musescore_download_in_progress_) {
+    return;
+  }
+
+  MuseScoreMetadata metadata;
+  std::string error;
+  if (!ParseMuseScoreMetadata(response, &metadata, &error)) {
+    FinishMuseScorePdfDownload({}, std::move(error));
+    return;
+  }
+
+  SetStatusOutput("MuseScore: downloading " +
+                      std::to_string(metadata.urls.size()) + " page(s)...",
+                  0);
+  const std::string directory = DefaultMuseScoreDownloadDirectory().string();
+  CefRefPtr<BrowserWindow> self = this;
+  if (!CefPostTask(
+          TID_FILE_USER_BLOCKING,
+          base::BindOnce(&BrowserWindow::RunMuseScorePdfDownload, self,
+                         std::move(metadata.title), std::move(metadata.urls),
+                         directory))) {
+    FinishMuseScorePdfDownload({}, "failed to start the native download task");
+  }
+}
+
+void BrowserWindow::RunMuseScorePdfDownload(
+    std::string title,
+    std::vector<std::string> urls,
+    std::string download_directory) {
+  CefRefPtr<BrowserWindow> self = this;
+  MuseScorePdfResult result = DownloadMuseScorePdf(
+      title, urls, download_directory,
+      [self](std::string message) {
+        CefPostTask(TID_UI,
+                    base::BindOnce(&BrowserWindow::UpdateMuseScorePdfStatus,
+                                   self, std::move(message)));
+      });
+  CefPostTask(TID_UI,
+              base::BindOnce(&BrowserWindow::FinishMuseScorePdfDownload, self,
+                             std::move(result.output_path),
+                             std::move(result.error)));
+}
+
+void BrowserWindow::UpdateMuseScorePdfStatus(std::string message) {
+  if (musescore_download_in_progress_ && window_) {
+    SetStatusOutput(std::move(message), 0);
+  }
+}
+
+void BrowserWindow::FinishMuseScorePdfDownload(std::string output_path,
+                                               std::string error) {
+  musescore_download_in_progress_ = false;
+  if (!window_) {
+    return;
+  }
+  if (!error.empty()) {
+    SetStatusOutput("MuseScore PDF download failed: " + error, 10000);
+    return;
+  }
+  SetStatusOutput("MuseScore PDF saved to " + output_path, 10000);
 }
 
 }  // namespace vimbrowser

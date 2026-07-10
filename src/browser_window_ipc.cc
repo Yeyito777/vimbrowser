@@ -409,7 +409,8 @@ void BrowserWindow::HandleHtmlIpcCommand(uint64_t tab_id,
 
 void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
                                        std::string code,
-                                       IpcReplyCallback reply) {
+                                       IpcReplyCallback reply,
+                                       int timeout_ms) {
   std::string error;
   CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error);
   if (!browser) {
@@ -436,7 +437,7 @@ void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
       TID_UI,
       base::BindOnce(&BrowserWindow::CompleteJsIpcRequest, self, request_id,
                      std::string("ERR js command timed out\n")),
-      10000);
+      timeout_ms);
 }
 
 void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id,

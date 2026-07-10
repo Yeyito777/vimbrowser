@@ -13,6 +13,12 @@ set(CEF_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef" CACHE PATH "CEF binar
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
 
 find_package(CEF REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MUSESCORE_NATIVE REQUIRED IMPORTED_TARGET
+  libcurl
+  cairo
+  librsvg-2.0
+)
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 
 ADD_LOGICAL_TARGET(libcef_lib "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
@@ -39,6 +45,8 @@ add_executable(vimbrowser
   src/ipc_server.cc
   src/ipc_server.h
   src/main.cc
+  src/musescore_downloader.cc
+  src/musescore_downloader.h
   src/shortcuts.c
   src/shortcuts.h
   src/tab.h
@@ -65,6 +73,7 @@ target_precompile_headers(vimbrowser PRIVATE
 target_link_libraries(vimbrowser PRIVATE
   libcef_lib
   libcef_dll_wrapper
+  PkgConfig::MUSESCORE_NATIVE
   ${CEF_STANDARD_LIBS}
 )
 
