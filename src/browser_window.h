@@ -10,6 +10,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "browser_client.h"
@@ -51,6 +52,9 @@ class BrowserWindow final : public CefWindowDelegate,
                             public CefTextfieldDelegate {
  public:
   BrowserWindow(std::vector<std::string> initial_urls,
+                std::vector<uint64_t> initial_tab_folder_ids,
+                std::vector<uint64_t> initial_tab_sort_orders,
+                std::vector<bool> initial_tab_pinned,
                 size_t active_index,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
@@ -161,6 +165,8 @@ class BrowserWindow final : public CefWindowDelegate,
     kNormal,
     kCommandOpenCurrent,
     kCommandOpenNext,
+    kSidebarSearchForward,
+    kSidebarSearchBackward,
   };
 
   enum class FocusArea {
@@ -184,8 +190,65 @@ class BrowserWindow final : public CefWindowDelegate,
     std::vector<CompletionItem> matches;
   };
 
+  enum class SidebarItemType {
+    kNone,
+    kParent,
+    kFolder,
+    kTab,
+  };
+
+  struct SidebarItemRef {
+    SidebarItemType type = SidebarItemType::kNone;
+    uint64_t id = 0;
+
+    bool operator==(const SidebarItemRef& other) const {
+      return type == other.type && id == other.id;
+    }
+  };
+
+  enum class SidebarRowKind {
+    kFolderHeader,
+    kSectionLabel,
+    kSeparator,
+    kEntry,
+  };
+
+  struct SidebarDisplayRow {
+    SidebarRowKind kind = SidebarRowKind::kEntry;
+    SidebarItemRef item;
+    size_t tab_index = static_cast<size_t>(-1);
+    std::string text;
+    bool selected = false;
+    bool active = false;
+    bool audible = false;
+    uint32_t audible_utf16_offset = 0;
+  };
+
+  struct SidebarFolder {
+    uint64_t id = 0;
+    uint64_t parent_id = 0;
+    uint64_t sort_order = 0;
+    std::string name;
+    bool pinned = false;
+  };
+
+  enum class SidebarPromptPurpose {
+    kNone,
+    kCreateFolder,
+    kMoveItems,
+    kRenameFolder,
+  };
+
+  struct SidebarPromptContext {
+    SidebarPromptPurpose purpose = SidebarPromptPurpose::kNone;
+    uint64_t folder_id = 0;
+    std::vector<SidebarItemRef> items;
+  };
+
   struct SidebarRowViews {
     CefRefPtr<CefTextfield> row;
+    SidebarRowKind kind = SidebarRowKind::kEntry;
+    SidebarItemRef item;
     size_t tab_index = 0;
     std::string text;
     cef_color_t text_color = 0;
@@ -195,6 +258,9 @@ class BrowserWindow final : public CefWindowDelegate,
   struct ClosedTab {
     std::string url;
     size_t index = 0;
+    uint64_t folder_id = 0;
+    uint64_t sidebar_sort_order = 0;
+    bool pinned = false;
   };
 
   struct PendingPopup {
@@ -260,13 +326,18 @@ class BrowserWindow final : public CefWindowDelegate,
   void InsertTab(std::string url,
                  size_t index,
                  bool activate,
-                 bool defer_load = false);
+                 bool defer_load = false,
+                 uint64_t folder_id = 0,
+                 uint64_t sidebar_sort_order = 0,
+                 bool pinned = false);
   bool EnsureTabBrowser(size_t index, bool load_deferred_now);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
                       std::string url,
                       size_t index,
-                      bool activate);
+                      bool activate,
+                      uint64_t folder_id,
+                      uint64_t sidebar_sort_order);
   void ActivateTab(size_t index);
   void UpdateClientUrl(BrowserClient* client,
                        const std::string& url,
@@ -294,6 +365,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void CloseTabAtIndex(size_t closing,
                        CloseFocus focus_after_close = CloseFocus::kPreviousTab);
   void CloseTabBackend(Tab& tab);
+  void CloseTabsInDeletedSidebarFolders(
+      const std::unordered_set<uint64_t>& folder_ids);
   void QuitBrowser();
   void UndoCloseTab();
   std::optional<size_t> FindTabIndexById(uint64_t tab_id) const;
@@ -339,6 +412,10 @@ class BrowserWindow final : public CefWindowDelegate,
                                   std::vector<CompletionItem>& matches) const;
   void AppendTabFocusMatches(const std::string& prefix,
                              std::vector<CompletionItem>& matches) const;
+  void AppendFolderDestinationMatches(
+      const std::string& prefix,
+      const std::vector<SidebarItemRef>& moving_items,
+      std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
   bool DeleteSelectedCommandAutocomplete();
   void FillCommandAutocomplete(const CompletionItem& item);
@@ -353,6 +430,64 @@ class BrowserWindow final : public CefWindowDelegate,
   void ScheduleSidebarRefresh();
   void RefreshSidebarForGeneration(uint64_t generation);
   void RefreshSidebarRow(size_t index);
+  std::vector<SidebarDisplayRow> BuildSidebarDisplayRows() const;
+  void EnsureSidebarSelection();
+  void RevealTabInSidebar(size_t index);
+  void MoveSidebarSelection(int delta);
+  void MoveSidebarSelectionToEdge(bool last);
+  void ActivateSidebarItem(const SidebarItemRef& item);
+  void EnterSidebarFolder(uint64_t folder_id);
+  void LeaveSidebarFolder();
+  void ToggleSidebarVisualSelection();
+  void ToggleSelectedSidebarItemPinned();
+  bool SetSidebarItemPinned(const SidebarItemRef& item, bool pinned);
+  bool SetTabPinned(uint64_t tab_id, bool pinned);
+  bool SetFolderPinned(uint64_t folder_id, bool pinned);
+  std::vector<SidebarItemRef> SelectedSidebarItems() const;
+  SidebarItemRef SidebarFocusTargetAfterRemovingItems(
+      const std::vector<SidebarItemRef>& items) const;
+  void BeginCreateFolderPrompt();
+  void BeginMoveSidebarItemsPrompt();
+  void BeginRenameFolderPrompt();
+  bool CommitSidebarFolderCommand(const std::string& command,
+                                  const std::string& args);
+  uint64_t CreateSidebarFolder(std::string name,
+                               uint64_t parent_id,
+                               const std::vector<SidebarItemRef>& items = {});
+  bool RenameSidebarFolder(uint64_t folder_id, std::string name);
+  bool MoveSidebarItems(const std::vector<SidebarItemRef>& items,
+                        uint64_t destination_folder_id);
+  bool MoveSelectedSidebarItem(int delta);
+  bool DeleteSidebarFolder(uint64_t folder_id, bool unwrap);
+  void DeleteSelectedSidebarItems();
+  void ClearSidebarDeleteConfirmation(uint64_t generation);
+  void UnwrapSelectedSidebarFolder();
+  const SidebarFolder* FindSidebarFolder(uint64_t folder_id) const;
+  SidebarFolder* FindSidebarFolder(uint64_t folder_id);
+  bool SidebarFolderExists(uint64_t folder_id) const;
+  bool SidebarFolderIsDescendantOf(uint64_t folder_id,
+                                   uint64_t ancestor_id) const;
+  std::string SidebarFolderPath(uint64_t folder_id) const;
+  std::optional<uint64_t> ResolveSidebarFolderDestination(
+      const std::string& text,
+      const std::vector<SidebarItemRef>& moving_items) const;
+  uint64_t NextSidebarSortOrder(uint64_t parent_id) const;
+  uint64_t SidebarSortOrderAfterItem(const SidebarItemRef& item);
+  uint64_t NewTabFolderId() const;
+  bool IsSidebarSearchMode() const;
+  std::string ActiveSidebarSearchQuery() const;
+  void BeginSidebarSearch(bool forward);
+  void UpdateSidebarSearchLive();
+  void CommitSidebarSearch();
+  bool JumpSidebarSearch(bool forward);
+  std::optional<SidebarItemRef> FindSidebarSearchMatch(
+      const std::string& query,
+      const SidebarItemRef& from,
+      bool forward) const;
+  void ClearSidebarSearchHighlights();
+  void RestoreSidebarSearchOrigin();
+  std::string SidebarJson() const;
+  std::string FoldersJson() const;
   void RefreshAudibleTabs();
   void SetFocusArea(FocusArea area);
   void FocusRelative(int delta);
@@ -446,17 +581,24 @@ class BrowserWindow final : public CefWindowDelegate,
                                    const std::string& image_url);
 
   std::vector<std::string> initial_urls_;
+  std::vector<uint64_t> initial_tab_folder_ids_;
+  std::vector<uint64_t> initial_tab_sort_orders_;
+  std::vector<bool> initial_tab_pinned_;
   std::string state_path_;
   std::string dwm_save_argv_;
   size_t initial_active_index_ = 0;
   std::string command_text_;
   std::string status_output_text_;
   std::string page_search_text_;
+  std::string sidebar_search_query_;
+  SidebarItemRef sidebar_search_saved_item_;
+  uint64_t sidebar_search_saved_folder_id_ = 0;
   std::vector<std::string> open_history_;
   std::map<std::string, std::vector<std::string>> search_history_;
   std::unordered_map<std::string, uint32_t> media_permission_grants_;
   std::unordered_map<std::string, uint32_t> media_permission_denials_;
   std::string website_pending_keys_;
+  std::string sidebar_pending_keys_;
   std::vector<ClosedTab> closed_tabs_;
   vim::LineEditState command_vim_;
   CommandAutocompleteState command_autocomplete_;
@@ -484,6 +626,9 @@ class BrowserWindow final : public CefWindowDelegate,
   bool native_hints_active_ = false;
   bool page_search_forward_ = true;
   bool page_search_highlights_visible_ = false;
+  bool sidebar_search_highlights_visible_ = false;
+  bool sidebar_search_committing_ = false;
+  bool sidebar_search_forward_ = true;
   bool devtools_has_scroll_target_ = false;
   int devtools_scroll_target_x_ = 1;
   int devtools_scroll_target_y_ = 1;
@@ -496,7 +641,9 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t state_save_generation_ = 0;
   uint64_t sidebar_refresh_generation_ = 0;
   uint64_t status_output_generation_ = 0;
+  uint64_t sidebar_delete_generation_ = 0;
   uint64_t next_tab_id_ = 1;
+  uint64_t next_folder_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
   int page_search_browser_id_ = 0;
   std::atomic<bool> sidebar_mouse_watcher_running_{false};
@@ -518,6 +665,11 @@ class BrowserWindow final : public CefWindowDelegate,
   int laid_out_content_width_ = 0;
   int laid_out_content_height_ = 0;
   std::vector<Tab> tabs_;
+  std::vector<SidebarFolder> sidebar_folders_;
+  uint64_t current_sidebar_folder_id_ = 0;
+  SidebarItemRef sidebar_selected_item_;
+  SidebarItemRef sidebar_visual_anchor_;
+  SidebarPromptContext sidebar_prompt_;
   std::unordered_map<uint64_t, IpcReplyCallback> pending_js_ipc_;
   size_t active_index_ = 0;
 

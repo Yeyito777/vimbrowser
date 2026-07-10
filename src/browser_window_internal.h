@@ -141,6 +141,7 @@ inline constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
 inline constexpr int kVirtualSidebarRefreshDelayMs = 250;
 inline constexpr int kTabContentActivationDelayMs = 0;
 inline constexpr int kTabStateSaveDelayMs = 250;
+inline constexpr int kSidebarDeleteConfirmationMs = 3000;
 inline constexpr size_t kOpenHistoryCompletionNameMax = 140;
 inline constexpr size_t kTabFocusCompletionDescriptionMax = 140;
 inline constexpr size_t kNoTabIndex = std::numeric_limits<size_t>::max();
@@ -219,18 +220,6 @@ OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
     const std::string& after_command);
 bool IsTokenBoundary(const std::string& value, size_t pos);
 int TextColumns(const std::string& value);
-std::string SidebarTextForTab(size_t index,
-                              const std::string& url,
-                              bool active,
-                              bool audible);
-uint32_t DecimalDigits(size_t value);
-void StyleSidebarRow(CefRefPtr<CefTextfield> row,
-                     size_t index,
-                     bool active,
-                     bool audible,
-                     cef_color_t background);
-std::pair<size_t, size_t> SidebarRenderedRange(size_t tab_count,
-                                               size_t active_index);
 std::string ShellRead(const char* command);
 bool ShellWrite(const char* command, const std::string& text);
 std::string ReadClipboardText();

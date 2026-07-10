@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,9 @@ class App final : public CefApp,
                   public CefRenderProcessHandler {
  public:
   App(std::vector<std::string> initial_urls,
+      std::vector<uint64_t> initial_tab_folder_ids,
+      std::vector<uint64_t> initial_tab_sort_orders,
+      std::vector<bool> initial_tab_pinned,
       size_t active_index,
       bool show_mode_indicator,
       bool show_fps_indicator,
@@ -47,6 +51,9 @@ class App final : public CefApp,
 
  private:
   std::vector<std::string> initial_urls_;
+  std::vector<uint64_t> initial_tab_folder_ids_;
+  std::vector<uint64_t> initial_tab_sort_orders_;
+  std::vector<bool> initial_tab_pinned_;
   size_t active_index_;
   bool show_mode_indicator_;
   bool show_fps_indicator_;

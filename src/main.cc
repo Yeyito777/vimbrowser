@@ -326,6 +326,9 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   }
   setenv("VIMBROWSER_SHADER", config.shader_enabled ? "on" : "off", 1);
   CefRefPtr<vimbrowser::App> app(new vimbrowser::App(config.initial_urls,
+                                                      config.initial_tab_folder_ids,
+                                                      config.initial_tab_sort_orders,
+                                                      config.initial_tab_pinned,
                                                       config.active_index,
                                                       config.show_mode_indicator,
                                                       config.show_fps_indicator,

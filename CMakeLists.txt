@@ -27,6 +27,7 @@ add_executable(vimbrowser
   src/browser_window_autocomplete.cc
   src/browser_window_commands.cc
   src/browser_window_context_menu.cc
+  src/browser_window_sidebar.cc
   src/browser_window.cc
   src/browser_window.h
   src/browser_window_internal.cc

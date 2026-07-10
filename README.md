@@ -72,6 +72,8 @@ app control instead of adding one-off debug paths:
 scripts/vimbrowser-ipc status
 scripts/vimbrowser-ipc version
 scripts/vimbrowser-ipc tabs
+scripts/vimbrowser-ipc sidebar
+scripts/vimbrowser-ipc sidebar-select tab 3
 scripts/vimbrowser-ipc tab-focus 3
 scripts/vimbrowser-ipc html 3
 scripts/vimbrowser-ipc screenshot 3 > tab.png
@@ -89,9 +91,9 @@ separate test instance.
 
 See [`docs/ipc.md`](docs/ipc.md) for protocol framing, command semantics, and
 compatibility rules. IPC now has stable tab IDs (separate from reorderable tab
-indexes), ID-based tab focus/delete/order/open commands, native HTML/text/JS,
-backend tab screenshots, backend cookie inspection/mutation, and per-tab native
-network capture/replay.
+indexes), ID-based tab focus/delete/order/open commands, complete folder/sidebar
+inspection and control, native HTML/text/JS, backend tab screenshots, backend
+cookie inspection/mutation, and per-tab native network capture/replay.
 
 Performance tracking lives in [`docs/benchmarks.md`](docs/benchmarks.md). Run
 `make benchmark` for the deterministic local regression suite,
@@ -206,11 +208,40 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
-- when the tab sidebar is focused, `Shift+j` / `Shift+k` switch tabs
+- the sidebar has durable, nested Exocortex-style folders. The root starts
+  directly with its entries instead of a redundant `Tabs` title or permanent
+  separator; nested folders show a compact folder-name breadcrumb, `..`, and
+  `📁 name/ N` rows with recursive tab counts and descendant audio activity.
+  Folder structure, tab placement, sibling order, and the browsed folder survive
+  profile restarts
+- when the tab sidebar is focused, `j` / `k` move its selection without changing
+  the visible page; `Enter` activates a selected tab or enters a selected folder,
+  `l` enters a folder, and `h` / `Backspace` returns to its parent. Outside insert
+  mode, `Shift+j` / `Shift+k` focus the sidebar and continue from that same visual
+  selection, following the visible sibling order inside the browsed folder rather
+  than the tabs' backing-vector enumeration
+- sidebar `p` pins or unpins the selected tab or folder. Pinned items are
+  durable, share the leading `Pinned` section, and get the only section
+  separator in the list; unpinning returns an item to the top of the regular
+  entries
+- sidebar `/` and `?` open Exocortex-style forward/backward live search over all
+  folder names and tab titles/URLs, including results inside nested folders.
+  `Escape` restores the exact pre-search folder and selection, `Enter` confirms
+  the filter, `n` / `N` repeat it in the same/opposite direction, a second
+  `Enter` opens the selected result, and sidebar `:noh` clears the filter while
+  revealing that result in its containing folder
+- sidebar `f` creates a folder in the current folder; `F` moves the selected tab,
+  folder, or visual range to `/`, `..`, or an autocompleted folder path; `r`
+  renames a folder; `e` / `E` reorder the selected sibling; and `x` unwraps a
+  folder while retaining its children. Press `v`/`V` to start or clear a
+  contiguous visual selection. `dd`/`DD` confirms deletion of the focused item or
+  visual range; recursive folder deletion closes/destroys all contained tab
+  backends. After deletion or a move out of the current folder, focus stays near
+  the removed visual position and prefers the same pinned/unpinned section
 - tabs currently emitting audio are shown in the sidebar as `◉` before their
   URL; only that status icon is rendered with the theme accent color. When the
-  tab sidebar is focused, `[` / `]` or `h` / `l` move to the previous/next
-  audible tab with wraparound
+  tab sidebar is focused, `[` / `]` move to the previous/next audible tab with
+  wraparound
 - in website-normal and regular Vim normal web modes, `i` / `a` enter insert
   mode
 - in website-normal/normal web modes, `f` starts native backend hints and `F`

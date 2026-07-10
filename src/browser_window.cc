@@ -233,6 +233,9 @@ void StylePermissionButton(CefRefPtr<CefLabelButton> button,
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
+                             std::vector<uint64_t> initial_tab_folder_ids,
+                             std::vector<uint64_t> initial_tab_sort_orders,
+                             std::vector<bool> initial_tab_pinned,
                              size_t active_index,
                              bool show_mode_indicator,
                              bool show_fps_indicator,
@@ -241,6 +244,9 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              std::string state_path,
                              std::string dwm_save_argv)
     : initial_urls_(std::move(initial_urls)),
+      initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
+      initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
+      initial_tab_pinned_(std::move(initial_tab_pinned)),
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
       initial_active_index_(active_index),
@@ -255,8 +261,42 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                                   state.media_permission_grants.end());
   media_permission_denials_.insert(state.media_permission_denials.begin(),
                                    state.media_permission_denials.end());
+  std::unordered_set<uint64_t> folder_ids;
+  for (const SavedSidebarFolder& saved : state.sidebar_folders) {
+    if (saved.id == 0 || saved.name.empty() ||
+        !folder_ids.insert(saved.id).second) {
+      continue;
+    }
+    sidebar_folders_.push_back({saved.id, saved.parent_id, saved.sort_order,
+                                saved.name, saved.pinned});
+    next_folder_id_ = std::max(next_folder_id_, saved.id + 1);
+  }
+  next_folder_id_ = std::max(next_folder_id_, state.next_sidebar_folder_id);
+  for (SidebarFolder& folder : sidebar_folders_) {
+    if (folder.parent_id != 0 && !folder_ids.contains(folder.parent_id)) {
+      folder.parent_id = 0;
+    }
+    if (folder.sort_order == 0) {
+      folder.sort_order = folder.id * 1024;
+    }
+    if (folder.parent_id == folder.id ||
+        SidebarFolderIsDescendantOf(folder.parent_id, folder.id)) {
+      folder.parent_id = 0;
+    }
+  }
+  current_sidebar_folder_id_ = folder_ids.contains(state.sidebar_folder_id)
+                                   ? state.sidebar_folder_id
+                                   : 0;
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
+  }
+  initial_tab_folder_ids_.resize(initial_urls_.size(), 0);
+  initial_tab_sort_orders_.resize(initial_urls_.size(), 0);
+  initial_tab_pinned_.resize(initial_urls_.size(), false);
+  for (uint64_t& folder_id : initial_tab_folder_ids_) {
+    if (folder_id != 0 && !folder_ids.contains(folder_id)) {
+      folder_id = 0;
+    }
   }
   if (initial_active_index_ >= initial_urls_.size()) {
     initial_active_index_ = 0;
@@ -385,18 +425,7 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
         UpdateStatusBar();
       }
       SaveState();
-      if (tabs_.size() <= kSidebarMaxRenderedRows &&
-          sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-        RefreshSidebarRow(i);
-      } else if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
-        const auto [render_start, render_count] =
-            SidebarRenderedRange(tabs_.size(), active_index_);
-        if (i >= render_start && i < render_start + render_count) {
-          ScheduleSidebarRefresh();
-        }
-      } else {
-        RefreshSidebar();
-      }
+      RefreshSidebar();
       return;
     }
   }
@@ -619,15 +648,23 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
 
   native_hints_active_ = false;
   size_t insert_index = tabs_.size();
+  uint64_t popup_folder_id = NewTabFolderId();
+  uint64_t popup_sort_order = 0;
+  const std::optional<size_t> opener_index = FindTabIndexById(opener_tab_id);
+  if (opener_index) {
+    popup_folder_id = tabs_[*opener_index].folder_id;
+    popup_sort_order = SidebarSortOrderAfterItem(
+        {SidebarItemType::kTab, tabs_[*opener_index].id});
+  }
   if (insert_after_opener) {
-    if (std::optional<size_t> opener_index = FindTabIndexById(opener_tab_id)) {
+    if (opener_index) {
       insert_index = *opener_index + 1;
     } else if (active_index_ < tabs_.size()) {
       insert_index = active_index_ + 1;
     }
   }
   InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
-                 insert_index, activate);
+                 insert_index, activate, popup_folder_id, popup_sort_order);
   UpdateModeIndicator();
   return true;
 }
@@ -896,7 +933,9 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   for (size_t i = 0; i < initial_urls_.size(); ++i) {
     const bool activate = i == initial_active_index_;
     InsertTab(initial_urls_[i], tabs_.size(), activate,
-              lazy_restore_background_tabs && !activate);
+              lazy_restore_background_tabs && !activate,
+              initial_tab_folder_ids_[i], initial_tab_sort_orders_[i],
+              initial_tab_pinned_[i]);
   }
   bulk_tab_update_ = false;
   RefreshSidebar();
@@ -1457,6 +1496,15 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return HandleDevToolsModeKey(event);
   }
 
+  if (focus_area_ == FocusArea::kTabSidebar && IsEscapeKey(event) &&
+      (sidebar_visual_anchor_.type != SidebarItemType::kNone ||
+       !sidebar_pending_keys_.empty())) {
+    sidebar_visual_anchor_ = {};
+    sidebar_pending_keys_.clear();
+    RefreshSidebar();
+    return true;
+  }
+
   if (focus_area_ == FocusArea::kTabSidebar &&
       (IsEscapeKey(event) || IsSpaceKey(event))) {
     ForwardKeyToActivePage(event);
@@ -1575,11 +1623,13 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       return true;
     }
     if (command_id == kAcceleratorTabNext) {
-      ActivateRelative(1);
+      SetFocusArea(FocusArea::kTabSidebar);
+      MoveSidebarSelection(1);
       return true;
     }
     if (command_id == kAcceleratorTabPrevious) {
-      ActivateRelative(-1);
+      SetFocusArea(FocusArea::kTabSidebar);
+      MoveSidebarSelection(-1);
       return true;
     }
   }
@@ -1621,6 +1671,15 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
 
   if (focus_area_ == FocusArea::kDevTools) {
     return HandleDevToolsModeKey(event);
+  }
+
+  if (focus_area_ == FocusArea::kTabSidebar && IsEscapeKey(event) &&
+      (sidebar_visual_anchor_.type != SidebarItemType::kNone ||
+       !sidebar_pending_keys_.empty())) {
+    sidebar_visual_anchor_ = {};
+    sidebar_pending_keys_.clear();
+    RefreshSidebar();
+    return true;
   }
 
   if (focus_area_ == FocusArea::kTabSidebar &&
@@ -1665,29 +1724,39 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   }
 
   if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
+    if (IsEnterKey(event)) {
+      sidebar_pending_keys_.clear();
+      ActivateSidebarItem(sidebar_selected_item_);
+      return true;
+    }
+    if (IsBackspaceKey(event)) {
+      sidebar_pending_keys_.clear();
+      LeaveSidebarFolder();
+      return true;
+    }
     switch (PlainKeyChar(event)) {
-      case 'i':
-      case 'I':
-        ResetWebsitePendingKeys();
-        website_mode_ = vim::Mode::kInsert;
-        // The sidebar owns the mode-entry key. If the toolkit still emits a
-        // trailing CHAR after focus moves to the page, consume only that CHAR so
-        // `i` does not type into the newly-focused webview.
-        suppress_next_website_char_ = 'i';
-        SetFocusArea(FocusArea::kWebView);
-        return true;
-      case 'j':
-        ResetWebsitePendingKeys();
-        ActivateRelative(1);
-        return true;
-      case 'k':
-        ResetWebsitePendingKeys();
-        ActivateRelative(-1);
-        return true;
+    case 'i':
+    case 'I':
+      ResetWebsitePendingKeys();
+      website_mode_ = vim::Mode::kInsert;
+      // The sidebar owns the mode-entry key. If the toolkit still emits a
+      // trailing CHAR after focus moves to the page, consume only that CHAR so
+      // `i` does not type into the newly-focused webview.
+      suppress_next_website_char_ = 'i';
+      SetFocusArea(FocusArea::kWebView);
+      return true;
+    case 'j':
+      ResetWebsitePendingKeys();
+      MoveSidebarSelection(1);
+      return true;
+    case 'k':
+      ResetWebsitePendingKeys();
+      MoveSidebarSelection(-1);
+      return true;
     }
   }
 
-  if (HandleWebsiteCommandKey(event)) {
+  if (focus_area_ != FocusArea::kTabSidebar && HandleWebsiteCommandKey(event)) {
     return true;
   }
 
@@ -1703,7 +1772,7 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     if (focus_area_ != FocusArea::kTabSidebar) {
       return false;
     }
-    ActivateRelative(1);
+    MoveSidebarSelection(1);
     return true;
   }
 
@@ -1711,38 +1780,101 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     if (focus_area_ != FocusArea::kTabSidebar) {
       return false;
     }
-    ActivateRelative(-1);
+    MoveSidebarSelection(-1);
     return true;
   }
 
   if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
+    const char sidebar_key = PlainKeyChar(event);
+    if (sidebar_pending_keys_ == "g") {
+      sidebar_pending_keys_.clear();
+      if (sidebar_key == 'g' || sidebar_key == '0') {
+        MoveSidebarSelectionToEdge(false);
+      } else if (sidebar_key == '$') {
+        MoveSidebarSelectionToEdge(true);
+      }
+      return true;
+    }
+    if (sidebar_key != 'd' && sidebar_key != 'D') {
+      sidebar_pending_keys_.clear();
+    }
     switch (PlainKeyChar(event)) {
-      case 'd':
-        CloseActiveTab(CloseFocus::kNextTab);
-        return true;
-      case 'D':
-        CloseActiveTab(CloseFocus::kPreviousTab);
-        return true;
-      case 'u':
-        UndoCloseTab();
-        return true;
-      case 'c':
-        CloneActiveTab();
-        return true;
-      case '[':
-      case 'h':
-        ActivateRelativeAudible(-1);
-        return true;
-      case ']':
-      case 'l':
-        ActivateRelativeAudible(1);
-        return true;
-      case 'e':
-        MoveActiveTab(-1);
-        return true;
-      case 'E':
-        MoveActiveTab(1);
-        return true;
+    case 'd':
+    case 'D':
+      DeleteSelectedSidebarItems();
+      return true;
+    case 'u':
+      UndoCloseTab();
+      return true;
+    case 'c':
+      if (sidebar_selected_item_.type == SidebarItemType::kTab) {
+        if (const std::optional<size_t> index =
+                FindTabIndexById(sidebar_selected_item_.id)) {
+          InsertTab(tabs_[*index].url, *index + 1, true, false,
+                    tabs_[*index].folder_id,
+                    SidebarSortOrderAfterItem(
+                        {SidebarItemType::kTab, tabs_[*index].id}));
+        }
+      }
+      return true;
+    case '[':
+      ActivateRelativeAudible(-1);
+      return true;
+    case ']':
+      ActivateRelativeAudible(1);
+      return true;
+    case 'h':
+      LeaveSidebarFolder();
+      return true;
+    case 'l':
+      if (sidebar_selected_item_.type == SidebarItemType::kFolder ||
+          sidebar_selected_item_.type == SidebarItemType::kParent) {
+        ActivateSidebarItem(sidebar_selected_item_);
+      }
+      return true;
+    case 'e':
+      MoveSelectedSidebarItem(-1);
+      return true;
+    case 'E':
+      MoveSelectedSidebarItem(1);
+      return true;
+    case 'f':
+      BeginCreateFolderPrompt();
+      return true;
+    case 'F':
+      BeginMoveSidebarItemsPrompt();
+      return true;
+    case 'r':
+      BeginRenameFolderPrompt();
+      return true;
+    case 'x':
+      UnwrapSelectedSidebarFolder();
+      return true;
+    case 'v':
+    case 'V':
+      ToggleSidebarVisualSelection();
+      return true;
+    case 'p':
+      ToggleSelectedSidebarItemPinned();
+      return true;
+    case '/':
+      BeginSidebarSearch(true);
+      return true;
+    case '?':
+      BeginSidebarSearch(false);
+      return true;
+    case 'n':
+      JumpSidebarSearch(sidebar_search_forward_);
+      return true;
+    case 'N':
+      JumpSidebarSearch(!sidebar_search_forward_);
+      return true;
+    case 'g':
+      sidebar_pending_keys_ = "g";
+      return true;
+    case 'G':
+      MoveSidebarSelectionToEdge(true);
+      return true;
     }
   }
 
@@ -1758,6 +1890,14 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
        (!textfield || textfield->GetID() != kCommandFieldId)) ||
       mode_ == Mode::kNormal || command_vim_.mode != vim::Mode::kInsert ||
       suppress_next_char_event_) {
+    return;
+  }
+
+  // CEF can apply Backspace natively without routing a modeled key event. In
+  // sidebar search the / or ? prompt is not query text, so deleting the empty
+  // field is the native equivalent of Exocortex's "Backspace closes search".
+  if (IsSidebarSearchMode() && textfield->GetText().ToString().empty()) {
+    CancelCommand();
     return;
   }
 
@@ -1781,8 +1921,10 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     const size_t row_index = static_cast<size_t>(id - kSidebarRowBaseId);
     if (row_index < sidebar_rows_.size()) {
-      const size_t index = sidebar_rows_[row_index].tab_index;
-      ActivateTab(index);
+      const SidebarRowViews& row = sidebar_rows_[row_index];
+      if (row.kind == SidebarRowKind::kEntry) {
+        ActivateSidebarItem(row.item);
+      }
       SetFocusArea(FocusArea::kTabSidebar);
     }
     return;
@@ -1836,6 +1978,8 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
 
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+  const bool sidebar_search = IsSidebarSearchMode();
+  const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -1875,10 +2019,10 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(800, 800);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1200, kCommandHeight + 1);
+    return CefSize(1200, command_height + (sidebar_search ? 0 : 1));
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(1200, kCommandHeight);
+    return CefSize(1200, command_height);
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(1200, 1);
@@ -1933,7 +2077,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarContentWidth, 1);
   }
   if (id == kCommandFieldId) {
-    return CefSize(1200, kCommandHeight);
+    return CefSize(1200, command_height);
   }
   if (InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     return CefSize(std::max(1, CommandAutocompleteWidth()),
@@ -1994,6 +2138,8 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+  const bool sidebar_search = IsSidebarSearchMode();
+  const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -2007,10 +2153,10 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarBorderWidth, 1);
   }
   if (id == kCommandPanelId) {
-    return CefSize(1, kCommandHeight + 1);
+    return CefSize(1, command_height + (sidebar_search ? 0 : 1));
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(1, kCommandHeight);
+    return CefSize(1, command_height);
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(1, 1);
@@ -2091,11 +2237,13 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+  const bool sidebar_search = IsSidebarSearchMode();
+  const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
   if (id == kCommandPanelId) {
-    return CefSize(0, kCommandHeight + 1);
+    return CefSize(0, command_height + (sidebar_search ? 0 : 1));
   }
   if (id == kCommandContentPanelId) {
-    return CefSize(0, kCommandHeight);
+    return CefSize(0, command_height);
   }
   if (id == kCommandSeparatorPanelId) {
     return CefSize(0, 1);
@@ -2488,7 +2636,11 @@ void BrowserWindow::Layout() {
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
-  const int command_total_height = kCommandHeight + 1;
+  const bool sidebar_search = IsSidebarSearchMode();
+  const int command_surface_height =
+      sidebar_search ? kStatusBarHeight : kCommandHeight;
+  const int command_total_height =
+      command_surface_height + (sidebar_search ? 0 : 1);
   const int autocomplete_height = CommandAutocompleteHeight();
   const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
   const int main_height =
@@ -2497,14 +2649,20 @@ void BrowserWindow::Layout() {
   const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const bool command_active = mode_ != Mode::kNormal;
-  const bool autocomplete_visible =
-      command_active && command_autocomplete_.active &&
-      !command_autocomplete_.matches.empty();
+  const int command_surface_width =
+      sidebar_search ? std::max(1, sidebar_content_width) : width;
+  // Sidebar search owns the otherwise-empty left side of the status row. Dock
+  // it to the actual window bottom instead of above the statusline so there is
+  // no dead strip below / or ?.
+  const int command_surface_bottom = height;
+  const bool autocomplete_visible = command_active && !sidebar_search &&
+                                    command_autocomplete_.active &&
+                                    !command_autocomplete_.matches.empty();
   if (command_overlay_) {
     command_overlay_->SetVisible(command_active);
   }
   if (command_separator_overlay_) {
-    command_separator_overlay_->SetVisible(command_active);
+    command_separator_overlay_->SetVisible(command_active && !sidebar_search);
   }
   if (autocomplete_overlay_) {
     autocomplete_overlay_->SetVisible(autocomplete_visible);
@@ -2609,18 +2767,27 @@ void BrowserWindow::Layout() {
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
     status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
   }
-  command_panel_->SetSize(CefSize(width, kCommandHeight));
-  command_separator_panel_->SetSize(CefSize(width, 1));
-  command_content_panel_->SetSize(CefSize(width, kCommandHeight));
-  command_separator_panel_->SetBounds(CefRect(0, 0, width, 1));
-  command_content_panel_->SetBounds(CefRect(0, 0, width, kCommandHeight));
+  command_panel_->SetSize(
+      CefSize(command_surface_width, command_surface_height));
+  command_separator_panel_->SetSize(CefSize(command_surface_width, 1));
+  command_content_panel_->SetSize(
+      CefSize(command_surface_width, command_surface_height));
+  command_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
+                                                    : theme::kAppBg);
+  command_content_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
+                                                            : theme::kAppBg);
+  command_separator_panel_->SetBounds(CefRect(0, 0, command_surface_width, 1));
+  command_content_panel_->SetBounds(
+      CefRect(0, 0, command_surface_width, command_surface_height));
   if (command_overlay_) {
-    command_overlay_->SetBounds(CefRect(0, std::max(0, height - kCommandHeight),
-                                        width, kCommandHeight));
+    command_overlay_->SetBounds(
+        CefRect(0, std::max(0, command_surface_bottom - command_surface_height),
+                command_surface_width, command_surface_height));
   }
   if (command_separator_overlay_) {
     command_separator_overlay_->SetBounds(
-        CefRect(0, std::max(0, height - command_total_height), width, 1));
+        CefRect(0, std::max(0, command_surface_bottom - command_total_height),
+                command_surface_width, 1));
   }
   if (autocomplete_panel_ && autocomplete_overlay_) {
     autocomplete_panel_->SetSize(CefSize(autocomplete_width, std::max(1, autocomplete_height)));
@@ -2630,7 +2797,7 @@ void BrowserWindow::Layout() {
   }
   if (sidebar_border_overlay_ && sidebar_border_overlay_panel_) {
     int overlay_height = main_height;
-    if (command_active) {
+    if (command_active && !sidebar_search) {
       overlay_height = std::min(
           overlay_height,
           std::max(0, height - command_total_height -
@@ -2824,9 +2991,14 @@ void BrowserWindow::Layout() {
         CefRect(0, 0, actual_devtools_content_width, main_height));
   }
   if (command_field_) {
-    command_field_->SetBounds(CefRect(kCommandTextInsetX, 0,
-                                      std::max(1, width - kCommandTextInsetX),
-                                      kCommandHeight));
+    // Match the sidebar/status cmdline font exactly while / or ? is active;
+    // regular full-width commands retain their established 13px editing font.
+    command_field_->SetFontList(sidebar_search ? "monospace, 12px"
+                                               : "monospace, 13px");
+    command_field_->SetBounds(
+        CefRect(kCommandTextInsetX, 0,
+                std::max(1, command_surface_width - kCommandTextInsetX),
+                command_surface_height));
   }
   const int autocomplete_row_width = std::max(1, autocomplete_width -
                                                 kCommandAutocompleteBorder * 2);
@@ -2898,46 +3070,104 @@ bool BrowserWindow::RefreshSidebar() {
     return false;
   }
 
-  if (tabs_.size() <= kSidebarMaxRenderedRows &&
-      sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-    for (size_t i = 0; i < tabs_.size(); ++i) {
-      RefreshSidebarRow(i);
+  EnsureSidebarSelection();
+  const std::vector<SidebarDisplayRow> all_rows = BuildSidebarDisplayRows();
+  std::vector<SidebarDisplayRow> rendered_rows;
+  rendered_rows.reserve(std::min(all_rows.size(), kSidebarMaxRenderedRows));
+  const size_t fixed_rows =
+      !all_rows.empty() &&
+              all_rows.front().kind == SidebarRowKind::kFolderHeader
+          ? 1
+          : 0;
+  rendered_rows.insert(rendered_rows.end(), all_rows.begin(),
+                       all_rows.begin() +
+                           static_cast<std::ptrdiff_t>(fixed_rows));
+  const size_t entry_count = all_rows.size() - fixed_rows;
+  const size_t entry_capacity = kSidebarMaxRenderedRows - fixed_rows;
+  size_t selected_entry = 0;
+  for (size_t i = fixed_rows; i < all_rows.size(); ++i) {
+    if (all_rows[i].selected) {
+      selected_entry = i - fixed_rows;
+      break;
     }
-    return false;
   }
+  size_t entry_start = 0;
+  size_t capped_entry_count = entry_count;
+  if (entry_count > entry_capacity) {
+    capped_entry_count = entry_capacity;
+    const size_t half_window = entry_capacity / 2;
+    entry_start =
+        selected_entry > half_window ? selected_entry - half_window : 0;
+    if (entry_start + entry_capacity > entry_count) {
+      entry_start = entry_count - entry_capacity;
+    }
+  }
+  rendered_rows.insert(
+      rendered_rows.end(),
+      all_rows.begin() + static_cast<std::ptrdiff_t>(fixed_rows + entry_start),
+      all_rows.begin() + static_cast<std::ptrdiff_t>(fixed_rows + entry_start +
+                                                     capped_entry_count));
 
-  const auto [render_start, render_count] =
-      SidebarRenderedRange(tabs_.size(), active_index_);
-  if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_ &&
-      sidebar_rows_.size() == render_count) {
-    for (size_t row_index = 0; row_index < render_count; ++row_index) {
-      const size_t i = render_start + row_index;
-      SidebarRowViews& row_views = sidebar_rows_[row_index];
-      row_views.tab_index = i;
-      CefRefPtr<CefTextfield> row = row_views.row;
-      if (!row) {
-        continue;
-      }
-      const bool active = i == active_index_;
-      const std::string text = SidebarTextForTab(i, tabs_[i].url, active,
-                                                tabs_[i].audible);
-      const cef_color_t row_bg =
-          active ? theme::kSidebarSelBg : theme::kSidebarBg;
-      const cef_color_t row_text = theme::kText;
+  const std::vector<SidebarItemRef> visual_items = SelectedSidebarItems();
+  const bool visual_active =
+      sidebar_visual_anchor_.type != SidebarItemType::kNone;
+  auto is_visual = [&](const SidebarItemRef& item) {
+    return visual_active && std::find(visual_items.begin(), visual_items.end(),
+                                      item) != visual_items.end();
+  };
+  auto style_display_row = [&](CefRefPtr<CefTextfield> row,
+                               const SidebarDisplayRow& display,
+                               cef_color_t background) {
+    cef_color_t text_color = theme::kText;
+    CefString font = "monospace, 12px";
+    if (display.kind == SidebarRowKind::kFolderHeader ||
+        display.kind == SidebarRowKind::kSectionLabel) {
+      font = "bold monospace, 12px";
+    } else if (display.kind == SidebarRowKind::kSeparator ||
+               ((display.item.type == SidebarItemType::kFolder ||
+                 display.item.type == SidebarItemType::kParent) &&
+                !display.selected)) {
+      text_color = theme::kMuted;
+    }
+    StyleTextfield(row, text_color, background, font);
+    if (!row) {
+      return text_color;
+    }
+    if (display.selected || display.active) {
+      row->ApplyTextColor(theme::kAccent, CefRange(0, 1));
+    }
+    if (display.audible) {
+      row->ApplyTextColor(theme::kAccent,
+                          CefRange(display.audible_utf16_offset,
+                                   display.audible_utf16_offset + 1));
+    }
+    return text_color;
+  };
+
+  if (sidebar_spacer_ && sidebar_rows_.size() == rendered_rows.size()) {
+    for (size_t row_index = 0; row_index < rendered_rows.size(); ++row_index) {
+      const SidebarDisplayRow& display = rendered_rows[row_index];
+      SidebarRowViews& views = sidebar_rows_[row_index];
+      views.kind = display.kind;
+      views.item = display.item;
+      views.tab_index = display.tab_index;
+      const cef_color_t background = display.selected || is_visual(display.item)
+                                         ? theme::kSidebarSelBg
+                                         : theme::kSidebarBg;
       bool text_changed = false;
-      if (row_views.text != text) {
-        row->SetText(text);
-        row->SelectRange(CefRange(0, 0));
-        row_views.text = text;
+      if (views.text != display.text) {
+        views.row->SetText(display.text);
+        views.row->SelectRange(CefRange(0, 0));
+        views.text = display.text;
         text_changed = true;
       }
-      if (text_changed || row_views.text_color != row_text ||
-          row_views.background_color != row_bg) {
-        StyleSidebarRow(row, i, active, tabs_[i].audible, row_bg);
-        row_views.text_color = row_text;
-        row_views.background_color = row_bg;
-      }
+      const cef_color_t text_color =
+          style_display_row(views.row, display, background);
+      views.text_color = text_color;
+      views.background_color = background;
+      (void)text_changed;
     }
+    UpdateSidebarMouseBounds();
     return false;
   }
 
@@ -2957,21 +3187,19 @@ bool BrowserWindow::RefreshSidebar() {
     sidebar_content_layout = sidebar_content_panel_->GetLayout()->AsBoxLayout();
   }
 
-  for (size_t row_index = 0; row_index < render_count; ++row_index) {
-    const size_t i = render_start + row_index;
-    const bool active = i == active_index_;
-    const std::string text = SidebarTextForTab(i, tabs_[i].url, active,
-                                               tabs_[i].audible);
-
-    const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
-    const cef_color_t row_text = theme::kText;
+  for (size_t row_index = 0; row_index < rendered_rows.size(); ++row_index) {
+    const SidebarDisplayRow& display = rendered_rows[row_index];
+    const cef_color_t row_bg = display.selected || is_visual(display.item)
+                                   ? theme::kSidebarSelBg
+                                   : theme::kSidebarBg;
     CefRefPtr<CefTextfield> row = CefTextfield::CreateTextfield(this);
-    row->SetText(text);
+    row->SetText(display.text);
     row->SelectRange(CefRange(0, 0));
     row->SetID(kSidebarRowBaseId + static_cast<int>(row_index));
-    StyleSidebarRow(row, i, active, tabs_[i].audible, row_bg);
+    const cef_color_t row_text = style_display_row(row, display, row_bg);
     sidebar_content_panel_->AddChildView(row);
-    sidebar_rows_.push_back({row, i, text, row_text, row_bg});
+    sidebar_rows_.push_back({row, display.kind, display.item, display.tab_index,
+                             display.text, row_text, row_bg});
   }
 
   sidebar_spacer_ = CefTextfield::CreateTextfield(this);
@@ -3008,46 +3236,8 @@ void BrowserWindow::RefreshSidebarForGeneration(uint64_t generation) {
 }
 
 void BrowserWindow::RefreshSidebarRow(size_t index) {
-  if (index >= tabs_.size()) {
-    return;
-  }
-  size_t row_index = index;
-  if (sidebar_rows_.size() != tabs_.size() ||
-      row_index >= sidebar_rows_.size() ||
-      sidebar_rows_[row_index].tab_index != index) {
-    row_index = sidebar_rows_.size();
-    for (size_t i = 0; i < sidebar_rows_.size(); ++i) {
-      if (sidebar_rows_[i].tab_index == index) {
-        row_index = i;
-        break;
-      }
-    }
-  }
-  if (row_index >= sidebar_rows_.size()) {
-    return;
-  }
-  CefRefPtr<CefTextfield> row = sidebar_rows_[row_index].row;
-  if (!row) {
-    return;
-  }
-  const bool active = index == active_index_;
-  const std::string text = SidebarTextForTab(index, tabs_[index].url, active,
-                                            tabs_[index].audible);
-  const cef_color_t row_bg = active ? theme::kSidebarSelBg : theme::kSidebarBg;
-  const cef_color_t row_text = theme::kText;
-  SidebarRowViews& row_views = sidebar_rows_[row_index];
-  bool text_changed = false;
-  if (row_views.text != text) {
-    row->SetText(text);
-    row->SelectRange(CefRange(0, 0));
-    row_views.text = text;
-    text_changed = true;
-  }
-  if (text_changed || row_views.text_color != row_text ||
-      row_views.background_color != row_bg) {
-    StyleSidebarRow(row, index, active, tabs_[index].audible, row_bg);
-    row_views.text_color = row_text;
-    row_views.background_color = row_bg;
+  if (index < tabs_.size()) {
+    RefreshSidebar();
   }
 }
 
@@ -3075,6 +3265,8 @@ void BrowserWindow::RefreshAudibleTabs() {
 
 void BrowserWindow::SetFocusArea(FocusArea area) {
   ResetWebsitePendingKeys();
+  sidebar_pending_keys_.clear();
+  ++sidebar_delete_generation_;
   suppress_next_devtools_char_.reset();
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
@@ -3817,8 +4009,14 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
       return true;
     case 'p': OpenClipboard(false); return true;
     case 'P': OpenClipboard(true); return true;
-    case 'J': ActivateRelative(1); return true;
-    case 'K': ActivateRelative(-1); return true;
+    case 'J':
+      SetFocusArea(FocusArea::kTabSidebar);
+      MoveSidebarSelection(1);
+      return true;
+    case 'K':
+      SetFocusArea(FocusArea::kTabSidebar);
+      MoveSidebarSelection(-1);
+      return true;
     case 'd': CloseActiveTab(CloseFocus::kNextTab); return true;
     case 'D': CloseActiveTab(CloseFocus::kPreviousTab); return true;
     case 'u': UndoCloseTab(); return true;
@@ -4284,9 +4482,9 @@ void BrowserWindow::HandleSidebarMouseRowClick(size_t row_index) {
   }
 
   if (row_index < sidebar_rows_.size()) {
-    const size_t index = sidebar_rows_[row_index].tab_index;
-    if (index < tabs_.size()) {
-      ActivateTab(index);
+    const SidebarRowViews& row = sidebar_rows_[row_index];
+    if (row.kind == SidebarRowKind::kEntry) {
+      ActivateSidebarItem(row.item);
     }
   }
   SetFocusArea(FocusArea::kTabSidebar);
@@ -4507,9 +4705,20 @@ void BrowserWindow::SaveState() const {
                                        media_permission_grants_.end());
   state.media_permission_denials.insert(media_permission_denials_.begin(),
                                         media_permission_denials_.end());
+  state.sidebar_folder_id = current_sidebar_folder_id_;
+  state.next_sidebar_folder_id = next_folder_id_;
+  state.sidebar_folders.reserve(sidebar_folders_.size());
+  for (const SidebarFolder& folder : sidebar_folders_) {
+    state.sidebar_folders.push_back({folder.id, folder.parent_id,
+                                     folder.sort_order, folder.name,
+                                     folder.pinned});
+  }
   for (const Tab& tab : tabs_) {
     if (!tab.url.empty()) {
       state.tabs.push_back(tab.url);
+      state.tab_folder_ids.push_back(tab.folder_id);
+      state.tab_sort_orders.push_back(tab.sidebar_sort_order);
+      state.tab_pinned.push_back(tab.pinned);
     }
   }
   if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {
@@ -4519,6 +4728,9 @@ void BrowserWindow::SaveState() const {
 }
 
 std::string BrowserWindow::ModeIndicatorText() const {
+  if (IsSidebarSearchMode()) {
+    return "SIDEBAR";
+  }
   if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
     return command_vim_.mode == vim::Mode::kNormal ? "CMD-N" : "CMD-I";
   }
@@ -4546,6 +4758,9 @@ std::string BrowserWindow::ModeIndicatorText() const {
 }
 
 cef_color_t BrowserWindow::ModeIndicatorColor() const {
+  if (IsSidebarSearchMode()) {
+    return theme::kBorderFocused;
+  }
   if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
     return theme::kCommand;
   }

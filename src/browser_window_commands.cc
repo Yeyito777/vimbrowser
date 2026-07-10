@@ -97,6 +97,8 @@ void BrowserWindow::BeginCommand(Mode mode) {
 }
 
 void BrowserWindow::BeginCommandText(std::string text) {
+  sidebar_pending_keys_.clear();
+  ++sidebar_delete_generation_;
   previous_focus_area_ = focus_area_ == FocusArea::kCommandLine ? previous_focus_area_
                                                                 : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
@@ -118,6 +120,10 @@ void BrowserWindow::BeginCommandText(std::string text) {
 }
 
 void BrowserWindow::CommitCommand() {
+  if (IsSidebarSearchMode()) {
+    CommitSidebarSearch();
+    return;
+  }
   const std::string raw_text = command_text_;
   std::string text = Trim(command_text_);
   bool open_in_new_tab = mode_ == Mode::kCommandOpenNext;
@@ -144,12 +150,20 @@ void BrowserWindow::CommitCommand() {
       return;
     };
 
+    if (CommitSidebarFolderCommand(command, args)) {
+      return;
+    }
+
     if (command == ":noh" || command == ":nohlsearch") {
       if (!args.empty()) {
         CancelCommand();
         return;
       }
-      finish([&] { ClearPageSearchHighlights(); });
+      const bool clear_sidebar = previous_focus_area_ == FocusArea::kTabSidebar;
+      finish([&] {
+        ClearPageSearchHighlights();
+        if (clear_sidebar) ClearSidebarSearchHighlights();
+      });
       return;
     }
 
@@ -439,7 +453,12 @@ void BrowserWindow::CommitCommand() {
 }
 
 void BrowserWindow::CancelCommand() {
+  const bool sidebar_search = IsSidebarSearchMode();
+  if (sidebar_search && !sidebar_search_committing_) {
+    RestoreSidebarSearchOrigin();
+  }
   mode_ = Mode::kNormal;
+  sidebar_prompt_ = {};
   ClearCommandAutocomplete();
   vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
   SetCommandText("");
@@ -457,6 +476,9 @@ void BrowserWindow::CancelCommand() {
   }
   if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_) {
     devtools_browser_view_->RequestFocus();
+  }
+  if (sidebar_search) {
+    RefreshSidebar();
   }
   Layout();
 }

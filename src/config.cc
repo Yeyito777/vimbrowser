@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cctype>
 #include <cstdlib>
@@ -210,6 +211,8 @@ std::string EscapeStateValue(std::string_view value) {
       out += "\\n";
     } else if (c == '\r') {
       out += "\\r";
+    } else if (c == '\t') {
+      out += "\\t";
     } else {
       out.push_back(c);
     }
@@ -229,11 +232,79 @@ std::string UnescapeStateValue(std::string_view value) {
       out.push_back('\n');
     } else if (escaped == 'r') {
       out.push_back('\r');
+    } else if (escaped == 't') {
+      out.push_back('\t');
     } else {
       out.push_back(escaped);
     }
   }
   return out;
+}
+
+bool ParseStateUint64(std::string_view text, uint64_t* value) {
+  if (!value || text.empty()) {
+    return false;
+  }
+  const char* begin = text.data();
+  const char* end = begin + text.size();
+  uint64_t parsed = 0;
+  const auto result = std::from_chars(begin, end, parsed);
+  if (result.ec != std::errc() || result.ptr != end) {
+    return false;
+  }
+  *value = parsed;
+  return true;
+}
+
+void ReadSidebarFolder(std::string_view payload,
+                       std::vector<SavedSidebarFolder>* folders) {
+  if (!folders) {
+    return;
+  }
+  const size_t first_tab = payload.find('\t');
+  const size_t second_tab = first_tab == std::string_view::npos
+                                ? std::string_view::npos
+                                : payload.find('\t', first_tab + 1);
+  const size_t third_tab = second_tab == std::string_view::npos
+                               ? std::string_view::npos
+                               : payload.find('\t', second_tab + 1);
+  if (first_tab == std::string_view::npos ||
+      second_tab == std::string_view::npos ||
+      third_tab == std::string_view::npos) {
+    return;
+  }
+
+  SavedSidebarFolder folder;
+  if (!ParseStateUint64(payload.substr(0, first_tab), &folder.id) ||
+      folder.id == 0 ||
+      !ParseStateUint64(payload.substr(first_tab + 1,
+                                       second_tab - first_tab - 1),
+                        &folder.parent_id) ||
+      !ParseStateUint64(payload.substr(second_tab + 1,
+                                       third_tab - second_tab - 1),
+                        &folder.sort_order)) {
+    return;
+  }
+  folder.name = UnescapeStateValue(payload.substr(third_tab + 1));
+  if (!folder.name.empty()) {
+    folders->push_back(std::move(folder));
+  }
+}
+
+void ReadPinnedSidebarFolder(std::string_view payload,
+                             std::vector<SavedSidebarFolder>* folders) {
+  uint64_t folder_id = 0;
+  if (!folders || !ParseStateUint64(payload, &folder_id) || folder_id == 0) {
+    return;
+  }
+  const auto folder =
+      std::find_if(folders->begin(), folders->end(),
+                   [&](const SavedSidebarFolder& candidate) {
+                     return candidate.id == folder_id;
+                   });
+  if (folder != folders->end()) {
+    folder->pinned = true;
+  }
 }
 
 void ReadPermissionDecision(std::string_view payload,
@@ -384,7 +455,32 @@ AppState ReadAppState(const std::string& state_path) {
       const std::string tab = UnescapeStateValue(std::string_view(line).substr(4));
       if (!tab.empty()) {
         state.tabs.push_back(tab);
+        state.tab_folder_ids.push_back(0);
+        state.tab_sort_orders.push_back(0);
+        state.tab_pinned.push_back(false);
       }
+    } else if (StartsWith(line, "tab_folder=") &&
+               !state.tab_folder_ids.empty()) {
+      uint64_t folder_id = 0;
+      if (ParseStateUint64(std::string_view(line).substr(11), &folder_id)) {
+        state.tab_folder_ids.back() = folder_id;
+      }
+    } else if (StartsWith(line, "tab_order=") &&
+               !state.tab_sort_orders.empty()) {
+      uint64_t sort_order = 0;
+      if (ParseStateUint64(std::string_view(line).substr(10), &sort_order)) {
+        state.tab_sort_orders.back() = sort_order;
+      }
+    } else if (StartsWith(line, "tab_pinned=") &&
+               !state.tab_pinned.empty()) {
+      state.tab_pinned.back() =
+          ParseBoolSetting(line.substr(11), state.tab_pinned.back());
+    } else if (StartsWith(line, "folder=")) {
+      ReadSidebarFolder(std::string_view(line).substr(7),
+                        &state.sidebar_folders);
+    } else if (StartsWith(line, "folder_pinned=")) {
+      ReadPinnedSidebarFolder(std::string_view(line).substr(14),
+                              &state.sidebar_folders);
     } else if (StartsWith(line, "open_history=")) {
       const std::string entry = UnescapeStateValue(std::string_view(line).substr(13));
       if (!entry.empty()) {
@@ -413,6 +509,12 @@ AppState ReadAppState(const std::string& state_path) {
       if (end != value.c_str()) {
         state.active_index = static_cast<size_t>(active);
       }
+    } else if (StartsWith(line, "sidebar_folder=")) {
+      ParseStateUint64(std::string_view(line).substr(15),
+                       &state.sidebar_folder_id);
+    } else if (StartsWith(line, "next_sidebar_folder_id=")) {
+      ParseStateUint64(std::string_view(line).substr(23),
+                       &state.next_sidebar_folder_id);
     } else if (StartsWith(line, "showmode=")) {
       const std::string value = ToLowerAscii(std::string(line.substr(9)));
       state.show_mode_indicator = value == "1" || value == "true" ||
@@ -470,9 +572,37 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     file << "showstatusline=" << (state.show_statusline ? "on" : "off") << '\n';
     file << "shader=" << (state.shader_enabled ? "on" : "off") << '\n';
     file << "active=" << state.active_index << '\n';
-    for (const std::string& tab : state.tabs) {
+    file << "sidebar_folder=" << state.sidebar_folder_id << '\n';
+    file << "next_sidebar_folder_id=" << state.next_sidebar_folder_id << '\n';
+    for (const SavedSidebarFolder& folder : state.sidebar_folders) {
+      if (folder.id != 0 && !folder.name.empty()) {
+        file << "folder=" << folder.id << '\t' << folder.parent_id << '\t'
+             << folder.sort_order << '\t' << EscapeStateValue(folder.name)
+             << '\n';
+        if (folder.pinned) {
+          file << "folder_pinned=" << folder.id << '\n';
+        }
+      }
+    }
+    for (size_t i = 0; i < state.tabs.size(); ++i) {
+      const std::string& tab = state.tabs[i];
       if (!tab.empty()) {
         file << "tab=" << EscapeStateValue(tab) << '\n';
+        const uint64_t folder_id = i < state.tab_folder_ids.size()
+                                       ? state.tab_folder_ids[i]
+                                       : 0;
+        const uint64_t sort_order = i < state.tab_sort_orders.size()
+                                        ? state.tab_sort_orders[i]
+                                        : 0;
+        if (folder_id != 0) {
+          file << "tab_folder=" << folder_id << '\n';
+        }
+        if (sort_order != 0) {
+          file << "tab_order=" << sort_order << '\n';
+        }
+        if (i < state.tab_pinned.size() && state.tab_pinned[i]) {
+          file << "tab_pinned=on\n";
+        }
       }
     }
     const size_t history_start = state.open_history.size() > kMaxOpenHistoryEntries
@@ -608,6 +738,9 @@ Config ParseConfig(int argc, char* argv[]) {
     } else if (!arg.empty() && arg[0] != '-') {
       const std::string url = ResolveUrlOrSearch(std::string(arg));
       config.initial_urls.push_back(url);
+      config.initial_tab_folder_ids.push_back(0);
+      config.initial_tab_sort_orders.push_back(0);
+      config.initial_tab_pinned.push_back(false);
       config.explicit_initial_urls.push_back(url);
     }
   }
@@ -623,9 +756,15 @@ Config ParseConfig(int argc, char* argv[]) {
   if (!config.explicit_initial_urls.empty()) {
     if (!state.tabs.empty()) {
       config.initial_urls = state.tabs;
+      config.initial_tab_folder_ids = state.tab_folder_ids;
+      config.initial_tab_sort_orders = state.tab_sort_orders;
+      config.initial_tab_pinned = state.tab_pinned;
       config.initial_urls.insert(config.initial_urls.end(),
                                  config.explicit_initial_urls.begin(),
                                  config.explicit_initial_urls.end());
+      config.initial_tab_folder_ids.resize(config.initial_urls.size(), 0);
+      config.initial_tab_sort_orders.resize(config.initial_urls.size(), 0);
+      config.initial_tab_pinned.resize(config.initial_urls.size(), false);
       config.active_index = config.initial_urls.size() - 1;
     }
     if (!config.initial_urls.empty()) {
@@ -634,10 +773,16 @@ Config ParseConfig(int argc, char* argv[]) {
     }
   } else if (!state.tabs.empty()) {
     config.initial_urls = state.tabs;
+    config.initial_tab_folder_ids = state.tab_folder_ids;
+    config.initial_tab_sort_orders = state.tab_sort_orders;
+    config.initial_tab_pinned = state.tab_pinned;
     config.active_index = std::min(state.active_index, config.initial_urls.size() - 1);
     config.initial_url = config.initial_urls[config.active_index];
   } else {
     config.initial_urls.push_back(config.initial_url);
+    config.initial_tab_folder_ids.push_back(0);
+    config.initial_tab_sort_orders.push_back(0);
+    config.initial_tab_pinned.push_back(false);
   }
 
   if (!dwm_save_disabled && config.dwm_save_argv.empty()) {

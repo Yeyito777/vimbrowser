@@ -19,19 +19,30 @@
 namespace vimbrowser {
 
 void BrowserWindow::AddTab(std::string url, bool activate) {
-  InsertTab(std::move(url), tabs_.size(), activate);
+  InsertTab(std::move(url), tabs_.size(), activate, false, NewTabFolderId());
 }
 
 void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
   const size_t insert_index =
       active_index_ < tabs_.size() ? active_index_ + 1 : tabs_.size();
-  InsertTab(std::move(url), insert_index, activate);
+  const uint64_t folder_id = NewTabFolderId();
+  uint64_t sort_order = 0;
+  if (active_index_ < tabs_.size() &&
+      tabs_[active_index_].folder_id == folder_id) {
+    sort_order = SidebarSortOrderAfterItem(
+        {SidebarItemType::kTab, tabs_[active_index_].id});
+  }
+  InsertTab(std::move(url), insert_index, activate, false, folder_id,
+            sort_order);
 }
 
 void BrowserWindow::InsertTab(std::string url,
                               size_t index,
                               bool activate,
-                              bool defer_load) {
+                              bool defer_load,
+                              uint64_t folder_id,
+                              uint64_t sidebar_sort_order,
+                              bool pinned) {
   last_tab_close_placeholder_ = false;
   const size_t insert_index = std::min(index, tabs_.size());
   const bool deferred_load = defer_load && !activate;
@@ -39,6 +50,11 @@ void BrowserWindow::InsertTab(std::string url,
   Tab tab;
   SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
+  tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;
+  tab.sidebar_sort_order = sidebar_sort_order != 0
+                               ? sidebar_sort_order
+                               : NextSidebarSortOrder(tab.folder_id);
+  tab.pinned = pinned;
   tab.deferred_load = deferred_load;
 
   if (!tabs_.empty() && insert_index <= active_index_) {
@@ -54,9 +70,8 @@ void BrowserWindow::InsertTab(std::string url,
 
   if (activate && !bulk_tab_update_) {
     active_index_ = insert_index;
-    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
-      ScheduleSidebarRefresh();
-    } else if (RefreshSidebar()) {
+    RevealTabInSidebar(active_index_);
+    if (RefreshSidebar()) {
       Layout();
     }
     ScheduleStateSave();
@@ -117,7 +132,9 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                                    CefRefPtr<BrowserClient> popup_client,
                                    std::string url,
                                    size_t index,
-                                   bool activate) {
+                                   bool activate,
+                                   uint64_t folder_id,
+                                   uint64_t sidebar_sort_order) {
   if (!popup_browser_view || !popup_client) {
     return;
   }
@@ -127,6 +144,10 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   Tab tab;
   SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
+  tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;
+  tab.sidebar_sort_order = sidebar_sort_order != 0
+                               ? sidebar_sort_order
+                               : NextSidebarSortOrder(tab.folder_id);
   tab.client = popup_client;
   ++tab_client_count_;
   tab.view = popup_browser_view;
@@ -158,43 +179,29 @@ void BrowserWindow::ActivateTab(size_t index) {
   }
 
   if (active_index_ == index) {
-    bool needs_sidebar_refresh = false;
     if (!bulk_tab_update_) {
-      if (tabs_.size() <= kSidebarMaxRenderedRows &&
-          sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-        RefreshSidebarRow(index);
-      } else {
-        needs_sidebar_refresh = true;
-      }
+      RevealTabInSidebar(index);
     }
     if (visible_tab_index_ != index || !tabs_[index].view) {
       ScheduleActiveBrowserSync();
     }
-    if (needs_sidebar_refresh) {
-      ScheduleSidebarRefresh();
+    if (!bulk_tab_update_ && RefreshSidebar()) {
+      Layout();
     }
     UpdateStatusBar();
     return;
   }
 
-  const size_t previous_active_index = active_index_;
   active_index_ = index;
-  bool needs_sidebar_refresh = false;
   if (!bulk_tab_update_) {
-    if (tabs_.size() <= kSidebarMaxRenderedRows &&
-        sidebar_rows_.size() == tabs_.size() && sidebar_spacer_) {
-      RefreshSidebarRow(previous_active_index);
-      RefreshSidebarRow(active_index_);
-    } else {
-      needs_sidebar_refresh = true;
-    }
+    RevealTabInSidebar(active_index_);
   }
   if (!bulk_tab_update_) {
     ScheduleStateSave();
   }
   ScheduleActiveBrowserSync();
-  if (needs_sidebar_refresh) {
-    ScheduleSidebarRefresh();
+  if (!bulk_tab_update_ && RefreshSidebar()) {
+    Layout();
   }
   UpdateStatusBar();
 }
@@ -361,6 +368,10 @@ void BrowserWindow::MoveActiveTab(int delta) {
   const int next = (current + delta + count) % count;
   const size_t old_active_index = active_index_;
   const size_t new_active_index = static_cast<size_t>(next);
+  if (tabs_[old_active_index].folder_id == tabs_[new_active_index].folder_id) {
+    std::swap(tabs_[old_active_index].sidebar_sort_order,
+              tabs_[new_active_index].sidebar_sort_order);
+  }
   std::swap(tabs_[active_index_], tabs_[static_cast<size_t>(next)]);
   if (visible_tab_index_ == old_active_index) {
     visible_tab_index_ = new_active_index;
@@ -386,13 +397,36 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
 
   const size_t old_active_index = active_index_;
   const size_t old_visible_index = visible_tab_index_;
-  const auto [old_render_start, old_render_count] =
-      SidebarRenderedRange(tabs_.size(), active_index_);
-  const size_t old_render_end = old_render_start + old_render_count;
+  const uint64_t moved_tab_id = tabs_[from].id;
+  const uint64_t moved_folder_id = tabs_[from].folder_id;
+  std::unordered_set<uint64_t> crossed_sibling_ids{moved_tab_id};
+  const size_t crossed_start = std::min(from, to);
+  const size_t crossed_end = std::max(from, to);
+  for (size_t i = crossed_start; i <= crossed_end; ++i) {
+    if (tabs_[i].folder_id == moved_folder_id) {
+      crossed_sibling_ids.insert(tabs_[i].id);
+    }
+  }
 
   Tab tab = tabs_[from];
   tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(from));
   tabs_.insert(tabs_.begin() + static_cast<std::ptrdiff_t>(to), tab);
+
+  if (crossed_sibling_ids.size() > 1) {
+    std::vector<uint64_t> sibling_sort_orders;
+    for (const Tab& sibling : tabs_) {
+      if (crossed_sibling_ids.contains(sibling.id)) {
+        sibling_sort_orders.push_back(sibling.sidebar_sort_order);
+      }
+    }
+    std::sort(sibling_sort_orders.begin(), sibling_sort_orders.end());
+    size_t sibling_index = 0;
+    for (Tab& sibling : tabs_) {
+      if (crossed_sibling_ids.contains(sibling.id)) {
+        sibling.sidebar_sort_order = sibling_sort_orders[sibling_index++];
+      }
+    }
+  }
 
   if (old_active_index < tabs_.size()) {
     active_index_ = IndexAfterVectorMove(old_active_index, from, to);
@@ -404,21 +438,8 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
   }
 
   SaveState();
-  const bool can_keep_virtual_sidebar =
-      tabs_.size() > kSidebarMaxRenderedRows &&
-      active_index_ == old_active_index &&
-      visible_tab_index_ == old_visible_index &&
-      sidebar_rows_.size() == old_render_count &&
-      ((from >= old_render_end && to >= old_render_end) ||
-       (from < old_render_start && to < old_render_start));
-  if (!can_keep_virtual_sidebar) {
-    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
-      ScheduleSidebarRefresh();
-    } else {
-      if (RefreshSidebar()) {
-        Layout();
-      }
-    }
+  if (RefreshSidebar()) {
+    Layout();
   }
   UpdateStatusBar();
   return true;
@@ -441,22 +462,38 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
   }
 
   const bool closing_active = closing == active_index_;
+  const bool closing_sidebar_selection =
+      sidebar_selected_item_.type == SidebarItemType::kTab &&
+      sidebar_selected_item_.id == tabs_[closing].id;
+  if ((sidebar_visual_anchor_.type == SidebarItemType::kTab &&
+       sidebar_visual_anchor_.id == tabs_[closing].id) ||
+      closing_sidebar_selection) {
+    sidebar_visual_anchor_ = {};
+  }
+  size_t closing_sidebar_entry = 0;
+  if (closing_sidebar_selection) {
+    size_t entry = 0;
+    for (const SidebarDisplayRow& row : BuildSidebarDisplayRows()) {
+      if (row.kind != SidebarRowKind::kEntry) {
+        continue;
+      }
+      if (row.item == sidebar_selected_item_) {
+        closing_sidebar_entry = entry;
+        break;
+      }
+      ++entry;
+    }
+  }
   const uint64_t active_id = active_index_ < tabs_.size() ? tabs_[active_index_].id : 0;
-  const size_t old_active_index = active_index_;
-  const size_t old_visible_index = visible_tab_index_;
-  const auto [old_render_start, old_render_count] =
-      SidebarRenderedRange(tabs_.size(), active_index_);
-  const size_t old_render_end = old_render_start + old_render_count;
-  const bool can_keep_virtual_sidebar_on_close =
-      tabs_.size() > kSidebarMaxRenderedRows && !closing_active &&
-      closing >= old_render_end && sidebar_rows_.size() == old_render_count;
   const std::string closing_url = tabs_[closing].url;
   std::cerr << "vimbrowser: close-tab id=" << tabs_[closing].id
             << " index=" << (closing + 1)
             << " count=" << tabs_.size() << " url=" << closing_url
             << std::endl;
   if (!closing_url.empty()) {
-    closed_tabs_.push_back({closing_url, closing});
+    closed_tabs_.push_back({closing_url, closing, tabs_[closing].folder_id,
+                            tabs_[closing].sidebar_sort_order,
+                            tabs_[closing].pinned});
   }
 
   ++active_browser_sync_generation_;
@@ -491,6 +528,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
 
   if (closing_active) {
     active_index_ = std::min(next_index, tabs_.size() - 1);
+    RevealTabInSidebar(active_index_);
     if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
       visible_tab_index_ = kNoTabIndex;
       ScheduleActiveBrowserSync();
@@ -507,6 +545,22 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     } else {
       active_index_ = std::min(active_index_, tabs_.size() - 1);
     }
+    if (closing_sidebar_selection) {
+      std::vector<SidebarItemRef> remaining_items;
+      sidebar_selected_item_ = {};
+      for (const SidebarDisplayRow& row : BuildSidebarDisplayRows()) {
+        if (row.kind == SidebarRowKind::kEntry) {
+          remaining_items.push_back(row.item);
+        }
+      }
+      if (!remaining_items.empty()) {
+        const size_t target = closing_sidebar_entry > 0
+                                  ? closing_sidebar_entry - 1
+                                  : 0;
+        sidebar_selected_item_ =
+            remaining_items[std::min(target, remaining_items.size() - 1)];
+      }
+    }
   }
   UpdateFpsIndicator();
   UpdateStatusBar();
@@ -517,7 +571,10 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
   SaveState();
   if (closing_active && tabs_.size() > kSidebarMaxRenderedRows &&
       sidebar_spacer_) {
-    ScheduleSidebarRefresh();
+    const bool sidebar_hierarchy_changed = RefreshSidebar();
+    if (sidebar_hierarchy_changed) {
+      Layout();
+    }
     if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
       content_inner_panel_->Layout();
     }
@@ -525,15 +582,12 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
     UpdateStatusBar();
     return;
   }
-  if (can_keep_virtual_sidebar_on_close && active_index_ == old_active_index &&
-      visible_tab_index_ == old_visible_index) {
-    last_tab_close_placeholder_ = false;
-    UpdateStatusBar();
-    return;
-  }
   if (!closing_active && tabs_.size() > kSidebarMaxRenderedRows &&
       sidebar_spacer_) {
-    ScheduleSidebarRefresh();
+    const bool sidebar_hierarchy_changed = RefreshSidebar();
+    if (sidebar_hierarchy_changed) {
+      Layout();
+    }
     last_tab_close_placeholder_ = false;
     UpdateStatusBar();
     return;
@@ -566,6 +620,67 @@ void BrowserWindow::CloseTabBackend(Tab& tab) {
   tab.client = nullptr;
 }
 
+void BrowserWindow::CloseTabsInDeletedSidebarFolders(
+    const std::unordered_set<uint64_t>& folder_ids) {
+  if (folder_ids.empty() || tabs_.empty()) {
+    return;
+  }
+
+  const uint64_t old_active_id = ActiveTabId();
+  const uint64_t old_visible_id =
+      visible_tab_index_ < tabs_.size() ? tabs_[visible_tab_index_].id : 0;
+  const size_t old_active_index = active_index_;
+  size_t surviving_before_active = 0;
+  for (size_t i = 0; i < std::min(old_active_index, tabs_.size()); ++i) {
+    if (!folder_ids.contains(tabs_[i].folder_id)) {
+      ++surviving_before_active;
+    }
+  }
+  const bool active_deleted =
+      active_index_ < tabs_.size() &&
+      folder_ids.contains(tabs_[active_index_].folder_id);
+
+  ++active_browser_sync_generation_;
+  bulk_tab_update_ = true;
+  for (size_t i = tabs_.size(); i > 0; --i) {
+    const size_t index = i - 1;
+    if (!folder_ids.contains(tabs_[index].folder_id)) {
+      continue;
+    }
+    if (!tabs_[index].url.empty()) {
+      closed_tabs_.push_back({tabs_[index].url, index, tabs_[index].folder_id,
+                              tabs_[index].sidebar_sort_order,
+                              tabs_[index].pinned});
+    }
+    Tab closing_tab = tabs_[index];
+    CloseTabBackend(closing_tab);
+    tabs_.erase(tabs_.begin() + static_cast<std::ptrdiff_t>(index));
+  }
+
+  if (tabs_.empty()) {
+    active_index_ = 0;
+    visible_tab_index_ = kNoTabIndex;
+    InsertTab("about:blank", 0, true, false, current_sidebar_folder_id_);
+    last_tab_close_placeholder_ = true;
+  } else {
+    if (!active_deleted) {
+      active_index_ = FindTabIndexById(old_active_id).value_or(0);
+    } else {
+      active_index_ = surviving_before_active > 0
+                          ? std::min(surviving_before_active - 1,
+                                     tabs_.size() - 1)
+                          : 0;
+    }
+    visible_tab_index_ = FindTabIndexById(old_visible_id).value_or(kNoTabIndex);
+    if (active_deleted || visible_tab_index_ != active_index_) {
+      ScheduleActiveBrowserSync();
+    }
+  }
+  bulk_tab_update_ = false;
+  UpdateFpsIndicator();
+  UpdateStatusBar();
+}
+
 void BrowserWindow::QuitBrowser() {
   if (window_close_pending_) {
     return;
@@ -592,13 +707,23 @@ void BrowserWindow::UndoCloseTab() {
       active_index_ == 0 && tabs_[0].client && tabs_[0].client->browser()) {
     last_tab_close_placeholder_ = false;
     SetTabUrl(tabs_[0], closed_tab.url);
+    tabs_[0].folder_id = SidebarFolderExists(closed_tab.folder_id)
+                             ? closed_tab.folder_id
+                             : 0;
+    tabs_[0].sidebar_sort_order = closed_tab.sidebar_sort_order != 0
+                                      ? closed_tab.sidebar_sort_order
+                                      : NextSidebarSortOrder(tabs_[0].folder_id);
+    tabs_[0].pinned = closed_tab.pinned;
+    RevealTabInSidebar(0);
     tabs_[0].client->browser()->GetMainFrame()->LoadURL(closed_tab.url);
     SaveState();
     RefreshSidebar();
     Layout();
     return;
   }
-  InsertTab(closed_tab.url, closed_tab.index, true);
+  InsertTab(closed_tab.url, closed_tab.index, true, false,
+            closed_tab.folder_id, closed_tab.sidebar_sort_order,
+            closed_tab.pinned);
 }
 
 std::optional<size_t> BrowserWindow::FindTabIndexById(uint64_t tab_id) const {

@@ -671,6 +671,12 @@ void BrowserWindow::AppendTabJson(std::string& out,
     AppendJsonBool(out, index == active_index_);
     out += ",\"audible\":";
     AppendJsonBool(out, tab.audible);
+    out += ",\"folder_id\":";
+    AppendJsonNumber(out, tab.folder_id);
+    out += ",\"sidebar_sort_order\":";
+    AppendJsonNumber(out, tab.sidebar_sort_order);
+    out += ",\"pinned\":";
+    AppendJsonBool(out, tab.pinned);
     out += ",\"url\":";
     out += tab.url_json;
     out += ",\"title\":\"\",\"loading\":false,\"can_go_back\":false,"
@@ -727,6 +733,12 @@ void BrowserWindow::AppendTabJson(std::string& out,
   AppendJsonBool(out, index == active_index_);
   out += ",\"audible\":";
   AppendJsonBool(out, tab.audible);
+  out += ",\"folder_id\":";
+  AppendJsonNumber(out, tab.folder_id);
+  out += ",\"sidebar_sort_order\":";
+  AppendJsonNumber(out, tab.sidebar_sort_order);
+  out += ",\"pinned\":";
+  AppendJsonBool(out, tab.pinned);
   out += ",\"url\":";
   if (!tab.url.empty()) {
     out += tab.url_json;
@@ -771,6 +783,25 @@ std::string BrowserWindow::TabsJson() const {
   AppendJsonNumber(out, active_index_);
   out += ",\"active_tab\":";
   AppendJsonNumber(out, active_index_ + 1);
+  out += ",\"current_folder_id\":";
+  AppendJsonNumber(out, current_sidebar_folder_id_);
+  out += ",\"sidebar_selected_type\":";
+  switch (sidebar_selected_item_.type) {
+    case SidebarItemType::kParent:
+      AppendJsonString(out, "parent");
+      break;
+    case SidebarItemType::kFolder:
+      AppendJsonString(out, "folder");
+      break;
+    case SidebarItemType::kTab:
+      AppendJsonString(out, "tab");
+      break;
+    case SidebarItemType::kNone:
+      AppendJsonString(out, "none");
+      break;
+  }
+  out += ",\"sidebar_selected_id\":";
+  AppendJsonNumber(out, sidebar_selected_item_.id);
   out += ",\"tabs\":[";
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (i > 0) {
@@ -803,6 +834,13 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   }
   if (command == "commands") {
     return IpcCommandsJson();
+  }
+  if (command == "folders") {
+    return FoldersJson();
+  }
+  if (command == "sidebar") {
+    EnsureSidebarSelection();
+    return SidebarJson();
   }
   if (command == "fps") {
     if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->fps_has_sample()) {
@@ -843,6 +881,326 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     return find_tab_index_arg(argv[arg_index], error);
   };
+  auto parse_folder_id = [&](const std::string& text,
+                             uint64_t* folder_id) -> bool {
+    return ParseUint64Arg(text, folder_id) &&
+           SidebarFolderExists(*folder_id);
+  };
+  if (command == "folder-create") {
+    if (argv.size() < 3) {
+      return "ERR usage: folder-create <parent-folderid|0> <name>\n";
+    }
+    uint64_t parent_id = 0;
+    if (!parse_folder_id(argv[1], &parent_id)) {
+      return "ERR no such parent folder\n";
+    }
+    if (CreateSidebarFolder(JoinArgs(argv, 2), parent_id) == 0) {
+      return "ERR invalid or duplicate folder name\n";
+    }
+    return FoldersJson();
+  }
+  if (command == "folder-rename") {
+    if (argv.size() < 3) {
+      return "ERR usage: folder-rename <folderid> <name>\n";
+    }
+    uint64_t folder_id = 0;
+    if (!parse_folder_id(argv[1], &folder_id) || folder_id == 0) {
+      return "ERR no such folder\n";
+    }
+    if (!RenameSidebarFolder(folder_id, JoinArgs(argv, 2))) {
+      return "ERR invalid or duplicate folder name\n";
+    }
+    return FoldersJson();
+  }
+  if (command == "folder-delete") {
+    if (argv.size() != 3) {
+      return "ERR usage: folder-delete <folderid> <recursive|unwrap>\n";
+    }
+    uint64_t folder_id = 0;
+    if (!parse_folder_id(argv[1], &folder_id) || folder_id == 0) {
+      return "ERR no such folder\n";
+    }
+    const std::string mode = ToLowerAscii(argv[2]);
+    if (mode != "recursive" && mode != "unwrap") {
+      return "ERR usage: folder-delete <folderid> <recursive|unwrap>\n";
+    }
+    DeleteSidebarFolder(folder_id, mode == "unwrap");
+    return FoldersJson();
+  }
+  if (command == "folder-move") {
+    if (argv.size() != 3) {
+      return "ERR usage: folder-move <folderid> <parent-folderid|0>\n";
+    }
+    uint64_t folder_id = 0;
+    uint64_t parent_id = 0;
+    if (!parse_folder_id(argv[1], &folder_id) || folder_id == 0) {
+      return "ERR no such folder\n";
+    }
+    if (!parse_folder_id(argv[2], &parent_id)) {
+      return "ERR no such parent folder\n";
+    }
+    if (!MoveSidebarItems({{SidebarItemType::kFolder, folder_id}},
+                          parent_id)) {
+      return "ERR invalid folder move\n";
+    }
+    return FoldersJson();
+  }
+  if (command == "tab-folder") {
+    if (argv.size() != 3) {
+      return "ERR usage: tab-folder <tabid> <folderid|0>\n";
+    }
+    std::string error;
+    const std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
+    if (!index) {
+      return error;
+    }
+    uint64_t folder_id = 0;
+    if (!parse_folder_id(argv[2], &folder_id)) {
+      return "ERR no such folder\n";
+    }
+    MoveSidebarItems({{SidebarItemType::kTab, tabs_[*index].id}}, folder_id);
+    return TabsJson();
+  }
+  if (command == "folder-pin") {
+    if (argv.size() < 2 || argv.size() > 3) {
+      return "ERR usage: folder-pin <folderid> [on|off]\n";
+    }
+    uint64_t folder_id = 0;
+    if (!parse_folder_id(argv[1], &folder_id) || folder_id == 0) {
+      return "ERR no such folder\n";
+    }
+    const SidebarFolder* folder = FindSidebarFolder(folder_id);
+    bool pinned = !folder->pinned;
+    if (argv.size() == 3) {
+      const std::string value = ToLowerAscii(argv[2]);
+      if (value == "on" || value == "1" || value == "true") {
+        pinned = true;
+      } else if (value == "off" || value == "0" || value == "false") {
+        pinned = false;
+      } else {
+        return "ERR usage: folder-pin <folderid> [on|off]\n";
+      }
+    }
+    SetFolderPinned(folder_id, pinned);
+    return FoldersJson();
+  }
+  if (command == "tab-pin") {
+    if (argv.size() < 2 || argv.size() > 3) {
+      return "ERR usage: tab-pin <tabid> [on|off]\n";
+    }
+    std::string error;
+    const std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
+    if (!index) {
+      return error;
+    }
+    bool pinned = !tabs_[*index].pinned;
+    if (argv.size() == 3) {
+      const std::string value = ToLowerAscii(argv[2]);
+      if (value == "on" || value == "1" || value == "true") {
+        pinned = true;
+      } else if (value == "off" || value == "0" || value == "false") {
+        pinned = false;
+      } else {
+        return "ERR usage: tab-pin <tabid> [on|off]\n";
+      }
+    }
+    SetTabPinned(tabs_[*index].id, pinned);
+    return TabsJson();
+  }
+  if (command == "sidebar-folder") {
+    if (argv.size() != 2) {
+      return "ERR usage: sidebar-folder <folderid|0>\n";
+    }
+    uint64_t folder_id = 0;
+    if (!parse_folder_id(argv[1], &folder_id)) {
+      return "ERR no such folder\n";
+    }
+    if (IsSidebarSearchMode()) {
+      CancelCommand();
+    }
+    sidebar_search_highlights_visible_ = false;
+    current_sidebar_folder_id_ = folder_id;
+    sidebar_selected_item_ = {};
+    sidebar_visual_anchor_ = {};
+    EnsureSidebarSelection();
+    SaveState();
+    if (RefreshSidebar()) {
+      Layout();
+    }
+    return FoldersJson();
+  }
+  if (command == "sidebar-visibility") {
+    if (argv.size() != 2) {
+      return "ERR usage: sidebar-visibility <on|off|toggle>\n";
+    }
+    const std::string value = ToLowerAscii(argv[1]);
+    bool visible = sidebar_visible_;
+    if (value == "on" || value == "1" || value == "true") {
+      visible = true;
+    } else if (value == "off" || value == "0" || value == "false") {
+      visible = false;
+    } else if (value == "toggle") {
+      visible = !visible;
+    } else {
+      return "ERR usage: sidebar-visibility <on|off|toggle>\n";
+    }
+    if (!visible && mode_ != Mode::kNormal) {
+      CancelCommand();
+    }
+    if (visible != sidebar_visible_) {
+      sidebar_visible_ = visible;
+      if (!visible && focus_area_ == FocusArea::kTabSidebar) {
+        SetFocusArea(FocusArea::kWebView);
+      } else {
+        RefreshSidebar();
+        UpdateModeIndicator();
+        Layout();
+      }
+    }
+    return SidebarJson();
+  }
+  if (command == "sidebar-focus") {
+    if (argv.size() > 2) {
+      return "ERR usage: sidebar-focus [sidebar|web]\n";
+    }
+    FocusArea target = FocusArea::kTabSidebar;
+    if (argv.size() == 2) {
+      const std::string value = ToLowerAscii(argv[1]);
+      if (value == "sidebar" || value == "on") {
+        target = FocusArea::kTabSidebar;
+      } else if (value == "web" || value == "off") {
+        target = FocusArea::kWebView;
+      } else {
+        return "ERR usage: sidebar-focus [sidebar|web]\n";
+      }
+    }
+    if (mode_ != Mode::kNormal) {
+      CancelCommand();
+    }
+    SetFocusArea(target);
+    return SidebarJson();
+  }
+  if (command == "sidebar-select") {
+    if (argv.size() < 2 || argv.size() > 3) {
+      return "ERR usage: sidebar-select <tab|folder|parent> [id]\n";
+    }
+    if (IsSidebarSearchMode()) {
+      CancelCommand();
+    }
+    sidebar_search_highlights_visible_ = false;
+    const std::string type = ToLowerAscii(argv[1]);
+    if (type == "tab") {
+      if (argv.size() != 3) {
+        return "ERR usage: sidebar-select tab <tabid>\n";
+      }
+      std::string error;
+      const std::optional<size_t> index = find_tab_index_arg(argv[2], &error);
+      if (!index) {
+        return error;
+      }
+      current_sidebar_folder_id_ = tabs_[*index].folder_id;
+      sidebar_selected_item_ = {SidebarItemType::kTab, tabs_[*index].id};
+    } else if (type == "folder") {
+      if (argv.size() != 3) {
+        return "ERR usage: sidebar-select folder <folderid>\n";
+      }
+      uint64_t folder_id = 0;
+      if (!parse_folder_id(argv[2], &folder_id) || folder_id == 0) {
+        return "ERR no such folder\n";
+      }
+      const SidebarFolder* folder = FindSidebarFolder(folder_id);
+      current_sidebar_folder_id_ = folder->parent_id;
+      sidebar_selected_item_ = {SidebarItemType::kFolder, folder_id};
+    } else if (type == "parent") {
+      if (argv.size() != 2) {
+        return "ERR usage: sidebar-select parent\n";
+      }
+      if (current_sidebar_folder_id_ == 0) {
+        return "ERR sidebar is already at root\n";
+      }
+      sidebar_selected_item_ = {SidebarItemType::kParent, 0};
+    } else {
+      return "ERR usage: sidebar-select <tab|folder|parent> [id]\n";
+    }
+    sidebar_visual_anchor_ = {};
+    sidebar_pending_keys_.clear();
+    SaveState();
+    RefreshSidebar();
+    Layout();
+    return SidebarJson();
+  }
+  if (command == "sidebar-activate") {
+    if (argv.size() != 1) {
+      return "ERR usage: sidebar-activate\n";
+    }
+    if (IsSidebarSearchMode()) {
+      CommitSidebarSearch();
+    }
+    ActivateSidebarItem(sidebar_selected_item_);
+    return SidebarJson();
+  }
+  if (command == "sidebar-search") {
+    const std::string usage =
+        "ERR usage: sidebar-search <forward|backward> <query> | "
+        "sidebar-search next [same|opposite|forward|backward] | "
+        "sidebar-search clear\n";
+    if (argv.size() == 2 && ToLowerAscii(argv[1]) == "clear") {
+      if (IsSidebarSearchMode()) {
+        CancelCommand();
+      }
+      ClearSidebarSearchHighlights();
+      return SidebarJson();
+    }
+    if (argv.size() >= 2 && ToLowerAscii(argv[1]) == "next") {
+      if (argv.size() > 3 || sidebar_search_query_.empty()) {
+        return sidebar_search_query_.empty() ? "ERR no sidebar search\n"
+                                             : usage;
+      }
+      bool forward = sidebar_search_forward_;
+      if (argv.size() == 3) {
+        const std::string direction = ToLowerAscii(argv[2]);
+        if (direction == "opposite") {
+          forward = !sidebar_search_forward_;
+        } else if (direction == "forward") {
+          forward = true;
+        } else if (direction == "backward") {
+          forward = false;
+        } else if (direction != "same") {
+          return usage;
+        }
+      }
+      if (!JumpSidebarSearch(forward)) {
+        return "ERR no sidebar search match\n";
+      }
+      return SidebarJson();
+    }
+    if (argv.size() < 3) {
+      return usage;
+    }
+    const std::string direction = ToLowerAscii(argv[1]);
+    const bool forward = direction == "forward";
+    if (!forward && direction != "backward") {
+      return usage;
+    }
+    const std::string query = JoinArgs(argv, 2);
+    if (query.empty()) {
+      return usage;
+    }
+    if (mode_ != Mode::kNormal) {
+      CancelCommand();
+    }
+    sidebar_search_query_ = query;
+    sidebar_search_forward_ = forward;
+    sidebar_search_highlights_visible_ = true;
+    sidebar_visual_anchor_ = {};
+    if (const std::optional<SidebarItemRef> match = FindSidebarSearchMatch(
+            query, sidebar_selected_item_, forward)) {
+      sidebar_selected_item_ = *match;
+    }
+    RefreshSidebar();
+    Layout();
+    return SidebarJson();
+  }
   if (command == "tab-focus") {
     if (argv.size() != 2) {
       return "ERR usage: tab-focus <tabid>\n";
@@ -907,15 +1265,6 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
     }
     SaveState();
-    if (tabs_.size() > kSidebarMaxRenderedRows && sidebar_spacer_) {
-      const auto [render_start, render_count] =
-          SidebarRenderedRange(tabs_.size(), active_index_);
-      if (tab_index == active_index_ ||
-          (tab_index >= render_start && tab_index < render_start + render_count)) {
-        ScheduleSidebarRefresh();
-      }
-      return TabsJson();
-    }
     RefreshSidebar();
     Layout();
     return TabsJson();
@@ -1109,6 +1458,23 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  status|json\n"
            "  tabs\n"
            "  commands\n"
+           "  folders\n"
+           "  folder-create <parent-folderid|0> <name>\n"
+           "  folder-rename <folderid> <name>\n"
+           "  folder-delete <folderid> <recursive|unwrap>\n"
+           "  folder-move <folderid> <parent-folderid|0>\n"
+           "  folder-pin <folderid> [on|off]\n"
+           "  tab-folder <tabid> <folderid|0>\n"
+           "  tab-pin <tabid> [on|off]\n"
+           "  sidebar\n"
+           "  sidebar-folder <folderid|0>\n"
+           "  sidebar-visibility <on|off|toggle>\n"
+           "  sidebar-focus [sidebar|web]\n"
+           "  sidebar-select <tab|folder|parent> [id]\n"
+           "  sidebar-activate\n"
+           "  sidebar-search <forward|backward> <query>\n"
+           "  sidebar-search next [same|opposite|forward|backward]\n"
+           "  sidebar-search clear\n"
            "  tab-focus <tabid>\n"
            "  tab-delete <tabid>\n"
            "  tab-order <tabid> <zero-based-index>\n"
@@ -1382,6 +1748,25 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonNumber(out, active_index_ + 1);
   out += ",\"tabs\":";
   AppendJsonNumber(out, tabs_.size());
+  out += ",\"current_folder_id\":";
+  AppendJsonNumber(out, current_sidebar_folder_id_);
+  out += ",\"sidebar_selected_type\":";
+  switch (sidebar_selected_item_.type) {
+    case SidebarItemType::kParent:
+      AppendJsonString(out, "parent");
+      break;
+    case SidebarItemType::kFolder:
+      AppendJsonString(out, "folder");
+      break;
+    case SidebarItemType::kTab:
+      AppendJsonString(out, "tab");
+      break;
+    case SidebarItemType::kNone:
+      AppendJsonString(out, "none");
+      break;
+  }
+  out += ",\"sidebar_selected_id\":";
+  AppendJsonNumber(out, sidebar_selected_item_.id);
   out += ",\"url\":";
   AppendJsonString(out, url);
   out += ",\"title\":";

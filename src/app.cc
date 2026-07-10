@@ -214,6 +214,9 @@ std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string& code) {
 }  // namespace
 
 App::App(std::vector<std::string> initial_urls,
+         std::vector<uint64_t> initial_tab_folder_ids,
+         std::vector<uint64_t> initial_tab_sort_orders,
+         std::vector<bool> initial_tab_pinned,
          size_t active_index,
          bool show_mode_indicator,
          bool show_fps_indicator,
@@ -223,6 +226,9 @@ App::App(std::vector<std::string> initial_urls,
          std::string dwm_save_argv,
          bool disable_gpu)
     : initial_urls_(std::move(initial_urls)),
+      initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
+      initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
+      initial_tab_pinned_(std::move(initial_tab_pinned)),
       active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
@@ -278,7 +284,11 @@ bool App::OnAlreadyRunningAppRelaunch(
 }
 
 void App::OnContextInitialized() {
-  CefRefPtr<BrowserWindow> window(new BrowserWindow(initial_urls_, active_index_,
+  CefRefPtr<BrowserWindow> window(new BrowserWindow(initial_urls_,
+                                                    initial_tab_folder_ids_,
+                                                    initial_tab_sort_orders_,
+                                                    initial_tab_pinned_,
+                                                    active_index_,
                                                     show_mode_indicator_,
                                                     show_fps_indicator_,
                                                     show_statusline_,

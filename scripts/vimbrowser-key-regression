@@ -715,7 +715,7 @@ def test_website_keybinds_do_not_type(h: Harness) -> None:
             "website-mode keybindings generated input events", snap)
 
 
-def test_sidebar_jk_moves_tab_cursor(h: Harness) -> None:
+def test_sidebar_jk_moves_selection_and_enter_activates(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url])
     h.ipc(["open-tab", h.initial_url])
     tabs = h.ipc(["tabs"])["tabs"]
@@ -728,16 +728,24 @@ def test_sidebar_jk_moves_tab_cursor(h: Harness) -> None:
 
     h.key("j", pause=0.25)
     after_j = h.ipc(["status"])
-    require(after_j.get("active_index") == 1,
-            "sidebar j did not move the tab cursor down", after_j)
+    require(after_j.get("active_index") == 0 and
+            after_j.get("sidebar_selected_type") == "tab" and
+            after_j.get("sidebar_selected_id") == tabs[1]["id"],
+            "sidebar j did not move selection down without activating", after_j)
+
+    h.key("Return", pause=0.25)
+    after_enter = h.ipc(["status"])
+    require(after_enter.get("active_index") == 1,
+            "sidebar Enter did not activate the selected tab", after_enter)
 
     h.key("k", pause=0.25)
     after_k = h.ipc(["status"])
-    require(after_k.get("active_index") == 0,
-            "sidebar k did not move the tab cursor up", after_k)
+    require(after_k.get("active_index") == 1 and
+            after_k.get("sidebar_selected_id") == tabs[0]["id"],
+            "sidebar k did not move selection up without activating", after_k)
 
 
-def test_sidebar_gg_and_G_jump_to_tab_ends(h: Harness) -> None:
+def test_sidebar_gg_and_G_jump_to_visible_ends(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url])
     h.ipc(["open-tab", h.initial_url])
     tabs = h.ipc(["tabs"])["tabs"]
@@ -748,16 +756,160 @@ def test_sidebar_gg_and_G_jump_to_tab_ends(h: Harness) -> None:
     require(before.get("mode") == "SIDEBAR" and before.get("active_index") == 1,
             "could not focus sidebar with middle tab selected", before)
 
+    active_id = before.get("active_tabid")
+    first_id = tabs[0]["id"]
+    last_id = tabs[-1]["id"]
+
     h.key("g", "g", pause=0.25)
     after_gg = h.ipc(["status"])
-    require(after_gg.get("mode") == "SIDEBAR" and after_gg.get("active_index") == 0,
-            "sidebar gg did not move the tab cursor to the top", after_gg)
+    require(after_gg.get("mode") == "SIDEBAR" and
+            after_gg.get("active_tabid") == active_id and
+            after_gg.get("sidebar_selected_id") == first_id,
+            "sidebar gg did not move selection to the first visible entry", after_gg)
 
     h.key("shift+g", pause=0.25)
     after_G = h.ipc(["status"])
     require(after_G.get("mode") == "SIDEBAR" and
-            after_G.get("active_index") == len(tabs) - 1,
-            "sidebar G did not move the tab cursor to the bottom", after_G)
+            after_G.get("active_tabid") == active_id and
+            after_G.get("sidebar_selected_id") == last_id,
+            "sidebar G did not move selection to the last visible entry", after_G)
+
+
+def test_shift_jk_uses_focused_sidebar_order_inside_folder(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url + "#shift-a"])
+    h.ipc(["open-tab", h.initial_url + "#shift-b"])
+    tabs = h.ipc(["tabs"])["tabs"]
+    first, second = tabs[-2], tabs[-1]
+
+    folder_reply = h.ipc(["folder-create", "0", "Shift JK container"])
+    container = max(folder_reply["folders"], key=lambda item: item["id"])
+    h.ipc(["tab-folder", str(first["id"]), str(container["id"])])
+    h.ipc(["tab-folder", str(second["id"]), str(container["id"])])
+    nested_reply = h.ipc([
+        "folder-create", str(container["id"]), "Between tabs"
+    ])
+    nested = max(nested_reply["folders"], key=lambda item: item["id"])
+
+    # The child folder was appended after both tabs. Move it up once so the
+    # visible order is first-tab, child-folder, second-tab.
+    h.ipc(["sidebar-select", "folder", str(nested["id"])])
+    h.ipc(["sidebar-focus", "sidebar"])
+    h.key("e", pause=0.2)
+    h.ipc(["sidebar-select", "tab", str(first["id"])])
+    h.ipc(["sidebar-focus", "web"])
+    before = h.ipc(["status"])
+
+    h.key("shift+j", pause=0.25)
+    after_j = h.ipc(["status"])
+    require(after_j.get("mode") == "SIDEBAR" and
+            after_j.get("active_tabid") == before.get("active_tabid") and
+            after_j.get("current_folder_id") == container["id"] and
+            after_j.get("sidebar_selected_type") == "folder" and
+            after_j.get("sidebar_selected_id") == nested["id"],
+            "Shift+J did not follow the focused row's visual folder order",
+            {"before": before, "after": after_j})
+
+    h.key("shift+k", pause=0.25)
+    after_k = h.ipc(["status"])
+    require(after_k.get("active_tabid") == before.get("active_tabid") and
+            after_k.get("current_folder_id") == container["id"] and
+            after_k.get("sidebar_selected_type") == "tab" and
+            after_k.get("sidebar_selected_id") == first["id"],
+            "Shift+K did not return to the focused row above", after_k)
+
+    h.ipc(["folder-delete", str(container["id"]), "recursive"])
+
+
+def test_sidebar_dd_uses_visual_focus_and_stays_in_pinned_section(h: Harness) -> None:
+    for suffix in ("pinned", "target", "below"):
+        h.ipc(["open-tab", h.initial_url + "#delete-" + suffix])
+    tabs = h.ipc(["tabs"])["tabs"]
+    pinned, target, below = tabs[-3:]
+    folder_reply = h.ipc(["folder-create", "0", "Delete focus container"])
+    container = max(folder_reply["folders"], key=lambda item: item["id"])
+    for tab in (pinned, target, below):
+        h.ipc(["tab-folder", str(tab["id"]), str(container["id"])])
+    h.ipc(["tab-pin", str(pinned["id"]), "on"])
+    h.ipc(["sidebar-select", "tab", str(target["id"])])
+    h.ipc(["sidebar-focus", "sidebar"])
+
+    count_before = len(h.ipc(["tabs"])["tabs"])
+    h.key("d", pause=0.15)
+    after_first_d = h.ipc(["status"])
+    require(len(h.ipc(["tabs"])["tabs"]) == count_before and
+            after_first_d.get("sidebar_selected_id") == target["id"],
+            "first sidebar d did not leave the focused tab pending confirmation",
+            after_first_d)
+
+    h.key("d", pause=0.25)
+    after_dd = h.ipc(["status"])
+    remaining_ids = {tab["id"] for tab in h.ipc(["tabs"])["tabs"]}
+    require(target["id"] not in remaining_ids and
+            after_dd.get("current_folder_id") == container["id"] and
+            after_dd.get("sidebar_selected_type") == "tab" and
+            after_dd.get("sidebar_selected_id") == below["id"],
+            "sidebar dd did not choose the nearby row in the same unpinned section",
+            after_dd)
+
+    # The remaining unpinned row is the active page. Deleting it should use the
+    # same visible-focus fallback, rather than jumping to an unrelated vector
+    # neighbor outside this folder.
+    h.key("d", "d", pause=0.25)
+    after_active_dd = h.ipc(["status"])
+    require(after_active_dd.get("current_folder_id") == container["id"] and
+            after_active_dd.get("active_tabid") == pinned["id"] and
+            after_active_dd.get("sidebar_selected_type") == "tab" and
+            after_active_dd.get("sidebar_selected_id") == pinned["id"],
+            "deleting the active focused tab did not activate the visual fallback",
+            after_active_dd)
+
+    h.ipc(["folder-delete", str(container["id"]), "recursive"])
+
+
+def test_sidebar_p_toggles_folder_pin(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url])
+    tabs = h.ipc(["tabs"])["tabs"]
+    folder_reply = h.ipc(["folder-create", "0", "Pinned folder"])
+    folder = max(folder_reply["folders"], key=lambda item: item["id"])
+    require(folder["id"] == tabs[0]["id"],
+            "fixture did not create colliding tab/folder IDs",
+            {"folder": folder, "tab": tabs[0]})
+
+    # Pin the colliding tab first so folder p must append to the shared pinned
+    # section without confusing equal numeric tab/folder IDs.
+    h.ipc(["tab-pin", str(tabs[0]["id"]), "on"])
+    h.ipc(["sidebar-select", "folder", str(folder["id"])])
+    h.ipc(["sidebar-focus", "sidebar"])
+    h.key("p", pause=0.25)
+
+    pinned_folder = next(
+        item for item in h.ipc(["folders"])["folders"]
+        if item["id"] == folder["id"]
+    )
+    sidebar = h.ipc(["sidebar"])
+    pinned_entries = [
+        (row["item_type"], row["item_id"])
+        for row in sidebar["rows"]
+        if row["kind"] == "entry" and row.get("pinned")
+    ]
+    row_kinds = [row["kind"] for row in sidebar["rows"]]
+    require(pinned_folder["pinned"],
+            "sidebar p did not pin the selected folder", pinned_folder)
+    require(pinned_entries == [("tab", tabs[0]["id"]),
+                               ("folder", folder["id"])],
+            "folder did not append to the shared pinned section", sidebar)
+    require(row_kinds.count("section_label") == 1 and
+            row_kinds.count("separator") == 1,
+            "shared pinned section label/separator was not canonical", sidebar)
+
+    h.key("p", pause=0.25)
+    unpinned_folder = next(
+        item for item in h.ipc(["folders"])["folders"]
+        if item["id"] == folder["id"]
+    )
+    require(not unpinned_folder["pinned"],
+            "second sidebar p did not unpin the selected folder",
+            unpinned_folder)
 
 
 def test_sidebar_keybinds_do_not_type(h: Harness) -> None:
@@ -1088,8 +1240,11 @@ TESTS = [
     test_insert_escape_exits_without_passthrough,
     test_normal_escape_returns_to_website_mode,
     test_website_keybinds_do_not_type,
-    test_sidebar_jk_moves_tab_cursor,
-    test_sidebar_gg_and_G_jump_to_tab_ends,
+    test_sidebar_jk_moves_selection_and_enter_activates,
+    test_sidebar_gg_and_G_jump_to_visible_ends,
+    test_sidebar_p_toggles_folder_pin,
+    test_shift_jk_uses_focused_sidebar_order_inside_folder,
+    test_sidebar_dd_uses_visual_focus_and_stays_in_pinned_section,
     test_sidebar_keybinds_do_not_type,
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,

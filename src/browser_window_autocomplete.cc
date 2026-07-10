@@ -265,6 +265,16 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     if (completing_new_arg || !arg_prefix.empty()) {
       AppendTabFocusMatches(arg_prefix, matches);
     }
+  } else if (StartsWithCaseInsensitive(typed_command, ":folder-move") &&
+             IsTokenBoundary(typed_command, 12)) {
+    const std::string arg_prefix = after_command;
+    const std::vector<SidebarItemRef> moving_items =
+        sidebar_prompt_.purpose == SidebarPromptPurpose::kMoveItems
+            ? sidebar_prompt_.items
+            : SelectedSidebarItems();
+    AppendFolderDestinationMatches(arg_prefix, moving_items, matches);
+    command_autocomplete_.completion_start =
+        first_non_space + first_space + 1;
   } else if (StartsWithCaseInsensitive(typed_command, ":test") &&
              IsTokenBoundary(typed_command, 5)) {
     const size_t arg_start = after_command.find_last_of(" \t");
@@ -565,10 +575,26 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return process_key({vim::KeyType::kEnter}, false);
     }
     if (IsEscapeKey(event)) {
+      // Exocortex sidebar search is a transient insert-only bar: one Escape
+      // closes it and restores the exact pre-search folder/selection. Keep the
+      // regular two-stage insert -> command-normal behavior for other commands.
+      if (IsSidebarSearchMode()) {
+        CancelCommand();
+        return true;
+      }
       const bool shifted = event.modifiers & EVENTFLAG_SHIFT_DOWN;
       return process_key({vim::KeyType::kEscape, 0, shifted}, false);
     }
     if (IsBackspaceKey(event)) {
+      if (IsSidebarSearchMode() && command_vim_.cursor <= 1) {
+        // The leading / or ? is chrome rather than editable query text. At an
+        // empty query Backspace closes the bar, matching Exocortex; at the start
+        // of a non-empty query it leaves the prompt intact.
+        if (command_text_.size() <= 1) {
+          CancelCommand();
+        }
+        return true;
+      }
       return process_key({vim::KeyType::kBackspace}, true);
     }
   }
@@ -601,6 +627,12 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
     const char16_t c = event.character ? event.character : event.unmodified_character;
     if (IsBackspaceKey(event)) {
+      if (IsSidebarSearchMode() && command_vim_.cursor <= 1) {
+        if (command_text_.size() <= 1) {
+          CancelCommand();
+        }
+        return true;
+      }
       return process_key({vim::KeyType::kBackspace}, false);
     }
     if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
@@ -617,6 +649,9 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
 void BrowserWindow::SetCommandText(std::string text) {
   command_text_ = std::move(text);
   vim::Clamp(command_vim_, command_text_);
+  if (IsSidebarSearchMode()) {
+    UpdateSidebarSearchLive();
+  }
   UpdateCommandView();
   UpdateAutocompleteView();
 }
@@ -643,6 +678,14 @@ bool BrowserWindow::SyncCommandTextFromField() {
 
   command_text_ = text;
   command_vim_.cursor = cursor;
+  if (IsSidebarSearchMode()) {
+    const char prompt = mode_ == Mode::kSidebarSearchForward ? '/' : '?';
+    if (command_text_.empty() || command_text_.front() != prompt) {
+      command_text_.insert(command_text_.begin(), prompt);
+      ++command_vim_.cursor;
+    }
+    command_vim_.cursor = std::max<size_t>(1, command_vim_.cursor);
+  }
   vim::Clamp(command_vim_, command_text_);
   if (command_vim_.mode == vim::Mode::kInsert) {
     UpdateCommandAutocomplete();

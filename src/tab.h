@@ -13,6 +13,9 @@ struct Tab {
   std::string id_json;
   std::string url;
   std::string url_json;
+  uint64_t folder_id = 0;
+  uint64_t sidebar_sort_order = 0;
+  bool pinned = false;
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
   bool deferred_load = false;

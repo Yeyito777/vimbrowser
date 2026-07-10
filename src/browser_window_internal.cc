@@ -195,6 +195,9 @@ const std::vector<CompletionItem>& CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
       {":tab-focus", "focus tab by number/title/url"},
+      {":folder-create", "create a folder in the current sidebar folder"},
+      {":folder-move", "move selected sidebar items to a folder"},
+      {":folder-rename", "rename the selected sidebar folder"},
       {":test", "open deterministic internal test fixtures"},
       {":shader", "toggle native page color shader"},
       {":showmode", "toggle top-right vim mode display"},
@@ -230,6 +233,8 @@ const std::vector<CompletionItem>& TestArgList() {
 
 bool CommandTakesArguments(const std::string& command) {
   return command == ":open" || command == ":tab-focus" ||
+         command == ":folder-create" || command == ":folder-move" ||
+         command == ":folder-rename" ||
          command == ":shader" || command == ":showmode" ||
          command == ":showfps" || command == ":showstatusline" ||
          command == ":test";
@@ -680,67 +685,6 @@ int TextColumns(const std::string& value) {
   return static_cast<int>(value.size());
 }
 
-std::string SidebarTextForTab(size_t index,
-                              const std::string& url,
-                              bool active,
-                              bool audible) {
-  std::string text = active ? "▸ " : "  ";
-  text.reserve(168);
-  text += std::to_string(index + 1);
-  text += ": ";
-  if (audible) {
-    text += "◉ ";
-  }
-  text += DisplayUrl(url);
-  if (text.size() > 160) {
-    text.resize(157);
-    text += "...";
-  }
-  return text;
-}
-
-uint32_t DecimalDigits(size_t value) {
-  uint32_t digits = 1;
-  while (value >= 10) {
-    value /= 10;
-    ++digits;
-  }
-  return digits;
-}
-
-void StyleSidebarRow(CefRefPtr<CefTextfield> row,
-                     size_t index,
-                     bool active,
-                     bool audible,
-                     cef_color_t background) {
-  StyleTextfield(row, theme::kText, background, "monospace, 12px");
-  if (!row) {
-    return;
-  }
-  if (audible) {
-    // SidebarTextForTab format: "<marker><space><1-based index>: <icon> <url>".
-    // The status glyphs are BMP characters, so these CefRange offsets are UTF-16
-    // code-unit positions even though the backing std::string is UTF-8.
-    const uint32_t audible_icon_offset = 2 + DecimalDigits(index + 1) + 2;
-    row->ApplyTextColor(theme::kAccent,
-                        CefRange(audible_icon_offset,
-                                 audible_icon_offset + 1));
-  }
-}
-
-std::pair<size_t, size_t> SidebarRenderedRange(size_t tab_count,
-                                               size_t active_index) {
-  if (tab_count <= kSidebarMaxRenderedRows) {
-    return {0, tab_count};
-  }
-  const size_t half_window = kSidebarMaxRenderedRows / 2;
-  size_t start = active_index > half_window ? active_index - half_window : 0;
-  if (start + kSidebarMaxRenderedRows > tab_count) {
-    start = tab_count - kSidebarMaxRenderedRows;
-  }
-  return {start, kSidebarMaxRenderedRows};
-}
-
 std::string ShellRead(const char* command) {
   std::string output;
   FILE* pipe = popen(command, "r");
@@ -912,6 +856,21 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"json", "json", "status alias", "json"},
       {"tabs", "tabs", "list all tabs with stable tab ids", "json"},
       {"commands", "commands", "machine-readable command metadata", "json"},
+      {"folders", "folders", "list durable nested sidebar folders", "json"},
+      {"folder-create", "folder-create <parent-folderid|0> <name>", "create a sidebar folder", "json"},
+      {"folder-rename", "folder-rename <folderid> <name>", "rename a sidebar folder", "json"},
+      {"folder-delete", "folder-delete <folderid> <recursive|unwrap>", "delete or unwrap a sidebar folder", "json"},
+      {"folder-move", "folder-move <folderid> <parent-folderid|0>", "move a folder without reloading contained tabs", "json"},
+      {"folder-pin", "folder-pin <folderid> [on|off]", "toggle or set a folder's pinned sidebar state", "json"},
+      {"tab-folder", "tab-folder <tabid> <folderid|0>", "move a tab into a sidebar folder", "json"},
+      {"tab-pin", "tab-pin <tabid> [on|off]", "toggle or set a tab's pinned sidebar state", "json"},
+      {"sidebar", "sidebar", "inspect sidebar visibility, focus, selection, search, and displayed rows", "json"},
+      {"sidebar-folder", "sidebar-folder <folderid|0>", "open a folder in the sidebar", "json"},
+      {"sidebar-visibility", "sidebar-visibility <on|off|toggle>", "set or toggle sidebar visibility", "json"},
+      {"sidebar-focus", "sidebar-focus [sidebar|web]", "focus the sidebar or web view", "json"},
+      {"sidebar-select", "sidebar-select <tab|folder|parent> [id]", "select a sidebar item without activating it", "json"},
+      {"sidebar-activate", "sidebar-activate", "activate the selected tab or enter the selected folder", "json"},
+      {"sidebar-search", "sidebar-search <forward|backward> <query> | next [same|opposite|forward|backward] | clear", "set, navigate, or clear the global sidebar filter", "json"},
       {"tab-focus", "tab-focus <tabid>", "focus a tab by stable id", "json"},
       {"tab-delete", "tab-delete <tabid>", "delete a tab by stable id and destroy its backend", "json"},
       {"tab-order", "tab-order <tabid> <index>", "move tab to zero-based index", "json"},

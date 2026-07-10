@@ -43,7 +43,9 @@ Use the installed `vimbrowser-ipc` command or the source-tree `scripts/vimbrowse
 ```bash
 scripts/vimbrowser-ipc status
 scripts/vimbrowser-ipc tabs
+scripts/vimbrowser-ipc sidebar
 scripts/vimbrowser-ipc tab-focus 3
+scripts/vimbrowser-ipc sidebar-select tab 3
 VIMBROWSER_PROFILE_DIR=/tmp/my-vimbrowser-profile scripts/vimbrowser-ipc tabs
 VIMBROWSER_IPC=/tmp/test/ipc.sock scripts/vimbrowser-ipc status
 ```
@@ -149,9 +151,119 @@ Notes:
 - `active_tabid` is the stable runtime tab ID.
 - `audible` mirrors Chromium's current per-tab audible state and drives the
   sidebar audio indicator.
+- `folder_id` is the tab's durable sidebar folder (`0` is the root).
+- `sidebar_sort_order` is its durable order among sidebar siblings, and `pinned`
+  reports whether it belongs to that folder's leading pinned section.
+- `current_folder_id`, `sidebar_selected_type`, and `sidebar_selected_id`
+  expose the folder view and keyboard selection independently of the active tab.
 - `fps` is `null` when no native compositor sample is available.
 
+### Sidebar folders
+
+Folders are durable, nested, and use stable profile-persistent numeric IDs.
+Folder ID `0` denotes the sidebar root and is never returned as a folder object.
+
+#### `folders`
+
+Returns the current folder view and every folder with `id`, `parent_id`,
+`sort_order`, `pinned`, `name`, and its slash-separated `path`.
+
+#### `folder-create <parent-folderid|0> <name>`
+
+Creates a folder under the supplied parent. Names may contain spaces but not
+`/`; sibling names are case-insensitively unique.
+
+#### `folder-rename <folderid> <name>`
+
+Renames a folder while preserving its ID, children, placement, and tab backends.
+
+#### `folder-delete <folderid> <recursive|unwrap>`
+
+`recursive` destroys every tab backend in the complete descendant tree and then
+removes the folders. `unwrap` removes only the folder shell and moves its direct
+tabs/subfolders to the parent in their existing order.
+
+#### `folder-move <folderid> <parent-folderid|0>`
+
+Moves a complete folder subtree under another folder or the root. Cycles are
+rejected, and contained tab backends are neither reloaded nor recreated.
+
+#### `folder-pin <folderid> [on|off]`
+
+Pins or unpins a folder among its siblings. Omitting `on|off` toggles the current
+state. Pinned folders and tabs share one ordered `Pinned` section, and the state
+survives profile restarts. This is the IPC equivalent of pressing sidebar `p` on
+a folder.
+
+#### `tab-folder <tabid> <folderid|0>`
+
+Moves a tab to a folder without changing its stable runtime tab ID or reloading
+its browser backend.
+
+#### `sidebar`
+
+Returns canonical sidebar UI state, including visibility, focus, current folder,
+selected item, active search/filter state, and every currently displayed row.
+Folder and tab entry rows include stable item IDs and pinned state; tab rows
+also include their zero-based tab index.
+
+#### `sidebar-folder <folderid|0>`
+
+Browses a folder in the sidebar without activating or reloading a tab. Any active
+sidebar search filter is cleared so the requested folder is shown directly.
+
+#### `sidebar-visibility <on|off|toggle>`
+
+Shows, hides, or toggles the sidebar. Hiding a focused sidebar returns focus to
+the web view. Showing it does not implicitly steal web focus.
+
+#### `sidebar-focus [sidebar|web]`
+
+Moves keyboard focus to the sidebar or web view. With no argument it focuses the
+sidebar and makes it visible. An active command/search prompt is canceled first.
+
+#### `sidebar-select <tab|folder|parent> [id]`
+
+Moves only the sidebar cursor, without activating a tab or entering a folder.
+Selecting a tab or folder automatically browses its containing folder, so nested
+items can be selected directly by stable ID. Forms are:
+
+```text
+sidebar-select tab <tabid>
+sidebar-select folder <folderid>
+sidebar-select parent
+```
+
+#### `sidebar-activate`
+
+Performs the sidebar `Enter` action on the current selection: activates a tab,
+enters a folder, or follows `..` to the parent. Returns updated `sidebar` JSON.
+
+#### `sidebar-search ...`
+
+Controls the same global, case-insensitive folder/tab filter as the sidebar `/`
+and `?` bindings without synthesizing keyboard input:
+
+```text
+sidebar-search forward <query>
+sidebar-search backward <query>
+sidebar-search next [same|opposite|forward|backward]
+sidebar-search clear
+```
+
+Starting a search selects the nearest wrapped match in the requested direction.
+`next` repeats the retained query, and `clear` reveals the selected result in its
+containing folder just like sidebar `:noh`.
+
 ### Tab control
+
+#### `tab-pin <tabid> [on|off]`
+
+Pins or unpins a tab in its current sidebar folder without changing its stable
+ID or reloading its browser backend. Omitting `on|off` toggles the current state.
+A newly pinned tab is placed at the bottom of the combined pinned tab/folder
+section; an unpinned tab is placed at the top of the regular section. The state
+survives profile restarts and is exposed as `pinned` by `tabs`.
 
 #### `tab-focus <tabid>`
 

@@ -14,6 +14,9 @@ inline constexpr size_t kMaxOpenHistoryEntries = 1000;
 struct Config {
   std::string initial_url = "https://example.com";
   std::vector<std::string> initial_urls;
+  std::vector<uint64_t> initial_tab_folder_ids;
+  std::vector<uint64_t> initial_tab_sort_orders;
+  std::vector<bool> initial_tab_pinned;
   std::vector<std::string> explicit_initial_urls;
   std::string profile_dir;
   std::string cache_path;
@@ -32,13 +35,29 @@ struct Config {
   bool shader_enabled = true;
 };
 
+struct SavedSidebarFolder {
+  uint64_t id = 0;
+  uint64_t parent_id = 0;
+  uint64_t sort_order = 0;
+  std::string name;
+  bool pinned = false;
+};
+
 struct AppState {
   std::vector<std::string> tabs;
+  // These vectors are kept index-aligned with |tabs|. Zero means the sidebar
+  // root for folder ids and "assign a legacy/default order" for sort orders.
+  std::vector<uint64_t> tab_folder_ids;
+  std::vector<uint64_t> tab_sort_orders;
+  std::vector<bool> tab_pinned;
+  std::vector<SavedSidebarFolder> sidebar_folders;
   std::vector<std::string> open_history;
   std::map<std::string, std::vector<std::string>> search_history;
   std::map<std::string, uint32_t> media_permission_grants;
   std::map<std::string, uint32_t> media_permission_denials;
   size_t active_index = 0;
+  uint64_t sidebar_folder_id = 0;
+  uint64_t next_sidebar_folder_id = 1;
   bool show_mode_indicator = true;
   bool show_fps_indicator = false;
   bool show_statusline = true;
