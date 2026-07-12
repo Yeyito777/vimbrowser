@@ -1817,6 +1817,9 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     case 'u':
       UndoCloseTab();
       return true;
+    case 't':
+      BeginCommandText(":tab-focus ");
+      return true;
     case 'c':
       if (sidebar_selected_item_.type == SidebarItemType::kTab) {
         if (const std::optional<size_t> index =

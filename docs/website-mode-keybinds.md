@@ -54,7 +54,8 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `e` — move tab up / previous position
 - [x] `E` — move tab down / next position
 - [x] `c` — clone current tab
-- [x] `t` — command line prefilled with `:tab-focus `
+- [x] `t` — command line prefilled with `:tab-focus ` from either website or
+  sidebar focus
 - [x] `[` / `]` while sidebar-focused — focus previous/next audible tab with
   wraparound; audible tabs are marked `◉` in the accent color
 

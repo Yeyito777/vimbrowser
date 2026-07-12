@@ -208,6 +208,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab
+- `t` opens the command line prefilled with `:tab-focus ` from either the web
+  view or the focused tab sidebar
 - the sidebar has durable, nested Exocortex-style folders. The root starts
   directly with its entries instead of a redundant `Tabs` title or permanent
   separator; nested folders show a compact folder-name breadcrumb, `..`, and

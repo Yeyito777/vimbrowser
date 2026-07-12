@@ -797,6 +797,25 @@ def test_sidebar_gg_and_G_jump_to_visible_ends(h: Harness) -> None:
             "sidebar G did not move selection to the last visible entry", after_G)
 
 
+def test_sidebar_t_opens_tab_focus_command(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url])
+    tabs = h.ipc(["tabs"])["tabs"]
+    require(len(tabs) >= 2, "sidebar t regression requires at least two tabs", tabs)
+    target_id = str(tabs[0]["id"])
+    h.ipc(["tab-focus", str(tabs[-1]["id"])])
+    h.ipc(["sidebar-focus", "sidebar"])
+
+    h.key("t", pause=0.2)
+    command_mode = h.ipc(["status"])
+    require(command_mode.get("mode") == "CMD-I",
+            "sidebar t did not open the tab-focus command line", command_mode)
+
+    h.key(*target_id, "Return", pause=0.3)
+    after_commit = h.ipc(["status"])
+    require(str(after_commit.get("active_tabid")) == target_id,
+            "sidebar t command was not prefilled with :tab-focus ", after_commit)
+
+
 def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
     initial_sidebar = h.ipc(["sidebar"])
     viewport_rows = int(initial_sidebar.get("viewport_rows") or 0)
@@ -1445,6 +1464,7 @@ TESTS = [
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_selection_and_enter_activates,
     test_sidebar_gg_and_G_jump_to_visible_ends,
+    test_sidebar_t_opens_tab_focus_command,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_sidebar_p_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
