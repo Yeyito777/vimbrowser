@@ -234,10 +234,11 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   folder, or visual range to `/`, `..`, or an autocompleted folder path; `r`
   renames a folder; `e` / `E` reorder the selected sibling; and `x` unwraps a
   folder while retaining its children. Press `v`/`V` to start or clear a
-  contiguous visual selection. `dd`/`DD` confirms deletion of the focused item or
-  visual range; recursive folder deletion closes/destroys all contained tab
-  backends. After deletion or a move out of the current folder, focus stays near
-  the removed visual position and prefers the same pinned/unpinned section
+  contiguous visual selection. `d`/`D` immediately deletes a focused tab or a
+  tab-only visual range; selections containing folders still require `dd`/`DD`
+  because recursive folder deletion closes/destroys all contained tab backends.
+  After deletion or a move out of the current folder, focus stays near the
+  removed visual position and prefers the same pinned/unpinned section
 - tabs currently emitting audio are shown in the sidebar as `◉` before their
   URL; only that status icon is rendered with the theme accent color. When the
   tab sidebar is focused, `[` / `]` move to the previous/next audible tab with

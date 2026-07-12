@@ -1317,17 +1317,15 @@ void BrowserWindow::DeleteSelectedSidebarItems() {
     sidebar_pending_keys_.clear();
     return;
   }
-  if (sidebar_pending_keys_ != "d") {
+  const bool includes_folder =
+      std::any_of(selected_items.begin(), selected_items.end(),
+                  [](const SidebarItemRef& item) {
+                    return item.type == SidebarItemType::kFolder;
+                  });
+  if (includes_folder && sidebar_pending_keys_ != "d") {
     sidebar_pending_keys_ = "d";
     const uint64_t generation = ++sidebar_delete_generation_;
-    const bool includes_folder =
-        std::any_of(selected_items.begin(), selected_items.end(),
-                    [](const SidebarItemRef& item) {
-                      return item.type == SidebarItemType::kFolder;
-                    });
-    SetStatusOutput(includes_folder
-                        ? "press d again to recursively delete selection"
-                        : "press d again to delete selection",
+    SetStatusOutput("press d again to recursively delete selection",
                     kSidebarDeleteConfirmationMs);
     CefRefPtr<BrowserWindow> self = this;
     CefPostDelayedTask(
