@@ -435,6 +435,18 @@ class BrowserWindow final : public CefWindowDelegate,
   void RevealTabInSidebar(size_t index);
   void MoveSidebarSelection(int delta);
   void MoveSidebarSelectionToEdge(bool last);
+  bool ScrollSidebarByKey(char key);
+  size_t SidebarFixedRowCount(
+      const std::vector<SidebarDisplayRow>& rows) const;
+  size_t SidebarViewportRowCapacity(size_t fixed_rows) const;
+  size_t SnapSidebarScrollOffset(
+      const std::vector<SidebarDisplayRow>& rows,
+      size_t fixed_rows,
+      size_t viewport_rows,
+      size_t offset,
+      int direction) const;
+  void EnsureSidebarSelectionVisible(
+      const std::vector<SidebarDisplayRow>& rows);
   void ActivateSidebarItem(const SidebarItemRef& item);
   void EnterSidebarFolder(uint64_t folder_id);
   void LeaveSidebarFolder();
@@ -601,6 +613,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::string sidebar_search_query_;
   SidebarItemRef sidebar_search_saved_item_;
   uint64_t sidebar_search_saved_folder_id_ = 0;
+  size_t sidebar_search_saved_scroll_offset_ = 0;
   std::vector<std::string> open_history_;
   std::map<std::string, std::vector<std::string>> search_history_;
   std::unordered_map<std::string, uint32_t> media_permission_grants_;
@@ -678,6 +691,7 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t current_sidebar_folder_id_ = 0;
   SidebarItemRef sidebar_selected_item_;
   SidebarItemRef sidebar_visual_anchor_;
+  size_t sidebar_scroll_offset_ = 0;
   SidebarPromptContext sidebar_prompt_;
   std::unordered_map<uint64_t, IpcReplyCallback> pending_js_ipc_;
   size_t active_index_ = 0;

@@ -797,6 +797,139 @@ def test_sidebar_gg_and_G_jump_to_visible_ends(h: Harness) -> None:
             "sidebar G did not move selection to the last visible entry", after_G)
 
 
+def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
+    initial_sidebar = h.ipc(["sidebar"])
+    viewport_rows = int(initial_sidebar.get("viewport_rows") or 0)
+    require(viewport_rows >= 4,
+            "sidebar viewport is too short for Ctrl-scroll regression",
+            initial_sidebar)
+
+    # Folders exercise the real sidebar row model without creating dozens of
+    # renderer processes merely to overflow the viewport.
+    for index in range(viewport_rows * 2 + 8):
+        h.ipc(["folder-create", "0", f"scroll-regression-{index:03d}"])
+
+    sidebar = h.ipc(["sidebar"])
+    entries = [row for row in sidebar["rows"] if row["kind"] == "entry"]
+    require(len(entries) > viewport_rows,
+            "sidebar Ctrl-scroll fixture did not overflow the viewport",
+            sidebar)
+
+    def select_entry(index: int) -> None:
+        row = entries[index]
+        h.ipc(["sidebar-select", row["item_type"], str(row["item_id"])])
+
+    def assert_sidebar(expected_index: int, expected_offset: int,
+                       message: str) -> None:
+        current = h.ipc(["sidebar"])
+        expected = entries[expected_index]
+        require(current.get("selected_type") == expected["item_type"] and
+                current.get("selected_id") == expected["item_id"] and
+                current.get("scroll_offset") == expected_offset,
+                message,
+                {"expected": expected,
+                 "expected_offset": expected_offset,
+                 "actual": current})
+
+    select_entry(0)
+    h.ipc(["sidebar-focus", "sidebar"])
+    active_tab = h.ipc(["status"])["active_tabid"]
+
+    # Ctrl+E scrolls the viewport one row and only moves the cursor when its old
+    # row would leave the viewport. Ctrl+Y reverses the viewport movement while
+    # leaving that now-visible cursor on the same buffer row.
+    h.key("ctrl+e", pause=0.2)
+    assert_sidebar(1, 1, "sidebar Ctrl+E was not sticky-cursor line scrolling")
+    h.key("ctrl+y", pause=0.2)
+    assert_sidebar(1, 0, "sidebar Ctrl+Y did not preserve the visible cursor row")
+
+    half_page = viewport_rows // 2
+    select_entry(0)
+    h.key("ctrl+d", pause=0.2)
+    assert_sidebar(half_page, half_page,
+                   "sidebar Ctrl+D did not move cursor and viewport by half a page")
+    h.key("ctrl+u", pause=0.2)
+    assert_sidebar(0, 0,
+                   "sidebar Ctrl+U did not reverse the half-page movement")
+
+    page = viewport_rows - 2
+    select_entry(0)
+    h.key("ctrl+f", pause=0.2)
+    assert_sidebar(page, page,
+                   "sidebar Ctrl+F did not place the cursor at the new page top")
+    h.key("ctrl+b", pause=0.2)
+    assert_sidebar(viewport_rows - 1, 0,
+                   "sidebar Ctrl+B did not place the cursor at the new page bottom")
+
+    # Section labels and separators are display chrome, not cursor-bearing
+    # rows. Drive one-line scrolling directly across the pinned/unpinned split
+    # and verify that both the viewport and selection skip the separator.
+    pinnable = [row for row in entries if row["item_type"] == "folder"][:3]
+    for row in pinnable:
+        h.ipc(["folder-pin", str(row["item_id"]), "on"])
+    divided = h.ipc(["sidebar"])["rows"]
+    last_pinned_index = max(
+        index for index, row in enumerate(divided)
+        if row["kind"] == "entry" and row.get("pinned"))
+    separator_index = next(
+        index for index, row in enumerate(divided)
+        if row["kind"] == "separator")
+    first_unpinned_index = next(
+        index for index in range(separator_index + 1, len(divided))
+        if divided[index]["kind"] == "entry")
+    first_pinned = next(
+        row for row in divided
+        if row["kind"] == "entry" and row.get("pinned"))
+    h.ipc(["sidebar-select", first_pinned["item_type"],
+           str(first_pinned["item_id"])])
+    h.key("ctrl+y", pause=0.1)
+    last_pinned = divided[last_pinned_index]
+    h.ipc(["sidebar-select", last_pinned["item_type"],
+           str(last_pinned["item_id"])])
+    for _ in range(separator_index):
+        h.key("ctrl+e", pause=0.05)
+    crossed = h.ipc(["sidebar"])
+    first_unpinned = divided[first_unpinned_index]
+    require(crossed.get("selected_type") == first_unpinned["item_type"] and
+            crossed.get("selected_id") == first_unpinned["item_id"] and
+            crossed.get("scroll_offset") == first_unpinned_index,
+            "sidebar Ctrl+E landed on pinned-section display chrome",
+            crossed)
+    h.key("ctrl+y", pause=0.2)
+    reversed_split = h.ipc(["sidebar"])
+    require(reversed_split.get("selected_type") == first_unpinned["item_type"] and
+            reversed_split.get("selected_id") == first_unpinned["item_id"] and
+            reversed_split.get("scroll_offset") == last_pinned_index,
+            "sidebar Ctrl+Y did not skip the pinned-section separator",
+            reversed_split)
+
+    # When preserving a cursor near the viewport bottom, Exocortex can
+    # intentionally leave the separator itself at the viewport top. A later
+    # ordinary refresh must clamp visibility only, not re-snap and shift it.
+    h.key("ctrl+e", pause=0.1)
+    preserved_cursor_index = first_unpinned_index + viewport_rows - 2
+    preserved_cursor = divided[preserved_cursor_index]
+    h.ipc(["sidebar-select", preserved_cursor["item_type"],
+           str(preserved_cursor["item_id"])])
+    h.key("ctrl+y", pause=0.1)
+    separator_top = h.ipc(["sidebar"])
+    require(separator_top.get("selected_type") ==
+                preserved_cursor["item_type"] and
+            separator_top.get("selected_id") == preserved_cursor["item_id"] and
+            separator_top.get("scroll_offset") == separator_index,
+            "sidebar Ctrl+Y did not preserve the cursor with separator at top",
+            separator_top)
+    h.ipc(["sidebar-focus", "sidebar"])
+    after_refresh = h.ipc(["sidebar"])
+    require(after_refresh.get("selected_id") == preserved_cursor["item_id"] and
+            after_refresh.get("scroll_offset") == separator_index,
+            "ordinary sidebar refresh re-snapped a valid scroll result",
+            after_refresh)
+
+    require(h.ipc(["status"])["active_tabid"] == active_tab,
+            "sidebar Ctrl-scroll activated a row instead of only selecting it")
+
+
 def test_shift_jk_uses_focused_sidebar_order_inside_folder(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url + "#shift-a"])
     h.ipc(["open-tab", h.initial_url + "#shift-b"])
@@ -1312,6 +1445,7 @@ TESTS = [
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_selection_and_enter_activates,
     test_sidebar_gg_and_G_jump_to_visible_ends,
+    test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_sidebar_p_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
     test_sidebar_dd_uses_visual_focus_and_stays_in_pinned_section,

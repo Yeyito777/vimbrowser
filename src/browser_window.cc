@@ -1417,6 +1417,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
 
 void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
                                           const CefRect& new_bounds) {
+  RefreshSidebar();
   Layout();
 }
 
@@ -1711,6 +1712,16 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 
   if (mode_ != Mode::kNormal) {
     return false;
+  }
+
+  if (focus_area_ == FocusArea::kTabSidebar &&
+      HasOnlyControlModifier(event)) {
+    if (IsCtrlKey(event, 'E')) return ScrollSidebarByKey('E');
+    if (IsCtrlKey(event, 'Y')) return ScrollSidebarByKey('Y');
+    if (IsCtrlKey(event, 'D')) return ScrollSidebarByKey('D');
+    if (IsCtrlKey(event, 'U')) return ScrollSidebarByKey('U');
+    if (IsCtrlKey(event, 'F')) return ScrollSidebarByKey('F');
+    if (IsCtrlKey(event, 'B')) return ScrollSidebarByKey('B');
   }
 
   if (PlainKeyChar(event) == ':') {
@@ -3067,36 +3078,18 @@ bool BrowserWindow::RefreshSidebar() {
 
   EnsureSidebarSelection();
   const std::vector<SidebarDisplayRow> all_rows = BuildSidebarDisplayRows();
+  EnsureSidebarSelectionVisible(all_rows);
   std::vector<SidebarDisplayRow> rendered_rows;
-  rendered_rows.reserve(std::min(all_rows.size(), kSidebarMaxRenderedRows));
-  const size_t fixed_rows =
-      !all_rows.empty() &&
-              all_rows.front().kind == SidebarRowKind::kFolderHeader
-          ? 1
-          : 0;
+  const size_t fixed_rows = SidebarFixedRowCount(all_rows);
+  const size_t viewport_rows = SidebarViewportRowCapacity(fixed_rows);
+  rendered_rows.reserve(std::min(all_rows.size(), fixed_rows + viewport_rows));
   rendered_rows.insert(rendered_rows.end(), all_rows.begin(),
                        all_rows.begin() +
                            static_cast<std::ptrdiff_t>(fixed_rows));
-  const size_t entry_count = all_rows.size() - fixed_rows;
-  const size_t entry_capacity = kSidebarMaxRenderedRows - fixed_rows;
-  size_t selected_entry = 0;
-  for (size_t i = fixed_rows; i < all_rows.size(); ++i) {
-    if (all_rows[i].selected) {
-      selected_entry = i - fixed_rows;
-      break;
-    }
-  }
-  size_t entry_start = 0;
-  size_t capped_entry_count = entry_count;
-  if (entry_count > entry_capacity) {
-    capped_entry_count = entry_capacity;
-    const size_t half_window = entry_capacity / 2;
-    entry_start =
-        selected_entry > half_window ? selected_entry - half_window : 0;
-    if (entry_start + entry_capacity > entry_count) {
-      entry_start = entry_count - entry_capacity;
-    }
-  }
+  const size_t scrollable_rows = all_rows.size() - fixed_rows;
+  const size_t entry_start = std::min(sidebar_scroll_offset_, scrollable_rows);
+  const size_t capped_entry_count =
+      std::min(viewport_rows, scrollable_rows - entry_start);
   rendered_rows.insert(
       rendered_rows.end(),
       all_rows.begin() + static_cast<std::ptrdiff_t>(fixed_rows + entry_start),
@@ -4648,6 +4641,7 @@ void BrowserWindow::SetShowStatusLine(bool visible) {
   show_statusline_ = visible;
   SaveState();
   UpdateStatusBar();
+  RefreshSidebar();
   Layout();
 }
 

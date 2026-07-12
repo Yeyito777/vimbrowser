@@ -303,6 +303,283 @@ void BrowserWindow::MoveSidebarSelectionToEdge(bool last) {
   RefreshSidebar();
 }
 
+size_t BrowserWindow::SidebarFixedRowCount(
+    const std::vector<SidebarDisplayRow>& rows) const {
+  return !rows.empty() && rows.front().kind == SidebarRowKind::kFolderHeader
+             ? 1
+             : 0;
+}
+
+size_t BrowserWindow::SidebarViewportRowCapacity(size_t fixed_rows) const {
+  const int window_height = window_ ? std::max(1, window_->GetBounds().height)
+                                    : 800;
+  const bool bottom_row_reserved = show_statusline_ || IsSidebarSearchMode();
+  const int main_height = std::max(
+      1, window_height - (bottom_row_reserved ? kStatusBarHeight : 0));
+  const size_t total_rows = std::min(
+      kSidebarMaxRenderedRows,
+      static_cast<size_t>(std::max(1, main_height / kSidebarRowHeight)));
+  return total_rows > fixed_rows ? total_rows - fixed_rows : 0;
+}
+
+size_t BrowserWindow::SnapSidebarScrollOffset(
+    const std::vector<SidebarDisplayRow>& rows,
+    size_t fixed_rows,
+    size_t viewport_rows,
+    size_t offset,
+    int direction) const {
+  if (fixed_rows >= rows.size() || viewport_rows == 0) {
+    return 0;
+  }
+
+  const size_t scrollable_rows = rows.size() - fixed_rows;
+  const size_t max_start =
+      scrollable_rows > viewport_rows ? scrollable_rows - viewport_rows : 0;
+  const size_t clamped = std::min(offset, max_start);
+  auto kind_at = [&](size_t row) {
+    return rows[fixed_rows + row].kind;
+  };
+  auto is_section_start = [&](size_t row) {
+    return row < scrollable_rows &&
+           kind_at(row) == SidebarRowKind::kSectionLabel &&
+           row + 1 < scrollable_rows &&
+           kind_at(row + 1) == SidebarRowKind::kEntry;
+  };
+  auto reveal_preceding_label = [&](size_t row) {
+    if (direction < 0 && row > 0 &&
+        kind_at(row) == SidebarRowKind::kEntry &&
+        kind_at(row - 1) == SidebarRowKind::kSectionLabel) {
+      return row - 1;
+    }
+    return row;
+  };
+  auto usable_start = [&](size_t row) -> std::optional<size_t> {
+    if (is_section_start(row)) {
+      return row;
+    }
+    if (kind_at(row) == SidebarRowKind::kEntry) {
+      return reveal_preceding_label(row);
+    }
+    return std::nullopt;
+  };
+
+  if (const std::optional<size_t> current = usable_start(clamped)) {
+    return *current;
+  }
+
+  auto scan = [&](int step) -> std::optional<size_t> {
+    int64_t row = static_cast<int64_t>(clamped) + step;
+    while (row >= 0 && row <= static_cast<int64_t>(max_start)) {
+      if (const std::optional<size_t> candidate =
+              usable_start(static_cast<size_t>(row))) {
+        return candidate;
+      }
+      row += step;
+    }
+    return std::nullopt;
+  };
+
+  if (direction > 0) {
+    if (const std::optional<size_t> down = scan(1)) return *down;
+    if (const std::optional<size_t> up = scan(-1)) return *up;
+  } else if (direction < 0) {
+    if (const std::optional<size_t> up = scan(-1)) return *up;
+    if (const std::optional<size_t> down = scan(1)) return *down;
+  } else {
+    if (const std::optional<size_t> down = scan(1)) return *down;
+    if (const std::optional<size_t> up = scan(-1)) return *up;
+  }
+  return clamped;
+}
+
+void BrowserWindow::EnsureSidebarSelectionVisible(
+    const std::vector<SidebarDisplayRow>& rows) {
+  const size_t fixed_rows = SidebarFixedRowCount(rows);
+  const size_t viewport_rows = SidebarViewportRowCapacity(fixed_rows);
+  if (fixed_rows >= rows.size() || viewport_rows == 0) {
+    sidebar_scroll_offset_ = 0;
+    return;
+  }
+
+  const size_t scrollable_rows = rows.size() - fixed_rows;
+  const size_t max_start =
+      scrollable_rows > viewport_rows ? scrollable_rows - viewport_rows : 0;
+  sidebar_scroll_offset_ = std::min(sidebar_scroll_offset_, max_start);
+
+  const auto selected = std::find_if(
+      rows.begin() + static_cast<std::ptrdiff_t>(fixed_rows), rows.end(),
+      [](const SidebarDisplayRow& row) { return row.selected; });
+  if (selected == rows.end()) {
+    return;
+  }
+
+  const size_t cursor_row = static_cast<size_t>(
+      selected - rows.begin() - static_cast<std::ptrdiff_t>(fixed_rows));
+  if (cursor_row < sidebar_scroll_offset_) {
+    sidebar_scroll_offset_ = cursor_row;
+  } else if (cursor_row >= sidebar_scroll_offset_ + viewport_rows) {
+    sidebar_scroll_offset_ = cursor_row - viewport_rows + 1;
+  }
+}
+
+// Match Exocortex's cursor-aware Ctrl+E/Y/D/U/F/B sidebar behavior: line
+// scrolling keeps the selected buffer row sticky until it reaches an edge,
+// half-page scrolling moves viewport and selection together, and page scrolling
+// places the selection at the entering page's top/bottom edge. Display-only
+// section labels and separators never become selected.
+bool BrowserWindow::ScrollSidebarByKey(char key) {
+  EnsureSidebarSelection();
+  const std::vector<SidebarDisplayRow> rows = BuildSidebarDisplayRows();
+  const size_t fixed_rows = SidebarFixedRowCount(rows);
+  const size_t viewport_rows = SidebarViewportRowCapacity(fixed_rows);
+  if (fixed_rows >= rows.size() || viewport_rows == 0) {
+    return true;
+  }
+
+  const size_t total_rows = rows.size() - fixed_rows;
+  const size_t max_start =
+      total_rows > viewport_rows ? total_rows - viewport_rows : 0;
+  const auto selected = std::find_if(
+      rows.begin() + static_cast<std::ptrdiff_t>(fixed_rows), rows.end(),
+      [](const SidebarDisplayRow& row) { return row.selected; });
+  if (selected == rows.end()) {
+    return true;
+  }
+
+  const size_t current_cursor = static_cast<size_t>(
+      selected - rows.begin() - static_cast<std::ptrdiff_t>(fixed_rows));
+  const size_t current_start = std::min(sidebar_scroll_offset_, max_start);
+  int direction = 0;  // Positive scrolls toward later rows.
+  int64_t next_start = static_cast<int64_t>(current_start);
+  int64_t next_cursor = static_cast<int64_t>(current_cursor);
+  bool place_cursor_at_top = false;
+  bool place_cursor_at_bottom = false;
+
+  switch (key) {
+    case 'E':
+      direction = 1;
+      ++next_start;
+      break;
+    case 'Y':
+      direction = -1;
+      --next_start;
+      break;
+    case 'D': {
+      direction = 1;
+      const size_t amount = viewport_rows / 2;
+      next_start += static_cast<int64_t>(amount);
+      next_cursor += static_cast<int64_t>(amount);
+      break;
+    }
+    case 'U': {
+      direction = -1;
+      const size_t amount = viewport_rows / 2;
+      next_start -= static_cast<int64_t>(amount);
+      next_cursor -= static_cast<int64_t>(amount);
+      break;
+    }
+    case 'F': {
+      direction = 1;
+      const size_t amount = viewport_rows > 2 ? viewport_rows - 2 : 1;
+      next_start += static_cast<int64_t>(amount);
+      place_cursor_at_top = true;
+      break;
+    }
+    case 'B': {
+      direction = -1;
+      const size_t amount = viewport_rows > 2 ? viewport_rows - 2 : 1;
+      next_start -= static_cast<int64_t>(amount);
+      place_cursor_at_bottom = true;
+      break;
+    }
+    default:
+      return false;
+  }
+
+  next_start = std::clamp<int64_t>(next_start, 0,
+                                   static_cast<int64_t>(max_start));
+  next_cursor = std::clamp<int64_t>(next_cursor, 0,
+                                    static_cast<int64_t>(total_rows - 1));
+  if (key == 'E' || key == 'Y') {
+    const int64_t view_end =
+        next_start + static_cast<int64_t>(viewport_rows) - 1;
+    next_cursor = std::clamp(next_cursor, next_start, view_end);
+    next_cursor = std::min<int64_t>(next_cursor,
+                                    static_cast<int64_t>(total_rows - 1));
+  }
+
+  const size_t snapped_start = SnapSidebarScrollOffset(
+      rows, fixed_rows, viewport_rows, static_cast<size_t>(next_start),
+      direction);
+  if (place_cursor_at_top) {
+    next_cursor = static_cast<int64_t>(snapped_start);
+  } else if (place_cursor_at_bottom) {
+    next_cursor = std::min<int64_t>(
+        static_cast<int64_t>(total_rows - 1),
+        static_cast<int64_t>(snapped_start + viewport_rows - 1));
+  }
+
+  auto row_kind = [&](size_t row) {
+    return rows[fixed_rows + row].kind;
+  };
+  auto nearest_entry = [&](size_t target,
+                           int preferred_step) -> std::optional<size_t> {
+    target = std::min(target, total_rows - 1);
+    if (row_kind(target) == SidebarRowKind::kEntry) {
+      return target;
+    }
+    auto scan = [&](int step) -> std::optional<size_t> {
+      int64_t row = static_cast<int64_t>(target) + step;
+      while (row >= 0 && row < static_cast<int64_t>(total_rows)) {
+        if (row_kind(static_cast<size_t>(row)) == SidebarRowKind::kEntry) {
+          return static_cast<size_t>(row);
+        }
+        row += step;
+      }
+      return std::nullopt;
+    };
+    if (preferred_step < 0) {
+      if (const std::optional<size_t> before = scan(-1)) return before;
+      return scan(1);
+    }
+    if (const std::optional<size_t> after = scan(1)) return after;
+    return scan(-1);
+  };
+
+  const size_t target_row = static_cast<size_t>(next_cursor);
+  const int preferred_step = target_row < current_cursor
+                                 ? -1
+                                 : target_row > current_cursor ? 1 : 0;
+  const std::optional<size_t> target =
+      nearest_entry(target_row, preferred_step);
+  if (!target) {
+    return true;
+  }
+  sidebar_selected_item_ = rows[fixed_rows + *target].item;
+
+  size_t final_start = snapped_start;
+  if (direction > 0 && current_start < total_rows &&
+      row_kind(current_start) == SidebarRowKind::kSectionLabel &&
+      current_cursor > current_start &&
+      current_cursor < current_start + viewport_rows) {
+    const size_t previous_selectable_slot =
+        current_cursor - current_start - 1;
+    final_start = *target > previous_selectable_slot
+                      ? *target - previous_selectable_slot
+                      : 0;
+    final_start = std::min(final_start, max_start);
+  }
+  if (*target < final_start) {
+    final_start = *target;
+  } else if (*target >= final_start + viewport_rows) {
+    final_start = *target - viewport_rows + 1;
+  }
+  sidebar_scroll_offset_ = std::min(final_start, max_start);
+  sidebar_pending_keys_.clear();
+  RefreshSidebar();
+  return true;
+}
+
 void BrowserWindow::ActivateSidebarItem(const SidebarItemRef& item) {
   sidebar_selected_item_ = item;
   if (item.type == SidebarItemType::kParent) {
@@ -575,6 +852,7 @@ BrowserWindow::FindSidebarSearchMatch(const std::string& query,
 void BrowserWindow::BeginSidebarSearch(bool forward) {
   sidebar_search_saved_item_ = sidebar_selected_item_;
   sidebar_search_saved_folder_id_ = current_sidebar_folder_id_;
+  sidebar_search_saved_scroll_offset_ = sidebar_scroll_offset_;
   sidebar_search_forward_ = forward;
   sidebar_visual_anchor_ = {};
   BeginCommandText(forward ? "/" : "?");
@@ -590,6 +868,7 @@ void BrowserWindow::RestoreSidebarSearchOrigin() {
           ? sidebar_search_saved_folder_id_
           : 0;
   sidebar_selected_item_ = sidebar_search_saved_item_;
+  sidebar_scroll_offset_ = sidebar_search_saved_scroll_offset_;
   EnsureSidebarSelection();
 }
 
@@ -1653,6 +1932,11 @@ std::string BrowserWindow::SidebarJson() const {
   append_item_type(out, sidebar_selected_item_.type);
   out += ",\"selected_id\":";
   AppendJsonNumber(out, sidebar_selected_item_.id);
+  out += ",\"scroll_offset\":";
+  AppendJsonNumber(out, sidebar_scroll_offset_);
+  out += ",\"viewport_rows\":";
+  AppendJsonNumber(out, SidebarViewportRowCapacity(
+                            SidebarFixedRowCount(rows)));
   out += ",\"search_bar_open\":";
   AppendJsonBool(out, IsSidebarSearchMode());
   out += ",\"search_filter_active\":";
