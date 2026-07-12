@@ -994,48 +994,45 @@ def test_shift_jk_uses_focused_sidebar_order_inside_folder(h: Harness) -> None:
     h.ipc(["folder-delete", str(container["id"]), "recursive"])
 
 
-def test_sidebar_dd_uses_visual_focus_and_stays_in_pinned_section(h: Harness) -> None:
-    for suffix in ("pinned", "target", "below"):
+def test_sidebar_d_focuses_next_visible_tab(h: Harness) -> None:
+    for suffix in ("pinned", "above", "target", "below"):
         h.ipc(["open-tab", h.initial_url + "#delete-" + suffix])
     tabs = h.ipc(["tabs"])["tabs"]
-    pinned, target, below = tabs[-3:]
+    pinned, above, target, below = tabs[-4:]
     folder_reply = h.ipc(["folder-create", "0", "Delete focus container"])
     container = max(folder_reply["folders"], key=lambda item: item["id"])
-    for tab in (pinned, target, below):
+    for tab in (pinned, above, target, below):
         h.ipc(["tab-folder", str(tab["id"]), str(container["id"])])
     h.ipc(["tab-pin", str(pinned["id"]), "on"])
     h.ipc(["sidebar-select", "tab", str(target["id"])])
     h.ipc(["sidebar-focus", "sidebar"])
 
+    # A tab does not need the recursive-folder confirmation. Deleting a middle
+    # row must keep the cursor at that visual position by selecting the row that
+    # was below it, even though another unpinned row also survives above it.
     count_before = len(h.ipc(["tabs"])["tabs"])
-    h.key("d", pause=0.15)
-    after_first_d = h.ipc(["status"])
-    require(len(h.ipc(["tabs"])["tabs"]) == count_before and
-            after_first_d.get("sidebar_selected_id") == target["id"],
-            "first sidebar d did not leave the focused tab pending confirmation",
-            after_first_d)
-
     h.key("d", pause=0.25)
-    after_dd = h.ipc(["status"])
+    after_d = h.ipc(["status"])
     remaining_ids = {tab["id"] for tab in h.ipc(["tabs"])["tabs"]}
-    require(target["id"] not in remaining_ids and
-            after_dd.get("current_folder_id") == container["id"] and
-            after_dd.get("sidebar_selected_type") == "tab" and
-            after_dd.get("sidebar_selected_id") == below["id"],
-            "sidebar dd did not choose the nearby row in the same unpinned section",
-            after_dd)
+    require(len(remaining_ids) == count_before - 1 and
+            target["id"] not in remaining_ids and
+            after_d.get("current_folder_id") == container["id"] and
+            after_d.get("sidebar_selected_type") == "tab" and
+            after_d.get("sidebar_selected_id") == below["id"],
+            "sidebar d did not focus the next visible tab",
+            after_d)
 
-    # The remaining unpinned row is the active page. Deleting it should use the
-    # same visible-focus fallback, rather than jumping to an unrelated vector
-    # neighbor outside this folder.
-    h.key("d", "d", pause=0.25)
-    after_active_dd = h.ipc(["status"])
-    require(after_active_dd.get("current_folder_id") == container["id"] and
-            after_active_dd.get("active_tabid") == pinned["id"] and
-            after_active_dd.get("sidebar_selected_type") == "tab" and
-            after_active_dd.get("sidebar_selected_id") == pinned["id"],
-            "deleting the active focused tab did not activate the visual fallback",
-            after_active_dd)
+    # The selected next row is the active page. When it is the section's final
+    # row, deletion should fall back upward within that section instead of
+    # crossing the pinned divider.
+    h.key("d", pause=0.25)
+    after_active_d = h.ipc(["status"])
+    require(after_active_d.get("current_folder_id") == container["id"] and
+            after_active_d.get("active_tabid") == above["id"] and
+            after_active_d.get("sidebar_selected_type") == "tab" and
+            after_active_d.get("sidebar_selected_id") == above["id"],
+            "deleting the final row did not use the same-section fallback",
+            after_active_d)
 
     h.ipc(["folder-delete", str(container["id"]), "recursive"])
 
@@ -1468,7 +1465,7 @@ TESTS = [
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_sidebar_p_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
-    test_sidebar_dd_uses_visual_focus_and_stays_in_pinned_section,
+    test_sidebar_d_focuses_next_visible_tab,
     test_sidebar_keybinds_do_not_type,
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,

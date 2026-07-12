@@ -1035,20 +1035,25 @@ BrowserWindow::SidebarFocusTargetAfterRemovingItems(
   }
 
   const size_t split = std::min(removed_index, after.size());
-  for (size_t i = split; i > 0; --i) {
-    if (after[i - 1].pinned == removed_section) {
-      return after[i - 1].item;
-    }
-  }
+  // Keep the cursor at the removed block's display position by preferring the
+  // next row. This matches Exocortex-style list removal: repeated `d` walks
+  // down through the sidebar instead of jumping back to the preceding tab.
+  // Stay within the pinned/unpinned section whenever that section still has a
+  // survivor; only cross the divider as a final fallback.
   for (size_t i = split; i < after.size(); ++i) {
     if (after[i].pinned == removed_section) {
       return after[i].item;
     }
   }
-  if (split > 0) {
-    return after[split - 1].item;
+  for (size_t i = split; i > 0; --i) {
+    if (after[i - 1].pinned == removed_section) {
+      return after[i - 1].item;
+    }
   }
-  return after.front().item;
+  if (split < after.size()) {
+    return after[split].item;
+  }
+  return after.back().item;
 }
 
 void BrowserWindow::BeginCreateFolderPrompt() {
