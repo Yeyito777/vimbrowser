@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "browser_client.h"
+#include "include/cef_request_context.h"
 #include "include/views/cef_box_layout.h"
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_button_delegate.h"
@@ -61,7 +62,8 @@ class BrowserWindow final : public CefWindowDelegate,
                 bool show_statusline,
                 bool shader_enabled,
                 std::string state_path,
-                std::string dwm_save_argv);
+                std::string dwm_save_argv,
+                std::string root_cache_path);
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
@@ -80,6 +82,9 @@ class BrowserWindow final : public CefWindowDelegate,
                            const std::string& target_url,
                            bool activate);
   void OnClientBeforePopupAborted(BrowserClient* client, int popup_id);
+  void OnNamedRequestContextInitialized(
+      std::string context_name,
+      CefRefPtr<CefRequestContext> request_context);
   bool RunNativeContextMenu(
       BrowserClient* client,
       CefRefPtr<CefBrowser> browser,
@@ -269,6 +274,7 @@ class BrowserWindow final : public CefWindowDelegate,
     bool activate = true;
     uint64_t opener_tab_id = 0;
     bool insert_after_opener = false;
+    std::string context;
   };
 
   struct MediaPermissionRequest {
@@ -320,7 +326,9 @@ class BrowserWindow final : public CefWindowDelegate,
  private:
   void BuildChrome();
   void RegisterDwmSaveArgv();
-  void AddTab(std::string url, bool activate);
+  void AddTab(std::string url,
+              bool activate,
+              std::string context_name = {});
   void AddTabAfterActive(std::string url, bool activate);
   void InsertTab(std::string url,
                  size_t index,
@@ -328,7 +336,14 @@ class BrowserWindow final : public CefWindowDelegate,
                  bool defer_load = false,
                  uint64_t folder_id = 0,
                  uint64_t sidebar_sort_order = 0,
-                 bool pinned = false);
+                 bool pinned = false,
+                 std::string context_name = {});
+  bool AddContextTab(std::string context_name,
+                     std::string url,
+                     std::string* error);
+  CefRefPtr<CefRequestContext> RequestContextForName(
+      const std::string& context_name,
+      std::string* error = nullptr);
   bool EnsureTabBrowser(size_t index, bool load_deferred_now);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
@@ -336,7 +351,8 @@ class BrowserWindow final : public CefWindowDelegate,
                       size_t index,
                       bool activate,
                       uint64_t folder_id,
-                      uint64_t sidebar_sort_order);
+                      uint64_t sidebar_sort_order,
+                      std::string context_name);
   void ActivateTab(size_t index);
   void UpdateClientUrl(BrowserClient* client,
                        const std::string& url,
@@ -606,6 +622,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::vector<bool> initial_tab_pinned_;
   std::string state_path_;
   std::string dwm_save_argv_;
+  std::string root_cache_path_;
   size_t initial_active_index_ = 0;
   std::string command_text_;
   std::string status_output_text_;
@@ -618,6 +635,9 @@ class BrowserWindow final : public CefWindowDelegate,
   std::map<std::string, std::vector<std::string>> search_history_;
   std::unordered_map<std::string, uint32_t> media_permission_grants_;
   std::unordered_map<std::string, uint32_t> media_permission_denials_;
+  std::unordered_map<std::string, CefRefPtr<CefRequestContext>>
+      request_contexts_;
+  std::unordered_set<std::string> initialized_request_contexts_;
   std::string website_pending_keys_;
   std::string sidebar_pending_keys_;
   std::vector<ClosedTab> closed_tabs_;

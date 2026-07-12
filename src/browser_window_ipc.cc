@@ -678,6 +678,12 @@ void BrowserWindow::AppendTabJson(std::string& out,
     AppendJsonNumber(out, tab.sidebar_sort_order);
     out += ",\"pinned\":";
     AppendJsonBool(out, tab.pinned);
+    out += ",\"context\":";
+    if (tab.context.empty()) {
+      out += "null";
+    } else {
+      AppendJsonString(out, tab.context);
+    }
     out += ",\"url\":";
     out += tab.url_json;
     out += ",\"title\":\"\",\"loading\":false,\"can_go_back\":false,"
@@ -740,6 +746,12 @@ void BrowserWindow::AppendTabJson(std::string& out,
   AppendJsonNumber(out, tab.sidebar_sort_order);
   out += ",\"pinned\":";
   AppendJsonBool(out, tab.pinned);
+  out += ",\"context\":";
+  if (tab.context.empty()) {
+    out += "null";
+  } else {
+    AppendJsonString(out, tab.context);
+  }
   out += ",\"url\":";
   if (!tab.url.empty()) {
     out += tab.url_json;
@@ -1247,6 +1259,19 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     AddTab(url, true);
     return IpcStatusJson();
   }
+  if (command == "open-context-tab") {
+    if (argv.size() < 3) {
+      return "ERR usage: open-context-tab <context-name> <url-or-query>\n";
+    }
+    const std::string text = JoinArgs(argv, 2);
+    const std::string url = ResolveUrlOrSearch(text);
+    std::string error;
+    if (!AddContextTab(argv[1], url, &error)) {
+      return error;
+    }
+    RecordOpenHistory(text);
+    return IpcStatusJson();
+  }
   if (command == "open") {
     if (argv.size() < 3) {
       return "ERR usage: open <tabid> <url-or-query>\n";
@@ -1480,6 +1505,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  tab-delete <tabid>\n"
            "  tab-order <tabid> <zero-based-index>\n"
            "  open-tab <url-or-query>\n"
+           "  open-context-tab <context-name> <url-or-query>\n"
            "  open <tabid> <url-or-query>\n"
            "  reload [tabid]\n"
            "  reload-ignore-cache [tabid]\n"
@@ -1716,10 +1742,12 @@ std::string BrowserWindow::IpcStatusJson() const {
   double refresh_rate = 0.0;
   std::string url;
   std::string title;
+  std::string context;
   bool audible = false;
   if (!tabs_.empty() && active_index_ < tabs_.size()) {
     const Tab& tab = tabs_[active_index_];
     url = tab.url;
+    context = tab.context;
     audible = tab.audible;
     if (tab.client) {
       fps_has_sample = tab.client->fps_has_sample();
@@ -1772,6 +1800,12 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonString(out, url);
   out += ",\"title\":";
   AppendJsonString(out, title);
+  out += ",\"context\":";
+  if (context.empty()) {
+    out += "null";
+  } else {
+    AppendJsonString(out, context);
+  }
   out += ",\"audible\":";
   AppendJsonBool(out, audible);
   out += ",\"showfps\":";

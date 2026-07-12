@@ -242,13 +242,15 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              bool show_statusline,
                              bool shader_enabled,
                              std::string state_path,
-                             std::string dwm_save_argv)
+                             std::string dwm_save_argv,
+                             std::string root_cache_path)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
+      root_cache_path_(std::move(root_cache_path)),
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
@@ -480,10 +482,10 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
                                         int popup_id,
                                         const std::string& target_url,
                                         bool activate) {
-  const bool source_owned = std::any_of(
+  const auto source = std::find_if(
       tabs_.begin(), tabs_.end(),
       [client](const Tab& tab) { return tab.client.get() == client; });
-  if (!source_owned) {
+  if (source == tabs_.end()) {
     // Unknown popups should never escape into CEF-owned top-level windows.
     return true;
   }
@@ -491,6 +493,7 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
   const bool hint_open_tab = native_hints_active_ && ActiveTab() &&
                              ActiveTab()->client.get() == client;
   const uint64_t opener_tab_id = hint_open_tab ? ActiveTab()->id : 0;
+  const std::string source_context = source->context;
 
   if (!popup_client) {
     if (target_url.empty()) {
@@ -500,7 +503,7 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
     if (hint_open_tab) {
       AddTabAfterActive(target_url, activate);
     } else {
-      AddTab(target_url, activate);
+      AddTab(target_url, activate, source_context);
     }
     UpdateModeIndicator();
     return true;
@@ -508,7 +511,7 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
 
   pending_popups_.push_back(
       {popup_client, popup_id, target_url, activate, opener_tab_id,
-       hint_open_tab});
+       hint_open_tab, source_context});
   return false;
 }
 
@@ -628,6 +631,7 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
   const bool activate = pending->activate;
   const bool insert_after_opener = pending->insert_after_opener;
   const uint64_t opener_tab_id = pending->opener_tab_id;
+  std::string popup_context = pending->context;
   CefRefPtr<BrowserClient> retained_popup_client = pending->client;
   pending_popups_.erase(pending);
 
@@ -659,7 +663,8 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
     }
   }
   InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
-                 insert_index, activate, popup_folder_id, popup_sort_order);
+                 insert_index, activate, popup_folder_id, popup_sort_order,
+                 std::move(popup_context));
   UpdateModeIndicator();
   return true;
 }
@@ -1819,7 +1824,8 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
           InsertTab(tabs_[*index].url, *index + 1, true, false,
                     tabs_[*index].folder_id,
                     SidebarSortOrderAfterItem(
-                        {SidebarItemType::kTab, tabs_[*index].id}));
+                        {SidebarItemType::kTab, tabs_[*index].id}),
+                    false, tabs_[*index].context);
         }
       }
       return true;
@@ -4674,7 +4680,11 @@ void BrowserWindow::BroadcastShaderState() {
 
 void BrowserWindow::SaveState() const {
   AppState state;
-  state.active_index = active_index_;
+  // Named request-context tabs are intentionally transient shell state. Their
+  // request-context data remains persistent on disk, but excluding the tabs
+  // from this URL-only state format makes it impossible to restore one in the
+  // default context after restart.
+  state.active_index = 0;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
   state.show_statusline = show_statusline_;
@@ -4693,8 +4703,12 @@ void BrowserWindow::SaveState() const {
                                      folder.sort_order, folder.name,
                                      folder.pinned});
   }
-  for (const Tab& tab : tabs_) {
-    if (!tab.url.empty()) {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    const Tab& tab = tabs_[i];
+    if (tab.context.empty() && !tab.url.empty()) {
+      if (i <= active_index_) {
+        state.active_index = state.tabs.size();
+      }
       state.tabs.push_back(tab.url);
       state.tab_folder_ids.push_back(tab.folder_id);
       state.tab_sort_orders.push_back(tab.sidebar_sort_order);

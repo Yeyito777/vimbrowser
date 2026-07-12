@@ -224,6 +224,7 @@ App::App(std::vector<std::string> initial_urls,
          bool shader_enabled,
          std::string state_path,
          std::string dwm_save_argv,
+         std::string root_cache_path,
          bool disable_gpu)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
@@ -236,6 +237,7 @@ App::App(std::vector<std::string> initial_urls,
       shader_enabled_(shader_enabled),
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
+      root_cache_path_(std::move(root_cache_path)),
       disable_gpu_(disable_gpu) {}
 
 void App::OnBeforeCommandLineProcessing(
@@ -293,7 +295,8 @@ void App::OnContextInitialized() {
                                                     show_fps_indicator_,
                                                     show_statusline_,
                                                     shader_enabled_, state_path_,
-                                                    dwm_save_argv_));
+                                                    dwm_save_argv_,
+                                                    root_cache_path_));
   window->Create();
 }
 

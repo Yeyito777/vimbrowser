@@ -3,6 +3,7 @@
 #include "browser_window_internal.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -12,14 +13,41 @@
 #include "config.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
+#include "include/cef_request_context_handler.h"
 #include "include/views/cef_browser_view.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "theme.h"
 
 namespace vimbrowser {
+namespace {
 
-void BrowserWindow::AddTab(std::string url, bool activate) {
-  InsertTab(std::move(url), tabs_.size(), activate, false, NewTabFolderId());
+class NamedRequestContextHandler final : public CefRequestContextHandler {
+ public:
+  NamedRequestContextHandler(BrowserWindow* owner, std::string context_name)
+      : owner_(owner), context_name_(std::move(context_name)) {}
+
+  void OnRequestContextInitialized(
+      CefRefPtr<CefRequestContext> request_context) override {
+    if (owner_) {
+      owner_->OnNamedRequestContextInitialized(context_name_, request_context);
+    }
+  }
+
+ private:
+  BrowserWindow* owner_;
+  const std::string context_name_;
+
+  IMPLEMENT_REFCOUNTING(NamedRequestContextHandler);
+  DISALLOW_COPY_AND_ASSIGN(NamedRequestContextHandler);
+};
+
+}  // namespace
+
+void BrowserWindow::AddTab(std::string url,
+                           bool activate,
+                           std::string context_name) {
+  InsertTab(std::move(url), tabs_.size(), activate, false, NewTabFolderId(), 0,
+            false, std::move(context_name));
 }
 
 void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
@@ -27,13 +55,17 @@ void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
       active_index_ < tabs_.size() ? active_index_ + 1 : tabs_.size();
   const uint64_t folder_id = NewTabFolderId();
   uint64_t sort_order = 0;
+  std::string context_name;
   if (active_index_ < tabs_.size() &&
       tabs_[active_index_].folder_id == folder_id) {
     sort_order = SidebarSortOrderAfterItem(
         {SidebarItemType::kTab, tabs_[active_index_].id});
   }
+  if (active_index_ < tabs_.size()) {
+    context_name = tabs_[active_index_].context;
+  }
   InsertTab(std::move(url), insert_index, activate, false, folder_id,
-            sort_order);
+            sort_order, false, std::move(context_name));
 }
 
 void BrowserWindow::InsertTab(std::string url,
@@ -42,7 +74,8 @@ void BrowserWindow::InsertTab(std::string url,
                               bool defer_load,
                               uint64_t folder_id,
                               uint64_t sidebar_sort_order,
-                              bool pinned) {
+                              bool pinned,
+                              std::string context_name) {
   last_tab_close_placeholder_ = false;
   const size_t insert_index = std::min(index, tabs_.size());
   const bool deferred_load = defer_load && !activate;
@@ -50,6 +83,7 @@ void BrowserWindow::InsertTab(std::string url,
   Tab tab;
   SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
+  tab.context = std::move(context_name);
   tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;
   tab.sidebar_sort_order = sidebar_sort_order != 0
                                ? sidebar_sort_order
@@ -92,6 +126,89 @@ void BrowserWindow::InsertTab(std::string url,
   }
 }
 
+bool BrowserWindow::AddContextTab(std::string context_name,
+                                  std::string url,
+                                  std::string* error) {
+  if (!RequestContextForName(context_name, error)) {
+    return false;
+  }
+  AddTab(std::move(url), true, std::move(context_name));
+  return true;
+}
+
+CefRefPtr<CefRequestContext> BrowserWindow::RequestContextForName(
+    const std::string& context_name,
+    std::string* error) {
+  if (context_name.empty()) {
+    return CefRequestContext::GetGlobalContext();
+  }
+  if (!IsValidRequestContextName(context_name)) {
+    if (error) {
+      *error = "ERR invalid context name (use 1-48 lowercase letters, digits, '-' or '_'; first character must be alphanumeric)\n";
+    }
+    return nullptr;
+  }
+  if (const auto existing = request_contexts_.find(context_name);
+      existing != request_contexts_.end()) {
+    return existing->second;
+  }
+  if (root_cache_path_.empty()) {
+    if (error) {
+      *error = "ERR CEF root cache path is not configured\n";
+    }
+    return nullptr;
+  }
+
+  // Chrome-runtime CEF requires every disk-backed request context to be an
+  // immediate child of root_cache_path (ChromeBrowserContext rejects deeper
+  // profile paths). Keep the deterministic name grouped with a contexts- prefix.
+  const std::filesystem::path context_path =
+      std::filesystem::path(root_cache_path_) / ("contexts-" + context_name);
+  std::error_code ec;
+  std::filesystem::create_directories(context_path, ec);
+  if (ec) {
+    if (error) {
+      *error = "ERR failed to create context cache directory\n";
+    }
+    return nullptr;
+  }
+
+  CefRequestContextSettings settings;
+  CefString(&settings.cache_path) = context_path.string();
+  settings.persist_session_cookies = true;
+  CefRefPtr<CefRequestContext> context =
+      CefRequestContext::CreateContext(
+          settings, new NamedRequestContextHandler(this, context_name));
+  if (!context) {
+    if (error) {
+      *error = "ERR failed to create request context\n";
+    }
+    return nullptr;
+  }
+  request_contexts_.emplace(context_name, context);
+  return context;
+}
+
+void BrowserWindow::OnNamedRequestContextInitialized(
+    std::string context_name,
+    CefRefPtr<CefRequestContext> request_context) {
+  if (!request_context || !IsValidRequestContextName(context_name)) {
+    return;
+  }
+  request_contexts_.insert_or_assign(context_name, request_context);
+  initialized_request_contexts_.insert(context_name);
+
+  // Disk-backed contexts initialize asynchronously. Materialize every tab that
+  // was queued while the profile loaded, then rerun active-view selection so an
+  // active context tab becomes visible and focused.
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].context == context_name && !tabs_[i].view) {
+      EnsureTabBrowser(i, false);
+    }
+  }
+  ScheduleActiveBrowserSync();
+}
+
 bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
   if (!content_inner_panel_ || index >= tabs_.size()) {
     return false;
@@ -112,6 +229,22 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
   ApplyBrowserFontSettings(browser_settings);
   ++tab_client_count_;
   tab.client = new BrowserClient(this);
+  std::string context_error;
+  CefRefPtr<CefRequestContext> request_context =
+      tab.context.empty() ? nullptr
+                          : RequestContextForName(tab.context, &context_error);
+  if (!tab.context.empty() && !request_context) {
+    std::cerr << "vimbrowser: " << context_error;
+    tab.client = nullptr;
+    --tab_client_count_;
+    return false;
+  }
+  if (!tab.context.empty() &&
+      !initialized_request_contexts_.contains(tab.context)) {
+    tab.client = nullptr;
+    --tab_client_count_;
+    return false;
+  }
   const std::string browser_url = load_deferred_now && tab.deferred_load
                                       ? tab.url
                                       : (tab.deferred_load ? "about:blank"
@@ -121,7 +254,12 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
   }
   tab.view = CefBrowserView::CreateBrowserView(tab.client, browser_url,
                                                browser_settings, nullptr,
-                                               nullptr, this);
+                                               request_context, this);
+  if (!tab.view) {
+    tab.client = nullptr;
+    --tab_client_count_;
+    return false;
+  }
   tab.view->SetPreferAccelerators(true);
   tab.view->SetVisible(false);
   content_inner_panel_->AddChildView(tab.view);
@@ -134,7 +272,8 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                                    size_t index,
                                    bool activate,
                                    uint64_t folder_id,
-                                   uint64_t sidebar_sort_order) {
+                                   uint64_t sidebar_sort_order,
+                                   std::string context_name) {
   if (!popup_browser_view || !popup_client) {
     return;
   }
@@ -144,6 +283,7 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   Tab tab;
   SetTabId(tab, next_tab_id_++);
   SetTabUrl(tab, std::move(url));
+  tab.context = std::move(context_name);
   tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;
   tab.sidebar_sort_order = sidebar_sort_order != 0
                                ? sidebar_sort_order
@@ -448,7 +588,8 @@ bool BrowserWindow::MoveTabToIndex(size_t from, size_t to) {
 void BrowserWindow::CloneActiveTab() {
   const std::string url = ActiveTabUrl();
   if (!url.empty()) {
-    AddTab(url, true);
+    const std::string context = ActiveTab() ? ActiveTab()->context : std::string();
+    AddTab(url, true, context);
   }
 }
 
@@ -490,7 +631,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
             << " index=" << (closing + 1)
             << " count=" << tabs_.size() << " url=" << closing_url
             << std::endl;
-  if (!closing_url.empty()) {
+  if (!closing_url.empty() && tabs_[closing].context.empty()) {
     closed_tabs_.push_back({closing_url, closing, tabs_[closing].folder_id,
                             tabs_[closing].sidebar_sort_order,
                             tabs_[closing].pinned});
@@ -647,7 +788,7 @@ void BrowserWindow::CloseTabsInDeletedSidebarFolders(
     if (!folder_ids.contains(tabs_[index].folder_id)) {
       continue;
     }
-    if (!tabs_[index].url.empty()) {
+    if (!tabs_[index].url.empty() && tabs_[index].context.empty()) {
       closed_tabs_.push_back({tabs_[index].url, index, tabs_[index].folder_id,
                               tabs_[index].sidebar_sort_order,
                               tabs_[index].pinned});

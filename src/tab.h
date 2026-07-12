@@ -13,6 +13,9 @@ struct Tab {
   std::string id_json;
   std::string url;
   std::string url_json;
+  // Empty means the global/default request context. Non-empty names identify
+  // persistent, isolated contexts rooted below the configured CEF cache root.
+  std::string context;
   uint64_t folder_id = 0;
   uint64_t sidebar_sort_order = 0;
   bool pinned = false;

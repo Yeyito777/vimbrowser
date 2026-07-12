@@ -820,6 +820,20 @@ void SetTabId(Tab& tab, uint64_t id) {
   AppendJsonNumber(tab.id_json, tab.id);
 }
 
+bool IsValidRequestContextName(std::string_view name) {
+  // Context names are also suffixes of profile directories below the CEF cache
+  // root. Keep the accepted grammar deliberately smaller than a generic path.
+  const auto is_lower = [](char c) { return c >= 'a' && c <= 'z'; };
+  const auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+  if (name.empty() || name.size() > 48 ||
+      (!is_lower(name.front()) && !is_digit(name.front()))) {
+    return false;
+  }
+  return std::all_of(name.begin(), name.end(), [&](char c) {
+    return is_lower(c) || is_digit(c) || c == '-' || c == '_';
+  });
+}
+
 std::string IpcSocketPathForStatePath(const std::string& state_path) {
   std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
   if (dir.empty()) {
@@ -876,6 +890,7 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"tab-delete", "tab-delete <tabid>", "delete a tab by stable id and destroy its backend", "json"},
       {"tab-order", "tab-order <tabid> <index>", "move tab to zero-based index", "json"},
       {"open-tab", "open-tab <url-or-query>", "open url/query in a new active tab", "json"},
+      {"open-context-tab", "open-context-tab <context-name> <url-or-query>", "open a transient tab in a named persistent isolated request context", "json"},
       {"open", "open <tabid> <url-or-query>", "load url/query in an existing tab", "json"},
       {"reload", "reload [tabid]", "reload a tab", "json"},
       {"reload-ignore-cache", "reload-ignore-cache [tabid]", "hard reload a tab", "json"},

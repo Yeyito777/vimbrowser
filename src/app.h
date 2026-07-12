@@ -25,6 +25,7 @@ class App final : public CefApp,
       bool shader_enabled,
       std::string state_path,
       std::string dwm_save_argv,
+      std::string root_cache_path,
       bool disable_gpu);
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
@@ -61,6 +62,7 @@ class App final : public CefApp,
   bool shader_enabled_;
   std::string state_path_;
   std::string dwm_save_argv_;
+  std::string root_cache_path_;
   bool disable_gpu_;
 
   IMPLEMENT_REFCOUNTING(App);

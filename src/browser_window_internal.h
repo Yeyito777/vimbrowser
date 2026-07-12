@@ -199,6 +199,7 @@ bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event,
                                      bool focus_on_editable_field);
 std::string Trim(std::string value);
 std::string ToLowerAscii(std::string value);
+bool IsValidRequestContextName(std::string_view name);
 std::vector<std::string> SplitArgs(const std::string& value);
 std::string JoinArgs(const std::vector<std::string>& args, size_t start);
 bool ParseUint64Arg(const std::string& text, uint64_t* out);

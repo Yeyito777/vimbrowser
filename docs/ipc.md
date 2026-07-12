@@ -104,6 +104,7 @@ Returns canonical app/tab state as JSON. Fields include:
   "tabs": 1,
   "url": "https://example.com/",
   "title": "Example Domain",
+  "context": null,
   "audible": false,
   "showfps": false,
   "shader": true,
@@ -131,6 +132,7 @@ Returns all tabs as JSON:
       "tab": 1,
       "active": false,
       "audible": false,
+      "context": null,
       "url": "https://example.com/",
       "title": "Example Domain",
       "loading": false,
@@ -151,6 +153,8 @@ Notes:
 - `active_tabid` is the stable runtime tab ID.
 - `audible` mirrors Chromium's current per-tab audible state and drives the
   sidebar audio indicator.
+- `context` is `null` for the default profile or the named isolated request
+  context for that tab. The same field in `status` describes the active tab.
 - `folder_id` is the tab's durable sidebar folder (`0` is the root).
 - `sidebar_sort_order` is its durable order among sidebar siblings, and `pinned`
   reports whether it belongs to that folder's leading pinned section.
@@ -280,6 +284,35 @@ Moves a tab to a target zero-based index. The target is clamped into the valid r
 #### `open-tab <url-or-query-or-local-path>`
 
 Resolves the text with the same native URL/search/local-file path used by `:open`, records open history, opens a new active tab, and returns `status` JSON.
+
+#### `open-context-tab <context-name> <url-or-query-or-local-path>`
+
+Opens a new active tab in a named persistent `CefRequestContext`. A name must be
+1-48 characters, start with a lowercase ASCII letter or digit, and contain only
+lowercase ASCII letters, digits, `-`, and `_`. Each name maps to
+`<CEF-root-cache>/contexts-<context-name>`; cookies (including session cookies),
+local storage, IndexedDB, cache storage, and other CEF profile data therefore
+persist across process restarts. The `contexts-` prefix keeps these profiles
+visibly grouped while satisfying Chrome-runtime CEF's requirement that profile
+cache paths be immediate children of the configured root cache. Different names
+do not share request-context storage with each other or with the default profile.
+Reusing a name shares the same context and storage.
+
+Named-context tabs are deliberately **transient shell tabs**: vimbrowser keeps
+their context data on disk but excludes their restorable tab entries from
+session state and excludes them from the undo-close stack. This avoids the
+legacy URL-only session format ever restoring an isolated URL in the default
+context. Tabs created from an isolated tab (new-tab link actions, clones,
+targeted links, and popups) retain the same context and are transient too.
+Closing/restarting the browser does not delete the named context directory; open
+it again with this command to continue using the persisted login/storage state.
+
+Example:
+
+```sh
+scripts/vimbrowser-ipc open-context-tab work https://example.com/
+scripts/vimbrowser-ipc open-context-tab personal https://example.com/
+```
 
 #### `open <tabid> <url-or-query-or-local-path>`
 
