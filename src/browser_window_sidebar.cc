@@ -17,15 +17,6 @@
 namespace vimbrowser {
 namespace {
 
-uint32_t SidebarDecimalDigits(size_t value) {
-  uint32_t digits = 1;
-  while (value >= 10) {
-    value /= 10;
-    ++digits;
-  }
-  return digits;
-}
-
 bool ValidFolderName(const std::string& name) {
   if (name.empty() || name == "." || name == ".." ||
       name.find('/') != std::string::npos) {
@@ -170,10 +161,7 @@ BrowserWindow::BuildSidebarDisplayRows() const {
     const Tab& tab = tabs_[entry.tab_index];
     const bool active = entry.tab_index == active_index_;
     std::string text = selected ? "▸ " : active ? "• " : "  ";
-    text += std::to_string(entry.tab_index + 1);
-    text += ": ";
-    const uint32_t audible_offset =
-        2 + SidebarDecimalDigits(entry.tab_index + 1) + 2;
+    constexpr uint32_t audible_offset = 2;
     if (tab.audible) {
       text += "◉ ";
     }
