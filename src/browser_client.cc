@@ -991,6 +991,9 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                                        pending_chatgpt_autosubmit_key_),
           frame->GetURL(), 0);
     }
+    if (owner_) {
+      owner_->OnClientLoadEnd(this);
+    }
   }
 }
 

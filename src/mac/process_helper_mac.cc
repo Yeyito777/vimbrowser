@@ -18,9 +18,11 @@ int main(int argc, char* argv[]) {
 
   CefMainArgs main_args(argc, argv);
   CefRefPtr<vimbrowser::App> app(new vimbrowser::App(
-      /*initial_urls=*/{}, /*active_index=*/0, /*show_mode_indicator=*/false,
+      /*initial_urls=*/{}, /*initial_tab_folder_ids=*/{},
+      /*initial_tab_sort_orders=*/{}, /*initial_tab_pinned=*/{},
+      /*active_index=*/0, /*show_mode_indicator=*/false,
       /*show_fps_indicator=*/false, /*show_statusline=*/false,
       /*shader_enabled=*/false, /*state_path=*/{}, /*dwm_save_argv=*/{},
-      /*disable_gpu=*/false));
+      /*root_cache_path=*/{}, /*disable_gpu=*/false));
   return CefExecuteProcess(main_args, app, nullptr);
 }
