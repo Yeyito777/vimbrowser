@@ -1471,6 +1471,23 @@ void BrowserWindow::BuildChrome() {
   command_field_->SetAccessibleName("vimbrowser command line");
   command_content_panel_->AddChildView(command_field_);
 
+#if defined(__APPLE__)
+  // Chrome-style Views textfields paint a rounded focus halo inside their own
+  // bounds on macOS. Theme colors cannot remove that platform treatment. Keep
+  // the real editable field for native clipboard/history/navigation behavior,
+  // then cover only the few edge pixels where the halo is drawn.
+  auto add_command_focus_mask = [&]() {
+    CefRefPtr<CefPanel> panel = CefPanel::CreatePanel(nullptr);
+    panel->SetBackgroundColor(theme::kAppBg);
+    command_content_panel_->AddChildView(panel);
+    return panel;
+  };
+  command_focus_mask_top_ = add_command_focus_mask();
+  command_focus_mask_bottom_ = add_command_focus_mask();
+  command_focus_mask_left_ = add_command_focus_mask();
+  command_focus_mask_right_ = add_command_focus_mask();
+#endif
+
   command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
                                             false);
   command_overlay_->SetVisible(false);
@@ -1813,6 +1830,10 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   status_bar_panel_ = nullptr;
   content_inner_panel_ = nullptr;
   content_panel_ = nullptr;
+  command_focus_mask_top_ = nullptr;
+  command_focus_mask_bottom_ = nullptr;
+  command_focus_mask_left_ = nullptr;
+  command_focus_mask_right_ = nullptr;
   command_separator_panel_ = nullptr;
   sidebar_border_panel_ = nullptr;
   sidebar_rows_.clear();
@@ -3351,10 +3372,15 @@ void BrowserWindow::Layout() {
     sidebar_visible_ = false;
   }
 
-  // Child views and overlays use client-area coordinates. CefWindow::GetBounds
-  // includes the native title bar on macOS, which placed the 28px command line
-  // exactly one title-bar height below the visible client area.
-  const CefRect bounds = WindowClientBounds(window_);
+  // Overlay coordinates use the Window's Views content space. On macOS,
+  // GetClientAreaBoundsInScreen() is shorter than the fill-layout root by the
+  // bottom status-row height, so using it leaves command overlays one status
+  // row above the actual bottom edge. The root panel is the authoritative
+  // coordinate space; retain the window-client fallback for initial layout.
+  CefRect bounds = root_panel_->GetBounds();
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    bounds = WindowClientBounds(window_);
+  }
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
   const bool sidebar_search = IsSidebarSearchMode();
@@ -3759,6 +3785,33 @@ void BrowserWindow::Layout() {
         std::max(1, command_surface_width - kCommandTextInsetX +
                         2 * kCommandFieldBleed),
         command_surface_height + 2 * kCommandFieldBleed));
+  }
+  const cef_color_t command_background =
+      sidebar_search ? theme::kSidebarBg : theme::kAppBg;
+  const int focus_mask = std::min(
+      kCommandFocusMaskThickness,
+      std::max(0, command_surface_height / 2));
+  if (command_focus_mask_top_) {
+    command_focus_mask_top_->SetBackgroundColor(command_background);
+    command_focus_mask_top_->SetBounds(
+        CefRect(0, 0, command_surface_width, focus_mask));
+  }
+  if (command_focus_mask_bottom_) {
+    command_focus_mask_bottom_->SetBackgroundColor(command_background);
+    command_focus_mask_bottom_->SetBounds(CefRect(
+        0, std::max(0, command_surface_height - focus_mask),
+        command_surface_width, focus_mask));
+  }
+  if (command_focus_mask_left_) {
+    command_focus_mask_left_->SetBackgroundColor(command_background);
+    command_focus_mask_left_->SetBounds(
+        CefRect(0, 0, focus_mask, command_surface_height));
+  }
+  if (command_focus_mask_right_) {
+    command_focus_mask_right_->SetBackgroundColor(command_background);
+    command_focus_mask_right_->SetBounds(CefRect(
+        std::max(0, command_surface_width - focus_mask), 0, focus_mask,
+        command_surface_height));
   }
   const int autocomplete_row_width = std::max(1, autocomplete_width -
                                                 kCommandAutocompleteBorder * 2);
