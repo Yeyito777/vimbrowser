@@ -790,6 +790,20 @@ bool ParseSyntheticKeySpec(const std::string& spec, CefKeyEvent* event) {
   } else if (key == "backspace") {
     key_code = 0x08;
     character = unmodified = u'\b';
+  } else if (key == "delete") {
+    key_code = 0x2e;
+  } else if (key == "left") {
+    key_code = 0x25;
+  } else if (key == "up") {
+    key_code = 0x26;
+  } else if (key == "right") {
+    key_code = 0x27;
+  } else if (key == "down") {
+    key_code = 0x28;
+  } else if (key == "home") {
+    key_code = 0x24;
+  } else if (key == "end") {
+    key_code = 0x23;
   } else if (key.size() == 1) {
     const unsigned char raw = static_cast<unsigned char>(key[0]);
     if (raw < 0x20 || raw > 0x7e) {

@@ -178,6 +178,12 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   if (!field) {
     return;
   }
+#if defined(__APPLE__)
+  // macOS uses a separate, off-screen editable field. This visible field is a
+  // renderer only, so Chromium never attaches its rounded focus ring here.
+  field->SetReadOnly(true);
+  field->SetFocusable(false);
+#else
   // The command line is a real focused native textfield. We intercept editing
   // keys in BrowserWindow and drive vim::LineEditState ourselves, but the
   // textfield owns all text/caret/selection painting. This keeps normal-mode
@@ -185,6 +191,7 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   // using overlay views that can drift, move text, or fail to erase glyphs.
   field->SetReadOnly(false);
   field->SetFocusable(true);
+#endif
   field->SetFontList("monospace, 13px");
   field->SetBackgroundColor(theme::kTransparent);
   // Chromium colors the insertion caret from the default text color. Keep that
@@ -785,9 +792,13 @@ bool ShellWrite(const char* command, const std::string& text) {
 }
 
 std::string ReadClipboardText() {
+#if defined(__APPLE__)
+  return ShellRead("pbpaste | head -c 1048576");
+#else
   return ShellRead("(xclip -selection clipboard -o 2>/dev/null || "
                    "xsel -b -o 2>/dev/null || "
                    "wl-paste -n 2>/dev/null) | head -c 1048576");
+#endif
 }
 
 std::string JsonEscape(std::string_view text) {
@@ -1153,6 +1164,9 @@ std::string CookieJson(const CefCookie& cookie) {
 }
 
 void WriteClipboardText(const std::string& text) {
+#if defined(__APPLE__)
+  ShellWrite("pbcopy", text);
+#else
   if (ShellWrite("xclip -selection clipboard -i 2>/dev/null", text)) {
     return;
   }
@@ -1160,6 +1174,7 @@ void WriteClipboardText(const std::string& text) {
     return;
   }
   ShellWrite("wl-copy 2>/dev/null", text);
+#endif
 }
 
 }  // namespace vimbrowser

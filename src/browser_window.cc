@@ -1472,28 +1472,27 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_->AddChildView(command_field_);
 
 #if defined(__APPLE__)
-  // Chrome-style Views textfields paint a rounded focus halo inside their own
-  // bounds on macOS. Theme colors cannot remove that platform treatment. Keep
-  // the real editable field for native clipboard/history/navigation behavior,
-  // then cover only the few edge pixels where the halo is drawn.
-  auto add_command_focus_mask = [&]() {
-    CefRefPtr<CefPanel> panel = CefPanel::CreatePanel(nullptr);
-    panel->SetBackgroundColor(theme::kAppBg);
-    command_content_panel_->AddChildView(panel);
-    return panel;
-  };
-  command_focus_mask_top_ = add_command_focus_mask();
-  command_focus_mask_bottom_ = add_command_focus_mask();
-  command_focus_mask_left_ = add_command_focus_mask();
-  command_focus_mask_right_ = add_command_focus_mask();
-#endif
-
+  // A real root-layout row avoids the macOS overlay coordinate space, which
+  // ends above the status row. The command row replaces the status row while
+  // active and is therefore structurally pinned to the true bottom edge.
+  CefBoxLayoutSettings command_row_settings = {};
+  command_row_settings.size = sizeof(command_row_settings);
+  command_row_settings.horizontal = false;
+  command_row_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  command_row_settings.inside_border_insets = CefInsets(1, 0, 0, 0);
+  CefRefPtr<CefBoxLayout> command_row_layout =
+      command_panel_->SetToBoxLayout(command_row_settings);
+  command_row_layout->SetFlexForView(command_content_panel_, 1);
+  root_panel_->AddChildView(command_panel_);
+  command_panel_->SetVisible(false);
+#else
   command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
                                             false);
   command_overlay_->SetVisible(false);
   command_separator_overlay_ = window_->AddOverlayView(
       command_separator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
   command_separator_overlay_->SetVisible(false);
+#endif
 
   autocomplete_panel_ = CefPanel::CreatePanel(this);
   autocomplete_panel_->SetID(kCommandAutocompletePanelId);
@@ -1830,10 +1829,6 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   status_bar_panel_ = nullptr;
   content_inner_panel_ = nullptr;
   content_panel_ = nullptr;
-  command_focus_mask_top_ = nullptr;
-  command_focus_mask_bottom_ = nullptr;
-  command_focus_mask_left_ = nullptr;
-  command_focus_mask_right_ = nullptr;
   command_separator_panel_ = nullptr;
   sidebar_border_panel_ = nullptr;
   sidebar_rows_.clear();
@@ -2660,7 +2655,11 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(800, 800);
   }
   if (id == kCommandPanelId) {
+#if defined(__APPLE__)
+    return CefSize(1200, command_height + 1);
+#else
     return CefSize(1200, command_height);
+#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1200, command_height);
@@ -2815,7 +2814,11 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarBorderWidth, 1);
   }
   if (id == kCommandPanelId) {
+#if defined(__APPLE__)
+    return CefSize(1, command_height + 1);
+#else
     return CefSize(1, command_height);
+#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1, command_height);
@@ -2923,7 +2926,11 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
   if (id == kCommandPanelId) {
+#if defined(__APPLE__)
+    return CefSize(0, command_height + 1);
+#else
     return CefSize(0, command_height);
+#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(0, command_height);
@@ -3372,11 +3379,9 @@ void BrowserWindow::Layout() {
     sidebar_visible_ = false;
   }
 
-  // Overlay coordinates use the Window's Views content space. On macOS,
-  // GetClientAreaBoundsInScreen() is shorter than the fill-layout root by the
-  // bottom status-row height, so using it leaves command overlays one status
-  // row above the actual bottom edge. The root panel is the authoritative
-  // coordinate space; retain the window-client fallback for initial layout.
+  // The fill-layout root is the authoritative coordinate space for all chrome
+  // rows. Retain the window-client fallback for the initial layout pass before
+  // CEF has assigned root bounds.
   CefRect bounds = root_panel_->GetBounds();
   if (bounds.width <= 0 || bounds.height <= 0) {
     bounds = WindowClientBounds(window_);
@@ -3386,20 +3391,35 @@ void BrowserWindow::Layout() {
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_surface_height =
       sidebar_search ? kStatusBarHeight : kCommandHeight;
+#if defined(__APPLE__)
+  const int command_total_height = command_surface_height + 1;
+#else
   const int command_total_height =
       command_surface_height + (sidebar_search ? 0 : 1);
+#endif
   const int autocomplete_height = CommandAutocompleteHeight();
   const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
   const int a26_chrome_height = a26_shell_ ? kA26ChromeHeight : 0;
-  const int main_height =
-      std::max(1, height - (show_statusline_ ? kStatusBarHeight : 0) -
-                      a26_chrome_height);
   const int sidebar_content_width = sidebar_visible_ ? kSidebarContentWidth : 0;
   const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const bool command_active = mode_ != Mode::kNormal;
+#if defined(__APPLE__)
+  const bool status_visible = show_statusline_ && !command_active;
+  const int bottom_row_height =
+      command_active ? command_total_height
+                     : (status_visible ? kStatusBarHeight : 0);
+  const int main_height =
+      std::max(1, height - bottom_row_height - a26_chrome_height);
+  const int command_surface_width = width;
+#else
+  const bool status_visible = show_statusline_;
+  const int main_height =
+      std::max(1, height - (status_visible ? kStatusBarHeight : 0) -
+                      a26_chrome_height);
   const int command_surface_width =
       sidebar_search ? std::max(1, sidebar_content_width) : width;
+#endif
   // Sidebar search owns the otherwise-empty left side of the status row. Dock
   // it to the actual window bottom instead of above the statusline so there is
   // no dead strip below / or ?.
@@ -3410,6 +3430,9 @@ void BrowserWindow::Layout() {
   if (command_overlay_) {
     command_overlay_->SetVisible(command_active);
   }
+#if defined(__APPLE__)
+  command_panel_->SetVisible(command_active);
+#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(command_active && !sidebar_search);
   }
@@ -3520,12 +3543,12 @@ void BrowserWindow::Layout() {
     }
   }
   if (status_bar_panel_) {
-    status_bar_panel_->SetVisible(show_statusline_);
+    status_bar_panel_->SetVisible(status_visible);
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
     status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
   }
   if (a26_chrome_panel_) {
-    const int chrome_y = main_height + (show_statusline_ ? kStatusBarHeight : 0);
+    const int chrome_y = height - a26_chrome_height;
     a26_chrome_panel_->SetVisible(a26_shell_);
     a26_chrome_panel_->SetSize(CefSize(width, kA26ChromeHeight));
     a26_chrome_panel_->SetBounds(
@@ -3534,8 +3557,7 @@ void BrowserWindow::Layout() {
   if (a26_navigation_panel_) {
     a26_navigation_panel_->SetSize(CefSize(width, kA26NavigationHeight));
     if (a26_navigation_overlay_) {
-      const int navigation_y =
-          main_height + (show_statusline_ ? kStatusBarHeight : 0);
+      const int navigation_y = height - a26_chrome_height;
       a26_navigation_overlay_->SetVisible(a26_shell_);
       a26_navigation_overlay_->SetBounds(
           CefRect(0, navigation_y, width, kA26NavigationHeight));
@@ -3547,18 +3569,34 @@ void BrowserWindow::Layout() {
     a26_bottom_reserve_panel_->SetBounds(
         CefRect(0, kA26NavigationHeight, width, kA26BottomReserveHeight));
   }
+#if defined(__APPLE__)
+  command_panel_->SetSize(
+      CefSize(command_surface_width, command_total_height));
+  command_panel_->SetBounds(CefRect(
+      0, main_height, command_surface_width, command_total_height));
+#else
   command_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
+#endif
   command_separator_panel_->SetSize(CefSize(command_surface_width, 1));
   command_content_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
+#if defined(__APPLE__)
+  command_panel_->SetBackgroundColor(theme::kAccent);
+#else
   command_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                     : theme::kAppBg);
+#endif
   command_content_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                             : theme::kAppBg);
   command_separator_panel_->SetBounds(CefRect(0, 0, command_surface_width, 1));
+#if defined(__APPLE__)
+  command_content_panel_->SetBounds(CefRect(
+      0, 1, command_surface_width, command_surface_height));
+#else
   command_content_panel_->SetBounds(
       CefRect(0, 0, command_surface_width, command_surface_height));
+#endif
   if (command_overlay_) {
     command_overlay_->SetBounds(
         CefRect(0, std::max(0, command_surface_bottom - command_surface_height),
@@ -3728,6 +3766,9 @@ void BrowserWindow::Layout() {
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
   }
+  if (command_panel_->GetLayout()) {
+    command_panel_->Layout();
+  }
   if (main_panel_->GetLayout()) {
     main_panel_->Layout();
   }
@@ -3777,41 +3818,18 @@ void BrowserWindow::Layout() {
     // regular full-width commands retain their established 13px editing font.
     command_field_->SetFontList(sidebar_search ? "monospace, 12px"
                                                : "monospace, 13px");
-    // Bleed the stock CEF textfield outside the clipped command surface so its
-    // rounded focus ring stays hidden for both the full-width command line and
-    // the compact sidebar-search surface.
+#if defined(__APPLE__)
+    command_field_->SetBounds(CefRect(
+        kCommandTextInsetX, 0,
+        std::max(1, command_surface_width - kCommandTextInsetX),
+        command_surface_height));
+#else
     command_field_->SetBounds(CefRect(
         kCommandTextInsetX - kCommandFieldBleed, -kCommandFieldBleed,
         std::max(1, command_surface_width - kCommandTextInsetX +
                         2 * kCommandFieldBleed),
         command_surface_height + 2 * kCommandFieldBleed));
-  }
-  const cef_color_t command_background =
-      sidebar_search ? theme::kSidebarBg : theme::kAppBg;
-  const int focus_mask = std::min(
-      kCommandFocusMaskThickness,
-      std::max(0, command_surface_height / 2));
-  if (command_focus_mask_top_) {
-    command_focus_mask_top_->SetBackgroundColor(command_background);
-    command_focus_mask_top_->SetBounds(
-        CefRect(0, 0, command_surface_width, focus_mask));
-  }
-  if (command_focus_mask_bottom_) {
-    command_focus_mask_bottom_->SetBackgroundColor(command_background);
-    command_focus_mask_bottom_->SetBounds(CefRect(
-        0, std::max(0, command_surface_height - focus_mask),
-        command_surface_width, focus_mask));
-  }
-  if (command_focus_mask_left_) {
-    command_focus_mask_left_->SetBackgroundColor(command_background);
-    command_focus_mask_left_->SetBounds(
-        CefRect(0, 0, focus_mask, command_surface_height));
-  }
-  if (command_focus_mask_right_) {
-    command_focus_mask_right_->SetBackgroundColor(command_background);
-    command_focus_mask_right_->SetBounds(CefRect(
-        std::max(0, command_surface_width - focus_mask), 0, focus_mask,
-        command_surface_height));
+#endif
   }
   const int autocomplete_row_width = std::max(1, autocomplete_width -
                                                 kCommandAutocompleteBorder * 2);

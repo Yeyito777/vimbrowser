@@ -238,15 +238,24 @@ void BrowserWindow::BeginCommandText(std::string text) {
   vim::Reset(command_vim_, command_text_.size(), 0, vim::Mode::kInsert);
   ClearCommandAutocomplete();
   UpdateCommandAutocomplete();
-  command_overlay_->SetVisible(true);
+  if (command_overlay_) {
+    command_overlay_->SetVisible(true);
+  }
+#if defined(__APPLE__)
+  if (command_panel_) {
+    command_panel_->SetVisible(true);
+  }
+#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(true);
   }
   Layout();
   SetCommandText(command_text_);
+#if !defined(__APPLE__)
   if (command_field_) {
     command_field_->RequestFocus();
   }
+#endif
   UpdateModeIndicator();
 }
 
@@ -597,7 +606,14 @@ void BrowserWindow::CancelCommand() {
   ClearCommandAutocomplete();
   vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
   SetCommandText("");
-  command_overlay_->SetVisible(false);
+  if (command_overlay_) {
+    command_overlay_->SetVisible(false);
+  }
+#if defined(__APPLE__)
+  if (command_panel_) {
+    command_panel_->SetVisible(false);
+  }
+#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(false);
   }

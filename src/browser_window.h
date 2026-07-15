@@ -882,10 +882,6 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
   CefRefPtr<CefTextfield> command_field_;
-  CefRefPtr<CefPanel> command_focus_mask_top_;
-  CefRefPtr<CefPanel> command_focus_mask_bottom_;
-  CefRefPtr<CefPanel> command_focus_mask_left_;
-  CefRefPtr<CefPanel> command_focus_mask_right_;
   CefRefPtr<CefOverlayController> command_overlay_;
   CefRefPtr<CefOverlayController> command_separator_overlay_;
   CefRefPtr<CefPanel> autocomplete_panel_;

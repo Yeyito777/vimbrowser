@@ -553,10 +553,10 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return true;
   }
 
-  // Let the focused textfield perform platform-native cursor movement,
-  // forward-delete, clipboard, and undo/redo operations in insert mode.
-  // OnAfterUserAction synchronizes any resulting text/cursor change back into
-  // the vim line-edit model. Command-control keys above remain shell-owned.
+#if !defined(__APPLE__)
+  // Linux keeps the editable field focused and can delegate these operations
+  // to it. macOS deliberately keeps the visible renderer unfocused and handles
+  // the same operations in the command model below.
   if (command_vim_.mode == vim::Mode::kInsert &&
       (IsNavigationEditingKey(event) || IsDeleteKey(event) ||
        IsNativeCommandEditingShortcut(event))) {
@@ -571,6 +571,7 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   if (command_vim_.mode == vim::Mode::kInsert && !suppress_next_char_event_) {
     SyncCommandTextFromField();
   }
+#endif
 
   auto apply_result = [&](const vim::LineEditResult& result) {
     if (result.submit) {
@@ -616,6 +617,105 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   };
 
   const bool key_down = IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN;
+#if defined(__APPLE__)
+  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
+      IsNativeCommandEditingShortcut(event)) {
+    if (MatchesAsciiKey(event, 'c')) {
+      WriteClipboardText(command_text_);
+      return true;
+    }
+    if (MatchesAsciiKey(event, 'x')) {
+      WriteClipboardText(command_text_);
+      const size_t floor = std::min(command_vim_.floor, command_text_.size());
+      const bool changed = command_text_.size() > floor;
+      command_text_.erase(floor);
+      command_vim_.cursor = floor;
+      vim::LineEditResult result;
+      result.text_changed = changed;
+      result.cursor_changed = true;
+      apply_result(result);
+      return true;
+    }
+    if (MatchesAsciiKey(event, 'v')) {
+      std::string pasted = ReadClipboardText();
+      std::replace(pasted.begin(), pasted.end(), '\r', ' ');
+      std::replace(pasted.begin(), pasted.end(), '\n', ' ');
+      if (!pasted.empty()) {
+        vim::ClampInsert(command_vim_, command_text_);
+        command_text_.insert(command_vim_.cursor, pasted);
+        command_vim_.cursor += pasted.size();
+        vim::LineEditResult result;
+        result.text_changed = true;
+        result.cursor_changed = true;
+        apply_result(result);
+      }
+      return true;
+    }
+    if (MatchesAsciiKey(event, 'a')) {
+      const size_t old_cursor = command_vim_.cursor;
+      command_vim_.cursor = command_text_.size();
+      vim::LineEditResult result;
+      result.cursor_changed = command_vim_.cursor != old_cursor;
+      apply_result(result);
+      return true;
+    }
+    // Keep undo/redo shortcuts shell-owned even though the lightweight command
+    // model does not currently retain an edit-history stack.
+    return true;
+  }
+
+  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
+      IsNavigationEditingKey(event)) {
+    const size_t old_cursor = command_vim_.cursor;
+    const bool command_modifier = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+    const bool word_modifier = event.modifiers & EVENTFLAG_ALT_DOWN;
+    const bool left = event.windows_key_code == 0x25 ||
+                      event.native_key_code == 123;
+    const bool right = event.windows_key_code == 0x27 ||
+                       event.native_key_code == 124;
+    const bool home = event.windows_key_code == 0x24 ||
+                      event.native_key_code == 115;
+    const bool end = event.windows_key_code == 0x23 ||
+                     event.native_key_code == 119;
+    if (left) {
+      if (command_modifier) {
+        command_vim_.cursor = command_vim_.floor;
+      } else if (word_modifier) {
+        vim::MoveWordBackward(command_vim_, command_text_);
+      } else if (command_vim_.cursor > command_vim_.floor) {
+        --command_vim_.cursor;
+      }
+    } else if (right) {
+      if (command_modifier) {
+        command_vim_.cursor = command_text_.size();
+      } else if (word_modifier) {
+        vim::MoveWordForward(command_vim_, command_text_);
+      } else if (command_vim_.cursor < command_text_.size()) {
+        ++command_vim_.cursor;
+      }
+    } else if (home) {
+      command_vim_.cursor = command_vim_.floor;
+    } else if (end) {
+      command_vim_.cursor = command_text_.size();
+    }
+    vim::LineEditResult result;
+    result.cursor_changed = command_vim_.cursor != old_cursor;
+    apply_result(result);
+    return true;
+  }
+
+  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
+      IsDeleteKey(event)) {
+    vim::ClampInsert(command_vim_, command_text_);
+    if (command_vim_.cursor < command_text_.size()) {
+      command_text_.erase(command_vim_.cursor, 1);
+      vim::LineEditResult result;
+      result.text_changed = true;
+      apply_result(result);
+    }
+    return true;
+  }
+#endif
   if (key_down) {
     if (HasOnlyControlModifier(event) && IsCtrlKey(event, 'X')) {
       DeleteSelectedCommandAutocomplete();
@@ -868,9 +968,11 @@ void BrowserWindow::RebuildCommandCells() {
     command_field_->SelectRange(
         CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(cursor)));
   }
+#if !defined(__APPLE__)
   if (mode_ != Mode::kNormal && !command_field_->HasFocus()) {
     command_field_->RequestFocus();
   }
+#endif
 }
 
 void BrowserWindow::RebuildAutocompleteRows() {
