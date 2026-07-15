@@ -1463,28 +1463,28 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_ = CefPanel::CreatePanel(this);
   command_content_panel_->SetID(kCommandContentPanelId);
   command_content_panel_->SetBackgroundColor(theme::kAppBg);
+#if !defined(__APPLE__)
   command_panel_->AddChildView(command_content_panel_);
+#endif
 
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
   StyleCommandField(command_field_);
   command_field_->SetAccessibleName("vimbrowser command line");
+#if defined(__APPLE__)
+  command_panel_->AddChildView(command_field_);
+#else
   command_content_panel_->AddChildView(command_field_);
+#endif
 
 #if defined(__APPLE__)
-  // A real root-layout row avoids the macOS overlay coordinate space, which
-  // ends above the status row. The command row replaces the status row while
-  // active and is therefore structurally pinned to the true bottom edge.
-  CefBoxLayoutSettings command_row_settings = {};
-  command_row_settings.size = sizeof(command_row_settings);
-  command_row_settings.horizontal = false;
-  command_row_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  command_row_settings.inside_border_insets = CefInsets(1, 0, 0, 0);
-  CefRefPtr<CefBoxLayout> command_row_layout =
-      command_panel_->SetToBoxLayout(command_row_settings);
-  command_row_layout->SetFlexForView(command_content_panel_, 1);
-  root_panel_->AddChildView(command_panel_);
+  // Reuse the existing fixed-height status row for command mode. Direct child
+  // views paint reliably at this height on macOS, unlike a nested 15px panel,
+  // and replacing equal-height row contents cannot resize the BrowserView.
+  status_bar_panel_->AddChildView(command_panel_);
+  status_layout->SetFlexForView(command_panel_, 1);
   command_panel_->SetVisible(false);
+
 #else
   command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
                                             false);
@@ -2614,8 +2614,12 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
 
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+#if defined(__APPLE__)
+  const int command_height = kStatusBarHeight;
+#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
+#endif
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -2656,7 +2660,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   }
   if (id == kCommandPanelId) {
 #if defined(__APPLE__)
-    return CefSize(1200, command_height + 1);
+    return CefSize(1200, kStatusBarHeight);
 #else
     return CefSize(1200, command_height);
 #endif
@@ -2799,8 +2803,12 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+#if defined(__APPLE__)
+  const int command_height = kStatusBarHeight;
+#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
+#endif
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -2815,7 +2823,7 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   }
   if (id == kCommandPanelId) {
 #if defined(__APPLE__)
-    return CefSize(1, command_height + 1);
+    return CefSize(1, kStatusBarHeight);
 #else
     return CefSize(1, command_height);
 #endif
@@ -2923,11 +2931,15 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
+#if defined(__APPLE__)
+  const int command_height = kStatusBarHeight;
+#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
+#endif
   if (id == kCommandPanelId) {
 #if defined(__APPLE__)
-    return CefSize(0, command_height + 1);
+    return CefSize(0, kStatusBarHeight);
 #else
     return CefSize(0, command_height);
 #endif
@@ -3379,9 +3391,8 @@ void BrowserWindow::Layout() {
     sidebar_visible_ = false;
   }
 
-  // The fill-layout root is the authoritative coordinate space for all chrome
-  // rows. Retain the window-client fallback for the initial layout pass before
-  // CEF has assigned root bounds.
+  // The managed root is the authoritative coordinate space for all structural
+  // chrome rows. Retain the client fallback for the initial layout pass.
   CefRect bounds = root_panel_->GetBounds();
   if (bounds.width <= 0 || bounds.height <= 0) {
     bounds = WindowClientBounds(window_);
@@ -3389,11 +3400,12 @@ void BrowserWindow::Layout() {
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
   const bool sidebar_search = IsSidebarSearchMode();
+#if defined(__APPLE__)
+  const int command_surface_height = kStatusBarHeight;
+  const int command_total_height = kStatusBarHeight;
+#else
   const int command_surface_height =
       sidebar_search ? kStatusBarHeight : kCommandHeight;
-#if defined(__APPLE__)
-  const int command_total_height = command_surface_height + 1;
-#else
   const int command_total_height =
       command_surface_height + (sidebar_search ? 0 : 1);
 #endif
@@ -3405,12 +3417,10 @@ void BrowserWindow::Layout() {
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const bool command_active = mode_ != Mode::kNormal;
 #if defined(__APPLE__)
-  const bool status_visible = show_statusline_ && !command_active;
-  const int bottom_row_height =
-      command_active ? command_total_height
-                     : (status_visible ? kStatusBarHeight : 0);
+  const bool status_visible = show_statusline_ || command_active;
   const int main_height =
-      std::max(1, height - bottom_row_height - a26_chrome_height);
+      std::max(1, height - (status_visible ? kStatusBarHeight : 0) -
+                      a26_chrome_height);
   const int command_surface_width = width;
 #else
   const bool status_visible = show_statusline_;
@@ -3420,22 +3430,29 @@ void BrowserWindow::Layout() {
   const int command_surface_width =
       sidebar_search ? std::max(1, sidebar_content_width) : width;
 #endif
-  // Sidebar search owns the otherwise-empty left side of the status row. Dock
-  // it to the actual window bottom instead of above the statusline so there is
-  // no dead strip below / or ?.
+#if defined(__APPLE__)
+  const int command_surface_bottom =
+      height - a26_chrome_height +
+      std::max(0, window_->GetBounds().height - height);
+#else
   const int command_surface_bottom = height - a26_chrome_height;
+#endif
   const bool autocomplete_visible = command_active && !sidebar_search &&
                                     command_autocomplete_.active &&
                                     !command_autocomplete_.matches.empty();
+#if defined(__APPLE__)
+  command_panel_->SetVisible(command_active);
+  status_sidebar_spacer_panel_->SetVisible(!command_active && sidebar_visible_);
+  status_border_panel_->SetVisible(!command_active && sidebar_visible_);
+  status_content_panel_->SetVisible(!command_active);
+#else
   if (command_overlay_) {
     command_overlay_->SetVisible(command_active);
   }
-#if defined(__APPLE__)
-  command_panel_->SetVisible(command_active);
-#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(command_active && !sidebar_search);
   }
+#endif
   if (autocomplete_overlay_) {
     autocomplete_overlay_->SetVisible(autocomplete_visible);
   }
@@ -3544,6 +3561,8 @@ void BrowserWindow::Layout() {
   }
   if (status_bar_panel_) {
     status_bar_panel_->SetVisible(status_visible);
+    status_bar_panel_->SetBackgroundColor(command_active ? theme::kAppBg
+                                                         : theme::kSidebarBg);
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
     status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
   }
@@ -3572,8 +3591,8 @@ void BrowserWindow::Layout() {
 #if defined(__APPLE__)
   command_panel_->SetSize(
       CefSize(command_surface_width, command_total_height));
-  command_panel_->SetBounds(CefRect(
-      0, main_height, command_surface_width, command_total_height));
+  command_panel_->SetBounds(
+      CefRect(0, 0, command_surface_width, command_total_height));
 #else
   command_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
@@ -3582,7 +3601,7 @@ void BrowserWindow::Layout() {
   command_content_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
 #if defined(__APPLE__)
-  command_panel_->SetBackgroundColor(theme::kAccent);
+  command_panel_->SetBackgroundColor(theme::kAppBg);
 #else
   command_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                     : theme::kAppBg);
@@ -3590,10 +3609,7 @@ void BrowserWindow::Layout() {
   command_content_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                             : theme::kAppBg);
   command_separator_panel_->SetBounds(CefRect(0, 0, command_surface_width, 1));
-#if defined(__APPLE__)
-  command_content_panel_->SetBounds(CefRect(
-      0, 1, command_surface_width, command_surface_height));
-#else
+#if !defined(__APPLE__)
   command_content_panel_->SetBounds(
       CefRect(0, 0, command_surface_width, command_surface_height));
 #endif
@@ -3619,7 +3635,7 @@ void BrowserWindow::Layout() {
     if (command_active && !sidebar_search) {
       overlay_height = std::min(
           overlay_height,
-          std::max(0, height - command_total_height -
+          std::max(0, command_surface_bottom - command_total_height -
                           (autocomplete_visible ? autocomplete_height : 0)));
     }
     const bool show_sidebar_border_overlay =
@@ -3814,10 +3830,14 @@ void BrowserWindow::Layout() {
         CefRect(0, 0, actual_devtools_content_width, main_height));
   }
   if (command_field_) {
+#if defined(__APPLE__)
+    command_field_->SetFontList("monospace, 12px");
+#else
     // Match the sidebar/status cmdline font exactly while / or ? is active;
     // regular full-width commands retain their established 13px editing font.
     command_field_->SetFontList(sidebar_search ? "monospace, 12px"
                                                : "monospace, 13px");
+#endif
 #if defined(__APPLE__)
     command_field_->SetBounds(CefRect(
         kCommandTextInsetX, 0,
@@ -3856,18 +3876,19 @@ void BrowserWindow::Layout() {
     a26_navigation_panel_->Layout();
   }
   if (status_sidebar_spacer_panel_) {
-    status_sidebar_spacer_panel_->SetVisible(sidebar_visible_);
+    status_sidebar_spacer_panel_->SetVisible(!command_active && sidebar_visible_);
     status_sidebar_spacer_panel_->SetBounds(
         CefRect(0, 0, sidebar_content_width, kStatusBarHeight));
     status_sidebar_spacer_panel_->SetBackgroundColor(theme::kSidebarBg);
   }
   if (status_content_panel_) {
+    status_content_panel_->SetVisible(!command_active);
     status_content_panel_->SetBounds(
         CefRect(content_x, 0, available_content_width, kStatusBarHeight));
     status_content_panel_->SetBackgroundColor(StatusBarBackgroundColor());
   }
   if (status_border_panel_) {
-    status_border_panel_->SetVisible(sidebar_visible_);
+    status_border_panel_->SetVisible(!command_active && sidebar_visible_);
     status_border_panel_->SetBounds(
         CefRect(sidebar_content_width, 0, sidebar_border_width,
                 kStatusBarHeight));
@@ -3879,6 +3900,16 @@ void BrowserWindow::Layout() {
   if (status_content_panel_ && status_content_panel_->GetLayout()) {
     status_content_panel_->Layout();
   }
+#if defined(__APPLE__)
+  // CefBoxLayout recursively lays out the newly visible command renderer when
+  // it replaces the normal status contents. Reassert its bounds afterwards.
+  if (command_field_) {
+    command_field_->SetBounds(CefRect(
+        kCommandTextInsetX, 0,
+        std::max(1, command_surface_width - kCommandTextInsetX),
+        command_surface_height));
+  }
+#endif
   UpdateStatusBar();
   laid_out_content_width_ = actual_content_width;
   laid_out_content_height_ = main_height;

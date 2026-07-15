@@ -927,8 +927,24 @@ void BrowserWindow::RebuildCommandCells() {
     }
   }
 
-  const std::string rendered_text =
+  std::string rendered_text;
+#if defined(__APPLE__)
+  // The macOS command field is an unfocused renderer, so Chromium will not
+  // paint its native caret or selection cursor. Render the cursor in-band: a
+  // thin bar in insert mode and a solid replacement block in command-normal.
+  rendered_text = command_text_;
+  const std::string cursor_glyph = normal ? "\xE2\x96\x88"  // █
+                                          : "\xE2\x96\x8F"; // ▏
+  const size_t rendered_cursor = std::min(cursor, rendered_text.size());
+  if (normal && rendered_cursor < rendered_text.size()) {
+    rendered_text.replace(rendered_cursor, 1, cursor_glyph);
+  } else {
+    rendered_text.insert(rendered_cursor, cursor_glyph);
+  }
+#else
+  rendered_text =
       normal && command_text_.empty() ? std::string(" ") : command_text_;
+#endif
   const size_t previous_rendered_length =
       command_field_->GetText().ToString().size();
   if (previous_rendered_length > rendered_text.size()) {
@@ -960,6 +976,12 @@ void BrowserWindow::RebuildCommandCells() {
         CefRange(static_cast<uint32_t>(search_engine_arg_start),
                  static_cast<uint32_t>(search_engine_arg_end)));
   }
+#if defined(__APPLE__)
+  command_field_->ApplyTextColor(
+      theme::kVimNormal,
+      CefRange(static_cast<uint32_t>(cursor),
+               static_cast<uint32_t>(cursor + 1)));
+#else
   if (normal) {
     const size_t selection_end = std::min(cursor + 1, rendered_text.size());
     command_field_->SelectRange(
@@ -968,7 +990,6 @@ void BrowserWindow::RebuildCommandCells() {
     command_field_->SelectRange(
         CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(cursor)));
   }
-#if !defined(__APPLE__)
   if (mode_ != Mode::kNormal && !command_field_->HasFocus()) {
     command_field_->RequestFocus();
   }

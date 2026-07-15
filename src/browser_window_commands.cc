@@ -241,11 +241,6 @@ void BrowserWindow::BeginCommandText(std::string text) {
   if (command_overlay_) {
     command_overlay_->SetVisible(true);
   }
-#if defined(__APPLE__)
-  if (command_panel_) {
-    command_panel_->SetVisible(true);
-  }
-#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(true);
   }
@@ -609,11 +604,6 @@ void BrowserWindow::CancelCommand() {
   if (command_overlay_) {
     command_overlay_->SetVisible(false);
   }
-#if defined(__APPLE__)
-  if (command_panel_) {
-    command_panel_->SetVisible(false);
-  }
-#endif
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(false);
   }
