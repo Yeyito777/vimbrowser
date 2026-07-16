@@ -130,7 +130,14 @@ inline constexpr size_t kSidebarMaxRenderedRows = 96;
 inline constexpr bool kModeIndicatorEnabled = true;
 inline constexpr int kModeIndicatorWidth = 96;
 inline constexpr int kModeIndicatorHeight = 24;
+#if defined(__APPLE__)
+// The macOS command renderer replaces the status row instead of floating over
+// the BrowserView. Keep that shared row at the working Linux command height so
+// entering command mode cannot resize the page and the cmdline is not cramped.
+inline constexpr int kStatusBarHeight = kCommandHeight;
+#else
 inline constexpr int kStatusBarHeight = 16;
+#endif
 inline constexpr int kStatusModeWidth = 64;
 inline constexpr int kCommandTextInsetX = 0;
 inline constexpr int kCommandFieldBleed = 4;

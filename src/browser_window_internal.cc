@@ -192,7 +192,14 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   field->SetReadOnly(false);
   field->SetFocusable(true);
 #endif
+#if defined(__APPLE__)
+  // The generic macOS monospace fallback does not give every block-element
+  // glyph the same advance as ASCII. Menlo does, so an in-band block cursor
+  // occupies exactly one command character cell.
+  field->SetFontList("Menlo, 13px");
+#else
   field->SetFontList("monospace, 13px");
+#endif
   field->SetBackgroundColor(theme::kTransparent);
   // Chromium colors the insertion caret from the default text color. Keep that
   // cyan, then apply per-range colors for the actual glyphs below.

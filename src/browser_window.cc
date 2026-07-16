@@ -3782,6 +3782,24 @@ void BrowserWindow::Layout() {
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
   }
+#if defined(__APPLE__)
+  // Overlay coordinates on macOS do not share the managed root's origin.
+  // Anchor autocomplete to the structural command/status row in screen space
+  // after the root layout has settled, instead of estimating the title-bar
+  // offset. This keeps the last completion row flush with the cmdline.
+  if (autocomplete_overlay_ && status_bar_panel_ && autocomplete_visible) {
+    const CefRect status_screen = status_bar_panel_->GetBoundsInScreen();
+    const CefRect window_screen = window_->GetBounds();
+    if (status_screen.height > 0 && window_screen.height > 0) {
+      // CefWindow custom overlays use the outer window's origin, including
+      // the title bar, rather than the client-area origin.
+      const int command_top = status_screen.y - window_screen.y;
+      autocomplete_overlay_->SetBounds(CefRect(
+          0, std::max(0, command_top - autocomplete_height),
+          autocomplete_width, std::max(1, autocomplete_height)));
+    }
+  }
+#endif
   if (command_panel_->GetLayout()) {
     command_panel_->Layout();
   }
@@ -3831,7 +3849,7 @@ void BrowserWindow::Layout() {
   }
   if (command_field_) {
 #if defined(__APPLE__)
-    command_field_->SetFontList("monospace, 12px");
+    command_field_->SetFontList("Menlo, 13px");
 #else
     // Match the sidebar/status cmdline font exactly while / or ? is active;
     // regular full-width commands retain their established 13px editing font.
