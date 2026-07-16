@@ -797,6 +797,31 @@ def test_sidebar_gg_and_G_jump_to_visible_ends(h: Harness) -> None:
             "sidebar G did not move selection to the last visible entry", after_G)
 
 
+def test_sidebar_super_is_a_noop(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url + "#super-second"])
+    h.ipc(["open-tab", h.initial_url + "#super-third"])
+    tabs = h.ipc(["tabs"])["tabs"]
+    first, middle = tabs[0], tabs[1]
+    h.ipc(["tab-focus", str(middle["id"])])
+    h.ipc(["sidebar-focus", "sidebar"])
+
+    # A modifier's own keydown may not carry its modifier flag. VKEY_LWIN is
+    # numerically 0x5b (ASCII '['), so it used to run the sidebar '[' binding
+    # and also interrupt pending multi-key commands. Keep both Super keys inert:
+    # the second g must still complete the gg that began before the modifier.
+    for key in ("Super_L", "Super_R"):
+        h.ipc(["sidebar-select", "tab", str(middle["id"])])
+        before = h.ipc(["status"])
+        h.key("g", key, "g", pause=0.3)
+        after = h.ipc(["status"])
+        require(after.get("mode") == "SIDEBAR" and
+                after.get("active_tabid") == before.get("active_tabid") and
+                after.get("sidebar_selected_type") == "tab" and
+                after.get("sidebar_selected_id") == first["id"],
+                f"standalone {key} changed or interrupted sidebar input",
+                {"before": before, "after": after})
+
+
 def test_sidebar_t_opens_tab_focus_command(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url])
     tabs = h.ipc(["tabs"])["tabs"]
@@ -1461,6 +1486,7 @@ TESTS = [
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_selection_and_enter_activates,
     test_sidebar_gg_and_G_jump_to_visible_ends,
+    test_sidebar_super_is_a_noop,
     test_sidebar_t_opens_tab_focus_command,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_sidebar_p_toggles_folder_pin,

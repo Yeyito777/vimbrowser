@@ -253,8 +253,37 @@ bool IsPrintableAscii(char16_t c) {
   return c >= 0x20 && c <= 0x7e;
 }
 
+namespace {
+
+bool IsModifierKeyEvent(const CefKeyEvent& event) {
+  // A modifier's own key-down event does not necessarily include that modifier
+  // in |event.modifiers|. In particular, Super_L arrives as VKEY_LWIN (0x5B),
+  // whose numeric value happens to equal ASCII '['. Without identifying the
+  // physical modifier first, PlainKeyChar() treats a standalone Super press as
+  // the sidebar's previous-audible-tab binding.
+  switch (event.windows_key_code) {
+    case 0x10:  // VKEY_SHIFT
+    case 0x11:  // VKEY_CONTROL
+    case 0x12:  // VKEY_MENU (Alt)
+    case 0x5B:  // VKEY_LWIN / VKEY_COMMAND
+    case 0x5C:  // VKEY_RWIN
+    case 0xA0:  // VKEY_LSHIFT
+    case 0xA1:  // VKEY_RSHIFT
+    case 0xA2:  // VKEY_LCONTROL
+    case 0xA3:  // VKEY_RCONTROL
+    case 0xA4:  // VKEY_LMENU
+    case 0xA5:  // VKEY_RMENU
+      return true;
+    default:
+      return false;
+  }
+}
+
+}  // namespace
+
 bool IsPlain(const CefKeyEvent& event) {
-  return !(event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+  return !IsModifierKeyEvent(event) &&
+         !(event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
          !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
          !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
 }
