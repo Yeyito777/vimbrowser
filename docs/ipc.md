@@ -422,7 +422,11 @@ Exceptions return `{"ok":false,...}`. Promise values are reported synchronously 
 
 #### `js-file <tabid> <path>`
 
-Reads JavaScript from a local file in the browser process and evaluates it with the same renderer bridge as `js`.
+Reads JavaScript from a local regular file in the browser process and evaluates
+it with the same renderer bridge as `js`. File I/O runs on CEF's blocking-file
+thread instead of the UI thread. The file is limited to 1 MiB; terminals,
+devices, FIFOs, and other non-regular paths (including `/dev/stdin`) are rejected
+so a malformed automation command cannot hang the browser.
 
 #### `cookies-url <url>`
 

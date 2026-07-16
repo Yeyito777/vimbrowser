@@ -1,5 +1,9 @@
 #include "browser_window.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <cerrno>
 #include <charconv>
@@ -8,7 +12,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -997,23 +1000,63 @@ constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
 // of feeding it through the smooth-scroll animation accumulator/timer.
 constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
 
-std::string ReadFileToString(const std::string& path, std::string* error) {
-  std::ifstream file(path, std::ios::binary);
-  if (!file) {
+std::string ReadRegularFileToString(const std::string& path,
+                                    size_t max_bytes,
+                                    std::string* error) {
+  auto fail = [error](std::string message) {
     if (error) {
-      *error = "ERR failed to open file\n";
+      *error = "ERR " + std::move(message) + "\n";
     }
-    return {};
+    return std::string();
+  };
+
+  // O_NONBLOCK is essential here. A js-file caller can otherwise pass a FIFO,
+  // terminal, or device (including /dev/stdin, which names the browser's own
+  // stdin) and wedge whichever thread opens or reads it indefinitely.
+  const int fd = open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+  if (fd < 0) {
+    return fail("failed to open js-file");
   }
-  std::ostringstream out;
-  out << file.rdbuf();
-  if (!file.good() && !file.eof()) {
-    if (error) {
-      *error = "ERR failed to read file\n";
+
+  struct stat info = {};
+  if (fstat(fd, &info) != 0) {
+    close(fd);
+    return fail("failed to inspect js-file");
+  }
+  if (!S_ISREG(info.st_mode)) {
+    close(fd);
+    return fail("js-file path is not a regular file");
+  }
+  if (info.st_size < 0 || static_cast<uint64_t>(info.st_size) > max_bytes) {
+    close(fd);
+    return fail("js-file exceeds the size limit");
+  }
+
+  std::string contents;
+  contents.reserve(static_cast<size_t>(info.st_size));
+  char buffer[64 * 1024];
+  for (;;) {
+    const ssize_t count = read(fd, buffer, sizeof(buffer));
+    if (count < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      close(fd);
+      return fail(errno == EAGAIN || errno == EWOULDBLOCK
+                      ? "js-file read would block"
+                      : "failed to read js-file");
     }
-    return {};
+    if (count == 0) {
+      break;
+    }
+    if (static_cast<size_t>(count) > max_bytes - contents.size()) {
+      close(fd);
+      return fail("js-file exceeds the size limit");
+    }
+    contents.append(buffer, static_cast<size_t>(count));
   }
-  return out.str();
+  close(fd);
+  return contents;
 }
 
 std::string HeadersJson(const CefResponse::HeaderMap& headers) {

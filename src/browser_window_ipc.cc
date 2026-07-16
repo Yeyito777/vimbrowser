@@ -28,6 +28,8 @@
 namespace vimbrowser {
 namespace {
 
+constexpr size_t kMaxJsFileBytes = 1024 * 1024;
+
 int NextScreenshotDevToolsMessageId() {
   // Use an explicit positive ID instead of ExecuteDevToolsMethod(0)'s auto-ID so
   // an extremely fast DevTools method result cannot race observer initialization.
@@ -438,6 +440,32 @@ void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
       base::BindOnce(&BrowserWindow::CompleteJsIpcRequest, self, request_id,
                      std::string("ERR js command timed out\n")),
       timeout_ms);
+}
+
+void BrowserWindow::ReadJsFileForIpc(uint64_t tab_id,
+                                     std::string path,
+                                     IpcReplyCallback reply) {
+  std::string error;
+  std::string code =
+      ReadRegularFileToString(path, kMaxJsFileBytes, &error);
+  CefRefPtr<BrowserWindow> self = this;
+  if (!CefPostTask(
+          TID_UI,
+          base::BindOnce(&BrowserWindow::FinishJsFileForIpc, self, tab_id,
+                         std::move(code), std::move(error), reply))) {
+    reply("ERR failed to post js-file result to UI thread\n");
+  }
+}
+
+void BrowserWindow::FinishJsFileForIpc(uint64_t tab_id,
+                                       std::string code,
+                                       std::string error,
+                                       IpcReplyCallback reply) {
+  if (!error.empty()) {
+    reply(std::move(error));
+    return;
+  }
+  HandleJsIpcCommand(tab_id, std::move(code), std::move(reply));
 }
 
 void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id,
@@ -1611,13 +1639,13 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    std::string error;
-    std::string code = ReadFileToString(argv[2], &error);
-    if (!error.empty()) {
-      reply(error);
-      return;
+    CefRefPtr<BrowserWindow> self = this;
+    if (!CefPostTask(
+            TID_FILE_USER_BLOCKING,
+            base::BindOnce(&BrowserWindow::ReadJsFileForIpc, self, tab_id,
+                           argv[2], reply))) {
+      reply("ERR failed to post js-file read task\n");
     }
-    HandleJsIpcCommand(tab_id, std::move(code), std::move(reply));
     return;
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -244,7 +245,9 @@ void SetTabId(Tab& tab, uint64_t id);
 std::string IpcSocketPathForStatePath(const std::string& state_path);
 std::string IpcVersionJson();
 std::string IpcCommandsJson();
-std::string ReadFileToString(const std::string& path, std::string* error);
+std::string ReadRegularFileToString(const std::string& path,
+                                    size_t max_bytes,
+                                    std::string* error);
 std::string HeadersJson(const CefResponse::HeaderMap& headers);
 std::string SameSiteName(cef_cookie_same_site_t same_site);
 std::string CookieJson(const CefCookie& cookie);

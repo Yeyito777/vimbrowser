@@ -394,6 +394,13 @@ class BrowserWindow final : public CefWindowDelegate,
                           std::string code,
                           IpcReplyCallback reply,
                           int timeout_ms = 10000);
+  void ReadJsFileForIpc(uint64_t tab_id,
+                        std::string path,
+                        IpcReplyCallback reply);
+  void FinishJsFileForIpc(uint64_t tab_id,
+                          std::string code,
+                          std::string error,
+                          IpcReplyCallback reply);
   void HandleCookiesIpcCommand(uint64_t tab_id,
                                std::string url_override,
                                IpcReplyCallback reply);
