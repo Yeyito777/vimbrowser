@@ -28,23 +28,29 @@ adb -s "${serial}" push \
 adb -s "${serial}" push \
   "${repo_dir}/scripts/a26/phone-launch.sh" \
   /data/local/tmp/vimbrowser-a26-launch
+adb -s "${serial}" push \
+  "${repo_dir}/assets/a26-browser.bgrx" \
+  /data/local/tmp/vimbrowser-a26-icon.bgrx
 
 adb -s "${serial}" shell '/data/local/tmp/su -c "set -e
   base=/data/local/a26-linux/opt/vimbrowser-a26
   bb=/data/local/a26-linux/busybox.static
   rm -rf \"\$base/rootfs.new\"
-  mkdir -p \"\$base/rootfs.new\" \"\$base/bin\"
+  mkdir -p \"\$base/rootfs.new\" \"\$base/bin\" \"\$base/share\"
   \"\$bb\" gzip -dc /data/local/tmp/vimbrowser-a26-rootfs.tar.gz | \"\$bb\" tar -xf - -C \"\$base/rootfs.new\"
   mkdir -p \"\$base/rootfs.new/opt/vimbrowser/Release\"
   \"\$bb\" gzip -dc /data/local/tmp/vimbrowser-a26-release.tar.gz | \"\$bb\" tar -xf - -C \"\$base/rootfs.new/opt/vimbrowser/Release\"
   cp /data/local/tmp/vimbrowser-a26-launch \"\$base/bin/vimbrowser-a26.new\"
+  cp /data/local/tmp/vimbrowser-a26-icon.bgrx \"\$base/share/browser-app.bgrx.new\"
   chmod 0755 \"\$base/bin/vimbrowser-a26.new\" \"\$base/rootfs.new/opt/vimbrowser/Release/vimbrowser\"
+  chmod 0644 \"\$base/share/browser-app.bgrx.new\"
   rm -rf \"\$base/rootfs.old\"
   if [ -d \"\$base/rootfs\" ]; then mv \"\$base/rootfs\" \"\$base/rootfs.old\"; fi
   mv \"\$base/rootfs.new\" \"\$base/rootfs\"
   mv \"\$base/bin/vimbrowser-a26.new\" \"\$base/bin/vimbrowser-a26\"
+  mv \"\$base/share/browser-app.bgrx.new\" \"\$base/share/browser-app.bgrx\"
   rm -rf \"\$base/rootfs.old\"
-  rm -f /data/local/tmp/vimbrowser-a26-rootfs.tar.gz /data/local/tmp/vimbrowser-a26-release.tar.gz /data/local/tmp/vimbrowser-a26-launch
+  rm -f /data/local/tmp/vimbrowser-a26-rootfs.tar.gz /data/local/tmp/vimbrowser-a26-release.tar.gz /data/local/tmp/vimbrowser-a26-launch /data/local/tmp/vimbrowser-a26-icon.bgrx
   \"\$bb\" chroot \"\$base/rootfs\" /bin/sh -c true
 "'
 

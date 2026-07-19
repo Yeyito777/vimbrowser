@@ -31,10 +31,15 @@ small nested Debian ARM64 application root at
 `/opt/vimbrowser-a26/rootfs`, sharing only the existing display, kernel mounts
 and network configuration needed by this proof.
 
-For the current A26 Shell, set `A26_SYSTEM_APP` to
-`/opt/vimbrowser-a26/bin/vimbrowser-a26` and open the existing System tile.  This
-temporary substitution avoids changing another repository before browser
-viability is known.
+The self-contained app installation also provides its launcher icon at
+`/opt/vimbrowser-a26/share/browser-app.bgrx`. Regenerate or verify that asset
+with `scripts/a26/prepare-icon.py [--check]` using the pinned Pillow version in
+`requirements-a26-assets.txt`.
+
+A26 Shell exposes this installation as the separate **Browser** launcher tile
+and starts `/opt/vimbrowser-a26/bin/vimbrowser-a26` without replacing the
+standalone System app. The shell owns fullscreen stacking and the global
+bottom-edge close gesture; vimbrowser owns the page surface and browser state.
 
 Android currently drops the Wi-Fi carrier when its Java framework is suspended
 for the DRM handoff.  During USB development, run the loopback-only proxy and
