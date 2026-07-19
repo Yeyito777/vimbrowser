@@ -33,6 +33,7 @@ struct Config {
   bool show_fps_indicator = false;
   bool show_statusline = true;
   bool shader_enabled = true;
+  bool a26_shell = false;
 };
 
 struct SavedSidebarFolder {

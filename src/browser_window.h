@@ -63,7 +63,8 @@ class BrowserWindow final : public CefWindowDelegate,
                 bool shader_enabled,
                 std::string state_path,
                 std::string dwm_save_argv,
-                std::string root_cache_path);
+                std::string root_cache_path,
+                bool a26_shell);
 
   void Create();
   void OnClientBrowserCreated(BrowserClient* client);
@@ -667,6 +668,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_fps_indicator_ = false;
   bool show_statusline_ = true;
   bool shader_enabled_ = true;
+  bool a26_shell_ = false;
   bool dwm_save_registered_ = false;
   bool forwarding_key_to_page_ = false;
   bool forwarding_key_to_devtools_ = false;

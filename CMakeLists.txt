@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 project(vimbrowser LANGUAGES C CXX)
 
+option(VIMBROWSER_USE_PRIVATE_CEF_API
+  "Link against the custom vimbrowser CEF backend API" ON)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -54,6 +57,18 @@ add_executable(vimbrowser
   src/vim.cc
   src/vim.h
 )
+
+if(NOT VIMBROWSER_USE_PRIVATE_CEF_API)
+  target_sources(vimbrowser PRIVATE src/cef_private_api_compat.cc)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # The compact A26 builder only carries this shell's development libraries.
+    # Official libcef records its NSS/ATK/DBus/CUPS/GBM/ALSA dependencies as
+    # DT_NEEDED entries; those are installed in the separate phone runtime
+    # image and resolve there.  Do not require their development packages merely
+    # to complete this compatibility link.
+    target_link_options(vimbrowser PRIVATE "-Wl,--allow-shlib-undefined")
+  endif()
+endif()
 
 add_executable(vimbrowser-ipc
   src/ipc_client.c

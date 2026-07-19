@@ -243,7 +243,8 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              bool shader_enabled,
                              std::string state_path,
                              std::string dwm_save_argv,
-                             std::string root_cache_path)
+                             std::string root_cache_path,
+                             bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
@@ -255,7 +256,9 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
       show_statusline_(show_statusline),
-      shader_enabled_(shader_enabled) {
+      shader_enabled_(shader_enabled),
+      a26_shell_(a26_shell) {
+  sidebar_visible_ = !a26_shell_;
   const AppState state = ReadAppState(state_path_);
   open_history_ = state.open_history;
   search_history_ = state.search_history;
@@ -940,8 +943,12 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   bulk_tab_update_ = false;
   RefreshSidebar();
 
-  window_->CenterWindow(CefSize(1200, 800));
+  window_->CenterWindow(a26_shell_ ? CefSize(1080, 2340)
+                                   : CefSize(1200, 800));
   window_->Show();
+  if (a26_shell_) {
+    window_->SetFullscreen(true);
+  }
   RegisterDwmSaveArgv();
   Layout();
   SetFocusArea(FocusArea::kWebView);

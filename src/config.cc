@@ -708,6 +708,8 @@ Config ParseConfig(int argc, char* argv[]) {
     std::string_view arg(argv[i]);
     if (StartsWith(arg, "--type=")) {
       is_subprocess = true;
+    } else if (arg == "--a26-shell") {
+      config.a26_shell = true;
     } else if (arg == "--disable-gpu") {
       config.disable_gpu = true;
     } else if (StartsWith(arg, "--remote-debugging-port=")) {
@@ -751,6 +753,17 @@ Config ParseConfig(int argc, char* argv[]) {
   config.show_statusline = state.show_statusline;
   if (!config.explicit_shader_enabled) {
     config.shader_enabled = state.shader_enabled;
+  }
+
+  if (config.a26_shell) {
+    // The phone shell owns system status, app switching and the bottom-edge
+    // close gesture.  Start with a page-only surface and software rendering;
+    // browser controls can still be exercised through the existing IPC while
+    // touch behavior is being measured.
+    config.disable_gpu = true;
+    config.show_mode_indicator = false;
+    config.show_fps_indicator = false;
+    config.show_statusline = false;
   }
 
   if (!config.explicit_initial_urls.empty()) {

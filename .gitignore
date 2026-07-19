@@ -1,6 +1,8 @@
 /build/
 /build-source/
+/build-a26-arm64/
 /third_party/cef/
+/third_party/cef-a26-arm64/
 /third_party/downloads/
 /third_party/.cef-extract.*/
 *.o
@@ -10,6 +12,9 @@
 .cache/
 compile_commands.json
 CMakeUserPresets.json
+/__pycache__/
+__pycache__/
+*.pyc
 /core
 /core.*
 /backend/depot_tools/

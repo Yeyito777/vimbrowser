@@ -225,7 +225,8 @@ App::App(std::vector<std::string> initial_urls,
          std::string state_path,
          std::string dwm_save_argv,
          std::string root_cache_path,
-         bool disable_gpu)
+         bool disable_gpu,
+         bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
@@ -238,7 +239,8 @@ App::App(std::vector<std::string> initial_urls,
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
       root_cache_path_(std::move(root_cache_path)),
-      disable_gpu_(disable_gpu) {}
+      disable_gpu_(disable_gpu),
+      a26_shell_(a26_shell) {}
 
 void App::OnBeforeCommandLineProcessing(
     const CefString& process_type,
@@ -247,6 +249,7 @@ void App::OnBeforeCommandLineProcessing(
   // command line or process-singleton relaunch messages.
   command_line->RemoveSwitch("profile-dir");
   command_line->RemoveSwitch("cache-path");
+  command_line->RemoveSwitch("a26-shell");
 
   // Keep the shell minimal and deterministic. These are Chromium switches, not
   // external UI toolkits.
@@ -273,6 +276,10 @@ void App::OnBeforeCommandLineProcessing(
   if (disable_gpu_) {
     command_line->AppendSwitch("disable-gpu");
   }
+  if (a26_shell_) {
+    command_line->AppendSwitchWithValue("ozone-platform", "x11");
+    command_line->AppendSwitch("disable-dev-shm-usage");
+  }
 }
 
 bool App::OnAlreadyRunningAppRelaunch(
@@ -296,7 +303,8 @@ void App::OnContextInitialized() {
                                                     show_statusline_,
                                                     shader_enabled_, state_path_,
                                                     dwm_save_argv_,
-                                                    root_cache_path_));
+                                                    root_cache_path_,
+                                                    a26_shell_));
   window->Create();
 }
 

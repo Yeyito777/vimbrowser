@@ -1,0 +1,52 @@
+FROM docker.io/library/debian:bookworm-slim AS builder
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      cmake \
+      libcairo2-dev \
+      libcurl4-openssl-dev \
+      librsvg2-dev \
+      libx11-dev \
+      libxi-dev \
+      ninja-build \
+      pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+FROM docker.io/library/debian:bookworm-slim AS runtime
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates \
+      fonts-dejavu-core \
+      libasound2 \
+      libatk-bridge2.0-0 \
+      libatspi2.0-0 \
+      libcairo2 \
+      libcups2 \
+      libcurl4 \
+      libdbus-1-3 \
+      libdrm2 \
+      libgbm1 \
+      libglib2.0-0 \
+      libgtk-3-0 \
+      libnspr4 \
+      libnss3 \
+      libpango-1.0-0 \
+      librsvg2-2 \
+      libx11-6 \
+      libx11-xcb1 \
+      libxcb1 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxext6 \
+      libxfixes3 \
+      libxi6 \
+      libxkbcommon0 \
+      libxrandr2 \
+      libxshmfence1 \
+      libxss1 \
+      procps && \
+    rm -rf /var/lib/apt/lists/* && \
+    install -d -m 0755 /opt/vimbrowser/Release /var/lib/vimbrowser/profile
