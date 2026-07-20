@@ -41,17 +41,22 @@ and starts `/opt/vimbrowser-a26/bin/vimbrowser-a26` without replacing the
 standalone System app. The shell owns fullscreen stacking and the global
 bottom-edge close gesture; vimbrowser owns the page surface and browser state.
 
-Android currently drops the Wi-Fi carrier when its Java framework is suspended
-for the DRM handoff.  During USB development, run the loopback-only proxy and
-reverse its port before opening the browser:
+The native A26 environment now owns `wlan0` directly while Android's Java Wi-Fi
+framework is suspended, so the default launcher uses the phone's system-wide
+Linux route and DNS configuration. No browser-specific proxy is required.
+
+A loopback-only ADB proxy remains available as a recovery fallback. Start it,
+reverse its port, and launch the wrapper with an explicit proxy value:
 
 ```sh
 scripts/a26/adb-http-proxy.py --port 18777
 adb reverse tcp:18777 tcp:18777
+A26_VIMBROWSER_PROXY=http://127.0.0.1:18777 \
+  /opt/vimbrowser-a26/bin/vimbrowser-a26
 ```
 
-The host resolves names and opens Internet connections; TLS remains end-to-end
-between Chromium and the destination because HTTPS uses `CONNECT` tunneling.
+With that optional fallback, the host resolves names and opens connections;
+HTTPS remains end-to-end because Chromium uses `CONNECT` tunneling.
 
 ## Expected limitations
 
