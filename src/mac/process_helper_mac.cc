@@ -23,6 +23,6 @@ int main(int argc, char* argv[]) {
       /*active_index=*/0, /*show_mode_indicator=*/false,
       /*show_fps_indicator=*/false, /*show_statusline=*/false,
       /*shader_enabled=*/false, /*state_path=*/{}, /*dwm_save_argv=*/{},
-      /*root_cache_path=*/{}, /*disable_gpu=*/false));
+      /*root_cache_path=*/{}, /*disable_gpu=*/false, /*a26_shell=*/false));
   return CefExecuteProcess(main_args, app, nullptr);
 }
