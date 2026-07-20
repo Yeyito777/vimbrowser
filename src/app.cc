@@ -10,6 +10,9 @@
 #include "include/cef_process_message.h"
 #include "include/cef_values.h"
 #include "include/cef_v8.h"
+#if defined(__APPLE__)
+#include "mac/browser_features_mac.h"
+#endif
 
 namespace vimbrowser {
 namespace {
@@ -401,6 +404,10 @@ void App::OnContextCreated(CefRefPtr<CefBrowser>,
       CefV8Value::CreateFunction("__vimbrowserReport",
                                  new MacPageBridgeHandler(frame)),
       attributes);
+  CefRefPtr<CefV8Value> tracker_result;
+  CefRefPtr<CefV8Exception> tracker_exception;
+  context->Eval(mac::kHintListenerTrackerScript, frame->GetURL(), 0,
+                tracker_result, tracker_exception);
 }
 #endif
 
