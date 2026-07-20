@@ -390,21 +390,8 @@ inline std::string BuildHintScript(std::string_view mode) {
   overlay.style.cssText =
     'all:initial;display:block;position:fixed;inset:0;pointer-events:none;' +
     'z-index:2147483647;contain:strict;overflow:visible;';
-  const renderMarker = (candidate, prefix = '') => {
-    const marker = candidate.marker;
-    marker.replaceChildren();
-    const matchedLength = candidate.label.startsWith(prefix) ? prefix.length : 0;
-    if (!matchedLength) {
-      marker.textContent = candidate.label;
-      return;
-    }
-    const matched = document.createElement('span');
-    matched.style.cssText = 'all:unset;color:#fff;';
-    matched.textContent = candidate.label.slice(0, matchedLength);
-    const rest = document.createElement('span');
-    rest.style.cssText = 'all:unset;color:#00050f;';
-    rest.textContent = candidate.label.slice(matchedLength);
-    marker.append(matched, rest);
+  const renderMarker = candidate => {
+    candidate.marker.textContent = candidate.label;
   };
   for (const candidate of candidates) {
     const rect = candidate.rect;
@@ -482,7 +469,7 @@ inline std::string BuildHintScript(std::string_view mode) {
         for (const candidate of candidates) {
           candidate.marker.style.display =
             candidate.label.startsWith(prefix) ? 'block' : 'none';
-          renderMarker(candidate, prefix);
+          renderMarker(candidate);
         }
       }
       return;
@@ -494,7 +481,7 @@ inline std::string BuildHintScript(std::string_view mode) {
       candidate.label.startsWith(prefix));
     for (const candidate of candidates) {
       candidate.marker.style.display = matches.includes(candidate) ? 'block' : 'none';
-      renderMarker(candidate, prefix);
+      renderMarker(candidate);
     }
     const exact = matches.find(candidate => candidate.label === prefix);
     if (exact) activate(exact);
