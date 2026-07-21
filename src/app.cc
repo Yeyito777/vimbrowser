@@ -19,29 +19,34 @@ constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
 
-bool IsEditableTextNode(CefRefPtr<CefDOMNode> node) {
+std::string FocusedEditablePurpose(CefRefPtr<CefDOMNode> node) {
   if (!node) {
-    return false;
+    return {};
   }
-  if (node->IsEditable()) {
-    return true;
+
+  if (node->IsFormControlElement()) {
+    switch (node->GetFormControlElementType()) {
+      case DOM_FORM_CONTROL_TYPE_INPUT_PASSWORD:
+        return "password";
+      case DOM_FORM_CONTROL_TYPE_INPUT_SEARCH:
+        return "search";
+      case DOM_FORM_CONTROL_TYPE_INPUT_URL:
+        return "url";
+      case DOM_FORM_CONTROL_TYPE_INPUT_NUMBER:
+        return "number";
+      case DOM_FORM_CONTROL_TYPE_INPUT_EMAIL:
+      case DOM_FORM_CONTROL_TYPE_INPUT_TELEPHONE:
+      case DOM_FORM_CONTROL_TYPE_INPUT_TEXT:
+      case DOM_FORM_CONTROL_TYPE_TEXT_AREA:
+        return "text";
+      default:
+        break;
+    }
   }
-  if (!node->IsFormControlElement()) {
-    return false;
-  }
-  switch (node->GetFormControlElementType()) {
-    case DOM_FORM_CONTROL_TYPE_INPUT_EMAIL:
-    case DOM_FORM_CONTROL_TYPE_INPUT_NUMBER:
-    case DOM_FORM_CONTROL_TYPE_INPUT_PASSWORD:
-    case DOM_FORM_CONTROL_TYPE_INPUT_SEARCH:
-    case DOM_FORM_CONTROL_TYPE_INPUT_TELEPHONE:
-    case DOM_FORM_CONTROL_TYPE_INPUT_TEXT:
-    case DOM_FORM_CONTROL_TYPE_INPUT_URL:
-    case DOM_FORM_CONTROL_TYPE_TEXT_AREA:
-      return true;
-    default:
-      return false;
-  }
+
+  // contenteditable and other renderer-recognized editable nodes do not expose
+  // a reliable input purpose through CefDOMNode. Report the safe generic type.
+  return node->IsEditable() ? "text" : std::string();
 }
 
 std::string JsonEscape(std::string_view text) {
@@ -317,7 +322,11 @@ void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>,
   // CefKeyEvent flag.
   CefRefPtr<CefProcessMessage> message =
       CefProcessMessage::Create(kFocusedEditableMessage);
-  message->GetArgumentList()->SetBool(0, IsEditableTextNode(node));
+  const std::string purpose = FocusedEditablePurpose(node);
+  message->GetArgumentList()->SetBool(0, !purpose.empty());
+  // Purpose only. Never inspect or serialize the node value/contents.
+  message->GetArgumentList()->SetString(1,
+                                        purpose.empty() ? "text" : purpose);
   if (frame && frame->IsValid()) {
     frame->SendProcessMessage(PID_BROWSER, message);
   }

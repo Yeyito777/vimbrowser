@@ -28,6 +28,8 @@ ADD_LOGICAL_TARGET(libcef_lib "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 SET_CEF_TARGET_OUT_DIR()
 
 add_executable(vimbrowser
+  src/a26_keyboard.cc
+  src/a26_keyboard.h
   src/app.cc
   src/app.h
   src/browser_font_settings.h

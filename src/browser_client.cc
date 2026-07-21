@@ -930,6 +930,16 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void BrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                         bool isLoading,
+                                         bool canGoBack,
+                                         bool canGoForward) {
+  if (owner_) {
+    owner_->OnClientLoadingStateChange(this, isLoading, canGoBack,
+                                       canGoForward);
+  }
+}
+
 void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode) {
@@ -950,6 +960,13 @@ void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
                                     const CefString& url) {
   if (owner_ && frame && frame->IsMain()) {
     owner_->OnClientAddressChange(this, url.ToString());
+  }
+}
+
+void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
+                                  const CefString& title) {
+  if (owner_) {
+    owner_->OnClientTitleChange(this, title.ToString());
   }
 }
 

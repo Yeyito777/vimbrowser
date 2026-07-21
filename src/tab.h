@@ -24,6 +24,11 @@ struct Tab {
   bool deferred_load = false;
   bool audible = false;
   bool focused_editable_node = false;
+  std::string focused_editable_purpose = "text";
+  std::string title;
+  bool is_loading = false;
+  bool can_go_back = false;
+  bool can_go_forward = false;
   bool has_scroll_target = false;
   int scroll_target_x = 0;
   int scroll_target_y = 0;

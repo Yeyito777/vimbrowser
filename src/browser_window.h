@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "a26_keyboard.h"
 #include "browser_client.h"
 #include "include/cef_request_context.h"
 #include "include/views/cef_box_layout.h"
@@ -71,6 +72,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void OnClientBeforeClose(BrowserClient* client);
   void OnClientLoadStart(BrowserClient* client, const std::string& url);
   void OnClientAddressChange(BrowserClient* client, const std::string& url);
+  void OnClientTitleChange(BrowserClient* client, const std::string& title);
+  void OnClientLoadingStateChange(BrowserClient* client,
+                                  bool is_loading,
+                                  bool can_go_back,
+                                  bool can_go_forward);
   bool OnClientProcessMessage(BrowserClient* client,
                               CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
@@ -156,6 +162,8 @@ class BrowserWindow final : public CefWindowDelegate,
   CefSize GetMinimumSize(CefRefPtr<CefView> view) override;
   CefSize GetMaximumSize(CefRefPtr<CefView> view) override;
   void OnThemeChanged(CefRefPtr<CefView> view) override;
+  void OnFocus(CefRefPtr<CefView> view) override;
+  void OnBlur(CefRefPtr<CefView> view) override;
   cef_runtime_style_t GetWindowRuntimeStyle() override;
   cef_runtime_style_t GetBrowserRuntimeStyle() override;
 
@@ -179,6 +187,7 @@ class BrowserWindow final : public CefWindowDelegate,
     kWebView,
     kDevTools,
     kCommandLine,
+    kA26Url,
   };
 
   enum class CloseFocus {
@@ -326,6 +335,7 @@ class BrowserWindow final : public CefWindowDelegate,
 
  private:
   void BuildChrome();
+  void BuildA26Chrome();
   void RegisterDwmSaveArgv();
   void AddTab(std::string url,
               bool activate,
@@ -573,11 +583,22 @@ class BrowserWindow final : public CefWindowDelegate,
   void SetStatusOutput(std::string message, int timeout_ms = 3000);
   void ClearStatusOutputForGeneration(uint64_t generation);
   void UpdateStatusBar();
+  void UpdateA26Chrome();
+  void SelectA26UrlAfterFocus();
+  void CommitA26Url();
+  void CancelA26Url();
+  void FinishA26ChromeAction();
+  void RequestA26Keyboard(A26KeyboardPurpose purpose);
+  void SyncA26KeyboardForActivePage();
   void UpdateCommandView();
   void StartSidebarMouseWatcher();
   void StopSidebarMouseWatcher();
   void RunSidebarMouseWatcher();
   void UpdateSidebarMouseBounds();
+  void UpdateA26MouseBounds();
+  void HandleA26MouseControl(size_t control_index);
+  void FocusA26UrlFromTouch();
+  void ClearA26ControlDedup(int control_id, uint64_t generation);
   void HandleSidebarMouseRowClick(size_t row_index);
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
@@ -672,6 +693,9 @@ class BrowserWindow final : public CefWindowDelegate,
   bool show_statusline_ = true;
   bool shader_enabled_ = true;
   bool a26_shell_ = false;
+  bool a26_xtest_char_workaround_ = false;
+  bool a26_url_focused_ = false;
+  bool a26_url_editing_ = false;
   bool dwm_save_registered_ = false;
   bool forwarding_key_to_page_ = false;
   bool forwarding_key_to_devtools_ = false;
@@ -699,6 +723,8 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t sidebar_refresh_generation_ = 0;
   uint64_t status_output_generation_ = 0;
   uint64_t sidebar_delete_generation_ = 0;
+  uint64_t a26_control_dedup_generation_ = 0;
+  int a26_last_control_id_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_folder_id_ = 1;
   uint64_t next_ipc_request_id_ = 1;
@@ -710,6 +736,9 @@ class BrowserWindow final : public CefWindowDelegate,
   std::atomic<int> sidebar_mouse_height_{0};
   std::atomic<int> sidebar_mouse_row_count_{0};
   std::atomic<unsigned long> sidebar_mouse_window_{0};
+  std::atomic<int> a26_layout_width_{0};
+  std::atomic<int> a26_layout_height_{0};
+  std::atomic<unsigned long> a26_mouse_window_{0};
   std::atomic<int> context_menu_mouse_screen_x_{0};
   std::atomic<int> context_menu_mouse_screen_y_{0};
   std::atomic<int> context_menu_mouse_width_{0};
@@ -754,6 +783,15 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefTextfield> status_output_field_;
   CefRefPtr<CefTextfield> status_mode_field_;
   CefRefPtr<CefLabelButton> status_url_label_;
+  CefRefPtr<CefPanel> a26_chrome_panel_;
+  CefRefPtr<CefPanel> a26_navigation_panel_;
+  CefRefPtr<CefPanel> a26_bottom_reserve_panel_;
+  CefRefPtr<CefLabelButton> a26_back_button_;
+  CefRefPtr<CefLabelButton> a26_forward_button_;
+  CefRefPtr<CefTextfield> a26_url_field_;
+  CefRefPtr<CefLabelButton> a26_reload_button_;
+  CefRefPtr<CefLabelButton> a26_tabs_button_;
+  CefRefPtr<CefOverlayController> a26_navigation_overlay_;
   CefRefPtr<CefPanel> command_panel_;
   CefRefPtr<CefPanel> command_content_panel_;
   CefRefPtr<CefPanel> command_separator_panel_;
@@ -795,6 +833,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::vector<CefRefPtr<CefLabelButton>> context_menu_rows_;
   CefRefPtr<CefOverlayController> context_menu_overlay_;
   std::thread sidebar_mouse_thread_;
+  std::unique_ptr<A26KeyboardClient> a26_keyboard_;
   std::unique_ptr<IpcServer> ipc_server_;
   uint64_t devtools_opener_tab_id_ = 0;
   bool devtools_visible_ = false;

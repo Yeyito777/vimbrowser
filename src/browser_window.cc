@@ -1,6 +1,8 @@
 #include "browser_window.h"
 #include "browser_window_internal.h"
 
+#include "a26_keyboard.h"
+
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -230,6 +232,39 @@ void StylePermissionButton(CefRefPtr<CefLabelButton> button,
   button->SetState(CEF_BUTTON_STATE_NORMAL);
 }
 
+void StyleA26Button(CefRefPtr<CefLabelButton> button) {
+  if (!button) {
+    return;
+  }
+  button->SetFontList("sans-serif, 14px");
+  button->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+  button->SetFocusable(false);
+  button->SetInkDropEnabled(true);
+  button->SetBackgroundColor(theme::kSidebarBg);
+  button->SetEnabledTextColors(theme::kText);
+  button->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
+  button->SetTextColor(CEF_BUTTON_STATE_HOVERED, theme::kText);
+  button->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
+  button->SetTextColor(CEF_BUTTON_STATE_DISABLED, theme::kMuted);
+}
+
+void StyleA26UrlField(CefRefPtr<CefTextfield> field) {
+  if (!field) {
+    return;
+  }
+  // Do not reuse StyleTextfield here: it temporarily makes a field read-only
+  // and non-focusable, which would blur this live editor on every layout/theme
+  // refresh before those flags were restored.
+  field->SetReadOnly(false);
+  field->SetFocusable(true);
+  field->SetFontList("sans-serif, 15px");
+  field->SetBackgroundColor(theme::kAppBg);
+  field->SetTextColor(theme::kText);
+  field->SetSelectionTextColor(theme::kText);
+  field->SetSelectionBackgroundColor(theme::kSelectionBg);
+  field->SetPlaceholderTextColor(theme::kMuted);
+}
+
 bool HasKeyModifier(const CefKeyEvent& event) {
   constexpr uint32_t kKeyModifierMask =
       EVENTFLAG_SHIFT_DOWN | EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN |
@@ -269,6 +304,9 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       show_statusline_(show_statusline),
       shader_enabled_(shader_enabled),
       a26_shell_(a26_shell) {
+  const char* xtest_workaround = std::getenv("A26_VIMBROWSER_XTEST_CHAR_WORKAROUND");
+  a26_xtest_char_workaround_ =
+      a26_shell_ && xtest_workaround && std::string_view(xtest_workaround) == "1";
   sidebar_visible_ = !a26_shell_;
   const AppState state = ReadAppState(state_path_);
   open_history_ = state.open_history;
@@ -325,6 +363,20 @@ void BrowserWindow::Create() {
 
 void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   RefreshSidebar();
+  if (client && client->browser()) {
+    for (size_t i = 0; i < tabs_.size(); ++i) {
+      if (tabs_[i].client.get() != client) {
+        continue;
+      }
+      tabs_[i].is_loading = client->browser()->IsLoading();
+      tabs_[i].can_go_back = client->browser()->CanGoBack();
+      tabs_[i].can_go_forward = client->browser()->CanGoForward();
+      if (i == active_index_) {
+        UpdateA26Chrome();
+      }
+      break;
+    }
+  }
   if (client && client->browser() && client->browser()->GetHost()) {
     client->browser()->GetHost()->NotifyScreenInfoChanged();
   }
@@ -402,12 +454,48 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   // the browser-side latch at the same document boundary so a pending navigation
   // can never leave the shell routing keys to an obsolete hint matcher.
   StopPageNativeHintsForClient(client);
+  if (a26_shell_ && ActiveTab() && ActiveTab()->client.get() == client) {
+    website_mode_ = vim::Mode::kWebsiteNormal;
+    RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  }
   UpdateClientUrl(client, url, true);
 }
 
 void BrowserWindow::OnClientAddressChange(BrowserClient* client,
                                           const std::string& url) {
   UpdateClientUrl(client, url, false);
+}
+
+void BrowserWindow::OnClientTitleChange(BrowserClient* client,
+                                        const std::string& title) {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].client.get() != client) {
+      continue;
+    }
+    tabs_[i].title = title;
+    if (i == active_index_) {
+      UpdateA26Chrome();
+    }
+    return;
+  }
+}
+
+void BrowserWindow::OnClientLoadingStateChange(BrowserClient* client,
+                                               bool is_loading,
+                                               bool can_go_back,
+                                               bool can_go_forward) {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].client.get() != client) {
+      continue;
+    }
+    tabs_[i].is_loading = is_loading;
+    tabs_[i].can_go_back = can_go_back;
+    tabs_[i].can_go_forward = can_go_forward;
+    if (i == active_index_) {
+      UpdateA26Chrome();
+    }
+    return;
+  }
 }
 
 void BrowserWindow::UpdateClientUrl(BrowserClient* client,
@@ -426,6 +514,7 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
       SetTabUrl(tab, url);
       if (force_update) {
         tab.focused_editable_node = false;
+        tab.focused_editable_purpose = "text";
       }
       tab.has_scroll_target = false;
       tab.scroll_target_is_pdf_viewport = false;
@@ -434,6 +523,9 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
       }
       if (i == active_index_) {
         UpdateStatusBar();
+        if (force_update) {
+          RequestA26Keyboard(A26KeyboardPurpose::kHide);
+        }
       }
       SaveState();
       RefreshSidebar();
@@ -454,24 +546,57 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
   if (name == kFocusedEditableMessage) {
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     const bool focused_editable = args && args->GetSize() >= 1 && args->GetBool(0);
+    std::string purpose =
+        args && args->GetSize() >= 2 ? args->GetString(1).ToString() : "text";
+    if (purpose != "password" && purpose != "search" && purpose != "url" &&
+        purpose != "number") {
+      purpose = "text";
+    }
     bool active_tab_focused_editable = false;
+    bool message_for_active_tab = false;
     for (Tab& tab : tabs_) {
       if (tab.client.get() == client) {
         tab.focused_editable_node = focused_editable;
+        tab.focused_editable_purpose = purpose;
+        message_for_active_tab = ActiveTab() == &tab;
         active_tab_focused_editable = focused_editable && ActiveTab() == &tab;
         break;
       }
     }
-    if (active_tab_focused_editable && native_hints_active_ &&
-        mode_ == Mode::kNormal && focus_area_ == FocusArea::kWebView) {
+    if (active_tab_focused_editable &&
+        ((native_hints_active_ && mode_ == Mode::kNormal &&
+          focus_area_ == FocusArea::kWebView) ||
+         a26_shell_)) {
       // Only native hints turn focused page text controls into vimbrowser insert
       // mode.  Ordinary mouse clicks, tab traversal, autofocus, and page script
       // focus must leave the website vim mode alone so normal-mode keys remain
       // under vimbrowser's control until the user explicitly enters insert mode.
+      // A26 is the deliberate exception: Moon injects XTEST key events after a
+      // touch-focused DOM input, so that input must already be on the existing
+      // insert/forwarding path before the global keyboard becomes visible.
       website_mode_ = vim::Mode::kInsert;
       ResetWebsitePendingKeys();
       suppress_next_website_char_.reset();
+      if (a26_shell_) {
+        focus_area_ = FocusArea::kWebView;
+        a26_url_focused_ = false;
+        a26_url_editing_ = false;
+        SyncA26KeyboardForActivePage();
+        if (frame && frame->IsValid()) {
+          // Moon resizes the app above its global keyboard. Re-center only the
+          // focused element after that configure settles; never inspect or
+          // return its value.
+          frame->ExecuteJavaScript(
+              "setTimeout(()=>{const e=document.activeElement;"
+              "if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',"
+              "inline:'nearest'});},180);",
+              frame->GetURL(), 0);
+        }
+      }
       UpdateModeIndicator();
+    } else if (a26_shell_ && message_for_active_tab && !focused_editable &&
+               !a26_url_focused_) {
+      RequestA26Keyboard(A26KeyboardPurpose::kHide);
     }
     return true;
   }
@@ -891,6 +1016,11 @@ void BrowserWindow::OnDevToolsNativeHintsStopped() {
 
 void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_ = window;
+  if (a26_shell_) {
+    sidebar_visible_ = false;
+    a26_keyboard_ = std::make_unique<A26KeyboardClient>();
+    RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  }
   window_->SetTitle("vimbrowser");
   window_->SetThemeColor(CEF_ColorPrimaryBackground, theme::kAppBg);
   window_->SetThemeColor(CEF_ColorPrimaryForeground, theme::kText);
@@ -1150,6 +1280,10 @@ void BrowserWindow::BuildChrome() {
 
   root_panel_->AddChildView(status_bar_panel_);
 
+  if (a26_shell_) {
+    BuildA26Chrome();
+  }
+
   command_panel_ = CefPanel::CreatePanel(this);
   command_panel_->SetID(kCommandPanelId);
   command_panel_->SetBackgroundColor(theme::kAppBg);
@@ -1366,8 +1500,83 @@ void BrowserWindow::BuildChrome() {
   media_permission_right_border_overlay_->SetVisible(false);
 }
 
+void BrowserWindow::BuildA26Chrome() {
+  if (!a26_shell_ || !root_panel_) {
+    return;
+  }
+
+  a26_chrome_panel_ = CefPanel::CreatePanel(this);
+  a26_chrome_panel_->SetID(kA26ChromePanelId);
+  a26_chrome_panel_->SetBackgroundColor(theme::kAppBg);
+  // This ordinary root child reserves all bottom chrome/gesture space. The
+  // interactive navigation row is a Window overlay above Chromium's native X11
+  // child surface; otherwise the BrowserView can win hit-testing even though a
+  // sibling Views panel paints on top of it.
+  root_panel_->AddChildView(a26_chrome_panel_);
+
+  a26_navigation_panel_ = CefPanel::CreatePanel(this);
+  a26_navigation_panel_->SetID(kA26NavigationPanelId);
+  a26_navigation_panel_->SetBackgroundColor(theme::kSidebarBg);
+  CefBoxLayoutSettings navigation_settings = {};
+  navigation_settings.size = sizeof(navigation_settings);
+  navigation_settings.horizontal = true;
+  navigation_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
+  navigation_settings.inside_border_insets = CefInsets(6, 6, 6, 6);
+  navigation_settings.between_child_spacing = 4;
+  CefRefPtr<CefBoxLayout> navigation_layout =
+      a26_navigation_panel_->SetToBoxLayout(navigation_settings);
+  a26_navigation_overlay_ = window_->AddOverlayView(
+      a26_navigation_panel_, CEF_DOCKING_MODE_CUSTOM, true);
+  a26_navigation_overlay_->SetVisible(true);
+
+  a26_back_button_ = CefLabelButton::CreateLabelButton(this, "\u2190");
+  a26_back_button_->SetID(kA26BackButtonId);
+  a26_back_button_->SetAccessibleName("Back");
+  StyleA26Button(a26_back_button_);
+  a26_navigation_panel_->AddChildView(a26_back_button_);
+
+  a26_forward_button_ = CefLabelButton::CreateLabelButton(this, "\u2192");
+  a26_forward_button_->SetID(kA26ForwardButtonId);
+  a26_forward_button_->SetAccessibleName("Forward");
+  StyleA26Button(a26_forward_button_);
+  a26_navigation_panel_->AddChildView(a26_forward_button_);
+
+  a26_url_field_ = CefTextfield::CreateTextfield(this);
+  a26_url_field_->SetID(kA26UrlFieldId);
+  StyleA26UrlField(a26_url_field_);
+  a26_url_field_->SetPlaceholderText("URL or search");
+  a26_url_field_->SetPlaceholderTextColor(theme::kMuted);
+  a26_url_field_->SetAccessibleName("Address");
+  a26_navigation_panel_->AddChildView(a26_url_field_);
+  navigation_layout->SetFlexForView(a26_url_field_, 1);
+
+  a26_reload_button_ = CefLabelButton::CreateLabelButton(this, "Reload");
+  a26_reload_button_->SetID(kA26ReloadButtonId);
+  a26_reload_button_->SetAccessibleName("Reload");
+  StyleA26Button(a26_reload_button_);
+  a26_navigation_panel_->AddChildView(a26_reload_button_);
+
+  a26_tabs_button_ = CefLabelButton::CreateLabelButton(this, "Tabs 0/0");
+  a26_tabs_button_->SetID(kA26TabsButtonId);
+  a26_tabs_button_->SetAccessibleName("Activate next tab");
+  StyleA26Button(a26_tabs_button_);
+  a26_navigation_panel_->AddChildView(a26_tabs_button_);
+
+  // This final in-layout strip is intentionally empty. Moon's bottom-edge close
+  // gesture starts here, below every essential browser control.
+  a26_bottom_reserve_panel_ = CefPanel::CreatePanel(this);
+  a26_bottom_reserve_panel_->SetID(kA26BottomReservePanelId);
+  a26_bottom_reserve_panel_->SetBackgroundColor(theme::kAppBg);
+  a26_chrome_panel_->AddChildView(a26_bottom_reserve_panel_);
+
+  // main_panel_ is the root layout's only flex child, so this panel keeps its
+  // fixed preferred height without an explicit (and toolkit-dependent) flex 0.
+  UpdateA26Chrome();
+}
+
 void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   CancelNativeContextMenu();
+  RequestA26Keyboard(A26KeyboardPurpose::kHide);
   StopSidebarMouseWatcher();
   ++active_browser_sync_generation_;
   ++state_save_generation_;
@@ -1417,7 +1626,16 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   command_field_ = nullptr;
   command_content_panel_ = nullptr;
   command_panel_ = nullptr;
+  a26_navigation_overlay_ = nullptr;
   status_url_label_ = nullptr;
+  a26_tabs_button_ = nullptr;
+  a26_reload_button_ = nullptr;
+  a26_url_field_ = nullptr;
+  a26_forward_button_ = nullptr;
+  a26_back_button_ = nullptr;
+  a26_bottom_reserve_panel_ = nullptr;
+  a26_navigation_panel_ = nullptr;
+  a26_chrome_panel_ = nullptr;
   status_mode_field_ = nullptr;
   status_output_field_ = nullptr;
   status_content_panel_ = nullptr;
@@ -1435,6 +1653,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   main_panel_ = nullptr;
   root_panel_ = nullptr;
   window_ = nullptr;
+  a26_keyboard_.reset();
   CefQuitMessageLoop();
 }
 
@@ -1556,6 +1775,9 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
   if (mode_ != Mode::kNormal) {
     return HandleCommandModeKey(event);
   }
+  if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
+    return false;
+  }
 
   if (native_hints_active_ &&
       (focus_area_ == FocusArea::kWebView || focus_area_ == FocusArea::kDevTools)) {
@@ -1622,6 +1844,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       DeleteSelectedCommandAutocomplete();
       return true;
     }
+  }
+  if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
+    return false;
   }
   if (mode_ == Mode::kNormal && !native_hints_active_) {
     if (command_id == kAcceleratorFocusNext) {
@@ -1736,6 +1961,9 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
   }
   if (mode_ != Mode::kNormal) {
     return HandleCommandModeKey(event);
+  }
+  if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
+    return false;
   }
 
   if (native_hints_active_ &&
@@ -1985,6 +2213,10 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 }
 
 void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
+  if (a26_shell_ && textfield && textfield->GetID() == kA26UrlFieldId) {
+    a26_url_editing_ = true;
+    return;
+  }
   if ((textfield != command_field_ &&
        (!textfield || textfield->GetID() != kCommandFieldId)) ||
       mode_ == Mode::kNormal || command_vim_.mode != vim::Mode::kInsert ||
@@ -2009,6 +2241,59 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
 
 void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   const int id = button ? button->GetID() : 0;
+  if (a26_shell_ &&
+      (id == kA26BackButtonId || id == kA26ForwardButtonId ||
+       id == kA26ReloadButtonId || id == kA26TabsButtonId)) {
+    // X11 BrowserViews may cover sibling Views for pointer hit-testing. The raw
+    // watcher below guarantees phone touches work, while some CEF versions also
+    // deliver the native button callback. Coalesce those two observations of the
+    // same press without making normal double-tap cadence feel unresponsive.
+    if (a26_last_control_id_ == id) {
+      return;
+    }
+    a26_last_control_id_ = id;
+    const uint64_t generation = ++a26_control_dedup_generation_;
+    CefRefPtr<BrowserWindow> self = this;
+    CefPostDelayedTask(
+        TID_UI,
+        base::BindOnce(&BrowserWindow::ClearA26ControlDedup, self, id,
+                       generation),
+        100);
+  }
+  if (a26_shell_ && id == kA26BackButtonId) {
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+        browser && browser->CanGoBack()) {
+      browser->GoBack();
+    }
+    FinishA26ChromeAction();
+    return;
+  }
+  if (a26_shell_ && id == kA26ForwardButtonId) {
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+        browser && browser->CanGoForward()) {
+      browser->GoForward();
+    }
+    FinishA26ChromeAction();
+    return;
+  }
+  if (a26_shell_ && id == kA26ReloadButtonId) {
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
+      if (browser->IsLoading()) {
+        browser->StopLoad();
+      } else {
+        browser->Reload();
+      }
+    }
+    FinishA26ChromeAction();
+    UpdateA26Chrome();
+    return;
+  }
+  if (a26_shell_ && id == kA26TabsButtonId) {
+    FinishA26ChromeAction();
+    ActivateRelative(1);
+    UpdateA26Chrome();
+    return;
+  }
   if (id == kContextMenuBackdropButtonId) {
     CancelNativeContextMenu();
     return;
@@ -2068,6 +2353,21 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
   }
   if (HandleMediaPermissionPromptKey(event)) {
     return true;
+  }
+  if (a26_shell_ && textfield && textfield->GetID() == kA26UrlFieldId) {
+    if (IsEnterKey(event)) {
+      if (IsRawKeyDown(event)) {
+        CommitA26Url();
+      }
+      return true;
+    }
+    if (IsEscapeKey(event)) {
+      if (IsRawKeyDown(event)) {
+        CancelA26Url();
+      }
+      return true;
+    }
+    return false;
   }
   if (textfield != command_field_ || mode_ == Mode::kNormal) {
     return false;
@@ -2168,6 +2468,27 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   }
   if (id == kStatusUrlFieldId) {
     return CefSize(1200, kStatusBarHeight);
+  }
+  if (id == kA26ChromePanelId) {
+    return CefSize(1200, kA26ChromeHeight);
+  }
+  if (id == kA26NavigationPanelId) {
+    return CefSize(1200, kA26NavigationHeight);
+  }
+  if (id == kA26BottomReservePanelId) {
+    return CefSize(1200, kA26BottomReserveHeight);
+  }
+  if (id == kA26BackButtonId || id == kA26ForwardButtonId) {
+    return CefSize(kA26HistoryButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26UrlFieldId) {
+    return CefSize(240, kA26TouchControlHeight);
+  }
+  if (id == kA26ReloadButtonId) {
+    return CefSize(kA26ReloadButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26TabsButtonId) {
+    return CefSize(kA26TabsButtonWidth, kA26TouchControlHeight);
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     return CefSize(kSidebarContentWidth, kSidebarRowHeight);
@@ -2291,6 +2612,27 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   if (id == kStatusUrlFieldId) {
     return CefSize(1, kStatusBarHeight);
   }
+  if (id == kA26ChromePanelId) {
+    return CefSize(1, kA26ChromeHeight);
+  }
+  if (id == kA26NavigationPanelId) {
+    return CefSize(1, kA26NavigationHeight);
+  }
+  if (id == kA26BottomReservePanelId) {
+    return CefSize(1, kA26BottomReserveHeight);
+  }
+  if (id == kA26BackButtonId || id == kA26ForwardButtonId) {
+    return CefSize(kA26HistoryButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26UrlFieldId) {
+    return CefSize(1, kA26TouchControlHeight);
+  }
+  if (id == kA26ReloadButtonId) {
+    return CefSize(kA26ReloadButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26TabsButtonId) {
+    return CefSize(kA26TabsButtonWidth, kA26TouchControlHeight);
+  }
   if (InIdRange(id, kSidebarRowBaseId, 1000) ||
       id == kSidebarSpacerId ||
       id == kCommandFieldId ||
@@ -2378,6 +2720,27 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   if (id == kStatusUrlFieldId) {
     return CefSize(0, kStatusBarHeight);
   }
+  if (id == kA26ChromePanelId) {
+    return CefSize(0, kA26ChromeHeight);
+  }
+  if (id == kA26NavigationPanelId) {
+    return CefSize(0, kA26NavigationHeight);
+  }
+  if (id == kA26BottomReservePanelId) {
+    return CefSize(0, kA26BottomReserveHeight);
+  }
+  if (id == kA26BackButtonId || id == kA26ForwardButtonId) {
+    return CefSize(kA26HistoryButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26UrlFieldId) {
+    return CefSize(0, kA26TouchControlHeight);
+  }
+  if (id == kA26ReloadButtonId) {
+    return CefSize(kA26ReloadButtonWidth, kA26TouchControlHeight);
+  }
+  if (id == kA26TabsButtonId) {
+    return CefSize(kA26TabsButtonWidth, kA26TouchControlHeight);
+  }
   if (id == kModeIndicatorPanelId || id == kModeIndicatorFieldId ||
       id == kFpsIndicatorPanelId || id == kFpsIndicatorFieldId) {
     return CefSize(kModeIndicatorWidth, kModeIndicatorHeight);
@@ -2413,6 +2776,35 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
 
 void BrowserWindow::OnThemeChanged(CefRefPtr<CefView> view) {
   RestyleView(view);
+}
+
+void BrowserWindow::OnFocus(CefRefPtr<CefView> view) {
+  if (!a26_shell_ || !view || view->GetID() != kA26UrlFieldId ||
+      !a26_url_field_) {
+    return;
+  }
+  a26_url_focused_ = true;
+  a26_url_editing_ = true;
+  focus_area_ = FocusArea::kA26Url;
+  ResetWebsitePendingKeys();
+  a26_url_field_->SelectAll(false);
+  RequestA26Keyboard(A26KeyboardPurpose::kUrl);
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostTask(TID_UI,
+              base::BindOnce(&BrowserWindow::SelectA26UrlAfterFocus, self));
+}
+
+void BrowserWindow::OnBlur(CefRefPtr<CefView> view) {
+  if (!a26_shell_ || !view || view->GetID() != kA26UrlFieldId) {
+    return;
+  }
+  a26_url_focused_ = false;
+  a26_url_editing_ = false;
+  if (focus_area_ == FocusArea::kA26Url) {
+    focus_area_ = FocusArea::kWebView;
+  }
+  UpdateA26Chrome();
+  RequestA26Keyboard(A26KeyboardPurpose::kHide);
 }
 
 cef_runtime_style_t BrowserWindow::GetWindowRuntimeStyle() {
@@ -2732,6 +3124,12 @@ void BrowserWindow::Layout() {
     return;
   }
 
+  if (a26_shell_) {
+    // Phone chrome is bottom-only. Never allow desktop sidebar state, keyboard
+    // shortcuts, or IPC toggles to introduce side UI in the A26 shell.
+    sidebar_visible_ = false;
+  }
+
   const CefRect bounds = window_->GetBounds();
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
@@ -2742,8 +3140,10 @@ void BrowserWindow::Layout() {
       command_surface_height + (sidebar_search ? 0 : 1);
   const int autocomplete_height = CommandAutocompleteHeight();
   const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
+  const int a26_chrome_height = a26_shell_ ? kA26ChromeHeight : 0;
   const int main_height =
-      std::max(1, height - (show_statusline_ ? kStatusBarHeight : 0));
+      std::max(1, height - (show_statusline_ ? kStatusBarHeight : 0) -
+                      a26_chrome_height);
   const int sidebar_content_width = sidebar_visible_ ? kSidebarContentWidth : 0;
   const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
@@ -2753,7 +3153,7 @@ void BrowserWindow::Layout() {
   // Sidebar search owns the otherwise-empty left side of the status row. Dock
   // it to the actual window bottom instead of above the statusline so there is
   // no dead strip below / or ?.
-  const int command_surface_bottom = height;
+  const int command_surface_bottom = height - a26_chrome_height;
   const bool autocomplete_visible = command_active && !sidebar_search &&
                                     command_autocomplete_.active &&
                                     !command_autocomplete_.matches.empty();
@@ -2791,6 +3191,14 @@ void BrowserWindow::Layout() {
   RestyleView(status_output_field_);
   RestyleView(status_mode_field_);
   RestyleView(status_url_label_);
+  RestyleView(a26_chrome_panel_);
+  RestyleView(a26_navigation_panel_);
+  RestyleView(a26_bottom_reserve_panel_);
+  RestyleView(a26_back_button_);
+  RestyleView(a26_forward_button_);
+  RestyleView(a26_url_field_);
+  RestyleView(a26_reload_button_);
+  RestyleView(a26_tabs_button_);
   RestyleView(mode_indicator_panel_);
   RestyleView(mode_indicator_label_);
   RestyleView(fps_indicator_panel_);
@@ -2866,6 +3274,29 @@ void BrowserWindow::Layout() {
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
     status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
   }
+  if (a26_chrome_panel_) {
+    const int chrome_y = main_height + (show_statusline_ ? kStatusBarHeight : 0);
+    a26_chrome_panel_->SetVisible(a26_shell_);
+    a26_chrome_panel_->SetSize(CefSize(width, kA26ChromeHeight));
+    a26_chrome_panel_->SetBounds(
+        CefRect(0, chrome_y, width, kA26ChromeHeight));
+  }
+  if (a26_navigation_panel_) {
+    a26_navigation_panel_->SetSize(CefSize(width, kA26NavigationHeight));
+    if (a26_navigation_overlay_) {
+      const int navigation_y =
+          main_height + (show_statusline_ ? kStatusBarHeight : 0);
+      a26_navigation_overlay_->SetVisible(a26_shell_);
+      a26_navigation_overlay_->SetBounds(
+          CefRect(0, navigation_y, width, kA26NavigationHeight));
+    }
+  }
+  if (a26_bottom_reserve_panel_) {
+    a26_bottom_reserve_panel_->SetSize(
+        CefSize(width, kA26BottomReserveHeight));
+    a26_bottom_reserve_panel_->SetBounds(
+        CefRect(0, kA26NavigationHeight, width, kA26BottomReserveHeight));
+  }
   command_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
   command_separator_panel_->SetSize(CefSize(command_surface_width, 1));
@@ -2891,7 +3322,8 @@ void BrowserWindow::Layout() {
   if (autocomplete_panel_ && autocomplete_overlay_) {
     autocomplete_panel_->SetSize(CefSize(autocomplete_width, std::max(1, autocomplete_height)));
     autocomplete_overlay_->SetBounds(
-        CefRect(0, std::max(0, height - command_total_height - autocomplete_height),
+        CefRect(0, std::max(0, command_surface_bottom - command_total_height -
+                                  autocomplete_height),
                 autocomplete_width, std::max(1, autocomplete_height)));
   }
   if (sidebar_border_overlay_ && sidebar_border_overlay_panel_) {
@@ -2971,7 +3403,8 @@ void BrowserWindow::Layout() {
       const int prompt_height = std::min(kMediaPermissionPromptHeight,
                                          std::max(1, height - 32));
       const int prompt_x = std::max(0, (width - prompt_width) / 2);
-      const int prompt_bottom_margin = 8 + (show_statusline_ ? kStatusBarHeight : 0);
+      const int prompt_bottom_margin =
+          8 + (show_statusline_ ? kStatusBarHeight : 0) + a26_chrome_height;
       const int prompt_y = std::max(
           0, height - prompt_height - prompt_bottom_margin);
       const int content_width = std::max(
@@ -3117,6 +3550,12 @@ void BrowserWindow::Layout() {
   if (status_bar_panel_ && status_bar_panel_->GetLayout()) {
     status_bar_panel_->Layout();
   }
+  if (a26_chrome_panel_ && a26_chrome_panel_->GetLayout()) {
+    a26_chrome_panel_->Layout();
+  }
+  if (a26_navigation_panel_ && a26_navigation_panel_->GetLayout()) {
+    a26_navigation_panel_->Layout();
+  }
   if (status_sidebar_spacer_panel_) {
     status_sidebar_spacer_panel_->SetVisible(sidebar_visible_);
     status_sidebar_spacer_panel_->SetBounds(
@@ -3153,6 +3592,7 @@ void BrowserWindow::Layout() {
     }
   }
   UpdateSidebarMouseBounds();
+  UpdateA26MouseBounds();
   if (mode_indicator_panel_ && mode_indicator_panel_->GetLayout()) {
     mode_indicator_panel_->Layout();
   }
@@ -3349,6 +3789,20 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
   sidebar_pending_keys_.clear();
   ++sidebar_delete_generation_;
   suppress_next_devtools_char_.reset();
+  if (a26_shell_ && area == FocusArea::kTabSidebar) {
+    area = FocusArea::kWebView;
+    sidebar_visible_ = false;
+  }
+  if (area == FocusArea::kA26Url &&
+      (!a26_shell_ || !a26_url_field_)) {
+    area = FocusArea::kWebView;
+  }
+  if (a26_shell_ && focus_area_ == FocusArea::kA26Url &&
+      area != FocusArea::kA26Url) {
+    a26_url_focused_ = false;
+    a26_url_editing_ = false;
+    RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  }
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
   }
@@ -3362,6 +3816,8 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
     }
   } else if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_) {
     devtools_browser_view_->RequestFocus();
+  } else if (focus_area_ == FocusArea::kA26Url && a26_url_field_) {
+    a26_url_field_->RequestFocus();
   }
   RefreshSidebar();
   UpdateModeIndicator();
@@ -3378,6 +3834,8 @@ bool BrowserWindow::FocusAreaAvailable(FocusArea area) const {
       return devtools_visible_ && devtools_browser_view_;
     case FocusArea::kCommandLine:
       return mode_ != Mode::kNormal;
+    case FocusArea::kA26Url:
+      return a26_shell_ && a26_url_field_;
   }
   return false;
 }
@@ -3409,6 +3867,13 @@ void BrowserWindow::FocusRelative(int delta) {
 }
 
 void BrowserWindow::ToggleSidebar() {
+  if (a26_shell_) {
+    sidebar_visible_ = false;
+    if (focus_area_ == FocusArea::kTabSidebar) {
+      SetFocusArea(FocusArea::kWebView);
+    }
+    return;
+  }
   sidebar_visible_ = !sidebar_visible_;
   if (!sidebar_visible_ && focus_area_ == FocusArea::kTabSidebar) {
     focus_area_ = FocusArea::kWebView;
@@ -3512,9 +3977,18 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
       if (website_mode_ == vim::Mode::kInsert) {
-        website_mode_ = (event.modifiers & EVENTFLAG_SHIFT_DOWN)
-                            ? vim::Mode::kWebsiteNormal
-                            : vim::Mode::kNormal;
+        if (a26_shell_) {
+          // Moon's HIDE key emits one Escape as a dismissal signal. Unlike the
+          // desktop's staged Vim transition, dismiss the focused phone field in
+          // one step so a later tap produces a fresh focus event and reopens the
+          // global keyboard.
+          website_mode_ = vim::Mode::kWebsiteNormal;
+          ScheduleActivePageBlur();
+        } else {
+          website_mode_ = (event.modifiers & EVENTFLAG_SHIFT_DOWN)
+                              ? vim::Mode::kWebsiteNormal
+                              : vim::Mode::kNormal;
+        }
         UpdateModeIndicator();
         return true;
       }
@@ -3539,8 +4013,26 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       return false;
     }
 
+    const bool page_focused_editable = PageHasFocusedEditable(event);
+    if (a26_xtest_char_workaround_ && website_mode_ == vim::Mode::kInsert &&
+        page_focused_editable && IsPlainPrintableKey(event)) {
+      // On the downstream A26 Xorg/CEF combination, XTEST reaches CEF as a raw
+      // key event but does not produce the corresponding CHAR event. Consume
+      // that raw event and explicitly forward one CHAR to the focused renderer.
+      // The payload remains ephemeral and is never logged or sent over IPC.
+      if (const char character = PlainKeyChar(event)) {
+        CefKeyEvent character_event = event;
+        character_event.type = KEYEVENT_CHAR;
+        character_event.character = static_cast<char16_t>(character);
+        character_event.unmodified_character = static_cast<char16_t>(character);
+        ForwardKeyToActivePage(character_event);
+        ResetWebsitePendingKeys();
+        return true;
+      }
+    }
+
     if (website_mode_ == vim::Mode::kInsert &&
-        ShouldForwardFocusedEditableKey(event, PageHasFocusedEditable(event))) {
+        ShouldForwardFocusedEditableKey(event, page_focused_editable)) {
       ResetWebsitePendingKeys();
       return false;
     }
@@ -4178,6 +4670,23 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     status_url_label_->SetBackgroundColor(StatusBarBackgroundColor());
     status_url_label_->SetState(CEF_BUTTON_STATE_NORMAL);
     UpdateStatusBar();
+  } else if (id == kA26ChromePanelId ||
+             id == kA26BottomReservePanelId) {
+    view->SetBackgroundColor(theme::kAppBg);
+  } else if (id == kA26NavigationPanelId) {
+    view->SetBackgroundColor(theme::kSidebarBg);
+  } else if (id == kA26BackButtonId) {
+    StyleA26Button(a26_back_button_);
+    a26_back_button_->SetFontList("sans-serif, 20px");
+  } else if (id == kA26ForwardButtonId) {
+    StyleA26Button(a26_forward_button_);
+    a26_forward_button_->SetFontList("sans-serif, 20px");
+  } else if (id == kA26ReloadButtonId) {
+    StyleA26Button(a26_reload_button_);
+  } else if (id == kA26TabsButtonId) {
+    StyleA26Button(a26_tabs_button_);
+  } else if (id == kA26UrlFieldId && a26_url_field_) {
+    StyleA26UrlField(a26_url_field_);
   } else if (id == kRootPanelId || id == kMainPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kModeIndicatorPanelId) {
@@ -4262,6 +4771,9 @@ void BrowserWindow::StopSidebarMouseWatcher() {
   sidebar_mouse_height_.store(0);
   sidebar_mouse_row_count_.store(0);
   sidebar_mouse_window_.store(0);
+  a26_layout_width_.store(0);
+  a26_layout_height_.store(0);
+  a26_mouse_window_.store(0);
   if (sidebar_mouse_thread_.joinable() &&
       sidebar_mouse_thread_.get_id() != std::this_thread::get_id()) {
     sidebar_mouse_thread_.join();
@@ -4336,8 +4848,16 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     Window browser_toplevel = 0;
   };
 
+  struct A26MouseHit {
+    int control_index = -1;
+    Window browser_toplevel = 0;
+    int root_x = 0;
+    int root_y = 0;
+  };
+
   struct ChromeMouseHits {
     ContextMenuMouseHit context_menu;
+    A26MouseHit a26;
     SidebarMouseHit sidebar;
   };
 
@@ -4354,7 +4874,6 @@ void BrowserWindow::RunSidebarMouseWatcher() {
                        &root_y, &win_x, &win_y, &buttons)) {
       return hit;
     }
-
     const Window browser_window =
         static_cast<Window>(sidebar_mouse_window_.load());
     hit.browser_toplevel =
@@ -4405,7 +4924,6 @@ void BrowserWindow::RunSidebarMouseWatcher() {
                        &root_y, &win_x, &win_y, &buttons)) {
       return hit;
     }
-
     hit.browser_toplevel = toplevel_for_window(browser_window);
     if (hit.browser_toplevel == 0 || child_return != hit.browser_toplevel ||
         root_x < menu_x || root_x >= menu_x + menu_width || root_y < menu_y ||
@@ -4420,6 +4938,93 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     }
     hit.row_index = static_cast<size_t>(row_area_y / kContextMenuRowHeight);
     hit.over_row = hit.row_index < static_cast<size_t>(row_count);
+    return hit;
+  };
+
+  auto a26_hit_test = [&]() {
+    A26MouseHit hit;
+    const Window browser_window =
+        static_cast<Window>(a26_mouse_window_.load());
+    if (browser_window == 0) {
+      return hit;
+    }
+
+    Window root_return = 0;
+    Window child_return = 0;
+    int root_x = 0;
+    int root_y = 0;
+    int win_x = 0;
+    int win_y = 0;
+    unsigned int buttons = 0;
+    if (!XQueryPointer(display, root, &root_return, &child_return, &root_x,
+                       &root_y, &win_x, &win_y, &buttons)) {
+      return hit;
+    }
+    hit.root_x = root_x;
+    hit.root_y = root_y;
+
+    hit.browser_toplevel = toplevel_for_window(browser_window);
+    if (hit.browser_toplevel == 0 || child_return != hit.browser_toplevel) {
+      hit.browser_toplevel = 0;
+      return hit;
+    }
+
+    const int layout_width = a26_layout_width_.load();
+    const int layout_height = a26_layout_height_.load();
+    XWindowAttributes attributes = {};
+    int window_root_x = 0;
+    int window_root_y = 0;
+    Window translated_child = 0;
+    if (layout_width <= 0 || layout_height <= 0 ||
+        !XGetWindowAttributes(display, hit.browser_toplevel, &attributes) ||
+        attributes.width <= 0 || attributes.height <= 0 ||
+        !XTranslateCoordinates(display, hit.browser_toplevel, root, 0, 0,
+                               &window_root_x, &window_root_y,
+                               &translated_child) ||
+        root_x < window_root_x || root_y < window_root_y ||
+        root_x >= window_root_x + attributes.width ||
+        root_y >= window_root_y + attributes.height) {
+      hit.browser_toplevel = 0;
+      return hit;
+    }
+
+    // XInput reports physical root pixels while CEF Views uses DIP. Derive the
+    // current scale from the actual X11 top-level size so forced/non-integer
+    // device scales hit the same logical rectangles that were laid out above.
+    const int logical_x =
+        (root_x - window_root_x) * layout_width / attributes.width;
+    const int logical_y =
+        (root_y - window_root_y) * layout_height / attributes.height;
+    const int control_top = layout_height - kA26ChromeHeight + 6;
+    if (logical_y < control_top ||
+        logical_y >= control_top + kA26TouchControlHeight) {
+      hit.browser_toplevel = 0;
+      return hit;
+    }
+
+    const int back_left = 6;
+    const int forward_left = back_left + kA26HistoryButtonWidth + 4;
+    const int tabs_right = layout_width - 6;
+    const int tabs_left = tabs_right - kA26TabsButtonWidth;
+    const int reload_right = tabs_left - 4;
+    const int reload_left = reload_right - kA26ReloadButtonWidth;
+    const int url_left = forward_left + kA26HistoryButtonWidth + 4;
+    const int url_right = reload_left - 4;
+    if (logical_x >= back_left &&
+        logical_x < back_left + kA26HistoryButtonWidth) {
+      hit.control_index = 0;
+    } else if (logical_x >= forward_left &&
+               logical_x < forward_left + kA26HistoryButtonWidth) {
+      hit.control_index = 1;
+    } else if (logical_x >= url_left && logical_x < url_right) {
+      hit.control_index = 2;
+    } else if (logical_x >= reload_left && logical_x < reload_right) {
+      hit.control_index = 3;
+    } else if (logical_x >= tabs_left && logical_x < tabs_right) {
+      hit.control_index = 4;
+    } else {
+      hit.browser_toplevel = 0;
+    }
     return hit;
   };
 
@@ -4441,9 +5046,15 @@ void BrowserWindow::RunSidebarMouseWatcher() {
       use_hand_cursor = hits.context_menu.over_row;
       target_window = hits.context_menu.browser_toplevel;
     } else {
-      hits.sidebar = sidebar_hit_test();
-      use_hand_cursor = hits.sidebar.over_clickable_row;
-      target_window = hits.sidebar.browser_toplevel;
+      hits.a26 = a26_hit_test();
+      if (hits.a26.control_index >= 0) {
+        use_hand_cursor = true;
+        target_window = hits.a26.browser_toplevel;
+      } else {
+        hits.sidebar = sidebar_hit_test();
+        use_hand_cursor = hits.sidebar.over_clickable_row;
+        target_window = hits.sidebar.browser_toplevel;
+      }
     }
 
     if (use_hand_cursor && target_window != 0 && hand_cursor != None) {
@@ -4461,7 +5072,15 @@ void BrowserWindow::RunSidebarMouseWatcher() {
 
   unsigned char mask[XIMaskLen(XI_LASTEVENT)] = {};
   XISetMask(mask, XI_RawButtonPress);
+  XISetMask(mask, XI_RawButtonRelease);
   XISetMask(mask, XI_RawMotion);
+  if (a26_shell_) {
+    // Synthetic XTEST clicks used by Moon/xenv may not surface as raw XI2
+    // events on every X server, so also observe their non-raw counterparts.
+    XISetMask(mask, XI_ButtonPress);
+    XISetMask(mask, XI_ButtonRelease);
+    XISetMask(mask, XI_Motion);
+  }
   XIEventMask event_mask = {};
   event_mask.deviceid = XIAllMasterDevices;
   event_mask.mask_len = sizeof(mask);
@@ -4470,6 +5089,12 @@ void BrowserWindow::RunSidebarMouseWatcher() {
   XFlush(display);
 
   const int fd = ConnectionNumber(display);
+  Time last_button_time = 0;
+  int a26_pressed_control = -1;
+  bool a26_page_pressed = false;
+  int a26_press_root_x = 0;
+  int a26_press_root_y = 0;
+  bool a26_press_moved = false;
   while (sidebar_mouse_watcher_running_.load()) {
     fd_set readfds;
     FD_ZERO(&readfds);
@@ -4492,17 +5117,43 @@ void BrowserWindow::RunSidebarMouseWatcher() {
         continue;
       }
 
-      if (xevent.xcookie.evtype == XI_RawMotion) {
+      if (xevent.xcookie.evtype == XI_RawMotion ||
+          xevent.xcookie.evtype == XI_Motion) {
         ChromeMouseHits hits = update_hover_cursor();
+        if (a26_pressed_control >= 0 || a26_page_pressed) {
+          const int dx = hits.a26.root_x - a26_press_root_x;
+          const int dy = hits.a26.root_y - a26_press_root_y;
+          if ((a26_pressed_control >= 0 &&
+               hits.a26.control_index != a26_pressed_control) ||
+              dx * dx + dy * dy > 35 * 35) {
+            a26_press_moved = true;
+          }
+        }
         if (hits.context_menu.over_row) {
           CefRefPtr<BrowserWindow> self = this;
           CefPostTask(TID_UI,
                       base::BindOnce(&BrowserWindow::HoverNativeContextMenuRow,
                                      self, hits.context_menu.row_index));
         }
-      } else if (xevent.xcookie.evtype == XI_RawButtonPress) {
-        auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
-        if (raw && raw->detail == 1) {
+      } else if (xevent.xcookie.evtype == XI_RawButtonPress ||
+                 xevent.xcookie.evtype == XI_ButtonPress) {
+        int detail = 0;
+        Time event_time = 0;
+        if (xevent.xcookie.evtype == XI_RawButtonPress) {
+          auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
+          if (raw) {
+            detail = raw->detail;
+            event_time = raw->time;
+          }
+        } else {
+          auto* device = static_cast<XIDeviceEvent*>(xevent.xcookie.data);
+          if (device) {
+            detail = device->detail;
+            event_time = device->time;
+          }
+        }
+        if (detail == 1 && event_time != last_button_time) {
+          last_button_time = event_time;
           ChromeMouseHits hits = update_hover_cursor();
           if (hits.context_menu.menu_visible) {
             CefRefPtr<BrowserWindow> self = this;
@@ -4515,11 +5166,65 @@ void BrowserWindow::RunSidebarMouseWatcher() {
                           base::BindOnce(&BrowserWindow::CancelNativeContextMenu,
                                          self));
             }
+          } else if (hits.a26.control_index >= 0) {
+            // Phone navigation activates on release after gesture
+            // classification. Acting on press races Moon's swipe-to-close
+            // recognizer and can execute again when Moon forwards the tap.
+            a26_pressed_control = hits.a26.control_index;
+            a26_press_root_x = hits.a26.root_x;
+            a26_press_root_y = hits.a26.root_y;
+            a26_press_moved = false;
+          } else if (a26_shell_ && hits.a26.browser_toplevel != 0) {
+            // A page field can remain focused after Moon's Hide key. Remember
+            // an ordinary page tap so the post-DOM-focus state can request the
+            // keyboard again even when no new focus-change notification fires.
+            a26_page_pressed = true;
+            a26_press_root_x = hits.a26.root_x;
+            a26_press_root_y = hits.a26.root_y;
+            a26_press_moved = false;
           } else if (hits.sidebar.inside_sidebar) {
             CefRefPtr<BrowserWindow> self = this;
             CefPostTask(TID_UI,
                         base::BindOnce(&BrowserWindow::HandleSidebarMouseRowClick,
                                        self, hits.sidebar.row_index));
+          }
+        }
+      } else if (xevent.xcookie.evtype == XI_RawButtonRelease ||
+                 xevent.xcookie.evtype == XI_ButtonRelease) {
+        int detail = 0;
+        if (xevent.xcookie.evtype == XI_RawButtonRelease) {
+          auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
+          if (raw) {
+            detail = raw->detail;
+          }
+        } else {
+          auto* device = static_cast<XIDeviceEvent*>(xevent.xcookie.data);
+          if (device) {
+            detail = device->detail;
+          }
+        }
+        if (detail == 1 && (a26_pressed_control >= 0 || a26_page_pressed)) {
+          const int pressed_control = a26_pressed_control;
+          const bool page_pressed = a26_page_pressed;
+          ChromeMouseHits hits = update_hover_cursor();
+          a26_pressed_control = -1;
+          a26_page_pressed = false;
+          if (!a26_press_moved && pressed_control >= 0 &&
+              hits.a26.control_index == pressed_control) {
+            CefRefPtr<BrowserWindow> self = this;
+            CefPostTask(
+                TID_UI,
+                base::BindOnce(&BrowserWindow::HandleA26MouseControl, self,
+                               static_cast<size_t>(pressed_control)));
+          } else if (!a26_press_moved && page_pressed &&
+                     hits.a26.browser_toplevel != 0 &&
+                     hits.a26.control_index < 0) {
+            CefRefPtr<BrowserWindow> self = this;
+            CefPostDelayedTask(
+                TID_UI,
+                base::BindOnce(&BrowserWindow::SyncA26KeyboardForActivePage,
+                               self),
+                180);
           }
         }
       }
@@ -4553,6 +5258,70 @@ void BrowserWindow::UpdateSidebarMouseBounds() {
   sidebar_mouse_height_.store(main_height);
   sidebar_mouse_row_count_.store(static_cast<int>(sidebar_rows_.size()));
   sidebar_mouse_window_.store(static_cast<unsigned long>(window_->GetWindowHandle()));
+}
+
+void BrowserWindow::UpdateA26MouseBounds() {
+  if (!window_ || !a26_shell_ || !a26_navigation_panel_) {
+    a26_layout_width_.store(0);
+    a26_layout_height_.store(0);
+    a26_mouse_window_.store(0);
+    return;
+  }
+
+  const CefRect bounds = window_->GetBounds();
+  a26_layout_width_.store(std::max(1, bounds.width));
+  a26_layout_height_.store(std::max(1, bounds.height));
+  a26_mouse_window_.store(
+      static_cast<unsigned long>(window_->GetWindowHandle()));
+}
+
+void BrowserWindow::HandleA26MouseControl(size_t control_index) {
+  if (!window_ || !a26_shell_) {
+    return;
+  }
+  switch (control_index) {
+    case 0:
+      OnButtonPressed(a26_back_button_);
+      return;
+    case 1:
+      OnButtonPressed(a26_forward_button_);
+      return;
+    case 2: {
+      FocusA26UrlFromTouch();
+      // The raw event may also have reached Chromium's native page child. Re-ask
+      // for URL focus after normal button dispatch has drained.
+      CefRefPtr<BrowserWindow> self = this;
+      CefPostDelayedTask(
+          TID_UI, base::BindOnce(&BrowserWindow::FocusA26UrlFromTouch, self),
+          25);
+      return;
+    }
+    case 3:
+      OnButtonPressed(a26_reload_button_);
+      return;
+    case 4:
+      OnButtonPressed(a26_tabs_button_);
+      return;
+    default:
+      return;
+  }
+}
+
+void BrowserWindow::FocusA26UrlFromTouch() {
+  if (!window_ || !a26_shell_ || !a26_url_field_) {
+    return;
+  }
+  SetFocusArea(FocusArea::kA26Url);
+  a26_url_field_->SelectAll(false);
+  RequestA26Keyboard(A26KeyboardPurpose::kUrl);
+}
+
+void BrowserWindow::ClearA26ControlDedup(int control_id,
+                                        uint64_t generation) {
+  if (generation == a26_control_dedup_generation_ &&
+      control_id == a26_last_control_id_) {
+    a26_last_control_id_ = 0;
+  }
 }
 
 void BrowserWindow::HandleSidebarMouseRowClick(size_t row_index) {
@@ -4592,6 +5361,7 @@ void BrowserWindow::UpdateModeIndicator() {
 }
 
 void BrowserWindow::UpdateStatusBar() {
+  UpdateA26Chrome();
   if (!status_output_field_ && !status_mode_field_ && !status_url_label_) {
     return;
   }
@@ -4644,6 +5414,144 @@ void BrowserWindow::UpdateStatusBar() {
   status_url_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, theme::kText);
   status_url_label_->SetBackgroundColor(background);
   status_url_label_->SetState(CEF_BUTTON_STATE_NORMAL);
+}
+
+void BrowserWindow::UpdateA26Chrome() {
+  if (!a26_shell_ || !a26_url_field_) {
+    return;
+  }
+
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!a26_url_editing_) {
+    std::string url = ActiveTabUrl();
+    if (url.empty()) {
+      url = "about:blank";
+    }
+    if (a26_url_field_->GetText().ToString() != url) {
+      a26_url_field_->SetText(url);
+    }
+    a26_url_field_->SelectRange(CefRange(0, 0));
+  }
+
+  std::string title;
+  if (!tabs_.empty() && active_index_ < tabs_.size()) {
+    title = tabs_[active_index_].title;
+  }
+  if (title.empty()) {
+    title = ActiveTabTitle();
+  }
+  a26_url_field_->SetAccessibleName(
+      title.empty() ? "Address" : "Address - " + Ellipsize(title, 100));
+
+  const Tab* active_tab =
+      !tabs_.empty() && active_index_ < tabs_.size() ? &tabs_[active_index_]
+                                                     : nullptr;
+  const bool loading = active_tab ? active_tab->is_loading : false;
+  const bool can_go_back = active_tab ? active_tab->can_go_back : false;
+  const bool can_go_forward = active_tab ? active_tab->can_go_forward : false;
+  if (a26_back_button_) {
+    a26_back_button_->SetEnabled(can_go_back);
+  }
+  if (a26_forward_button_) {
+    a26_forward_button_->SetEnabled(can_go_forward);
+  }
+  if (a26_reload_button_) {
+    a26_reload_button_->SetText(loading ? "Stop" : "Reload");
+    a26_reload_button_->SetAccessibleName(loading ? "Stop loading" : "Reload");
+    a26_reload_button_->SetEnabled(browser != nullptr);
+  }
+  if (a26_tabs_button_) {
+    const size_t active = tabs_.empty() ? 0 : std::min(active_index_ + 1, tabs_.size());
+    a26_tabs_button_->SetText("Tabs " + std::to_string(active) + "/" +
+                              std::to_string(tabs_.size()));
+    a26_tabs_button_->SetAccessibleName(
+        "Activate next tab; active " + std::to_string(active) + " of " +
+        std::to_string(tabs_.size()));
+    a26_tabs_button_->SetEnabled(!tabs_.empty());
+  }
+}
+
+void BrowserWindow::SelectA26UrlAfterFocus() {
+  if (a26_shell_ && a26_url_focused_ && a26_url_field_) {
+    a26_url_field_->SelectAll(false);
+  }
+}
+
+void BrowserWindow::CommitA26Url() {
+  if (!a26_shell_ || !a26_url_field_) {
+    return;
+  }
+
+  const std::string text = Trim(a26_url_field_->GetText().ToString());
+  const std::string url = ResolveUrlOrSearch(text);
+  RecordOpenHistory(text);
+  last_tab_close_placeholder_ = false;
+  if (active_index_ < tabs_.size()) {
+    SetTabUrl(tabs_[active_index_], url);
+    tabs_[active_index_].focused_editable_node = false;
+    tabs_[active_index_].focused_editable_purpose = "text";
+  }
+  a26_url_editing_ = false;
+  a26_url_focused_ = false;
+  RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+      browser && browser->GetMainFrame()) {
+    browser->GetMainFrame()->LoadURL(url);
+  }
+  SaveState();
+  RefreshSidebar();
+  FinishA26ChromeAction();
+  UpdateA26Chrome();
+}
+
+void BrowserWindow::CancelA26Url() {
+  if (!a26_shell_) {
+    return;
+  }
+  a26_url_editing_ = false;
+  a26_url_focused_ = false;
+  UpdateA26Chrome();
+  FinishA26ChromeAction();
+}
+
+void BrowserWindow::FinishA26ChromeAction() {
+  if (!a26_shell_) {
+    return;
+  }
+  a26_url_editing_ = false;
+  a26_url_focused_ = false;
+  RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  SetFocusArea(FocusArea::kWebView);
+}
+
+void BrowserWindow::RequestA26Keyboard(A26KeyboardPurpose purpose) {
+  if (a26_shell_ && a26_keyboard_) {
+    a26_keyboard_->Request(purpose);
+  }
+}
+
+void BrowserWindow::SyncA26KeyboardForActivePage() {
+  if (!a26_shell_ || a26_url_focused_) {
+    return;
+  }
+  const Tab* tab = ActiveTab();
+  if (!tab || !tab->focused_editable_node) {
+    RequestA26Keyboard(A26KeyboardPurpose::kHide);
+    return;
+  }
+
+  A26KeyboardPurpose purpose = A26KeyboardPurpose::kText;
+  if (tab->focused_editable_purpose == "password") {
+    purpose = A26KeyboardPurpose::kPassword;
+  } else if (tab->focused_editable_purpose == "search") {
+    purpose = A26KeyboardPurpose::kSearch;
+  } else if (tab->focused_editable_purpose == "url") {
+    purpose = A26KeyboardPurpose::kUrl;
+  } else if (tab->focused_editable_purpose == "number") {
+    purpose = A26KeyboardPurpose::kNumber;
+  }
+  website_mode_ = vim::Mode::kInsert;
+  RequestA26Keyboard(purpose);
 }
 
 void BrowserWindow::SetStatusOutput(std::string message, int timeout_ms) {

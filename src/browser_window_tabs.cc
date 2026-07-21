@@ -1,4 +1,5 @@
 #include "browser_window.h"
+#include "a26_keyboard.h"
 #include "browser_font_settings.h"
 #include "browser_window_internal.h"
 
@@ -332,6 +333,9 @@ void BrowserWindow::ActivateTab(size_t index) {
     return;
   }
 
+  if (a26_shell_) {
+    RequestA26Keyboard(A26KeyboardPurpose::kHide);
+  }
   active_index_ = index;
   if (!bulk_tab_update_) {
     RevealTabInSidebar(active_index_);
@@ -391,6 +395,7 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
     if (focus_area_ == FocusArea::kWebView) {
       tab.view->RequestFocus();
     }
+    SyncA26KeyboardForActivePage();
   }
   UpdateFpsIndicator();
   UpdateStatusBar();

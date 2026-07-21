@@ -58,13 +58,38 @@ A26_VIMBROWSER_PROXY=http://127.0.0.1:18777 \
 With that optional fallback, the host resolves names and opens connections;
 HTTPS remains end-to-end because Chromium uses `CONNECT` tunneling.
 
+## Phone interaction and rendering
+
+The A26 build has a touch-first bottom bar with Back, Forward, editable URL/search,
+Reload/Stop, and tab cycling. It reserves the final 180 physical pixels for
+Moon's global swipe-to-close gesture rather than placing controls in that zone.
+Desktop builds retain their normal side UI and keyboard behavior.
+
+Editable browser and page fields request Moon's global on-screen keyboard over
+the root-only control socket. Moon keeps X focus on the browser, injects keys
+with XTEST, resizes the browser above the keyboard, and restores fullscreen when
+the keyboard hides. No field value or password is copied into that IPC protocol.
+
+The Samsung kernel has no Mesa-compatible Mali path. The launcher therefore
+selects ANGLE's packaged ARM64 SwiftShader implementation for software
+compositing. Chromium's `--disable-gpu` mode is not used because CEF Views still
+requires a compositing GPU process and terminates after repeated startup failures
+on this target. The launcher also uses `--no-zygote`: CEF's zygote children exit
+on this Android-derived userspace/kernel combination before creating a renderer,
+whereas direct no-sandbox renderer processes are stable.
+
+This target exposes one additional CEF/X11 quirk: XTEST printable key presses
+reach the browser as raw events but do not synthesize a renderer CHAR event. The
+phone launcher enables a narrowly scoped A26 workaround that forwards exactly one
+ephemeral CHAR event while an editable page node is focused. It does not inspect,
+store, or log field contents. URL-bar text remains on CEF Views' normal key path.
+
 ## Expected limitations
 
-- software rendering (`--disable-gpu`)
-- unsandboxed/root execution for the controlled bring-up only
-- page surface starts full-screen with desktop browser chrome hidden
-- browser-owned touch controls have not yet been adapted
-- no on-screen keyboard yet
-- the normal bottom-edge A26 Shell gesture remains responsible for closing the app
+- software rendering is CPU-intensive;
+- the app still runs unsandboxed as root during this controlled bring-up;
+- the normal bottom-edge Moon gesture remains responsible for closing the app;
+- native hint/shader/FPS behavior still depends on the official-CEF compatibility
+  stubs described above.
 
 Do not use this proof build for routine untrusted browsing.

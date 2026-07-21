@@ -99,6 +99,14 @@ inline constexpr int kMediaPermissionBorderLeftPanelId = 140;
 inline constexpr int kMediaPermissionBorderRightPanelId = 141;
 inline constexpr int kContextMenuBackdropButtonId = 142;
 inline constexpr int kContextMenuPanelId = 143;
+inline constexpr int kA26ChromePanelId = 144;
+inline constexpr int kA26NavigationPanelId = 145;
+inline constexpr int kA26BottomReservePanelId = 146;
+inline constexpr int kA26BackButtonId = 147;
+inline constexpr int kA26ForwardButtonId = 148;
+inline constexpr int kA26UrlFieldId = 149;
+inline constexpr int kA26ReloadButtonId = 150;
+inline constexpr int kA26TabsButtonId = 151;
 inline constexpr int kAcceleratorCommandTab = 5000;
 inline constexpr int kAcceleratorCommandBacktab = 5001;
 inline constexpr int kAcceleratorTabNext = 5002;
@@ -138,6 +146,17 @@ inline constexpr int kContextMenuRowHeight = 24;
 inline constexpr int kContextMenuBorderWidth = 1;
 inline constexpr int kContextMenuHPadding = 10;
 inline constexpr int kContextMenuMaxVisibleRows = 18;
+// CEF Views sizes are device-independent logical coordinates. At the A26
+// launcher's 2.5 device scale these provide >=120px touch targets while keeping
+// Moon's final 180 physical pixels free for its bottom-edge close gesture.
+inline constexpr int kA26NavigationHeight = 64;
+inline constexpr int kA26BottomReserveHeight = 72;
+inline constexpr int kA26ChromeHeight =
+    kA26NavigationHeight + kA26BottomReserveHeight;
+inline constexpr int kA26TouchControlHeight = 52;
+inline constexpr int kA26HistoryButtonWidth = 64;
+inline constexpr int kA26ReloadButtonWidth = 60;
+inline constexpr int kA26TabsButtonWidth = 76;
 inline constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
 inline constexpr int kVirtualSidebarRefreshDelayMs = 250;
 inline constexpr int kTabContentActivationDelayMs = 0;
