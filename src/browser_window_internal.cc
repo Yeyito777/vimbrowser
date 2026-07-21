@@ -288,7 +288,8 @@ bool IsPlain(const CefKeyEvent& event) {
   return !IsModifierKeyEvent(event) &&
          !(event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
          !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
-         !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALTGR_DOWN);
 }
 
 bool HasOnlyControlModifier(const CefKeyEvent& event) {

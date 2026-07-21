@@ -230,6 +230,13 @@ void StylePermissionButton(CefRefPtr<CefLabelButton> button,
   button->SetState(CEF_BUTTON_STATE_NORMAL);
 }
 
+bool IsLoneSpaceShortcutEvent(const CefKeyEvent& event) {
+  constexpr uint32_t kKeyModifierMask =
+      EVENTFLAG_SHIFT_DOWN | EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN |
+      EVENTFLAG_COMMAND_DOWN | EVENTFLAG_ALTGR_DOWN;
+  return IsSpaceKey(event) && !(event.modifiers & kKeyModifierMask);
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
@@ -3478,12 +3485,12 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
 
-      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
-        return *shortcut;
-      }
-
       if (StartNativeHints(event)) {
         return true;
+      }
+
+      if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
+        return *shortcut;
       }
 
       if (IsPlain(event) && event.windows_key_code == 'O') {
@@ -3522,13 +3529,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
 
       if (website_mode_ == vim::Mode::kNormal) {
+        if (StartNativeHints(event)) {
+          return true;
+        }
+
         if (std::optional<bool> shortcut = HandlePageShortcut(event, true)) {
           return *shortcut;
         }
-      }
-
-      if (website_mode_ == vim::Mode::kNormal && StartNativeHints(event)) {
-        return true;
       }
 
       if (website_mode_ == vim::Mode::kNormal && IsPlain(event) &&
@@ -3614,6 +3621,13 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
     return std::nullopt;
   }
   if (!IsRawKeyDown(event) && !IsCharEvent(event)) {
+    return std::nullopt;
+  }
+
+  // Space has a page-specific playback binding on YouTube. Keep that binding
+  // strictly narrower than Space-based browser commands such as Ctrl+Space
+  // hints: any key modifier makes this a different chord, not playback input.
+  if (IsSpaceKey(event) && !IsLoneSpaceShortcutEvent(event)) {
     return std::nullopt;
   }
 

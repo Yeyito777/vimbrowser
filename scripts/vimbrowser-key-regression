@@ -141,7 +141,17 @@ window.events=[];
 window.keys=[];
 window.shortcutLog=[];
 const player = document.getElementById('movie_player');
+player._state = 1;
 player._volume = 50;
+player.getPlayerState = () => player._state;
+player.pauseVideo = () => {
+  player._state = 2;
+  window.shortcutLog.push('pause');
+};
+player.playVideo = () => {
+  player._state = 1;
+  window.shortcutLog.push('play');
+};
 player.getVolume = () => player._volume;
 player.setVolume = v => {
   player._volume = v;
@@ -166,6 +176,7 @@ window.resetProbe = (focusInput = true) => {
   window.events=[];
   window.keys=[];
   window.shortcutLog=[];
+  player._state = 1;
   player._volume = 50;
   const input = document.getElementById('input');
   input.value='';
@@ -1356,6 +1367,47 @@ def test_youtube_insert_hjkl_respects_focused_text_input(binary: Path) -> None:
 test_youtube_insert_hjkl_respects_focused_text_input.owns_harness = True
 
 
+def test_youtube_playback_requires_lone_space(binary: Path) -> None:
+    with StaticHttpsServer(YOUTUBE_TEST_HTML) as server:
+        require(server.url is not None, "test https server did not start")
+        with Harness(
+            binary,
+            initial_url=server.url,
+            html=YOUTUBE_TEST_HTML,
+            extra_browser_args=[
+                "--host-resolver-rules=MAP not.youtube.com 127.0.0.1",
+                "--ignore-certificate-errors",
+            ],
+        ) as h:
+            reset_to_website_mode(h, focus_input=False)
+            h.clear()
+            h.key("space", pause=0.3)
+            plain_space = h.snapshot()
+            require(plain_space["shortcutLog"] == ["pause"],
+                    "lone YouTube Space did not toggle playback exactly once",
+                    plain_space)
+
+            reset_to_website_mode(h, focus_input=False)
+            h.clear()
+            h.key("shift+space", pause=0.3)
+            shifted_space = h.snapshot()
+            require(shifted_space["shortcutLog"] == [],
+                    "Shift+Space triggered YouTube playback", shifted_space)
+
+            reset_to_website_mode(h, focus_input=False)
+            h.clear()
+            h.key("ctrl+space", pause=0.3)
+            control_space = h.snapshot()
+            require(control_space["shortcutLog"] == [],
+                    "Ctrl+Space hints triggered YouTube playback", control_space)
+            require(h.ipc(["status"]).get("mode") == "HINT",
+                    "Ctrl+Space did not enter hint mode in playback regression",
+                    control_space)
+
+
+test_youtube_playback_requires_lone_space.owns_harness = True
+
+
 def test_youtube_cinematics_hidden_by_shader(binary: Path) -> None:
     with StaticHttpsServer(YOUTUBE_CINEMATICS_TEST_HTML, host="www.youtube.com") as server:
         require(server.url is not None, "youtube cinematics test server did not start")
@@ -1499,6 +1551,7 @@ TESTS = [
     test_hints_work_before_full_page_load_and_survive_navigation,
     test_cold_start_launch_url_restores_saved_tabs_at_bottom,
     test_youtube_insert_hjkl_respects_focused_text_input,
+    test_youtube_playback_requires_lone_space,
     test_youtube_cinematics_hidden_by_shader,
     test_proprietary_media_codecs_advertised,
     test_h264_aac_mp4_video_actually_plays,
