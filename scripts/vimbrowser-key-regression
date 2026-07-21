@@ -1393,6 +1393,11 @@ def test_youtube_playback_requires_lone_space(binary: Path) -> None:
             shifted_space = h.snapshot()
             require(shifted_space["shortcutLog"] == [],
                     "Shift+Space triggered YouTube playback", shifted_space)
+            require(not any(event.get("type") == "keyup" and
+                            event.get("key") in (" ", "Spacebar")
+                            for event in shifted_space["events"]),
+                    "Shift+Space release leaked to the YouTube page",
+                    shifted_space)
 
             reset_to_website_mode(h, focus_input=False)
             h.clear()
@@ -1400,6 +1405,11 @@ def test_youtube_playback_requires_lone_space(binary: Path) -> None:
             control_space = h.snapshot()
             require(control_space["shortcutLog"] == [],
                     "Ctrl+Space hints triggered YouTube playback", control_space)
+            require(not any(event.get("type") == "keyup" and
+                            event.get("key") in (" ", "Spacebar")
+                            for event in control_space["events"]),
+                    "Ctrl+Space release leaked to the YouTube page",
+                    control_space)
             require(h.ipc(["status"]).get("mode") == "HINT",
                     "Ctrl+Space did not enter hint mode in playback regression",
                     control_space)

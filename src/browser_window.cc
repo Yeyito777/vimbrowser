@@ -230,11 +230,15 @@ void StylePermissionButton(CefRefPtr<CefLabelButton> button,
   button->SetState(CEF_BUTTON_STATE_NORMAL);
 }
 
-bool IsLoneSpaceShortcutEvent(const CefKeyEvent& event) {
+bool HasKeyModifier(const CefKeyEvent& event) {
   constexpr uint32_t kKeyModifierMask =
       EVENTFLAG_SHIFT_DOWN | EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN |
       EVENTFLAG_COMMAND_DOWN | EVENTFLAG_ALTGR_DOWN;
-  return IsSpaceKey(event) && !(event.modifiers & kKeyModifierMask);
+  return event.modifiers & kKeyModifierMask;
+}
+
+bool IsLoneSpaceShortcutEvent(const CefKeyEvent& event) {
+  return IsSpaceKey(event) && !HasKeyModifier(event);
 }
 
 }  // namespace
@@ -1473,8 +1477,70 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
   return true;
 }
 
+void BrowserWindow::MaybeArmModifiedSpaceKeyUpSuppression(
+    const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event) || !IsSpaceKey(event) || !HasKeyModifier(event) ||
+      mode_ != Mode::kNormal) {
+    return;
+  }
+
+  const bool page_shortcuts_active =
+      focus_area_ == FocusArea::kWebView &&
+      (website_mode_ == vim::Mode::kWebsiteNormal ||
+       website_mode_ == vim::Mode::kNormal);
+  const bool devtools_hints_active =
+      focus_area_ == FocusArea::kDevTools &&
+      devtools_mode_ != vim::Mode::kInsert;
+  if (!page_shortcuts_active && !devtools_hints_active) {
+    return;
+  }
+
+  // The raw modified-Space keydown is owned by browser chrome. Its physical
+  // keyup can arrive after the modifier keyup and therefore look like a lone
+  // Space to the page. YouTube reacts to that orphaned release when its play
+  // button is focused, so keep ownership through the end of the key sequence.
+  suppress_modified_space_key_up_ = true;
+  modified_space_key_up_clear_scheduled_ = false;
+  ++modified_space_key_up_generation_;
+}
+
+bool BrowserWindow::HandleModifiedSpaceKeyUpSuppression(
+    const CefKeyEvent& event) {
+  if (!suppress_modified_space_key_up_ || event.type != KEYEVENT_KEYUP ||
+      !IsSpaceKey(event)) {
+    return false;
+  }
+
+  // Both the Views window delegate and CEF keyboard handler may observe this
+  // release. Delay clearing so every callback for the physical event consumes
+  // it, while a later Ctrl+Space sequence can invalidate this task by generation.
+  if (!modified_space_key_up_clear_scheduled_) {
+    modified_space_key_up_clear_scheduled_ = true;
+    const uint64_t generation = modified_space_key_up_generation_;
+    CefRefPtr<BrowserWindow> self = this;
+    CefPostDelayedTask(
+        TID_UI,
+        base::BindOnce(&BrowserWindow::ClearModifiedSpaceKeyUpSuppression,
+                       self, generation),
+        50);
+  }
+  return true;
+}
+
+void BrowserWindow::ClearModifiedSpaceKeyUpSuppression(uint64_t generation) {
+  if (generation != modified_space_key_up_generation_) {
+    return;
+  }
+  suppress_modified_space_key_up_ = false;
+  modified_space_key_up_clear_scheduled_ = false;
+}
+
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
                                const CefKeyEvent& event) {
+  MaybeArmModifiedSpaceKeyUpSuppression(event);
+  if (HandleModifiedSpaceKeyUpSuppression(event)) {
+    return true;
+  }
   if (HandleNativeContextMenuKey(event)) {
     return true;
   }
@@ -1652,6 +1718,10 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
 }
 
 bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
+  MaybeArmModifiedSpaceKeyUpSuppression(event);
+  if (HandleModifiedSpaceKeyUpSuppression(event)) {
+    return true;
+  }
   if (HandleNativeContextMenuKey(event)) {
     return true;
   }

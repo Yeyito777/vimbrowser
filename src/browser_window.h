@@ -532,6 +532,9 @@ class BrowserWindow final : public CefWindowDelegate,
   void CloseDevTools();
   bool FocusAreaAvailable(FocusArea area) const;
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
+  void MaybeArmModifiedSpaceKeyUpSuppression(const CefKeyEvent& event);
+  bool HandleModifiedSpaceKeyUpSuppression(const CefKeyEvent& event);
+  void ClearModifiedSpaceKeyUpSuppression(uint64_t generation);
   bool HandleWebsiteModeKey(const CefKeyEvent& event);
   bool HandleWebsiteCommandKey(const CefKeyEvent& event);
   bool HandleDevToolsModeKey(const CefKeyEvent& event);
@@ -672,6 +675,9 @@ class BrowserWindow final : public CefWindowDelegate,
   bool dwm_save_registered_ = false;
   bool forwarding_key_to_page_ = false;
   bool forwarding_key_to_devtools_ = false;
+  bool suppress_modified_space_key_up_ = false;
+  bool modified_space_key_up_clear_scheduled_ = false;
+  uint64_t modified_space_key_up_generation_ = 0;
   bool fps_update_scheduled_ = false;
   bool native_hints_active_ = false;
   bool page_search_forward_ = true;
