@@ -1,6 +1,5 @@
 // Copyright 2026 The vimbrowser Authors. All rights reserved.
 
-#include <cstddef>
 #include <cstdint>
 #include <algorithm>
 #include <cmath>
@@ -14,6 +13,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "cef/include/internal/cef_export.h"
+#include "cef/include/cef_browser.h"
 #include "cef/libcef/browser/browser_host_base.h"
 #include "cef/libcef/browser/browser_platform_delegate.h"
 #include "cef/libcef/browser/browser_platform_delegate_lookup.h"
@@ -58,22 +58,6 @@ void FinishActivation(
   completion->callback = nullptr;
   completion->user_data = nullptr;
   callback(user_data, static_cast<int>(result), match_count);
-}
-
-void ScheduleActivationDeadline(
-    const std::shared_ptr<VimbrowserActivationCompletion>& completion) {
-  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
-      FROM_HERE,
-      base::BindOnce(
-          [](std::shared_ptr<VimbrowserActivationCompletion> completion) {
-            FinishActivation(
-                completion,
-                blink::mojom::VimbrowserElementActivationResult::
-                    kBackendUnavailable,
-                0);
-          },
-          completion),
-      kVimbrowserBackendDeadline);
 }
 
 struct VimbrowserInspectionState {
@@ -322,7 +306,7 @@ void ContinueHandleActivation(
 
 }  // namespace
 
-extern "C" CEF_EXPORT bool vimbrowser_browser_has_fps_sample(int browser_id) {
+bool CefBrowserHost::VimbrowserBrowserHasFpsSample(int browser_id) {
   auto* delegate = cef::GetBrowserPlatformDelegateForBrowserId(browser_id);
   if (!delegate) {
     return false;
@@ -330,7 +314,7 @@ extern "C" CEF_EXPORT bool vimbrowser_browser_has_fps_sample(int browser_id) {
   return delegate->HasFpsSample();
 }
 
-extern "C" CEF_EXPORT double vimbrowser_get_browser_fps(int browser_id) {
+double CefBrowserHost::VimbrowserGetBrowserFps(int browser_id) {
   auto* delegate = cef::GetBrowserPlatformDelegateForBrowserId(browser_id);
   if (!delegate) {
     return 0.0;
@@ -338,8 +322,7 @@ extern "C" CEF_EXPORT double vimbrowser_get_browser_fps(int browser_id) {
   return delegate->GetCurrentFps();
 }
 
-extern "C" CEF_EXPORT double vimbrowser_get_browser_refresh_rate(
-    int browser_id) {
+double CefBrowserHost::VimbrowserGetBrowserRefreshRate(int browser_id) {
   auto* delegate = cef::GetBrowserPlatformDelegateForBrowserId(browser_id);
   if (!delegate) {
     return 0.0;
@@ -347,8 +330,7 @@ extern "C" CEF_EXPORT double vimbrowser_get_browser_refresh_rate(
   return delegate->GetCompositorRefreshRate();
 }
 
-extern "C" CEF_EXPORT bool vimbrowser_browser_is_currently_audible(
-    int browser_id) {
+bool CefBrowserHost::VimbrowserBrowserIsCurrentlyAudible(int browser_id) {
   auto* delegate = cef::GetBrowserPlatformDelegateForBrowserId(browser_id);
   if (!delegate) {
     return false;
@@ -356,26 +338,23 @@ extern "C" CEF_EXPORT bool vimbrowser_browser_is_currently_audible(
   return delegate->IsCurrentlyAudible();
 }
 
-extern "C" CEF_EXPORT void vimbrowser_send_browser_command_key_event(
+void CefBrowserHost::VimbrowserSendBrowserCommandKeyEvent(
     int browser_id,
-    const CefKeyEvent* event) {
+    const CefKeyEvent& event) {
   auto* delegate = cef::GetBrowserPlatformDelegateForBrowserId(browser_id);
-  if (!delegate || !event) {
+  if (!delegate) {
     return;
   }
-  delegate->SendVimbrowserBrowserCommandKeyEvent(*event);
+  delegate->SendVimbrowserBrowserCommandKeyEvent(event);
 }
 
-extern "C" CEF_EXPORT bool vimbrowser_activate_element_by_selector(
+bool CefBrowserHost::VimbrowserActivateElementBySelector(
     int browser_id,
-    const char* selector,
-    size_t selector_size,
-    uint64_t* activation_nonce_high,
-    uint64_t* activation_nonce_low,
-    VimbrowserElementActivationCallback callback,
-    void* user_data) {
-  if (!selector || selector_size == 0 || !activation_nonce_high ||
-      !activation_nonce_low || !callback) {
+    const CefString& selector,
+    uint64_t& activation_nonce_high,
+    uint64_t& activation_nonce_low,
+    CefRefPtr<CefVimbrowserElementActivationCallback> callback) {
+  if (selector.empty() || !callback) {
     return false;
   }
 
@@ -392,23 +371,19 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_by_selector(
 
   const base::UnguessableToken activation_nonce =
       base::UnguessableToken::Create();
-  *activation_nonce_high = activation_nonce.GetHighForSerialization();
-  *activation_nonce_low = activation_nonce.GetLowForSerialization();
+  activation_nonce_high = activation_nonce.GetHighForSerialization();
+  activation_nonce_low = activation_nonce.GetLowForSerialization();
 
-  auto completion = std::make_shared<VimbrowserActivationCompletion>();
-  completion->callback = callback;
-  completion->user_data = user_data;
-  ScheduleActivationDeadline(completion);
   auto result_callback = base::BindOnce(
-      [](std::shared_ptr<VimbrowserActivationCompletion> completion,
+      [](CefRefPtr<CefVimbrowserElementActivationCallback> callback,
          blink::mojom::VimbrowserElementActivationResult result,
          uint32_t match_count) {
-        FinishActivation(completion, result, static_cast<int>(match_count));
+        callback->OnComplete(static_cast<int>(result),
+                             static_cast<int>(match_count));
       },
-      completion);
+      callback);
   frame->GetAssociatedLocalFrame()->VimbrowserActivateElement(
-      std::string(selector, selector_size),
-      frame->GetDocumentToken(), activation_nonce,
+      selector.ToString(), frame->GetDocumentToken(), activation_nonce,
       mojo::WrapCallbackWithDefaultInvokeIfNotRun(
           std::move(result_callback),
           blink::mojom::VimbrowserElementActivationResult::kBackendUnavailable,
@@ -580,15 +555,10 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_handle(
   return true;
 }
 
-extern "C" CEF_EXPORT bool
-vimbrowser_get_current_file_dialog_activation_nonce(
+bool CefBrowserHost::VimbrowserGetCurrentFileDialogActivationNonce(
     int browser_id,
-    uint64_t* activation_nonce_high,
-    uint64_t* activation_nonce_low) {
-  if (!activation_nonce_high || !activation_nonce_low) {
-    return false;
-  }
-
+    uint64_t& activation_nonce_high,
+    uint64_t& activation_nonce_low) {
   auto browser = CefBrowserHostBase::GetBrowserForBrowserId(browser_id);
   const std::optional<base::UnguessableToken> activation_nonce =
       browser ? browser->GetCurrentVimbrowserFileDialogActivationNonce()
@@ -597,7 +567,7 @@ vimbrowser_get_current_file_dialog_activation_nonce(
     return false;
   }
 
-  *activation_nonce_high = activation_nonce->GetHighForSerialization();
-  *activation_nonce_low = activation_nonce->GetLowForSerialization();
+  activation_nonce_high = activation_nonce->GetHighForSerialization();
+  activation_nonce_low = activation_nonce->GetLowForSerialization();
   return true;
 }

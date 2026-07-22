@@ -4,12 +4,29 @@ set -euo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 backend_root="${repo_dir}/backend"
 chromium_src="${backend_root}/chromium"
-build_dir=${CHROMIUM_BUILD_DIR:-Release_GN_x64}
+case "$(uname -s):$(uname -m)" in
+  Darwin:arm64)
+    platform=mac
+    default_build_dir=Release_GN_arm64
+    dist_pattern='cef_binary_*_macosarm64_minimal'
+    ;;
+  Linux:x86_64)
+    platform=linux
+    default_build_dir=Release_GN_x64
+    dist_pattern='cef_binary_*_linux64_minimal'
+    ;;
+  *)
+    echo "error: unsupported CEF distribution host $(uname -s)/$(uname -m)" >&2
+    exit 1
+    ;;
+esac
+build_dir=${CHROMIUM_BUILD_DIR:-${default_build_dir}}
 out_dir="${chromium_src}/out/${build_dir}"
 
 dist_dir=${CEF_DIST_DIR:-}
 if [[ -z "${dist_dir}" ]]; then
-  dist_dir=$(ls -d "${chromium_src}"/cef/binary_distrib/cef_binary_*_linux64_minimal 2>/dev/null | tail -n 1 || true)
+  dist_dir=$(find "${chromium_src}/cef/binary_distrib" -maxdepth 1 -type d \
+    -name "${dist_pattern}" -print 2>/dev/null | sort | tail -n 1 || true)
 fi
 
 if [[ -z "${dist_dir}" || ! -d "${dist_dir}" ]]; then
@@ -22,6 +39,35 @@ if [[ ! -d "${out_dir}" ]]; then
   echo "error: Chromium output dir missing: ${out_dir}" >&2
   echo "       Run 'make build-chromium-cef' first." >&2
   exit 1
+fi
+
+if [[ "${platform}" == "mac" ]]; then
+  framework_name='Chromium Embedded Framework.framework'
+  framework_src="${out_dir}/${framework_name}"
+  framework_dst="${dist_dir}/Release/${framework_name}"
+  framework_binary="${framework_dst}/Chromium Embedded Framework"
+
+  if [[ ! -d "${framework_src}" ]]; then
+    echo "error: source-built CEF framework missing: ${framework_src}" >&2
+    echo "       Run 'make build-chromium-cef' first." >&2
+    exit 1
+  fi
+
+  mkdir -p "${dist_dir}/Release"
+  ditto "${framework_src}" "${framework_dst}"
+
+  if ! /usr/bin/nm -gUj "${framework_binary}" | \
+      grep -x '_cef_browser_host_vimbrowser_send_browser_command_key_event' \
+        >/dev/null; then
+    echo "error: packaged framework is missing vimbrowser's native CEF API" >&2
+    exit 1
+  fi
+
+  cat <<EOF
+[+] Source-built macOS CEF framework synced into:
+    ${dist_dir}
+EOF
+  exit 0
 fi
 
 changed=0

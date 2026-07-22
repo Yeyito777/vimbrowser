@@ -10,26 +10,17 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "cef/libcef/browser/native/browser_platform_delegate_native.h"
-#include "ui/compositor/compositor_animation_observer.h"
-#include "ui/compositor/compositor_observer.h"
 #include "ui/events/event.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/vector2d.h"
 
 namespace content {
-class RenderWidgetHost;
 class RenderWidgetHostViewAura;
-}
-
-namespace ui {
-class Compositor;
 }
 
 // Windowed browser implementation for Aura platforms.
 class CefBrowserPlatformDelegateNativeAura
-    : public CefBrowserPlatformDelegateNative,
-      public ui::CompositorAnimationObserver,
-      public ui::CompositorObserver {
+    : public CefBrowserPlatformDelegateNative {
  public:
   CefBrowserPlatformDelegateNativeAura(const CefWindowInfo& window_info,
                                        SkColor background_color);
@@ -38,21 +29,13 @@ class CefBrowserPlatformDelegateNativeAura
   void InstallRootWindowBoundsCallback();
 
   // CefBrowserPlatformDelegate methods:
-  void WebContentsDestroyed(content::WebContents* web_contents) override;
   void RenderViewReady() override;
-  bool HasFpsSample() const override;
-  double GetCurrentFps() const override;
-  double GetCompositorRefreshRate() const override;
-  void SendVimbrowserBrowserCommandKeyEvent(const CefKeyEvent& event) override;
   void SendKeyEvent(const CefKeyEvent& event) override;
   void SendMouseClickEvent(const CefMouseEvent& event,
                            CefBrowserHost::MouseButtonType type,
                            bool mouseUp,
                            int clickCount) override;
   void SendMouseMoveEvent(const CefMouseEvent& event, bool mouseLeave) override;
-  void SendMouseWheelEvent(const CefMouseEvent& event,
-                           int deltaX,
-                           int deltaY) override;
   void SendTouchEvent(const CefTouchEvent& event) override;
   std::unique_ptr<CefMenuRunner> CreateMenuRunner() override;
   gfx::Point GetScreenPoint(const gfx::Point& view,
@@ -94,12 +77,6 @@ class CefBrowserPlatformDelegateNativeAura
     return std::nullopt;
   }
 
-  // ui::CompositorAnimationObserver / ui::CompositorObserver methods:
-  void OnAnimationStep(base::TimeTicks timestamp) override;
-  void OnCompositingStarted(ui::Compositor* compositor,
-                            base::TimeTicks start_time) override;
-  void OnCompositingShuttingDown(ui::Compositor* compositor) override;
-
  protected:
   base::OnceClosure GetWidgetDeleteCallback();
 
@@ -119,43 +96,6 @@ class CefBrowserPlatformDelegateNativeAura
   void WidgetDeleted();
 
   content::RenderWidgetHostViewAura* GetHostView() const;
-  void InstallFpsObserver();
-  void RemoveFpsObserver();
-  void RecordFrameSubmission(base::TimeTicks now);
-  void StartSmoothScrollAnimation();
-  void StopSmoothScrollAnimation();
-  void AbortSmoothScroll();
-  void ResetSmoothScrollState();
-  content::RenderWidgetHost* RootSmoothScrollHost() const;
-  content::RenderWidgetHost* FocusedFrameSmoothScrollHost() const;
-  content::RenderWidgetHost* CurrentSmoothScrollHost() const;
-  gfx::PointF SmoothScrollPosition() const;
-  void SendInstantGestureScroll(const CefMouseEvent& event,
-                                int content_dx,
-                                int content_dy);
-  bool SendGestureScrollBegin(float deltaXHint, float deltaYHint);
-  bool SendGestureScrollUpdate(int stepX, int stepY);
-  bool SendGestureScrollEnd();
-  void TickSmoothScroll(base::TimeTicks now);
-
-  CefMouseEvent smooth_scroll_event_ = {};
-  raw_ptr<ui::Compositor> smooth_scroll_compositor_ = nullptr;
-  raw_ptr<content::RenderWidgetHost> smooth_scroll_host_ = nullptr;
-  double smooth_scroll_dx_ = 0.0;
-  double smooth_scroll_dy_ = 0.0;
-  double smooth_scroll_subpixel_x_ = 0.0;
-  double smooth_scroll_subpixel_y_ = 0.0;
-  double smooth_scroll_factor_ = 0.3;
-  base::TimeTicks smooth_scroll_last_tick_;
-  bool smooth_scroll_scrolling_ = false;
-  bool smooth_scroll_sent_begin_ = false;
-  bool smooth_scroll_from_hint_target_ = false;
-  bool smooth_scroll_target_viewport_ = true;
-  raw_ptr<ui::Compositor> fps_observed_compositor_ = nullptr;
-  int fps_frame_count_ = 0;
-  double fps_current_ = 0.0;
-  base::TimeTicks fps_sample_start_;
-  bool fps_has_sample_ = false;
 
   base::WeakPtrFactory<CefBrowserPlatformDelegateNativeAura> weak_ptr_factory_{
       this};

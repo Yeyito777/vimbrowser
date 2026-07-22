@@ -4,16 +4,95 @@
 
 #include "cef/libcef/browser/native/browser_platform_delegate_native.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "cef/libcef/browser/alloy/alloy_browser_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/web_contents.h"
+#include "third_party/blink/public/common/input/web_gesture_event.h"
 #include "third_party/blink/public/common/input/web_mouse_event.h"
+#include "ui/compositor/compositor.h"
+#include "ui/events/keycodes/dom/dom_code.h"
+#include "ui/events/keycodes/dom/dom_key.h"
+
+namespace {
+constexpr int kVimbrowserBrowserCommandWebModifier = 1 << 27;
+constexpr int kVimbrowserSmoothScrollWebModifier = 1 << 28;
+constexpr int kVimbrowserHintNewTabWebModifier = 1 << 29;
+constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
+constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
+constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
+constexpr double kSmoothScrollFactor = 0.3;
+
+bool IsCtrlSpaceBrowserCommand(const CefKeyEvent& event) {
+  return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+         !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         (event.windows_key_code == 0x20 || event.character == 0x20 ||
+          event.unmodified_character == 0x20);
+}
+
+bool IsCtrlLetterBrowserCommand(const CefKeyEvent& event, char key) {
+  return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
+         !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
+         !(event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         event.windows_key_code == key;
+}
+
+void NormalizeCtrlLetterBrowserCommand(input::NativeWebKeyboardEvent& web_event,
+                                       char key,
+                                       ui::DomCode dom_code) {
+  const char lower = static_cast<char>(key + ('a' - 'A'));
+  web_event.windows_key_code = key;
+  web_event.dom_code = static_cast<int>(dom_code);
+  web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(lower));
+  web_event.text[0] = lower;
+  web_event.unmodified_text[0] = lower;
+}
+
+void NormalizeLetterBrowserCommand(input::NativeWebKeyboardEvent& web_event,
+                                   const CefKeyEvent& event,
+                                   char key,
+                                   ui::DomCode dom_code) {
+  const char lower = static_cast<char>(key + ('a' - 'A'));
+  const char text = event.modifiers & EVENTFLAG_SHIFT_DOWN ? key : lower;
+  web_event.windows_key_code = key;
+  web_event.dom_code = static_cast<int>(dom_code);
+  web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(text));
+  web_event.text[0] = text;
+  web_event.unmodified_text[0] = lower;
+}
+}  // namespace
 
 CefBrowserPlatformDelegateNative::CefBrowserPlatformDelegateNative(
     const CefWindowInfo& window_info,
     SkColor background_color)
     : window_info_(window_info), background_color_(background_color) {}
+
+CefBrowserPlatformDelegateNative::~CefBrowserPlatformDelegateNative() {
+  AbortSmoothScroll();
+  RemoveFpsObserver();
+}
+
+void CefBrowserPlatformDelegateNative::WebContentsDestroyed(
+    content::WebContents* web_contents) {
+  AbortSmoothScroll();
+  RemoveFpsObserver();
+  CefBrowserPlatformDelegate::WebContentsDestroyed(web_contents);
+}
+
+void CefBrowserPlatformDelegateNative::RenderViewReady() {
+  AbortSmoothScroll();
+  CefBrowserPlatformDelegate::RenderViewReady();
+  InstallFpsObserver();
+}
 
 SkColor CefBrowserPlatformDelegateNative::GetBackgroundColor() const {
   return background_color_;
@@ -46,4 +125,376 @@ void CefBrowserPlatformDelegateNative::NotifyScreenInfoChanged() {
   }
 
   render_widget_host->NotifyScreenInfoChanged();
+}
+
+void CefBrowserPlatformDelegateNative::SendVimbrowserBrowserCommandKeyEvent(
+    const CefKeyEvent& event) {
+  auto* frame = web_contents_ ? web_contents_->GetFocusedFrame() : nullptr;
+  if (!frame) {
+    frame = web_contents_ ? web_contents_->GetPrimaryMainFrame() : nullptr;
+  }
+  auto* host = frame ? frame->GetRenderWidgetHost() : nullptr;
+  if (!host) {
+    return;
+  }
+
+  input::NativeWebKeyboardEvent web_event = TranslateWebKeyEvent(event);
+  int modifiers =
+      web_event.GetModifiers() | kVimbrowserBrowserCommandWebModifier;
+  if (event.modifiers & EVENTFLAG_SHIFT_DOWN) {
+    modifiers |= kVimbrowserHintNewTabWebModifier;
+  }
+  web_event.SetModifiers(modifiers);
+  if (IsCtrlSpaceBrowserCommand(event)) {
+    web_event.windows_key_code = 0x20;
+    web_event.dom_code = static_cast<int>(ui::DomCode::SPACE);
+    web_event.dom_key = static_cast<uint32_t>(ui::DomKey::FromCharacter(' '));
+    web_event.text[0] = ' ';
+    web_event.unmodified_text[0] = ' ';
+  }
+  if (event.windows_key_code == 'F') {
+    NormalizeLetterBrowserCommand(web_event, event, 'F', ui::DomCode::US_F);
+  } else if (IsCtrlLetterBrowserCommand(event, 'H')) {
+    NormalizeCtrlLetterBrowserCommand(web_event, 'H', ui::DomCode::US_H);
+  } else if (IsCtrlLetterBrowserCommand(event, 'L')) {
+    NormalizeCtrlLetterBrowserCommand(web_event, 'L', ui::DomCode::US_L);
+  }
+  web_event.is_browser_shortcut = true;
+  host->ForwardKeyboardEvent(web_event);
+}
+
+void CefBrowserPlatformDelegateNative::SendMouseWheelEvent(
+    const CefMouseEvent& event,
+    int deltaX,
+    int deltaY) {
+  const bool from_hint_target =
+      event.modifiers & kVimbrowserHintScrollTargetCefModifier;
+  const bool target_viewport =
+      !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
+  if (smooth_scroll_scrolling_ &&
+      (smooth_scroll_from_hint_target_ != from_hint_target ||
+       smooth_scroll_target_viewport_ != target_viewport ||
+       smooth_scroll_host_ != CurrentSmoothScrollHost())) {
+    AbortSmoothScroll();
+  }
+
+  smooth_scroll_event_ = event;
+  smooth_scroll_from_hint_target_ = from_hint_target;
+  smooth_scroll_target_viewport_ = target_viewport;
+  const int content_dx = -deltaX;
+  const int content_dy = -deltaY;
+  if (event.modifiers & kVimbrowserInstantScrollCefModifier) {
+    SendInstantGestureScroll(event, content_dx, content_dy);
+    return;
+  }
+
+  smooth_scroll_dx_ += content_dx;
+  smooth_scroll_dy_ += content_dy;
+  smooth_scroll_factor_ = kSmoothScrollFactor;
+  if (!smooth_scroll_scrolling_) {
+    smooth_scroll_subpixel_x_ = 0.0;
+    smooth_scroll_subpixel_y_ = 0.0;
+    if (!SendGestureScrollBegin(static_cast<float>(-content_dx),
+                                static_cast<float>(-content_dy))) {
+      ResetSmoothScrollState();
+      return;
+    }
+    smooth_scroll_scrolling_ = true;
+    smooth_scroll_last_tick_ = base::TimeTicks::Now();
+    StartSmoothScrollAnimation();
+    TickSmoothScroll(smooth_scroll_last_tick_);
+  }
+}
+
+bool CefBrowserPlatformDelegateNative::HasFpsSample() const {
+  return fps_has_sample_;
+}
+
+double CefBrowserPlatformDelegateNative::GetCurrentFps() const {
+  return fps_current_;
+}
+
+double CefBrowserPlatformDelegateNative::GetCompositorRefreshRate() const {
+  return fps_observed_compositor_ ? fps_observed_compositor_->refresh_rate()
+                                  : 0.0;
+}
+
+void CefBrowserPlatformDelegateNative::OnCompositingStarted(
+    ui::Compositor* compositor,
+    base::TimeTicks start_time) {
+  if (compositor == fps_observed_compositor_) {
+    RecordFrameSubmission(start_time.is_null() ? base::TimeTicks::Now()
+                                               : start_time);
+  }
+}
+
+void CefBrowserPlatformDelegateNative::OnAnimationStep(
+    base::TimeTicks timestamp) {
+  TickSmoothScroll(timestamp.is_null() ? base::TimeTicks::Now() : timestamp);
+}
+
+void CefBrowserPlatformDelegateNative::OnCompositingShuttingDown(
+    ui::Compositor* compositor) {
+  if (compositor == fps_observed_compositor_) {
+    if (compositor->HasObserver(this)) {
+      compositor->RemoveObserver(this);
+    }
+    fps_observed_compositor_ = nullptr;
+  }
+  if (compositor == smooth_scroll_compositor_) {
+    if (compositor->HasAnimationObserver(this)) {
+      compositor->RemoveAnimationObserver(this);
+    }
+    smooth_scroll_compositor_ = nullptr;
+    ResetSmoothScrollState();
+  }
+}
+
+content::RenderWidgetHostViewBase*
+CefBrowserPlatformDelegateNative::GetHostView() const {
+  return web_contents_ ? static_cast<content::RenderWidgetHostViewBase*>(
+                             web_contents_->GetRenderWidgetHostView())
+                       : nullptr;
+}
+
+void CefBrowserPlatformDelegateNative::InstallFpsObserver() {
+  auto* view = GetHostView();
+  ui::Compositor* compositor = view ? view->GetCompositor() : nullptr;
+  if (!compositor || compositor == fps_observed_compositor_) {
+    return;
+  }
+  RemoveFpsObserver();
+  fps_observed_compositor_ = compositor;
+  ResetFpsSample();
+  compositor->AddObserver(this);
+}
+
+void CefBrowserPlatformDelegateNative::RemoveFpsObserver() {
+  if (fps_observed_compositor_) {
+    if (fps_observed_compositor_->HasObserver(this)) {
+      fps_observed_compositor_->RemoveObserver(this);
+    }
+    fps_observed_compositor_ = nullptr;
+  }
+}
+
+void CefBrowserPlatformDelegateNative::ResetFpsSample() {
+  fps_frame_count_ = 0;
+  fps_current_ = 0.0;
+  fps_has_sample_ = false;
+  fps_sample_start_ = base::TimeTicks::Now();
+}
+
+void CefBrowserPlatformDelegateNative::RecordFrameSubmission(
+    base::TimeTicks now) {
+  if (fps_sample_start_.is_null()) {
+    fps_sample_start_ = now;
+  }
+  ++fps_frame_count_;
+  const base::TimeDelta elapsed = now - fps_sample_start_;
+  if (elapsed >= base::Seconds(1)) {
+    fps_current_ = fps_frame_count_ / elapsed.InSecondsF();
+    fps_frame_count_ = 0;
+    fps_sample_start_ = now;
+    fps_has_sample_ = true;
+  }
+}
+
+gfx::PointF CefBrowserPlatformDelegateNative::SmoothScrollPosition() const {
+  if (smooth_scroll_event_.x >= 0 && smooth_scroll_event_.y >= 0) {
+    return gfx::PointF(static_cast<float>(smooth_scroll_event_.x),
+                       static_cast<float>(smooth_scroll_event_.y));
+  }
+  auto* view = GetHostView();
+  if (!view) {
+    return gfx::PointF();
+  }
+  const gfx::Rect bounds = view->GetViewBounds();
+  return gfx::PointF(bounds.width() / 2.0f, bounds.height() / 2.0f);
+}
+
+void CefBrowserPlatformDelegateNative::StartSmoothScrollAnimation() {
+  auto* view = GetHostView();
+  ui::Compositor* compositor = view ? view->GetCompositor() : nullptr;
+  if (!compositor) {
+    return;
+  }
+  if (smooth_scroll_compositor_ && smooth_scroll_compositor_ != compositor &&
+      smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->RemoveAnimationObserver(this);
+  }
+  smooth_scroll_compositor_ = compositor;
+  if (!smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->AddAnimationObserver(this);
+  }
+  ResetFpsSample();
+}
+
+void CefBrowserPlatformDelegateNative::StopSmoothScrollAnimation() {
+  if (smooth_scroll_compositor_ &&
+      smooth_scroll_compositor_->HasAnimationObserver(this)) {
+    smooth_scroll_compositor_->RemoveAnimationObserver(this);
+  }
+  smooth_scroll_compositor_ = nullptr;
+}
+
+void CefBrowserPlatformDelegateNative::AbortSmoothScroll() {
+  StopSmoothScrollAnimation();
+  ResetSmoothScrollState();
+}
+
+void CefBrowserPlatformDelegateNative::ResetSmoothScrollState() {
+  smooth_scroll_host_ = nullptr;
+  smooth_scroll_dx_ = 0.0;
+  smooth_scroll_dy_ = 0.0;
+  smooth_scroll_subpixel_x_ = 0.0;
+  smooth_scroll_subpixel_y_ = 0.0;
+  smooth_scroll_scrolling_ = false;
+  smooth_scroll_sent_begin_ = false;
+  smooth_scroll_from_hint_target_ = false;
+  smooth_scroll_target_viewport_ = true;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNative::RootSmoothScrollHost() const {
+  auto* view = GetHostView();
+  return view ? view->host() : nullptr;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNative::FocusedFrameSmoothScrollHost() const {
+  auto* frame = web_contents_ ? web_contents_->GetFocusedFrame() : nullptr;
+  return frame ? frame->GetRenderWidgetHost() : nullptr;
+}
+
+content::RenderWidgetHost*
+CefBrowserPlatformDelegateNative::CurrentSmoothScrollHost() const {
+  if (smooth_scroll_from_hint_target_) {
+    if (auto* host = FocusedFrameSmoothScrollHost()) {
+      return host;
+    }
+  }
+  return RootSmoothScrollHost();
+}
+
+void CefBrowserPlatformDelegateNative::SendInstantGestureScroll(
+    const CefMouseEvent& event,
+    int content_dx,
+    int content_dy) {
+  AbortSmoothScroll();
+  if (content_dx == 0 && content_dy == 0) {
+    return;
+  }
+  smooth_scroll_event_ = event;
+  smooth_scroll_from_hint_target_ =
+      event.modifiers & kVimbrowserHintScrollTargetCefModifier;
+  smooth_scroll_target_viewport_ =
+      !(event.modifiers & kVimbrowserScrollTargetElementCefModifier);
+  if (!SendGestureScrollBegin(static_cast<float>(-content_dx),
+                              static_cast<float>(-content_dy))) {
+    ResetSmoothScrollState();
+    return;
+  }
+  if (!SendGestureScrollUpdate(content_dx, content_dy)) {
+    AbortSmoothScroll();
+    return;
+  }
+  SendGestureScrollEnd();
+  ResetSmoothScrollState();
+}
+
+bool CefBrowserPlatformDelegateNative::SendGestureScrollBegin(
+    float deltaXHint,
+    float deltaYHint) {
+  auto* host = CurrentSmoothScrollHost();
+  if (!host) {
+    return false;
+  }
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollBegin,
+                               kVimbrowserSmoothScrollWebModifier,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  event.data.scroll_begin.delta_x_hint = deltaXHint;
+  event.data.scroll_begin.delta_y_hint = deltaYHint;
+  event.data.scroll_begin.target_viewport = smooth_scroll_target_viewport_;
+  host->ForwardGestureEvent(event);
+  smooth_scroll_host_ = host;
+  smooth_scroll_sent_begin_ = true;
+  return true;
+}
+
+bool CefBrowserPlatformDelegateNative::SendGestureScrollUpdate(int stepX,
+                                                               int stepY) {
+  auto* host = CurrentSmoothScrollHost();
+  if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
+      smooth_scroll_host_ != host) {
+    return false;
+  }
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollUpdate,
+                               kVimbrowserSmoothScrollWebModifier,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  event.data.scroll_update.delta_x = static_cast<float>(-stepX);
+  event.data.scroll_update.delta_y = static_cast<float>(-stepY);
+  host->ForwardGestureEvent(event);
+  return true;
+}
+
+bool CefBrowserPlatformDelegateNative::SendGestureScrollEnd() {
+  auto* host = CurrentSmoothScrollHost();
+  if (!smooth_scroll_sent_begin_ || !smooth_scroll_host_ ||
+      smooth_scroll_host_ != host) {
+    return false;
+  }
+  blink::WebGestureEvent event(blink::WebInputEvent::Type::kGestureScrollEnd,
+                               kVimbrowserSmoothScrollWebModifier,
+                               base::TimeTicks::Now());
+  event.SetSourceDevice(blink::WebGestureDevice::kTouchpad);
+  event.SetPositionInWidget(SmoothScrollPosition());
+  host->ForwardGestureEvent(event);
+  smooth_scroll_host_ = nullptr;
+  smooth_scroll_sent_begin_ = false;
+  return true;
+}
+
+void CefBrowserPlatformDelegateNative::TickSmoothScroll(base::TimeTicks now) {
+  if (!smooth_scroll_scrolling_) {
+    StopSmoothScrollAnimation();
+    return;
+  }
+  const base::TimeDelta elapsed = now - smooth_scroll_last_tick_;
+  smooth_scroll_last_tick_ = now;
+  const double dt = std::max(1.0, elapsed.InMillisecondsF());
+  if (!smooth_scroll_sent_begin_ ||
+      smooth_scroll_host_ != CurrentSmoothScrollHost()) {
+    AbortSmoothScroll();
+    return;
+  }
+  const double effective_factor =
+      1.0 - std::pow(1.0 - smooth_scroll_factor_, dt / 16.0);
+  const double frac_step_x = smooth_scroll_dx_ * effective_factor;
+  const double frac_step_y = smooth_scroll_dy_ * effective_factor;
+  smooth_scroll_subpixel_x_ += frac_step_x;
+  smooth_scroll_subpixel_y_ += frac_step_y;
+  const int step_x = static_cast<int>(smooth_scroll_subpixel_x_);
+  const int step_y = static_cast<int>(smooth_scroll_subpixel_y_);
+  smooth_scroll_subpixel_x_ -= step_x;
+  smooth_scroll_subpixel_y_ -= step_y;
+  smooth_scroll_dx_ -= frac_step_x;
+  smooth_scroll_dy_ -= frac_step_y;
+  if (step_x != 0 || step_y != 0) {
+    if (!SendGestureScrollUpdate(step_x, step_y)) {
+      AbortSmoothScroll();
+      return;
+    }
+    RecordFrameSubmission(now);
+  }
+  if (std::abs(smooth_scroll_dx_) < 0.01 &&
+      std::abs(smooth_scroll_dy_) < 0.01) {
+    StopSmoothScrollAnimation();
+    SendGestureScrollEnd();
+    ResetSmoothScrollState();
+  }
 }

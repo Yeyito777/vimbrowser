@@ -8,11 +8,8 @@
 
 #include "browser_window.h"
 #include "include/cef_process_message.h"
-#include "include/cef_values.h"
 #include "include/cef_v8.h"
-#if defined(__APPLE__)
-#include "mac/browser_features_mac.h"
-#endif
+#include "include/cef_values.h"
 
 namespace vimbrowser {
 namespace {
@@ -21,47 +18,11 @@ constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
-#if defined(__APPLE__)
-constexpr const char kMacPageEventMessage[] = "__vimbrowser_mac_page_event__";
-
-class MacPageBridgeHandler final : public CefV8Handler {
- public:
-  explicit MacPageBridgeHandler(CefRefPtr<CefFrame> frame) : frame_(frame) {}
-
-  bool Execute(const CefString& name,
-               CefRefPtr<CefV8Value> object,
-               const CefV8ValueList& arguments,
-               CefRefPtr<CefV8Value>& retval,
-               CefString& exception) override {
-    if (name.ToString() != "__vimbrowserReport" || arguments.empty() ||
-        !arguments[0]->IsString() || !frame_ || !frame_->IsValid()) {
-      return false;
-    }
-    CefRefPtr<CefProcessMessage> message =
-        CefProcessMessage::Create(kMacPageEventMessage);
-    CefRefPtr<CefListValue> args = message->GetArgumentList();
-    args->SetString(0, arguments[0]->GetStringValue());
-    args->SetString(1, arguments.size() >= 2 && arguments[1]->IsString()
-                           ? arguments[1]->GetStringValue()
-                           : CefString());
-    frame_->SendProcessMessage(PID_BROWSER, message);
-    retval = CefV8Value::CreateBool(true);
-    return true;
-  }
-
- private:
-  CefRefPtr<CefFrame> frame_;
-
-  IMPLEMENT_REFCOUNTING(MacPageBridgeHandler);
-  DISALLOW_COPY_AND_ASSIGN(MacPageBridgeHandler);
-};
-#endif
 
 std::string FocusedEditablePurpose(CefRefPtr<CefDOMNode> node) {
   if (!node) {
     return {};
   }
-
   if (node->IsFormControlElement()) {
     switch (node->GetFormControlElementType()) {
       case DOM_FORM_CONTROL_TYPE_INPUT_PASSWORD:
@@ -92,22 +53,36 @@ std::string JsonEscape(std::string_view text) {
   out.reserve(text.size() + 8);
   for (unsigned char c : text) {
     switch (c) {
-      case '"': out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\b': out += "\\b"; break;
-      case '\f': out += "\\f"; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        if (c < 0x20) {
-          constexpr char kHex[] = "0123456789abcdef";
-          out += "\\u00";
-          out.push_back(kHex[(c >> 4) & 0xf]);
-          out.push_back(kHex[c & 0xf]);
-        } else {
-          out.push_back(static_cast<char>(c));
-        }
+    case '"':
+      out += "\\\"";
+      break;
+    case '\\':
+      out += "\\\\";
+      break;
+    case '\b':
+      out += "\\b";
+      break;
+    case '\f':
+      out += "\\f";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
+    default:
+      if (c < 0x20) {
+        constexpr char kHex[] = "0123456789abcdef";
+        out += "\\u00";
+        out.push_back(kHex[(c >> 4) & 0xf]);
+        out.push_back(kHex[c & 0xf]);
+      } else {
+        out.push_back(static_cast<char>(c));
+      }
     }
   }
   return out;
@@ -145,7 +120,8 @@ std::string V8ValueToJsonValue(CefRefPtr<CefV8Value> value, int depth) {
     return "\"" + JsonEscape(value->GetStringValue().ToString()) + "\"";
   }
   if (value->IsFunction()) {
-    return "\"[function " + JsonEscape(value->GetFunctionName().ToString()) + "]\"";
+    return "\"[function " + JsonEscape(value->GetFunctionName().ToString()) +
+           "]\"";
   }
   if (value->IsPromise()) {
     return "\"[promise]\"";
@@ -177,7 +153,7 @@ std::string V8ValueToJsonValue(CefRefPtr<CefV8Value> value, int depth) {
     std::ostringstream out;
     out << "{";
     size_t written = 0;
-    for (const CefString& key : keys) {
+    for (const CefString &key : keys) {
       if (written >= 100) {
         break;
       }
@@ -188,8 +164,8 @@ std::string V8ValueToJsonValue(CefRefPtr<CefV8Value> value, int depth) {
       if (written) {
         out << ",";
       }
-      out << "\"" << JsonEscape(key.ToString()) << "\":"
-          << V8ValueToJsonValue(child, depth - 1);
+      out << "\"" << JsonEscape(key.ToString())
+          << "\":" << V8ValueToJsonValue(child, depth - 1);
       ++written;
     }
     out << "}";
@@ -199,20 +175,30 @@ std::string V8ValueToJsonValue(CefRefPtr<CefV8Value> value, int depth) {
 }
 
 std::string V8ValueType(CefRefPtr<CefV8Value> value) {
-  if (!value) return "null";
-  if (value->IsUndefined()) return "undefined";
-  if (value->IsNull()) return "null";
-  if (value->IsBool()) return "boolean";
-  if (value->IsInt() || value->IsUInt() || value->IsDouble()) return "number";
-  if (value->IsString()) return "string";
-  if (value->IsArray()) return "array";
-  if (value->IsFunction()) return "function";
-  if (value->IsPromise()) return "promise";
-  if (value->IsObject()) return "object";
+  if (!value)
+    return "null";
+  if (value->IsUndefined())
+    return "undefined";
+  if (value->IsNull())
+    return "null";
+  if (value->IsBool())
+    return "boolean";
+  if (value->IsInt() || value->IsUInt() || value->IsDouble())
+    return "number";
+  if (value->IsString())
+    return "string";
+  if (value->IsArray())
+    return "array";
+  if (value->IsFunction())
+    return "function";
+  if (value->IsPromise())
+    return "promise";
+  if (value->IsObject())
+    return "object";
   return "unknown";
 }
 
-std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string& code) {
+std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string &code) {
   if (!frame || !frame->IsValid()) {
     return R"JSON({"ok":false,"error":"invalid frame"})JSON";
   }
@@ -236,9 +222,8 @@ std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string& code) {
                                 : std::string("evaluation failed"))
         << "\"";
     if (exception) {
-      out << ",\"line\":" << exception->GetLineNumber()
-          << ",\"source\":\"" << JsonEscape(exception->GetSourceLine().ToString())
-          << "\"";
+      out << ",\"line\":" << exception->GetLineNumber() << ",\"source\":\""
+          << JsonEscape(exception->GetSourceLine().ToString()) << "\"";
     }
     out << "}";
     return out.str();
@@ -254,82 +239,59 @@ std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string& code) {
   return out.str();
 }
 
-}  // namespace
+} // namespace
 
 App::App(std::vector<std::string> initial_urls,
          std::vector<uint64_t> initial_tab_folder_ids,
          std::vector<uint64_t> initial_tab_sort_orders,
-         std::vector<bool> initial_tab_pinned,
-         size_t active_index,
-         bool show_mode_indicator,
-         bool show_fps_indicator,
-         bool show_statusline,
-         bool shader_enabled,
-         std::string state_path,
-         std::string dwm_save_argv,
-         std::string root_cache_path,
-         bool disable_gpu,
-         bool a26_shell)
+         std::vector<bool> initial_tab_pinned, size_t active_index,
+         bool show_mode_indicator, bool show_fps_indicator,
+         bool show_statusline, bool shader_enabled, std::string state_path,
+         std::string dwm_save_argv, std::string root_cache_path,
+         bool disable_gpu, bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
-      active_index_(active_index),
-      show_mode_indicator_(show_mode_indicator),
+      active_index_(active_index), show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
-      show_statusline_(show_statusline),
-      shader_enabled_(shader_enabled),
+      show_statusline_(show_statusline), shader_enabled_(shader_enabled),
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
-      root_cache_path_(std::move(root_cache_path)),
-      disable_gpu_(disable_gpu),
+      root_cache_path_(std::move(root_cache_path)), disable_gpu_(disable_gpu),
       a26_shell_(a26_shell) {}
 
 void App::OnBeforeCommandLineProcessing(
-    const CefString& process_type,
-    CefRefPtr<CefCommandLine> command_line) {
-  // These are public vimbrowser-level flags. Do not forward them into Chromium's
-  // command line or process-singleton relaunch messages.
+    const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
+  // These are public vimbrowser-level flags. Do not forward them into
+  // Chromium's command line or process-singleton relaunch messages.
   command_line->RemoveSwitch("profile-dir");
   command_line->RemoveSwitch("cache-path");
   command_line->RemoveSwitch("a26-shell");
-
-#if defined(__APPLE__)
-  if (process_type.empty()) {
-    // Ad-hoc signatures change whenever this locally built app is rebuilt.
-    // Chromium Safe Storage consequently asks the login keychain to authorize
-    // each new build. Use Chromium's built-in mock keychain by default so a
-    // normal app launch never presents that recurring password dialog. Users
-    // who prefer login-keychain protection can opt back in explicitly.
-    const bool use_system_keychain =
-        command_line->HasSwitch("use-system-keychain");
-    command_line->RemoveSwitch("use-system-keychain");
-    if (!use_system_keychain && !command_line->HasSwitch("use-mock-keychain")) {
-      command_line->AppendSwitch("use-mock-keychain");
-    }
-  }
-#endif
 
   // Keep the shell minimal and deterministic. These are Chromium switches, not
   // external UI toolkits.
   //
   // Do not use --disable-extensions here: Chromium's built-in PDF viewer is a
-  // privileged component extension (chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai).
-  // Disabling the extension subsystem leaves direct PDF navigations stuck on the
-  // empty PDF embedder shell. Instead only suppress component extensions that run
-  // background pages; the PDF viewer component has no background page and remains
-  // available for application/pdf MIME handling.
-  command_line->AppendSwitch("disable-component-extensions-with-background-pages");
+  // privileged component extension
+  // (chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai). Disabling the
+  // extension subsystem leaves direct PDF navigations stuck on the empty PDF
+  // embedder shell. Instead only suppress component extensions that run
+  // background pages; the PDF viewer component has no background page and
+  // remains available for application/pdf MIME handling.
+  command_line->AppendSwitch(
+      "disable-component-extensions-with-background-pages");
   command_line->AppendSwitch("disable-background-networking");
   command_line->AppendSwitch("disable-sync");
   command_line->AppendSwitch("no-default-browser-check");
-  command_line->AppendSwitchWithValue("disable-features", "Translate,MediaRouter");
+  command_line->AppendSwitchWithValue("disable-features",
+                                      "Translate,MediaRouter");
   if (!command_line->HasSwitch("autoplay-policy")) {
     // Desktop Chromium's default is no-user-gesture-required. vimbrowser should
     // not let restored tabs or freshly loaded pages start media on their own;
     // explicit user play/click gestures still work.
     command_line->AppendSwitchWithValue("autoplay-policy",
-                                       "user-gesture-required");
+                                        "user-gesture-required");
   }
 
   if (disable_gpu_) {
@@ -341,34 +303,25 @@ void App::OnBeforeCommandLineProcessing(
   }
 }
 
-bool App::OnAlreadyRunningAppRelaunch(
-    CefRefPtr<CefCommandLine>,
-    const CefString&) {
-  // A durable --profile-dir is intentionally single-writer. For now, acknowledge
-  // relaunches so CEF exits the second process cleanly instead of creating a
-  // default Chrome-styled window against our profile. Opening URLs in the
-  // existing vimbrowser process should go through our Unix IPC protocol.
+bool App::OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine>,
+                                      const CefString &) {
+  // A durable --profile-dir is intentionally single-writer. For now,
+  // acknowledge relaunches so CEF exits the second process cleanly instead of
+  // creating a default Chrome-styled window against our profile. Opening URLs
+  // in the existing vimbrowser process should go through our Unix IPC protocol.
   return true;
 }
 
 void App::OnContextInitialized() {
-  CefRefPtr<BrowserWindow> window(new BrowserWindow(initial_urls_,
-                                                    initial_tab_folder_ids_,
-                                                    initial_tab_sort_orders_,
-                                                    initial_tab_pinned_,
-                                                    active_index_,
-                                                    show_mode_indicator_,
-                                                    show_fps_indicator_,
-                                                    show_statusline_,
-                                                    shader_enabled_, state_path_,
-                                                    dwm_save_argv_,
-                                                    root_cache_path_,
-                                                    a26_shell_));
+  CefRefPtr<BrowserWindow> window(new BrowserWindow(
+      initial_urls_, initial_tab_folder_ids_, initial_tab_sort_orders_,
+      initial_tab_pinned_, active_index_, show_mode_indicator_,
+      show_fps_indicator_, show_statusline_, shader_enabled_, state_path_,
+      dwm_save_argv_, root_cache_path_, a26_shell_));
   window->Create();
 }
 
-void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>,
-                               CefRefPtr<CefFrame> frame,
+void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame,
                                CefRefPtr<CefDOMNode> node) {
   // Mirror renderer-side focused-editable state into the browser process.  Page
   // shortcuts are decided before/around normal renderer key dispatch, so the
@@ -386,31 +339,6 @@ void App::OnFocusedNodeChanged(CefRefPtr<CefBrowser>,
   }
 }
 
-#if defined(__APPLE__)
-void App::OnContextCreated(CefRefPtr<CefBrowser>,
-                           CefRefPtr<CefFrame> frame,
-                           CefRefPtr<CefV8Context> context) {
-  if (!frame || !context || !context->IsValid()) {
-    return;
-  }
-  CefRefPtr<CefV8Value> global = context->GetGlobal();
-  if (!global) {
-    return;
-  }
-  const auto attributes = static_cast<CefV8Value::PropertyAttribute>(
-      V8_PROPERTY_ATTRIBUTE_READONLY | V8_PROPERTY_ATTRIBUTE_DONTDELETE);
-  global->SetValue(
-      "__vimbrowserReport",
-      CefV8Value::CreateFunction("__vimbrowserReport",
-                                 new MacPageBridgeHandler(frame)),
-      attributes);
-  CefRefPtr<CefV8Value> tracker_result;
-  CefRefPtr<CefV8Exception> tracker_exception;
-  context->Eval(mac::kHintListenerTrackerScript, frame->GetURL(), 0,
-                tracker_result, tracker_exception);
-}
-#endif
-
 bool App::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                    CefRefPtr<CefFrame> frame,
                                    CefProcessId source_process,
@@ -427,7 +355,8 @@ bool App::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                : std::string();
   const std::string payload = EvalJsForIpc(frame, code);
 
-  CefRefPtr<CefProcessMessage> response = CefProcessMessage::Create(kJsResultMessage);
+  CefRefPtr<CefProcessMessage> response =
+      CefProcessMessage::Create(kJsResultMessage);
   CefRefPtr<CefListValue> response_args = response->GetArgumentList();
   response_args->SetString(0, request_id);
   response_args->SetString(1, payload);
@@ -437,4 +366,4 @@ bool App::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
   return true;
 }
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

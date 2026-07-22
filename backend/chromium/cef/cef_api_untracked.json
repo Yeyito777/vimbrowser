@@ -8,11 +8,11 @@
       "windows": "1cf33dbf355efffcd993ab4d2ea391e6631f95f2"
     },
     "999999": {
-      "comment": "Experimental version last updated May 12, 2026.",
-      "linux": "e1f04162d75f4f36056af4e4a02a4da0457451dd",
-      "mac": "48dac8d7565e012841b9d3c3935776c1a7bff589",
+      "comment": "Experimental version last updated July 28, 2026.",
+      "linux": "80e561a0498bdb39c503d743d8ab682707d73f28",
+      "mac": "32ff543dd170137c44982e35929fd2d9a21cd93c",
       "sandbox_compat": "2c7f1000da15f67f",
-      "windows": "65db327c10558a625d0650a0e454cc24ea6f23b4"
+      "windows": "073680207ebba26f545b142fdf08494edc6f0d4d"
     }
   }
 }

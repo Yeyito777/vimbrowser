@@ -130,14 +130,7 @@ inline constexpr size_t kSidebarMaxRenderedRows = 96;
 inline constexpr bool kModeIndicatorEnabled = true;
 inline constexpr int kModeIndicatorWidth = 96;
 inline constexpr int kModeIndicatorHeight = 24;
-#if defined(__APPLE__)
-// The macOS command renderer replaces the status row instead of floating over
-// the BrowserView. Keep that shared row at the working Linux command height so
-// entering command mode cannot resize the page and the cmdline is not cramped.
-inline constexpr int kStatusBarHeight = kCommandHeight;
-#else
 inline constexpr int kStatusBarHeight = 16;
-#endif
 inline constexpr int kStatusModeWidth = 64;
 inline constexpr int kCommandTextInsetX = 0;
 inline constexpr int kCommandFieldBleed = 4;
@@ -181,10 +174,6 @@ inline constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
 inline constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
 inline constexpr const char kFocusedEditableMessage[] =
     "__vimbrowser_focused_editable_changed__";
-#if defined(__APPLE__)
-inline constexpr const char kMacPageEventMessage[] =
-    "__vimbrowser_mac_page_event__";
-#endif
 inline constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
 inline constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
 inline constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
@@ -202,70 +191,71 @@ struct OpenAutocompleteContext {
 
 size_t IndexAfterVectorMove(size_t index, size_t from, size_t to);
 bool InIdRange(int id, int base, int count);
-void StyleTextfield(CefRefPtr<CefTextfield> field,
-                    cef_color_t text,
+void StyleTextfield(CefRefPtr<CefTextfield> field, cef_color_t text,
                     cef_color_t background,
-                    const CefString& font = "monospace, 13px");
+                    const CefString &font = "monospace, 13px");
 void StyleCommandField(CefRefPtr<CefTextfield> field);
-const std::vector<CompletionItem>& CommandList();
-const std::vector<CompletionItem>& OnOffArgList();
-const std::vector<CompletionItem>& OpenArgList();
-const std::vector<CompletionItem>& TestArgList();
-bool CommandTakesArguments(const std::string& command);
-bool IsRawKeyDown(const CefKeyEvent& event);
-bool IsCharEvent(const CefKeyEvent& event);
+const std::vector<CompletionItem> &CommandList();
+const std::vector<CompletionItem> &OnOffArgList();
+const std::vector<CompletionItem> &OpenArgList();
+const std::vector<CompletionItem> &TestArgList();
+bool CommandTakesArguments(const std::string &command);
+bool IsRawKeyDown(const CefKeyEvent &event);
+bool IsCharEvent(const CefKeyEvent &event);
 bool IsPrintableAscii(char16_t c);
-bool IsPlain(const CefKeyEvent& event);
-bool HasOnlyControlModifier(const CefKeyEvent& event);
-bool IsSpaceKey(const CefKeyEvent& event);
-bool IsPlainPrintableKey(const CefKeyEvent& event);
-bool IsPlainLetterKey(const CefKeyEvent& event, char key);
+bool IsPlain(const CefKeyEvent &event);
+bool HasOnlyControlModifier(const CefKeyEvent &event);
+bool IsSpaceKey(const CefKeyEvent &event);
+bool IsPlainPrintableKey(const CefKeyEvent &event);
+bool IsPlainLetterKey(const CefKeyEvent &event, char key);
 char LowerAsciiChar(char c);
-char PlainKeyChar(const CefKeyEvent& event);
-bool IsEnterKey(const CefKeyEvent& event);
-bool IsEscapeKey(const CefKeyEvent& event);
-bool IsBackspaceKey(const CefKeyEvent& event);
-bool IsTabKey(const CefKeyEvent& event);
-bool IsDeleteKey(const CefKeyEvent& event);
-bool IsNavigationEditingKey(const CefKeyEvent& event);
-bool IsCtrlKey(const CefKeyEvent& event, char key);
-bool IsCtrlSemicolonKey(const CefKeyEvent& event);
-bool IsCommonCtrlEditingKey(const CefKeyEvent& event);
-bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event,
+char PlainKeyChar(const CefKeyEvent &event);
+bool IsEnterKey(const CefKeyEvent &event);
+bool IsEscapeKey(const CefKeyEvent &event);
+bool IsBackspaceKey(const CefKeyEvent &event);
+bool IsTabKey(const CefKeyEvent &event);
+bool IsDeleteKey(const CefKeyEvent &event);
+bool IsNavigationEditingKey(const CefKeyEvent &event);
+bool IsCtrlKey(const CefKeyEvent &event, char key);
+bool IsCtrlSemicolonKey(const CefKeyEvent &event);
+int NativeKeyCodeForSyntheticKey(int windows_key_code,
+                                 char16_t unmodified_character);
+bool IsCommonCtrlEditingKey(const CefKeyEvent &event);
+bool ShouldForwardFocusedEditableKey(const CefKeyEvent &event,
                                      bool focus_on_editable_field);
 std::string Trim(std::string value);
 std::string ToLowerAscii(std::string value);
 bool IsValidRequestContextName(std::string_view name);
-std::vector<std::string> SplitArgs(const std::string& value);
-std::string JoinArgs(const std::vector<std::string>& args, size_t start);
-bool ParseUint64Arg(const std::string& text, uint64_t* out);
-bool ParseLongArg(const std::string& text, long* out);
-bool ParseDoubleArg(const std::string& text, double* out);
-bool StartsWithCaseInsensitive(const std::string& value,
-                               const std::string& prefix);
-bool ContainsCaseInsensitive(const std::string& value,
-                             const std::string& needle);
+std::vector<std::string> SplitArgs(const std::string &value);
+std::string JoinArgs(const std::vector<std::string> &args, size_t start);
+bool ParseUint64Arg(const std::string &text, uint64_t *out);
+bool ParseLongArg(const std::string &text, long *out);
+bool ParseDoubleArg(const std::string &text, double *out);
+bool StartsWithCaseInsensitive(const std::string &value,
+                               const std::string &prefix);
+bool ContainsCaseInsensitive(const std::string &value,
+                             const std::string &needle);
 std::string Ellipsize(std::string value, size_t max_size);
-const std::string& CompletionInsertText(const CompletionItem& item);
-bool IsWhitespaceOnly(const std::string& value);
-bool IsOpenTabArg(const std::string& value);
-bool ArgsContainOpenTabArg(const std::string& value);
-bool ParseSearchEngineInvocation(const std::string& text,
-                                 std::string* engine_out,
-                                 std::string* query_out);
-OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
-    const std::string& after_command);
-bool IsTokenBoundary(const std::string& value, size_t pos);
-int TextColumns(const std::string& value);
-std::string ShellRead(const char* command);
-bool ShellWrite(const char* command, const std::string& text);
+const std::string &CompletionInsertText(const CompletionItem &item);
+bool IsWhitespaceOnly(const std::string &value);
+bool IsOpenTabArg(const std::string &value);
+bool ArgsContainOpenTabArg(const std::string &value);
+bool ParseSearchEngineInvocation(const std::string &text,
+                                 std::string *engine_out,
+                                 std::string *query_out);
+OpenAutocompleteContext
+AnalyzeOpenAutocompleteArgs(const std::string &after_command);
+bool IsTokenBoundary(const std::string &value, size_t pos);
+int TextColumns(const std::string &value);
+std::string ShellRead(const char *command);
+bool ShellWrite(const char *command, const std::string &text);
 std::string ReadClipboardText();
 std::string JsonEscape(std::string_view text);
-void AppendJsonEscaped(std::string& out, std::string_view text);
-void AppendJsonString(std::string& out, std::string_view text);
+void AppendJsonEscaped(std::string &out, std::string_view text);
+void AppendJsonString(std::string &out, std::string_view text);
 
 template <typename Integer>
-void AppendJsonNumber(std::string& out, Integer value) {
+void AppendJsonNumber(std::string &out, Integer value) {
   char buffer[32];
   auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value);
   if (ec == std::errc()) {
@@ -273,19 +263,18 @@ void AppendJsonNumber(std::string& out, Integer value) {
   }
 }
 
-void AppendJsonNumber(std::string& out, double value);
-void AppendJsonBool(std::string& out, bool value);
-void SetTabUrl(Tab& tab, std::string url);
-void SetTabId(Tab& tab, uint64_t id);
-std::string IpcSocketPathForStatePath(const std::string& state_path);
+void AppendJsonNumber(std::string &out, double value);
+void AppendJsonBool(std::string &out, bool value);
+void SetTabUrl(Tab &tab, std::string url);
+void SetTabId(Tab &tab, uint64_t id);
+std::string IpcSocketPathForStatePath(const std::string &state_path);
 std::string IpcVersionJson();
 std::string IpcCommandsJson();
-std::string ReadRegularFileToString(const std::string& path,
-                                    size_t max_bytes,
-                                    std::string* error);
-std::string HeadersJson(const CefResponse::HeaderMap& headers);
+std::string ReadRegularFileToString(const std::string &path, size_t max_bytes,
+                                    std::string *error);
+std::string HeadersJson(const CefResponse::HeaderMap &headers);
 std::string SameSiteName(cef_cookie_same_site_t same_site);
-std::string CookieJson(const CefCookie& cookie);
-void WriteClipboardText(const std::string& text);
+std::string CookieJson(const CefCookie &cookie);
+void WriteClipboardText(const std::string &text);
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

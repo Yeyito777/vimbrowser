@@ -21,8 +21,13 @@ __pycache__/
 /core
 /core.*
 /backend/depot_tools/
+/backend/src
+/backend/chromium/third_party/google_toolbox_for_mac/src/
+/backend/chromium/third_party/lighttpd/
+/backend/chromium/third_party/test_fonts/test_fonts/
 /backend/.cipd/
 /backend/.gclient_entries
+/backend/.gclient_previous_custom_vars
 /backend/.gcs_entries
 /backend/.gclient_previous_sync_commits
 /frontend/node_modules/

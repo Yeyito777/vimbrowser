@@ -391,20 +391,6 @@ void CefBrowserPlatformDelegateNativeMac::SendMouseMoveEvent(
   view->RouteOrProcessMouseEvent(web_event);
 }
 
-void CefBrowserPlatformDelegateNativeMac::SendMouseWheelEvent(
-    const CefMouseEvent& event,
-    int deltaX,
-    int deltaY) {
-  auto view = GetHostView();
-  if (!view) {
-    return;
-  }
-
-  blink::WebMouseWheelEvent web_event =
-      TranslateWebWheelEvent(event, deltaX, deltaY);
-  view->RouteOrProcessMouseEvent(web_event);
-}
-
 void CefBrowserPlatformDelegateNativeMac::SendTouchEvent(
     const CefTouchEvent& event) {
   NOTIMPLEMENTED();

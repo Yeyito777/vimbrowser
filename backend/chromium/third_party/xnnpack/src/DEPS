@@ -21,7 +21,7 @@ gclient_gn_args = [
 
 
 # Expect everything to be up-to-date with submodules.
-git_dependencies = 'SYNC'
+git_dependencies = 'DEPS'
 
 vars = {
   'chromium_url': 'https://chromium.googlesource.com',

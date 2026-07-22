@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f26dfc049cd214fba69e2c675e26fa24ca0ffda2$
+// $hash=1dc221327488722e75ec49df65f7b05282e26a3c$
 //
 
 #include "libcef_dll/cpptoc/client_cpptoc.h"
@@ -18,6 +18,7 @@
 #include "libcef_dll/cpptoc/navigation_entry_visitor_cpptoc.h"
 #include "libcef_dll/cpptoc/pdf_print_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h"
+#include "libcef_dll/cpptoc/vimbrowser_element_activation_callback_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/browser_host_ctocpp.h"
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
@@ -83,6 +84,126 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefBrowser> CefBrowserHost::GetBrowserByIdent
   // Return type: refptr_same
   return CefBrowserCToCpp_Wrap(_retval);
 }
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") bool CefBrowserHost::VimbrowserBrowserHasFpsSample(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = cef_browser_host_vimbrowser_browser_has_fps_sample(
+      browser_id);
+
+  // Return type: bool
+  return _retval?true:false;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") double CefBrowserHost::VimbrowserGetBrowserFps(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  double _retval = cef_browser_host_vimbrowser_get_browser_fps(
+      browser_id);
+
+  // Return type: simple
+  return _retval;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") double CefBrowserHost::VimbrowserGetBrowserRefreshRate(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  double _retval = cef_browser_host_vimbrowser_get_browser_refresh_rate(
+      browser_id);
+
+  // Return type: simple
+  return _retval;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") bool CefBrowserHost::VimbrowserBrowserIsCurrentlyAudible(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = cef_browser_host_vimbrowser_browser_is_currently_audible(
+      browser_id);
+
+  // Return type: bool
+  return _retval?true:false;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") void CefBrowserHost::VimbrowserSendBrowserCommandKeyEvent(int browser_id, const CefKeyEvent& event) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_browser_host_vimbrowser_send_browser_command_key_event(
+      browser_id,
+      &event);
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") bool CefBrowserHost::VimbrowserActivateElementBySelector(int browser_id, const CefString& selector, uint64_t& activation_nonce_high, uint64_t& activation_nonce_low, CefRefPtr<CefVimbrowserElementActivationCallback> callback) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: selector; type: string_byref_const
+  DCHECK(!selector.empty());
+  if (selector.empty()) {
+    return false;
+  }
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback.get());
+  if (!callback.get()) {
+    return false;
+  }
+
+  // Execute
+  int _retval = cef_browser_host_vimbrowser_activate_element_by_selector(
+      browser_id,
+      selector.GetStruct(),
+      &activation_nonce_high,
+      &activation_nonce_low,
+      CefVimbrowserElementActivationCallbackCppToC_Wrap(callback));
+
+  // Return type: bool
+  return _retval?true:false;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") bool CefBrowserHost::VimbrowserGetCurrentFileDialogActivationNonce(int browser_id, uint64_t& activation_nonce_high, uint64_t& activation_nonce_low) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(
+      browser_id,
+      &activation_nonce_high,
+      &activation_nonce_low);
+
+  // Return type: bool
+  return _retval?true:false;
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
 
 
 // VIRTUAL METHODS - Body may be edited by hand.

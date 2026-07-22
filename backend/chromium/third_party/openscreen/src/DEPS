@@ -8,7 +8,7 @@
 # to list the dependency's destination directory.
 
 use_relative_paths = True
-git_dependencies = 'SYNC'
+git_dependencies = 'DEPS'
 
 gclient_gn_args_file = 'build/config/gclient_args.gni'
 gclient_gn_args = [

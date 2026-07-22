@@ -34,7 +34,7 @@
 
 # We expect all git dependencies specified in this file to be in sync with git
 # submodules (gitlinks).
-git_dependencies = "SYNC"
+git_dependencies = "DEPS"
 
 deps = {
   # Testing libraries and utilities.

@@ -1,24 +1,23 @@
-# Galaxy A26 phone-shell bring-up
+# Galaxy A26 phone-shell bring-up (backend port required)
 
-This port keeps the normal x86-64 desktop build and its Chromium object cache
-untouched.  The first phone experiment deliberately uses the exact matching
-official CEF Linux ARM64 binary distribution instead of rebuilding Chromium.
-
-The compatibility build therefore retains normal Chromium page rendering,
-vimbrowser tabs, DevTools/CDP and Unix-socket IPC, while temporarily stubbing the
-five private symbols exported only by vimbrowser's custom CEF backend.  Native
-hint/shader/FPS backend behavior is not part of this first proof.
+The original phone experiment used an official stock CEF Linux ARM64 binary and
+stubbed vimbrowser's private backend hooks. That compatibility path has been
+removed: the shell now requires the repository-owned patched Chromium/CEF API on
+every platform. A native ARM64 build of the patched backend is required before
+the packaging/install scripts can produce a runnable browser.
 
 ## Build and package
 
+Point `A26_CEF_ROOT` at a source-built Linux ARM64 distribution containing the
+vimbrowser CEF API, then build and package normally:
+
 ```sh
-scripts/a26/build.sh
-scripts/a26/package.sh
+A26_CEF_ROOT=/path/to/cef_binary_*_linuxarm64_minimal scripts/a26/build.sh
+A26_CEF_ROOT=/path/to/cef_binary_*_linuxarm64_minimal scripts/a26/package.sh
 ```
 
-The scripts use a cached ARM64 Debian Bookworm container under QEMU.  CEF and
-Chromium themselves are not compiled.  Generated files stay under ignored
-`build-a26-arm64/` and `third_party/cef-a26-arm64/` directories.
+The build rejects stock CEF before configuring the shell. Generated files stay
+under ignored `build-a26-arm64/` directories.
 
 ## Install
 

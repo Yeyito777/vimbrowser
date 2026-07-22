@@ -148,6 +148,7 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
   void Destroy() override;
   void UpdateTooltipUnderCursor(const std::u16string& tooltip_text) override;
   void UpdateTooltip(const std::u16string& tooltip_text) override;
+  ui::Compositor* GetCompositor() override;
   gfx::Size GetRequestedRendererSize() override;
   uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy() override;

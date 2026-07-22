@@ -17,19 +17,15 @@ make build
 make install
 ```
 
-The legacy quick build downloads the Linux x86_64 CEF **minimal** binary/source
-distribution into `third_party/cef/` and builds only the small C++ shell plus the
-CEF wrapper library.
-
-For the real vimbrowser backend, use the source Chromium/CEF tree under
-`backend/chromium/`:
+Every desktop build uses the patched Chromium/CEF tree under
+`backend/chromium/`; stock CEF distributions are unsupported:
 
 ```bash
-make bootstrap-chromium
+SYNC_DEPS=1 make bootstrap-chromium
 make build-chromium-cef
 make source-distrib
-make build-source
-make install-source
+make build-shell
+make install-wrapper
 ```
 
 After that first full source distribution exists, use the fast backend edit loop:
@@ -304,15 +300,14 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   from history.
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
-- `:shader [on|off]` toggles the page color shader (the patched native Blink
-  shader on Linux and CEF's auto-dark emulation on macOS); with the Linux
-  shader enabled, YouTube's decorative `#cinematics` ambient-mode canvas glow
-  is hidden natively so it cannot leave an unshadered dark square around videos
+- `:shader [on|off]` toggles the patched native Blink page color shader; on
+  every desktop platform, YouTube's decorative `#cinematics` ambient-mode
+  canvas glow is hidden natively so it cannot leave an unshadered dark square
+  around videos
 - `:mspdf` downloads every page of the current MuseScore score and assembles a
   native PDF in `~/Desktop/musescore-sheets` (override with
-  `MUSESCORE_DOWNLOAD_DIR`). On Linux, the network transfer and SVG/PNG-to-PDF
-  conversion are implemented in C/C++ with libcurl, librsvg, and Cairo; the
-  stock-CEF macOS build currently reports the feature as unavailable
+  `MUSESCORE_DOWNLOAD_DIR`). The network transfer and SVG/PNG-to-PDF conversion
+  are implemented in C/C++ with libcurl, librsvg, and Cairo on both desktops
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.
@@ -329,33 +324,46 @@ MIT. See `LICENSE`.
 
 ## macOS build
 
-The shell builds against a stock CEF macOS binary distribution (no patched
-Chromium backend). The macOS shell supplies CEF-based fallbacks for the patched
-backend features: page and docked-DevTools hints (`f`/`F`, `Ctrl+l`, `Ctrl+h`,
-`Ctrl+Space`), Vim scrolling, the page color shader, FPS/refresh sampling, and
-audible-tab state. Content blocking and opt-in network capture use standard CEF
-request handlers and work on both platforms. The build targets Apple silicon
-and macOS 13.3 or newer.
+macOS uses the same repository-owned patched Chromium/CEF backend as Linux.
+There is no stock-CEF feature fallback layer: native Blink hints, shadered page
+colors, browser-command input, audible-tab state, command chrome, scrolling,
+content blocking, network capture, and MuseScore export all use the same source
+paths and backend API contract. The build targets Apple silicon and macOS 13.3
+or newer.
 
-Because local ad-hoc signatures change on every rebuild, macOS otherwise asks
-for the login keychain password repeatedly to access `Chromium Safe Storage`.
-The macOS build uses Chromium's mock keychain by default to avoid that launch
-dialog. This means browser secrets are not protected by the login keychain; run
-with `--use-system-keychain` to opt back into the system keychain.
+Chromium 147 requires Xcode 26.0.1 and its separately installed Metal
+Toolchain. Point `DEVELOPER_DIR` at that Xcode without changing the machine-wide
+selection if desired:
 
 ```bash
+export DEVELOPER_DIR=/path/to/Xcode-26.0.1.app/Contents/Developer
+xcodebuild -runFirstLaunch
+xcodebuild -downloadComponent MetalToolchain
+```
+
+```bash
+SYNC_DEPS=1 make bootstrap-chromium
+make build-chromium-cef
+make mac-source-distrib
+brew install librsvg
 make mac-build
 make mac-install
 vimbrowser https://example.com
 ```
 
-`mac-build` downloads and verifies the pinned CEF macOS arm64 distribution,
-then produces an ad-hoc signed app bundle in
+The first Chromium checkout/build is large; later builds reuse
+`backend/chromium/out/Release_GN_arm64`. `mac-source-distrib` packages that
+patched backend for the small shell build. `mac-build` then produces a signed
+app bundle in
 `build-mac.noindex/Release/vimbrowser.app`. The `.noindex` build directory and
 hidden helper staging directory keep Chromium's GPU/Renderer helper apps out of
 Spotlight results. `mac-install` copies the main bundle to
 `~/Applications/vimbrowser.app`, registers it with LaunchServices, and installs
 the `vimbrowser` and `vimbrowser-ipc` commands under `~/.local/bin`.
+
+If the login keychain contains an Apple Development identity, `mac-build`
+automatically uses it for a stable real bundle signature; otherwise it falls
+back to an ad-hoc signature. Override with `MAC_CODESIGN_IDENTITY=...`.
 
 Subprocesses run through the `vimbrowser Helper*.app` bundles inside
 `vimbrowser.app/Contents/Frameworks/`; the renderer helper embeds the same

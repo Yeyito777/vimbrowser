@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2fd5ac00fa193e1af800be9652b52b7f24faf3b5$
+// $hash=7f4496422a38c42bbbf3656f952f91bd5eee0dd4$
 //
 
 #ifndef CEF_LIBCEF_DLL_WRAPPER_TYPES_H_
@@ -196,6 +196,7 @@ enum CefWrapperType {
   WT_VALUE,
   WT_VIEW,
   WT_VIEW_DELEGATE,
+  WT_VIMBROWSER_ELEMENT_ACTIVATION_CALLBACK,
   WT_WAITABLE_EVENT,
   WT_WINDOW,
   WT_WINDOW_DELEGATE,

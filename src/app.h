@@ -13,21 +13,14 @@ namespace vimbrowser {
 class App final : public CefApp,
                   public CefBrowserProcessHandler,
                   public CefRenderProcessHandler {
- public:
+public:
   App(std::vector<std::string> initial_urls,
       std::vector<uint64_t> initial_tab_folder_ids,
       std::vector<uint64_t> initial_tab_sort_orders,
-      std::vector<bool> initial_tab_pinned,
-      size_t active_index,
-      bool show_mode_indicator,
-      bool show_fps_indicator,
-      bool show_statusline,
-      bool shader_enabled,
-      std::string state_path,
-      std::string dwm_save_argv,
-      std::string root_cache_path,
-      bool disable_gpu,
-      bool a26_shell);
+      std::vector<bool> initial_tab_pinned, size_t active_index,
+      bool show_mode_indicator, bool show_fps_indicator, bool show_statusline,
+      bool shader_enabled, std::string state_path, std::string dwm_save_argv,
+      std::string root_cache_path, bool disable_gpu, bool a26_shell);
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
@@ -37,26 +30,20 @@ class App final : public CefApp,
   }
 
   void OnBeforeCommandLineProcessing(
-      const CefString& process_type,
+      const CefString &process_type,
       CefRefPtr<CefCommandLine> command_line) override;
-  bool OnAlreadyRunningAppRelaunch(
-      CefRefPtr<CefCommandLine> command_line,
-      const CefString& current_directory) override;
+  bool OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine> command_line,
+                                   const CefString &current_directory) override;
   void OnContextInitialized() override;
   void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame,
                             CefRefPtr<CefDOMNode> node) override;
-#if defined(__APPLE__)
-  void OnContextCreated(CefRefPtr<CefBrowser> browser,
-                        CefRefPtr<CefFrame> frame,
-                        CefRefPtr<CefV8Context> context) override;
-#endif
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
 
- private:
+private:
   std::vector<std::string> initial_urls_;
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
@@ -76,4 +63,4 @@ class App final : public CefApp,
   DISALLOW_COPY_AND_ASSIGN(App);
 };
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

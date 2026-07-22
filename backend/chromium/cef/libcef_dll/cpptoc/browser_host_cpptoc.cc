@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5d6adb93d1b4e199619ede98ac475964aa521d81$
+// $hash=e30d79dfcb65893c2d1f986b1d4887acbd987e7b$
 //
 
 #include "include/cef_api_hash.h"
@@ -26,6 +26,7 @@
 #include "libcef_dll/ctocpp/navigation_entry_visitor_ctocpp.h"
 #include "libcef_dll/ctocpp/pdf_print_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/run_file_dialog_callback_ctocpp.h"
+#include "libcef_dll/ctocpp/vimbrowser_element_activation_callback_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/template_util.h"
 #include "libcef_dll/transfer_util.h"
@@ -141,6 +142,170 @@ CEF_EXPORT struct _cef_browser_0_t* cef_browser_host_get_browser_by_identifier(i
 
   // Return type: refptr_same
   return CefBrowserCppToC_Wrap(_retval);
+}
+
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_has_fps_sample(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  bool _retval = CefBrowserHost::VimbrowserBrowserHasFpsSample(
+      browser_id);
+
+  // Return type: bool
+  return _retval;
+}
+
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_fps(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  double _retval = CefBrowserHost::VimbrowserGetBrowserFps(
+      browser_id);
+
+  // Return type: simple
+  return _retval;
+}
+
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_refresh_rate(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  double _retval = CefBrowserHost::VimbrowserGetBrowserRefreshRate(
+      browser_id);
+
+  // Return type: simple
+  return _retval;
+}
+
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_is_currently_audible(int browser_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  bool _retval = CefBrowserHost::VimbrowserBrowserIsCurrentlyAudible(
+      browser_id);
+
+  // Return type: bool
+  return _retval;
+}
+
+CEF_EXPORT void cef_browser_host_vimbrowser_send_browser_command_key_event(int browser_id, const cef_key_event_t* event) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: event; type: simple_byref_const
+  DCHECK(event);
+  if (!event) {
+    return;
+  }
+
+  // Translate param: event; type: simple_byref_const
+  CefKeyEvent eventVal = event?*event:CefKeyEvent();
+
+  // Execute
+  CefBrowserHost::VimbrowserSendBrowserCommandKeyEvent(
+      browser_id,
+      eventVal);
+}
+
+CEF_EXPORT int cef_browser_host_vimbrowser_activate_element_by_selector(int browser_id, const cef_string_t* selector, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low, struct _cef_vimbrowser_element_activation_callback_999999_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: selector; type: string_byref_const
+  DCHECK(selector);
+  if (!selector) {
+    return 0;
+  }
+  // Verify param: activation_nonce_high; type: simple_byref
+  DCHECK(activation_nonce_high);
+  if (!activation_nonce_high) {
+    return 0;
+  }
+  // Verify param: activation_nonce_low; type: simple_byref
+  DCHECK(activation_nonce_low);
+  if (!activation_nonce_low) {
+    return 0;
+  }
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback);
+  if (!callback) {
+    return 0;
+  }
+
+  // Translate param: activation_nonce_high; type: simple_byref
+  uint64_t activation_nonce_highVal = activation_nonce_high?*activation_nonce_high:0;
+  // Translate param: activation_nonce_low; type: simple_byref
+  uint64_t activation_nonce_lowVal = activation_nonce_low?*activation_nonce_low:0;
+
+  // Execute
+  bool _retval = CefBrowserHost::VimbrowserActivateElementBySelector(
+      browser_id,
+      CefString(selector),
+      activation_nonce_highVal,
+      activation_nonce_lowVal,
+      CefVimbrowserElementActivationCallbackCToCpp_Wrap(callback));
+
+  // Restore param: activation_nonce_high; type: simple_byref
+  if (activation_nonce_high) {
+    *activation_nonce_high = activation_nonce_highVal;
+  }
+  // Restore param: activation_nonce_low; type: simple_byref
+  if (activation_nonce_low) {
+    *activation_nonce_low = activation_nonce_lowVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+CEF_EXPORT int cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(int browser_id, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: activation_nonce_high; type: simple_byref
+  DCHECK(activation_nonce_high);
+  if (!activation_nonce_high) {
+    return 0;
+  }
+  // Verify param: activation_nonce_low; type: simple_byref
+  DCHECK(activation_nonce_low);
+  if (!activation_nonce_low) {
+    return 0;
+  }
+
+  // Translate param: activation_nonce_high; type: simple_byref
+  uint64_t activation_nonce_highVal = activation_nonce_high?*activation_nonce_high:0;
+  // Translate param: activation_nonce_low; type: simple_byref
+  uint64_t activation_nonce_lowVal = activation_nonce_low?*activation_nonce_low:0;
+
+  // Execute
+  bool _retval = CefBrowserHost::VimbrowserGetCurrentFileDialogActivationNonce(
+      browser_id,
+      activation_nonce_highVal,
+      activation_nonce_lowVal);
+
+  // Restore param: activation_nonce_high; type: simple_byref
+  if (activation_nonce_high) {
+    *activation_nonce_high = activation_nonce_highVal;
+  }
+  // Restore param: activation_nonce_low; type: simple_byref
+  if (activation_nonce_low) {
+    *activation_nonce_low = activation_nonce_lowVal;
+  }
+
+  // Return type: bool
+  return _retval;
 }
 
 // HELPER FUNCTIONS - Do not edit by hand.

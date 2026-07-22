@@ -122,7 +122,7 @@ bool IpcServer::Start() {
   std::filesystem::create_directories(std::filesystem::path(socket_path_).parent_path(), ec);
   std::filesystem::remove(socket_path_, ec);
 
-  server_fd_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  server_fd_ = SocketCloseOnExec(AF_UNIX, SOCK_STREAM, 0);
   if (server_fd_ < 0) {
     std::cerr << "vimbrowser: ipc socket() failed: " << std::strerror(errno) << std::endl;
     return false;
@@ -198,7 +198,7 @@ void IpcServer::Stop() {
 
 void IpcServer::Loop() {
   while (running_) {
-    const int client_fd = accept4(server_fd_, nullptr, nullptr, SOCK_CLOEXEC);
+    const int client_fd = AcceptCloseOnExec(server_fd_);
     if (client_fd < 0) {
       if (running_) {
         std::cerr << "vimbrowser: ipc accept() failed: " << std::strerror(errno) << std::endl;

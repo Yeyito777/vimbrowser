@@ -28,7 +28,7 @@ namespace {
 // instead of feeding it into the smooth-scroll accumulator/timer.
 constexpr int kScrollToEdgePx = 10'000'000;
 
-CefMouseEvent ScrollTargetMouseEvent(Tab* tab, CefRefPtr<CefWindow> window) {
+CefMouseEvent ScrollTargetMouseEvent(Tab *tab, CefRefPtr<CefWindow> window) {
   CefMouseEvent event;
   event.modifiers = 0;
   if (tab && tab->has_scroll_target) {
@@ -65,7 +65,7 @@ void SendScrollWheel(CefRefPtr<CefBrowser> browser,
 }
 
 void ExecuteJavaScriptInAllFrames(CefRefPtr<CefBrowser> browser,
-                                  const std::string& script) {
+                                  const std::string &script) {
   if (!browser) {
     return;
   }
@@ -76,7 +76,7 @@ void ExecuteJavaScriptInAllFrames(CefRefPtr<CefBrowser> browser,
     frame_ids.push_back(browser->GetMainFrame()->GetIdentifier());
   }
 
-  for (const CefString& frame_id : frame_ids) {
+  for (const CefString &frame_id : frame_ids) {
     CefRefPtr<CefFrame> frame = browser->GetFrameByIdentifier(frame_id);
     if (!frame || !frame->IsValid()) {
       continue;
@@ -90,7 +90,7 @@ struct MuseScoreMetadata {
   std::vector<std::string> urls;
 };
 
-bool IsMuseScoreUrl(const std::string& url) {
+bool IsMuseScoreUrl(const std::string &url) {
   CefURLParts parts;
   if (!CefParseURL(url, parts)) {
     return false;
@@ -100,9 +100,8 @@ bool IsMuseScoreUrl(const std::string& url) {
          (host.size() > 14 && host.ends_with(".musescore.com"));
 }
 
-bool ParseMuseScoreMetadata(const std::string& response,
-                            MuseScoreMetadata* metadata,
-                            std::string* error) {
+bool ParseMuseScoreMetadata(const std::string &response,
+                            MuseScoreMetadata *metadata, std::string *error) {
   if (!metadata || !error) {
     return false;
   }
@@ -169,44 +168,7 @@ bool ParseMuseScoreMetadata(const std::string& response,
   return true;
 }
 
-#if defined(__APPLE__)
-void ScrollMacPage(CefRefPtr<CefBrowser> browser, int dy) {
-  if (!browser || !browser->GetMainFrame()) {
-    return;
-  }
-  std::ostringstream script;
-  script << "(()=>{const t=window.__vimbrowserScrollTarget;"
-            "if(t&&t.isConnected){if(typeof t.scrollBy==='function')"
-            "t.scrollBy({top:"
-         << dy
-         << ",behavior:'auto'});else t.scrollTop+=" << dy
-         << ";}else window.scrollBy({top:" << dy
-         << ",behavior:'auto'});})()";
-  browser->GetMainFrame()->ExecuteJavaScript(
-      script.str(), browser->GetMainFrame()->GetURL(), 0);
-}
-
-void ScrollMacPageToEdge(CefRefPtr<CefBrowser> browser, bool bottom) {
-  if (!browser || !browser->GetMainFrame()) {
-    return;
-  }
-  const char* script = bottom
-      ? "(()=>{const t=window.__vimbrowserScrollTarget;"
-        "if(t&&t.isConnected){if(typeof t.scrollTo==='function')"
-        "t.scrollTo({top:t.scrollHeight,behavior:'auto'});else "
-        "t.scrollTop=t.scrollHeight;}else window.scrollTo({top:"
-        "document.documentElement.scrollHeight,behavior:'auto'});})()"
-      : "(()=>{const t=window.__vimbrowserScrollTarget;"
-        "if(t&&t.isConnected){if(typeof t.scrollTo==='function')"
-        "t.scrollTo({top:0,behavior:'auto'});else t.scrollTop=0;}"
-        "else window.scrollTo({top:0,behavior:'auto'});})()";
-  browser->GetMainFrame()->ExecuteJavaScript(
-      script, browser->GetMainFrame()->GetURL(), 0);
-}
-#endif
-
-void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser,
-                             int dy,
+void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser, int dy,
                              bool instant = false) {
   std::ostringstream script;
   script << "(()=>{"
@@ -215,12 +177,11 @@ void SendPdfViewerScrollHook(CefRefPtr<CefBrowser> browser,
             "!document.querySelector('pdf-viewer'))return;"
             "const f=window.__vimbrowserPdfScrollBy;"
             "if(typeof f==='function'){try{f("
-         << dy
-         << "," << (instant ? "true" : "false") << ");}catch(e){}}})();";
+         << dy << "," << (instant ? "true" : "false") << ");}catch(e){}}})();";
   ExecuteJavaScriptInAllFrames(browser, script.str());
 }
 
-}  // namespace
+} // namespace
 
 void BrowserWindow::BeginCommand(Mode mode) {
   BeginCommandText(mode == Mode::kCommandOpenNext ? ":open tab " : ":open ");
@@ -230,8 +191,9 @@ void BrowserWindow::BeginCommand(Mode mode) {
 void BrowserWindow::BeginCommandText(std::string text) {
   sidebar_pending_keys_.clear();
   ++sidebar_delete_generation_;
-  previous_focus_area_ = focus_area_ == FocusArea::kCommandLine ? previous_focus_area_
-                                                                : focus_area_;
+  previous_focus_area_ = focus_area_ == FocusArea::kCommandLine
+                             ? previous_focus_area_
+                             : focus_area_;
   focus_area_ = FocusArea::kCommandLine;
   mode_ = Mode::kCommandOpenCurrent;
   command_text_ = std::move(text);
@@ -246,11 +208,9 @@ void BrowserWindow::BeginCommandText(std::string text) {
   }
   Layout();
   SetCommandText(command_text_);
-#if !defined(__APPLE__)
   if (command_field_) {
     command_field_->RequestFocus();
   }
-#endif
   UpdateModeIndicator();
 }
 
@@ -297,14 +257,15 @@ void BrowserWindow::CommitCommand() {
       const bool clear_sidebar = previous_focus_area_ == FocusArea::kTabSidebar;
       finish([&] {
         ClearPageSearchHighlights();
-        if (clear_sidebar) ClearSidebarSearchHighlights();
+        if (clear_sidebar)
+          ClearSidebarSearchHighlights();
       });
       return;
     }
 
     if (command == ":showmode") {
       std::vector<std::string> argv = SplitArgs(args);
-      for (std::string& arg : argv) {
+      for (std::string &arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
@@ -327,7 +288,7 @@ void BrowserWindow::CommitCommand() {
 
     if (command == ":showfps") {
       std::vector<std::string> argv = SplitArgs(args);
-      for (std::string& arg : argv) {
+      for (std::string &arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
@@ -350,7 +311,7 @@ void BrowserWindow::CommitCommand() {
 
     if (command == ":showstatusline") {
       std::vector<std::string> argv = SplitArgs(args);
-      for (std::string& arg : argv) {
+      for (std::string &arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
@@ -373,7 +334,7 @@ void BrowserWindow::CommitCommand() {
 
     if (command == ":shader") {
       std::vector<std::string> argv = SplitArgs(args);
-      for (std::string& arg : argv) {
+      for (std::string &arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
@@ -396,7 +357,7 @@ void BrowserWindow::CommitCommand() {
 
     if (command == ":test") {
       std::vector<std::string> argv = SplitArgs(args);
-      for (std::string& arg : argv) {
+      for (std::string &arg : argv) {
         arg = ToLowerAscii(arg);
       }
 
@@ -419,7 +380,8 @@ void BrowserWindow::CommitCommand() {
 
       if (command == ":back") {
         finish([&] {
-          if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) {
+          if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+              browser && browser->CanGoBack()) {
             browser->GoBack();
           }
         });
@@ -427,41 +389,95 @@ void BrowserWindow::CommitCommand() {
       }
       if (command == ":forward") {
         finish([&] {
-          if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoForward()) {
+          if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+              browser && browser->CanGoForward()) {
             browser->GoForward();
           }
         });
         return;
       }
-      if (command == ":open-clipboard") { finish([&] { OpenClipboard(false); }); return; }
-      if (command == ":open-clipboard-tab") { finish([&] { OpenClipboard(true); }); return; }
+      if (command == ":open-clipboard") {
+        finish([&] { OpenClipboard(false); });
+        return;
+      }
+      if (command == ":open-clipboard-tab") {
+        finish([&] { OpenClipboard(true); });
+        return;
+      }
       if (command == ":reload") {
         finish([&] {
-          if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->Reload();
+          if (CefRefPtr<CefBrowser> browser = ActiveBrowser())
+            browser->Reload();
         });
         return;
       }
       if (command == ":reload-force") {
         finish([&] {
-          if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->ReloadIgnoreCache();
+          if (CefRefPtr<CefBrowser> browser = ActiveBrowser())
+            browser->ReloadIgnoreCache();
         });
         return;
       }
-      if (command == ":q" || command == ":wq") { finish([&] { QuitBrowser(); }); return; }
-      if (command == ":scroll-bottom") { finish([&] { ScrollActivePageToBottom(); }); return; }
-      if (command == ":scroll-down") { finish([&] { ScrollActivePageBy(kLineScrollPx); }); return; }
-      if (command == ":scroll-page-down") { finish([&] { ScrollActivePageBy(1120); }); return; }
-      if (command == ":scroll-page-up") { finish([&] { ScrollActivePageBy(-1120); }); return; }
-      if (command == ":scroll-top") { finish([&] { ScrollActivePageToTop(); }); return; }
-      if (command == ":scroll-up") { finish([&] { ScrollActivePageBy(-kLineScrollPx); }); return; }
-      if (command == ":tab-clone") { finish([&] { CloneActiveTab(); }); return; }
-      if (command == ":tab-close") { finish([&] { CloseActiveTab(); }); return; }
-      if (command == ":tab-first") { finish([&] { ActivateFirstTab(); }); return; }
-      if (command == ":tab-last") { finish([&] { ActivateLastTab(); }); return; }
-      if (command == ":tab-move-left") { finish([&] { MoveActiveTab(-1); }); return; }
-      if (command == ":tab-move-right") { finish([&] { MoveActiveTab(1); }); return; }
-      if (command == ":tab-next") { finish([&] { ActivateRelative(1); }); return; }
-      if (command == ":tab-prev") { finish([&] { ActivateRelative(-1); }); return; }
+      if (command == ":q" || command == ":wq") {
+        finish([&] { QuitBrowser(); });
+        return;
+      }
+      if (command == ":scroll-bottom") {
+        finish([&] { ScrollActivePageToBottom(); });
+        return;
+      }
+      if (command == ":scroll-down") {
+        finish([&] { ScrollActivePageBy(kLineScrollPx); });
+        return;
+      }
+      if (command == ":scroll-page-down") {
+        finish([&] { ScrollActivePageBy(1120); });
+        return;
+      }
+      if (command == ":scroll-page-up") {
+        finish([&] { ScrollActivePageBy(-1120); });
+        return;
+      }
+      if (command == ":scroll-top") {
+        finish([&] { ScrollActivePageToTop(); });
+        return;
+      }
+      if (command == ":scroll-up") {
+        finish([&] { ScrollActivePageBy(-kLineScrollPx); });
+        return;
+      }
+      if (command == ":tab-clone") {
+        finish([&] { CloneActiveTab(); });
+        return;
+      }
+      if (command == ":tab-close") {
+        finish([&] { CloseActiveTab(); });
+        return;
+      }
+      if (command == ":tab-first") {
+        finish([&] { ActivateFirstTab(); });
+        return;
+      }
+      if (command == ":tab-last") {
+        finish([&] { ActivateLastTab(); });
+        return;
+      }
+      if (command == ":tab-move-left") {
+        finish([&] { MoveActiveTab(-1); });
+        return;
+      }
+      if (command == ":tab-move-right") {
+        finish([&] { MoveActiveTab(1); });
+        return;
+      }
+      if (command == ":tab-next") {
+        finish([&] { ActivateRelative(1); });
+        return;
+      }
+      if (command == ":tab-prev") {
+        finish([&] { ActivateRelative(-1); });
+        return;
+      }
       if (command == ":undo" || command == ":undo-close-tab") {
         finish([&] { UndoCloseTab(); });
         return;
@@ -470,13 +486,34 @@ void BrowserWindow::CommitCommand() {
         finish([&] { StartMuseScorePdfDownload(); });
         return;
       }
-      if (command == ":yank") { finish([&] { YankActiveUrl(); }); return; }
-      if (command == ":yank-dom") { finish([&] { YankActiveDom(); }); return; }
-      if (command == ":yank-markdown") { finish([&] { YankActiveMarkdown(); }); return; }
-      if (command == ":yank-title") { finish([&] { YankActiveTitle(); }); return; }
-      if (command == ":zoom-in") { finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_IN); }); return; }
-      if (command == ":zoom-out") { finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_OUT); }); return; }
-      if (command == ":zoom-reset") { finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_RESET); }); return; }
+      if (command == ":yank") {
+        finish([&] { YankActiveUrl(); });
+        return;
+      }
+      if (command == ":yank-dom") {
+        finish([&] { YankActiveDom(); });
+        return;
+      }
+      if (command == ":yank-markdown") {
+        finish([&] { YankActiveMarkdown(); });
+        return;
+      }
+      if (command == ":yank-title") {
+        finish([&] { YankActiveTitle(); });
+        return;
+      }
+      if (command == ":zoom-in") {
+        finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_IN); });
+        return;
+      }
+      if (command == ":zoom-out") {
+        finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_OUT); });
+        return;
+      }
+      if (command == ":zoom-reset") {
+        finish([&] { ZoomActivePage(CEF_ZOOM_COMMAND_RESET); });
+        return;
+      }
 
       CancelCommand();
       return;
@@ -485,16 +522,17 @@ void BrowserWindow::CommitCommand() {
 
   if (StartsWithCaseInsensitive(text, ":tab-focus")) {
     const size_t after_command = 10;
-    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+    if (text.size() == after_command ||
+        std::isspace(static_cast<unsigned char>(text[after_command]))) {
       text.erase(0, after_command);
       text = Trim(text);
       CancelCommand();
       if (text.empty()) {
         return;
       }
-      const bool all_digits = std::all_of(text.begin(), text.end(), [](unsigned char c) {
-        return std::isdigit(c);
-      });
+      const bool all_digits =
+          std::all_of(text.begin(), text.end(),
+                      [](unsigned char c) { return std::isdigit(c); });
       if (all_digits) {
         const int index = std::stoi(text);
         if (index > 0) {
@@ -508,7 +546,10 @@ void BrowserWindow::CommitCommand() {
         if (tabs_[i].client && tabs_[i].client->browser() &&
             tabs_[i].client->browser()->GetHost()) {
           CefRefPtr<CefNavigationEntry> entry =
-              tabs_[i].client->browser()->GetHost()->GetVisibleNavigationEntry();
+              tabs_[i]
+                  .client->browser()
+                  ->GetHost()
+                  ->GetVisibleNavigationEntry();
           if (entry) {
             title = entry->GetTitle().ToString();
           }
@@ -525,13 +566,16 @@ void BrowserWindow::CommitCommand() {
 
   if (StartsWithCaseInsensitive(text, ":open")) {
     const size_t after_command = 5;
-    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+    if (text.size() == after_command ||
+        std::isspace(static_cast<unsigned char>(text[after_command]))) {
       text.erase(0, after_command);
       text = Trim(text);
       if ((StartsWithCaseInsensitive(text, "tab") &&
-           (text.size() == 3 || std::isspace(static_cast<unsigned char>(text[3])))) ||
+           (text.size() == 3 ||
+            std::isspace(static_cast<unsigned char>(text[3])))) ||
           (StartsWithCaseInsensitive(text, "-t") &&
-           (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2]))))) {
+           (text.size() == 2 ||
+            std::isspace(static_cast<unsigned char>(text[2]))))) {
         open_in_new_tab = true;
         text.erase(0, StartsWithCaseInsensitive(text, "tab") ? 3 : 2);
         text = Trim(text);
@@ -542,13 +586,16 @@ void BrowserWindow::CommitCommand() {
   } else if (StartsWithCaseInsensitive(text, "open")) {
     // Backward compatibility for command lines created before colon commands.
     const size_t after_command = 4;
-    if (text.size() == after_command || std::isspace(static_cast<unsigned char>(text[after_command]))) {
+    if (text.size() == after_command ||
+        std::isspace(static_cast<unsigned char>(text[after_command]))) {
       text.erase(0, after_command);
       text = Trim(text);
       if ((StartsWithCaseInsensitive(text, "tab") &&
-           (text.size() == 3 || std::isspace(static_cast<unsigned char>(text[3])))) ||
+           (text.size() == 3 ||
+            std::isspace(static_cast<unsigned char>(text[3])))) ||
           (StartsWithCaseInsensitive(text, "-t") &&
-           (text.size() == 2 || std::isspace(static_cast<unsigned char>(text[2]))))) {
+           (text.size() == 2 ||
+            std::isspace(static_cast<unsigned char>(text[2]))))) {
         open_in_new_tab = true;
         text.erase(0, StartsWithCaseInsensitive(text, "tab") ? 3 : 2);
         text = Trim(text);
@@ -567,9 +614,10 @@ void BrowserWindow::CommitCommand() {
   std::string search_query;
   const bool is_search_engine_invocation =
       ParseSearchEngineInvocation(text, &search_engine, &search_query);
-  const std::string url = is_search_engine_invocation
-                              ? ResolveSearchEngineUrl(search_engine, search_query)
-                              : ResolveUrlOrSearch(text);
+  const std::string url =
+      is_search_engine_invocation
+          ? ResolveSearchEngineUrl(search_engine, search_query)
+          : ResolveUrlOrSearch(text);
   if (open_in_new_tab) {
     if (is_search_engine_invocation) {
       RecordSearchHistory(search_engine, search_query);
@@ -577,7 +625,8 @@ void BrowserWindow::CommitCommand() {
       RecordOpenHistory(text);
     }
     AddTabAfterActive(url, true);
-  } else if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->browser()) {
+  } else if (Tab *tab = ActiveTab();
+             tab && tab->client && tab->client->browser()) {
     if (is_search_engine_invocation) {
       RecordSearchHistory(search_engine, search_query);
     } else {
@@ -607,10 +656,11 @@ void BrowserWindow::CancelCommand() {
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(false);
   }
-  focus_area_ = previous_focus_area_ == FocusArea::kCommandLine ? FocusArea::kWebView
-                                                                : previous_focus_area_;
+  focus_area_ = previous_focus_area_ == FocusArea::kCommandLine
+                    ? FocusArea::kWebView
+                    : previous_focus_area_;
   UpdateModeIndicator();
-  if (Tab* tab = ActiveTab(); tab) {
+  if (Tab *tab = ActiveTab(); tab) {
     if (focus_area_ == FocusArea::kWebView) {
       tab->view->RequestFocus();
     }
@@ -654,16 +704,12 @@ void BrowserWindow::ScrollActivePageBy(int dy) {
     return;
   }
 
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   SendPdfViewerScrollHook(browser, dy);
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
-#if defined(__APPLE__)
-  ScrollMacPage(browser, dy);
-#else
   SendScrollWheel(browser, ScrollTargetMouseEvent(tab, window_), dy);
-#endif
 }
 
 void BrowserWindow::ScrollDevToolsBy(int dy) {
@@ -671,9 +717,6 @@ void BrowserWindow::ScrollDevToolsBy(int dy) {
     return;
   }
 
-#if defined(__APPLE__)
-  ScrollMacPage(devtools_browser_view_->GetBrowser(), dy);
-#else
   CefMouseEvent event;
   event.modifiers = 0;
   if (devtools_has_scroll_target_) {
@@ -689,7 +732,6 @@ void BrowserWindow::ScrollDevToolsBy(int dy) {
     event.y = std::max(1, bounds.height / 2);
   }
   SendScrollWheel(devtools_browser_view_->GetBrowser(), event, dy);
-#endif
 }
 
 void BrowserWindow::CycleDevToolsPanel(int delta) {
@@ -705,23 +747,25 @@ void BrowserWindow::CycleDevToolsPanel(int delta) {
 
   // Chrome DevTools already exposes first-class global actions for switching
   // main panels (Elements, Console, Sources, Network, ...): Ctrl+[ and Ctrl+].
-  // DevTools normal mode maps h/l to those actions by sending the same key events
-  // directly to the DevTools renderer. This keeps panel ordering/customization in
-  // DevTools itself instead of duplicating frontend state in vimbrowser chrome.
+  // DevTools normal mode maps h/l to those actions by sending the same key
+  // events directly to the DevTools renderer. This keeps panel
+  // ordering/customization in DevTools itself instead of duplicating frontend
+  // state in vimbrowser chrome.
   CefKeyEvent event;
   event.type = KEYEVENT_RAWKEYDOWN;
-  event.windows_key_code = delta > 0 ? 0xDD : 0xDB;  // VKEY_OEM_6 / VKEY_OEM_4.
-  event.native_key_code = delta > 0 ? 35 : 34;       // X11 ] / [ keycodes.
+  event.windows_key_code = delta > 0 ? 0xDD : 0xDB; // VKEY_OEM_6 / VKEY_OEM_4.
+  event.native_key_code = NativeKeyCodeForSyntheticKey(
+      event.windows_key_code, delta > 0 ? ']' : '[');
   event.character = 0;
   event.unmodified_character = delta > 0 ? ']' : '[';
   event.modifiers = EVENTFLAG_CONTROL_DOWN;
   forwarding_key_to_devtools_ = true;
   host->SendKeyEvent(event);
   CefRefPtr<BrowserWindow> self = this;
-  CefPostDelayedTask(TID_UI,
-                     base::BindOnce(&BrowserWindow::ClearForwardingDevToolsKeyGuard,
-                                    self),
-                     50);
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ClearForwardingDevToolsKeyGuard, self),
+      50);
 }
 
 void BrowserWindow::ScrollActivePageToTop() {
@@ -729,18 +773,14 @@ void BrowserWindow::ScrollActivePageToTop() {
   if (!browser) {
     return;
   }
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   CefMouseEvent event = ScrollTargetMouseEvent(tab, window_);
   event.modifiers |= kVimbrowserInstantScrollCefModifier;
   SendPdfViewerScrollHook(browser, -kScrollToEdgePx, true);
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
-#if defined(__APPLE__)
-  ScrollMacPageToEdge(browser, false);
-#else
   SendScrollWheel(browser, event, -kScrollToEdgePx);
-#endif
 }
 
 void BrowserWindow::ScrollActivePageToBottom() {
@@ -748,18 +788,14 @@ void BrowserWindow::ScrollActivePageToBottom() {
   if (!browser) {
     return;
   }
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   CefMouseEvent event = ScrollTargetMouseEvent(tab, window_);
   event.modifiers |= kVimbrowserInstantScrollCefModifier;
   SendPdfViewerScrollHook(browser, kScrollToEdgePx, true);
   if (tab && tab->has_scroll_target && tab->scroll_target_is_pdf_viewport) {
     return;
   }
-#if defined(__APPLE__)
-  ScrollMacPageToEdge(browser, true);
-#else
   SendScrollWheel(browser, event, kScrollToEdgePx);
-#endif
 }
 
 void BrowserWindow::StartPageSearch(std::string text, bool forward) {
@@ -796,8 +832,8 @@ void BrowserWindow::FindNextPageSearch(bool reverse_direction) {
     return;
   }
 
-  const bool forward = reverse_direction ? !page_search_forward_
-                                         : page_search_forward_;
+  const bool forward =
+      reverse_direction ? !page_search_forward_ : page_search_forward_;
   const bool same_browser = page_search_browser_id_ == browser->GetIdentifier();
   const bool find_next = same_browser && page_search_highlights_visible_;
   page_search_highlights_visible_ = true;
@@ -835,29 +871,28 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
   }
 }
 
-void BrowserWindow::RecordOpenHistory(const std::string& text) {
+void BrowserWindow::RecordOpenHistory(const std::string &text) {
   std::string entry = Trim(text);
   if (entry.empty()) {
     return;
   }
 
   const std::string folded = ToLowerAscii(entry);
-  open_history_.erase(
-      std::remove_if(open_history_.begin(), open_history_.end(),
-                     [&](const std::string& existing) {
-                       return ToLowerAscii(existing) == folded;
-                     }),
-      open_history_.end());
+  open_history_.erase(std::remove_if(open_history_.begin(), open_history_.end(),
+                                     [&](const std::string &existing) {
+                                       return ToLowerAscii(existing) == folded;
+                                     }),
+                      open_history_.end());
   open_history_.push_back(std::move(entry));
   if (open_history_.size() > kMaxOpenHistoryEntries) {
-    open_history_.erase(
-        open_history_.begin(),
-        open_history_.end() - static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+    open_history_.erase(open_history_.begin(),
+                        open_history_.end() - static_cast<std::ptrdiff_t>(
+                                                  kMaxOpenHistoryEntries));
   }
 }
 
-void BrowserWindow::RecordSearchHistory(const std::string& engine,
-                                        const std::string& query) {
+void BrowserWindow::RecordSearchHistory(const std::string &engine,
+                                        const std::string &query) {
   const std::string folded_engine = ToLowerAscii(engine);
   if (!FindSearchEngine(folded_engine)) {
     return;
@@ -868,18 +903,17 @@ void BrowserWindow::RecordSearchHistory(const std::string& engine,
     return;
   }
 
-  std::vector<std::string>& history = search_history_[folded_engine];
+  std::vector<std::string> &history = search_history_[folded_engine];
   const std::string folded_entry = ToLowerAscii(entry);
   history.erase(std::remove_if(history.begin(), history.end(),
-                               [&](const std::string& existing) {
+                               [&](const std::string &existing) {
                                  return ToLowerAscii(existing) == folded_entry;
                                }),
                 history.end());
   history.push_back(std::move(entry));
   if (history.size() > kMaxOpenHistoryEntries) {
-    history.erase(history.begin(),
-                  history.end() -
-                      static_cast<std::ptrdiff_t>(kMaxOpenHistoryEntries));
+    history.erase(history.begin(), history.end() - static_cast<std::ptrdiff_t>(
+                                                       kMaxOpenHistoryEntries));
   }
 }
 
@@ -896,9 +930,7 @@ void BrowserWindow::YankActiveUrl() {
   SetStatusOutput("url copied: " + url);
 }
 
-void BrowserWindow::YankActiveTitle() {
-  WriteClipboardText(ActiveTabTitle());
-}
+void BrowserWindow::YankActiveTitle() { WriteClipboardText(ActiveTabTitle()); }
 
 void BrowserWindow::YankActiveMarkdown() {
   WriteClipboardText("[" + ActiveTabTitle() + "](" + ActiveTabUrl() + ")");
@@ -910,9 +942,15 @@ void BrowserWindow::YankActiveDom() {
     return;
   }
   browser->GetMainFrame()->ExecuteJavaScript(
-      "(()=>{const text=document.documentElement?document.documentElement.outerHTML:(document.body?document.body.outerHTML:'');"
-      "if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{});return;}"
-      "const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-10000px';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();})()",
+      "(()=>{const "
+      "text=document.documentElement?document.documentElement.outerHTML:("
+      "document.body?document.body.outerHTML:'');"
+      "if(navigator.clipboard&&navigator.clipboard.writeText){navigator."
+      "clipboard.writeText(text).catch(()=>{});return;}"
+      "const "
+      "ta=document.createElement('textarea');ta.value=text;ta.style.position='"
+      "fixed';ta.style.left='-10000px';document.body.appendChild(ta);ta.select("
+      ");document.execCommand('copy');ta.remove();})()",
       browser->GetMainFrame()->GetURL(), 0);
 }
 
@@ -922,7 +960,7 @@ void BrowserWindow::StartMuseScorePdfDownload() {
     return;
   }
 
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   if (!tab || !tab->client || !tab->client->browser()) {
     SetStatusOutput("MuseScore PDF download failed: current tab has no browser",
                     6000);
@@ -967,31 +1005,27 @@ void BrowserWindow::OnMuseScoreMetadata(std::string response) {
                   0);
   const std::string directory = DefaultMuseScoreDownloadDirectory().string();
   CefRefPtr<BrowserWindow> self = this;
-  if (!CefPostTask(
-          TID_FILE_USER_BLOCKING,
-          base::BindOnce(&BrowserWindow::RunMuseScorePdfDownload, self,
-                         std::move(metadata.title), std::move(metadata.urls),
-                         directory))) {
+  if (!CefPostTask(TID_FILE_USER_BLOCKING,
+                   base::BindOnce(&BrowserWindow::RunMuseScorePdfDownload, self,
+                                  std::move(metadata.title),
+                                  std::move(metadata.urls), directory))) {
     FinishMuseScorePdfDownload({}, "failed to start the native download task");
   }
 }
 
-void BrowserWindow::RunMuseScorePdfDownload(
-    std::string title,
-    std::vector<std::string> urls,
-    std::string download_directory) {
+void BrowserWindow::RunMuseScorePdfDownload(std::string title,
+                                            std::vector<std::string> urls,
+                                            std::string download_directory) {
   CefRefPtr<BrowserWindow> self = this;
   MuseScorePdfResult result = DownloadMuseScorePdf(
-      title, urls, download_directory,
-      [self](std::string message) {
+      title, urls, download_directory, [self](std::string message) {
         CefPostTask(TID_UI,
                     base::BindOnce(&BrowserWindow::UpdateMuseScorePdfStatus,
                                    self, std::move(message)));
       });
-  CefPostTask(TID_UI,
-              base::BindOnce(&BrowserWindow::FinishMuseScorePdfDownload, self,
-                             std::move(result.output_path),
-                             std::move(result.error)));
+  CefPostTask(TID_UI, base::BindOnce(&BrowserWindow::FinishMuseScorePdfDownload,
+                                     self, std::move(result.output_path),
+                                     std::move(result.error)));
 }
 
 void BrowserWindow::UpdateMuseScorePdfStatus(std::string message) {
@@ -1013,4 +1047,4 @@ void BrowserWindow::FinishMuseScorePdfDownload(std::string output_path,
   SetStatusOutput("MuseScore PDF saved to " + output_path, 10000);
 }
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

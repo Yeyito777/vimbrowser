@@ -8,7 +8,7 @@
 # by hand. See the translator.README.txt file in the tools directory for
 # more information.
 #
-# $hash=f60f3f389b5f7dce8be4bff5ff16474bad33b26d$
+# $hash=a709a0c7344ff0cbe7293746c8ca252becb44ecb$
 #
 
 {
@@ -686,6 +686,8 @@
       'libcef_dll/cpptoc/views/view_cpptoc.h',
       'libcef_dll/ctocpp/views/view_delegate_ctocpp.cc',
       'libcef_dll/ctocpp/views/view_delegate_ctocpp.h',
+      'libcef_dll/ctocpp/vimbrowser_element_activation_callback_ctocpp.cc',
+      'libcef_dll/ctocpp/vimbrowser_element_activation_callback_ctocpp.h',
       'libcef_dll/cpptoc/waitable_event_cpptoc.cc',
       'libcef_dll/cpptoc/waitable_event_cpptoc.h',
       'libcef_dll/cpptoc/views/window_cpptoc.cc',
@@ -1058,6 +1060,8 @@
       'libcef_dll/ctocpp/views/view_ctocpp.h',
       'libcef_dll/cpptoc/views/view_delegate_cpptoc.cc',
       'libcef_dll/cpptoc/views/view_delegate_cpptoc.h',
+      'libcef_dll/cpptoc/vimbrowser_element_activation_callback_cpptoc.cc',
+      'libcef_dll/cpptoc/vimbrowser_element_activation_callback_cpptoc.h',
       'libcef_dll/ctocpp/waitable_event_ctocpp.cc',
       'libcef_dll/ctocpp/waitable_event_ctocpp.h',
       'libcef_dll/ctocpp/views/window_ctocpp.cc',

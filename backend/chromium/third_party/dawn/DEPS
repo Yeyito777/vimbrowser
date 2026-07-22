@@ -8,7 +8,7 @@ gclient_gn_args = [
   'generate_location_tags',
 ]
 
-git_dependencies = 'SYNC'
+git_dependencies = 'DEPS'
 
 vars = {
   'chromium_git': 'https://chromium.googlesource.com',

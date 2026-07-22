@@ -30,7 +30,7 @@ namespace {
 
 constexpr SkColor kHintBackground = SkColorSetRGB(0x1d, 0x9b, 0xf0);
 constexpr SkColor kHintForeground = SkColorSetRGB(0x00, 0x05, 0x0f);
-constexpr SkColor kHintMatchedForeground = SkColorSetRGB(0xff, 0xff, 0xff);
+constexpr SkColor kHintMatchedForeground = kHintForeground;
 
 bool LabelIsVisibleForPrefix(const String& label, const String& prefix) {
   return prefix.empty() || label.starts_with(prefix);

@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=a935a1fa527e1f635bf33c83c38c82689b13069a$
+// $hash=0a98554bc7e283eb17c36f52d3f9c341a21b5a71$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_BROWSER_CAPI_H_
@@ -211,6 +211,31 @@ typedef struct _cef_run_file_dialog_callback_t {
   void (CEF_CALLBACK *on_file_dialog_dismissed)(struct _cef_run_file_dialog_callback_t* self, cef_string_list_t file_paths);
 } cef_run_file_dialog_callback_t;
 
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+
+///
+/// Callback structure for
+/// cef_browser_host_t::VimbrowserActivateElementBySelector. The functions of
+/// this structure will be called on the browser process UI thread.
+///
+/// NOTE: This struct is allocated client-side.
+///
+typedef struct _cef_vimbrowser_element_activation_callback_t {
+  ///
+  /// Base structure.
+  ///
+  cef_base_ref_counted_t base;
+
+  ///
+  /// Called asynchronously after the element activation attempt completes.
+  /// |result| is a blink.mojom.VimbrowserElementActivationResult value and
+  /// |match_count| is the number of matching elements.
+  ///
+  void (CEF_CALLBACK *on_complete)(struct _cef_vimbrowser_element_activation_callback_t* self, int result, int match_count);
+} cef_vimbrowser_element_activation_callback_t;
+
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
 
 ///
 /// Callback structure for cef_browser_host_t::GetNavigationEntries. The
@@ -970,6 +995,60 @@ CEF_EXPORT cef_browser_t* cef_browser_host_create_browser_sync(const cef_window_
 /// Returns the browser (if any) with the specified identifier.
 ///
 CEF_EXPORT cef_browser_t* cef_browser_host_get_browser_by_identifier(int browser_id);
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Returns true (1) if the browser compositor has produced an FPS sample.
+///
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_has_fps_sample(int browser_id);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Returns the browser compositor's current FPS sample.
+///
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_fps(int browser_id);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Returns the browser compositor's current display refresh rate.
+///
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_refresh_rate(int browser_id);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Returns true (1) if the browser is currently audible.
+///
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_is_currently_audible(int browser_id);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Sends a vimbrowser command key through the native browser platform delegate.
+/// This is the entry path used by Blink-native hint handling.
+///
+CEF_EXPORT void cef_browser_host_vimbrowser_send_browser_command_key_event(int browser_id, const cef_key_event_t* event);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Activates the unique element matching |selector| in the browser's primary
+/// main frame. Returns false (0) if activation could not be started. On
+/// success, writes the activation nonce to |activation_nonce_high| and
+/// |activation_nonce_low| and executes |callback| asynchronously.
+///
+CEF_EXPORT int cef_browser_host_vimbrowser_activate_element_by_selector(int browser_id, const cef_string_t* selector, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low, cef_vimbrowser_element_activation_callback_t* callback);
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+///
+/// Returns the activation nonce associated with the browser's current native
+/// file dialog, if any.
+///
+CEF_EXPORT int cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(int browser_id, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low);
+#endif
 
 
 #ifdef __cplusplus

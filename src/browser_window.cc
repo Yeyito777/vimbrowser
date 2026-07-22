@@ -5,9 +5,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cerrno>
 #include <charconv>
-#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -25,8 +25,8 @@
 #if defined(__linux__)
 #include <sys/select.h>
 
-#include <X11/cursorfont.h>
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
 #include <X11/extensions/XInput2.h>
 #endif
 
@@ -50,13 +50,6 @@
 #include "ipc_server.h"
 #include "shortcuts.h"
 #include "theme.h"
-#if defined(__APPLE__)
-#include "mac/browser_features_mac.h"
-#endif
-
-extern "C" void vimbrowser_send_browser_command_key_event(
-    int browser_id,
-    const CefKeyEvent* event);
 
 namespace vimbrowser {
 
@@ -65,16 +58,14 @@ namespace {
 class DevToolsClient final : public CefClient,
                              public CefDisplayHandler,
                              public CefKeyboardHandler {
- public:
-  explicit DevToolsClient(BrowserWindow* owner) : owner_(owner) {}
+public:
+  explicit DevToolsClient(BrowserWindow *owner) : owner_(owner) {}
 
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
-  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
-                        cef_log_severity_t level,
-                        const CefString& message,
-                        const CefString& source,
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level,
+                        const CefString &message, const CefString &source,
                         int line) override {
     if (!owner_) {
       return false;
@@ -97,20 +88,20 @@ class DevToolsClient final : public CefClient,
         "__vimbrowser_native_hint_scroll_target__";
     if (text.rfind(kScrollTargetPrefix, 0) == 0) {
       const std::string payload = text.substr(kScrollTargetPrefix.size());
-      char* end = nullptr;
+      char *end = nullptr;
       const long x = std::strtol(payload.c_str(), &end, 10);
       if (end && *end == ',') {
-        char* y_end = nullptr;
+        char *y_end = nullptr;
         const long y = std::strtol(end + 1, &y_end, 10);
         if (y_end != end + 1) {
           bool is_page_scroller = false;
           bool is_pdf_viewport = false;
           if (*y_end == ',') {
-            char* page_end = nullptr;
+            char *page_end = nullptr;
             const long page = std::strtol(y_end + 1, &page_end, 10);
             is_page_scroller = page_end != y_end + 1 && page != 0;
             if (page_end && *page_end == ',') {
-              char* pdf_end = nullptr;
+              char *pdf_end = nullptr;
               const long pdf = std::strtol(page_end + 1, &pdf_end, 10);
               is_pdf_viewport = pdf_end != page_end + 1 && pdf != 0;
             }
@@ -131,70 +122,22 @@ class DevToolsClient final : public CefClient,
     return false;
   }
 
-  bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
-                     const CefKeyEvent& event,
+  bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent &event,
                      CefEventHandle os_event,
-                     bool* is_keyboard_shortcut) override {
+                     bool *is_keyboard_shortcut) override {
     return owner_ && owner_->HandleBrowserKeyEvent(event);
   }
 
-#if defined(__APPLE__)
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame>,
-                                CefProcessId,
-                                CefRefPtr<CefProcessMessage> message) override {
-    if (!owner_ || !browser || !message ||
-        message->GetName().ToString() != kMacPageEventMessage) {
-      return false;
-    }
-    CefRefPtr<CefListValue> args = message->GetArgumentList();
-    const std::string event = args && args->GetSize() >= 1
-                                  ? args->GetString(0).ToString()
-                                  : std::string();
-    const std::string payload = args && args->GetSize() >= 2
-                                    ? args->GetString(1).ToString()
-                                    : std::string();
-    if (event == "open-tab") {
-      owner_->OnDevToolsNativeHintOpenTab(payload);
-    } else if (event == "focused-editable") {
-      owner_->OnDevToolsNativeHintFocusedEditable();
-    } else if (event == "stopped") {
-      owner_->OnDevToolsNativeHintsStopped();
-    } else if ((event == "context-at" || event == "hover-at") &&
-               browser->GetHost()) {
-      char* x_end = nullptr;
-      const double x = std::strtod(payload.c_str(), &x_end);
-      if (x_end && *x_end == ',') {
-        char* y_end = nullptr;
-        const double y = std::strtod(x_end + 1, &y_end);
-        if (y_end != x_end + 1 && std::isfinite(x) && std::isfinite(y)) {
-          CefMouseEvent mouse_event;
-          mouse_event.x = std::max(0, static_cast<int>(std::lround(x)));
-          mouse_event.y = std::max(0, static_cast<int>(std::lround(y)));
-          browser->GetHost()->SendMouseMoveEvent(mouse_event, false);
-          if (event == "context-at") {
-            browser->GetHost()->SendMouseClickEvent(
-                mouse_event, MBT_RIGHT, false, 1);
-            browser->GetHost()->SendMouseClickEvent(
-                mouse_event, MBT_RIGHT, true, 1);
-          }
-        }
-      }
-    }
-    return true;
-  }
-#endif
-
- private:
-  BrowserWindow* owner_ = nullptr;
+private:
+  BrowserWindow *owner_ = nullptr;
 
   IMPLEMENT_REFCOUNTING(DevToolsClient);
   DISALLOW_COPY_AND_ASSIGN(DevToolsClient);
 };
 
 class DevToolsBrowserViewDelegate final : public CefBrowserViewDelegate {
- public:
-  explicit DevToolsBrowserViewDelegate(BrowserWindow* owner) : owner_(owner) {}
+public:
+  explicit DevToolsBrowserViewDelegate(BrowserWindow *owner) : owner_(owner) {}
 
   void OnBrowserCreated(CefRefPtr<CefBrowserView> browser_view,
                         CefRefPtr<CefBrowser> browser) override {
@@ -216,8 +159,8 @@ class DevToolsBrowserViewDelegate final : public CefBrowserViewDelegate {
     return CEF_RUNTIME_STYLE_CHROME;
   }
 
- private:
-  BrowserWindow* owner_ = nullptr;
+private:
+  BrowserWindow *owner_ = nullptr;
 
   IMPLEMENT_REFCOUNTING(DevToolsBrowserViewDelegate);
   DISALLOW_COPY_AND_ASSIGN(DevToolsBrowserViewDelegate);
@@ -254,7 +197,7 @@ std::string MediaPermissionNameList(uint32_t permissions) {
   return out;
 }
 
-std::string DisplayMediaPermissionOrigin(const std::string& origin) {
+std::string DisplayMediaPermissionOrigin(const std::string &origin) {
   if (origin.empty()) {
     return "this page";
   }
@@ -265,8 +208,7 @@ std::string DisplayMediaPermissionOrigin(const std::string& origin) {
   return display;
 }
 
-void StylePermissionButton(CefRefPtr<CefLabelButton> button,
-                           cef_color_t text,
+void StylePermissionButton(CefRefPtr<CefLabelButton> button, cef_color_t text,
                            cef_color_t background) {
   if (!button) {
     return;
@@ -368,7 +310,8 @@ void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
   window->SetThemeColor(CEF_ColorTextfieldBackgroundDisabled, theme::kAppBg);
   window->SetThemeColor(CEF_ColorTextfieldFilledBackground, theme::kAppBg);
   window->SetThemeColor(CEF_ColorTextfieldForeground, theme::kText);
-  window->SetThemeColor(CEF_ColorTextfieldFilledForegroundInvalid, theme::kText);
+  window->SetThemeColor(CEF_ColorTextfieldFilledForegroundInvalid,
+                        theme::kText);
   window->SetThemeColor(CEF_ColorTextfieldForegroundIcon, theme::kText);
   window->SetThemeColor(CEF_ColorTextfieldForegroundLabel, theme::kText);
   window->SetThemeColor(CEF_ColorTextfieldForegroundPlaceholder, theme::kMuted);
@@ -379,7 +322,8 @@ void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
                         theme::kSelectionBg);
   window->SetThemeColor(CEF_ColorTextfieldSelectionForeground, theme::kText);
   window->SetThemeColor(CEF_ColorTextfieldFilledUnderline, theme::kAppBg);
-  window->SetThemeColor(CEF_ColorTextfieldFilledUnderlineFocused, theme::kAppBg);
+  window->SetThemeColor(CEF_ColorTextfieldFilledUnderlineFocused,
+                        theme::kAppBg);
   window->SetThemeColor(CEF_ColorTextfieldOutline, theme::kAppBg);
   window->SetThemeColor(CEF_ColorTextfieldOutlineDisabled, theme::kAppBg);
   window->SetThemeColor(CEF_ColorTextfieldOutlineInvalid, theme::kAppBg);
@@ -397,21 +341,17 @@ void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
   window->SetThemeColor(CEF_ColorButtonForeground, theme::kText);
 }
 
-}  // namespace
+} // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              std::vector<uint64_t> initial_tab_folder_ids,
                              std::vector<uint64_t> initial_tab_sort_orders,
                              std::vector<bool> initial_tab_pinned,
-                             size_t active_index,
-                             bool show_mode_indicator,
-                             bool show_fps_indicator,
-                             bool show_statusline,
-                             bool shader_enabled,
-                             std::string state_path,
+                             size_t active_index, bool show_mode_indicator,
+                             bool show_fps_indicator, bool show_statusline,
+                             bool shader_enabled, std::string state_path,
                              std::string dwm_save_argv,
-                             std::string root_cache_path,
-                             bool a26_shell)
+                             std::string root_cache_path, bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
@@ -422,8 +362,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       initial_active_index_(active_index),
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
-      show_statusline_(show_statusline),
-      shader_enabled_(shader_enabled),
+      show_statusline_(show_statusline), shader_enabled_(shader_enabled),
       a26_shell_(a26_shell) {
   const char* xtest_workaround = std::getenv("A26_VIMBROWSER_XTEST_CHAR_WORKAROUND");
   a26_xtest_char_workaround_ =
@@ -437,7 +376,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   media_permission_denials_.insert(state.media_permission_denials.begin(),
                                    state.media_permission_denials.end());
   std::unordered_set<uint64_t> folder_ids;
-  for (const SavedSidebarFolder& saved : state.sidebar_folders) {
+  for (const SavedSidebarFolder &saved : state.sidebar_folders) {
     if (saved.id == 0 || saved.name.empty() ||
         !folder_ids.insert(saved.id).second) {
       continue;
@@ -447,7 +386,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
     next_folder_id_ = std::max(next_folder_id_, saved.id + 1);
   }
   next_folder_id_ = std::max(next_folder_id_, state.next_sidebar_folder_id);
-  for (SidebarFolder& folder : sidebar_folders_) {
+  for (SidebarFolder &folder : sidebar_folders_) {
     if (folder.parent_id != 0 && !folder_ids.contains(folder.parent_id)) {
       folder.parent_id = 0;
     }
@@ -468,7 +407,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   initial_tab_folder_ids_.resize(initial_urls_.size(), 0);
   initial_tab_sort_orders_.resize(initial_urls_.size(), 0);
   initial_tab_pinned_.resize(initial_urls_.size(), false);
-  for (uint64_t& folder_id : initial_tab_folder_ids_) {
+  for (uint64_t &folder_id : initial_tab_folder_ids_) {
     if (folder_id != 0 && !folder_ids.contains(folder_id)) {
       folder_id = 0;
     }
@@ -478,11 +417,9 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   }
 }
 
-void BrowserWindow::Create() {
-  CefWindow::CreateTopLevelWindow(this);
-}
+void BrowserWindow::Create() { CefWindow::CreateTopLevelWindow(this); }
 
-void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
+void BrowserWindow::OnClientBrowserCreated(BrowserClient *client) {
   RefreshSidebar();
   if (client && client->browser()) {
     for (size_t i = 0; i < tabs_.size(); ++i) {
@@ -503,14 +440,14 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient* client) {
   }
 }
 
-bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient* client,
-                                                     CefRect& rect) const {
+bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient *client,
+                                                     CefRect &rect) const {
   if (!client || !content_inner_panel_) {
     return false;
   }
 
   bool owns_client = false;
-  for (const Tab& tab : tabs_) {
+  for (const Tab &tab : tabs_) {
     if (tab.client.get() == client) {
       owns_client = true;
       break;
@@ -558,7 +495,7 @@ void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
   }
 }
 
-bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
+bool BrowserWindow::OnClientDoClose(BrowserClient *client) {
   if (window_close_pending_) {
     return false;
   }
@@ -572,10 +509,12 @@ bool BrowserWindow::OnClientDoClose(BrowserClient* client) {
   return false;
 }
 
-void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& url) {
-  // Blink tears down the renderer-side hint overlay with the old Document. Clear
-  // the browser-side latch at the same document boundary so a pending navigation
-  // can never leave the shell routing keys to an obsolete hint matcher.
+void BrowserWindow::OnClientLoadStart(BrowserClient *client,
+                                      const std::string &url) {
+  // Blink tears down the renderer-side hint overlay with the old Document.
+  // Clear the browser-side latch at the same document boundary so a pending
+  // navigation can never leave the shell routing keys to an obsolete hint
+  // matcher.
   StopPageNativeHintsForClient(client);
   CancelFileChooserUploadForClient(
       client, "navigation", "armed tab navigated before file selection");
@@ -586,17 +525,12 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   UpdateClientUrl(client, url, true);
 }
 
-void BrowserWindow::OnClientLoadEnd(BrowserClient* client) {
+void BrowserWindow::OnClientLoadEnd(BrowserClient *client) {
   StopPageNativeHintsForClient(client);
-#if defined(__APPLE__)
-  // The stock CEF macOS build has no patched Blink shader. Apply the equivalent
-  // DevTools auto-dark override after each main-frame navigation instead.
-  BroadcastShaderState();
-#endif
 }
 
-void BrowserWindow::OnClientAddressChange(BrowserClient* client,
-                                          const std::string& url) {
+void BrowserWindow::OnClientAddressChange(BrowserClient *client,
+                                          const std::string &url) {
   UpdateClientUrl(client, url, false);
 }
 
@@ -636,7 +570,7 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
                                     const std::string& url,
                                     bool force_update) {
   for (size_t i = 0; i < tabs_.size(); ++i) {
-    Tab& tab = tabs_[i];
+    Tab &tab = tabs_[i];
     if (tab.client.get() == client) {
       if (tab.deferred_load && url == "about:blank") {
         return;
@@ -668,11 +602,10 @@ void BrowserWindow::UpdateClientUrl(BrowserClient* client,
   }
 }
 
-bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
-                                           CefRefPtr<CefBrowser> browser,
-                                           CefRefPtr<CefFrame> frame,
-                                           CefProcessId source_process,
-                                           CefRefPtr<CefProcessMessage> message) {
+bool BrowserWindow::OnClientProcessMessage(
+    BrowserClient *client, CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame, CefProcessId source_process,
+    CefRefPtr<CefProcessMessage> message) {
   if (!message) {
     return false;
   }
@@ -735,49 +668,6 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
     return true;
   }
 
-#if defined(__APPLE__)
-  if (name == kMacPageEventMessage) {
-    CefRefPtr<CefListValue> args = message->GetArgumentList();
-    const std::string event = args && args->GetSize() >= 1
-                                  ? args->GetString(0).ToString()
-                                  : std::string();
-    const std::string payload = args && args->GetSize() >= 2
-                                    ? args->GetString(1).ToString()
-                                    : std::string();
-    if (event == "open-tab") {
-      OnNativeHintOpenTab(client, payload);
-    } else if (event == "context-at" || event == "hover-at") {
-      Tab* tab = ActiveTab();
-      if (native_hints_active_ && tab && tab->client.get() == client &&
-          focus_area_ == FocusArea::kWebView && client->browser() &&
-          client->browser()->GetHost()) {
-        char* x_end = nullptr;
-        const double x = std::strtod(payload.c_str(), &x_end);
-        if (x_end && *x_end == ',') {
-          char* y_end = nullptr;
-          const double y = std::strtod(x_end + 1, &y_end);
-          if (y_end != x_end + 1 && std::isfinite(x) && std::isfinite(y)) {
-            CefMouseEvent mouse_event;
-            mouse_event.x = std::max(0, static_cast<int>(std::lround(x)));
-            mouse_event.y = std::max(0, static_cast<int>(std::lround(y)));
-            CefRefPtr<CefBrowserHost> host = client->browser()->GetHost();
-            host->SendMouseMoveEvent(mouse_event, false);
-            if (event == "context-at") {
-              host->SendMouseClickEvent(mouse_event, MBT_RIGHT, false, 1);
-              host->SendMouseClickEvent(mouse_event, MBT_RIGHT, true, 1);
-            }
-          }
-        }
-      }
-    } else if (event == "focused-editable") {
-      OnNativeHintFocusedEditable(client);
-    } else if (event == "stopped") {
-      OnNativeHintsStopped(client);
-    }
-    return true;
-  }
-#endif
-
   if (name != kJsResultMessage) {
     return false;
   }
@@ -793,14 +683,15 @@ bool BrowserWindow::OnClientProcessMessage(BrowserClient* client,
   return true;
 }
 
-bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
+bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
                                         CefRefPtr<BrowserClient> popup_client,
                                         int popup_id,
-                                        const std::string& target_url,
+                                        const std::string &target_url,
                                         bool activate) {
-  const auto source = std::find_if(
-      tabs_.begin(), tabs_.end(),
-      [client](const Tab& tab) { return tab.client.get() == client; });
+  const auto source =
+      std::find_if(tabs_.begin(), tabs_.end(), [client](const Tab &tab) {
+        return tab.client.get() == client;
+      });
   if (source == tabs_.end()) {
     // Unknown popups should never escape into CEF-owned top-level windows.
     return true;
@@ -825,27 +716,23 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient* client,
     return true;
   }
 
-  pending_popups_.push_back(
-      {popup_client, popup_id, target_url, activate, opener_tab_id,
-       hint_open_tab, source_context});
+  pending_popups_.push_back({popup_client, popup_id, target_url, activate,
+                             opener_tab_id, hint_open_tab, source_context});
   return false;
 }
 
-void BrowserWindow::OnClientBeforePopupAborted(BrowserClient*, int popup_id) {
-  pending_popups_.erase(
-      std::remove_if(pending_popups_.begin(), pending_popups_.end(),
-                     [popup_id](const PendingPopup& popup) {
-                       return popup.popup_id == popup_id;
-                     }),
-      pending_popups_.end());
+void BrowserWindow::OnClientBeforePopupAborted(BrowserClient *, int popup_id) {
+  pending_popups_.erase(std::remove_if(pending_popups_.begin(),
+                                       pending_popups_.end(),
+                                       [popup_id](const PendingPopup &popup) {
+                                         return popup.popup_id == popup_id;
+                                       }),
+                        pending_popups_.end());
 }
 
 bool BrowserWindow::OnClientMediaAccessRequest(
-    BrowserClient* client,
-    CefRefPtr<CefBrowser>,
-    CefRefPtr<CefFrame> frame,
-    const CefString& requesting_origin,
-    uint32_t requested_permissions,
+    BrowserClient *client, CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame,
+    const CefString &requesting_origin, uint32_t requested_permissions,
     CefRefPtr<CefMediaAccessCallback> callback) {
   if (!callback) {
     return true;
@@ -890,15 +777,14 @@ bool BrowserWindow::OnClientMediaAccessRequest(
 
 bool BrowserWindow::OnPopupBrowserViewCreated(
     CefRefPtr<CefBrowserView> browser_view,
-    CefRefPtr<CefBrowserView> popup_browser_view,
-    bool is_devtools) {
+    CefRefPtr<CefBrowserView> popup_browser_view, bool is_devtools) {
   if (is_devtools) {
     if (!popup_browser_view || !content_panel_) {
       return false;
     }
 
     uint64_t opener_tab_id = 0;
-    for (const Tab& tab : tabs_) {
+    for (const Tab &tab : tabs_) {
       if (tab.view && browser_view && tab.view->IsSame(browser_view)) {
         opener_tab_id = tab.id;
         break;
@@ -926,18 +812,17 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
   }
 
   CefRefPtr<CefBrowser> popup_browser = popup_browser_view->GetBrowser();
-  CefRefPtr<CefClient> cef_client =
-      popup_browser && popup_browser->GetHost()
-          ? popup_browser->GetHost()->GetClient()
-          : nullptr;
+  CefRefPtr<CefClient> cef_client = popup_browser && popup_browser->GetHost()
+                                        ? popup_browser->GetHost()->GetClient()
+                                        : nullptr;
   if (!cef_client) {
     return false;
   }
 
   auto pending = std::find_if(
       pending_popups_.begin(), pending_popups_.end(),
-      [cef_client](const PendingPopup& popup) {
-        return static_cast<CefClient*>(popup.client.get()) == cef_client.get();
+      [cef_client](const PendingPopup &popup) {
+        return static_cast<CefClient *>(popup.client.get()) == cef_client.get();
       });
   if (pending == pending_popups_.end()) {
     return false;
@@ -1018,7 +903,7 @@ void BrowserWindow::OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
     devtools_visible_ = false;
     if (focus_area_ == FocusArea::kDevTools) {
       focus_area_ = FocusArea::kWebView;
-      if (Tab* tab = ActiveTab(); tab && tab->view) {
+      if (Tab *tab = ActiveTab(); tab && tab->view) {
         tab->view->RequestFocus();
       }
     }
@@ -1028,10 +913,8 @@ void BrowserWindow::OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
 }
 
 CefRefPtr<CefBrowserViewDelegate> BrowserWindow::GetDelegateForPopupBrowserView(
-    CefRefPtr<CefBrowserView> browser_view,
-    const CefBrowserSettings& settings,
-    CefRefPtr<CefClient> client,
-    bool is_devtools) {
+    CefRefPtr<CefBrowserView> browser_view, const CefBrowserSettings &settings,
+    CefRefPtr<CefClient> client, bool is_devtools) {
   if (!is_devtools) {
     return this;
   }
@@ -1042,14 +925,14 @@ CefRefPtr<CefBrowserViewDelegate> BrowserWindow::GetDelegateForPopupBrowserView(
   return devtools_browser_view_delegate_;
 }
 
-void BrowserWindow::ShowDevToolsForClient(BrowserClient* client,
-                                          const CefPoint& inspect_element_at) {
+void BrowserWindow::ShowDevToolsForClient(BrowserClient *client,
+                                          const CefPoint &inspect_element_at) {
   if (!client || !client->browser() || !client->browser()->GetHost()) {
     return;
   }
 
   uint64_t opener_tab_id = 0;
-  for (const Tab& tab : tabs_) {
+  for (const Tab &tab : tabs_) {
     if (tab.client.get() == client) {
       opener_tab_id = tab.id;
       break;
@@ -1063,19 +946,20 @@ void BrowserWindow::ShowDevToolsForClient(BrowserClient* client,
 
   CefWindowInfo window_info;
   // Leave CefWindowInfo unparented here so the DevTools popup stays in the CEF
-  // Views hierarchy via OnPopupBrowserViewCreated(). Native child-window hosting
-  // sits above the Views compositor, hides separator panels, and flickers on
-  // focus transitions. Keeping DevTools as a BrowserView sibling of the main
-  // content puts it at the same UI level as the sidebar.
+  // Views hierarchy via OnPopupBrowserViewCreated(). Native child-window
+  // hosting sits above the Views compositor, hides separator panels, and
+  // flickers on focus transitions. Keeping DevTools as a BrowserView sibling of
+  // the main content puts it at the same UI level as the sidebar.
   CefBrowserSettings settings;
   settings.background_color = theme::kAppBg;
   browser->GetHost()->ShowDevTools(window_info, devtools_client_, settings,
                                    inspect_element_at);
 
-  // ShowDevTools focuses an already-open DevTools browser without recreating its
-  // BrowserView. Re-attach the existing docked view to the carousel in that path.
-  if (devtools_browser_view_ &&
-      (devtools_opener_tab_id_ == 0 || devtools_opener_tab_id_ == opener_tab_id)) {
+  // ShowDevTools focuses an already-open DevTools browser without recreating
+  // its BrowserView. Re-attach the existing docked view to the carousel in that
+  // path.
+  if (devtools_browser_view_ && (devtools_opener_tab_id_ == 0 ||
+                                 devtools_opener_tab_id_ == opener_tab_id)) {
     devtools_opener_tab_id_ = opener_tab_id;
     devtools_visible_ = true;
     devtools_browser_view_->SetVisible(true);
@@ -1089,13 +973,13 @@ void BrowserWindow::ShowDevToolsForClient(BrowserClient* client,
   }
 }
 
-void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
-                                        const std::string& url) {
+void BrowserWindow::OnNativeHintOpenTab(BrowserClient *client,
+                                        const std::string &url) {
   if (url.empty()) {
     return;
   }
 
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   if (!native_hints_active_ || !tab || tab->client.get() != client) {
     return;
   }
@@ -1107,12 +991,10 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient* client,
   UpdateModeIndicator();
 }
 
-void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
-                                             int x,
-                                             int y,
-                                             bool is_page_scroller,
+void BrowserWindow::OnNativeHintScrollTarget(BrowserClient *client, int x,
+                                             int y, bool is_page_scroller,
                                              bool is_pdf_viewport) {
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   if (!tab || tab->client.get() != client) {
     return;
   }
@@ -1124,8 +1006,8 @@ void BrowserWindow::OnNativeHintScrollTarget(BrowserClient* client,
   tab->scroll_target_is_pdf_viewport = is_pdf_viewport;
 }
 
-void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient* client) {
-  Tab* tab = ActiveTab();
+void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient *client) {
+  Tab *tab = ActiveTab();
   if (!native_hints_active_ || !tab || tab->client.get() != client ||
       mode_ != Mode::kNormal || focus_area_ != FocusArea::kWebView) {
     return;
@@ -1138,12 +1020,11 @@ void BrowserWindow::OnNativeHintFocusedEditable(BrowserClient* client) {
   UpdateModeIndicator();
 }
 
-void BrowserWindow::OnNativeHintsStopped(BrowserClient* client) {
+void BrowserWindow::OnNativeHintsStopped(BrowserClient *client) {
   StopPageNativeHintsForClient(client);
 }
 
-void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x,
-                                                     int y,
+void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x, int y,
                                                      bool is_page_scroller,
                                                      bool is_pdf_viewport) {
   if (focus_area_ != FocusArea::kDevTools || !devtools_browser_view_) {
@@ -1156,7 +1037,7 @@ void BrowserWindow::OnDevToolsNativeHintScrollTarget(int x,
   devtools_scroll_target_is_page_ = is_page_scroller || is_pdf_viewport;
 }
 
-void BrowserWindow::OnDevToolsNativeHintOpenTab(const std::string& url) {
+void BrowserWindow::OnDevToolsNativeHintOpenTab(const std::string &url) {
   if (!native_hints_active_ || focus_area_ != FocusArea::kDevTools ||
       url.empty()) {
     return;
@@ -1202,11 +1083,15 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   ApplyWindowThemeColors(window_);
   window_->ThemeChanged();
   window_->SetToFillLayout();
-  window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false, true);
-  window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false, true);
+  window_->SetAccelerator(kAcceleratorCommandTab, 0x09, false, false, false,
+                          true);
+  window_->SetAccelerator(kAcceleratorCommandBacktab, 0x09, true, false, false,
+                          true);
   window_->SetAccelerator(kAcceleratorTabNext, 'J', true, false, false, true);
-  window_->SetAccelerator(kAcceleratorTabPrevious, 'K', true, false, false, true);
-  window_->SetAccelerator(kAcceleratorSidebarSpace, 0x20, false, false, false, true);
+  window_->SetAccelerator(kAcceleratorTabPrevious, 'K', true, false, false,
+                          true);
+  window_->SetAccelerator(kAcceleratorSidebarSpace, 0x20, false, false, false,
+                          true);
   window_->SetAccelerator(kAcceleratorHintRightClick, 'L', false, true, false,
                           true);
   window_->SetAccelerator(kAcceleratorHintHover, 'H', false, true, false, true);
@@ -1228,7 +1113,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
                           true);
   window_->SetAccelerator(kAcceleratorCommandShiftEscape, 0x1B, true, false,
                           false, true);
-  ipc_server_ = std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
+  ipc_server_ =
+      std::make_unique<IpcServer>(this, IpcSocketPathForStatePath(state_path_));
   ipc_server_->Start();
   BuildChrome();
   const bool lazy_restore_background_tabs =
@@ -1244,8 +1130,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   bulk_tab_update_ = false;
   RefreshSidebar();
 
-  window_->CenterWindow(a26_shell_ ? CefSize(1080, 2340)
-                                   : CefSize(1200, 800));
+  window_->CenterWindow(a26_shell_ ? CefSize(1080, 2340) : CefSize(1200, 800));
   window_->Show();
   if (a26_shell_) {
     window_->SetFullscreen(true);
@@ -1257,8 +1142,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   ScheduleFpsIndicatorUpdate();
 }
 
-void BrowserWindow::OnThemeColorsChanged(CefRefPtr<CefWindow> window,
-                                         bool) {
+void BrowserWindow::OnThemeColorsChanged(CefRefPtr<CefWindow> window, bool) {
   // Adding the first BrowserView installs its Chrome theme and resets all
   // per-window overrides. Reapply them here so focused textfields never regain
   // Chromium's rounded focus halo after startup or a system theme change.
@@ -1277,17 +1161,18 @@ void BrowserWindow::RegisterDwmSaveArgv() {
     return;
   }
 
-  Display* display = XOpenDisplay(nullptr);
+  Display *display = XOpenDisplay(nullptr);
   if (!display) {
     return;
   }
 
   Atom save_atom = XInternAtom(display, "_DWM_SAVE_ARGV", False);
   Atom utf8_atom = XInternAtom(display, "UTF8_STRING", False);
-  XChangeProperty(display, static_cast<Window>(handle), save_atom, utf8_atom, 8,
-                  PropModeReplace,
-                  reinterpret_cast<const unsigned char*>(dwm_save_argv_.data()),
-                  static_cast<int>(dwm_save_argv_.size()));
+  XChangeProperty(
+      display, static_cast<Window>(handle), save_atom, utf8_atom, 8,
+      PropModeReplace,
+      reinterpret_cast<const unsigned char *>(dwm_save_argv_.data()),
+      static_cast<int>(dwm_save_argv_.size()));
   XFlush(display);
   XCloseDisplay(display);
 #endif
@@ -1301,7 +1186,8 @@ void BrowserWindow::BuildChrome() {
   root_settings.size = sizeof(root_settings);
   root_settings.horizontal = false;
   root_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  CefRefPtr<CefBoxLayout> root_layout = root_panel_->SetToBoxLayout(root_settings);
+  CefRefPtr<CefBoxLayout> root_layout =
+      root_panel_->SetToBoxLayout(root_settings);
   window_->AddChildView(root_panel_);
 
   main_panel_ = CefPanel::CreatePanel(this);
@@ -1311,7 +1197,8 @@ void BrowserWindow::BuildChrome() {
   main_settings.size = sizeof(main_settings);
   main_settings.horizontal = true;
   main_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  CefRefPtr<CefBoxLayout> main_layout = main_panel_->SetToBoxLayout(main_settings);
+  CefRefPtr<CefBoxLayout> main_layout =
+      main_panel_->SetToBoxLayout(main_settings);
   root_panel_->AddChildView(main_panel_);
   root_layout->SetFlexForView(main_panel_, 1);
 
@@ -1333,12 +1220,13 @@ void BrowserWindow::BuildChrome() {
 
   content_panel_ = CefPanel::CreatePanel(nullptr);
   content_panel_->SetID(kContentPanelId);
-  // The sidebar's right-hand separator intentionally lives inside the BrowserView
-  // parent panel, immediately before content_inner_panel_. CEF BrowserViews are
-  // native child surfaces on Linux and can repaint above sibling Views during
-  // tab/page activation; when the active page is white that race made the old
-  // main-panel-level sidebar_border_panel_ appear as #ffffff. Keeping the
-  // separator in the BrowserView parent clips the native page to its right.
+  // The sidebar's right-hand separator intentionally lives inside the
+  // BrowserView parent panel, immediately before content_inner_panel_. CEF
+  // BrowserViews are native child surfaces on Linux and can repaint above
+  // sibling Views during tab/page activation; when the active page is white
+  // that race made the old main-panel-level sidebar_border_panel_ appear as
+  // #ffffff. Keeping the separator in the BrowserView parent clips the native
+  // page to its right.
   content_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings content_settings = {};
   content_settings.size = sizeof(content_settings);
@@ -1419,8 +1307,8 @@ void BrowserWindow::BuildChrome() {
 
   status_output_field_ = CefTextfield::CreateTextfield(this);
   status_output_field_->SetID(kStatusOutputFieldId);
-  StyleTextfield(status_output_field_, theme::kText,
-                 StatusBarBackgroundColor(), "monospace, 12px");
+  StyleTextfield(status_output_field_, theme::kText, StatusBarBackgroundColor(),
+                 "monospace, 12px");
   status_output_field_->SetAccessibleName("vimbrowser status output");
   status_content_panel_->AddChildView(status_output_field_);
 
@@ -1463,36 +1351,20 @@ void BrowserWindow::BuildChrome() {
   command_content_panel_ = CefPanel::CreatePanel(this);
   command_content_panel_->SetID(kCommandContentPanelId);
   command_content_panel_->SetBackgroundColor(theme::kAppBg);
-#if !defined(__APPLE__)
   command_panel_->AddChildView(command_content_panel_);
-#endif
 
   command_field_ = CefTextfield::CreateTextfield(this);
   command_field_->SetID(kCommandFieldId);
   StyleCommandField(command_field_);
   command_field_->SetAccessibleName("vimbrowser command line");
-#if defined(__APPLE__)
-  command_panel_->AddChildView(command_field_);
-#else
   command_content_panel_->AddChildView(command_field_);
-#endif
 
-#if defined(__APPLE__)
-  // Reuse the existing fixed-height status row for command mode. Direct child
-  // views paint reliably at this height on macOS, unlike a nested 15px panel,
-  // and replacing equal-height row contents cannot resize the BrowserView.
-  status_bar_panel_->AddChildView(command_panel_);
-  status_layout->SetFlexForView(command_panel_, 1);
-  command_panel_->SetVisible(false);
-
-#else
-  command_overlay_ = window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM,
-                                            false);
+  command_overlay_ =
+      window_->AddOverlayView(command_panel_, CEF_DOCKING_MODE_CUSTOM, false);
   command_overlay_->SetVisible(false);
   command_separator_overlay_ = window_->AddOverlayView(
       command_separator_panel_, CEF_DOCKING_MODE_CUSTOM, false);
   command_separator_overlay_->SetVisible(false);
-#endif
 
   autocomplete_panel_ = CefPanel::CreatePanel(this);
   autocomplete_panel_->SetID(kCommandAutocompletePanelId);
@@ -1518,7 +1390,8 @@ void BrowserWindow::BuildChrome() {
     mode_indicator_label_ = CefLabelButton::CreateLabelButton(this, "");
     mode_indicator_label_->SetID(kModeIndicatorFieldId);
     mode_indicator_label_->SetFontList("monospace, 12px");
-    mode_indicator_label_->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+    mode_indicator_label_->SetHorizontalAlignment(
+        CEF_HORIZONTAL_ALIGNMENT_CENTER);
     mode_indicator_label_->SetFocusable(false);
     mode_indicator_label_->SetInkDropEnabled(false);
     mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
@@ -1540,7 +1413,8 @@ void BrowserWindow::BuildChrome() {
     fps_indicator_label_ = CefLabelButton::CreateLabelButton(this, "");
     fps_indicator_label_->SetID(kFpsIndicatorFieldId);
     fps_indicator_label_->SetFontList("monospace, 12px");
-    fps_indicator_label_->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
+    fps_indicator_label_->SetHorizontalAlignment(
+        CEF_HORIZONTAL_ALIGNMENT_CENTER);
     fps_indicator_label_->SetFocusable(false);
     fps_indicator_label_->SetInkDropEnabled(false);
     fps_indicator_label_->SetBackgroundColor(theme::kUserBg);
@@ -1577,7 +1451,8 @@ void BrowserWindow::BuildChrome() {
   media_permission_top_border_panel_->SetBackgroundColor(theme::kAccent);
 
   media_permission_bottom_border_panel_ = CefPanel::CreatePanel(this);
-  media_permission_bottom_border_panel_->SetID(kMediaPermissionBorderBottomPanelId);
+  media_permission_bottom_border_panel_->SetID(
+      kMediaPermissionBorderBottomPanelId);
   media_permission_bottom_border_panel_->SetBackgroundColor(theme::kAccent);
 
   media_permission_left_border_panel_ = CefPanel::CreatePanel(this);
@@ -1585,17 +1460,21 @@ void BrowserWindow::BuildChrome() {
   media_permission_left_border_panel_->SetBackgroundColor(theme::kAccent);
 
   media_permission_right_border_panel_ = CefPanel::CreatePanel(this);
-  media_permission_right_border_panel_->SetID(kMediaPermissionBorderRightPanelId);
+  media_permission_right_border_panel_->SetID(
+      kMediaPermissionBorderRightPanelId);
   media_permission_right_border_panel_->SetBackgroundColor(theme::kAccent);
 
   media_permission_content_panel_ = CefPanel::CreatePanel(this);
   media_permission_content_panel_->SetID(kMediaPermissionPromptContentPanelId);
   media_permission_content_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings media_permission_content_settings = {};
-  media_permission_content_settings.size = sizeof(media_permission_content_settings);
+  media_permission_content_settings.size =
+      sizeof(media_permission_content_settings);
   media_permission_content_settings.horizontal = false;
-  media_permission_content_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
-  media_permission_content_settings.inside_border_insets = CefInsets(8, 12, 8, 12);
+  media_permission_content_settings.cross_axis_alignment =
+      CEF_AXIS_ALIGNMENT_STRETCH;
+  media_permission_content_settings.inside_border_insets =
+      CefInsets(8, 12, 8, 12);
   media_permission_content_settings.between_child_spacing = 2;
   media_permission_content_panel_->SetToBoxLayout(
       media_permission_content_settings);
@@ -1636,12 +1515,15 @@ void BrowserWindow::BuildChrome() {
   media_permission_button_panel_->SetID(kMediaPermissionButtonPanelId);
   media_permission_button_panel_->SetBackgroundColor(theme::kAppBg);
   CefBoxLayoutSettings media_permission_button_settings = {};
-  media_permission_button_settings.size = sizeof(media_permission_button_settings);
+  media_permission_button_settings.size =
+      sizeof(media_permission_button_settings);
   media_permission_button_settings.horizontal = true;
   media_permission_button_settings.main_axis_alignment = CEF_AXIS_ALIGNMENT_END;
-  media_permission_button_settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_STRETCH;
+  media_permission_button_settings.cross_axis_alignment =
+      CEF_AXIS_ALIGNMENT_STRETCH;
   media_permission_button_settings.between_child_spacing = 8;
-  media_permission_button_panel_->SetToBoxLayout(media_permission_button_settings);
+  media_permission_button_panel_->SetToBoxLayout(
+      media_permission_button_settings);
   media_permission_content_panel_->AddChildView(media_permission_button_panel_);
 
   media_permission_allow_button_ =
@@ -1843,7 +1725,7 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
 }
 
 void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
-                                          const CefRect& new_bounds) {
+                                          const CefRect &new_bounds) {
   RefreshSidebar();
   Layout();
 }
@@ -1872,7 +1754,7 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
   }
 
   bool all_ready_to_close = true;
-  for (Tab& tab : tabs_) {
+  for (Tab &tab : tabs_) {
     if (tab.client && tab.client->browser()) {
       all_ready_to_close &= tab.client->browser()->GetHost()->TryCloseBrowser();
     }
@@ -1961,7 +1843,8 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     // recursively forwarding the same event.
     return false;
   }
-  if (mode_ != Mode::kNormal && IsCharEvent(event) && PlainKeyChar(event) == ':') {
+  if (mode_ != Mode::kNormal && IsCharEvent(event) &&
+      PlainKeyChar(event) == ':') {
     return true;
   }
   if (mode_ != Mode::kNormal) {
@@ -1971,8 +1854,8 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
     return false;
   }
 
-  if (native_hints_active_ &&
-      (focus_area_ == FocusArea::kWebView || focus_area_ == FocusArea::kDevTools)) {
+  if (native_hints_active_ && (focus_area_ == FocusArea::kWebView ||
+                               focus_area_ == FocusArea::kDevTools)) {
     // Native hints live in Blink and own the full key stream until they stop.
     // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
     // label matcher.
@@ -2027,9 +1910,8 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   if (forwarding_key_to_page_) {
     return false;
   }
-  if (mode_ != Mode::kNormal &&
-      (command_id == kAcceleratorCommandTab ||
-       command_id == kAcceleratorCommandBacktab)) {
+  if (mode_ != Mode::kNormal && (command_id == kAcceleratorCommandTab ||
+                                 command_id == kAcceleratorCommandBacktab)) {
     if (command_vim_.mode == vim::Mode::kInsert) {
       CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1
                                                                         : 1);
@@ -2053,7 +1935,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
     event.type = KEYEVENT_RAWKEYDOWN;
     event.windows_key_code =
         command_id == kAcceleratorCommandEnter ? 0x0D : 0x1B;
-    event.native_key_code = event.windows_key_code;
+    event.native_key_code = NativeKeyCodeForSyntheticKey(
+        event.windows_key_code,
+        command_id == kAcceleratorCommandEnter ? '\r' : 0x1B);
     if (command_id == kAcceleratorCommandShiftEscape) {
       event.modifiers = EVENTFLAG_SHIFT_DOWN;
     }
@@ -2086,12 +1970,11 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
     CefKeyEvent event;
     event.type = KEYEVENT_RAWKEYDOWN;
     event.windows_key_code = 0x09;
-    event.native_key_code = 23;
+    event.native_key_code = NativeKeyCodeForSyntheticKey(0x09, '\t');
     event.character = 0;
     event.unmodified_character = 0;
-    event.modifiers = command_id == kAcceleratorCommandBacktab
-                          ? EVENTFLAG_SHIFT_DOWN
-                          : 0;
+    event.modifiers =
+        command_id == kAcceleratorCommandBacktab ? EVENTFLAG_SHIFT_DOWN : 0;
     ForwardKeyToActivePage(event);
     return true;
   }
@@ -2107,7 +1990,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       event.type = KEYEVENT_RAWKEYDOWN;
       event.windows_key_code =
           command_id == kAcceleratorHintRightClick ? 'L' : 'H';
-      event.native_key_code = event.windows_key_code;
+      event.native_key_code = NativeKeyCodeForSyntheticKey(
+          event.windows_key_code,
+          command_id == kAcceleratorHintRightClick ? 'l' : 'h');
       event.character = 0;
       event.unmodified_character =
           command_id == kAcceleratorHintRightClick ? 'l' : 'h';
@@ -2121,7 +2006,9 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       event.type = KEYEVENT_RAWKEYDOWN;
       event.windows_key_code =
           command_id == kAcceleratorHintRightClick ? 'L' : 'H';
-      event.native_key_code = event.windows_key_code;
+      event.native_key_code = NativeKeyCodeForSyntheticKey(
+          event.windows_key_code,
+          command_id == kAcceleratorHintRightClick ? 'l' : 'h');
       event.character = 0;
       event.unmodified_character =
           command_id == kAcceleratorHintRightClick ? 'l' : 'h';
@@ -2133,7 +2020,7 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       CefKeyEvent event;
       event.type = KEYEVENT_RAWKEYDOWN;
       event.windows_key_code = 0x20;
-      event.native_key_code = 65;
+      event.native_key_code = NativeKeyCodeForSyntheticKey(0x20, ' ');
       event.character = 0x20;
       event.unmodified_character = 0x20;
       ForwardKeyToActivePage(event);
@@ -2177,8 +2064,8 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
     return false;
   }
 
-  if (native_hints_active_ &&
-      (focus_area_ == FocusArea::kWebView || focus_area_ == FocusArea::kDevTools)) {
+  if (native_hints_active_ && (focus_area_ == FocusArea::kWebView ||
+                               focus_area_ == FocusArea::kDevTools)) {
     // Native hints live in Blink and own the full key stream until they stop.
     // Do not let shell/page shortcuts (including YouTube h/j/k/l) race the hint
     // label matcher.
@@ -2223,7 +2110,7 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
   return HandleNormalModeKey(event);
 }
 
-bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent &event) {
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -2232,7 +2119,7 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
 
   if (ctrl && shift && event.windows_key_code == 'I') {
-    if (Tab* tab = ActiveTab(); tab && tab->client) {
+    if (Tab *tab = ActiveTab(); tab && tab->client) {
       tab->client->ShowDevTools();
     }
     return true;
@@ -2242,14 +2129,19 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     return false;
   }
 
-  if (focus_area_ == FocusArea::kTabSidebar &&
-      HasOnlyControlModifier(event)) {
-    if (IsCtrlKey(event, 'E')) return ScrollSidebarByKey('E');
-    if (IsCtrlKey(event, 'Y')) return ScrollSidebarByKey('Y');
-    if (IsCtrlKey(event, 'D')) return ScrollSidebarByKey('D');
-    if (IsCtrlKey(event, 'U')) return ScrollSidebarByKey('U');
-    if (IsCtrlKey(event, 'F')) return ScrollSidebarByKey('F');
-    if (IsCtrlKey(event, 'B')) return ScrollSidebarByKey('B');
+  if (focus_area_ == FocusArea::kTabSidebar && HasOnlyControlModifier(event)) {
+    if (IsCtrlKey(event, 'E'))
+      return ScrollSidebarByKey('E');
+    if (IsCtrlKey(event, 'Y'))
+      return ScrollSidebarByKey('Y');
+    if (IsCtrlKey(event, 'D'))
+      return ScrollSidebarByKey('D');
+    if (IsCtrlKey(event, 'U'))
+      return ScrollSidebarByKey('U');
+    if (IsCtrlKey(event, 'F'))
+      return ScrollSidebarByKey('F');
+    if (IsCtrlKey(event, 'B'))
+      return ScrollSidebarByKey('B');
   }
 
   if (PlainKeyChar(event) == ':') {
@@ -2536,13 +2428,14 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
     return;
   }
   if (InIdRange(id, kContextMenuRowBaseId, 1000)) {
-    ActivateNativeContextMenuRow(static_cast<size_t>(id - kContextMenuRowBaseId));
+    ActivateNativeContextMenuRow(
+        static_cast<size_t>(id - kContextMenuRowBaseId));
     return;
   }
   if (InIdRange(id, kSidebarRowBaseId, 1000)) {
     const size_t row_index = static_cast<size_t>(id - kSidebarRowBaseId);
     if (row_index < sidebar_rows_.size()) {
-      const SidebarRowViews& row = sidebar_rows_[row_index];
+      const SidebarRowViews &row = sidebar_rows_[row_index];
       if (row.kind == SidebarRowKind::kEntry) {
         ActivateSidebarItem(row.item);
       }
@@ -2552,7 +2445,8 @@ void BrowserWindow::OnButtonPressed(CefRefPtr<CefButton> button) {
   }
   if (InIdRange(id, kAutocompleteRowBaseId, 1000)) {
     const int index = id - kAutocompleteRowBaseId;
-    if (index >= 0 && index < static_cast<int>(command_autocomplete_.matches.size())) {
+    if (index >= 0 &&
+        index < static_cast<int>(command_autocomplete_.matches.size())) {
       command_autocomplete_.selection = index;
       FillCommandAutocomplete(command_autocomplete_.matches[index]);
       SetCommandText(command_text_);
@@ -2584,7 +2478,7 @@ void BrowserWindow::OnButtonStateChanged(CefRefPtr<CefButton> button) {
 }
 
 bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
-                               const CefKeyEvent& event) {
+                               const CefKeyEvent &event) {
   if (HandleNativeContextMenuKey(event)) {
     return true;
   }
@@ -2614,12 +2508,8 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
 
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
-#if defined(__APPLE__)
-  const int command_height = kStatusBarHeight;
-#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
-#endif
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -2642,12 +2532,12 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     const int window_width = window_ ? WindowClientBounds(window_).width : 1200;
     const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
     const int available_content_width = std::max(1, window_width - content_x);
-    const int desired_width = std::max(
-        kDevToolsMinWidth,
-        available_content_width * kDevToolsDefaultWidthPercent / 100);
-    const int max_width = std::max(
-        1, available_content_width - kDevToolsBorderWidth -
-               kDevToolsMinPageWidth);
+    const int desired_width =
+        std::max(kDevToolsMinWidth,
+                 available_content_width * kDevToolsDefaultWidthPercent / 100);
+    const int max_width =
+        std::max(1, available_content_width - kDevToolsBorderWidth -
+                        kDevToolsMinPageWidth);
     int devtools_width = std::min(desired_width, max_width);
     if (available_content_width <=
         kDevToolsMinPageWidth + kDevToolsBorderWidth + 1) {
@@ -2659,11 +2549,7 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     return CefSize(800, 800);
   }
   if (id == kCommandPanelId) {
-#if defined(__APPLE__)
-    return CefSize(1200, kStatusBarHeight);
-#else
     return CefSize(1200, command_height);
-#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1200, command_height);
@@ -2700,12 +2586,13 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
     const int content_width = std::max(1, laid_out_content_width_);
     const int status_url_text_width =
         std::max(1, TextColumns(status_url_text) * kCommandCharWidth);
-    const int max_status_output_width = std::max(
-        0, content_width - kStatusModeWidth - status_url_text_width -
-               kCommandCharWidth);
+    const int max_status_output_width =
+        std::max(0, content_width - kStatusModeWidth - status_url_text_width -
+                        kCommandCharWidth);
     return CefSize(std::min(max_status_output_width,
                             std::max(1, TextColumns(status_output_text_) *
-                                            kCommandCharWidth + 8)),
+                                                kCommandCharWidth +
+                                            8)),
                    kStatusBarHeight);
   }
   if (id == kStatusModeFieldId) {
@@ -2768,15 +2655,13 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
                    kMediaPermissionPromptHeight);
   }
   if (id == kMediaPermissionPromptContentPanelId) {
-    return CefSize(kMediaPermissionPromptWidth -
-                       2 * kMediaPermissionPromptBorderWidth,
-                   kMediaPermissionPromptHeight -
-                       2 * kMediaPermissionPromptBorderWidth);
+    return CefSize(
+        kMediaPermissionPromptWidth - 2 * kMediaPermissionPromptBorderWidth,
+        kMediaPermissionPromptHeight - 2 * kMediaPermissionPromptBorderWidth);
   }
   if (id == kMediaPermissionTitleFieldId ||
       id == kMediaPermissionOriginFieldId ||
-      id == kMediaPermissionBodyFieldId ||
-      id == kMediaPermissionHintFieldId) {
+      id == kMediaPermissionBodyFieldId || id == kMediaPermissionHintFieldId) {
     return CefSize(1, 20);
   }
   if (id == kMediaPermissionButtonPanelId) {
@@ -2803,12 +2688,8 @@ CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
-#if defined(__APPLE__)
-  const int command_height = kStatusBarHeight;
-#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
-#endif
   if (id == kSidebarPanelId) {
     return CefSize(kSidebarContentWidth, 1);
   }
@@ -2822,11 +2703,7 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
     return CefSize(kSidebarBorderWidth, 1);
   }
   if (id == kCommandPanelId) {
-#if defined(__APPLE__)
-    return CefSize(1, kStatusBarHeight);
-#else
     return CefSize(1, command_height);
-#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(1, command_height);
@@ -2911,8 +2788,7 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
   }
   if (id == kMediaPermissionTitleFieldId ||
       id == kMediaPermissionOriginFieldId ||
-      id == kMediaPermissionBodyFieldId ||
-      id == kMediaPermissionHintFieldId) {
+      id == kMediaPermissionBodyFieldId || id == kMediaPermissionHintFieldId) {
     return CefSize(1, 20);
   }
   if (id == kMediaPermissionButtonPanelId) {
@@ -2931,18 +2807,10 @@ CefSize BrowserWindow::GetMinimumSize(CefRefPtr<CefView> view) {
 
 CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   const int id = view->GetID();
-#if defined(__APPLE__)
-  const int command_height = kStatusBarHeight;
-#else
   const bool sidebar_search = IsSidebarSearchMode();
   const int command_height = sidebar_search ? kStatusBarHeight : kCommandHeight;
-#endif
   if (id == kCommandPanelId) {
-#if defined(__APPLE__)
-    return CefSize(0, kStatusBarHeight);
-#else
     return CefSize(0, command_height);
-#endif
   }
   if (id == kCommandContentPanelId) {
     return CefSize(0, command_height);
@@ -3017,8 +2885,7 @@ CefSize BrowserWindow::GetMaximumSize(CefRefPtr<CefView> view) {
   }
   if (id == kMediaPermissionTitleFieldId ||
       id == kMediaPermissionOriginFieldId ||
-      id == kMediaPermissionBodyFieldId ||
-      id == kMediaPermissionHintFieldId) {
+      id == kMediaPermissionBodyFieldId || id == kMediaPermissionHintFieldId) {
     return CefSize(0, 20);
   }
   if (id == kMediaPermissionButtonPanelId) {
@@ -3083,20 +2950,20 @@ CefRefPtr<CefBrowser> BrowserWindow::ActiveBrowser() const {
   if (tabs_.empty() || active_index_ >= tabs_.size()) {
     return nullptr;
   }
-  const Tab& tab = tabs_[active_index_];
+  const Tab &tab = tabs_[active_index_];
   if (!tab.client) {
     return nullptr;
   }
   return tab.client->browser();
 }
 
-bool BrowserWindow::PageHasFocusedEditable(const CefKeyEvent& event) {
+bool BrowserWindow::PageHasFocusedEditable(const CefKeyEvent &event) {
   if (event.focus_on_editable_field) {
     // Persist a true per-key focus signal. CEF can invoke us both before and
     // after renderer key handling for the same physical key; keeping the state
     // true prevents the post-renderer callback from running a page shortcut
     // after the input box already received the text event.
-    if (Tab* tab = ActiveTab()) {
+    if (Tab *tab = ActiveTab()) {
       tab->focused_editable_node = true;
     }
     return true;
@@ -3106,7 +2973,7 @@ bool BrowserWindow::PageHasFocusedEditable(const CefKeyEvent& event) {
 }
 
 bool BrowserWindow::AllTabBrowsersClosed() const {
-  for (const Tab& tab : tabs_) {
+  for (const Tab &tab : tabs_) {
     if (tab.client && tab.client->browser()) {
       return false;
     }
@@ -3120,7 +2987,8 @@ void BrowserWindow::ShowNextMediaPermissionRequest() {
   }
 
   while (!queued_media_permissions_.empty()) {
-    MediaPermissionRequest request = std::move(queued_media_permissions_.front());
+    MediaPermissionRequest request =
+        std::move(queued_media_permissions_.front());
     queued_media_permissions_.erase(queued_media_permissions_.begin());
     if (!request.callback) {
       continue;
@@ -3182,8 +3050,9 @@ void BrowserWindow::UpdateMediaPermissionPrompt() {
     return;
   }
 
-  const MediaPermissionRequest& request = *active_media_permission_;
-  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const MediaPermissionRequest &request = *active_media_permission_;
+  const std::string devices =
+      MediaPermissionNameList(request.requested_permissions);
   const std::string origin = DisplayMediaPermissionOrigin(request.origin);
   const std::string short_origin = Ellipsize(origin, 76);
 
@@ -3195,10 +3064,10 @@ void BrowserWindow::UpdateMediaPermissionPrompt() {
     media_permission_origin_field_->SetText("origin: " + short_origin);
   }
   if (media_permission_body_field_) {
-    media_permission_body_field_->SetText(Ellipsize(
-        request.mock ? "mock page wants to use " + devices + "."
-                     : origin + " wants to use " + devices + ".",
-        84));
+    media_permission_body_field_->SetText(
+        Ellipsize(request.mock ? "mock page wants to use " + devices + "."
+                               : origin + " wants to use " + devices + ".",
+                  84));
   }
   if (media_permission_allow_button_) {
     media_permission_allow_button_->SetText("[a] allow");
@@ -3209,7 +3078,7 @@ void BrowserWindow::UpdateMediaPermissionPrompt() {
 }
 
 void BrowserWindow::ResolveActiveMediaPermissionRequest(bool allow,
-                                                       bool remember) {
+                                                        bool remember) {
   if (!active_media_permission_) {
     return;
   }
@@ -3219,8 +3088,10 @@ void BrowserWindow::ResolveActiveMediaPermissionRequest(bool allow,
   UpdateMediaPermissionPrompt();
 
   if (remember && !request.mock) {
-    auto& decisions = allow ? media_permission_grants_ : media_permission_denials_;
-    auto& opposite = allow ? media_permission_denials_ : media_permission_grants_;
+    auto &decisions =
+        allow ? media_permission_grants_ : media_permission_denials_;
+    auto &opposite =
+        allow ? media_permission_denials_ : media_permission_grants_;
     decisions[request.origin] |= request.requested_permissions;
     if (auto it = opposite.find(request.origin); it != opposite.end()) {
       it->second &= ~request.requested_permissions;
@@ -3231,7 +3102,8 @@ void BrowserWindow::ResolveActiveMediaPermissionRequest(bool allow,
     SaveState();
   }
 
-  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const std::string devices =
+      MediaPermissionNameList(request.requested_permissions);
   const std::string origin = DisplayMediaPermissionOrigin(request.origin);
   SetStatusOutput(std::string(request.mock ? "test permission modal: "
                                            : "media permission: ") +
@@ -3254,7 +3126,8 @@ void BrowserWindow::DismissActiveMediaPermissionRequest() {
   active_media_permission_.reset();
   UpdateMediaPermissionPrompt();
 
-  const std::string devices = MediaPermissionNameList(request.requested_permissions);
+  const std::string devices =
+      MediaPermissionNameList(request.requested_permissions);
   const std::string origin = DisplayMediaPermissionOrigin(request.origin);
   SetStatusOutput(std::string(request.mock ? "test permission modal: dismissed "
                                            : "media permission: dismissed ") +
@@ -3267,7 +3140,8 @@ void BrowserWindow::DismissActiveMediaPermissionRequest() {
   ShowNextMediaPermissionRequest();
 }
 
-void BrowserWindow::CancelMediaPermissionRequestsForClient(BrowserClient* client) {
+void BrowserWindow::CancelMediaPermissionRequestsForClient(
+    BrowserClient *client) {
   if (!client) {
     return;
   }
@@ -3280,7 +3154,7 @@ void BrowserWindow::CancelMediaPermissionRequestsForClient(BrowserClient* client
 
   std::vector<MediaPermissionRequest> kept;
   kept.reserve(queued_media_permissions_.size());
-  for (MediaPermissionRequest& request : queued_media_permissions_) {
+  for (MediaPermissionRequest &request : queued_media_permissions_) {
     if (request.client == client) {
       callbacks.push_back(request.callback);
     } else {
@@ -3308,7 +3182,7 @@ void BrowserWindow::CancelAllMediaPermissionRequests() {
     callbacks.push_back(active_media_permission_->callback);
     active_media_permission_.reset();
   }
-  for (MediaPermissionRequest& request : queued_media_permissions_) {
+  for (MediaPermissionRequest &request : queued_media_permissions_) {
     callbacks.push_back(request.callback);
   }
   queued_media_permissions_.clear();
@@ -3320,7 +3194,7 @@ void BrowserWindow::CancelAllMediaPermissionRequests() {
   }
 }
 
-bool BrowserWindow::HandleMediaPermissionPromptKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleMediaPermissionPromptKey(const CefKeyEvent &event) {
   if (!active_media_permission_) {
     return false;
   }
@@ -3339,16 +3213,16 @@ bool BrowserWindow::HandleMediaPermissionPromptKey(const CefKeyEvent& event) {
 
   const char key = LowerAsciiChar(PlainKeyChar(event));
   switch (key) {
-    case 'a':
-    case 'y':
-      ResolveActiveMediaPermissionRequest(true, true);
-      return true;
-    case 'd':
-    case 'n':
-      ResolveActiveMediaPermissionRequest(false, true);
-      return true;
-    default:
-      return true;
+  case 'a':
+  case 'y':
+    ResolveActiveMediaPermissionRequest(true, true);
+    return true;
+  case 'd':
+  case 'n':
+    ResolveActiveMediaPermissionRequest(false, true);
+    return true;
+  default:
+    return true;
   }
 }
 
@@ -3369,7 +3243,8 @@ std::string BrowserWindow::ActiveTabUrl() const {
 std::string BrowserWindow::ActiveTabTitle() const {
   CefRefPtr<CefBrowser> browser = ActiveBrowser();
   if (browser && browser->GetHost()) {
-    CefRefPtr<CefNavigationEntry> entry = browser->GetHost()->GetVisibleNavigationEntry();
+    CefRefPtr<CefNavigationEntry> entry =
+        browser->GetHost()->GetVisibleNavigationEntry();
     if (entry) {
       const std::string title = entry->GetTitle().ToString();
       if (!title.empty()) {
@@ -3400,59 +3275,34 @@ void BrowserWindow::Layout() {
   const int width = std::max(1, bounds.width);
   const int height = std::max(1, bounds.height);
   const bool sidebar_search = IsSidebarSearchMode();
-#if defined(__APPLE__)
-  const int command_surface_height = kStatusBarHeight;
-  const int command_total_height = kStatusBarHeight;
-#else
   const int command_surface_height =
       sidebar_search ? kStatusBarHeight : kCommandHeight;
   const int command_total_height =
       command_surface_height + (sidebar_search ? 0 : 1);
-#endif
   const int autocomplete_height = CommandAutocompleteHeight();
-  const int autocomplete_width = std::min(width, std::max(1, CommandAutocompleteWidth()));
+  const int autocomplete_width =
+      std::min(width, std::max(1, CommandAutocompleteWidth()));
   const int a26_chrome_height = a26_shell_ ? kA26ChromeHeight : 0;
   const int sidebar_content_width = sidebar_visible_ ? kSidebarContentWidth : 0;
   const int sidebar_border_width = sidebar_visible_ ? kSidebarBorderWidth : 0;
   const int content_x = sidebar_visible_ ? kSidebarWidth : 0;
   const bool command_active = mode_ != Mode::kNormal;
-#if defined(__APPLE__)
-  const bool status_visible = show_statusline_ || command_active;
-  const int main_height =
-      std::max(1, height - (status_visible ? kStatusBarHeight : 0) -
-                      a26_chrome_height);
-  const int command_surface_width = width;
-#else
   const bool status_visible = show_statusline_;
   const int main_height =
       std::max(1, height - (status_visible ? kStatusBarHeight : 0) -
                       a26_chrome_height);
   const int command_surface_width =
       sidebar_search ? std::max(1, sidebar_content_width) : width;
-#endif
-#if defined(__APPLE__)
-  const int command_surface_bottom =
-      height - a26_chrome_height +
-      std::max(0, window_->GetBounds().height - height);
-#else
   const int command_surface_bottom = height - a26_chrome_height;
-#endif
   const bool autocomplete_visible = command_active && !sidebar_search &&
                                     command_autocomplete_.active &&
                                     !command_autocomplete_.matches.empty();
-#if defined(__APPLE__)
-  command_panel_->SetVisible(command_active);
-  status_sidebar_spacer_panel_->SetVisible(!command_active && sidebar_visible_);
-  status_border_panel_->SetVisible(!command_active && sidebar_visible_);
-  status_content_panel_->SetVisible(!command_active);
-#else
   if (command_overlay_) {
     command_overlay_->SetVisible(command_active);
   }
   if (command_separator_overlay_) {
     command_separator_overlay_->SetVisible(command_active && !sidebar_search);
   }
-#endif
   if (autocomplete_overlay_) {
     autocomplete_overlay_->SetVisible(autocomplete_visible);
   }
@@ -3519,12 +3369,12 @@ void BrowserWindow::Layout() {
   const int devtools_border_width = devtools_docked ? kDevToolsBorderWidth : 0;
   int devtools_width = 0;
   if (devtools_docked) {
-    const int desired_width = std::max(
-        kDevToolsMinWidth,
-        available_content_width * kDevToolsDefaultWidthPercent / 100);
-    const int max_width = std::max(
-        1, available_content_width - devtools_border_width -
-               kDevToolsMinPageWidth);
+    const int desired_width =
+        std::max(kDevToolsMinWidth,
+                 available_content_width * kDevToolsDefaultWidthPercent / 100);
+    const int max_width =
+        std::max(1, available_content_width - devtools_border_width -
+                        kDevToolsMinPageWidth);
     devtools_width = std::min(desired_width, max_width);
     if (available_content_width <=
         kDevToolsMinPageWidth + devtools_border_width + 1) {
@@ -3533,8 +3383,9 @@ void BrowserWindow::Layout() {
   }
   const int content_inner_width = std::max(
       1, available_content_width - devtools_border_width - devtools_width);
-  const bool content_size_changed = content_inner_width != laid_out_content_width_ ||
-                                    main_height != laid_out_content_height_;
+  const bool content_size_changed =
+      content_inner_width != laid_out_content_width_ ||
+      main_height != laid_out_content_height_;
   content_panel_->SetSize(
       CefSize(sidebar_border_width + content_inner_width, main_height));
   content_panel_->SetBackgroundColor(theme::kAppBg);
@@ -3544,8 +3395,8 @@ void BrowserWindow::Layout() {
     devtools_panel_->SetVisible(devtools_docked);
     devtools_panel_->SetSize(CefSize(
         devtools_border_width + std::max(1, devtools_width), main_height));
-    devtools_panel_->SetBackgroundColor(
-        focus_area_ == FocusArea::kDevTools ? theme::kAccent
+    devtools_panel_->SetBackgroundColor(focus_area_ == FocusArea::kDevTools
+                                            ? theme::kAccent
                                             : theme::kBorderUnfocused);
   }
   if (devtools_content_panel_) {
@@ -3564,7 +3415,8 @@ void BrowserWindow::Layout() {
     status_bar_panel_->SetBackgroundColor(command_active ? theme::kAppBg
                                                          : theme::kSidebarBg);
     status_bar_panel_->SetSize(CefSize(width, kStatusBarHeight));
-    status_bar_panel_->SetBounds(CefRect(0, main_height, width, kStatusBarHeight));
+    status_bar_panel_->SetBounds(
+        CefRect(0, main_height, width, kStatusBarHeight));
   }
   if (a26_chrome_panel_) {
     const int chrome_y = height - a26_chrome_height;
@@ -3588,31 +3440,18 @@ void BrowserWindow::Layout() {
     a26_bottom_reserve_panel_->SetBounds(
         CefRect(0, kA26NavigationHeight, width, kA26BottomReserveHeight));
   }
-#if defined(__APPLE__)
-  command_panel_->SetSize(
-      CefSize(command_surface_width, command_total_height));
-  command_panel_->SetBounds(
-      CefRect(0, 0, command_surface_width, command_total_height));
-#else
   command_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
-#endif
   command_separator_panel_->SetSize(CefSize(command_surface_width, 1));
   command_content_panel_->SetSize(
       CefSize(command_surface_width, command_surface_height));
-#if defined(__APPLE__)
-  command_panel_->SetBackgroundColor(theme::kAppBg);
-#else
   command_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                     : theme::kAppBg);
-#endif
   command_content_panel_->SetBackgroundColor(sidebar_search ? theme::kSidebarBg
                                                             : theme::kAppBg);
   command_separator_panel_->SetBounds(CefRect(0, 0, command_surface_width, 1));
-#if !defined(__APPLE__)
   command_content_panel_->SetBounds(
       CefRect(0, 0, command_surface_width, command_surface_height));
-#endif
   if (command_overlay_) {
     command_overlay_->SetBounds(
         CefRect(0, std::max(0, command_surface_bottom - command_surface_height),
@@ -3624,10 +3463,12 @@ void BrowserWindow::Layout() {
                 command_surface_width, 1));
   }
   if (autocomplete_panel_ && autocomplete_overlay_) {
-    autocomplete_panel_->SetSize(CefSize(autocomplete_width, std::max(1, autocomplete_height)));
+    autocomplete_panel_->SetSize(
+        CefSize(autocomplete_width, std::max(1, autocomplete_height)));
     autocomplete_overlay_->SetBounds(
-        CefRect(0, std::max(0, command_surface_bottom - command_total_height -
-                                  autocomplete_height),
+        CefRect(0,
+                std::max(0, command_surface_bottom - command_total_height -
+                                autocomplete_height),
                 autocomplete_width, std::max(1, autocomplete_height)));
   }
   if (sidebar_border_overlay_ && sidebar_border_overlay_panel_) {
@@ -3645,19 +3486,22 @@ void BrowserWindow::Layout() {
     sidebar_border_overlay_panel_->SetBackgroundColor(SidebarBorderColor());
     sidebar_border_overlay_panel_->SetSize(
         CefSize(kSidebarBorderWidth, std::max(1, overlay_height)));
-    sidebar_border_overlay_->SetBounds(CefRect(
-        kSidebarContentWidth, 0, kSidebarBorderWidth,
-        std::max(1, overlay_height)));
+    sidebar_border_overlay_->SetBounds(CefRect(kSidebarContentWidth, 0,
+                                               kSidebarBorderWidth,
+                                               std::max(1, overlay_height)));
   }
-  if (mode_indicator_overlay_ && mode_indicator_panel_ && mode_indicator_label_) {
+  if (mode_indicator_overlay_ && mode_indicator_panel_ &&
+      mode_indicator_label_) {
     mode_indicator_overlay_->SetVisible(show_mode_indicator_);
     mode_indicator_overlay_->SetBounds(
         CefRect(std::max(0, width - kModeIndicatorWidth), 0,
                 kModeIndicatorWidth, kModeIndicatorHeight));
-    mode_indicator_panel_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
-    mode_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
-    mode_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
-                                             kModeIndicatorHeight));
+    mode_indicator_panel_->SetSize(
+        CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    mode_indicator_label_->SetSize(
+        CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    mode_indicator_label_->SetBounds(
+        CefRect(0, 0, kModeIndicatorWidth, kModeIndicatorHeight));
     UpdateModeIndicator();
   }
   if (fps_indicator_overlay_ && fps_indicator_panel_ && fps_indicator_label_) {
@@ -3665,10 +3509,12 @@ void BrowserWindow::Layout() {
     fps_indicator_overlay_->SetBounds(
         CefRect(std::max(0, width - kModeIndicatorWidth), kModeIndicatorHeight,
                 kModeIndicatorWidth, kModeIndicatorHeight));
-    fps_indicator_panel_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
-    fps_indicator_label_->SetSize(CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
-    fps_indicator_label_->SetBounds(CefRect(0, 0, kModeIndicatorWidth,
-                                            kModeIndicatorHeight));
+    fps_indicator_panel_->SetSize(
+        CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    fps_indicator_label_->SetSize(
+        CefSize(kModeIndicatorWidth, kModeIndicatorHeight));
+    fps_indicator_label_->SetBounds(
+        CefRect(0, 0, kModeIndicatorWidth, kModeIndicatorHeight));
   }
 
   if (media_permission_overlay_ && media_permission_panel_ &&
@@ -3704,8 +3550,8 @@ void BrowserWindow::Layout() {
     if (prompt_visible) {
       const int prompt_width = std::max(
           1, std::min(kMediaPermissionPromptWidth, std::max(1, width - 32)));
-      const int prompt_height = std::min(kMediaPermissionPromptHeight,
-                                         std::max(1, height - 32));
+      const int prompt_height =
+          std::min(kMediaPermissionPromptHeight, std::max(1, height - 32));
       const int prompt_x = std::max(0, (width - prompt_width) / 2);
       const int prompt_bottom_margin =
           8 + (show_statusline_ ? kStatusBarHeight : 0) + a26_chrome_height;
@@ -3718,28 +3564,29 @@ void BrowserWindow::Layout() {
 
       media_permission_panel_->SetBackgroundColor(theme::kAppBg);
       media_permission_panel_->SetSize(CefSize(content_width, content_height));
-      media_permission_overlay_->SetBounds(CefRect(
-          prompt_x + kMediaPermissionPromptBorderWidth,
-          prompt_y + kMediaPermissionPromptBorderWidth,
-          content_width, content_height));
+      media_permission_overlay_->SetBounds(
+          CefRect(prompt_x + kMediaPermissionPromptBorderWidth,
+                  prompt_y + kMediaPermissionPromptBorderWidth, content_width,
+                  content_height));
       if (media_permission_top_border_panel_ &&
           media_permission_top_border_overlay_) {
         media_permission_top_border_panel_->SetBackgroundColor(theme::kAccent);
         media_permission_top_border_panel_->SetSize(
             CefSize(prompt_width, kMediaPermissionPromptBorderWidth));
-        media_permission_top_border_overlay_->SetBounds(CefRect(
-            prompt_x, prompt_y, prompt_width,
-            kMediaPermissionPromptBorderWidth));
+        media_permission_top_border_overlay_->SetBounds(
+            CefRect(prompt_x, prompt_y, prompt_width,
+                    kMediaPermissionPromptBorderWidth));
       }
       if (media_permission_bottom_border_panel_ &&
           media_permission_bottom_border_overlay_) {
-        media_permission_bottom_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_bottom_border_panel_->SetBackgroundColor(
+            theme::kAccent);
         media_permission_bottom_border_panel_->SetSize(
             CefSize(prompt_width, kMediaPermissionPromptBorderWidth));
         media_permission_bottom_border_overlay_->SetBounds(CefRect(
             prompt_x,
-            prompt_y + std::max(0, prompt_height -
-                                       kMediaPermissionPromptBorderWidth),
+            prompt_y +
+                std::max(0, prompt_height - kMediaPermissionPromptBorderWidth),
             prompt_width, kMediaPermissionPromptBorderWidth));
       }
       if (media_permission_left_border_panel_ &&
@@ -3747,18 +3594,19 @@ void BrowserWindow::Layout() {
         media_permission_left_border_panel_->SetBackgroundColor(theme::kAccent);
         media_permission_left_border_panel_->SetSize(
             CefSize(kMediaPermissionPromptBorderWidth, prompt_height));
-        media_permission_left_border_overlay_->SetBounds(CefRect(
-            prompt_x, prompt_y, kMediaPermissionPromptBorderWidth,
-            prompt_height));
+        media_permission_left_border_overlay_->SetBounds(
+            CefRect(prompt_x, prompt_y, kMediaPermissionPromptBorderWidth,
+                    prompt_height));
       }
       if (media_permission_right_border_panel_ &&
           media_permission_right_border_overlay_) {
-        media_permission_right_border_panel_->SetBackgroundColor(theme::kAccent);
+        media_permission_right_border_panel_->SetBackgroundColor(
+            theme::kAccent);
         media_permission_right_border_panel_->SetSize(
             CefSize(kMediaPermissionPromptBorderWidth, prompt_height));
         media_permission_right_border_overlay_->SetBounds(CefRect(
-            prompt_x + std::max(0, prompt_width -
-                                       kMediaPermissionPromptBorderWidth),
+            prompt_x +
+                std::max(0, prompt_width - kMediaPermissionPromptBorderWidth),
             prompt_y, kMediaPermissionPromptBorderWidth, prompt_height));
       }
       media_permission_content_panel_->SetBackgroundColor(theme::kAppBg);
@@ -3782,24 +3630,6 @@ void BrowserWindow::Layout() {
   if (root_panel_->GetLayout()) {
     root_panel_->Layout();
   }
-#if defined(__APPLE__)
-  // Overlay coordinates on macOS do not share the managed root's origin.
-  // Anchor autocomplete to the structural command/status row in screen space
-  // after the root layout has settled, instead of estimating the title-bar
-  // offset. This keeps the last completion row flush with the cmdline.
-  if (autocomplete_overlay_ && status_bar_panel_ && autocomplete_visible) {
-    const CefRect status_screen = status_bar_panel_->GetBoundsInScreen();
-    const CefRect window_screen = window_->GetBounds();
-    if (status_screen.height > 0 && window_screen.height > 0) {
-      // CefWindow custom overlays use the outer window's origin, including
-      // the title bar, rather than the client-area origin.
-      const int command_top = status_screen.y - window_screen.y;
-      autocomplete_overlay_->SetBounds(CefRect(
-          0, std::max(0, command_top - autocomplete_height),
-          autocomplete_width, std::max(1, autocomplete_height)));
-    }
-  }
-#endif
   if (command_panel_->GetLayout()) {
     command_panel_->Layout();
   }
@@ -3819,7 +3649,8 @@ void BrowserWindow::Layout() {
       std::max(1, content_panel_->GetBounds().width - sidebar_border_width);
   const int actual_devtools_content_width =
       devtools_panel_ && devtools_docked
-          ? std::max(1, devtools_panel_->GetBounds().width - kDevToolsBorderWidth)
+          ? std::max(1,
+                     devtools_panel_->GetBounds().width - kDevToolsBorderWidth)
           : std::max(1, devtools_width);
   content_panel_->SetBackgroundColor(theme::kAppBg);
   if (sidebar_border_panel_) {
@@ -3831,46 +3662,34 @@ void BrowserWindow::Layout() {
   content_inner_panel_->SetBounds(
       CefRect(sidebar_border_width, 0, actual_content_width, main_height));
   if (devtools_panel_) {
-    devtools_panel_->SetBackgroundColor(
-        focus_area_ == FocusArea::kDevTools ? theme::kAccent
+    devtools_panel_->SetBackgroundColor(focus_area_ == FocusArea::kDevTools
+                                            ? theme::kAccent
                                             : theme::kBorderUnfocused);
   }
   if (devtools_panel_ && devtools_panel_->GetLayout()) {
     devtools_panel_->Layout();
   }
   if (devtools_content_panel_) {
-    devtools_content_panel_->SetBounds(
-        CefRect(kDevToolsBorderWidth, 0, actual_devtools_content_width,
-                main_height));
+    devtools_content_panel_->SetBounds(CefRect(
+        kDevToolsBorderWidth, 0, actual_devtools_content_width, main_height));
   }
   if (devtools_browser_view_ && devtools_docked) {
     devtools_browser_view_->SetBounds(
         CefRect(0, 0, actual_devtools_content_width, main_height));
   }
   if (command_field_) {
-#if defined(__APPLE__)
-    command_field_->SetFontList("Menlo, 13px");
-#else
     // Match the sidebar/status cmdline font exactly while / or ? is active;
     // regular full-width commands retain their established 13px editing font.
     command_field_->SetFontList(sidebar_search ? "monospace, 12px"
                                                : "monospace, 13px");
-#endif
-#if defined(__APPLE__)
-    command_field_->SetBounds(CefRect(
-        kCommandTextInsetX, 0,
-        std::max(1, command_surface_width - kCommandTextInsetX),
-        command_surface_height));
-#else
-    command_field_->SetBounds(CefRect(
-        kCommandTextInsetX - kCommandFieldBleed, -kCommandFieldBleed,
-        std::max(1, command_surface_width - kCommandTextInsetX +
-                        2 * kCommandFieldBleed),
-        command_surface_height + 2 * kCommandFieldBleed));
-#endif
+    command_field_->SetBounds(
+        CefRect(kCommandTextInsetX - kCommandFieldBleed, -kCommandFieldBleed,
+                std::max(1, command_surface_width - kCommandTextInsetX +
+                                2 * kCommandFieldBleed),
+                command_surface_height + 2 * kCommandFieldBleed));
   }
-  const int autocomplete_row_width = std::max(1, autocomplete_width -
-                                                kCommandAutocompleteBorder * 2);
+  const int autocomplete_row_width =
+      std::max(1, autocomplete_width - kCommandAutocompleteBorder * 2);
   for (size_t i = 0; i < autocomplete_rows_.size(); ++i) {
     autocomplete_rows_[i]->SetBounds(
         CefRect(kCommandAutocompleteBorder,
@@ -3894,7 +3713,8 @@ void BrowserWindow::Layout() {
     a26_navigation_panel_->Layout();
   }
   if (status_sidebar_spacer_panel_) {
-    status_sidebar_spacer_panel_->SetVisible(!command_active && sidebar_visible_);
+    status_sidebar_spacer_panel_->SetVisible(!command_active &&
+                                             sidebar_visible_);
     status_sidebar_spacer_panel_->SetBounds(
         CefRect(0, 0, sidebar_content_width, kStatusBarHeight));
     status_sidebar_spacer_panel_->SetBackgroundColor(theme::kSidebarBg);
@@ -3907,9 +3727,8 @@ void BrowserWindow::Layout() {
   }
   if (status_border_panel_) {
     status_border_panel_->SetVisible(!command_active && sidebar_visible_);
-    status_border_panel_->SetBounds(
-        CefRect(sidebar_content_width, 0, sidebar_border_width,
-                kStatusBarHeight));
+    status_border_panel_->SetBounds(CefRect(
+        sidebar_content_width, 0, sidebar_border_width, kStatusBarHeight));
     status_border_panel_->SetBackgroundColor(SidebarBorderColor());
   }
   if (status_output_field_) {
@@ -3918,21 +3737,11 @@ void BrowserWindow::Layout() {
   if (status_content_panel_ && status_content_panel_->GetLayout()) {
     status_content_panel_->Layout();
   }
-#if defined(__APPLE__)
-  // CefBoxLayout recursively lays out the newly visible command renderer when
-  // it replaces the normal status contents. Reassert its bounds afterwards.
-  if (command_field_) {
-    command_field_->SetBounds(CefRect(
-        kCommandTextInsetX, 0,
-        std::max(1, command_surface_width - kCommandTextInsetX),
-        command_surface_height));
-  }
-#endif
   UpdateStatusBar();
   laid_out_content_width_ = actual_content_width;
   laid_out_content_height_ = main_height;
   if (content_size_changed) {
-    for (const Tab& tab : tabs_) {
+    for (const Tab &tab : tabs_) {
       if (tab.client && tab.client->browser() &&
           tab.client->browser()->GetHost()) {
         tab.client->browser()->GetHost()->NotifyScreenInfoChanged();
@@ -3980,12 +3789,12 @@ bool BrowserWindow::RefreshSidebar() {
   const std::vector<SidebarItemRef> visual_items = SelectedSidebarItems();
   const bool visual_active =
       sidebar_visual_anchor_.type != SidebarItemType::kNone;
-  auto is_visual = [&](const SidebarItemRef& item) {
+  auto is_visual = [&](const SidebarItemRef &item) {
     return visual_active && std::find(visual_items.begin(), visual_items.end(),
                                       item) != visual_items.end();
   };
   auto style_display_row = [&](CefRefPtr<CefTextfield> row,
-                               const SidebarDisplayRow& display,
+                               const SidebarDisplayRow &display,
                                cef_color_t background) {
     cef_color_t text_color = theme::kText;
     CefString font = "monospace, 12px";
@@ -4015,8 +3824,8 @@ bool BrowserWindow::RefreshSidebar() {
 
   if (sidebar_spacer_ && sidebar_rows_.size() == rendered_rows.size()) {
     for (size_t row_index = 0; row_index < rendered_rows.size(); ++row_index) {
-      const SidebarDisplayRow& display = rendered_rows[row_index];
-      SidebarRowViews& views = sidebar_rows_[row_index];
+      const SidebarDisplayRow &display = rendered_rows[row_index];
+      SidebarRowViews &views = sidebar_rows_[row_index];
       views.kind = display.kind;
       views.item = display.item;
       views.tab_index = display.tab_index;
@@ -4040,7 +3849,7 @@ bool BrowserWindow::RefreshSidebar() {
     return false;
   }
 
-  for (auto& row : sidebar_rows_) {
+  for (auto &row : sidebar_rows_) {
     if (row.row) {
       sidebar_content_panel_->RemoveChildView(row.row);
     }
@@ -4057,7 +3866,7 @@ bool BrowserWindow::RefreshSidebar() {
   }
 
   for (size_t row_index = 0; row_index < rendered_rows.size(); ++row_index) {
-    const SidebarDisplayRow& display = rendered_rows[row_index];
+    const SidebarDisplayRow &display = rendered_rows[row_index];
     const cef_color_t row_bg = display.selected || is_visual(display.item)
                                    ? theme::kSidebarSelBg
                                    : theme::kSidebarBg;
@@ -4113,7 +3922,7 @@ void BrowserWindow::RefreshSidebarRow(size_t index) {
 void BrowserWindow::RefreshAudibleTabs() {
   bool changed = false;
   size_t clients_seen = 0;
-  for (Tab& tab : tabs_) {
+  for (Tab &tab : tabs_) {
     if (!tab.client) {
       continue;
     }
@@ -4154,12 +3963,13 @@ void BrowserWindow::SetFocusArea(FocusArea area) {
   if (area == FocusArea::kTabSidebar && !sidebar_visible_) {
     sidebar_visible_ = true;
   }
-  if (area == FocusArea::kDevTools && !FocusAreaAvailable(FocusArea::kDevTools)) {
+  if (area == FocusArea::kDevTools &&
+      !FocusAreaAvailable(FocusArea::kDevTools)) {
     area = FocusArea::kWebView;
   }
   focus_area_ = area;
   if (focus_area_ == FocusArea::kWebView) {
-    if (Tab* tab = ActiveTab(); tab && tab->view) {
+    if (Tab *tab = ActiveTab(); tab && tab->view) {
       tab->view->RequestFocus();
     }
   } else if (focus_area_ == FocusArea::kDevTools && devtools_browser_view_) {
@@ -4247,7 +4057,7 @@ void BrowserWindow::CloseDevTools() {
   }
   if (focus_area_ == FocusArea::kDevTools) {
     focus_area_ = FocusArea::kWebView;
-    if (Tab* tab = ActiveTab(); tab && tab->view) {
+    if (Tab *tab = ActiveTab(); tab && tab->view) {
       tab->view->RequestFocus();
     }
   }
@@ -4256,7 +4066,7 @@ void BrowserWindow::CloseDevTools() {
 }
 
 void BrowserWindow::ToggleDevTools() {
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   if (!tab || !tab->client || !tab->client->browser()) {
     return;
   }
@@ -4272,7 +4082,7 @@ void BrowserWindow::ToggleDevTools() {
   ShowDevToolsForClient(tab->client.get());
 }
 
-bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent &event) {
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -4281,7 +4091,7 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
   const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
 
   if (ctrl && shift && event.windows_key_code == 'I') {
-    if (Tab* tab = ActiveTab(); tab && tab->client) {
+    if (Tab *tab = ActiveTab(); tab && tab->client) {
       tab->client->ShowDevTools();
     }
     return true;
@@ -4305,7 +4115,7 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent& event) {
   return false;
 }
 
-bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent &event) {
   if (focus_area_ != FocusArea::kWebView) {
     return false;
   }
@@ -4444,13 +4254,15 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       return true;
     }
 
-    if (website_mode_ == vim::Mode::kNormal || website_mode_ == vim::Mode::kVisual) {
+    if (website_mode_ == vim::Mode::kNormal ||
+        website_mode_ == vim::Mode::kVisual) {
       if (website_mode_ == vim::Mode::kNormal && PlainKeyChar(event) == ':') {
         BeginCommandText(":");
         return true;
       }
 
-      if (website_mode_ == vim::Mode::kNormal && HandleWebsiteCommandKey(event)) {
+      if (website_mode_ == vim::Mode::kNormal &&
+          HandleWebsiteCommandKey(event)) {
         return true;
       }
 
@@ -4483,9 +4295,9 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return true;
       }
 
-      // Regular Vim normal/visual modes are skeleton states for future operators,
-      // text objects, and selections. For now they intentionally swallow plain
-      // printable keys and perform no page action.
+      // Regular Vim normal/visual modes are skeleton states for future
+      // operators, text objects, and selections. For now they intentionally
+      // swallow plain printable keys and perform no page action.
       if (IsPlainPrintableKey(event)) {
         return true;
       }
@@ -4535,9 +4347,9 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
   return false;
 }
 
-std::optional<bool> BrowserWindow::HandlePageShortcut(
-    const CefKeyEvent& event,
-    bool allow_forward_to_page) {
+std::optional<bool>
+BrowserWindow::HandlePageShortcut(const CefKeyEvent &event,
+                                  bool allow_forward_to_page) {
   if (focus_area_ != FocusArea::kWebView || native_hints_active_) {
     // Hint mode consumes hint-label characters in Blink. Page shortcuts must be
     // completely disabled here so site-specific bindings never steal labels.
@@ -4582,42 +4394,40 @@ std::optional<bool> BrowserWindow::HandlePageShortcut(
   }
   const VimbrowserShortcut shortcut = vimbrowser_shortcut_for_key(
       url.c_str(), static_cast<unsigned char>(key), IsRawKeyDown(event),
-      IsCharEvent(event), plain_without_shift,
-      focus_on_editable_field ? 1 : 0, shortcut_mode);
+      IsCharEvent(event), plain_without_shift, focus_on_editable_field ? 1 : 0,
+      shortcut_mode);
 
   switch (shortcut.action) {
-    case VIMBROWSER_SHORTCUT_NONE:
+  case VIMBROWSER_SHORTCUT_NONE:
+    return std::nullopt;
+  case VIMBROWSER_SHORTCUT_FORWARD_TO_PAGE:
+    if (!allow_forward_to_page) {
       return std::nullopt;
-    case VIMBROWSER_SHORTCUT_FORWARD_TO_PAGE:
-      if (!allow_forward_to_page) {
-        return std::nullopt;
-      }
-      ResetWebsitePendingKeys();
-      return false;
-    case VIMBROWSER_SHORTCUT_CONSUME:
-      ResetWebsitePendingKeys();
-      return true;
-    case VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT: {
-      ResetWebsitePendingKeys();
-      CefRefPtr<CefBrowser> browser = ActiveBrowser();
-      if (browser && browser->GetMainFrame() && shortcut.script &&
-          shortcut.script[0]) {
-        browser->GetMainFrame()->ExecuteJavaScript(
-            shortcut.script, browser->GetMainFrame()->GetURL(), 0);
-      }
-      return true;
     }
+    ResetWebsitePendingKeys();
+    return false;
+  case VIMBROWSER_SHORTCUT_CONSUME:
+    ResetWebsitePendingKeys();
+    return true;
+  case VIMBROWSER_SHORTCUT_EVALUATE_SCRIPT: {
+    ResetWebsitePendingKeys();
+    CefRefPtr<CefBrowser> browser = ActiveBrowser();
+    if (browser && browser->GetMainFrame() && shortcut.script &&
+        shortcut.script[0]) {
+      browser->GetMainFrame()->ExecuteJavaScript(
+          shortcut.script, browser->GetMainFrame()->GetURL(), 0);
+    }
+    return true;
+  }
   }
 
   return std::nullopt;
 }
 
-void BrowserWindow::ResetWebsitePendingKeys() {
-  website_pending_keys_.clear();
-}
+void BrowserWindow::ResetWebsitePendingKeys() { website_pending_keys_.clear(); }
 
-bool BrowserWindow::StopPageNativeHintsForClient(BrowserClient* client) {
-  Tab* tab = ActiveTab();
+bool BrowserWindow::StopPageNativeHintsForClient(BrowserClient *client) {
+  Tab *tab = ActiveTab();
   if (!native_hints_active_ || !tab || tab->client.get() != client ||
       focus_area_ != FocusArea::kWebView) {
     return false;
@@ -4632,23 +4442,23 @@ bool BrowserWindow::StopPageNativeHintsForClient(BrowserClient* client) {
   return true;
 }
 
-bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
+bool BrowserWindow::StartNativeHints(const CefKeyEvent &event) {
   if (!IsRawKeyDown(event)) {
     return false;
   }
 
   const bool click_hints = IsPlainLetterKey(event, 'f');
-  const bool right_click_hints = HasOnlyControlModifier(event) &&
-                                 IsCtrlKey(event, 'L');
-  const bool hover_hints = HasOnlyControlModifier(event) &&
-                           IsCtrlKey(event, 'H');
-  const bool scrollable_hints = HasOnlyControlModifier(event) && IsSpaceKey(event);
-  if (!click_hints && !right_click_hints && !hover_hints &&
-      !scrollable_hints) {
+  const bool right_click_hints =
+      HasOnlyControlModifier(event) && IsCtrlKey(event, 'L');
+  const bool hover_hints =
+      HasOnlyControlModifier(event) && IsCtrlKey(event, 'H');
+  const bool scrollable_hints =
+      HasOnlyControlModifier(event) && IsSpaceKey(event);
+  if (!click_hints && !right_click_hints && !hover_hints && !scrollable_hints) {
     return false;
   }
 
-  Tab* tab = ActiveTab();
+  Tab *tab = ActiveTab();
   if (!tab || !tab->client || !tab->client->browser()) {
     return false;
   }
@@ -4658,8 +4468,8 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   UpdateModeIndicator();
   CefKeyEvent browser_event = event;
   if (click_hints) {
-    // Normalize toolkit-specific lower/upper keycodes to the Windows virtual-key
-    // code that Blink's native hint dispatcher expects.
+    // Normalize toolkit-specific lower/upper keycodes to the Windows
+    // virtual-key code that Blink's native hint dispatcher expects.
     browser_event.windows_key_code = 'F';
   }
   if (right_click_hints) {
@@ -4671,43 +4481,25 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent& event) {
   }
   if (hover_hints) {
     // Blink's native hint dispatcher recognizes Ctrl+H as the hover hint entry
-    // command. Preserve the semantic key explicitly for the renderer round-trip.
+    // command. Preserve the semantic key explicitly for the renderer
+    // round-trip.
     browser_event.windows_key_code = 'H';
     browser_event.unmodified_character = 'h';
   }
   if (scrollable_hints) {
     // Some toolkits deliver Ctrl+Space to the browser chrome as a control
-    // character with no virtual key. Blink's native hint dispatcher keys off the
-    // Windows virtual-key field after CEF translates this back into a web event,
-    // so preserve the semantic key explicitly for the renderer round-trip.
+    // character with no virtual key. Blink's native hint dispatcher keys off
+    // the Windows virtual-key field after CEF translates this back into a web
+    // event, so preserve the semantic key explicitly for the renderer
+    // round-trip.
     browser_event.windows_key_code = 0x20;
     browser_event.unmodified_character = 0x20;
   }
-#if defined(__APPLE__)
-  std::string_view hint_mode = "click";
-  if (click_hints && (event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
-    hint_mode = "new-tab";
-  } else if (right_click_hints) {
-    hint_mode = "context";
-  } else if (hover_hints) {
-    hint_mode = "hover";
-  } else if (scrollable_hints) {
-    hint_mode = "scroll";
-  }
-  CefRefPtr<CefFrame> frame = tab->client->browser()->GetMainFrame();
-  if (!frame || !frame->IsValid()) {
-    native_hints_active_ = false;
-    UpdateModeIndicator();
-    return true;
-  }
-  frame->ExecuteJavaScript(mac::BuildHintScript(hint_mode), frame->GetURL(), 0);
-#else
   tab->client->SendBrowserCommandKeyEvent(browser_event);
-#endif
   return true;
 }
 
-bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
+bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent &event) {
   if (!IsRawKeyDown(event) || !devtools_browser_view_ ||
       !devtools_browser_view_->GetBrowser()) {
     return false;
@@ -4719,9 +4511,9 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
   const bool hover_hints = ctrl_only && IsCtrlKey(event, 'H');
   const bool scrollable_hints =
       ctrl_only && (IsSpaceKey(event) || event.windows_key_code == 0 ||
-                    event.native_key_code == 65);
-  if (!click_hints && !right_click_hints && !hover_hints &&
-      !scrollable_hints) {
+                    event.native_key_code ==
+                        NativeKeyCodeForSyntheticKey(0x20, ' '));
+  if (!click_hints && !right_click_hints && !hover_hints && !scrollable_hints) {
     return false;
   }
 
@@ -4734,8 +4526,8 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
 
   CefKeyEvent browser_event = event;
   if (click_hints) {
-    // Normalize toolkit-specific lower/upper keycodes to the Windows virtual-key
-    // code that Blink's native hint dispatcher expects.
+    // Normalize toolkit-specific lower/upper keycodes to the Windows
+    // virtual-key code that Blink's native hint dispatcher expects.
     browser_event.windows_key_code = 'F';
   }
   if (right_click_hints) {
@@ -4747,40 +4539,20 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent& event) {
     browser_event.unmodified_character = 'h';
   }
   if (scrollable_hints) {
-    // Keep this exactly parallel to Ctrl+Space scrollable hints for normal pages:
-    // toolkit/X11 paths can report Ctrl+Space as a control character, while
-    // Blink's native hint dispatcher keys off VK_SPACE after CEF translates this
-    // synthetic browser-command event back into a WebKeyboardEvent.
+    // Keep this exactly parallel to Ctrl+Space scrollable hints for normal
+    // pages: toolkit/X11 paths can report Ctrl+Space as a control character,
+    // while Blink's native hint dispatcher keys off VK_SPACE after CEF
+    // translates this synthetic browser-command event back into a
+    // WebKeyboardEvent.
     browser_event.windows_key_code = 0x20;
     browser_event.unmodified_character = 0x20;
   }
-#if defined(__APPLE__)
-  CefRefPtr<CefFrame> frame =
-      devtools_browser_view_->GetBrowser()->GetMainFrame();
-  if (!frame || !frame->IsValid()) {
-    native_hints_active_ = false;
-    UpdateModeIndicator();
-    return true;
-  }
-  std::string_view hint_mode = "click";
-  if (click_hints && (event.modifiers & EVENTFLAG_SHIFT_DOWN)) {
-    hint_mode = "new-tab";
-  } else if (right_click_hints) {
-    hint_mode = "context";
-  } else if (hover_hints) {
-    hint_mode = "hover";
-  } else if (scrollable_hints) {
-    hint_mode = "scroll";
-  }
-  frame->ExecuteJavaScript(mac::BuildHintScript(hint_mode), frame->GetURL(), 0);
-#else
-  vimbrowser_send_browser_command_key_event(
-      devtools_browser_view_->GetBrowser()->GetIdentifier(), &browser_event);
-#endif
+  CefBrowserHost::VimbrowserSendBrowserCommandKeyEvent(
+      devtools_browser_view_->GetBrowser()->GetIdentifier(), browser_event);
   return true;
 }
 
-bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent &event) {
   if (native_hints_active_) {
     // DevTools native hints are implemented in Blink just like page hints. Once
     // active, Blink owns hint-label characters and Escape until it reports that
@@ -4841,12 +4613,30 @@ bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
   const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
   const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
   if (ctrl && !shift) {
-    if (IsCtrlKey(event, 'E')) { ScrollDevToolsBy(kSmallScrollPx); return true; }
-    if (IsCtrlKey(event, 'Y')) { ScrollDevToolsBy(-kSmallScrollPx); return true; }
-    if (IsCtrlKey(event, 'D')) { ScrollDevToolsBy(560); return true; }
-    if (IsCtrlKey(event, 'U')) { ScrollDevToolsBy(-560); return true; }
-    if (IsCtrlKey(event, 'F')) { ScrollDevToolsBy(1120); return true; }
-    if (IsCtrlKey(event, 'B')) { ScrollDevToolsBy(-1120); return true; }
+    if (IsCtrlKey(event, 'E')) {
+      ScrollDevToolsBy(kSmallScrollPx);
+      return true;
+    }
+    if (IsCtrlKey(event, 'Y')) {
+      ScrollDevToolsBy(-kSmallScrollPx);
+      return true;
+    }
+    if (IsCtrlKey(event, 'D')) {
+      ScrollDevToolsBy(560);
+      return true;
+    }
+    if (IsCtrlKey(event, 'U')) {
+      ScrollDevToolsBy(-560);
+      return true;
+    }
+    if (IsCtrlKey(event, 'F')) {
+      ScrollDevToolsBy(1120);
+      return true;
+    }
+    if (IsCtrlKey(event, 'B')) {
+      ScrollDevToolsBy(-1120);
+      return true;
+    }
   }
 
   if (IsPlainLetterKey(event, 'j')) {
@@ -4882,7 +4672,7 @@ bool BrowserWindow::HandleDevToolsModeKey(const CefKeyEvent& event) {
   return true;
 }
 
-bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent &event) {
   if (!IsRawKeyDown(event)) {
     return false;
   }
@@ -4898,12 +4688,30 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   if (ctrl && !shift) {
-    if (IsCtrlKey(event, 'E')) { ScrollActivePageBy(kSmallScrollPx); return true; }
-    if (IsCtrlKey(event, 'Y')) { ScrollActivePageBy(-kSmallScrollPx); return true; }
-    if (IsCtrlKey(event, 'D')) { ScrollActivePageBy(560); return true; }
-    if (IsCtrlKey(event, 'U')) { ScrollActivePageBy(-560); return true; }
-    if (IsCtrlKey(event, 'F')) { ScrollActivePageBy(1120); return true; }
-    if (IsCtrlKey(event, 'B')) { ScrollActivePageBy(-1120); return true; }
+    if (IsCtrlKey(event, 'E')) {
+      ScrollActivePageBy(kSmallScrollPx);
+      return true;
+    }
+    if (IsCtrlKey(event, 'Y')) {
+      ScrollActivePageBy(-kSmallScrollPx);
+      return true;
+    }
+    if (IsCtrlKey(event, 'D')) {
+      ScrollActivePageBy(560);
+      return true;
+    }
+    if (IsCtrlKey(event, 'U')) {
+      ScrollActivePageBy(-560);
+      return true;
+    }
+    if (IsCtrlKey(event, 'F')) {
+      ScrollActivePageBy(1120);
+      return true;
+    }
+    if (IsCtrlKey(event, 'B')) {
+      ScrollActivePageBy(-1120);
+      return true;
+    }
   }
 
   if (ctrl && shift && IsCtrlKey(event, 'Y')) {
@@ -4927,16 +4735,31 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
       }
       return true;
     }
-    if (key == '0') { ActivateFirstTab(); return true; }
-    if (key == '$') { ActivateLastTab(); return true; }
+    if (key == '0') {
+      ActivateFirstTab();
+      return true;
+    }
+    if (key == '$') {
+      ActivateLastTab();
+      return true;
+    }
     return true;
   }
 
   if (website_pending_keys_ == "y") {
     ResetWebsitePendingKeys();
-    if (key == 'y') { YankActiveUrl(); return true; }
-    if (key == 't') { YankActiveTitle(); return true; }
-    if (key == 'm') { YankActiveMarkdown(); return true; }
+    if (key == 'y') {
+      YankActiveUrl();
+      return true;
+    }
+    if (key == 't') {
+      YankActiveTitle();
+      return true;
+    }
+    if (key == 'm') {
+      YankActiveMarkdown();
+      return true;
+    }
     return true;
   }
 
@@ -4964,49 +4787,87 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent& event) {
   }
 
   switch (key) {
-    case 'j': ScrollActivePageBy(kLineScrollPx); return true;
-    case 'k': ScrollActivePageBy(-kLineScrollPx); return true;
-    case 'G':
-      if (focus_area_ == FocusArea::kTabSidebar) {
-        ActivateLastTab();
-      } else {
-        ScrollActivePageToBottom();
-      }
-      return true;
-    case 'H':
-      if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoBack()) browser->GoBack();
-      return true;
-    case 'L':
-      if (CefRefPtr<CefBrowser> browser = ActiveBrowser(); browser && browser->CanGoForward()) browser->GoForward();
-      return true;
-    case 'r':
-      if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->Reload();
-      return true;
-    case 'R':
-      if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) browser->ReloadIgnoreCache();
-      return true;
-    case 'p': OpenClipboard(false); return true;
-    case 'P': OpenClipboard(true); return true;
-    case 'J':
-      SetFocusArea(FocusArea::kTabSidebar);
-      MoveSidebarSelection(1);
-      return true;
-    case 'K':
-      SetFocusArea(FocusArea::kTabSidebar);
-      MoveSidebarSelection(-1);
-      return true;
-    case 'd': CloseActiveTab(CloseFocus::kNextTab); return true;
-    case 'D': CloseActiveTab(CloseFocus::kPreviousTab); return true;
-    case 'u': UndoCloseTab(); return true;
-    case 'e': MoveActiveTab(-1); return true;
-    case 'E': MoveActiveTab(1); return true;
-    case 'c': CloneActiveTab(); return true;
-    case 't': BeginCommandText(":tab-focus "); return true;
-    case '=': ZoomActivePage(CEF_ZOOM_COMMAND_IN); return true;
-    case '-': ZoomActivePage(CEF_ZOOM_COMMAND_OUT); return true;
-    case ')': ZoomActivePage(CEF_ZOOM_COMMAND_RESET); return true;
-    case 'g': website_pending_keys_ = "g"; return true;
-    case 'y': website_pending_keys_ = "y"; return true;
+  case 'j':
+    ScrollActivePageBy(kLineScrollPx);
+    return true;
+  case 'k':
+    ScrollActivePageBy(-kLineScrollPx);
+    return true;
+  case 'G':
+    if (focus_area_ == FocusArea::kTabSidebar) {
+      ActivateLastTab();
+    } else {
+      ScrollActivePageToBottom();
+    }
+    return true;
+  case 'H':
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+        browser && browser->CanGoBack())
+      browser->GoBack();
+    return true;
+  case 'L':
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser();
+        browser && browser->CanGoForward())
+      browser->GoForward();
+    return true;
+  case 'r':
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser())
+      browser->Reload();
+    return true;
+  case 'R':
+    if (CefRefPtr<CefBrowser> browser = ActiveBrowser())
+      browser->ReloadIgnoreCache();
+    return true;
+  case 'p':
+    OpenClipboard(false);
+    return true;
+  case 'P':
+    OpenClipboard(true);
+    return true;
+  case 'J':
+    SetFocusArea(FocusArea::kTabSidebar);
+    MoveSidebarSelection(1);
+    return true;
+  case 'K':
+    SetFocusArea(FocusArea::kTabSidebar);
+    MoveSidebarSelection(-1);
+    return true;
+  case 'd':
+    CloseActiveTab(CloseFocus::kNextTab);
+    return true;
+  case 'D':
+    CloseActiveTab(CloseFocus::kPreviousTab);
+    return true;
+  case 'u':
+    UndoCloseTab();
+    return true;
+  case 'e':
+    MoveActiveTab(-1);
+    return true;
+  case 'E':
+    MoveActiveTab(1);
+    return true;
+  case 'c':
+    CloneActiveTab();
+    return true;
+  case 't':
+    BeginCommandText(":tab-focus ");
+    return true;
+  case '=':
+    ZoomActivePage(CEF_ZOOM_COMMAND_IN);
+    return true;
+  case '-':
+    ZoomActivePage(CEF_ZOOM_COMMAND_OUT);
+    return true;
+  case ')':
+    ZoomActivePage(CEF_ZOOM_COMMAND_RESET);
+    return true;
+  case 'g':
+    website_pending_keys_ = "g";
+    return true;
+  case 'y':
+    website_pending_keys_ = "y";
+    return true;
   }
 
   ResetWebsitePendingKeys();
@@ -5100,9 +4961,12 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
     view->SetBackgroundColor(theme::kUserBg);
   } else if (id == kModeIndicatorFieldId && mode_indicator_label_) {
     mode_indicator_label_->SetEnabledTextColors(ModeIndicatorColor());
-    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, ModeIndicatorColor());
-    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, ModeIndicatorColor());
-    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL,
+                                        ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED,
+                                        ModeIndicatorColor());
+    mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED,
+                                        ModeIndicatorColor());
     mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
     mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
     UpdateModeIndicator();
@@ -5131,16 +4995,16 @@ void BrowserWindow::RestyleView(CefRefPtr<CefView> view) {
                    theme::kAppBg, "monospace, 13px");
   } else if (id == kMediaPermissionOriginFieldId &&
              media_permission_origin_field_) {
-    StyleTextfield(media_permission_origin_field_, theme::kMuted,
-                   theme::kAppBg, "monospace, 12px");
+    StyleTextfield(media_permission_origin_field_, theme::kMuted, theme::kAppBg,
+                   "monospace, 12px");
   } else if (id == kMediaPermissionBodyFieldId &&
              media_permission_body_field_) {
-    StyleTextfield(media_permission_body_field_, theme::kText,
-                   theme::kAppBg, "monospace, 12px");
+    StyleTextfield(media_permission_body_field_, theme::kText, theme::kAppBg,
+                   "monospace, 12px");
   } else if (id == kMediaPermissionHintFieldId &&
              media_permission_hint_field_) {
-    StyleTextfield(media_permission_hint_field_, theme::kMuted,
-                   theme::kAppBg, "monospace, 12px");
+    StyleTextfield(media_permission_hint_field_, theme::kMuted, theme::kAppBg,
+                   "monospace, 12px");
   } else if (id == kMediaPermissionButtonPanelId) {
     view->SetBackgroundColor(theme::kAppBg);
   } else if (id == kMediaPermissionAllowButtonId &&
@@ -5167,7 +5031,8 @@ void BrowserWindow::StartSidebarMouseWatcher() {
     return;
   }
   UpdateSidebarMouseBounds();
-  sidebar_mouse_thread_ = std::thread(&BrowserWindow::RunSidebarMouseWatcher, this);
+  sidebar_mouse_thread_ =
+      std::thread(&BrowserWindow::RunSidebarMouseWatcher, this);
 #endif
 }
 
@@ -5190,7 +5055,7 @@ void BrowserWindow::StopSidebarMouseWatcher() {
 
 void BrowserWindow::RunSidebarMouseWatcher() {
 #if defined(__linux__)
-  Display* display = XOpenDisplay(nullptr);
+  Display *display = XOpenDisplay(nullptr);
   if (!display) {
     sidebar_mouse_watcher_running_.store(false);
     return;
@@ -5223,7 +5088,7 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     while (current != 0 && current != root) {
       Window query_root = 0;
       Window parent = 0;
-      Window* children = nullptr;
+      Window *children = nullptr;
       unsigned int child_count = 0;
       if (!XQueryTree(display, current, &query_root, &parent, &children,
                       &child_count)) {
@@ -5304,7 +5169,8 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     }
 
     hit.inside_sidebar = true;
-    hit.row_index = static_cast<size_t>((root_y - sidebar_y) / kSidebarRowHeight);
+    hit.row_index =
+        static_cast<size_t>((root_y - sidebar_y) / kSidebarRowHeight);
     const int row_count = sidebar_mouse_row_count_.load();
     hit.over_clickable_row =
         row_count > 0 && hit.row_index < static_cast<size_t>(row_count);
@@ -5771,13 +5637,14 @@ void BrowserWindow::RunSidebarMouseWatcher() {
           if (hits.context_menu.menu_visible) {
             CefRefPtr<BrowserWindow> self = this;
             if (hits.context_menu.over_row) {
-              CefPostTask(TID_UI,
-                          base::BindOnce(&BrowserWindow::ActivateNativeContextMenuRow,
-                                         self, hits.context_menu.row_index));
+              CefPostTask(
+                  TID_UI,
+                  base::BindOnce(&BrowserWindow::ActivateNativeContextMenuRow,
+                                 self, hits.context_menu.row_index));
             } else if (!hits.context_menu.inside_menu) {
               CefPostTask(TID_UI,
-                          base::BindOnce(&BrowserWindow::CancelNativeContextMenu,
-                                         self));
+                          base::BindOnce(
+                              &BrowserWindow::CancelNativeContextMenu, self));
             }
           } else if (hits.a26.control_index >= 0) {
             // Phone navigation activates on release after gesture
@@ -5797,9 +5664,9 @@ void BrowserWindow::RunSidebarMouseWatcher() {
             a26_press_moved = false;
           } else if (hits.sidebar.inside_sidebar) {
             CefRefPtr<BrowserWindow> self = this;
-            CefPostTask(TID_UI,
-                        base::BindOnce(&BrowserWindow::HandleSidebarMouseRowClick,
-                                       self, hits.sidebar.row_index));
+            CefPostTask(TID_UI, base::BindOnce(
+                                    &BrowserWindow::HandleSidebarMouseRowClick,
+                                    self, hits.sidebar.row_index));
           }
         }
       } else if (xevent.xcookie.evtype == XI_RawButtonRelease ||
@@ -5863,8 +5730,8 @@ void BrowserWindow::UpdateSidebarMouseBounds() {
   }
 
   const CefRect bounds = window_->GetClientAreaBoundsInScreen();
-  const int main_height = std::max(
-      0, bounds.height - (show_statusline_ ? kStatusBarHeight : 0));
+  const int main_height =
+      std::max(0, bounds.height - (show_statusline_ ? kStatusBarHeight : 0));
   sidebar_mouse_screen_x_.store(bounds.x);
   sidebar_mouse_screen_y_.store(bounds.y);
   sidebar_mouse_width_.store(kSidebarContentWidth);
@@ -5873,7 +5740,8 @@ void BrowserWindow::UpdateSidebarMouseBounds() {
 #if defined(__linux__)
   // Only the X11 sidebar mouse watcher consumes this window id; on other
   // platforms the native handle is a pointer and the watcher never runs.
-  sidebar_mouse_window_.store(static_cast<unsigned long>(window_->GetWindowHandle()));
+  sidebar_mouse_window_.store(
+      static_cast<unsigned long>(window_->GetWindowHandle()));
 #else
   sidebar_mouse_window_.store(0);
 #endif
@@ -5890,8 +5758,12 @@ void BrowserWindow::UpdateA26MouseBounds() {
   const CefRect bounds = window_->GetBounds();
   a26_layout_width_.store(std::max(1, bounds.width));
   a26_layout_height_.store(std::max(1, bounds.height));
+#if defined(__linux__)
   a26_mouse_window_.store(
       static_cast<unsigned long>(window_->GetWindowHandle()));
+#else
+  a26_mouse_window_.store(0);
+#endif
 }
 
 void BrowserWindow::HandleA26MouseControl(size_t control_index) {
@@ -5949,7 +5821,7 @@ void BrowserWindow::HandleSidebarMouseRowClick(size_t row_index) {
   }
 
   if (row_index < sidebar_rows_.size()) {
-    const SidebarRowViews& row = sidebar_rows_[row_index];
+    const SidebarRowViews &row = sidebar_rows_[row_index];
     if (row.kind == SidebarRowKind::kEntry) {
       ActivateSidebarItem(row.item);
     }
@@ -5972,9 +5844,12 @@ void BrowserWindow::UpdateModeIndicator() {
   const std::string text = ModeIndicatorText();
   mode_indicator_label_->SetText(text);
   mode_indicator_label_->SetEnabledTextColors(ModeIndicatorColor());
-  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, ModeIndicatorColor());
-  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED, ModeIndicatorColor());
-  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED, ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL,
+                                      ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_HOVERED,
+                                      ModeIndicatorColor());
+  mode_indicator_label_->SetTextColor(CEF_BUTTON_STATE_PRESSED,
+                                      ModeIndicatorColor());
   mode_indicator_label_->SetBackgroundColor(theme::kUserBg);
   mode_indicator_label_->SetState(CEF_BUTTON_STATE_NORMAL);
 }
@@ -6003,9 +5878,8 @@ void BrowserWindow::UpdateStatusBar() {
     sidebar_border_overlay_panel_->SetBackgroundColor(SidebarBorderColor());
   }
   if (status_output_field_) {
-    status_output_field_->SetText(status_output_text_.empty()
-                                      ? ""
-                                      : " " + status_output_text_);
+    status_output_field_->SetText(
+        status_output_text_.empty() ? "" : " " + status_output_text_);
     status_output_field_->SetTextColor(theme::kText);
     status_output_field_->SetBackgroundColor(background);
     status_output_field_->SelectRange(CefRange(0, 0));
@@ -6221,10 +6095,11 @@ void BrowserWindow::SetStatusOutput(std::string message, int timeout_ms) {
     return;
   }
   CefRefPtr<BrowserWindow> self = this;
-  CefPostDelayedTask(TID_UI,
-                     base::BindOnce(&BrowserWindow::ClearStatusOutputForGeneration,
-                                    self, generation),
-                     timeout_ms);
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ClearStatusOutputForGeneration, self,
+                     generation),
+      timeout_ms);
 }
 
 void BrowserWindow::ClearStatusOutputForGeneration(uint64_t generation) {
@@ -6256,13 +6131,13 @@ void BrowserWindow::UpdateFpsIndicator() {
 
   bool has_sample = false;
   double fps = 0.0;
-  if (Tab* tab = ActiveTab(); tab && tab->client) {
+  if (Tab *tab = ActiveTab(); tab && tab->client) {
     has_sample = tab->client->fps_has_sample();
     fps = tab->client->current_fps();
   }
-  const std::string text = has_sample
-                               ? "fps " + std::to_string(static_cast<int>(std::round(fps)))
-                               : "fps --";
+  const std::string text =
+      has_sample ? "fps " + std::to_string(static_cast<int>(std::round(fps)))
+                 : "fps --";
   fps_indicator_label_->SetText(text);
   fps_indicator_label_->SetEnabledTextColors(theme::kText);
   fps_indicator_label_->SetTextColor(CEF_BUTTON_STATE_NORMAL, theme::kText);
@@ -6278,10 +6153,9 @@ void BrowserWindow::ScheduleFpsIndicatorUpdate() {
   }
   fps_update_scheduled_ = true;
   CefRefPtr<BrowserWindow> self = this;
-  CefPostDelayedTask(TID_UI,
-                     base::BindOnce(&BrowserWindow::OnFpsIndicatorUpdateTimer,
-                                    self),
-                     500);
+  CefPostDelayedTask(
+      TID_UI, base::BindOnce(&BrowserWindow::OnFpsIndicatorUpdateTimer, self),
+      500);
 }
 
 void BrowserWindow::OnFpsIndicatorUpdateTimer() {
@@ -6318,30 +6192,23 @@ void BrowserWindow::SetShaderEnabled(bool enabled) {
 }
 
 void BrowserWindow::BroadcastShaderState() {
-  for (Tab& tab : tabs_) {
+  for (Tab &tab : tabs_) {
     if (!tab.client || !tab.client->browser()) {
       continue;
     }
     CefRefPtr<CefBrowser> browser = tab.client->browser();
-#if defined(__APPLE__)
-    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
-    params->SetBool("enabled", shader_enabled_);
-    browser->GetHost()->ExecuteDevToolsMethod(
-        0, "Emulation.setAutoDarkModeOverride", params);
-#else
     std::vector<CefString> frame_ids;
     browser->GetFrameIdentifiers(frame_ids);
     if (frame_ids.empty() && browser->GetMainFrame()) {
       frame_ids.push_back(browser->GetMainFrame()->GetIdentifier());
     }
-    for (const CefString& frame_id : frame_ids) {
+    for (const CefString &frame_id : frame_ids) {
       CefRefPtr<CefFrame> frame = browser->GetFrameByIdentifier(frame_id);
       if (!frame) {
         continue;
       }
       frame->ExecuteJavaScript(kShaderRefreshScript, frame->GetURL(), 0);
     }
-#endif
   }
 }
 
@@ -6365,13 +6232,13 @@ void BrowserWindow::SaveState() const {
   state.sidebar_folder_id = current_sidebar_folder_id_;
   state.next_sidebar_folder_id = next_folder_id_;
   state.sidebar_folders.reserve(sidebar_folders_.size());
-  for (const SidebarFolder& folder : sidebar_folders_) {
+  for (const SidebarFolder &folder : sidebar_folders_) {
     state.sidebar_folders.push_back({folder.id, folder.parent_id,
                                      folder.sort_order, folder.name,
                                      folder.pinned});
   }
   for (size_t i = 0; i < tabs_.size(); ++i) {
-    const Tab& tab = tabs_[i];
+    const Tab &tab = tabs_[i];
     if (tab.context.empty() && !tab.url.empty()) {
       if (i <= active_index_) {
         state.active_index = state.tabs.size();
@@ -6406,14 +6273,14 @@ std::string BrowserWindow::ModeIndicatorText() const {
   }
 
   switch (website_mode_) {
-    case vim::Mode::kWebsiteNormal:
-      return "WEBSITE";
-    case vim::Mode::kNormal:
-      return "NORMAL";
-    case vim::Mode::kInsert:
-      return "INSERT";
-    case vim::Mode::kVisual:
-      return "VISUAL";
+  case vim::Mode::kWebsiteNormal:
+    return "WEBSITE";
+  case vim::Mode::kNormal:
+    return "NORMAL";
+  case vim::Mode::kInsert:
+    return "INSERT";
+  case vim::Mode::kVisual:
+    return "VISUAL";
   }
   return "WEBSITE";
 }
@@ -6437,14 +6304,14 @@ cef_color_t BrowserWindow::ModeIndicatorColor() const {
   }
 
   switch (website_mode_) {
-    case vim::Mode::kWebsiteNormal:
-      return theme::kVimNormal;
-    case vim::Mode::kNormal:
-      return theme::kVimNormal;
-    case vim::Mode::kInsert:
-      return theme::kVimInsert;
-    case vim::Mode::kVisual:
-      return theme::kVimVisual;
+  case vim::Mode::kWebsiteNormal:
+    return theme::kVimNormal;
+  case vim::Mode::kNormal:
+    return theme::kVimNormal;
+  case vim::Mode::kInsert:
+    return theme::kVimInsert;
+  case vim::Mode::kVisual:
+    return theme::kVimVisual;
   }
   return theme::kVimNormal;
 }
@@ -6470,11 +6337,11 @@ cef_color_t BrowserWindow::StatusBarBackgroundColor() const {
   return theme::kSidebarBg;
 }
 
-Tab* BrowserWindow::ActiveTab() {
+Tab *BrowserWindow::ActiveTab() {
   if (tabs_.empty() || active_index_ >= tabs_.size()) {
     return nullptr;
   }
   return &tabs_[active_index_];
 }
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

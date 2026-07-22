@@ -4,9 +4,6 @@ if(APPLE)
   enable_language(OBJCXX)
 endif()
 
-option(VIMBROWSER_USE_PRIVATE_CEF_API
-  "Link against the custom vimbrowser CEF backend API" ON)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -15,19 +12,21 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-set(CEF_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef" CACHE PATH "CEF binary/source distribution root")
+set(CEF_ROOT "" CACHE PATH "Source-built vimbrowser CEF distribution root")
+if(NOT CEF_ROOT)
+  message(FATAL_ERROR
+    "CEF_ROOT must point to a distribution built from backend/chromium")
+endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
 
 find_package(CEF REQUIRED)
 
-if(NOT OS_MAC)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(MUSESCORE_NATIVE REQUIRED IMPORTED_TARGET
-    libcurl
-    cairo
-    librsvg-2.0
-  )
-endif()
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MUSESCORE_NATIVE REQUIRED IMPORTED_TARGET
+  libcurl
+  cairo
+  librsvg-2.0
+)
 
 if(OS_MAC)
   # std::to_chars for floating point (browser_window_internal.cc) needs the
@@ -75,23 +74,10 @@ set(VIMBROWSER_COMMON_SRCS
   src/vim.h
 )
 
-if(NOT VIMBROWSER_USE_PRIVATE_CEF_API AND NOT OS_MAC)
-  list(APPEND VIMBROWSER_COMMON_SRCS src/cef_private_api_compat.cc)
-endif()
-
-if(OS_MAC)
-  # Stock CEF mac distributions lack the vimbrowser_* exports provided by the
-  # patched Linux libcef; link degrading stubs instead.
-  list(APPEND VIMBROWSER_COMMON_SRCS
-    src/mac/musescore_downloader_stubs.cc
-    src/mac/vimbrowser_api_stubs.cc
-  )
-else()
-  list(APPEND VIMBROWSER_COMMON_SRCS
-    src/musescore_downloader.cc
-    src/musescore_downloader.h
-  )
-endif()
+list(APPEND VIMBROWSER_COMMON_SRCS
+  src/musescore_downloader.cc
+  src/musescore_downloader.h
+)
 
 set(VIMBROWSER_SRCS ${VIMBROWSER_COMMON_SRCS} src/main.cc)
 if(OS_MAC)
@@ -101,15 +87,6 @@ endif()
 macro(VIMBROWSER_TARGET_COMMON target)
   SET_EXECUTABLE_TARGET_PROPERTIES(${target})
   add_dependencies(${target} libcef_dll_wrapper)
-  if(OS_MAC)
-    # Constants used only inside __linux__ blocks trip clang's unused warnings
-    # under CEF's -Werror; GCC on the Linux build does not emit them.
-    target_compile_options(${target} PRIVATE
-      -Wno-unused-const-variable
-      -Wno-unused-variable
-      -Wno-unused-function
-    )
-  endif()
   target_include_directories(${target} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CEF_INCLUDE_PATH}"
@@ -122,6 +99,20 @@ endmacro()
 if(OS_MAC)
   set(VIMBROWSER_APP "${CEF_TARGET_OUT_DIR}/vimbrowser.app")
   set(VIMBROWSER_ICON "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/vimbrowser.icns")
+  set(VIMBROWSER_CEF_FRAMEWORK_BINARY
+      "${CEF_BINARY_DIR_RELEASE}/Chromium Embedded Framework.framework/Chromium Embedded Framework")
+  execute_process(
+    COMMAND /usr/bin/nm -gUj "${VIMBROWSER_CEF_FRAMEWORK_BINARY}"
+    RESULT_VARIABLE VIMBROWSER_CEF_NM_RESULT
+    OUTPUT_VARIABLE VIMBROWSER_CEF_EXPORTED_SYMBOLS
+    ERROR_QUIET
+  )
+  if(NOT VIMBROWSER_CEF_NM_RESULT EQUAL 0 OR
+     NOT VIMBROWSER_CEF_EXPORTED_SYMBOLS MATCHES
+         "_cef_browser_host_vimbrowser_send_browser_command_key_event")
+    message(FATAL_ERROR
+      "CEF_ROOT must point to a source-built vimbrowser CEF distribution; stock CEF fallbacks have been removed")
+  endif()
   set_source_files_properties(${VIMBROWSER_ICON} PROPERTIES
     MACOSX_PACKAGE_LOCATION "Resources"
   )
@@ -134,6 +125,7 @@ if(OS_MAC)
   VIMBROWSER_TARGET_COMMON(vimbrowser)
   target_link_libraries(vimbrowser PRIVATE
     libcef_dll_wrapper
+    PkgConfig::MUSESCORE_NATIVE
     ${CEF_STANDARD_LIBS}
   )
   set_target_properties(vimbrowser PROPERTIES
@@ -192,6 +184,7 @@ if(OS_MAC)
     VIMBROWSER_TARGET_COMMON(${_helper_target})
     target_link_libraries(${_helper_target} PRIVATE
       libcef_dll_wrapper
+      PkgConfig::MUSESCORE_NATIVE
       ${CEF_STANDARD_LIBS}
     )
     set_target_properties(${_helper_target} PROPERTIES
@@ -213,14 +206,16 @@ if(OS_MAC)
   endforeach()
 
   # CMake/linker ad-hoc signs the main executable before the framework and
-  # helper bundles are copied. Re-sign the completed bundle so Gatekeeper and
-  # codesign verification see a coherent application instead of modified
-  # signed resources.
-  find_program(CODESIGN_EXECUTABLE codesign REQUIRED)
+  # helper bundles are copied. Sign nested code inside-out, keeping CEF's large
+  # framework ad-hoc signed for dyld while the outer app retains the stable
+  # developer identity used by Keychain.
+  set(VIMBROWSER_CODESIGN_IDENTITY "-" CACHE STRING
+      "macOS code-signing identity; '-' selects an ad-hoc signature")
   add_custom_command(
     TARGET vimbrowser
     POST_BUILD
-    COMMAND ${CODESIGN_EXECUTABLE} --force --deep --sign - "${VIMBROWSER_APP}"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/codesign-mac-app.sh"
+            "${VIMBROWSER_APP}" "${VIMBROWSER_CODESIGN_IDENTITY}"
     VERBATIM
   )
 else()
@@ -235,14 +230,6 @@ else()
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(vimbrowser PRIVATE Xi)
-    if(NOT VIMBROWSER_USE_PRIVATE_CEF_API)
-      # The compact A26 builder only carries this shell's development libraries.
-      # Official libcef records its NSS/ATK/DBus/CUPS/GBM/ALSA dependencies as
-      # DT_NEEDED entries; those are installed in the separate phone runtime
-      # image and resolve there. Do not require their development packages
-      # merely to complete this compatibility link.
-      target_link_options(vimbrowser PRIVATE "-Wl,--allow-shlib-undefined")
-    endif()
   endif()
 
   COPY_FILES(vimbrowser "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")

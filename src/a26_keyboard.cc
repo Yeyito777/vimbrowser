@@ -16,13 +16,14 @@
 namespace vimbrowser {
 namespace {
 
+constexpr int kRetryDelayMs = 100;
+constexpr int kShowAttempts = 25;
+constexpr int kHideAttempts = 3;
+
 #if defined(__linux__)
 constexpr char kA26ControlSocketPath[] = "/run/a26-shell/control.sock";
 constexpr int kSocketTotalTimeoutMs = 120;
 constexpr size_t kMaxResponseBytes = 4096;
-constexpr int kRetryDelayMs = 100;
-constexpr int kShowAttempts = 25;
-constexpr int kHideAttempts = 3;
 
 class ScopedSocket final {
  public:

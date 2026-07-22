@@ -1,11 +1,10 @@
 #include "browser_client.h"
 
 #include <algorithm>
-#include <chrono>
 #include <cctype>
-#include <cmath>
-#include <cstring>
+#include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -21,22 +20,6 @@
 #include "include/cef_callback.h"
 #include "include/cef_response.h"
 #include "include/cef_response_filter.h"
-#if defined(__APPLE__)
-#include "mac/browser_features_mac.h"
-#endif
-
-extern "C" bool vimbrowser_browser_has_fps_sample(int browser_id);
-extern "C" double vimbrowser_get_browser_fps(int browser_id);
-extern "C" double vimbrowser_get_browser_refresh_rate(int browser_id);
-extern "C" bool vimbrowser_browser_is_currently_audible(int browser_id);
-extern "C" void vimbrowser_send_browser_command_key_event(
-    int browser_id,
-    const CefKeyEvent* event);
-
-extern "C" bool vimbrowser_get_current_file_dialog_activation_nonce(
-    int browser_id,
-    uint64_t* activation_nonce_high,
-    uint64_t* activation_nonce_low);
 
 namespace vimbrowser {
 
@@ -63,7 +46,8 @@ struct BrowserClient::NetworkRequestRecord {
   cef_urlrequest_status_t request_status = UR_UNKNOWN;
   int64_t received_content_length = 0;
   bool completed = false;
-  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point start =
+      std::chrono::steady_clock::now();
   std::chrono::steady_clock::time_point end = start;
 };
 
@@ -74,9 +58,9 @@ constexpr size_t kNetworkBodyLimit = 1024 * 1024;
 constexpr size_t kNetworkRequestBodyLimit = 256 * 1024;
 
 std::string LowerAscii(std::string value) {
-  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
-    return static_cast<char>(std::tolower(c));
-  });
+  std::transform(
+      value.begin(), value.end(), value.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return value;
 }
 
@@ -93,11 +77,12 @@ bool ParseBooleanSwitchValue(std::string_view value, bool fallback) {
 bool NativeContentBlockingEnabled() {
   static const bool enabled = [] {
     bool result = true;
-    if (const char* env = std::getenv("VIMBROWSER_CONTENT_BLOCKING");
+    if (const char *env = std::getenv("VIMBROWSER_CONTENT_BLOCKING");
         env && *env) {
       result = ParseBooleanSwitchValue(LowerAscii(env), result);
     }
-    CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
     if (command_line &&
         command_line->HasSwitch("disable-vimbrowser-content-blocking")) {
       result = false;
@@ -110,11 +95,12 @@ bool NativeContentBlockingEnabled() {
 bool NativeNetworkCaptureEnabled() {
   static const bool enabled = [] {
     bool result = false;
-    if (const char* env = std::getenv("VIMBROWSER_NETWORK_CAPTURE");
+    if (const char *env = std::getenv("VIMBROWSER_NETWORK_CAPTURE");
         env && *env) {
       result = ParseBooleanSwitchValue(LowerAscii(env), result);
     }
-    CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
     if (command_line &&
         command_line->HasSwitch("enable-vimbrowser-network-capture")) {
       result = true;
@@ -133,7 +119,8 @@ bool HostIsOrSubdomain(std::string_view host, std::string_view domain) {
     return true;
   }
   return host.size() > domain.size() &&
-         host.compare(host.size() - domain.size(), domain.size(), domain) == 0 &&
+         host.compare(host.size() - domain.size(), domain.size(), domain) ==
+             0 &&
          host[host.size() - domain.size() - 1] == '.';
 }
 
@@ -143,10 +130,9 @@ std::string HostFromUrl(std::string_view url) {
     start = scheme + 3;
   }
   const size_t authority_end = url.find_first_of("/?#", start);
-  std::string_view authority =
-      authority_end == std::string_view::npos
-          ? url.substr(start)
-          : url.substr(start, authority_end - start);
+  std::string_view authority = authority_end == std::string_view::npos
+                                   ? url.substr(start)
+                                   : url.substr(start, authority_end - start);
   if (const size_t at = authority.rfind('@'); at != std::string_view::npos) {
     authority.remove_prefix(at + 1);
   }
@@ -212,9 +198,8 @@ std::string UrlDecodeQueryComponent(std::string_view value) {
   return out;
 }
 
-bool UrlQueryParam(std::string_view url,
-                   std::string_view name,
-                   std::string* value_out) {
+bool UrlQueryParam(std::string_view url, std::string_view name,
+                   std::string *value_out) {
   const size_t question = url.find('?');
   if (question == std::string_view::npos) {
     return false;
@@ -227,17 +212,17 @@ bool UrlQueryParam(std::string_view url,
   size_t pos = 0;
   while (pos <= query.size()) {
     const size_t amp = query.find('&', pos);
-    const std::string_view part =
-        amp == std::string_view::npos ? query.substr(pos)
+    const std::string_view part = amp == std::string_view::npos
+                                      ? query.substr(pos)
                                       : query.substr(pos, amp - pos);
     const size_t equals = part.find('=');
     const std::string decoded_name = UrlDecodeQueryComponent(
         equals == std::string_view::npos ? part : part.substr(0, equals));
     if (decoded_name == name) {
       if (value_out) {
-        *value_out = UrlDecodeQueryComponent(
-            equals == std::string_view::npos ? std::string_view()
-                                             : part.substr(equals + 1));
+        *value_out = UrlDecodeQueryComponent(equals == std::string_view::npos
+                                                 ? std::string_view()
+                                                 : part.substr(equals + 1));
       }
       return true;
     }
@@ -250,12 +235,11 @@ bool UrlQueryParam(std::string_view url,
 }
 
 bool HasNonWhitespace(std::string_view value) {
-  return std::any_of(value.begin(), value.end(), [](unsigned char c) {
-    return !std::isspace(c);
-  });
+  return std::any_of(value.begin(), value.end(),
+                     [](unsigned char c) { return !std::isspace(c); });
 }
 
-bool ExtractChatgptAutosubmitPrompt(std::string_view url, std::string* prompt) {
+bool ExtractChatgptAutosubmitPrompt(std::string_view url, std::string *prompt) {
   if (!IsChatgptUrl(url)) {
     return false;
   }
@@ -287,7 +271,7 @@ bool IsChatgptAutosubmitQueryParam(std::string_view encoded_name) {
 }
 
 bool StripChatgptAutosubmitQueryParams(std::string_view url,
-                                       std::string* stripped_url) {
+                                       std::string *stripped_url) {
   const size_t question = url.find('?');
   if (question == std::string_view::npos) {
     return false;
@@ -303,8 +287,8 @@ bool StripChatgptAutosubmitQueryParams(std::string_view url,
   size_t pos = 0;
   while (pos <= query.size()) {
     const size_t amp = query.find('&', pos);
-    const std::string_view part =
-        amp == std::string_view::npos ? query.substr(pos)
+    const std::string_view part = amp == std::string_view::npos
+                                      ? query.substr(pos)
                                       : query.substr(pos, amp - pos);
     const size_t equals = part.find('=');
     const std::string_view name =
@@ -388,8 +372,7 @@ bool IsTrackerHost(std::string_view host) {
       sizeof(kBlockedDomains) / sizeof(kBlockedDomains[0]);
   auto is_blocked_domain = [](std::string_view domain) {
     return std::binary_search(kBlockedDomains,
-                              kBlockedDomains + kBlockedDomainCount,
-                              domain);
+                              kBlockedDomains + kBlockedDomainCount, domain);
   };
 
   if (is_blocked_domain(host)) {
@@ -428,16 +411,16 @@ bool ShouldBlockRequest(CefRefPtr<CefRequest> request) {
 bool ShouldOpenDispositionInTab(
     CefRequestHandler::WindowOpenDisposition disposition) {
   switch (disposition) {
-    case CEF_WOD_SINGLETON_TAB:
-    case CEF_WOD_NEW_FOREGROUND_TAB:
-    case CEF_WOD_NEW_BACKGROUND_TAB:
-    case CEF_WOD_NEW_POPUP:
-    case CEF_WOD_NEW_WINDOW:
-    case CEF_WOD_OFF_THE_RECORD:
-    case CEF_WOD_SWITCH_TO_TAB:
-      return true;
-    default:
-      return false;
+  case CEF_WOD_SINGLETON_TAB:
+  case CEF_WOD_NEW_FOREGROUND_TAB:
+  case CEF_WOD_NEW_BACKGROUND_TAB:
+  case CEF_WOD_NEW_POPUP:
+  case CEF_WOD_NEW_WINDOW:
+  case CEF_WOD_OFF_THE_RECORD:
+  case CEF_WOD_SWITCH_TO_TAB:
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -446,22 +429,36 @@ std::string JsonEscape(std::string_view text) {
   out.reserve(text.size() + 8);
   for (unsigned char c : text) {
     switch (c) {
-      case '"': out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\b': out += "\\b"; break;
-      case '\f': out += "\\f"; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        if (c < 0x20) {
-          constexpr char kHex[] = "0123456789abcdef";
-          out += "\\u00";
-          out.push_back(kHex[(c >> 4) & 0xf]);
-          out.push_back(kHex[c & 0xf]);
-        } else {
-          out.push_back(static_cast<char>(c));
-        }
+    case '"':
+      out += "\\\"";
+      break;
+    case '\\':
+      out += "\\\\";
+      break;
+    case '\b':
+      out += "\\b";
+      break;
+    case '\f':
+      out += "\\f";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
+    default:
+      if (c < 0x20) {
+        constexpr char kHex[] = "0123456789abcdef";
+        out += "\\u00";
+        out.push_back(kHex[(c >> 4) & 0xf]);
+        out.push_back(kHex[c & 0xf]);
+      } else {
+        out.push_back(static_cast<char>(c));
+      }
     }
   }
   return out;
@@ -666,82 +663,108 @@ setTimeout(()=>{if(attempt())clearInterval(timer);},50);
 
 std::string ResourceTypeName(cef_resource_type_t type) {
   switch (type) {
-    case RT_MAIN_FRAME: return "main_frame";
-    case RT_SUB_FRAME: return "sub_frame";
-    case RT_STYLESHEET: return "stylesheet";
-    case RT_SCRIPT: return "script";
-    case RT_IMAGE: return "image";
-    case RT_FONT_RESOURCE: return "font";
-    case RT_SUB_RESOURCE: return "sub_resource";
-    case RT_OBJECT: return "object";
-    case RT_MEDIA: return "media";
-    case RT_WORKER: return "worker";
-    case RT_SHARED_WORKER: return "shared_worker";
-    case RT_PREFETCH: return "prefetch";
-    case RT_FAVICON: return "favicon";
-    case RT_XHR: return "xhr";
-    case RT_PING: return "ping";
-    case RT_SERVICE_WORKER: return "service_worker";
-    case RT_CSP_REPORT: return "csp_report";
-    case RT_PLUGIN_RESOURCE: return "plugin_resource";
-    default: return "unknown";
+  case RT_MAIN_FRAME:
+    return "main_frame";
+  case RT_SUB_FRAME:
+    return "sub_frame";
+  case RT_STYLESHEET:
+    return "stylesheet";
+  case RT_SCRIPT:
+    return "script";
+  case RT_IMAGE:
+    return "image";
+  case RT_FONT_RESOURCE:
+    return "font";
+  case RT_SUB_RESOURCE:
+    return "sub_resource";
+  case RT_OBJECT:
+    return "object";
+  case RT_MEDIA:
+    return "media";
+  case RT_WORKER:
+    return "worker";
+  case RT_SHARED_WORKER:
+    return "shared_worker";
+  case RT_PREFETCH:
+    return "prefetch";
+  case RT_FAVICON:
+    return "favicon";
+  case RT_XHR:
+    return "xhr";
+  case RT_PING:
+    return "ping";
+  case RT_SERVICE_WORKER:
+    return "service_worker";
+  case RT_CSP_REPORT:
+    return "csp_report";
+  case RT_PLUGIN_RESOURCE:
+    return "plugin_resource";
+  default:
+    return "unknown";
   }
 }
 
 std::string URLRequestStatusName(cef_urlrequest_status_t status) {
   switch (status) {
-    case UR_UNKNOWN: return "unknown";
-    case UR_SUCCESS: return "success";
-    case UR_IO_PENDING: return "io_pending";
-    case UR_CANCELED: return "canceled";
-    case UR_FAILED: return "failed";
-    default: return "unknown";
+  case UR_UNKNOWN:
+    return "unknown";
+  case UR_SUCCESS:
+    return "success";
+  case UR_IO_PENDING:
+    return "io_pending";
+  case UR_CANCELED:
+    return "canceled";
+  case UR_FAILED:
+    return "failed";
+  default:
+    return "unknown";
   }
 }
 
-std::vector<std::pair<std::string, std::string>> RequestHeaders(
-    CefRefPtr<CefRequest> request) {
+std::vector<std::pair<std::string, std::string>>
+RequestHeaders(CefRefPtr<CefRequest> request) {
   std::vector<std::pair<std::string, std::string>> out;
   if (!request) {
     return out;
   }
   CefRequest::HeaderMap headers;
   request->GetHeaderMap(headers);
-  for (const auto& [name, value] : headers) {
+  for (const auto &[name, value] : headers) {
     out.emplace_back(name.ToString(), value.ToString());
   }
   return out;
 }
 
-std::vector<std::pair<std::string, std::string>> ResponseHeaders(
-    CefRefPtr<CefResponse> response) {
+std::vector<std::pair<std::string, std::string>>
+ResponseHeaders(CefRefPtr<CefResponse> response) {
   std::vector<std::pair<std::string, std::string>> out;
   if (!response) {
     return out;
   }
   CefResponse::HeaderMap headers;
   response->GetHeaderMap(headers);
-  for (const auto& [name, value] : headers) {
+  for (const auto &[name, value] : headers) {
     out.emplace_back(name.ToString(), value.ToString());
   }
   return out;
 }
 
-std::string HeadersJson(const std::vector<std::pair<std::string, std::string>>& headers) {
+std::string
+HeadersJson(const std::vector<std::pair<std::string, std::string>> &headers) {
   std::ostringstream out;
   out << "[";
   for (size_t i = 0; i < headers.size(); ++i) {
     if (i) {
       out << ",";
     }
-    out << "{\"name\":\"" << JsonEscape(headers[i].first)
-        << "\",\"value\":\"" << JsonEscape(headers[i].second) << "\"}";
+    out << "{\"name\":\"" << JsonEscape(headers[i].first) << "\",\"value\":\""
+        << JsonEscape(headers[i].second) << "\"}";
   }
   out << "]";
   return out.str();
 }
 
-std::string PostDataPreview(CefRefPtr<CefPostData> post_data, bool* truncated) {
+std::string PostDataPreview(CefRefPtr<CefPostData> post_data, bool *truncated) {
   if (truncated) {
     *truncated = false;
   }
@@ -788,33 +811,40 @@ std::string PostDataPreview(CefRefPtr<CefPostData> post_data, bool* truncated) {
   return body;
 }
 
-std::string RecordJson(const BrowserClient::NetworkRequestRecord& record,
+std::string RecordJson(const BrowserClient::NetworkRequestRecord &record,
                        bool detail) {
   std::lock_guard<std::mutex> lock(record.mutex);
-  const double duration_ms = record.completed
-                                 ? std::chrono::duration<double, std::milli>(
-                                       record.end - record.start).count()
-                                 : -1.0;
+  const double duration_ms =
+      record.completed
+          ? std::chrono::duration<double, std::milli>(record.end - record.start)
+                .count()
+          : -1.0;
   std::ostringstream out;
   out << "{"
       << "\"id\":" << record.id << ","
       << "\"cef_request_id\":" << record.cef_request_id << ","
       << "\"url\":\"" << JsonEscape(record.url) << "\","
       << "\"method\":\"" << JsonEscape(record.method) << "\","
-      << "\"resource_type\":\"" << ResourceTypeName(record.resource_type) << "\","
-      << "\"resource_type_code\":" << static_cast<int>(record.resource_type) << ","
-      << "\"request_initiator\":\"" << JsonEscape(record.request_initiator) << "\","
-      << "\"is_navigation\":" << (record.is_navigation ? "true" : "false") << ","
+      << "\"resource_type\":\"" << ResourceTypeName(record.resource_type)
+      << "\","
+      << "\"resource_type_code\":" << static_cast<int>(record.resource_type)
+      << ","
+      << "\"request_initiator\":\"" << JsonEscape(record.request_initiator)
+      << "\","
+      << "\"is_navigation\":" << (record.is_navigation ? "true" : "false")
+      << ","
       << "\"is_download\":" << (record.is_download ? "true" : "false") << ","
       << "\"status\":" << record.status << ","
       << "\"status_text\":\"" << JsonEscape(record.status_text) << "\","
       << "\"mime_type\":\"" << JsonEscape(record.mime_type) << "\","
       << "\"response_url\":\"" << JsonEscape(record.response_url) << "\","
       << "\"complete\":" << (record.completed ? "true" : "false") << ","
-      << "\"request_status\":\"" << URLRequestStatusName(record.request_status) << "\","
+      << "\"request_status\":\"" << URLRequestStatusName(record.request_status)
+      << "\","
       << "\"received_content_length\":" << record.received_content_length << ","
       << "\"body_size\":" << record.response_body.size() << ","
-      << "\"body_truncated\":" << (record.response_body_truncated ? "true" : "false") << ","
+      << "\"body_truncated\":"
+      << (record.response_body_truncated ? "true" : "false") << ","
       << "\"duration_ms\":" << duration_ms;
   if (detail) {
     out << ",\"request_headers\":" << HeadersJson(record.request_headers)
@@ -829,19 +859,16 @@ std::string RecordJson(const BrowserClient::NetworkRequestRecord& record,
 }
 
 class CaptureResponseFilter final : public CefResponseFilter {
- public:
+public:
   explicit CaptureResponseFilter(
       std::shared_ptr<BrowserClient::NetworkRequestRecord> record)
       : record_(std::move(record)) {}
 
   bool InitFilter() override { return true; }
 
-  FilterStatus Filter(void* data_in,
-                      size_t data_in_size,
-                      size_t& data_in_read,
-                      void* data_out,
-                      size_t data_out_size,
-                      size_t& data_out_written) override {
+  FilterStatus Filter(void *data_in, size_t data_in_size, size_t &data_in_read,
+                      void *data_out, size_t data_out_size,
+                      size_t &data_out_written) override {
     data_in_read = 0;
     data_out_written = 0;
     if (!data_in || data_in_size == 0) {
@@ -858,12 +885,14 @@ class CaptureResponseFilter final : public CefResponseFilter {
 
     if (record_) {
       std::lock_guard<std::mutex> lock(record_->mutex);
-      const size_t remaining = record_->response_body.size() < kNetworkBodyLimit
-                                   ? kNetworkBodyLimit - record_->response_body.size()
-                                   : 0;
+      const size_t remaining =
+          record_->response_body.size() < kNetworkBodyLimit
+              ? kNetworkBodyLimit - record_->response_body.size()
+              : 0;
       const size_t capture = std::min(take, remaining);
       if (capture > 0) {
-        record_->response_body.append(static_cast<const char*>(data_in), capture);
+        record_->response_body.append(static_cast<const char *>(data_in),
+                                      capture);
       }
       if (capture < take) {
         record_->response_body_truncated = true;
@@ -874,16 +903,16 @@ class CaptureResponseFilter final : public CefResponseFilter {
                                 : RESPONSE_FILTER_NEED_MORE_DATA;
   }
 
- private:
+private:
   std::shared_ptr<BrowserClient::NetworkRequestRecord> record_;
 
   IMPLEMENT_REFCOUNTING(CaptureResponseFilter);
   DISALLOW_COPY_AND_ASSIGN(CaptureResponseFilter);
 };
 
-}  // namespace
+} // namespace
 
-BrowserClient::BrowserClient(BrowserWindow* owner) : owner_(owner) {}
+BrowserClient::BrowserClient(BrowserWindow *owner) : owner_(owner) {}
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
@@ -927,9 +956,10 @@ bool BrowserClient::OnFileDialog(
   uint64_t activation_nonce_high = 0;
   uint64_t activation_nonce_low = 0;
   const bool has_activation_nonce =
-      browser && vimbrowser_get_current_file_dialog_activation_nonce(
-                     browser->GetIdentifier(), &activation_nonce_high,
-                     &activation_nonce_low);
+      browser &&
+      CefBrowserHost::VimbrowserGetCurrentFileDialogActivationNonce(
+          browser->GetIdentifier(), activation_nonce_high,
+          activation_nonce_low);
   return owner_ && owner_->OnClientFileDialog(
                        this, browser, mode, accept_filters, accept_extensions,
                        has_activation_nonce, activation_nonce_high,
@@ -945,11 +975,6 @@ void BrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 TransitionType transition_type) {
   if (frame && frame->IsMain()) {
-#if defined(__APPLE__)
-    fps_has_sample_.store(false, std::memory_order_relaxed);
-    fps_.store(0.0, std::memory_order_relaxed);
-    refresh_rate_.store(0.0, std::memory_order_relaxed);
-#endif
     const std::string url = frame->GetURL().ToString();
     std::string prompt;
     if (ExtractChatgptAutosubmitPrompt(url, &prompt)) {
@@ -977,12 +1002,8 @@ void BrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 }
 
 void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
-                              CefRefPtr<CefFrame> frame,
-                              int httpStatusCode) {
+                              CefRefPtr<CefFrame> frame, int httpStatusCode) {
   if (frame && frame->IsMain()) {
-#if defined(__APPLE__)
-    frame->ExecuteJavaScript(mac::kFpsMonitorScript, frame->GetURL(), 0);
-#endif
     if (browser && !pending_chatgpt_autosubmit_prompt_.empty() &&
         !pending_chatgpt_autosubmit_key_.empty() &&
         IsChatgptUrl(frame->GetURL().ToString())) {
@@ -999,7 +1020,7 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
 
 void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
                                     CefRefPtr<CefFrame> frame,
-                                    const CefString& url) {
+                                    const CefString &url) {
   if (owner_ && frame && frame->IsMain()) {
     owner_->OnClientAddressChange(this, url.ToString());
   }
@@ -1014,16 +1035,15 @@ void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
 
 #if CEF_API_ADDED(13700)
 bool BrowserClient::GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
-                                            CefRect& rect) {
+                                            CefRect &rect) {
   return owner_ && owner_->GetRootWindowScreenRectForClient(this, rect);
 }
 #endif
 
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
-                                ErrorCode error_code,
-                                const CefString& error_text,
-                                const CefString& failed_url) {
+                                CefRefPtr<CefFrame> frame, ErrorCode error_code,
+                                const CefString &error_text,
+                                const CefString &failed_url) {
   if (!frame->IsMain()) {
     return;
   }
@@ -1032,19 +1052,14 @@ void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
             << error_text.ToString() << std::endl;
 }
 
-bool BrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
-                                  CefRefPtr<CefFrame> frame,
-                                  int popup_id,
-                                  const CefString& target_url,
-                                  const CefString& target_frame_name,
-                                  CefLifeSpanHandler::WindowOpenDisposition target_disposition,
-                                  bool user_gesture,
-                                  const CefPopupFeatures& popupFeatures,
-                                  CefWindowInfo& windowInfo,
-                                  CefRefPtr<CefClient>& client,
-                                  CefBrowserSettings& settings,
-                                  CefRefPtr<CefDictionaryValue>& extra_info,
-                                  bool* no_javascript_access) {
+bool BrowserClient::OnBeforePopup(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popup_id,
+    const CefString &target_url, const CefString &target_frame_name,
+    CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+    bool user_gesture, const CefPopupFeatures &popupFeatures,
+    CefWindowInfo &windowInfo, CefRefPtr<CefClient> &client,
+    CefBrowserSettings &settings, CefRefPtr<CefDictionaryValue> &extra_info,
+    bool *no_javascript_access) {
   if (!owner_) {
     return true;
   }
@@ -1060,9 +1075,8 @@ bool BrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
 }
 
 bool BrowserClient::OnOpenURLFromTab(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    const CefString& target_url,
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    const CefString &target_url,
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool user_gesture) {
   if (!owner_) {
@@ -1079,30 +1093,9 @@ bool BrowserClient::OnOpenURLFromTab(
 
 bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                                      cef_log_severity_t level,
-                                     const CefString& message,
-                                     const CefString& source,
-                                     int line) {
+                                     const CefString &message,
+                                     const CefString &source, int line) {
   const std::string text = message.ToString();
-#if defined(__APPLE__)
-  constexpr std::string_view kFpsPrefix = "__vimbrowser_mac_fps__";
-  if (text.rfind(kFpsPrefix, 0) == 0) {
-    char* end = nullptr;
-    const char* start = text.c_str() + kFpsPrefix.size();
-    const double sample = std::strtod(start, &end);
-    if (end != start && std::isfinite(sample) && sample > 0.0) {
-      fps_.store(sample, std::memory_order_relaxed);
-      if (*end == ',') {
-        char* refresh_end = nullptr;
-        const double refresh = std::strtod(end + 1, &refresh_end);
-        if (refresh_end != end + 1 && std::isfinite(refresh) && refresh > 0.0) {
-          refresh_rate_.store(refresh, std::memory_order_relaxed);
-        }
-      }
-      fps_has_sample_.store(true, std::memory_order_relaxed);
-    }
-    return true;
-  }
-#endif
   if (!source.ToString().empty()) {
     return false;
   }
@@ -1120,28 +1113,27 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
   if (text.rfind(kScrollTargetPrefix, 0) == 0) {
     const std::string payload = text.substr(kScrollTargetPrefix.size());
     if (owner_) {
-      char* end = nullptr;
+      char *end = nullptr;
       const long x = std::strtol(payload.c_str(), &end, 10);
       if (end && *end == ',') {
-        char* y_end = nullptr;
+        char *y_end = nullptr;
         const long y = std::strtol(end + 1, &y_end, 10);
         if (y_end != end + 1) {
           bool is_page_scroller = false;
           bool is_pdf_viewport = false;
           if (*y_end == ',') {
-            char* page_end = nullptr;
+            char *page_end = nullptr;
             const long page = std::strtol(y_end + 1, &page_end, 10);
             is_page_scroller = page_end != y_end + 1 && page != 0;
             if (page_end && *page_end == ',') {
-              char* pdf_end = nullptr;
+              char *pdf_end = nullptr;
               const long pdf = std::strtol(page_end + 1, &pdf_end, 10);
               is_pdf_viewport = pdf_end != page_end + 1 && pdf != 0;
             }
           }
           owner_->OnNativeHintScrollTarget(this, static_cast<int>(x),
-                                          static_cast<int>(y),
-                                          is_page_scroller,
-                                          is_pdf_viewport);
+                                           static_cast<int>(y),
+                                           is_page_scroller, is_pdf_viewport);
         }
       }
     }
@@ -1162,10 +1154,9 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-bool BrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                              CefRefPtr<CefFrame> frame,
-                                              CefProcessId source_process,
-                                              CefRefPtr<CefProcessMessage> message) {
+bool BrowserClient::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
   return owner_ && owner_->OnClientProcessMessage(this, browser, frame,
                                                   source_process, message);
 }
@@ -1173,8 +1164,7 @@ bool BrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 bool BrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                    CefRefPtr<CefFrame> frame,
                                    CefRefPtr<CefRequest> request,
-                                   bool user_gesture,
-                                   bool is_redirect) {
+                                   bool user_gesture, bool is_redirect) {
   (void)browser;
   (void)user_gesture;
   (void)is_redirect;
@@ -1204,15 +1194,14 @@ bool BrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
 }
 
 bool BrowserClient::OnRequestMediaAccessPermission(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    const CefString& requesting_origin,
-    uint32_t requested_permissions,
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    const CefString &requesting_origin, uint32_t requested_permissions,
     CefRefPtr<CefMediaAccessCallback> callback) {
   CefRefPtr<BrowserClient> keep_alive(this);
   if (owner_) {
-    return owner_->OnClientMediaAccessRequest(
-        this, browser, frame, requesting_origin, requested_permissions, callback);
+    return owner_->OnClientMediaAccessRequest(this, browser, frame,
+                                              requesting_origin,
+                                              requested_permissions, callback);
   }
 
   if (callback) {
@@ -1221,32 +1210,10 @@ bool BrowserClient::OnRequestMediaAccessPermission(
   return true;
 }
 
-#if defined(__APPLE__)
-void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser>,
-                                         const CefAudioParameters&,
-                                         int) {
-  audible_.store(true, std::memory_order_relaxed);
-}
-
-void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser>,
-                                        const float**,
-                                        int,
-                                        int64_t) {}
-
-void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser>) {
-  audible_.store(false, std::memory_order_relaxed);
-}
-
-void BrowserClient::OnAudioStreamError(CefRefPtr<CefBrowser>,
-                                       const CefString&) {
-  audible_.store(false, std::memory_order_relaxed);
-}
-#endif
-
 bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
-                                  const CefKeyEvent& event,
+                                  const CefKeyEvent &event,
                                   CefEventHandle os_event,
-                                  bool* is_keyboard_shortcut) {
+                                  bool *is_keyboard_shortcut) {
   if (owner_ && owner_->HandleBrowserKeyEvent(event)) {
     return true;
   }
@@ -1267,11 +1234,10 @@ bool BrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-void BrowserClient::OnBeforeContextMenu(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefContextMenuParams> params,
-    CefRefPtr<CefMenuModel> model) {
+void BrowserClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefFrame> frame,
+                                        CefRefPtr<CefContextMenuParams> params,
+                                        CefRefPtr<CefMenuModel> model) {
   if (!owner_ || !model) {
     return;
   }
@@ -1284,10 +1250,8 @@ void BrowserClient::OnBeforeContextMenu(
 }
 
 bool BrowserClient::RunContextMenu(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefContextMenuParams> params,
-    CefRefPtr<CefMenuModel> model,
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model,
     CefRefPtr<CefRunContextMenuCallback> callback) {
   if (!owner_) {
     if (callback) {
@@ -1299,12 +1263,11 @@ bool BrowserClient::RunContextMenu(
   return owner_->RunNativeContextMenu(this, browser, frame, params, callback);
 }
 
-bool BrowserClient::OnContextMenuCommand(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefContextMenuParams> params,
-    int command_id,
-    cef_event_flags_t event_flags) {
+bool BrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
+                                         CefRefPtr<CefFrame> frame,
+                                         CefRefPtr<CefContextMenuParams> params,
+                                         int command_id,
+                                         cef_event_flags_t event_flags) {
   return owner_ && owner_->OnNativeContextMenuCommand(
                        this, browser, frame, params, command_id, event_flags);
 }
@@ -1317,13 +1280,9 @@ void BrowserClient::OnContextMenuDismissed(CefRefPtr<CefBrowser> browser,
 }
 
 CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request,
-    bool is_navigation,
-    bool is_download,
-    const CefString& request_initiator,
-    bool& disable_default_handling) {
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request, bool is_navigation, bool is_download,
+    const CefString &request_initiator, bool &disable_default_handling) {
   disable_default_handling = false;
   if (!request) {
     return nullptr;
@@ -1342,8 +1301,8 @@ CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
   record->is_download = is_download;
   record->request_initiator = request_initiator.ToString();
   record->request_headers = RequestHeaders(request);
-  record->request_body = PostDataPreview(request->GetPostData(),
-                                         &record->request_body_truncated);
+  record->request_body =
+      PostDataPreview(request->GetPostData(), &record->request_body_truncated);
   record->start = std::chrono::steady_clock::now();
   record->end = record->start;
 
@@ -1366,10 +1325,8 @@ CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
 }
 
 BrowserClient::ReturnValue BrowserClient::OnBeforeResourceLoad(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request,
-    CefRefPtr<CefCallback> callback) {
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) {
   if (ShouldBlockRequest(request)) {
     return RV_CANCEL;
   }
@@ -1395,12 +1352,10 @@ bool BrowserClient::OnResourceResponse(CefRefPtr<CefBrowser> browser,
 }
 
 CefRefPtr<CefResponseFilter> BrowserClient::GetResourceResponseFilter(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request,
-    CefRefPtr<CefResponse> response) {
-  auto record = request ? FindNetworkRecordByCefId(request->GetIdentifier())
-                        : nullptr;
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) {
+  auto record =
+      request ? FindNetworkRecordByCefId(request->GetIdentifier()) : nullptr;
   if (!record) {
     return nullptr;
   }
@@ -1413,8 +1368,8 @@ void BrowserClient::OnResourceLoadComplete(CefRefPtr<CefBrowser> browser,
                                            CefRefPtr<CefResponse> response,
                                            URLRequestStatus status,
                                            int64_t received_content_length) {
-  auto record = request ? FindNetworkRecordByCefId(request->GetIdentifier())
-                        : nullptr;
+  auto record =
+      request ? FindNetworkRecordByCefId(request->GetIdentifier()) : nullptr;
   if (!record) {
     return;
   }
@@ -1456,42 +1411,31 @@ void BrowserClient::ShowDevTools() {
 }
 
 double BrowserClient::current_fps() const {
-#if defined(__APPLE__)
-  return fps_.load(std::memory_order_relaxed);
-#else
-  return browser_ ? vimbrowser_get_browser_fps(browser_->GetIdentifier()) : 0.0;
-#endif
+  return browser_ ? CefBrowserHost::VimbrowserGetBrowserFps(
+                        browser_->GetIdentifier())
+                  : 0.0;
 }
 
 bool BrowserClient::fps_has_sample() const {
-#if defined(__APPLE__)
-  return fps_has_sample_.load(std::memory_order_relaxed);
-#else
-  return browser_ && vimbrowser_browser_has_fps_sample(browser_->GetIdentifier());
-#endif
+  return browser_ && CefBrowserHost::VimbrowserBrowserHasFpsSample(
+                         browser_->GetIdentifier());
 }
 
 double BrowserClient::compositor_refresh_rate() const {
-#if defined(__APPLE__)
-  return refresh_rate_.load(std::memory_order_relaxed);
-#else
-  return browser_ ? vimbrowser_get_browser_refresh_rate(browser_->GetIdentifier())
+  return browser_ ? CefBrowserHost::VimbrowserGetBrowserRefreshRate(
+                        browser_->GetIdentifier())
                   : 0.0;
-#endif
 }
 
 bool BrowserClient::is_currently_audible() const {
-#if defined(__APPLE__)
-  return audible_.load(std::memory_order_relaxed);
-#else
-  return browser_ &&
-         vimbrowser_browser_is_currently_audible(browser_->GetIdentifier());
-#endif
+  return browser_ && CefBrowserHost::VimbrowserBrowserIsCurrentlyAudible(
+                         browser_->GetIdentifier());
 }
 
-void BrowserClient::SendBrowserCommandKeyEvent(const CefKeyEvent& event) {
+void BrowserClient::SendBrowserCommandKeyEvent(const CefKeyEvent &event) {
   if (browser_) {
-    vimbrowser_send_browser_command_key_event(browser_->GetIdentifier(), &event);
+    CefBrowserHost::VimbrowserSendBrowserCommandKeyEvent(
+        browser_->GetIdentifier(), event);
   }
 }
 
@@ -1551,17 +1495,18 @@ std::string BrowserClient::NetworkDetailJson(uint64_t request_id) const {
   return RecordJson(*record, true);
 }
 
-bool BrowserClient::NetworkBody(uint64_t request_id,
-                                std::string* body,
-                                std::string* error) const {
+bool BrowserClient::NetworkBody(uint64_t request_id, std::string *body,
+                                std::string *error) const {
   auto record = FindNetworkRecord(request_id);
   if (!record) {
-    if (error) *error = "ERR no such request\n";
+    if (error)
+      *error = "ERR no such request\n";
     return false;
   }
   std::lock_guard<std::mutex> lock(record->mutex);
   if (record->response_body.empty() && !record->completed) {
-    if (error) *error = "ERR response body not available yet\n";
+    if (error)
+      *error = "ERR response body not available yet\n";
     return false;
   }
   if (body) {
@@ -1576,11 +1521,13 @@ void BrowserClient::ClearNetworkLog() {
   network_log_.clear();
 }
 
-CefRefPtr<CefRequest> BrowserClient::BuildReplayRequest(uint64_t request_id,
-                                                        std::string* error) const {
+CefRefPtr<CefRequest>
+BrowserClient::BuildReplayRequest(uint64_t request_id,
+                                  std::string *error) const {
   auto record = FindNetworkRecord(request_id);
   if (!record) {
-    if (error) *error = "ERR no such request\n";
+    if (error)
+      *error = "ERR no such request\n";
     return nullptr;
   }
 
@@ -1598,21 +1545,23 @@ CefRefPtr<CefRequest> BrowserClient::BuildReplayRequest(uint64_t request_id,
     headers = record->request_headers;
   }
   if (url.empty()) {
-    if (error) *error = "ERR request has no url\n";
+    if (error)
+      *error = "ERR request has no url\n";
     return nullptr;
   }
   if (request_body_truncated) {
-    if (error) *error = "ERR request body was truncated; cannot replay safely\n";
+    if (error)
+      *error = "ERR request body was truncated; cannot replay safely\n";
     return nullptr;
   }
 
   CefRequest::HeaderMap header_map;
-  for (const auto& [name, value] : headers) {
+  for (const auto &[name, value] : headers) {
     const std::string lower_name = [&] {
       std::string lower = name;
-      std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-      });
+      std::transform(
+          lower.begin(), lower.end(), lower.begin(),
+          [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
       return lower;
     }();
     if (lower_name == "host" || lower_name == "content-length") {
@@ -1636,4 +1585,4 @@ CefRefPtr<CefRequest> BrowserClient::BuildReplayRequest(uint64_t request_id,
   return request;
 }
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

@@ -8,7 +8,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=c3f26c9bda1733a544eb53d729c6b3f833fdcff9$
+// $hash=f3cdef8d2c32e3dfe29ba468357ed5f3888d311d$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_BROWSER_CAPI_VERSIONS_H_
@@ -65,6 +65,11 @@ typedef struct _cef_run_file_dialog_callback_0_t {
   cef_base_ref_counted_t base;
   void (CEF_CALLBACK *on_file_dialog_dismissed)(struct _cef_run_file_dialog_callback_0_t* self, cef_string_list_t file_paths);
 } cef_run_file_dialog_callback_0_t;
+
+typedef struct _cef_vimbrowser_element_activation_callback_999999_t {
+  cef_base_ref_counted_t base;
+  void (CEF_CALLBACK *on_complete)(struct _cef_vimbrowser_element_activation_callback_999999_t* self, int result, int match_count);
+} cef_vimbrowser_element_activation_callback_999999_t;
 
 typedef struct _cef_navigation_entry_visitor_0_t {
   cef_base_ref_counted_t base;
@@ -229,6 +234,13 @@ typedef struct _cef_browser_host_999999_t {
 CEF_EXPORT int cef_browser_host_create_browser(const cef_window_info_t* windowInfo, struct _cef_client_0_t* client, const cef_string_t* url, const struct _cef_browser_settings_t* settings, struct _cef_dictionary_value_0_t* extra_info, struct _cef_request_context_0_t* request_context);
 CEF_EXPORT cef_browser_0_t* cef_browser_host_create_browser_sync(const cef_window_info_t* windowInfo, struct _cef_client_0_t* client, const cef_string_t* url, const struct _cef_browser_settings_t* settings, struct _cef_dictionary_value_0_t* extra_info, struct _cef_request_context_0_t* request_context);
 CEF_EXPORT cef_browser_0_t* cef_browser_host_get_browser_by_identifier(int browser_id);
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_has_fps_sample(int browser_id);
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_fps(int browser_id);
+CEF_EXPORT double cef_browser_host_vimbrowser_get_browser_refresh_rate(int browser_id);
+CEF_EXPORT int cef_browser_host_vimbrowser_browser_is_currently_audible(int browser_id);
+CEF_EXPORT void cef_browser_host_vimbrowser_send_browser_command_key_event(int browser_id, const cef_key_event_t* event);
+CEF_EXPORT int cef_browser_host_vimbrowser_activate_element_by_selector(int browser_id, const cef_string_t* selector, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low, cef_vimbrowser_element_activation_callback_999999_t* callback);
+CEF_EXPORT int cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(int browser_id, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low);
 
 #ifdef __cplusplus
 }

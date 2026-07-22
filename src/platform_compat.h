@@ -1,34 +1,42 @@
 #pragma once
 
-// Portability shims for the Unix-socket IPC code shared across platforms.
-//
-// Darwin has no SOCK_CLOEXEC socket() flag and no accept4(). Defining the flag
-// to 0 keeps the shared call sites compiling. The accept4() emulation always
-// sets FD_CLOEXEC because SOCK_CLOEXEC necessarily arrives as 0 on Darwin.
-// Listener/client fds created with socket() lose close-on-exec on Darwin,
-// which is acceptable for the short-lived helper processes CEF spawns.
-#if defined(__APPLE__)
+// Platform adapters preserve close-on-exec semantics for the shared Unix IPC
+// implementation. Darwin lacks SOCK_CLOEXEC and accept4(), so apply FD_CLOEXEC
+// explicitly there instead of weakening behavior or redefining system APIs.
 
+#include <cerrno>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
-#ifndef SOCK_CLOEXEC
-#define SOCK_CLOEXEC 0
+#if defined(__APPLE__)
+inline int SetCloseOnExecOrClose(int fd) {
+  if (fd < 0) {
+    return fd;
+  }
+  const int flags = fcntl(fd, F_GETFD);
+  if (flags >= 0 && fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == 0) {
+    return fd;
+  }
+  const int error = errno;
+  close(fd);
+  errno = error;
+  return -1;
+}
 #endif
 
-static inline int accept4(int fd,
-                          struct sockaddr* addr,
-                          socklen_t* addrlen,
-                          int flags) {
-  (void)flags;
-  const int client = accept(fd, addr, addrlen);
-  if (client >= 0) {
-    const int fd_flags = fcntl(client, F_GETFD);
-    if (fd_flags >= 0) {
-      fcntl(client, F_SETFD, fd_flags | FD_CLOEXEC);
-    }
-  }
-  return client;
+inline int SocketCloseOnExec(int domain, int type, int protocol) {
+#if defined(__APPLE__)
+  return SetCloseOnExecOrClose(socket(domain, type, protocol));
+#else
+  return socket(domain, type | SOCK_CLOEXEC, protocol);
+#endif
 }
 
-#endif  // defined(__APPLE__)
+inline int AcceptCloseOnExec(int fd) {
+#if defined(__APPLE__)
+  return SetCloseOnExecOrClose(accept(fd, nullptr, nullptr));
+#else
+  return accept4(fd, nullptr, nullptr, SOCK_CLOEXEC);
+#endif
+}

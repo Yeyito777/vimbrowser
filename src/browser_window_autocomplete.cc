@@ -15,8 +15,8 @@ namespace vimbrowser {
 
 namespace {
 
-bool EraseCaseInsensitive(std::vector<std::string>& values,
-                          const std::string& value) {
+bool EraseCaseInsensitive(std::vector<std::string> &values,
+                          const std::string &value) {
   if (value.empty()) {
     return false;
   }
@@ -24,19 +24,19 @@ bool EraseCaseInsensitive(std::vector<std::string>& values,
   const std::string folded = ToLowerAscii(value);
   const size_t old_size = values.size();
   values.erase(std::remove_if(values.begin(), values.end(),
-                              [&](const std::string& existing) {
+                              [&](const std::string &existing) {
                                 return ToLowerAscii(existing) == folded;
                               }),
                values.end());
   return values.size() != old_size;
 }
 
-bool SameHistoryCompletionSource(const CompletionItem& a,
-                                 const CompletionItem& b) {
+bool SameHistoryCompletionSource(const CompletionItem &a,
+                                 const CompletionItem &b) {
   return a.source == b.source && a.source_key == b.source_key;
 }
 
-bool MatchesAsciiKey(const CefKeyEvent& event, char key) {
+bool MatchesAsciiKey(const CefKeyEvent &event, char key) {
   const char lower =
       static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
   const char upper =
@@ -47,7 +47,7 @@ bool MatchesAsciiKey(const CefKeyEvent& event, char key) {
          event.unmodified_character == upper;
 }
 
-bool IsNativeCommandEditingShortcut(const CefKeyEvent& event) {
+bool IsNativeCommandEditingShortcut(const CefKeyEvent &event) {
 #if defined(__APPLE__)
   if (!(event.modifiers & EVENTFLAG_COMMAND_DOWN) ||
       (event.modifiers & (EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN))) {
@@ -72,7 +72,7 @@ bool IsNativeCommandEditingShortcut(const CefKeyEvent& event) {
          MatchesAsciiKey(event, 'z');
 }
 
-}  // namespace
+} // namespace
 
 void BrowserWindow::ClearCommandAutocomplete() {
   command_autocomplete_ = CommandAutocompleteState{};
@@ -83,8 +83,7 @@ void BrowserWindow::ClearCommandAutocomplete() {
 }
 
 void BrowserWindow::AppendOpenHistoryMatches(
-    const std::string& prefix,
-    std::vector<CompletionItem>& matches) const {
+    const std::string &prefix, std::vector<CompletionItem> &matches) const {
   struct RankedHistoryMatch {
     CompletionItem item;
     size_t recency_rank = 0;
@@ -92,12 +91,12 @@ void BrowserWindow::AppendOpenHistoryMatches(
 
   std::vector<RankedHistoryMatch> ranked;
   std::unordered_set<std::string> seen;
-  for (const CompletionItem& item : matches) {
+  for (const CompletionItem &item : matches) {
     seen.insert(ToLowerAscii(CompletionInsertText(item)));
   }
   for (size_t i = open_history_.size(); i > 0; --i) {
     const size_t index = i - 1;
-    const std::string& entry = open_history_[index];
+    const std::string &entry = open_history_[index];
     if (entry.empty() ||
         (!prefix.empty() && !StartsWithCaseInsensitive(entry, prefix))) {
       continue;
@@ -110,33 +109,31 @@ void BrowserWindow::AppendOpenHistoryMatches(
 
     ranked.push_back(
         {CompletionItem{Ellipsize(entry, kOpenHistoryCompletionNameMax),
-                        "open history", entry,
-                        CompletionSource::kOpenHistory},
+                        "open history", entry, CompletionSource::kOpenHistory},
          open_history_.size() - 1 - index});
   }
 
-  std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
-                                             const RankedHistoryMatch& b) {
-    const std::string& a_insert = CompletionInsertText(a.item);
-    const std::string& b_insert = CompletionInsertText(b.item);
-    if (a_insert.size() != b_insert.size()) {
-      return a_insert.size() < b_insert.size();
-    }
-    if (a.recency_rank != b.recency_rank) {
-      return a.recency_rank < b.recency_rank;
-    }
-    return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
-  });
+  std::sort(ranked.begin(), ranked.end(),
+            [](const RankedHistoryMatch &a, const RankedHistoryMatch &b) {
+              const std::string &a_insert = CompletionInsertText(a.item);
+              const std::string &b_insert = CompletionInsertText(b.item);
+              if (a_insert.size() != b_insert.size()) {
+                return a_insert.size() < b_insert.size();
+              }
+              if (a.recency_rank != b.recency_rank) {
+                return a.recency_rank < b.recency_rank;
+              }
+              return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
+            });
 
-  for (const RankedHistoryMatch& match : ranked) {
+  for (const RankedHistoryMatch &match : ranked) {
     matches.push_back(match.item);
   }
 }
 
 void BrowserWindow::AppendSearchHistoryMatches(
-    const std::string& engine,
-    const std::string& prefix,
-    std::vector<CompletionItem>& matches) const {
+    const std::string &engine, const std::string &prefix,
+    std::vector<CompletionItem> &matches) const {
   struct RankedHistoryMatch {
     CompletionItem item;
     size_t recency_rank = 0;
@@ -152,7 +149,7 @@ void BrowserWindow::AppendSearchHistoryMatches(
   std::unordered_set<std::string> seen;
   for (size_t i = history_it->second.size(); i > 0; --i) {
     const size_t index = i - 1;
-    const std::string& entry = history_it->second[index];
+    const std::string &entry = history_it->second[index];
     if (entry.empty() ||
         (!prefix.empty() && !StartsWithCaseInsensitive(entry, prefix))) {
       continue;
@@ -170,37 +167,37 @@ void BrowserWindow::AppendSearchHistoryMatches(
          history_it->second.size() - 1 - index});
   }
 
-  std::sort(ranked.begin(), ranked.end(), [](const RankedHistoryMatch& a,
-                                             const RankedHistoryMatch& b) {
-    const std::string& a_insert = CompletionInsertText(a.item);
-    const std::string& b_insert = CompletionInsertText(b.item);
-    if (a_insert.size() != b_insert.size()) {
-      return a_insert.size() < b_insert.size();
-    }
-    if (a.recency_rank != b.recency_rank) {
-      return a.recency_rank < b.recency_rank;
-    }
-    return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
-  });
+  std::sort(ranked.begin(), ranked.end(),
+            [](const RankedHistoryMatch &a, const RankedHistoryMatch &b) {
+              const std::string &a_insert = CompletionInsertText(a.item);
+              const std::string &b_insert = CompletionInsertText(b.item);
+              if (a_insert.size() != b_insert.size()) {
+                return a_insert.size() < b_insert.size();
+              }
+              if (a.recency_rank != b.recency_rank) {
+                return a.recency_rank < b.recency_rank;
+              }
+              return ToLowerAscii(a_insert) < ToLowerAscii(b_insert);
+            });
 
-  for (const RankedHistoryMatch& match : ranked) {
+  for (const RankedHistoryMatch &match : ranked) {
     matches.push_back(match.item);
   }
 }
 
 void BrowserWindow::AppendTabFocusMatches(
-    const std::string& prefix,
-    std::vector<CompletionItem>& matches) const {
+    const std::string &prefix, std::vector<CompletionItem> &matches) const {
   std::unordered_set<std::string> seen;
-  for (const CompletionItem& item : matches) {
+  for (const CompletionItem &item : matches) {
     seen.insert(ToLowerAscii(item.name));
   }
 
   for (size_t i = 0; i < tabs_.size(); ++i) {
-    const Tab& tab = tabs_[i];
+    const Tab &tab = tabs_[i];
     const std::string number = std::to_string(i + 1);
     std::string title;
-    if (tab.client && tab.client->browser() && tab.client->browser()->GetHost()) {
+    if (tab.client && tab.client->browser() &&
+        tab.client->browser()->GetHost()) {
       CefRefPtr<CefNavigationEntry> entry =
           tab.client->browser()->GetHost()->GetVisibleNavigationEntry();
       if (entry) {
@@ -208,10 +205,10 @@ void BrowserWindow::AppendTabFocusMatches(
       }
     }
 
-    const bool matches_prefix =
-        prefix.empty() || StartsWithCaseInsensitive(number, prefix) ||
-        ContainsCaseInsensitive(title, prefix) ||
-        ContainsCaseInsensitive(tab.url, prefix);
+    const bool matches_prefix = prefix.empty() ||
+                                StartsWithCaseInsensitive(number, prefix) ||
+                                ContainsCaseInsensitive(title, prefix) ||
+                                ContainsCaseInsensitive(tab.url, prefix);
     if (!matches_prefix || !seen.insert(ToLowerAscii(number)).second) {
       continue;
     }
@@ -242,16 +239,17 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   if (command_text_.find('\n') != std::string::npos) {
     return;
   }
-  const size_t cursor = command_vim_.mode == vim::Mode::kNormal
-                            ? std::min(command_vim_.cursor + 1,
-                                       command_text_.size())
-                            : command_vim_.cursor;
+  const size_t cursor =
+      command_vim_.mode == vim::Mode::kNormal
+          ? std::min(command_vim_.cursor + 1, command_text_.size())
+          : command_vim_.cursor;
   if (cursor != command_text_.size()) {
     return;
   }
 
   const size_t first_non_space = command_text_.find_first_not_of(" \t");
-  if (first_non_space == std::string::npos || command_text_[first_non_space] != ':') {
+  if (first_non_space == std::string::npos ||
+      command_text_[first_non_space] != ':') {
     return;
   }
 
@@ -259,26 +257,30 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   std::vector<CompletionItem> matches;
 
   const size_t first_space = raw.find_first_of(" \t");
-  const std::string typed_command = first_space == std::string::npos ? raw : raw.substr(0, first_space);
-  const std::string after_command = first_space == std::string::npos ? "" : raw.substr(first_space + 1);
+  const std::string typed_command =
+      first_space == std::string::npos ? raw : raw.substr(0, first_space);
+  const std::string after_command =
+      first_space == std::string::npos ? "" : raw.substr(first_space + 1);
 
   if (first_space == std::string::npos) {
-    for (const CompletionItem& item : CommandList()) {
+    for (const CompletionItem &item : CommandList()) {
       if (StartsWithCaseInsensitive(item.name, typed_command)) {
         matches.push_back(item);
       }
     }
-  } else if (StartsWithCaseInsensitive(typed_command, ":open") && IsTokenBoundary(typed_command, 5)) {
-    const OpenAutocompleteContext context = AnalyzeOpenAutocompleteArgs(after_command);
+  } else if (StartsWithCaseInsensitive(typed_command, ":open") &&
+             IsTokenBoundary(typed_command, 5)) {
+    const OpenAutocompleteContext context =
+        AnalyzeOpenAutocompleteArgs(after_command);
     if (!context.search_engine.empty() &&
         !context.search_engine_token_is_current) {
       AppendSearchHistoryMatches(context.search_engine, context.search_prefix,
                                  matches);
-      command_autocomplete_.completion_start = first_non_space + first_space + 1 +
-                                               context.search_prefix_start;
+      command_autocomplete_.completion_start =
+          first_non_space + first_space + 1 + context.search_prefix_start;
     } else if (!context.already_has_tab_arg &&
                (context.completing_new_arg || !context.arg_prefix.empty())) {
-      for (const CompletionItem& item : OpenArgList()) {
+      for (const CompletionItem &item : OpenArgList()) {
         if (context.completing_new_arg ||
             StartsWithCaseInsensitive(item.name, context.arg_prefix)) {
           matches.push_back(item);
@@ -294,10 +296,10 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     const std::string arg_prefix = arg_start == std::string::npos
                                        ? after_command
                                        : after_command.substr(arg_start + 1);
-    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
-                                    (!after_command.empty() &&
-                                     std::isspace(static_cast<unsigned char>(
-                                         after_command.back())));
+    const bool completing_new_arg =
+        IsWhitespaceOnly(after_command) ||
+        (!after_command.empty() &&
+         std::isspace(static_cast<unsigned char>(after_command.back())));
     if (completing_new_arg || !arg_prefix.empty()) {
       AppendTabFocusMatches(arg_prefix, matches);
     }
@@ -309,20 +311,19 @@ void BrowserWindow::UpdateCommandAutocomplete() {
             ? sidebar_prompt_.items
             : SelectedSidebarItems();
     AppendFolderDestinationMatches(arg_prefix, moving_items, matches);
-    command_autocomplete_.completion_start =
-        first_non_space + first_space + 1;
+    command_autocomplete_.completion_start = first_non_space + first_space + 1;
   } else if (StartsWithCaseInsensitive(typed_command, ":test") &&
              IsTokenBoundary(typed_command, 5)) {
     const size_t arg_start = after_command.find_last_of(" \t");
     const std::string arg_prefix = arg_start == std::string::npos
                                        ? after_command
                                        : after_command.substr(arg_start + 1);
-    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
-                                    (!after_command.empty() &&
-                                     std::isspace(static_cast<unsigned char>(
-                                         after_command.back())));
+    const bool completing_new_arg =
+        IsWhitespaceOnly(after_command) ||
+        (!after_command.empty() &&
+         std::isspace(static_cast<unsigned char>(after_command.back())));
     if (completing_new_arg || !arg_prefix.empty()) {
-      for (const CompletionItem& item : TestArgList()) {
+      for (const CompletionItem &item : TestArgList()) {
         if (StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
         }
@@ -340,13 +341,14 @@ void BrowserWindow::UpdateCommandAutocomplete() {
     const std::string arg_prefix = arg_start == std::string::npos
                                        ? after_command
                                        : after_command.substr(arg_start + 1);
-    const bool completing_new_arg = IsWhitespaceOnly(after_command) ||
-                                    (!after_command.empty() &&
-                                     std::isspace(static_cast<unsigned char>(
-                                         after_command.back())));
+    const bool completing_new_arg =
+        IsWhitespaceOnly(after_command) ||
+        (!after_command.empty() &&
+         std::isspace(static_cast<unsigned char>(after_command.back())));
     if (completing_new_arg || !arg_prefix.empty()) {
-      for (const CompletionItem& item : OnOffArgList()) {
-        if (completing_new_arg || StartsWithCaseInsensitive(item.name, arg_prefix)) {
+      for (const CompletionItem &item : OnOffArgList()) {
+        if (completing_new_arg ||
+            StartsWithCaseInsensitive(item.name, arg_prefix)) {
           matches.push_back(item);
         }
       }
@@ -372,23 +374,26 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   command_autocomplete_.matches = std::move(matches);
 }
 
-void BrowserWindow::FillCommandAutocomplete(const CompletionItem& item) {
+void BrowserWindow::FillCommandAutocomplete(const CompletionItem &item) {
   if (!command_autocomplete_.active) {
     return;
   }
 
-  const std::string& name = CompletionInsertText(item);
+  const std::string &name = CompletionInsertText(item);
   std::string completed;
   if (!name.empty() && name[0] == ':') {
-    const size_t first_non_space = command_autocomplete_.prefix.find_first_not_of(" \t");
-    const std::string leading = first_non_space == std::string::npos
-                                    ? ""
-                                    : command_autocomplete_.prefix.substr(0, first_non_space);
+    const size_t first_non_space =
+        command_autocomplete_.prefix.find_first_not_of(" \t");
+    const std::string leading =
+        first_non_space == std::string::npos
+            ? ""
+            : command_autocomplete_.prefix.substr(0, first_non_space);
     completed = leading + name;
   } else {
     const size_t last_space = command_autocomplete_.prefix.find_last_of(" \t");
     if (command_autocomplete_.completion_start != std::string::npos &&
-        command_autocomplete_.completion_start <= command_autocomplete_.prefix.size()) {
+        command_autocomplete_.completion_start <=
+            command_autocomplete_.prefix.size()) {
       completed = command_autocomplete_.prefix.substr(
                       0, command_autocomplete_.completion_start) +
                   name;
@@ -417,7 +422,8 @@ int BrowserWindow::CommandAutocompleteHeight() const {
   if (visible == 0) {
     return 0;
   }
-  return visible * kCommandAutocompleteRowHeight + kCommandAutocompleteBorder * 2;
+  return visible * kCommandAutocompleteRowHeight +
+         kCommandAutocompleteBorder * 2;
 }
 
 int BrowserWindow::CommandAutocompleteWidth() const {
@@ -426,7 +432,7 @@ int BrowserWindow::CommandAutocompleteWidth() const {
   }
   int max_name = 0;
   int max_desc = 0;
-  for (const CompletionItem& item : command_autocomplete_.matches) {
+  for (const CompletionItem &item : command_autocomplete_.matches) {
     max_name = std::max(max_name, TextColumns(item.name));
     max_desc = std::max(max_desc, TextColumns(item.description));
   }
@@ -444,31 +450,33 @@ bool BrowserWindow::CycleCommandAutocomplete(int direction) {
 
   const int size = static_cast<int>(command_autocomplete_.matches.size());
   if (direction > 0) {
-    command_autocomplete_.selection = command_autocomplete_.selection < 0
-                                          ? 0
-                                          : (command_autocomplete_.selection + 1) % size;
+    command_autocomplete_.selection =
+        command_autocomplete_.selection < 0
+            ? 0
+            : (command_autocomplete_.selection + 1) % size;
   } else {
     command_autocomplete_.selection = command_autocomplete_.selection <= 0
                                           ? size - 1
                                           : command_autocomplete_.selection - 1;
   }
   FillCommandAutocomplete(
-      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)]);
+      command_autocomplete_
+          .matches[static_cast<size_t>(command_autocomplete_.selection)]);
   SetCommandText(command_text_);
   Layout();
   return true;
 }
 
 bool BrowserWindow::DeleteSelectedCommandAutocomplete() {
-  if (!command_autocomplete_.active ||
-      command_autocomplete_.selection < 0 ||
+  if (!command_autocomplete_.active || command_autocomplete_.selection < 0 ||
       command_autocomplete_.selection >=
           static_cast<int>(command_autocomplete_.matches.size())) {
     return false;
   }
 
   const CompletionItem item =
-      command_autocomplete_.matches[static_cast<size_t>(command_autocomplete_.selection)];
+      command_autocomplete_
+          .matches[static_cast<size_t>(command_autocomplete_.selection)];
   const std::string entry = CompletionInsertText(item);
   bool deleted = false;
 
@@ -504,20 +512,19 @@ bool BrowserWindow::DeleteSelectedCommandAutocomplete() {
   UpdateCommandAutocomplete();
 
   int next_selection = -1;
-  if (command_autocomplete_.active &&
-      !command_autocomplete_.matches.empty()) {
+  if (command_autocomplete_.active && !command_autocomplete_.matches.empty()) {
     const int size = static_cast<int>(command_autocomplete_.matches.size());
     const int start = std::min(old_selection, size - 1);
     for (int i = start; i < size; ++i) {
-      if (SameHistoryCompletionSource(command_autocomplete_.matches[static_cast<size_t>(i)],
-                                      item)) {
+      if (SameHistoryCompletionSource(
+              command_autocomplete_.matches[static_cast<size_t>(i)], item)) {
         next_selection = i;
         break;
       }
     }
     for (int i = start; next_selection < 0 && i >= 0; --i) {
-      if (SameHistoryCompletionSource(command_autocomplete_.matches[static_cast<size_t>(i)],
-                                      item)) {
+      if (SameHistoryCompletionSource(
+              command_autocomplete_.matches[static_cast<size_t>(i)], item)) {
         next_selection = i;
         break;
       }
@@ -536,7 +543,7 @@ bool BrowserWindow::DeleteSelectedCommandAutocomplete() {
   return true;
 }
 
-bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
+bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
   if (mode_ == Mode::kNormal) {
     return false;
   }
@@ -553,10 +560,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     return true;
   }
 
-#if !defined(__APPLE__)
-  // Linux keeps the editable field focused and can delegate these operations
-  // to it. macOS deliberately keeps the visible renderer unfocused and handles
-  // the same operations in the command model below.
+  // Keep the editable field focused and delegate native editing operations to
+  // it on every desktop platform.
   if (command_vim_.mode == vim::Mode::kInsert &&
       (IsNavigationEditingKey(event) || IsDeleteKey(event) ||
        IsNativeCommandEditingShortcut(event))) {
@@ -565,15 +570,15 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
 
   // Some platform textfield edit commands are applied natively without reaching
   // our key model. Synchronize those insert-mode edits before handling the next
-  // modeled key. In normal mode the vim model is authoritative: the textfield is
-  // only a renderer for text/cursor state, and syncing it can resurrect stale
-  // native contents after commands like dd/D/cw just rewrote command_text_.
+  // modeled key. In normal mode the vim model is authoritative: the textfield
+  // is only a renderer for text/cursor state, and syncing it can resurrect
+  // stale native contents after commands like dd/D/cw just rewrote
+  // command_text_.
   if (command_vim_.mode == vim::Mode::kInsert && !suppress_next_char_event_) {
     SyncCommandTextFromField();
   }
-#endif
 
-  auto apply_result = [&](const vim::LineEditResult& result) {
+  auto apply_result = [&](const vim::LineEditResult &result) {
     if (result.submit) {
       CommitCommand();
       return;
@@ -595,7 +600,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       Layout();
       UpdateModeIndicator();
     }
-    if (result.text_changed || result.cursor_changed || result.mode_changed || result.pending) {
+    if (result.text_changed || result.cursor_changed || result.mode_changed ||
+        result.pending) {
       SetCommandText(command_text_);
     }
   };
@@ -604,118 +610,24 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     const vim::Mode old_mode = command_vim_.mode;
     const size_t old_cursor = command_vim_.cursor;
     const std::string old_text = command_text_;
-    vim::LineEditResult result = vim::HandleLineEditKey(command_vim_, command_text_, key);
+    vim::LineEditResult result =
+        vim::HandleLineEditKey(command_vim_, command_text_, key);
     if (!result.handled) {
       return false;
     }
-    if (command_text_ != old_text) result.text_changed = true;
-    if (command_vim_.cursor != old_cursor) result.cursor_changed = true;
-    if (command_vim_.mode != old_mode) result.mode_changed = true;
+    if (command_text_ != old_text)
+      result.text_changed = true;
+    if (command_vim_.cursor != old_cursor)
+      result.cursor_changed = true;
+    if (command_vim_.mode != old_mode)
+      result.mode_changed = true;
     apply_result(result);
-    if (suppress_char) suppress_next_char_event_ = true;
+    if (suppress_char)
+      suppress_next_char_event_ = true;
     return true;
   };
 
   const bool key_down = IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN;
-#if defined(__APPLE__)
-  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
-      IsNativeCommandEditingShortcut(event)) {
-    if (MatchesAsciiKey(event, 'c')) {
-      WriteClipboardText(command_text_);
-      return true;
-    }
-    if (MatchesAsciiKey(event, 'x')) {
-      WriteClipboardText(command_text_);
-      const size_t floor = std::min(command_vim_.floor, command_text_.size());
-      const bool changed = command_text_.size() > floor;
-      command_text_.erase(floor);
-      command_vim_.cursor = floor;
-      vim::LineEditResult result;
-      result.text_changed = changed;
-      result.cursor_changed = true;
-      apply_result(result);
-      return true;
-    }
-    if (MatchesAsciiKey(event, 'v')) {
-      std::string pasted = ReadClipboardText();
-      std::replace(pasted.begin(), pasted.end(), '\r', ' ');
-      std::replace(pasted.begin(), pasted.end(), '\n', ' ');
-      if (!pasted.empty()) {
-        vim::ClampInsert(command_vim_, command_text_);
-        command_text_.insert(command_vim_.cursor, pasted);
-        command_vim_.cursor += pasted.size();
-        vim::LineEditResult result;
-        result.text_changed = true;
-        result.cursor_changed = true;
-        apply_result(result);
-      }
-      return true;
-    }
-    if (MatchesAsciiKey(event, 'a')) {
-      const size_t old_cursor = command_vim_.cursor;
-      command_vim_.cursor = command_text_.size();
-      vim::LineEditResult result;
-      result.cursor_changed = command_vim_.cursor != old_cursor;
-      apply_result(result);
-      return true;
-    }
-    // Keep undo/redo shortcuts shell-owned even though the lightweight command
-    // model does not currently retain an edit-history stack.
-    return true;
-  }
-
-  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
-      IsNavigationEditingKey(event)) {
-    const size_t old_cursor = command_vim_.cursor;
-    const bool command_modifier = event.modifiers & EVENTFLAG_COMMAND_DOWN;
-    const bool word_modifier = event.modifiers & EVENTFLAG_ALT_DOWN;
-    const bool left = event.windows_key_code == 0x25 ||
-                      event.native_key_code == 123;
-    const bool right = event.windows_key_code == 0x27 ||
-                       event.native_key_code == 124;
-    const bool home = event.windows_key_code == 0x24 ||
-                      event.native_key_code == 115;
-    const bool end = event.windows_key_code == 0x23 ||
-                     event.native_key_code == 119;
-    if (left) {
-      if (command_modifier) {
-        command_vim_.cursor = command_vim_.floor;
-      } else if (word_modifier) {
-        vim::MoveWordBackward(command_vim_, command_text_);
-      } else if (command_vim_.cursor > command_vim_.floor) {
-        --command_vim_.cursor;
-      }
-    } else if (right) {
-      if (command_modifier) {
-        command_vim_.cursor = command_text_.size();
-      } else if (word_modifier) {
-        vim::MoveWordForward(command_vim_, command_text_);
-      } else if (command_vim_.cursor < command_text_.size()) {
-        ++command_vim_.cursor;
-      }
-    } else if (home) {
-      command_vim_.cursor = command_vim_.floor;
-    } else if (end) {
-      command_vim_.cursor = command_text_.size();
-    }
-    vim::LineEditResult result;
-    result.cursor_changed = command_vim_.cursor != old_cursor;
-    apply_result(result);
-    return true;
-  }
-
-  if (key_down && command_vim_.mode == vim::Mode::kInsert &&
-      IsDeleteKey(event)) {
-    vim::ClampInsert(command_vim_, command_text_);
-    if (command_vim_.cursor < command_text_.size()) {
-      command_text_.erase(command_vim_.cursor, 1);
-      vim::LineEditResult result;
-      result.text_changed = true;
-      apply_result(result);
-    }
-    return true;
-  }
-#endif
   if (key_down) {
     if (HasOnlyControlModifier(event) && IsCtrlKey(event, 'X')) {
       DeleteSelectedCommandAutocomplete();
@@ -738,8 +650,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     if (IsBackspaceKey(event)) {
       if (IsSidebarSearchMode() && command_vim_.cursor <= 1) {
         // The leading / or ? is chrome rather than editable query text. At an
-        // empty query Backspace closes the bar, matching Exocortex; at the start
-        // of a non-empty query it leaves the prompt intact.
+        // empty query Backspace closes the bar, matching Exocortex; at the
+        // start of a non-empty query it leaves the prompt intact.
         if (command_text_.size() <= 1) {
           CancelCommand();
         }
@@ -752,9 +664,10 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
   if (IsRawKeyDown(event)) {
     const char key = PlainKeyChar(event);
     if (key) {
-      return process_key({vim::KeyType::kChar, key,
-                          static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
-                         true);
+      return process_key(
+          {vim::KeyType::kChar, key,
+           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
+          true);
     }
     return true;
   }
@@ -775,7 +688,8 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
     const bool ctrl = event.modifiers & EVENTFLAG_CONTROL_DOWN;
     const bool alt = event.modifiers & EVENTFLAG_ALT_DOWN;
     const bool command = event.modifiers & EVENTFLAG_COMMAND_DOWN;
-    const char16_t c = event.character ? event.character : event.unmodified_character;
+    const char16_t c =
+        event.character ? event.character : event.unmodified_character;
     if (IsBackspaceKey(event)) {
       if (IsSidebarSearchMode() && command_vim_.cursor <= 1) {
         if (command_text_.size() <= 1) {
@@ -786,9 +700,10 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent& event) {
       return process_key({vim::KeyType::kBackspace}, false);
     }
     if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
-      return process_key({vim::KeyType::kChar, static_cast<char>(c),
-                          static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
-                         false);
+      return process_key(
+          {vim::KeyType::kChar, static_cast<char>(c),
+           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
+          false);
     }
     return true;
   }
@@ -845,9 +760,7 @@ bool BrowserWindow::SyncCommandTextFromField() {
   return true;
 }
 
-void BrowserWindow::UpdateCommandView() {
-  RebuildCommandCells();
-}
+void BrowserWindow::UpdateCommandView() { RebuildCommandCells(); }
 
 void BrowserWindow::UpdateAutocompleteView() {
   if (autocomplete_overlay_) {
@@ -871,7 +784,8 @@ void BrowserWindow::RebuildCommandCells() {
   size_t search_engine_arg_start = 0;
   size_t search_engine_arg_end = 0;
   const size_t first_non_space = command_text_.find_first_not_of(" \t");
-  if (first_non_space != std::string::npos && command_text_[first_non_space] == ':') {
+  if (first_non_space != std::string::npos &&
+      command_text_[first_non_space] == ':') {
     const size_t command_start = first_non_space;
     size_t command_stop = command_text_.find_first_of(" \t", command_start);
     if (command_stop == std::string::npos) {
@@ -879,7 +793,7 @@ void BrowserWindow::RebuildCommandCells() {
     }
     const std::string typed_command = ToLowerAscii(
         command_text_.substr(command_start, command_stop - command_start));
-    for (const CompletionItem& item : CommandList()) {
+    for (const CompletionItem &item : CommandList()) {
       if (item.name == typed_command) {
         command_end = command_stop;
         break;
@@ -888,8 +802,9 @@ void BrowserWindow::RebuildCommandCells() {
 
     if (typed_command == ":open") {
       size_t arg_start = command_stop;
-      while (arg_start < command_text_.size() &&
-             std::isspace(static_cast<unsigned char>(command_text_[arg_start]))) {
+      while (
+          arg_start < command_text_.size() &&
+          std::isspace(static_cast<unsigned char>(command_text_[arg_start]))) {
         ++arg_start;
       }
       if (arg_start < command_text_.size()) {
@@ -897,14 +812,15 @@ void BrowserWindow::RebuildCommandCells() {
         if (arg_stop == std::string::npos) {
           arg_stop = command_text_.size();
         }
-        const std::string first_arg = ToLowerAscii(
-            command_text_.substr(arg_start, arg_stop - arg_start));
+        const std::string first_arg =
+            ToLowerAscii(command_text_.substr(arg_start, arg_stop - arg_start));
         if (first_arg == "tab" || first_arg == "-t") {
           open_arg_start = arg_start;
           open_arg_end = arg_stop;
           arg_start = arg_stop;
           while (arg_start < command_text_.size() &&
-                 std::isspace(static_cast<unsigned char>(command_text_[arg_start]))) {
+                 std::isspace(
+                     static_cast<unsigned char>(command_text_[arg_start]))) {
             ++arg_start;
           }
           if (arg_start < command_text_.size()) {
@@ -927,24 +843,8 @@ void BrowserWindow::RebuildCommandCells() {
     }
   }
 
-  std::string rendered_text;
-#if defined(__APPLE__)
-  // The macOS command field is an unfocused renderer, so Chromium will not
-  // paint its native caret or selection cursor. Render the cursor in-band: a
-  // thin bar in insert mode and a solid replacement block in command-normal.
-  rendered_text = command_text_;
-  const std::string cursor_glyph = normal ? "\xE2\x96\x88"  // █
-                                          : "\xE2\x96\x8F"; // ▏
-  const size_t rendered_cursor = std::min(cursor, rendered_text.size());
-  if (normal && rendered_cursor < rendered_text.size()) {
-    rendered_text.replace(rendered_cursor, 1, cursor_glyph);
-  } else {
-    rendered_text.insert(rendered_cursor, cursor_glyph);
-  }
-#else
-  rendered_text =
+  std::string rendered_text =
       normal && command_text_.empty() ? std::string(" ") : command_text_;
-#endif
   const size_t previous_rendered_length =
       command_field_->GetText().ToString().size();
   if (previous_rendered_length > rendered_text.size()) {
@@ -957,18 +857,18 @@ void BrowserWindow::RebuildCommandCells() {
   command_field_->SetText(rendered_text);
   StyleCommandField(command_field_);
   if (!command_text_.empty()) {
-    command_field_->ApplyTextColor(theme::kText,
-                                   CefRange(0, static_cast<uint32_t>(command_text_.size())));
+    command_field_->ApplyTextColor(
+        theme::kText, CefRange(0, static_cast<uint32_t>(command_text_.size())));
   }
   if (command_end > first_non_space) {
-    command_field_->ApplyTextColor(theme::kCommand,
-                                   CefRange(static_cast<uint32_t>(first_non_space),
-                                            static_cast<uint32_t>(command_end)));
+    command_field_->ApplyTextColor(
+        theme::kCommand, CefRange(static_cast<uint32_t>(first_non_space),
+                                  static_cast<uint32_t>(command_end)));
   }
   if (open_arg_end > open_arg_start) {
-    command_field_->ApplyTextColor(theme::kCommand,
-                                   CefRange(static_cast<uint32_t>(open_arg_start),
-                                            static_cast<uint32_t>(open_arg_end)));
+    command_field_->ApplyTextColor(
+        theme::kCommand, CefRange(static_cast<uint32_t>(open_arg_start),
+                                  static_cast<uint32_t>(open_arg_end)));
   }
   if (search_engine_arg_end > search_engine_arg_start) {
     command_field_->ApplyTextColor(
@@ -976,16 +876,10 @@ void BrowserWindow::RebuildCommandCells() {
         CefRange(static_cast<uint32_t>(search_engine_arg_start),
                  static_cast<uint32_t>(search_engine_arg_end)));
   }
-#if defined(__APPLE__)
-  command_field_->ApplyTextColor(
-      theme::kVimNormal,
-      CefRange(static_cast<uint32_t>(cursor),
-               static_cast<uint32_t>(cursor + 1)));
-#else
   if (normal) {
     const size_t selection_end = std::min(cursor + 1, rendered_text.size());
-    command_field_->SelectRange(
-        CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(selection_end)));
+    command_field_->SelectRange(CefRange(static_cast<uint32_t>(cursor),
+                                         static_cast<uint32_t>(selection_end)));
   } else {
     command_field_->SelectRange(
         CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(cursor)));
@@ -993,7 +887,6 @@ void BrowserWindow::RebuildCommandCells() {
   if (mode_ != Mode::kNormal && !command_field_->HasFocus()) {
     command_field_->RequestFocus();
   }
-#endif
 }
 
 void BrowserWindow::RebuildAutocompleteRows() {
@@ -1002,7 +895,7 @@ void BrowserWindow::RebuildAutocompleteRows() {
   }
   autocomplete_panel_->SetBackgroundColor(theme::kSidebarBg);
 
-  for (auto& row : autocomplete_rows_) {
+  for (auto &row : autocomplete_rows_) {
     autocomplete_panel_->RemoveChildView(row);
   }
   autocomplete_rows_.clear();
@@ -1015,12 +908,14 @@ void BrowserWindow::RebuildAutocompleteRows() {
   int start = 0;
   if (static_cast<int>(command_autocomplete_.matches.size()) > visible &&
       command_autocomplete_.selection >= 0) {
-    start = std::max(0, std::min(command_autocomplete_.selection - visible / 2,
-                                 static_cast<int>(command_autocomplete_.matches.size()) - visible));
+    start = std::max(
+        0, std::min(command_autocomplete_.selection - visible / 2,
+                    static_cast<int>(command_autocomplete_.matches.size()) -
+                        visible));
   }
 
   int max_name = 0;
-  for (const CompletionItem& item : command_autocomplete_.matches) {
+  for (const CompletionItem &item : command_autocomplete_.matches) {
     max_name = std::max(max_name, static_cast<int>(item.name.size()));
   }
 
@@ -1028,10 +923,11 @@ void BrowserWindow::RebuildAutocompleteRows() {
   const int row_width = std::max(1, width - kCommandAutocompleteBorder * 2);
   for (int r = 0; r < visible; ++r) {
     const int index = start + r;
-    if (index < 0 || index >= static_cast<int>(command_autocomplete_.matches.size())) {
+    if (index < 0 ||
+        index >= static_cast<int>(command_autocomplete_.matches.size())) {
       break;
     }
-    const CompletionItem& item = command_autocomplete_.matches[index];
+    const CompletionItem &item = command_autocomplete_.matches[index];
     const bool selected = index == command_autocomplete_.selection;
     std::string text = "  ";
     const size_t name_start = text.size();
@@ -1058,9 +954,10 @@ void BrowserWindow::RebuildAutocompleteRows() {
                                    static_cast<uint32_t>(text.size())));
     }
     autocomplete_panel_->AddChildView(row);
-    row->SetBounds(CefRect(kCommandAutocompleteBorder,
-                           kCommandAutocompleteBorder + r * kCommandAutocompleteRowHeight,
-                           row_width, kCommandAutocompleteRowHeight));
+    row->SetBounds(
+        CefRect(kCommandAutocompleteBorder,
+                kCommandAutocompleteBorder + r * kCommandAutocompleteRowHeight,
+                row_width, kCommandAutocompleteRowHeight));
     autocomplete_rows_.push_back(row);
   }
   autocomplete_panel_->InvalidateLayout();
@@ -1069,5 +966,4 @@ void BrowserWindow::RebuildAutocompleteRows() {
   }
 }
 
-
-}  // namespace vimbrowser
+} // namespace vimbrowser

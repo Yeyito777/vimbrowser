@@ -127,7 +127,7 @@ bool TryConnectUnixSocket(const std::filesystem::path& path) {
     return false;
   }
 
-  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  const int fd = SocketCloseOnExec(AF_UNIX, SOCK_STREAM, 0);
   if (fd < 0) {
     return false;
   }
@@ -149,7 +149,7 @@ bool SendIpcCommand(const std::filesystem::path& path,
     return false;
   }
 
-  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  const int fd = SocketCloseOnExec(AF_UNIX, SOCK_STREAM, 0);
   if (fd < 0) {
     return false;
   }

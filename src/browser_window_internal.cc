@@ -1,13 +1,13 @@
-#include "browser_window.h"
+#include "browser_window_internal.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <charconv>
-#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -42,108 +42,6 @@
 
 namespace vimbrowser {
 
-constexpr const char kIpcProtocolName[] = "vimbrowser-ipc";
-constexpr int kIpcProtocolVersion = 1;
-
-// This is only a style-invalidation pulse after :shader changes. The color
-// transform itself remains native Blink code in StyleResolver::ResolveStyle().
-constexpr const char kShaderRefreshScript[] = R"JS(
-(() => {
-  const refresh = () => {
-    const root = document.documentElement;
-    if (!root) return;
-    const oldDisplay = root.style.display;
-    root.style.display = 'none';
-    void root.offsetHeight;
-    root.style.display = oldDisplay;
-    void root.offsetHeight;
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', refresh, {once: true});
-  } else {
-    refresh();
-    setTimeout(refresh, 300);
-  }
-})();
-)JS";
-
-constexpr const char kBlurActiveElementScript[] = R"JS(
-(() => {
-  const element = document.activeElement;
-  if (element && element !== document.body &&
-      element !== document.documentElement &&
-      typeof element.blur === 'function') {
-    element.blur();
-  }
-})();
-)JS";
-
-constexpr int kSidebarWidth = 175;
-constexpr int kCommandHeight = 28;
-constexpr int kCommandAutocompleteRowHeight = 24;
-constexpr int kCommandAutocompleteMaxVisible = 10;
-constexpr int kCommandAutocompleteBorder = 0;
-constexpr int kCommandAutocompleteHPadding = 8;
-constexpr int kRootPanelId = 100;
-constexpr int kMainPanelId = 101;
-constexpr int kSidebarPanelId = 102;
-constexpr int kContentPanelId = 103;
-constexpr int kCommandPanelId = 104;
-constexpr int kCommandSeparatorPanelId = 106;
-constexpr int kCommandContentPanelId = 107;
-constexpr int kSidebarContentPanelId = 108;
-constexpr int kSidebarBorderPanelId = 109;
-constexpr int kContentInnerPanelId = 110;
-constexpr int kModeIndicatorPanelId = 111;
-constexpr int kModeIndicatorFieldId = 112;
-constexpr int kCommandAutocompletePanelId = 113;
-constexpr int kCommandFieldId = 114;
-constexpr int kSidebarSpacerId = 115;
-constexpr int kFpsIndicatorPanelId = 116;
-constexpr int kFpsIndicatorFieldId = 117;
-constexpr int kStatusBarPanelId = 118;
-constexpr int kStatusModeFieldId = 119;
-constexpr int kStatusUrlFieldId = 120;
-constexpr int kStatusContentPanelId = 121;
-constexpr int kStatusOutputFieldId = 122;
-constexpr int kStatusBorderPanelId = 123;
-constexpr int kStatusSidebarSpacerPanelId = 124;
-constexpr int kSidebarBorderOverlayPanelId = 125;
-constexpr int kAcceleratorCommandTab = 5000;
-constexpr int kAcceleratorCommandBacktab = 5001;
-constexpr int kAcceleratorTabNext = 5002;
-constexpr int kAcceleratorTabPrevious = 5003;
-constexpr int kAcceleratorSidebarSpace = 5004;
-constexpr int kAcceleratorHintRightClick = 5005;
-constexpr int kAcceleratorHintHover = 5006;
-constexpr int kSidebarRowBaseId = 2000;
-constexpr int kAutocompleteRowBaseId = 6000;
-constexpr int kSidebarRowHeight = 24;
-// The sidebar is fixed-height and does not expose a scroll container. Rendering
-// hundreds of off-screen textfields dominates extreme session restore startup,
-// while 96 rows already covers unusually tall windows at 24px per row.
-constexpr size_t kSidebarMaxRenderedRows = 96;
-// Experimental chrome-level mode indicator. Flip to false to disable without
-// touching the mode/focus state machines.
-constexpr bool kModeIndicatorEnabled = true;
-constexpr int kModeIndicatorWidth = 96;
-constexpr int kModeIndicatorHeight = 24;
-constexpr int kStatusBarHeight = 16;
-constexpr int kStatusModeWidth = 64;
-constexpr int kCommandTextInsetX = 0;
-constexpr int kCommandCharWidth = 8;
-constexpr int kLineScrollPx = 280;
-constexpr int kSmallScrollPx = 140;
-constexpr size_t kLazyRestoreBackgroundTabThreshold = 8;
-constexpr int kVirtualSidebarRefreshDelayMs = 250;
-// Keep tab content selection asynchronous so rapid tab-switch bursts still
-// coalesce by generation, but do not add an artificial human-visible delay.
-constexpr int kTabContentActivationDelayMs = 0;
-constexpr int kTabStateSaveDelayMs = 250;
-constexpr size_t kOpenHistoryCompletionNameMax = 140;
-constexpr size_t kTabFocusCompletionDescriptionMax = 140;
-constexpr size_t kNoTabIndex = std::numeric_limits<size_t>::max();
-
 size_t IndexAfterVectorMove(size_t index, size_t from, size_t to) {
   if (index == from) {
     return to;
@@ -158,10 +56,9 @@ bool InIdRange(int id, int base, int count) {
   return id >= base && id < base + count;
 }
 
-void StyleTextfield(CefRefPtr<CefTextfield> field,
-                    cef_color_t text,
+void StyleTextfield(CefRefPtr<CefTextfield> field, cef_color_t text,
                     cef_color_t background,
-                    const CefString& font = "monospace, 13px") {
+                    const CefString &font) {
   if (!field) {
     return;
   }
@@ -178,12 +75,6 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   if (!field) {
     return;
   }
-#if defined(__APPLE__)
-  // macOS uses a separate, off-screen editable field. This visible field is a
-  // renderer only, so Chromium never attaches its rounded focus ring here.
-  field->SetReadOnly(true);
-  field->SetFocusable(false);
-#else
   // The command line is a real focused native textfield. We intercept editing
   // keys in BrowserWindow and drive vim::LineEditState ourselves, but the
   // textfield owns all text/caret/selection painting. This keeps normal-mode
@@ -191,15 +82,7 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   // using overlay views that can drift, move text, or fail to erase glyphs.
   field->SetReadOnly(false);
   field->SetFocusable(true);
-#endif
-#if defined(__APPLE__)
-  // The generic macOS monospace fallback does not give every block-element
-  // glyph the same advance as ASCII. Menlo does, so an in-band block cursor
-  // occupies exactly one command character cell.
-  field->SetFontList("Menlo, 13px");
-#else
   field->SetFontList("monospace, 13px");
-#endif
   field->SetBackgroundColor(theme::kTransparent);
   // Chromium colors the insertion caret from the default text color. Keep that
   // cyan, then apply per-range colors for the actual glyphs below.
@@ -208,7 +91,7 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   field->SetSelectionBackgroundColor(theme::kVimNormal);
 }
 
-const std::vector<CompletionItem>& CommandList() {
+const std::vector<CompletionItem> &CommandList() {
   static const std::vector<CompletionItem> commands = {
       {":open", "open URL/search in current tab"},
       {":tab-focus", "focus tab by number/title/url"},
@@ -226,7 +109,7 @@ const std::vector<CompletionItem>& CommandList() {
   return commands;
 }
 
-const std::vector<CompletionItem>& OnOffArgList() {
+const std::vector<CompletionItem> &OnOffArgList() {
   static const std::vector<CompletionItem> args = {
       {"off", "turn off"},
       {"on", "turn on"},
@@ -234,7 +117,7 @@ const std::vector<CompletionItem>& OnOffArgList() {
   return args;
 }
 
-const std::vector<CompletionItem>& OpenArgList() {
+const std::vector<CompletionItem> &OpenArgList() {
   static const std::vector<CompletionItem> args = {
       {"-t", "open in a new tab"},
       {"tab", "open in a new tab"},
@@ -242,63 +125,60 @@ const std::vector<CompletionItem>& OpenArgList() {
   return args;
 }
 
-const std::vector<CompletionItem>& TestArgList() {
+const std::vector<CompletionItem> &TestArgList() {
   static const std::vector<CompletionItem> args = {
       {"permission-modal", "show a mock media permission prompt"},
   };
   return args;
 }
 
-bool CommandTakesArguments(const std::string& command) {
+bool CommandTakesArguments(const std::string &command) {
   return command == ":open" || command == ":tab-focus" ||
          command == ":folder-create" || command == ":folder-move" ||
-         command == ":folder-rename" ||
-         command == ":shader" || command == ":showmode" ||
-         command == ":showfps" || command == ":showstatusline" ||
-         command == ":test";
+         command == ":folder-rename" || command == ":shader" ||
+         command == ":showmode" || command == ":showfps" ||
+         command == ":showstatusline" || command == ":test";
 }
 
-bool IsRawKeyDown(const CefKeyEvent& event) {
+bool IsRawKeyDown(const CefKeyEvent &event) {
   return event.type == KEYEVENT_RAWKEYDOWN;
 }
 
-bool IsCharEvent(const CefKeyEvent& event) {
+bool IsCharEvent(const CefKeyEvent &event) {
   return event.type == KEYEVENT_CHAR;
 }
 
-bool IsPrintableAscii(char16_t c) {
-  return c >= 0x20 && c <= 0x7e;
-}
+bool IsPrintableAscii(char16_t c) { return c >= 0x20 && c <= 0x7e; }
 
 namespace {
 
-bool IsModifierKeyEvent(const CefKeyEvent& event) {
+bool IsModifierKeyEvent(const CefKeyEvent &event) {
   // A modifier's own key-down event does not necessarily include that modifier
   // in |event.modifiers|. In particular, Super_L arrives as VKEY_LWIN (0x5B),
   // whose numeric value happens to equal ASCII '['. Without identifying the
   // physical modifier first, PlainKeyChar() treats a standalone Super press as
   // the sidebar's previous-audible-tab binding.
   switch (event.windows_key_code) {
-    case 0x10:  // VKEY_SHIFT
-    case 0x11:  // VKEY_CONTROL
-    case 0x12:  // VKEY_MENU (Alt)
-    case 0x5B:  // VKEY_LWIN / VKEY_COMMAND
-    case 0x5C:  // VKEY_RWIN
-    case 0xA0:  // VKEY_LSHIFT
-    case 0xA1:  // VKEY_RSHIFT
-    case 0xA2:  // VKEY_LCONTROL
-    case 0xA3:  // VKEY_RCONTROL
-    case 0xA4:  // VKEY_LMENU
-    case 0xA5:  // VKEY_RMENU
-      return true;
-    default:
-      return false;
+  case 0x10: // VKEY_SHIFT
+  case 0x11: // VKEY_CONTROL
+  case 0x12: // VKEY_MENU (Alt)
+  case 0x5B: // VKEY_LWIN / VKEY_COMMAND
+  case 0x5C: // VKEY_RWIN
+  case 0xA0: // VKEY_LSHIFT
+  case 0xA1: // VKEY_RSHIFT
+  case 0xA2: // VKEY_LCONTROL
+  case 0xA3: // VKEY_RCONTROL
+  case 0xA4: // VKEY_LMENU
+  case 0xA5: // VKEY_RMENU
+    return true;
+  default:
+    return false;
   }
 }
 
-}  // namespace
+} // namespace
 
-bool IsPlain(const CefKeyEvent& event) {
+bool IsPlain(const CefKeyEvent &event) {
   return !IsModifierKeyEvent(event) &&
          !(event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
          !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
@@ -306,30 +186,34 @@ bool IsPlain(const CefKeyEvent& event) {
          !(event.modifiers & EVENTFLAG_ALTGR_DOWN);
 }
 
-bool HasOnlyControlModifier(const CefKeyEvent& event) {
+bool HasOnlyControlModifier(const CefKeyEvent &event) {
   return (event.modifiers & EVENTFLAG_CONTROL_DOWN) &&
          !(event.modifiers & EVENTFLAG_SHIFT_DOWN) &&
          !(event.modifiers & EVENTFLAG_ALT_DOWN) &&
          !(event.modifiers & EVENTFLAG_COMMAND_DOWN);
 }
 
-bool IsSpaceKey(const CefKeyEvent& event) {
+bool IsSpaceKey(const CefKeyEvent &event) {
   return event.windows_key_code == 0x20 || event.character == 0x20 ||
          event.unmodified_character == 0x20;
 }
 
-bool IsPlainPrintableKey(const CefKeyEvent& event) {
-  const char16_t c = event.character ? event.character : event.unmodified_character;
+bool IsPlainPrintableKey(const CefKeyEvent &event) {
+  const char16_t c =
+      event.character ? event.character : event.unmodified_character;
   return IsPlain(event) && IsPrintableAscii(c);
 }
 
-bool IsPlainLetterKey(const CefKeyEvent& event, char key) {
+bool IsPlainLetterKey(const CefKeyEvent &event, char key) {
   if (!IsPlain(event)) {
     return false;
   }
-  const char lower = static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
-  const char upper = static_cast<char>(std::toupper(static_cast<unsigned char>(key)));
-  const char16_t c = event.character ? event.character : event.unmodified_character;
+  const char lower =
+      static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
+  const char upper =
+      static_cast<char>(std::toupper(static_cast<unsigned char>(key)));
+  const char16_t c =
+      event.character ? event.character : event.unmodified_character;
   return event.windows_key_code == upper || event.windows_key_code == lower ||
          c == upper || c == lower;
 }
@@ -338,11 +222,12 @@ char LowerAsciiChar(char c) {
   return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 }
 
-char PlainKeyChar(const CefKeyEvent& event) {
+char PlainKeyChar(const CefKeyEvent &event) {
   if (!IsPlain(event)) {
     return 0;
   }
-  const char16_t c = event.character ? event.character : event.unmodified_character;
+  const char16_t c =
+      event.character ? event.character : event.unmodified_character;
   if (IsPrintableAscii(c)) {
     return static_cast<char>(c);
   }
@@ -353,27 +238,48 @@ char PlainKeyChar(const CefKeyEvent& event) {
   }
   if (event.modifiers & EVENTFLAG_SHIFT_DOWN) {
     switch (event.windows_key_code) {
-      case '1': return '!';
-      case '2': return '@';
-      case '3': return '#';
-      case '4': return '$';
-      case '5': return '%';
-      case '6': return '^';
-      case '7': return '&';
-      case '8': return '*';
-      case '9': return '(';
-      case '0': return ')';
-      case '-': return '_';
-      case '=': return '+';
-      case '[': return '{';
-      case ']': return '}';
-      case '\\': return '|';
-      case ';': return ':';
-      case '\'': return '"';
-      case ',': return '<';
-      case '.': return '>';
-      case '/': return '?';
-      case '`': return '~';
+    case '1':
+      return '!';
+    case '2':
+      return '@';
+    case '3':
+      return '#';
+    case '4':
+      return '$';
+    case '5':
+      return '%';
+    case '6':
+      return '^';
+    case '7':
+      return '&';
+    case '8':
+      return '*';
+    case '9':
+      return '(';
+    case '0':
+      return ')';
+    case '-':
+      return '_';
+    case '=':
+      return '+';
+    case '[':
+      return '{';
+    case ']':
+      return '}';
+    case '\\':
+      return '|';
+    case ';':
+      return ':';
+    case '\'':
+      return '"';
+    case ',':
+      return '<';
+    case '.':
+      return '>';
+    case '/':
+      return '?';
+    case '`':
+      return '~';
     }
   }
   if (event.windows_key_code >= 0x20 && event.windows_key_code <= 0x7e) {
@@ -382,7 +288,7 @@ char PlainKeyChar(const CefKeyEvent& event) {
   return 0;
 }
 
-bool IsEnterKey(const CefKeyEvent& event) {
+bool IsEnterKey(const CefKeyEvent &event) {
   if (event.windows_key_code == 0x0D || event.character == '\r' ||
       event.character == '\n' || event.unmodified_character == '\r' ||
       event.unmodified_character == '\n') {
@@ -395,23 +301,22 @@ bool IsEnterKey(const CefKeyEvent& event) {
 #endif
 }
 
-bool IsEscapeKey(const CefKeyEvent& event) {
+bool IsEscapeKey(const CefKeyEvent &event) {
   return event.windows_key_code == 0x1B || event.native_key_code == 9 ||
-         event.native_key_code == 53 ||
-         event.character == 0x1B || event.unmodified_character == 0x1B;
+         event.native_key_code == 53 || event.character == 0x1B ||
+         event.unmodified_character == 0x1B;
 }
 
-bool IsBackspaceKey(const CefKeyEvent& event) {
+bool IsBackspaceKey(const CefKeyEvent &event) {
   return event.windows_key_code == 0x08 || event.windows_key_code == 0xFF08 ||
          event.native_key_code == 22 ||
 #if defined(__APPLE__)
          event.native_key_code == 51 ||
 #endif
-         event.character == 0x08 ||
-         event.unmodified_character == 0x08;
+         event.character == 0x08 || event.unmodified_character == 0x08;
 }
 
-bool IsTabKey(const CefKeyEvent& event) {
+bool IsTabKey(const CefKeyEvent &event) {
   return event.windows_key_code == 0x09 || event.native_key_code == 23 ||
 #if defined(__APPLE__)
          event.native_key_code == 48 ||
@@ -419,7 +324,7 @@ bool IsTabKey(const CefKeyEvent& event) {
          event.character == '\t' || event.unmodified_character == '\t';
 }
 
-bool IsDeleteKey(const CefKeyEvent& event) {
+bool IsDeleteKey(const CefKeyEvent &event) {
   if (event.windows_key_code == 0x2E || event.windows_key_code == 0xFFFF) {
     return true;
   }
@@ -430,47 +335,48 @@ bool IsDeleteKey(const CefKeyEvent& event) {
 #endif
 }
 
-bool IsNavigationEditingKey(const CefKeyEvent& event) {
+bool IsNavigationEditingKey(const CefKeyEvent &event) {
   switch (event.windows_key_code) {
-    case 0x23:  // End
-    case 0x24:  // Home
-    case 0x25:  // Left
-    case 0x26:  // Up
-    case 0x27:  // Right
-    case 0x28:  // Down
-      return true;
-    default:
-      break;
+  case 0x23: // End
+  case 0x24: // Home
+  case 0x25: // Left
+  case 0x26: // Up
+  case 0x27: // Right
+  case 0x28: // Down
+    return true;
+  default:
+    break;
   }
 #if defined(__APPLE__)
   switch (event.native_key_code) {
-    case 115:  // Home
-    case 116:  // Page Up
-    case 119:  // End
-    case 121:  // Page Down
-    case 123:  // Left
-    case 124:  // Right
-    case 125:  // Down
-    case 126:  // Up
-      return true;
-    default:
-      break;
+  case 115: // Home
+  case 116: // Page Up
+  case 119: // End
+  case 121: // Page Down
+  case 123: // Left
+  case 124: // Right
+  case 125: // Down
+  case 126: // Up
+    return true;
+  default:
+    break;
   }
 #endif
   return false;
 }
 
-bool IsCtrlKey(const CefKeyEvent& event, char key) {
+bool IsCtrlKey(const CefKeyEvent &event, char key) {
   if (!(event.modifiers & EVENTFLAG_CONTROL_DOWN)) {
     return false;
   }
-  return event.windows_key_code == key || event.windows_key_code == key + ('a' - 'A') ||
+  return event.windows_key_code == key ||
+         event.windows_key_code == key + ('a' - 'A') ||
          event.character == key || event.character == key + ('a' - 'A') ||
          event.unmodified_character == key ||
          event.unmodified_character == key + ('a' - 'A');
 }
 
-bool IsCtrlSemicolonKey(const CefKeyEvent& event) {
+bool IsCtrlSemicolonKey(const CefKeyEvent &event) {
   if (!HasOnlyControlModifier(event)) {
     return false;
   }
@@ -478,16 +384,187 @@ bool IsCtrlSemicolonKey(const CefKeyEvent& event) {
   // CEF character fields preserve the literal ASCII semicolon on some paths.
   return event.windows_key_code == ';' || event.windows_key_code == 0xBA ||
          event.character == ';' || event.unmodified_character == ';' ||
-         event.native_key_code == 47;
+         event.native_key_code == NativeKeyCodeForSyntheticKey(';', ';');
 }
 
-bool IsCommonCtrlEditingKey(const CefKeyEvent& event) {
+int NativeKeyCodeForSyntheticKey(int windows_key_code,
+                                 char16_t unmodified_character) {
+#if defined(__APPLE__)
+  switch (windows_key_code) {
+  case 0x08:
+    return 51; // Delete / Backspace.
+  case 0x09:
+    return 48; // Tab.
+  case 0x0D:
+    return 36; // Return.
+  case 0x1B:
+    return 53; // Escape.
+  case 0x20:
+    return 49; // Space.
+  case 0x23:
+    return 119; // End.
+  case 0x24:
+    return 115; // Home.
+  case 0x25:
+    return 123; // Left.
+  case 0x26:
+    return 126; // Up.
+  case 0x27:
+    return 124; // Right.
+  case 0x28:
+    return 125; // Down.
+  case 0x2E:
+    return 117; // Forward Delete.
+  default:
+    break;
+  }
+  char16_t key = unmodified_character;
+  if (key >= 'A' && key <= 'Z') {
+    key += 'a' - 'A';
+  }
+  switch (key) {
+  case 'a': return 0;
+  case 's': return 1;
+  case 'd': return 2;
+  case 'f': return 3;
+  case 'h': return 4;
+  case 'g': return 5;
+  case 'z': return 6;
+  case 'x': return 7;
+  case 'c': return 8;
+  case 'v': return 9;
+  case 'b': return 11;
+  case 'q': return 12;
+  case 'w': return 13;
+  case 'e': return 14;
+  case 'r': return 15;
+  case 'y': return 16;
+  case 't': return 17;
+  case '1': return 18;
+  case '2': return 19;
+  case '3': return 20;
+  case '4': return 21;
+  case '6': return 22;
+  case '5': return 23;
+  case '=': return 24;
+  case '9': return 25;
+  case '7': return 26;
+  case '-': return 27;
+  case '8': return 28;
+  case '0': return 29;
+  case ']': return 30;
+  case 'o': return 31;
+  case 'u': return 32;
+  case '[': return 33;
+  case 'i': return 34;
+  case 'p': return 35;
+  case 'l': return 37;
+  case 'j': return 38;
+  case '\'': return 39;
+  case 'k': return 40;
+  case ';': return 41;
+  case '\\': return 42;
+  case ',': return 43;
+  case '/': return 44;
+  case 'n': return 45;
+  case 'm': return 46;
+  case '.': return 47;
+  case '`': return 50;
+  default: return 0;
+  }
+#else
+  switch (windows_key_code) {
+  case 0x08:
+    return 22; // Backspace.
+  case 0x09:
+    return 23; // Tab.
+  case 0x0D:
+    return 36; // Return.
+  case 0x1B:
+    return 9; // Escape.
+  case 0x20:
+    return 65; // Space.
+  case 0x23:
+    return 115; // End.
+  case 0x24:
+    return 110; // Home.
+  case 0x25:
+    return 113; // Left.
+  case 0x26:
+    return 111; // Up.
+  case 0x27:
+    return 114; // Right.
+  case 0x28:
+    return 116; // Down.
+  case 0x2E:
+    return 119; // Delete.
+  default:
+    break;
+  }
+  char16_t key = unmodified_character;
+  if (key >= 'A' && key <= 'Z') {
+    key += 'a' - 'A';
+  }
+  switch (key) {
+  case '1': return 10;
+  case '2': return 11;
+  case '3': return 12;
+  case '4': return 13;
+  case '5': return 14;
+  case '6': return 15;
+  case '7': return 16;
+  case '8': return 17;
+  case '9': return 18;
+  case '0': return 19;
+  case '-': return 20;
+  case '=': return 21;
+  case 'q': return 24;
+  case 'w': return 25;
+  case 'e': return 26;
+  case 'r': return 27;
+  case 't': return 28;
+  case 'y': return 29;
+  case 'u': return 30;
+  case 'i': return 31;
+  case 'o': return 32;
+  case 'p': return 33;
+  case '[': return 34;
+  case ']': return 35;
+  case 'a': return 38;
+  case 's': return 39;
+  case 'd': return 40;
+  case 'f': return 41;
+  case 'g': return 42;
+  case 'h': return 43;
+  case 'j': return 44;
+  case 'k': return 45;
+  case 'l': return 46;
+  case ';': return 47;
+  case '\'': return 48;
+  case '`': return 49;
+  case '\\': return 51;
+  case 'z': return 52;
+  case 'x': return 53;
+  case 'c': return 54;
+  case 'v': return 55;
+  case 'b': return 56;
+  case 'n': return 57;
+  case 'm': return 58;
+  case ',': return 59;
+  case '.': return 60;
+  case '/': return 61;
+  default: return 0;
+  }
+#endif
+}
+
+bool IsCommonCtrlEditingKey(const CefKeyEvent &event) {
   return IsCtrlKey(event, 'a') || IsCtrlKey(event, 'c') ||
          IsCtrlKey(event, 'v') || IsCtrlKey(event, 'x') ||
          IsCtrlKey(event, 'y') || IsCtrlKey(event, 'z');
 }
 
-bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event,
+bool ShouldForwardFocusedEditableKey(const CefKeyEvent &event,
                                      bool focus_on_editable_field) {
   if (!focus_on_editable_field) {
     return false;
@@ -502,8 +579,9 @@ bool ShouldForwardFocusedEditableKey(const CefKeyEvent& event,
 
 std::string Trim(std::string value) {
   auto is_space = [](unsigned char c) { return std::isspace(c); };
-  value.erase(value.begin(), std::find_if(value.begin(), value.end(),
-                                          [&](char c) { return !is_space(c); }));
+  value.erase(value.begin(),
+              std::find_if(value.begin(), value.end(),
+                           [&](char c) { return !is_space(c); }));
   value.erase(std::find_if(value.rbegin(), value.rend(),
                            [&](char c) { return !is_space(c); })
                   .base(),
@@ -512,13 +590,13 @@ std::string Trim(std::string value) {
 }
 
 std::string ToLowerAscii(std::string value) {
-  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
-    return static_cast<char>(std::tolower(c));
-  });
+  std::transform(
+      value.begin(), value.end(), value.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return value;
 }
 
-std::vector<std::string> SplitArgs(const std::string& value) {
+std::vector<std::string> SplitArgs(const std::string &value) {
   std::vector<std::string> args;
   size_t pos = 0;
   while (pos < value.size()) {
@@ -539,7 +617,7 @@ std::vector<std::string> SplitArgs(const std::string& value) {
   return args;
 }
 
-std::string JoinArgs(const std::vector<std::string>& args, size_t start) {
+std::string JoinArgs(const std::vector<std::string> &args, size_t start) {
   std::string result;
   for (size_t i = start; i < args.size(); ++i) {
     if (!result.empty()) {
@@ -550,11 +628,11 @@ std::string JoinArgs(const std::vector<std::string>& args, size_t start) {
   return result;
 }
 
-bool ParseUint64Arg(const std::string& text, uint64_t* out) {
+bool ParseUint64Arg(const std::string &text, uint64_t *out) {
   if (!out || text.empty()) {
     return false;
   }
-  char* end = nullptr;
+  char *end = nullptr;
   errno = 0;
   const unsigned long long value = std::strtoull(text.c_str(), &end, 10);
   if (end == text.c_str() || *end != '\0' || errno != 0) {
@@ -564,11 +642,11 @@ bool ParseUint64Arg(const std::string& text, uint64_t* out) {
   return true;
 }
 
-bool ParseLongArg(const std::string& text, long* out) {
+bool ParseLongArg(const std::string &text, long *out) {
   if (!out || text.empty()) {
     return false;
   }
-  char* end = nullptr;
+  char *end = nullptr;
   errno = 0;
   const long value = std::strtol(text.c_str(), &end, 10);
   if (end == text.c_str() || *end != '\0' || errno != 0) {
@@ -578,11 +656,11 @@ bool ParseLongArg(const std::string& text, long* out) {
   return true;
 }
 
-bool ParseDoubleArg(const std::string& text, double* out) {
+bool ParseDoubleArg(const std::string &text, double *out) {
   if (!out || text.empty()) {
     return false;
   }
-  char* end = nullptr;
+  char *end = nullptr;
   errno = 0;
   const double value = std::strtod(text.c_str(), &end);
   if (end == text.c_str() || *end != '\0' || errno != 0) {
@@ -592,7 +670,8 @@ bool ParseDoubleArg(const std::string& text, double* out) {
   return true;
 }
 
-bool StartsWithCaseInsensitive(const std::string& value, const std::string& prefix) {
+bool StartsWithCaseInsensitive(const std::string &value,
+                               const std::string &prefix) {
   if (value.size() < prefix.size()) {
     return false;
   }
@@ -605,7 +684,8 @@ bool StartsWithCaseInsensitive(const std::string& value, const std::string& pref
   return true;
 }
 
-bool ContainsCaseInsensitive(const std::string& value, const std::string& needle) {
+bool ContainsCaseInsensitive(const std::string &value,
+                             const std::string &needle) {
   if (needle.empty()) {
     return true;
   }
@@ -625,22 +705,21 @@ std::string Ellipsize(std::string value, size_t max_size) {
   return value;
 }
 
-const std::string& CompletionInsertText(const CompletionItem& item) {
+const std::string &CompletionInsertText(const CompletionItem &item) {
   return item.insert_text.empty() ? item.name : item.insert_text;
 }
 
-bool IsWhitespaceOnly(const std::string& value) {
-  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
-    return std::isspace(c);
-  });
+bool IsWhitespaceOnly(const std::string &value) {
+  return std::all_of(value.begin(), value.end(),
+                     [](unsigned char c) { return std::isspace(c); });
 }
 
-bool IsOpenTabArg(const std::string& value) {
+bool IsOpenTabArg(const std::string &value) {
   const std::string lower = ToLowerAscii(value);
   return lower == "tab" || lower == "-t";
 }
 
-bool ArgsContainOpenTabArg(const std::string& value) {
+bool ArgsContainOpenTabArg(const std::string &value) {
   for (std::string arg : SplitArgs(value)) {
     if (IsOpenTabArg(arg)) {
       return true;
@@ -649,9 +728,9 @@ bool ArgsContainOpenTabArg(const std::string& value) {
   return false;
 }
 
-bool ParseSearchEngineInvocation(const std::string& text,
-                                 std::string* engine_out,
-                                 std::string* query_out) {
+bool ParseSearchEngineInvocation(const std::string &text,
+                                 std::string *engine_out,
+                                 std::string *query_out) {
   size_t engine_start = 0;
   while (engine_start < text.size() &&
          std::isspace(static_cast<unsigned char>(text[engine_start]))) {
@@ -682,33 +761,22 @@ bool ParseSearchEngineInvocation(const std::string& text,
   return true;
 }
 
-struct OpenAutocompleteContext {
-  bool completing_new_arg = false;
-  std::string arg_prefix;
-  size_t arg_prefix_start = 0;
-  bool already_has_tab_arg = false;
-  std::string search_engine;
-  std::string search_prefix;
-  size_t search_prefix_start = 0;
-  bool search_engine_token_is_current = false;
-};
-
-OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
-    const std::string& after_command) {
+OpenAutocompleteContext
+AnalyzeOpenAutocompleteArgs(const std::string &after_command) {
   OpenAutocompleteContext context;
   const size_t arg_start = after_command.find_last_of(" \t");
   context.arg_prefix = arg_start == std::string::npos
                            ? after_command
                            : after_command.substr(arg_start + 1);
   context.arg_prefix_start = arg_start == std::string::npos ? 0 : arg_start + 1;
-  const std::string completed_args = arg_start == std::string::npos
-                                         ? ""
-                                         : after_command.substr(0, arg_start + 1);
+  const std::string completed_args =
+      arg_start == std::string::npos ? ""
+                                     : after_command.substr(0, arg_start + 1);
   context.already_has_tab_arg = ArgsContainOpenTabArg(completed_args);
-  context.completing_new_arg = IsWhitespaceOnly(after_command) ||
-                               (!after_command.empty() &&
-                                std::isspace(static_cast<unsigned char>(
-                                    after_command.back())));
+  context.completing_new_arg =
+      IsWhitespaceOnly(after_command) ||
+      (!after_command.empty() &&
+       std::isspace(static_cast<unsigned char>(after_command.back())));
 
   size_t token_start = 0;
   while (token_start < after_command.size() &&
@@ -724,27 +792,29 @@ OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
     ++token_end;
   }
 
-  const std::string first_token = after_command.substr(token_start,
-                                                       token_end - token_start);
+  const std::string first_token =
+      after_command.substr(token_start, token_end - token_start);
   if (IsOpenTabArg(first_token)) {
     context.already_has_tab_arg = true;
     token_start = token_end;
-    while (token_start < after_command.size() &&
-           std::isspace(static_cast<unsigned char>(after_command[token_start]))) {
+    while (
+        token_start < after_command.size() &&
+        std::isspace(static_cast<unsigned char>(after_command[token_start]))) {
       ++token_start;
     }
     if (token_start >= after_command.size()) {
       return context;
     }
     token_end = token_start;
-    while (token_end < after_command.size() &&
-           !std::isspace(static_cast<unsigned char>(after_command[token_end]))) {
+    while (
+        token_end < after_command.size() &&
+        !std::isspace(static_cast<unsigned char>(after_command[token_end]))) {
       ++token_end;
     }
   }
 
-  const std::string engine = ToLowerAscii(
-      after_command.substr(token_start, token_end - token_start));
+  const std::string engine =
+      ToLowerAscii(after_command.substr(token_start, token_end - token_start));
   if (!FindSearchEngine(engine)) {
     return context;
   }
@@ -765,17 +835,18 @@ OpenAutocompleteContext AnalyzeOpenAutocompleteArgs(
   return context;
 }
 
-bool IsTokenBoundary(const std::string& value, size_t pos) {
-  return pos >= value.size() || std::isspace(static_cast<unsigned char>(value[pos]));
+bool IsTokenBoundary(const std::string &value, size_t pos) {
+  return pos >= value.size() ||
+         std::isspace(static_cast<unsigned char>(value[pos]));
 }
 
-int TextColumns(const std::string& value) {
+int TextColumns(const std::string &value) {
   return static_cast<int>(value.size());
 }
 
-std::string ShellRead(const char* command) {
+std::string ShellRead(const char *command) {
   std::string output;
-  FILE* pipe = popen(command, "r");
+  FILE *pipe = popen(command, "r");
   if (!pipe) {
     return output;
   }
@@ -787,8 +858,8 @@ std::string ShellRead(const char* command) {
   return output;
 }
 
-bool ShellWrite(const char* command, const std::string& text) {
-  FILE* pipe = popen(command, "w");
+bool ShellWrite(const char *command, const std::string &text) {
+  FILE *pipe = popen(command, "w");
   if (!pipe) {
     return false;
   }
@@ -813,31 +884,45 @@ std::string JsonEscape(std::string_view text) {
   out.reserve(text.size() + 8);
   for (unsigned char c : text) {
     switch (c) {
-      case '"': out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\b': out += "\\b"; break;
-      case '\f': out += "\\f"; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        if (c < 0x20) {
-          constexpr char kHex[] = "0123456789abcdef";
-          out += "\\u00";
-          out.push_back(kHex[(c >> 4) & 0xf]);
-          out.push_back(kHex[c & 0xf]);
-        } else {
-          out.push_back(static_cast<char>(c));
-        }
+    case '"':
+      out += "\\\"";
+      break;
+    case '\\':
+      out += "\\\\";
+      break;
+    case '\b':
+      out += "\\b";
+      break;
+    case '\f':
+      out += "\\f";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
+    default:
+      if (c < 0x20) {
+        constexpr char kHex[] = "0123456789abcdef";
+        out += "\\u00";
+        out.push_back(kHex[(c >> 4) & 0xf]);
+        out.push_back(kHex[c & 0xf]);
+      } else {
+        out.push_back(static_cast<char>(c));
+      }
     }
   }
   return out;
 }
 
-void AppendJsonEscaped(std::string& out, std::string_view text) {
-  const char* chunk_start = text.data();
-  const char* const end = text.data() + text.size();
-  for (const char* current = chunk_start; current != end; ++current) {
+void AppendJsonEscaped(std::string &out, std::string_view text) {
+  const char *chunk_start = text.data();
+  const char *const end = text.data() + text.size();
+  for (const char *current = chunk_start; current != end; ++current) {
     const unsigned char c = static_cast<unsigned char>(*current);
     if (c != '\\' && c != '"' && c >= 0x20) {
       continue;
@@ -845,43 +930,44 @@ void AppendJsonEscaped(std::string& out, std::string_view text) {
 
     out.append(chunk_start, static_cast<size_t>(current - chunk_start));
     switch (c) {
-      case '\\': out += "\\\\"; break;
-      case '"': out += "\\\""; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        if (c < 0x20) {
-          static constexpr char kHex[] = "0123456789abcdef";
-          out += "\\u00";
-          out.push_back(kHex[(c >> 4) & 0xf]);
-          out.push_back(kHex[c & 0xf]);
-        } else {
-          out.push_back(static_cast<char>(c));
-        }
-        break;
+    case '\\':
+      out += "\\\\";
+      break;
+    case '"':
+      out += "\\\"";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
+    default:
+      if (c < 0x20) {
+        static constexpr char kHex[] = "0123456789abcdef";
+        out += "\\u00";
+        out.push_back(kHex[(c >> 4) & 0xf]);
+        out.push_back(kHex[c & 0xf]);
+      } else {
+        out.push_back(static_cast<char>(c));
+      }
+      break;
     }
     chunk_start = current + 1;
   }
   out.append(chunk_start, static_cast<size_t>(end - chunk_start));
 }
 
-void AppendJsonString(std::string& out, std::string_view text) {
+void AppendJsonString(std::string &out, std::string_view text) {
   out.push_back('"');
   AppendJsonEscaped(out, text);
   out.push_back('"');
 }
 
-template <typename Integer>
-void AppendJsonNumber(std::string& out, Integer value) {
-  char buffer[32];
-  auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), value);
-  if (ec == std::errc()) {
-    out.append(buffer, ptr);
-  }
-}
-
-void AppendJsonNumber(std::string& out, double value) {
+void AppendJsonNumber(std::string &out, double value) {
   char buffer[64];
   auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), value);
   if (ec == std::errc()) {
@@ -891,7 +977,7 @@ void AppendJsonNumber(std::string& out, double value) {
   }
 }
 
-void AppendJsonBool(std::string& out, bool value) {
+void AppendJsonBool(std::string &out, bool value) {
   if (value) {
     out.append("true", 4);
   } else {
@@ -899,13 +985,13 @@ void AppendJsonBool(std::string& out, bool value) {
   }
 }
 
-void SetTabUrl(Tab& tab, std::string url) {
+void SetTabUrl(Tab &tab, std::string url) {
   tab.url = std::move(url);
   tab.url_json.clear();
   AppendJsonString(tab.url_json, tab.url);
 }
 
-void SetTabId(Tab& tab, uint64_t id) {
+void SetTabId(Tab &tab, uint64_t id) {
   tab.id = id;
   tab.id_json.clear();
   AppendJsonNumber(tab.id_json, tab.id);
@@ -925,7 +1011,7 @@ bool IsValidRequestContextName(std::string_view name) {
   });
 }
 
-std::string IpcSocketPathForStatePath(const std::string& state_path) {
+std::string IpcSocketPathForStatePath(const std::string &state_path) {
   std::filesystem::path dir = std::filesystem::path(state_path).parent_path();
   if (dir.empty()) {
     dir = "/tmp/vimbrowser";
@@ -948,13 +1034,13 @@ std::string IpcVersionJson() {
 }
 
 struct IpcCommandInfo {
-  const char* name;
-  const char* usage;
-  const char* description;
-  const char* response;
+  const char *name;
+  const char *usage;
+  const char *description;
+  const char *response;
 };
 
-const std::vector<IpcCommandInfo>& IpcCommandList() {
+const std::vector<IpcCommandInfo> &IpcCommandList() {
   static const std::vector<IpcCommandInfo> commands = {
       {"version", "version", "protocol metadata", "json"},
       {"protocol", "protocol", "protocol metadata alias", "json"},
@@ -963,32 +1049,58 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"tabs", "tabs", "list all tabs with stable tab ids", "json"},
       {"commands", "commands", "machine-readable command metadata", "json"},
       {"folders", "folders", "list durable nested sidebar folders", "json"},
-      {"folder-create", "folder-create <parent-folderid|0> <name>", "create a sidebar folder", "json"},
-      {"folder-rename", "folder-rename <folderid> <name>", "rename a sidebar folder", "json"},
-      {"folder-delete", "folder-delete <folderid> <recursive|unwrap>", "delete or unwrap a sidebar folder", "json"},
-      {"folder-move", "folder-move <folderid> <parent-folderid|0>", "move a folder without reloading contained tabs", "json"},
-      {"folder-pin", "folder-pin <folderid> [on|off]", "toggle or set a folder's pinned sidebar state", "json"},
-      {"tab-folder", "tab-folder <tabid> <folderid|0>", "move a tab into a sidebar folder", "json"},
-      {"tab-pin", "tab-pin <tabid> [on|off]", "toggle or set a tab's pinned sidebar state", "json"},
-      {"sidebar", "sidebar", "inspect sidebar visibility, focus, selection, search, and displayed rows", "json"},
-      {"sidebar-folder", "sidebar-folder <folderid|0>", "open a folder in the sidebar", "json"},
-      {"sidebar-visibility", "sidebar-visibility <on|off|toggle>", "set or toggle sidebar visibility", "json"},
-      {"sidebar-focus", "sidebar-focus [sidebar|web]", "focus the sidebar or web view", "json"},
-      {"sidebar-select", "sidebar-select <tab|folder|parent> [id]", "select a sidebar item without activating it", "json"},
-      {"sidebar-activate", "sidebar-activate", "activate the selected tab or enter the selected folder", "json"},
-      {"sidebar-search", "sidebar-search <forward|backward> <query> | next [same|opposite|forward|backward] | clear", "set, navigate, or clear the global sidebar filter", "json"},
+      {"folder-create", "folder-create <parent-folderid|0> <name>",
+       "create a sidebar folder", "json"},
+      {"folder-rename", "folder-rename <folderid> <name>",
+       "rename a sidebar folder", "json"},
+      {"folder-delete", "folder-delete <folderid> <recursive|unwrap>",
+       "delete or unwrap a sidebar folder", "json"},
+      {"folder-move", "folder-move <folderid> <parent-folderid|0>",
+       "move a folder without reloading contained tabs", "json"},
+      {"folder-pin", "folder-pin <folderid> [on|off]",
+       "toggle or set a folder's pinned sidebar state", "json"},
+      {"tab-folder", "tab-folder <tabid> <folderid|0>",
+       "move a tab into a sidebar folder", "json"},
+      {"tab-pin", "tab-pin <tabid> [on|off]",
+       "toggle or set a tab's pinned sidebar state", "json"},
+      {"sidebar", "sidebar",
+       "inspect sidebar visibility, focus, selection, search, and displayed "
+       "rows",
+       "json"},
+      {"sidebar-folder", "sidebar-folder <folderid|0>",
+       "open a folder in the sidebar", "json"},
+      {"sidebar-visibility", "sidebar-visibility <on|off|toggle>",
+       "set or toggle sidebar visibility", "json"},
+      {"sidebar-focus", "sidebar-focus [sidebar|web]",
+       "focus the sidebar or web view", "json"},
+      {"sidebar-select", "sidebar-select <tab|folder|parent> [id]",
+       "select a sidebar item without activating it", "json"},
+      {"sidebar-activate", "sidebar-activate",
+       "activate the selected tab or enter the selected folder", "json"},
+      {"sidebar-search",
+       "sidebar-search <forward|backward> <query> | next "
+       "[same|opposite|forward|backward] | clear",
+       "set, navigate, or clear the global sidebar filter", "json"},
       {"tab-focus", "tab-focus <tabid>", "focus a tab by stable id", "json"},
-      {"tab-delete", "tab-delete <tabid>", "delete a tab by stable id and destroy its backend", "json"},
-      {"tab-order", "tab-order <tabid> <index>", "move tab to zero-based index", "json"},
-      {"open-tab", "open-tab <url-or-query>", "open url/query in a new active tab", "json"},
-      {"open-context-tab", "open-context-tab <context-name> <url-or-query>", "open a transient tab in a named persistent isolated request context", "json"},
-      {"open", "open <tabid> <url-or-query>", "load url/query in an existing tab", "json"},
+      {"tab-delete", "tab-delete <tabid>",
+       "delete a tab by stable id and destroy its backend", "json"},
+      {"tab-order", "tab-order <tabid> <index>", "move tab to zero-based index",
+       "json"},
+      {"open-tab", "open-tab <url-or-query>",
+       "open url/query in a new active tab", "json"},
+      {"open-context-tab", "open-context-tab <context-name> <url-or-query>",
+       "open a transient tab in a named persistent isolated request context",
+       "json"},
+      {"open", "open <tabid> <url-or-query>",
+       "load url/query in an existing tab", "json"},
       {"reload", "reload [tabid]", "reload a tab", "json"},
-      {"reload-ignore-cache", "reload-ignore-cache [tabid]", "hard reload a tab", "json"},
+      {"reload-ignore-cache", "reload-ignore-cache [tabid]",
+       "hard reload a tab", "json"},
       {"back", "back [tabid]", "navigate tab back", "json"},
       {"forward", "forward [tabid]", "navigate tab forward", "json"},
       {"stop", "stop [tabid]", "stop tab loading", "json"},
-      {"zoom", "zoom [tabid] <in|out|reset|level>", "run native tab zoom", "json"},
+      {"zoom", "zoom [tabid] <in|out|reset|level>", "run native tab zoom",
+       "json"},
       {"scroll", "scroll <dy> [count]", "scroll active page", "json"},
       {"scroll-tab", "scroll-tab <tabid> <dy> [count]", "scroll a tab by stable id", "json"},
       {"frame-tree", "frame-tree <tabid>", "list the current main/child frame tree with opaque frame ids", "json"},
@@ -1011,13 +1123,16 @@ const std::vector<IpcCommandInfo>& IpcCommandList() {
       {"cookie-set", "cookie-set <tabid> <name> <value> [domain] [path]", "set a cookie for the tab URL", "json"},
       {"network", "network <tabid> list|detail|body|replay|clear [requestid]", "inspect, replay, or clear native captured network requests", "json/body"},
       {"fps", "fps", "active tab fps sample", "text/plain"},
-      {"refresh", "refresh", "active tab compositor refresh rate", "text/plain"},
+      {"refresh", "refresh", "active tab compositor refresh rate",
+       "text/plain"},
       {"url", "url", "active tab url", "text/plain"},
       {"showfps", "showfps [on|off]", "toggle/set fps overlay", "json"},
-      {"showstatusline", "showstatusline [on|off]", "toggle/set bottom statusline", "json"},
+      {"showstatusline", "showstatusline [on|off]",
+       "toggle/set bottom statusline", "json"},
       {"shader", "shader [on|off]", "toggle/set shader", "json"},
       {"tab", "tab <1-based-index>", "legacy focus by index", "json"},
-      {"tab-close", "tab-close [tabid]", "legacy close active tab, or close tabid when provided", "json"},
+      {"tab-close", "tab-close [tabid]",
+       "legacy close active tab, or close tabid when provided", "json"},
       {"help", "help", "text command summary", "text/plain"},
   };
   return commands;
@@ -1028,7 +1143,7 @@ std::string IpcCommandsJson() {
     std::string out;
     out.reserve(4096);
     out += "{\"commands\":[";
-    const auto& commands = IpcCommandList();
+    const auto &commands = IpcCommandList();
     for (size_t i = 0; i < commands.size(); ++i) {
       if (i) {
         out.push_back(',');
@@ -1049,28 +1164,8 @@ std::string IpcCommandsJson() {
   return kJson;
 }
 
-constexpr const char kJsEvalMessage[] = "__vimbrowser_ipc_js_eval__";
-constexpr const char kJsResultMessage[] = "__vimbrowser_ipc_js_result__";
-constexpr const char kFocusedEditableMessage[] =
-    "__vimbrowser_focused_editable_changed__";
-// Private CEF mouse-event modifier: the wheel point came from a native hint
-// activation. The CEF Aura delegate uses this before event translation to route
-// synthetic scroll gestures to the currently-focused renderer frame/guest
-// instead of always to the root WebContents widget.
-constexpr uint32_t kVimbrowserHintScrollTargetCefModifier = 1u << 29;
-// Private CEF mouse-event modifier: Chromium masks this off as an unknown UI
-// flag, but our CEF Aura delegate reads it before translation to decide whether
-// synthetic smooth-scroll gestures should target the viewport or the element
-// under the hinted coordinates.
-constexpr uint32_t kVimbrowserScrollTargetElementCefModifier = 1u << 30;
-// Private CEF mouse-event modifier: use the same synthetic gesture path as
-// normal vimbrowser scrolling, but dispatch the full delta immediately instead
-// of feeding it through the smooth-scroll animation accumulator/timer.
-constexpr uint32_t kVimbrowserInstantScrollCefModifier = 1u << 31;
-
-std::string ReadRegularFileToString(const std::string& path,
-                                    size_t max_bytes,
-                                    std::string* error) {
+std::string ReadRegularFileToString(const std::string &path, size_t max_bytes,
+                                    std::string *error) {
   auto fail = [error](std::string message) {
     if (error) {
       *error = "ERR " + std::move(message) + "\n";
@@ -1127,16 +1222,16 @@ std::string ReadRegularFileToString(const std::string& path,
   return contents;
 }
 
-std::string HeadersJson(const CefResponse::HeaderMap& headers) {
+std::string HeadersJson(const CefResponse::HeaderMap &headers) {
   std::ostringstream out;
   out << "[";
   size_t index = 0;
-  for (const auto& [name, value] : headers) {
+  for (const auto &[name, value] : headers) {
     if (index++) {
       out << ",";
     }
-    out << "{\"name\":\"" << JsonEscape(name.ToString())
-        << "\",\"value\":\"" << JsonEscape(value.ToString()) << "\"}";
+    out << "{\"name\":\"" << JsonEscape(name.ToString()) << "\",\"value\":\""
+        << JsonEscape(value.ToString()) << "\"}";
   }
   out << "]";
   return out.str();
@@ -1144,33 +1239,41 @@ std::string HeadersJson(const CefResponse::HeaderMap& headers) {
 
 std::string SameSiteName(cef_cookie_same_site_t same_site) {
   switch (same_site) {
-    case CEF_COOKIE_SAME_SITE_UNSPECIFIED: return "unspecified";
-    case CEF_COOKIE_SAME_SITE_NO_RESTRICTION: return "none";
-    case CEF_COOKIE_SAME_SITE_LAX_MODE: return "lax";
-    case CEF_COOKIE_SAME_SITE_STRICT_MODE: return "strict";
-    default: return "unknown";
+  case CEF_COOKIE_SAME_SITE_UNSPECIFIED:
+    return "unspecified";
+  case CEF_COOKIE_SAME_SITE_NO_RESTRICTION:
+    return "none";
+  case CEF_COOKIE_SAME_SITE_LAX_MODE:
+    return "lax";
+  case CEF_COOKIE_SAME_SITE_STRICT_MODE:
+    return "strict";
+  default:
+    return "unknown";
   }
 }
 
-std::string CookieJson(const CefCookie& cookie) {
+std::string CookieJson(const CefCookie &cookie) {
   std::ostringstream out;
   out << "{"
-      << "\"name\":\"" << JsonEscape(CefString(&cookie.name).ToString()) << "\","
-      << "\"value\":\"" << JsonEscape(CefString(&cookie.value).ToString()) << "\","
-      << "\"domain\":\"" << JsonEscape(CefString(&cookie.domain).ToString()) << "\","
-      << "\"path\":\"" << JsonEscape(CefString(&cookie.path).ToString()) << "\","
+      << "\"name\":\"" << JsonEscape(CefString(&cookie.name).ToString())
+      << "\","
+      << "\"value\":\"" << JsonEscape(CefString(&cookie.value).ToString())
+      << "\","
+      << "\"domain\":\"" << JsonEscape(CefString(&cookie.domain).ToString())
+      << "\","
+      << "\"path\":\"" << JsonEscape(CefString(&cookie.path).ToString())
+      << "\","
       << "\"secure\":" << (cookie.secure ? "true" : "false") << ","
       << "\"httponly\":" << (cookie.httponly ? "true" : "false") << ","
       << "\"same_site\":\"" << SameSiteName(cookie.same_site) << "\","
       << "\"creation\":" << cookie.creation.val << ","
       << "\"last_access\":" << cookie.last_access.val << ","
       << "\"has_expires\":" << (cookie.has_expires ? "true" : "false") << ","
-      << "\"expires\":" << cookie.expires.val
-      << "}";
+      << "\"expires\":" << cookie.expires.val << "}";
   return out.str();
 }
 
-void WriteClipboardText(const std::string& text) {
+void WriteClipboardText(const std::string &text) {
 #if defined(__APPLE__)
   ShellWrite("pbcopy", text);
 #else
@@ -1184,4 +1287,4 @@ void WriteClipboardText(const std::string& text) {
 #endif
 }
 
-}  // namespace vimbrowser
+} // namespace vimbrowser

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -102,6 +103,10 @@ int main(int argc, char** argv) {
   if (fd < 0) {
     fprintf(stderr, "vimbrowser-ipc: socket: %s\n", strerror(errno));
     return 1;
+  }
+  const int fd_flags = fcntl(fd, F_GETFD);
+  if (fd_flags >= 0) {
+    fcntl(fd, F_SETFD, fd_flags | FD_CLOEXEC);
   }
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;

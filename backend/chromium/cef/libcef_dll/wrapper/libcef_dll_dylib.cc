@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=66f12071a9d5ee28ca8de68cf3e13b26ce94c95d$
+// $hash=dfba1a93d5e5f09b23cbc8a167d2e96a6eb9bd0b$
 //
 
 
@@ -153,6 +153,27 @@ decltype(&cef_is_feature_enabled_for_tests) cef_is_feature_enabled_for_tests;
 decltype(&cef_browser_host_create_browser) cef_browser_host_create_browser;
 decltype(&cef_browser_host_create_browser_sync) cef_browser_host_create_browser_sync;
 decltype(&cef_browser_host_get_browser_by_identifier) cef_browser_host_get_browser_by_identifier;
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_browser_has_fps_sample) cef_browser_host_vimbrowser_browser_has_fps_sample;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_get_browser_fps) cef_browser_host_vimbrowser_get_browser_fps;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_get_browser_refresh_rate) cef_browser_host_vimbrowser_get_browser_refresh_rate;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_browser_is_currently_audible) cef_browser_host_vimbrowser_browser_is_currently_audible;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_send_browser_command_key_event) cef_browser_host_vimbrowser_send_browser_command_key_event;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_activate_element_by_selector) cef_browser_host_vimbrowser_activate_element_by_selector;
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+decltype(&cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce) cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce;
+#endif
 decltype(&cef_command_line_create) cef_command_line_create;
 decltype(&cef_command_line_get_global) cef_command_line_get_global;
 #if CEF_API_ADDED(14600)
@@ -438,6 +459,27 @@ INIT_ENTRY(cef_is_feature_enabled_for_tests);
 INIT_ENTRY(cef_browser_host_create_browser);
 INIT_ENTRY(cef_browser_host_create_browser_sync);
 INIT_ENTRY(cef_browser_host_get_browser_by_identifier);
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_browser_has_fps_sample);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_get_browser_fps);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_get_browser_refresh_rate);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_browser_is_currently_audible);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_send_browser_command_key_event);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_activate_element_by_selector);
+#endif
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+INIT_ENTRY(cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce);
+#endif
 INIT_ENTRY(cef_command_line_create);
 INIT_ENTRY(cef_command_line_get_global);
 #if CEF_API_ADDED(14600)
@@ -919,6 +961,48 @@ NO_SANITIZE("cfi-icall") struct _cef_browser_t* cef_browser_host_create_browser_
 NO_SANITIZE("cfi-icall") struct _cef_browser_t* cef_browser_host_get_browser_by_identifier(int browser_id) {
   return g_libcef_pointers.cef_browser_host_get_browser_by_identifier(browser_id);
 }
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") int cef_browser_host_vimbrowser_browser_has_fps_sample(int browser_id) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_browser_has_fps_sample(browser_id);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") double cef_browser_host_vimbrowser_get_browser_fps(int browser_id) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_get_browser_fps(browser_id);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") double cef_browser_host_vimbrowser_get_browser_refresh_rate(int browser_id) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_get_browser_refresh_rate(browser_id);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") int cef_browser_host_vimbrowser_browser_is_currently_audible(int browser_id) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_browser_is_currently_audible(browser_id);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") void cef_browser_host_vimbrowser_send_browser_command_key_event(int browser_id, const cef_key_event_t* event) {
+  g_libcef_pointers.cef_browser_host_vimbrowser_send_browser_command_key_event(browser_id, event);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") int cef_browser_host_vimbrowser_activate_element_by_selector(int browser_id, const cef_string_t* selector, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low, struct _cef_vimbrowser_element_activation_callback_t* callback) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_activate_element_by_selector(browser_id, selector, activation_nonce_high, activation_nonce_low, callback);
+}
+#endif
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") int cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(int browser_id, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low) {
+  return g_libcef_pointers.cef_browser_host_vimbrowser_get_current_file_dialog_activation_nonce(browser_id, activation_nonce_high, activation_nonce_low);
+}
+#endif
 
 NO_SANITIZE("cfi-icall") struct _cef_command_line_t* cef_command_line_create() {
   return g_libcef_pointers.cef_command_line_create();

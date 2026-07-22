@@ -905,6 +905,10 @@ void RenderWidgetHostViewMac::Destroy() {
   delete this;
 }
 
+ui::Compositor* RenderWidgetHostViewMac::GetCompositor() {
+  return browser_compositor_ ? browser_compositor_->GetCompositor() : nullptr;
+}
+
 void RenderWidgetHostViewMac::UpdateTooltipUnderCursor(
     const std::u16string& tooltip_text) {
   if (GetCursorManager()->IsViewUnderCursor(this))

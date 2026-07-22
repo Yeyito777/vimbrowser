@@ -33,14 +33,6 @@
 #include "include/cef_values.h"
 #include "include/wrapper/cef_closure_task.h"
 
-extern "C" bool vimbrowser_activate_element_by_selector(
-    int browser_id,
-    const char* selector,
-    size_t selector_size,
-    uint64_t* activation_nonce_high,
-    uint64_t* activation_nonce_low,
-    void (*callback)(void* user_data, int result, int match_count),
-    void* user_data);
 extern "C" bool vimbrowser_frame_is_out_of_process(
     int browser_id,
     const char* frame_identifier,
@@ -734,8 +726,9 @@ void StartUploadFileAssignment(CefRefPtr<CefBrowserHost> host,
 }
 
 int NextScreenshotDevToolsMessageId() {
-  // Use an explicit positive ID instead of ExecuteDevToolsMethod(0)'s auto-ID so
-  // an extremely fast DevTools method result cannot race observer initialization.
+  // Use an explicit positive ID instead of ExecuteDevToolsMethod(0)'s auto-ID
+  // so an extremely fast DevTools method result cannot race observer
+  // initialization.
   static int next_message_id = 900000000;
   if (next_message_id >= 999000000) {
     next_message_id = 900000000;
@@ -743,7 +736,7 @@ int NextScreenshotDevToolsMessageId() {
   return next_message_id++;
 }
 
-bool ParseSyntheticKeySpec(const std::string& spec, CefKeyEvent* event) {
+bool ParseSyntheticKeySpec(const std::string &spec, CefKeyEvent *event) {
   if (!event || spec.empty()) {
     return false;
   }
@@ -751,9 +744,8 @@ bool ParseSyntheticKeySpec(const std::string& spec, CefKeyEvent* event) {
   size_t start = 0;
   while (start <= spec.size()) {
     const size_t plus = spec.find('+', start);
-    const std::string part = ToLowerAscii(
-        spec.substr(start, plus == std::string::npos ? std::string::npos
-                                                     : plus - start));
+    const std::string part = ToLowerAscii(spec.substr(
+        start, plus == std::string::npos ? std::string::npos : plus - start));
     if (part == "ctrl" || part == "control") {
       event->modifiers |= EVENTFLAG_CONTROL_DOWN;
     } else if (part == "shift") {
@@ -818,24 +810,26 @@ bool ParseSyntheticKeySpec(const std::string& spec, CefKeyEvent* event) {
   }
   event->type = KEYEVENT_RAWKEYDOWN;
   event->windows_key_code = key_code;
-  event->native_key_code = 0;
+  event->native_key_code =
+      NativeKeyCodeForSyntheticKey(key_code, unmodified);
   event->character = character;
   event->unmodified_character = unmodified;
   return true;
 }
 
 class IpcStringVisitor final : public CefStringVisitor {
- public:
-  explicit IpcStringVisitor(IpcReplyCallback reply) : reply_(std::move(reply)) {}
+public:
+  explicit IpcStringVisitor(IpcReplyCallback reply)
+      : reply_(std::move(reply)) {}
 
-  void Visit(const CefString& string) override {
+  void Visit(const CefString &string) override {
     if (reply_) {
       reply_(string.ToString());
       reply_ = nullptr;
     }
   }
 
- private:
+private:
   IpcReplyCallback reply_;
 
   IMPLEMENT_REFCOUNTING(IpcStringVisitor);
@@ -843,13 +837,12 @@ class IpcStringVisitor final : public CefStringVisitor {
 };
 
 class CookieListVisitor final : public CefCookieVisitor {
- public:
-  explicit CookieListVisitor(IpcReplyCallback reply) : reply_(std::move(reply)) {}
+public:
+  explicit CookieListVisitor(IpcReplyCallback reply)
+      : reply_(std::move(reply)) {}
 
-  bool Visit(const CefCookie& cookie,
-             int count,
-             int total,
-             bool& deleteCookie) override {
+  bool Visit(const CefCookie &cookie, int count, int total,
+             bool &deleteCookie) override {
     deleteCookie = false;
     cookies_.push_back(CookieJson(cookie));
     if (total <= 0 || count + 1 >= total) {
@@ -877,7 +870,7 @@ class CookieListVisitor final : public CefCookieVisitor {
     reply(out.str());
   }
 
- private:
+private:
   IpcReplyCallback reply_;
   std::vector<std::string> cookies_;
 
@@ -886,8 +879,9 @@ class CookieListVisitor final : public CefCookieVisitor {
 };
 
 class CookieDeleteCallback final : public CefDeleteCookiesCallback {
- public:
-  explicit CookieDeleteCallback(IpcReplyCallback reply) : reply_(std::move(reply)) {}
+public:
+  explicit CookieDeleteCallback(IpcReplyCallback reply)
+      : reply_(std::move(reply)) {}
 
   void OnComplete(int num_deleted) override {
     if (reply_) {
@@ -896,7 +890,7 @@ class CookieDeleteCallback final : public CefDeleteCookiesCallback {
     }
   }
 
- private:
+private:
   IpcReplyCallback reply_;
 
   IMPLEMENT_REFCOUNTING(CookieDeleteCallback);
@@ -904,8 +898,9 @@ class CookieDeleteCallback final : public CefDeleteCookiesCallback {
 };
 
 class CookieSetCallback final : public CefSetCookieCallback {
- public:
-  explicit CookieSetCallback(IpcReplyCallback reply) : reply_(std::move(reply)) {}
+public:
+  explicit CookieSetCallback(IpcReplyCallback reply)
+      : reply_(std::move(reply)) {}
 
   void OnComplete(bool success) override {
     if (reply_) {
@@ -914,7 +909,7 @@ class CookieSetCallback final : public CefSetCookieCallback {
     }
   }
 
- private:
+private:
   IpcReplyCallback reply_;
 
   IMPLEMENT_REFCOUNTING(CookieSetCallback);
@@ -922,8 +917,7 @@ class CookieSetCallback final : public CefSetCookieCallback {
 };
 
 void VisitCookiesForUrl(CefRefPtr<CefCookieManager> manager,
-                        const std::string& url,
-                        IpcReplyCallback reply) {
+                        const std::string &url, IpcReplyCallback reply) {
   if (url.empty()) {
     reply("ERR cookie URL is empty\n");
     return;
@@ -937,11 +931,12 @@ void VisitCookiesForUrl(CefRefPtr<CefCookieManager> manager,
     visitor->Finish();
     return;
   }
-  CefPostDelayedTask(TID_UI, base::BindOnce(&CookieListVisitor::Finish, visitor), 1500);
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&CookieListVisitor::Finish, visitor), 1500);
 }
 
 class URLRequestReplayClient final : public CefURLRequestClient {
- public:
+public:
   explicit URLRequestReplayClient(IpcReplyCallback reply)
       : reply_(std::move(reply)) {}
 
@@ -949,7 +944,8 @@ class URLRequestReplayClient final : public CefURLRequestClient {
     if (!reply_) {
       return;
     }
-    CefRefPtr<CefResponse> response = request ? request->GetResponse() : nullptr;
+    CefRefPtr<CefResponse> response =
+        request ? request->GetResponse() : nullptr;
     CefResponse::HeaderMap headers;
     if (response) {
       response->GetHeaderMap(headers);
@@ -958,13 +954,16 @@ class URLRequestReplayClient final : public CefURLRequestClient {
     out << "{"
         << "\"request_status\":"
         << (request ? static_cast<int>(request->GetRequestStatus()) : -1) << ","
-        << "\"error\":" << (response ? static_cast<int>(response->GetError()) : 0) << ","
+        << "\"error\":"
+        << (response ? static_cast<int>(response->GetError()) : 0) << ","
         << "\"status\":" << (response ? response->GetStatus() : 0) << ","
         << "\"status_text\":\""
-        << JsonEscape(response ? response->GetStatusText().ToString() : std::string())
+        << JsonEscape(response ? response->GetStatusText().ToString()
+                               : std::string())
         << "\","
         << "\"mime_type\":\""
-        << JsonEscape(response ? response->GetMimeType().ToString() : std::string())
+        << JsonEscape(response ? response->GetMimeType().ToString()
+                               : std::string())
         << "\","
         << "\"url\":\""
         << JsonEscape(response ? response->GetURL().ToString() : std::string())
@@ -972,43 +971,35 @@ class URLRequestReplayClient final : public CefURLRequestClient {
         << "\"headers\":" << HeadersJson(headers) << ","
         << "\"body\":\"" << JsonEscape(body_) << "\","
         << "\"body_size\":" << body_.size() << ","
-        << "\"body_truncated\":" << (body_truncated_ ? "true" : "false")
-        << "}";
+        << "\"body_truncated\":" << (body_truncated_ ? "true" : "false") << "}";
     auto reply = std::move(reply_);
     reply_ = nullptr;
     reply(out.str());
   }
 
-  void OnUploadProgress(CefRefPtr<CefURLRequest> request,
-                        int64_t current,
+  void OnUploadProgress(CefRefPtr<CefURLRequest> request, int64_t current,
                         int64_t total) override {}
-  void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
-                          int64_t current,
+  void OnDownloadProgress(CefRefPtr<CefURLRequest> request, int64_t current,
                           int64_t total) override {}
-  void OnDownloadData(CefRefPtr<CefURLRequest> request,
-                      const void* data,
+  void OnDownloadData(CefRefPtr<CefURLRequest> request, const void *data,
                       size_t data_length) override {
-    const size_t remaining = body_.size() < (1024 * 1024)
-                                 ? (1024 * 1024) - body_.size()
-                                 : 0;
+    const size_t remaining =
+        body_.size() < (1024 * 1024) ? (1024 * 1024) - body_.size() : 0;
     const size_t take = std::min(data_length, remaining);
     if (take > 0) {
-      body_.append(static_cast<const char*>(data), take);
+      body_.append(static_cast<const char *>(data), take);
     }
     if (take < data_length) {
       body_truncated_ = true;
     }
   }
-  bool GetAuthCredentials(bool isProxy,
-                          const CefString& host,
-                          int port,
-                          const CefString& realm,
-                          const CefString& scheme,
+  bool GetAuthCredentials(bool isProxy, const CefString &host, int port,
+                          const CefString &realm, const CefString &scheme,
                           CefRefPtr<CefAuthCallback> callback) override {
     return false;
   }
 
- private:
+private:
   IpcReplyCallback reply_;
   std::string body_;
   bool body_truncated_ = false;
@@ -1018,14 +1009,11 @@ class URLRequestReplayClient final : public CefURLRequestClient {
 };
 
 class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
- public:
-  ScreenshotDevToolsObserver(uint64_t tab_id,
-                             std::string url,
+public:
+  ScreenshotDevToolsObserver(uint64_t tab_id, std::string url,
                              IpcReplyCallback reply,
                              std::function<void()> cleanup = {})
-      : tab_id_(tab_id),
-        url_(std::move(url)),
-        reply_(std::move(reply)),
+      : tab_id_(tab_id), url_(std::move(url)), reply_(std::move(reply)),
         cleanup_(std::move(cleanup)) {}
 
   void SetRegistration(CefRefPtr<CefRegistration> registration) {
@@ -1036,29 +1024,30 @@ class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
 
   void Fail(std::string error) { Finish(std::move(error)); }
 
-  void OnDevToolsMethodResult(CefRefPtr<CefBrowser> browser,
-                              int message_id,
-                              bool success,
-                              const void* result,
+  void OnDevToolsMethodResult(CefRefPtr<CefBrowser> browser, int message_id,
+                              bool success, const void *result,
                               size_t result_size) override {
     if (completed_ || message_id_ == 0 || message_id != message_id_) {
       return;
     }
 
     if (!success) {
-      Finish("ERR screenshot failed: " + DevToolsErrorMessage(result, result_size) +
-             "\n");
+      Finish("ERR screenshot failed: " +
+             DevToolsErrorMessage(result, result_size) + "\n");
       return;
     }
 
-    CefRefPtr<CefValue> value = CefParseJSON(result, result_size, JSON_PARSER_RFC);
+    CefRefPtr<CefValue> value =
+        CefParseJSON(result, result_size, JSON_PARSER_RFC);
     if (!value || value->GetType() != VTYPE_DICTIONARY) {
       Finish("ERR screenshot failed: invalid devtools response\n");
       return;
     }
     CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
-    if (!dict || !dict->HasKey("data") || dict->GetType("data") != VTYPE_STRING) {
-      Finish("ERR screenshot failed: devtools response did not include image data\n");
+    if (!dict || !dict->HasKey("data") ||
+        dict->GetType("data") != VTYPE_STRING) {
+      Finish("ERR screenshot failed: devtools response did not include image "
+             "data\n");
       return;
     }
 
@@ -1079,12 +1068,14 @@ class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
     Finish(out.str());
   }
 
- private:
-  std::string DevToolsErrorMessage(const void* result, size_t result_size) const {
+private:
+  std::string DevToolsErrorMessage(const void *result,
+                                   size_t result_size) const {
     if (!result || result_size == 0) {
       return "unknown error";
     }
-    CefRefPtr<CefValue> value = CefParseJSON(result, result_size, JSON_PARSER_RFC);
+    CefRefPtr<CefValue> value =
+        CefParseJSON(result, result_size, JSON_PARSER_RFC);
     if (value && value->GetType() == VTYPE_DICTIONARY) {
       CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
       if (dict && dict->HasKey("message") &&
@@ -1092,7 +1083,7 @@ class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
         return dict->GetString("message").ToString();
       }
     }
-    return std::string(static_cast<const char*>(result), result_size);
+    return std::string(static_cast<const char *>(result), result_size);
   }
 
   void Finish(std::string response) {
@@ -1123,9 +1114,9 @@ class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
   DISALLOW_COPY_AND_ASSIGN(ScreenshotDevToolsObserver);
 };
 
-void StartScreenshotDevToolsCapture(CefRefPtr<CefBrowserHost> host,
-                                    CefRefPtr<CefDictionaryValue> params,
-                                    CefRefPtr<ScreenshotDevToolsObserver> observer) {
+void StartScreenshotDevToolsCapture(
+    CefRefPtr<CefBrowserHost> host, CefRefPtr<CefDictionaryValue> params,
+    CefRefPtr<ScreenshotDevToolsObserver> observer) {
   if (!host || !observer) {
     if (observer) {
       observer->Fail("ERR screenshot failed to start\n");
@@ -1136,9 +1127,8 @@ void StartScreenshotDevToolsCapture(CefRefPtr<CefBrowserHost> host,
   observer->SetRegistration(host->AddDevToolsMessageObserver(observer));
   const int requested_message_id = NextScreenshotDevToolsMessageId();
   observer->SetMessageId(requested_message_id);
-  const int message_id =
-      host->ExecuteDevToolsMethod(requested_message_id, "Page.captureScreenshot",
-                                  params);
+  const int message_id = host->ExecuteDevToolsMethod(
+      requested_message_id, "Page.captureScreenshot", params);
   if (message_id == 0) {
     observer->Fail("ERR screenshot failed to start\n");
     return;
@@ -1146,17 +1136,37 @@ void StartScreenshotDevToolsCapture(CefRefPtr<CefBrowserHost> host,
   if (message_id != requested_message_id) {
     observer->SetMessageId(message_id);
   }
-  CefPostDelayedTask(
-      TID_UI,
-      base::BindOnce(
-          [](CefRefPtr<ScreenshotDevToolsObserver> observer) {
-            if (observer) {
-              observer->Fail("ERR screenshot timed out\n");
-            }
-          },
-          observer),
-      30000);
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(
+                         [](CefRefPtr<ScreenshotDevToolsObserver> observer) {
+                           if (observer) {
+                             observer->Fail("ERR screenshot timed out\n");
+                           }
+                         },
+                         observer),
+                     30000);
 }
+
+class FileChooserActivationCallback final
+    : public CefVimbrowserElementActivationCallback {
+ public:
+  using Completion = base::OnceCallback<void(int, int)>;
+
+  explicit FileChooserActivationCallback(Completion completion)
+      : completion_(std::move(completion)) {}
+
+  void OnComplete(int result, int match_count) override {
+    if (completion_) {
+      std::move(completion_).Run(result, match_count);
+    }
+  }
+
+ private:
+  Completion completion_;
+
+  IMPLEMENT_REFCOUNTING(FileChooserActivationCallback);
+  DISALLOW_COPY_AND_ASSIGN(FileChooserActivationCallback);
+};
 
 struct FileChooserActivationContext {
   CefRefPtr<BrowserWindow> owner;
@@ -1258,26 +1268,22 @@ void BrowserWindow::StartFileChooserActivationUpload(
   file_chooser_upload_.chooser_callback = nullptr;
   file_chooser_upload_.completion_reply = std::move(reply);
 
-  auto context = std::make_unique<FileChooserActivationContext>();
-  context->owner = this;
-  context->generation = file_chooser_upload_.generation;
-  auto* context_ptr = context.release();
-  const bool started = vimbrowser_activate_element_by_selector(
-      browser->GetIdentifier(), file_chooser_upload_.activation_selector.data(),
-      file_chooser_upload_.activation_selector.size(),
-      &file_chooser_upload_.activation_nonce_high,
-      &file_chooser_upload_.activation_nonce_low,
-      +[](void* user_data, int result, int match_count) {
-        std::unique_ptr<FileChooserActivationContext> context(
-            static_cast<FileChooserActivationContext*>(user_data));
-        if (context && context->owner) {
-          context->owner->FinishFileChooserElementActivation(
-              context->generation, result, match_count);
-        }
-      },
-      context_ptr);
+  const uint64_t generation = file_chooser_upload_.generation;
+  CefRefPtr<FileChooserActivationCallback> activation_callback =
+      new FileChooserActivationCallback(base::BindOnce(
+          [](CefRefPtr<BrowserWindow> owner, uint64_t generation, int result,
+             int match_count) {
+            if (owner) {
+              owner->FinishFileChooserElementActivation(generation, result,
+                                                        match_count);
+            }
+          },
+          CefRefPtr<BrowserWindow>(this), generation));
+  const bool started = CefBrowserHost::VimbrowserActivateElementBySelector(
+      browser->GetIdentifier(), file_chooser_upload_.activation_selector,
+      file_chooser_upload_.activation_nonce_high,
+      file_chooser_upload_.activation_nonce_low, activation_callback);
   if (!started) {
-    delete context_ptr;
     file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
     file_chooser_upload_.paths.clear();
     file_chooser_upload_.error_code = "activation_backend_unavailable";
@@ -1849,7 +1855,8 @@ void BrowserWindow::FinishFileChooserUploadValidation(
   ReplyToAutomaticFileChooserUpload(true);
 }
 
-void BrowserWindow::CompleteJsIpcRequest(uint64_t request_id, std::string response) {
+void BrowserWindow::CompleteJsIpcRequest(uint64_t request_id,
+                                         std::string response) {
   auto it = pending_js_ipc_.find(request_id);
   if (it == pending_js_ipc_.end()) {
     return;
@@ -2023,37 +2030,34 @@ void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
   const uint64_t request_id = next_ipc_request_id_++;
   pending_js_ipc_[request_id] = std::move(reply);
 
-  CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(kJsEvalMessage);
+  CefRefPtr<CefProcessMessage> message =
+      CefProcessMessage::Create(kJsEvalMessage);
   CefRefPtr<CefListValue> args = message->GetArgumentList();
   args->SetString(0, std::to_string(request_id));
   args->SetString(1, code);
   frame->SendProcessMessage(PID_RENDERER, message);
 
   CefRefPtr<BrowserWindow> self = this;
-  CefPostDelayedTask(
-      TID_UI,
-      base::BindOnce(&BrowserWindow::CompleteJsIpcRequest, self, request_id,
-                     std::string("ERR js command timed out\n")),
-      timeout_ms);
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&BrowserWindow::CompleteJsIpcRequest, self,
+                                    request_id,
+                                    std::string("ERR js command timed out\n")),
+                     timeout_ms);
 }
 
-void BrowserWindow::ReadJsFileForIpc(uint64_t tab_id,
-                                     std::string path,
+void BrowserWindow::ReadJsFileForIpc(uint64_t tab_id, std::string path,
                                      IpcReplyCallback reply) {
   std::string error;
-  std::string code =
-      ReadRegularFileToString(path, kMaxJsFileBytes, &error);
+  std::string code = ReadRegularFileToString(path, kMaxJsFileBytes, &error);
   CefRefPtr<BrowserWindow> self = this;
-  if (!CefPostTask(
-          TID_UI,
-          base::BindOnce(&BrowserWindow::FinishJsFileForIpc, self, tab_id,
-                         std::move(code), std::move(error), reply))) {
+  if (!CefPostTask(TID_UI, base::BindOnce(&BrowserWindow::FinishJsFileForIpc,
+                                          self, tab_id, std::move(code),
+                                          std::move(error), reply))) {
     reply("ERR failed to post js-file result to UI thread\n");
   }
 }
 
-void BrowserWindow::FinishJsFileForIpc(uint64_t tab_id,
-                                       std::string code,
+void BrowserWindow::FinishJsFileForIpc(uint64_t tab_id, std::string code,
                                        std::string error,
                                        IpcReplyCallback reply) {
   if (!error.empty()) {
@@ -2081,23 +2085,23 @@ void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id,
     reply("ERR tab has no url\n");
     return;
   }
-  CefRefPtr<CefRequestContext> context = browser->GetHost()
-                                             ? browser->GetHost()->GetRequestContext()
-                                             : nullptr;
-  CefRefPtr<CefCookieManager> manager = context ? context->GetCookieManager(nullptr)
-                                                : nullptr;
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
+  CefRefPtr<CefCookieManager> manager =
+      context ? context->GetCookieManager(nullptr) : nullptr;
   VisitCookiesForUrl(manager, url, std::move(reply));
 }
 
 void BrowserWindow::HandleCookiesForUrlIpcCommand(std::string url,
                                                   IpcReplyCallback reply) {
-  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
+  CefRefPtr<CefCookieManager> manager =
+      CefCookieManager::GetGlobalManager(nullptr);
   VisitCookiesForUrl(manager, url, std::move(reply));
 }
 
 void BrowserWindow::HandleCookieDeleteIpcCommand(uint64_t tab_id,
-                                                std::string name,
-                                                IpcReplyCallback reply) {
+                                                 std::string name,
+                                                 IpcReplyCallback reply) {
   std::string error;
   CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error);
   if (!browser) {
@@ -2111,26 +2115,25 @@ void BrowserWindow::HandleCookieDeleteIpcCommand(uint64_t tab_id,
     reply("ERR tab has no url\n");
     return;
   }
-  CefRefPtr<CefRequestContext> context = browser->GetHost()
-                                             ? browser->GetHost()->GetRequestContext()
-                                             : nullptr;
-  CefRefPtr<CefCookieManager> manager = context ? context->GetCookieManager(nullptr)
-                                                : nullptr;
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
+  CefRefPtr<CefCookieManager> manager =
+      context ? context->GetCookieManager(nullptr) : nullptr;
   if (!manager) {
     reply("ERR no cookie manager\n");
     return;
   }
-  if (!manager->DeleteCookies(url, name, new CookieDeleteCallback(std::move(reply)))) {
+  if (!manager->DeleteCookies(url, name,
+                              new CookieDeleteCallback(std::move(reply)))) {
     reply("ERR cookie delete failed to start\n");
   }
 }
 
-void BrowserWindow::HandleCookieSetIpcCommand(uint64_t tab_id,
-                                             std::string name,
-                                             std::string value,
-                                             std::string domain,
-                                             std::string path,
-                                             IpcReplyCallback reply) {
+void BrowserWindow::HandleCookieSetIpcCommand(uint64_t tab_id, std::string name,
+                                              std::string value,
+                                              std::string domain,
+                                              std::string path,
+                                              IpcReplyCallback reply) {
   std::string error;
   CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error);
   if (!browser) {
@@ -2144,11 +2147,10 @@ void BrowserWindow::HandleCookieSetIpcCommand(uint64_t tab_id,
     reply("ERR tab has no url\n");
     return;
   }
-  CefRefPtr<CefRequestContext> context = browser->GetHost()
-                                             ? browser->GetHost()->GetRequestContext()
-                                             : nullptr;
-  CefRefPtr<CefCookieManager> manager = context ? context->GetCookieManager(nullptr)
-                                                : nullptr;
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
+  CefRefPtr<CefCookieManager> manager =
+      context ? context->GetCookieManager(nullptr) : nullptr;
   if (!manager) {
     reply("ERR no cookie manager\n");
     return;
@@ -2162,7 +2164,8 @@ void BrowserWindow::HandleCookieSetIpcCommand(uint64_t tab_id,
   cookie.httponly = 0;
   cookie.has_expires = 0;
   cookie.same_site = CEF_COOKIE_SAME_SITE_UNSPECIFIED;
-  if (!manager->SetCookie(url, cookie, new CookieSetCallback(std::move(reply)))) {
+  if (!manager->SetCookie(url, cookie,
+                          new CookieSetCallback(std::move(reply)))) {
     reply("ERR cookie set failed to start\n");
   }
 }
@@ -2181,15 +2184,16 @@ void BrowserWindow::HandleNetworkReplayIpcCommand(uint64_t tab_id,
     reply("ERR tab has no client\n");
     return;
   }
-  CefRefPtr<CefRequest> request = tabs_[index].client->BuildReplayRequest(request_id, &error);
+  CefRefPtr<CefRequest> request =
+      tabs_[index].client->BuildReplayRequest(request_id, &error);
   if (!request) {
     reply(error);
     return;
   }
-  CefRefPtr<URLRequestReplayClient> client(new URLRequestReplayClient(std::move(reply)));
-  CefRefPtr<CefRequestContext> context = browser->GetHost()
-                                             ? browser->GetHost()->GetRequestContext()
-                                             : nullptr;
+  CefRefPtr<URLRequestReplayClient> client(
+      new URLRequestReplayClient(std::move(reply)));
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
   CefURLRequest::Create(request, client, context);
 }
 
@@ -2224,17 +2228,18 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
 
   if (index == active_index_) {
     CefRefPtr<ScreenshotDevToolsObserver> observer =
-        new ScreenshotDevToolsObserver(tab_id, std::move(url), std::move(reply));
+        new ScreenshotDevToolsObserver(tab_id, std::move(url),
+                                       std::move(reply));
     StartScreenshotDevToolsCapture(host, params, observer);
     return;
   }
 
   // Paint the inactive tab into a background compositor surface without
-  // activating or focusing it. CEF/Views only keeps a reliable surface for views
-  // that are attached and visible, so briefly show the target behind the active
-  // view, keep the active view frontmost, then let the backend CDP new-surface
-  // path copy the target's own surface. The cleanup hides the target again if it
-  // is still inactive.
+  // activating or focusing it. CEF/Views only keeps a reliable surface for
+  // views that are attached and visible, so briefly show the target behind the
+  // active view, keep the active view frontmost, then let the backend CDP
+  // new-surface path copy the target's own surface. The cleanup hides the
+  // target again if it is still inactive.
   CefRefPtr<CefBrowserView> target_view = tabs_[index].view;
   CefRefPtr<CefBrowserView> active_view =
       active_index_ < tabs_.size() ? tabs_[active_index_].view : nullptr;
@@ -2265,10 +2270,8 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
       TID_UI,
       base::BindOnce(
           [](CefRefPtr<CefBrowserHost> host,
-             CefRefPtr<CefDictionaryValue> params,
-             uint64_t tab_id,
-             std::string url,
-             IpcReplyCallback reply,
+             CefRefPtr<CefDictionaryValue> params, uint64_t tab_id,
+             std::string url, IpcReplyCallback reply,
              std::function<void()> cleanup) mutable {
             CefRefPtr<ScreenshotDevToolsObserver> observer =
                 new ScreenshotDevToolsObserver(tab_id, std::move(url),
@@ -2281,8 +2284,7 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
       75);
 }
 
-void BrowserWindow::AppendTabJson(std::string& out,
-                                  const Tab& tab,
+void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
                                   size_t index) const {
   if (!tab.client && !tab.url.empty()) {
     out += "{\"id\":";
@@ -2335,7 +2337,8 @@ void BrowserWindow::AppendTabJson(std::string& out,
     can_go_back = browser->CanGoBack();
     can_go_forward = browser->CanGoForward();
     if (tab.url.empty() && browser->GetMainFrame()) {
-      const std::string frame_url = browser->GetMainFrame()->GetURL().ToString();
+      const std::string frame_url =
+          browser->GetMainFrame()->GetURL().ToString();
       if (!frame_url.empty()) {
         url = frame_url;
       }
@@ -2423,18 +2426,18 @@ std::string BrowserWindow::TabsJson() const {
   AppendJsonNumber(out, current_sidebar_folder_id_);
   out += ",\"sidebar_selected_type\":";
   switch (sidebar_selected_item_.type) {
-    case SidebarItemType::kParent:
-      AppendJsonString(out, "parent");
-      break;
-    case SidebarItemType::kFolder:
-      AppendJsonString(out, "folder");
-      break;
-    case SidebarItemType::kTab:
-      AppendJsonString(out, "tab");
-      break;
-    case SidebarItemType::kNone:
-      AppendJsonString(out, "none");
-      break;
+  case SidebarItemType::kParent:
+    AppendJsonString(out, "parent");
+    break;
+  case SidebarItemType::kFolder:
+    AppendJsonString(out, "folder");
+    break;
+  case SidebarItemType::kTab:
+    AppendJsonString(out, "tab");
+    break;
+  case SidebarItemType::kNone:
+    AppendJsonString(out, "none");
+    break;
   }
   out += ",\"sidebar_selected_id\":";
   AppendJsonNumber(out, sidebar_selected_item_.id);
@@ -2449,8 +2452,7 @@ std::string BrowserWindow::TabsJson() const {
   return out;
 }
 
-
-std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
+std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
   const std::vector<std::string> argv = SplitArgs(command_line);
   if (argv.empty()) {
     return "ERR empty command\n";
@@ -2501,13 +2503,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return SidebarJson();
   }
   if (command == "fps") {
-    if (Tab* tab = ActiveTab(); tab && tab->client && tab->client->fps_has_sample()) {
-      return std::to_string(static_cast<int>(std::round(tab->client->current_fps())));
+    if (Tab *tab = ActiveTab();
+        tab && tab->client && tab->client->fps_has_sample()) {
+      return std::to_string(
+          static_cast<int>(std::round(tab->client->current_fps())));
     }
     return "--";
   }
   if (command == "refresh") {
-    if (Tab* tab = ActiveTab(); tab && tab->client) {
+    if (Tab *tab = ActiveTab(); tab && tab->client) {
       return std::to_string(tab->client->compositor_refresh_rate()) + "\n";
     }
     return "0\n";
@@ -2533,42 +2537,17 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
         devtools_browser_view_->GetBrowser()) {
       key_target = devtools_browser_view_->GetBrowser();
     }
-    if (!handled && key_target && key_target->GetMainFrame()) {
-      std::string dom_key = ToLowerAscii(
-          argv[1].substr(argv[1].find_last_of('+') + 1));
-      if (dom_key == "esc") dom_key = "Escape";
-      else if (dom_key == "escape") dom_key = "Escape";
-      else if (dom_key == "space") dom_key = " ";
-      else if (dom_key == "enter" || dom_key == "return") dom_key = "Enter";
-      else if (dom_key == "tab") dom_key = "Tab";
-      else if (event.modifiers & EVENTFLAG_SHIFT_DOWN && dom_key.size() == 1) {
-        dom_key[0] = static_cast<char>(std::toupper(
-            static_cast<unsigned char>(dom_key[0])));
-      }
-      std::ostringstream script;
-      script << "(()=>{const target=document.activeElement||document;"
-                "for(const type of ['keydown','keyup'])target.dispatchEvent("
-                "new KeyboardEvent(type,{key:"
-             << '"' << JsonEscape(dom_key) << '"'
-             << ",bubbles:true,cancelable:true,ctrlKey:"
-             << ((event.modifiers & EVENTFLAG_CONTROL_DOWN) ? "true" : "false")
-             << ",shiftKey:"
-             << ((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? "true" : "false")
-             << ",altKey:"
-             << ((event.modifiers & EVENTFLAG_ALT_DOWN) ? "true" : "false")
-             << ",metaKey:"
-             << ((event.modifiers & EVENTFLAG_COMMAND_DOWN) ? "true" : "false")
-             << "}));})()";
-      key_target->GetMainFrame()->ExecuteJavaScript(
-          script.str(), key_target->GetMainFrame()->GetURL(), 0);
+    if (!handled && key_target && key_target->GetHost()) {
+      key_target->GetHost()->SendKeyEvent(event);
     }
     return IpcStatusJson();
   }
-  auto find_tab_index_arg = [&](const std::string& text,
-                                std::string* error) -> std::optional<size_t> {
+  auto find_tab_index_arg = [&](const std::string &text,
+                                std::string *error) -> std::optional<size_t> {
     uint64_t tab_id = 0;
     if (!ParseUint64Arg(text, &tab_id) || tab_id == 0) {
-      if (error) *error = "ERR invalid tabid\n";
+      if (error)
+        *error = "ERR invalid tabid\n";
       return std::nullopt;
     }
     std::optional<size_t> index = FindTabIndexById(tab_id);
@@ -2578,20 +2557,20 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     return index;
   };
   auto tab_index_or_active = [&](size_t arg_index,
-                                 std::string* error) -> std::optional<size_t> {
+                                 std::string *error) -> std::optional<size_t> {
     if (argv.size() <= arg_index) {
       if (tabs_.empty()) {
-        if (error) *error = "ERR no tabs\n";
+        if (error)
+          *error = "ERR no tabs\n";
         return std::nullopt;
       }
       return active_index_;
     }
     return find_tab_index_arg(argv[arg_index], error);
   };
-  auto parse_folder_id = [&](const std::string& text,
-                             uint64_t* folder_id) -> bool {
-    return ParseUint64Arg(text, folder_id) &&
-           SidebarFolderExists(*folder_id);
+  auto parse_folder_id = [&](const std::string &text,
+                             uint64_t *folder_id) -> bool {
+    return ParseUint64Arg(text, folder_id) && SidebarFolderExists(*folder_id);
   };
   if (command == "folder-create") {
     if (argv.size() < 3) {
@@ -2646,8 +2625,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (!parse_folder_id(argv[2], &parent_id)) {
       return "ERR no such parent folder\n";
     }
-    if (!MoveSidebarItems({{SidebarItemType::kFolder, folder_id}},
-                          parent_id)) {
+    if (!MoveSidebarItems({{SidebarItemType::kFolder, folder_id}}, parent_id)) {
       return "ERR invalid folder move\n";
     }
     return FoldersJson();
@@ -2676,7 +2654,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (!parse_folder_id(argv[1], &folder_id) || folder_id == 0) {
       return "ERR no such folder\n";
     }
-    const SidebarFolder* folder = FindSidebarFolder(folder_id);
+    const SidebarFolder *folder = FindSidebarFolder(folder_id);
     bool pinned = !folder->pinned;
     if (argv.size() == 3) {
       const std::string value = ToLowerAscii(argv[2]);
@@ -2815,7 +2793,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
       if (!parse_folder_id(argv[2], &folder_id) || folder_id == 0) {
         return "ERR no such folder\n";
       }
-      const SidebarFolder* folder = FindSidebarFolder(folder_id);
+      const SidebarFolder *folder = FindSidebarFolder(folder_id);
       current_sidebar_folder_id_ = folder->parent_id;
       sidebar_selected_item_ = {SidebarItemType::kFolder, folder_id};
     } else if (type == "parent") {
@@ -2900,8 +2878,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     sidebar_search_forward_ = forward;
     sidebar_search_highlights_visible_ = true;
     sidebar_visual_anchor_ = {};
-    if (const std::optional<SidebarItemRef> match = FindSidebarSearchMatch(
-            query, sidebar_selected_item_, forward)) {
+    if (const std::optional<SidebarItemRef> match =
+            FindSidebarSearchMatch(query, sidebar_selected_item_, forward)) {
       sidebar_selected_item_ = *match;
     }
     RefreshSidebar();
@@ -2914,7 +2892,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     std::string error;
     std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-    if (!index) return error;
+    if (!index)
+      return error;
     ActivateTab(*index);
     return IpcStatusJson();
   }
@@ -2924,7 +2903,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     std::string error;
     std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-    if (!index) return error;
+    if (!index)
+      return error;
     CloseTabAtIndex(*index);
     return IpcStatusJson();
   }
@@ -2934,12 +2914,14 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     std::string error;
     std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-    if (!index) return error;
+    if (!index)
+      return error;
     long target = 0;
     if (!ParseLongArg(argv[2], &target)) {
       return "ERR invalid target index\n";
     }
-    if (target < 0) target = 0;
+    if (target < 0)
+      target = 0;
     MoveTabToIndex(*index, static_cast<size_t>(target));
     return TabsJson();
   }
@@ -2972,12 +2954,13 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     std::string error;
     std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-    if (!index) return error;
+    if (!index)
+      return error;
     const std::string text = JoinArgs(argv, 2);
     const std::string url = ResolveUrlOrSearch(text);
     RecordOpenHistory(text);
     const size_t tab_index = *index;
-    Tab& tab = tabs_[tab_index];
+    Tab &tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
     SetTabUrl(tab, url);
     if (tab.client && tab.client->browser() &&
@@ -2992,13 +2975,16 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   if (command == "reload" || command == "reload-ignore-cache" ||
       command == "back" || command == "forward" || command == "stop") {
     if (argv.size() > 2) {
-      return "ERR usage: reload|reload-ignore-cache|back|forward|stop [tabid]\n";
+      return "ERR usage: reload|reload-ignore-cache|back|forward|stop "
+             "[tabid]\n";
     }
     std::string error;
     std::optional<size_t> index = tab_index_or_active(1, &error);
-    if (!index) return error;
-    Tab& tab = tabs_[*index];
-    CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
+    if (!index)
+      return error;
+    Tab &tab = tabs_[*index];
+    CefRefPtr<CefBrowser> browser =
+        tab.client ? tab.client->browser() : nullptr;
     if (!browser || !browser->GetHost()) {
       return "ERR tab has no browser\n";
     }
@@ -3007,9 +2993,11 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     } else if (command == "reload-ignore-cache") {
       browser->ReloadIgnoreCache();
     } else if (command == "back") {
-      if (browser->CanGoBack()) browser->GoBack();
+      if (browser->CanGoBack())
+        browser->GoBack();
     } else if (command == "forward") {
-      if (browser->CanGoForward()) browser->GoForward();
+      if (browser->CanGoForward())
+        browser->GoForward();
     } else if (command == "stop") {
       browser->StopLoad();
     }
@@ -3024,11 +3012,13 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (argv.size() == 3) {
       std::string error;
       index = find_tab_index_arg(argv[1], &error);
-      if (!index) return error;
+      if (!index)
+        return error;
       arg = 2;
     }
-    Tab& tab = tabs_[*index];
-    CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
+    Tab &tab = tabs_[*index];
+    CefRefPtr<CefBrowser> browser =
+        tab.client ? tab.client->browser() : nullptr;
     if (!browser || !browser->GetHost()) {
       return "ERR tab has no browser\n";
     }
@@ -3054,7 +3044,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     }
     std::string error;
     std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-    if (!index) return error;
+    if (!index)
+      return error;
     long dy = 0;
     if (!ParseLongArg(argv[2], &dy)) {
       return "ERR invalid dy\n";
@@ -3064,8 +3055,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
       return "ERR invalid count\n";
     }
     const int count = std::clamp(static_cast<int>(count_long), 1, 100);
-    Tab& tab = tabs_[*index];
-    CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
+    Tab &tab = tabs_[*index];
+    CefRefPtr<CefBrowser> browser =
+        tab.client ? tab.client->browser() : nullptr;
     if (!browser || !browser->GetMainFrame()) {
       return "ERR tab has no browser\n";
     }
@@ -3127,14 +3119,14 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (argv.size() < 2) {
       return "ERR usage: scroll <dy> [count]\n";
     }
-    char* end = nullptr;
+    char *end = nullptr;
     const long dy = std::strtol(argv[1].c_str(), &end, 10);
     if (end == argv[1].c_str()) {
       return "ERR invalid dy\n";
     }
     int count = 1;
     if (argv.size() >= 3) {
-      char* count_end = nullptr;
+      char *count_end = nullptr;
       count = static_cast<int>(std::strtol(argv[2].c_str(), &count_end, 10));
       if (count_end == argv[2].c_str()) {
         return "ERR invalid count\n";
@@ -3150,7 +3142,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (argv.size() != 2) {
       return "ERR usage: tab <1-based-index>\n";
     }
-    char* end = nullptr;
+    char *end = nullptr;
     const long index = std::strtol(argv[1].c_str(), &end, 10);
     if (end == argv[1].c_str() || index <= 0) {
       return "ERR invalid tab index\n";
@@ -3166,7 +3158,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
     if (argv.size() == 2) {
       std::string error;
       std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
-      if (!index) return error;
+      if (!index)
+        return error;
       CloseTabAtIndex(*index);
       return IpcStatusJson();
     }
@@ -3244,7 +3237,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   return "ERR unknown command\n";
 }
 
-void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
+void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
                                           IpcReplyCallback reply) {
   const std::vector<std::string> argv = SplitArgs(command_line);
   if (argv.empty()) {
@@ -3253,7 +3246,6 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
   }
 
   const std::string command = ToLowerAscii(argv[0]);
-
   if (command == "upload-file") {
     if (argv.size() != 3) {
       reply(UploadFileErrorJson(
@@ -3445,10 +3437,9 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
       return;
     }
     CefRefPtr<BrowserWindow> self = this;
-    if (!CefPostTask(
-            TID_FILE_USER_BLOCKING,
-            base::BindOnce(&BrowserWindow::ReadJsFileForIpc, self, tab_id,
-                           argv[2], reply))) {
+    if (!CefPostTask(TID_FILE_USER_BLOCKING,
+                     base::BindOnce(&BrowserWindow::ReadJsFileForIpc, self,
+                                    tab_id, argv[2], reply))) {
       reply("ERR failed to post js-file read task\n");
     }
     return;
@@ -3463,9 +3454,9 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    HandleCookiesIpcCommand(tab_id,
-                            argv.size() >= 3 ? JoinArgs(argv, 2) : std::string(),
-                            std::move(reply));
+    HandleCookiesIpcCommand(
+        tab_id, argv.size() >= 3 ? JoinArgs(argv, 2) : std::string(),
+        std::move(reply));
     return;
   }
 
@@ -3500,10 +3491,9 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    HandleCookieSetIpcCommand(tab_id, argv[2], argv[3],
-                              argv.size() >= 5 ? argv[4] : std::string(),
-                              argv.size() >= 6 ? argv[5] : std::string(),
-                              std::move(reply));
+    HandleCookieSetIpcCommand(
+        tab_id, argv[2], argv[3], argv.size() >= 5 ? argv[4] : std::string(),
+        argv.size() >= 6 ? argv[5] : std::string(), std::move(reply));
     return;
   }
 
@@ -3535,7 +3525,8 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
       reply(tabs_[*index].client->NetworkListJson());
       return;
     }
-    if (subcommand == "detail" || subcommand == "body" || subcommand == "replay") {
+    if (subcommand == "detail" || subcommand == "body" ||
+        subcommand == "replay") {
       if (argv.size() != 4) {
         reply("ERR usage: network <tabid> detail|body|replay <requestid>\n");
         return;
@@ -3578,7 +3569,7 @@ std::string BrowserWindow::IpcStatusJson() const {
   std::string context;
   bool audible = false;
   if (!tabs_.empty() && active_index_ < tabs_.size()) {
-    const Tab& tab = tabs_[active_index_];
+    const Tab &tab = tabs_[active_index_];
     url = tab.url;
     context = tab.context;
     audible = tab.audible;
@@ -3587,9 +3578,11 @@ std::string BrowserWindow::IpcStatusJson() const {
       fps = tab.client->current_fps();
       refresh_rate = tab.client->compositor_refresh_rate();
     }
-    if (CefRefPtr<CefBrowser> browser = tab.client ? tab.client->browser() : nullptr;
+    if (CefRefPtr<CefBrowser> browser =
+            tab.client ? tab.client->browser() : nullptr;
         browser && browser->GetHost()) {
-      CefRefPtr<CefNavigationEntry> entry = browser->GetHost()->GetVisibleNavigationEntry();
+      CefRefPtr<CefNavigationEntry> entry =
+          browser->GetHost()->GetVisibleNavigationEntry();
       if (entry) {
         title = entry->GetTitle().ToString();
       }
@@ -3614,18 +3607,18 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonNumber(out, current_sidebar_folder_id_);
   out += ",\"sidebar_selected_type\":";
   switch (sidebar_selected_item_.type) {
-    case SidebarItemType::kParent:
-      AppendJsonString(out, "parent");
-      break;
-    case SidebarItemType::kFolder:
-      AppendJsonString(out, "folder");
-      break;
-    case SidebarItemType::kTab:
-      AppendJsonString(out, "tab");
-      break;
-    case SidebarItemType::kNone:
-      AppendJsonString(out, "none");
-      break;
+  case SidebarItemType::kParent:
+    AppendJsonString(out, "parent");
+    break;
+  case SidebarItemType::kFolder:
+    AppendJsonString(out, "folder");
+    break;
+  case SidebarItemType::kTab:
+    AppendJsonString(out, "tab");
+    break;
+  case SidebarItemType::kNone:
+    AppendJsonString(out, "none");
+    break;
   }
   out += ",\"sidebar_selected_id\":";
   AppendJsonNumber(out, sidebar_selected_item_.id);
@@ -3663,5 +3656,4 @@ std::string BrowserWindow::IpcStatusJson() const {
   return out;
 }
 
-
-}  // namespace vimbrowser
+} // namespace vimbrowser

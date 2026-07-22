@@ -35,9 +35,6 @@ class CefBrowserPlatformDelegateNativeMac
                            bool mouseUp,
                            int clickCount) override;
   void SendMouseMoveEvent(const CefMouseEvent& event, bool mouseLeave) override;
-  void SendMouseWheelEvent(const CefMouseEvent& event,
-                           int deltaX,
-                           int deltaY) override;
   void SendTouchEvent(const CefTouchEvent& event) override;
   void SetFocus(bool setFocus) override;
   gfx::Point GetScreenPoint(const gfx::Point& view,
