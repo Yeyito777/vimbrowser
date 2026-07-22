@@ -22,6 +22,8 @@ bash -n scripts/a26/install.sh
 require_literal scripts/a26/install.sh 'unmount_tree() {'
 require_literal scripts/a26/install.sh 'unmount_tree \"\$base/rootfs\"'
 require_literal scripts/a26/install.sh 'unmount_tree \"\$base/rootfs.old\"'
+require_literal scripts/a26/install.sh \
+  'Refusing to replace the browser rootfs while vimbrowser is running.'
 
 # The phone rootfs must see Moon's original socket directory without gaining
 # permission to replace it or its control socket.
@@ -34,9 +36,18 @@ require_literal scripts/a26/phone-launch.sh \
   'bind destination escaped browser rootfs'
 require_literal scripts/a26/phone-launch.sh \
   '[ -S /run/a26-shell/control.sock ]'
+require_literal scripts/a26/phone-launch.sh 'private_dev_once "$root/dev"'
+require_literal scripts/a26/phone-launch.sh \
+  'private browser /dev unexpectedly exposes a video device'
+if grep -Fq 'bind_dir_once /dev "$root/dev"' scripts/a26/phone-launch.sh; then
+  echo 'A26 browser must not bind the phone host /dev into its rootfs' >&2
+  exit 1
+fi
 require_literal scripts/a26/phone-launch.sh '--use-gl=angle'
 require_literal scripts/a26/phone-launch.sh '--use-angle=swiftshader'
 require_literal scripts/a26/phone-launch.sh '--enable-unsafe-swiftshader'
+require_literal scripts/a26/phone-launch.sh '--disable-accelerated-video-decode'
+require_literal scripts/a26/phone-launch.sh '--disable-accelerated-video-encode'
 require_literal scripts/a26/phone-launch.sh '--no-zygote'
 require_literal scripts/a26/phone-launch.sh 'A26_VIMBROWSER_XTEST_CHAR_WORKAROUND=1'
 require_literal src/browser_window.cc 'character_event.type = KEYEVENT_CHAR;'

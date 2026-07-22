@@ -77,9 +77,69 @@ bind_dir_once_ro() {
   done
 }
 
+mount_type_at() {
+  mount_target=$1
+  awk -v target="$mount_target" '$2 == target { print $3; exit }' /proc/mounts
+}
+
+private_dev_once() {
+  target_path=$1
+
+  reject_symlink_components "$target_path"
+  if [ -e "$target_path" ] && [ ! -d "$target_path" ]; then
+    die "private /dev destination is not a directory: $target_path"
+  fi
+  mkdir -p "$target_path"
+  reject_symlink_components "$target_path"
+  canonical_target=$(readlink -f "$target_path") ||
+    die "could not canonicalize private /dev destination: $target_path"
+  case "$canonical_target" in
+    "$canonical_root"/*) ;;
+    *) die "private /dev destination escaped browser rootfs: $target_path" ;;
+  esac
+
+  existing_type=$(mount_type_at "$target_path")
+  if [ -z "$existing_type" ]; then
+    mount -t tmpfs -o mode=0755,nosuid,noexec \
+      a26-vimbrowser-dev "$target_path"
+    existing_type=$(mount_type_at "$target_path")
+  fi
+  [ "$existing_type" = tmpfs ] ||
+    die "unexpected mount at private /dev destination: $target_path"
+
+  # Chromium must never see Samsung's host /dev/video* nodes. Merely probing
+  # those nodes can enter the downstream FIMC camera driver and panic this
+  # kernel. The browser only needs basic character devices and shared memory;
+  # Xorg owns the real display and input devices.
+  for spec in \
+    'null 1 3 0666' \
+    'zero 1 5 0666' \
+    'full 1 7 0666' \
+    'random 1 8 0666' \
+    'urandom 1 9 0666' \
+    'tty 5 0 0666'; do
+    set -- $spec
+    node=$1
+    major=$2
+    minor=$3
+    mode=$4
+    if [ ! -c "$target_path/$node" ]; then
+      rm -f "$target_path/$node"
+      mknod "$target_path/$node" c "$major" "$minor"
+    fi
+    chmod "$mode" "$target_path/$node"
+  done
+  mkdir -p "$target_path/shm"
+  chmod 1777 "$target_path/shm"
+
+  if find "$target_path" -maxdepth 1 -name 'video*' -print -quit | grep -q .; then
+    die "private browser /dev unexpectedly exposes a video device"
+  fi
+}
+
 bind_dir_once /proc "$root/proc"
 bind_dir_once /sys "$root/sys"
-bind_dir_once /dev "$root/dev"
+private_dev_once "$root/dev"
 bind_dir_once /tmp/.X11-unix "$root/tmp/.X11-unix"
 [ -S /run/a26-shell/control.sock ] || die "Moon control socket is unavailable"
 [ "$(stat -c '%u' /run/a26-shell/control.sock)" = 0 ] ||
@@ -109,6 +169,8 @@ exec chroot "$root" /usr/bin/env -i \
       --use-angle=swiftshader \
       --enable-unsafe-swiftshader \
       --disable-gpu-sandbox \
+      --disable-accelerated-video-decode \
+      --disable-accelerated-video-encode \
       --no-zygote \
       --force-device-scale-factor=2.5 \
       --touch-events=enabled \

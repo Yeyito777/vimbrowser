@@ -35,6 +35,10 @@ adb -s "${serial}" push \
 adb -s "${serial}" shell '/data/local/tmp/su -c "set -e
   base=/data/local/a26-linux/opt/vimbrowser-a26
   bb=/data/local/a26-linux/busybox.static
+  if pidof vimbrowser >/dev/null 2>&1; then
+    echo \"Refusing to replace the browser rootfs while vimbrowser is running.\" >&2
+    exit 30
+  fi
   unmount_tree() {
     root=\$1
     while :; do

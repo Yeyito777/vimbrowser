@@ -78,6 +78,15 @@ on this target. The launcher also uses `--no-zygote`: CEF's zygote children exit
 on this Android-derived userspace/kernel combination before creating a renderer,
 whereas direct no-sandbox renderer processes are stable.
 
+The application root has a private minimal `/dev` containing only the basic
+character devices and shared-memory directory required by Chromium. In
+particular, the phone's `/dev/video*` devices are never exposed to the browser.
+This is a hard safety boundary rather than an optimization: enumerating those
+nodes enters Samsung's downstream FIMC camera driver, and the stock AYB8 kernel
+can panic while an unprivileged media client probes its camera pipelines. Xorg
+continues to own the real display and input devices outside the nested root.
+Accelerated video encode and decode are disabled as a second layer of defense.
+
 This target exposes one additional CEF/X11 quirk: XTEST printable key presses
 reach the browser as raw events but do not synthesize a renderer CHAR event. The
 phone launcher enables a narrowly scoped A26 workaround that forwards exactly one
