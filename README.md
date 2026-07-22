@@ -160,10 +160,15 @@ tabs and the last opened argument is focused at the bottom of the tab stack.
 Profile semantics:
 
 - without `--profile-dir`, vimbrowser uses per-process instance storage for app
-  state and CEF data; independent ad-hoc instances do not share login/session
-  data by default
+  state and CEF data unless the build supplies a default profile; independent
+  ad-hoc instances do not share login/session data by default
+- the installed macOS app supplies the same durable profile used by its command
+  launcher, so Spotlight/Finder launches retain tabs, command completion
+  history, cookies, and site storage
 - with `--profile-dir DIR`, vimbrowser stores app state in `DIR/state` and the
   CEF web profile in `DIR/cef/Default`
+- `VIMBROWSER_PROFILE_DIR` selects the same durable profile without adding a
+  command-line argument; an explicit `--profile-dir` still takes precedence
 - `--cache-path PATH` remains an advanced CEF-cache override; use
   `--profile-dir` for normal persistent browser profiles
 
@@ -191,8 +196,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   retaining real CEF popup/opener plumbing for OAuth-style auth flows
 - Alloy runtime style, no Chrome toolbar
 - URL/search startup argument
-- per-process isolated state/cache by default; persistent profiles require
-  `--profile-dir DIR` or the installed `~/.local/bin/vimbrowser` wrapper
+- per-process isolated state/cache by default unless the build supplies a
+  persistent default; `--profile-dir DIR` always selects an explicit profile
 - `Ctrl+Shift+I` opens DevTools
 - web view focused by default in website-normal mode
 - media autoplay is disabled by default; pages need an explicit user gesture to

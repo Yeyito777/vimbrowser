@@ -17,6 +17,8 @@ if(NOT CEF_ROOT)
   message(FATAL_ERROR
     "CEF_ROOT must point to a distribution built from backend/chromium")
 endif()
+set(VIMBROWSER_DEFAULT_PROFILE_DIR "" CACHE PATH
+    "Persistent profile used when --profile-dir is not supplied")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
 
 find_package(CEF REQUIRED)
@@ -94,6 +96,11 @@ macro(VIMBROWSER_TARGET_COMMON target)
   target_precompile_headers(${target} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/browser_pch.h>"
   )
+  if(VIMBROWSER_DEFAULT_PROFILE_DIR)
+    target_compile_definitions(${target} PRIVATE
+      VIMBROWSER_DEFAULT_PROFILE_DIR="${VIMBROWSER_DEFAULT_PROFILE_DIR}"
+    )
+  endif()
 endmacro()
 
 if(OS_MAC)
@@ -123,6 +130,13 @@ if(OS_MAC)
 
   add_executable(vimbrowser MACOSX_BUNDLE ${VIMBROWSER_SRCS} ${VIMBROWSER_ICON})
   VIMBROWSER_TARGET_COMMON(vimbrowser)
+  # CEF is loaded from the bundle instead of participating in the normal macOS
+  # link line. Still make its binary a link dependency so an incremental
+  # backend rebuild relinks/finalizes the app and reruns the framework copy and
+  # signing steps below.
+  set_property(TARGET vimbrowser APPEND PROPERTY LINK_DEPENDS
+    "${VIMBROWSER_CEF_FRAMEWORK_BINARY}"
+  )
   target_link_libraries(vimbrowser PRIVATE
     libcef_dll_wrapper
     PkgConfig::MUSESCORE_NATIVE

@@ -118,6 +118,10 @@ class CefWindowView : public CefPanelView<views::View, CefWindowDelegate>,
   // Returns the FrameView for this Window. May be nullptr.
   views::FrameView* GetFrameView() const;
 
+  // Returns the client-area bounds in screen coordinates, including any
+  // correction required for a custom-drawn FrameView.
+  gfx::Rect GetClientAreaBoundsInScreen() const;
+
   // Optionally modify the bounding box for the Chrome Find bar.
   void UpdateFindBarBoundingBox(gfx::Rect* bounds) const;
 

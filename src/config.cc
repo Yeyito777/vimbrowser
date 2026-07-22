@@ -192,7 +192,7 @@ std::string RuntimeHome() {
   return "/tmp/vimbrowser-" + std::to_string(getuid());
 }
 
-std::string DefaultInstanceCachePath() {
+[[maybe_unused]] std::string DefaultInstanceCachePath() {
   return RuntimeHome() + "/vimbrowser/cef/instances/" +
          std::to_string(getpid());
 }
@@ -688,8 +688,12 @@ std::string DisplayUrl(std::string url) {
 
 Config ParseConfig(int argc, char* argv[]) {
   Config config;
+#if defined(VIMBROWSER_DEFAULT_PROFILE_DIR)
+  ApplyProfileDir(config, VIMBROWSER_DEFAULT_PROFILE_DIR);
+#else
   config.cache_path = DefaultInstanceCachePath();
   config.state_path = DefaultStatePath();
+#endif
   bool dwm_save_disabled = false;
   if (const char* dwm_save_argv = std::getenv("VIMBROWSER_DWM_SAVE_ARGV")) {
     if (*dwm_save_argv && !IsDisabledDwmSaveValue(dwm_save_argv)) {
@@ -697,6 +701,10 @@ Config ParseConfig(int argc, char* argv[]) {
     } else {
       dwm_save_disabled = true;
     }
+  }
+  if (const char* profile_dir = std::getenv("VIMBROWSER_PROFILE_DIR");
+      profile_dir && *profile_dir) {
+    ApplyProfileDir(config, profile_dir);
   }
   if (const char* state_path = std::getenv("VIMBROWSER_STATE_PATH");
       state_path && *state_path) {

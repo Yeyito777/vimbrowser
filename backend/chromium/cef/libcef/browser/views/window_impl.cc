@@ -610,18 +610,8 @@ CefRefPtr<CefDisplay> CefWindowImpl::GetDisplay() {
 
 CefRect CefWindowImpl::GetClientAreaBoundsInScreen() {
   CEF_REQUIRE_VALID_RETURN(CefRect());
-  if (widget_) {
-    gfx::Rect bounds = widget_->GetClientAreaBoundsInScreen();
-
-    if (auto* frame_view = root_view()->GetFrameView()) {
-      // When using a custom drawn FrameView the native Window will not
-      // know the actual client bounds. Adjust the native Window bounds for the
-      // reported client bounds.
-      const gfx::Rect& client_bounds = frame_view->GetBoundsForClientView();
-      bounds.set_origin(bounds.origin() + client_bounds.OffsetFromOrigin());
-      bounds.set_size(client_bounds.size());
-    }
-
+  if (root_view()) {
+    const gfx::Rect bounds = root_view()->GetClientAreaBoundsInScreen();
     return CefRect(bounds.x(), bounds.y(), bounds.width(), bounds.height());
   }
   return CefRect();

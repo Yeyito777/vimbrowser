@@ -900,6 +900,11 @@ void RunWindowOverlayCustomBounds(CefRefPtr<CefWindow> window) {
   CefRect screen_bounds = controller->GetBoundsInScreen();
   EXPECT_GT(screen_bounds.width, 0);
   EXPECT_GT(screen_bounds.height, 0);
+  const CefRect client_bounds = window->GetClientAreaBoundsInScreen();
+  EXPECT_EQ(client_bounds.x + test_position.x, screen_bounds.x);
+  EXPECT_EQ(client_bounds.y + test_position.y, screen_bounds.y);
+  EXPECT_EQ(test_size.width, screen_bounds.width);
+  EXPECT_EQ(test_size.height, screen_bounds.height);
 
   controller->Destroy();
 }

@@ -57,7 +57,7 @@ build: backend-dev
 
 mac-build:
 	@test -n "$(MAC_CEF_ROOT)" || { echo 'No source-built macOS CEF distribution found; run make bootstrap-chromium build-chromium-cef mac-source-distrib, or set MAC_CEF_ROOT'; exit 1; }
-	cmake -S . -B "$(MAC_BUILD_DIR)" -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$(MAC_CEF_ROOT)" -DVIMBROWSER_CODESIGN_IDENTITY="$(MAC_CODESIGN_IDENTITY)"
+	cmake -S . -B "$(MAC_BUILD_DIR)" -DCMAKE_BUILD_TYPE=Release -DCEF_ROOT="$(MAC_CEF_ROOT)" -DVIMBROWSER_CODESIGN_IDENTITY="$(MAC_CODESIGN_IDENTITY)" -DVIMBROWSER_DEFAULT_PROFILE_DIR="$(MAC_PROFILE_DIR)"
 	cmake --build "$(MAC_BUILD_DIR)" -j$(JOBS)
 
 mac-install: mac-build

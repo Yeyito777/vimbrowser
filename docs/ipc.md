@@ -13,7 +13,11 @@ If a script, test, external agent, or future integration needs to observe or con
   - with `--profile-dir DIR`: `DIR/ipc.sock`
   - without `--profile-dir`: an instance-local runtime path next to the temporary per-process state file
 - Client override: set `VIMBROWSER_IPC=/path/to/ipc.sock`
-- Client profile shortcut: set `VIMBROWSER_PROFILE_DIR=DIR` to connect to `DIR/ipc.sock`. The installed user wrapper defaults to `/home/yeyito/.runtime/vimbrowser-yeyito`, and `scripts/vimbrowser-ipc` auto-detects that socket when it exists.
+- Client and browser profile shortcut: set `VIMBROWSER_PROFILE_DIR=DIR` to use
+  `DIR` and connect to `DIR/ipc.sock`. An explicit browser `--profile-dir`
+  takes precedence. Installed launchers and the macOS app default to their
+  configured durable profile, and `scripts/vimbrowser-ipc` auto-detects that
+  socket when it exists.
 - Socket permissions: `0600`
 
 The socket is local-user app IPC. It is not a remote network API and should stay unavailable to other users by default.

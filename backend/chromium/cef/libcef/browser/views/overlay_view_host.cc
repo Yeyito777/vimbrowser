@@ -288,7 +288,21 @@ void CefOverlayViewHost::SetOverlayBounds(const gfx::Rect& bounds) {
   if (view_->size() != bounds_.size()) {
     view_->SetSize(bounds_.size());
   }
-  widget_->SetBounds(bounds_);
+
+  // Overlay bounds are expressed in CefWindow client-area coordinates, but
+  // the native child Widget is positioned relative to the host's outer window.
+  // Those origins differ when the host has non-client chrome (for example, a
+  // native macOS title bar). Translate by the authoritative client-area origin
+  // instead of relying on them to coincide; otherwise bottom-docked/custom
+  // overlays stop a title-bar height above the bottom of the client area.
+  gfx::Point widget_origin = bounds_.origin();
+  const gfx::Rect host_window_bounds =
+      window_view_->GetWidget()->GetWindowBoundsInScreen();
+  const gfx::Rect host_client_bounds =
+      window_view_->GetClientAreaBoundsInScreen();
+  widget_origin.Offset(host_client_bounds.x() - host_window_bounds.x(),
+                       host_client_bounds.y() - host_window_bounds.y());
+  widget_->SetBounds(gfx::Rect(widget_origin, bounds_.size()));
   window_view_->OnOverlayBoundsChanged();
 
   bounds_changing_ = false;

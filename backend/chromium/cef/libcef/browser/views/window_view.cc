@@ -1021,6 +1021,24 @@ views::FrameView* CefWindowView::GetFrameView() const {
   return widget->non_client_view()->frame_view();
 }
 
+gfx::Rect CefWindowView::GetClientAreaBoundsInScreen() const {
+  const views::Widget* widget = GetWidget();
+  if (!widget) {
+    return gfx::Rect();
+  }
+
+  gfx::Rect bounds = widget->GetClientAreaBoundsInScreen();
+  if (auto* frame_view = GetFrameView()) {
+    // When using a custom-drawn FrameView the native Window does not know the
+    // actual client bounds. Adjust the native bounds to match the Views client
+    // coordinate space exposed through CefWindow.
+    const gfx::Rect& client_bounds = frame_view->GetBoundsForClientView();
+    bounds.set_origin(bounds.origin() + client_bounds.OffsetFromOrigin());
+    bounds.set_size(client_bounds.size());
+  }
+  return bounds;
+}
+
 void CefWindowView::UpdateBoundingBox(gfx::Rect* bounds,
                                       bool add_titlebar_height) const {
   // Max distance from the edges of |bounds| to qualify for subtraction.
