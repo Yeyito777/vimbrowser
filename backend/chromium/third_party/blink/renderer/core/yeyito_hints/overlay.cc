@@ -14,6 +14,7 @@
 #include "skia/ext/font_utils.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+#include "third_party/blink/renderer/core/page/chrome_client.h"
 #include "third_party/blink/renderer/core/yeyito_hints/candidate.h"
 #include "third_party/blink/renderer/core/yeyito_hints/hints.h"
 #include "third_party/blink/renderer/core/yeyito_hints/labels.h"
@@ -23,6 +24,7 @@
 #include "third_party/skia/include/core/SkFontMetrics.h"
 #include "third_party/skia/include/core/SkTextBlob.h"
 #include "third_party/skia/include/core/SkTypeface.h"
+#include "ui/display/screen_info.h"
 
 namespace blink {
 
@@ -31,6 +33,47 @@ namespace {
 constexpr SkColor kHintBackground = SkColorSetRGB(0x1d, 0x9b, 0xf0);
 constexpr SkColor kHintForeground = SkColorSetRGB(0x00, 0x05, 0x0f);
 constexpr SkColor kHintMatchedForeground = kHintForeground;
+constexpr float kHintFontSize = 13.0f;
+constexpr float kHintMinimumSize = 12.0f;
+constexpr float kHintVerticalMetricTrim = 3.0f;
+
+// The original hint geometry was tuned for a 1920x1080 display. Keep that as
+// the baseline, then grow the labels on higher-resolution displays while
+// preserving the label's proportions. ScreenInfo rectangles are in
+// device-independent pixels, so include the device scale factor to compare
+// physical display resolutions. Cap the result to keep very high-resolution
+// and multi-monitor setups usable.
+constexpr float HintScaleForPhysicalDisplay(float width, float height) {
+  constexpr float kReferenceLongEdge = 1920.0f;
+  constexpr float kReferenceShortEdge = 1080.0f;
+  constexpr float kMaximumScale = 1.5f;
+
+  const float long_edge = std::max(width, height);
+  const float short_edge = std::min(width, height);
+  if (long_edge <= 0.0f || short_edge <= 0.0f) {
+    return 1.0f;
+  }
+
+  const float resolution_scale =
+      std::min(long_edge / kReferenceLongEdge,
+               short_edge / kReferenceShortEdge);
+  return std::clamp(resolution_scale, 1.0f, kMaximumScale);
+}
+
+static_assert(HintScaleForPhysicalDisplay(1920.0f, 1080.0f) == 1.0f);
+static_assert(HintScaleForPhysicalDisplay(2560.0f, 1440.0f) > 1.3f);
+static_assert(HintScaleForPhysicalDisplay(3024.0f, 1964.0f) == 1.5f);
+static_assert(HintScaleForPhysicalDisplay(3840.0f, 2160.0f) == 1.5f);
+
+float HintScaleForFrame(LocalFrame& frame) {
+  const display::ScreenInfo& screen_info =
+      frame.GetChromeClient().GetScreenInfo(frame);
+  const float device_scale_factor =
+      std::max(1.0f, screen_info.device_scale_factor);
+  return HintScaleForPhysicalDisplay(
+      screen_info.rect.width() * device_scale_factor,
+      screen_info.rect.height() * device_scale_factor);
+}
 
 bool LabelIsVisibleForPrefix(const String& label, const String& prefix) {
   return prefix.empty() || label.starts_with(prefix);
@@ -90,14 +133,15 @@ void DrawTextChunk(cc::PaintCanvas& canvas,
 void PaintLabel(cc::PaintCanvas& canvas,
                 const gfx::PointF& point,
                 const String& label,
-                const String& prefix) {
+                const String& prefix,
+                float scale) {
   std::string text = label.Utf8();
   if (text.empty()) {
     return;
   }
 
   SkFont font(HintTypeface());
-  font.setSize(13.0f);
+  font.setSize(kHintFontSize * scale);
 
   const SkScalar text_width =
       font.measureText(text.data(), text.size(), SkTextEncoding::kUTF8);
@@ -106,12 +150,13 @@ void PaintLabel(cc::PaintCanvas& canvas,
   font.getMetrics(&metrics);
 
   constexpr float kHorizontalPadding = 0.0f;
-  constexpr float kVerticalMetricTrim = 3.0f;
   const float text_height = metrics.fDescent - metrics.fAscent;
   const float width =
-      std::max(12.0f, std::ceil(label_width + 2 * kHorizontalPadding));
-  const float height =
-      std::ceil(std::max(12.0f, text_height - kVerticalMetricTrim));
+      std::max(kHintMinimumSize * scale,
+               std::ceil(label_width + 2 * kHorizontalPadding));
+  const float height = std::ceil(std::max(
+      kHintMinimumSize * scale,
+      text_height - kHintVerticalMetricTrim * scale));
 
   const float left = std::max(0.0f, point.x());
   const float top = std::max(0.0f, point.y());
@@ -166,6 +211,8 @@ void HintOverlayDelegate::PaintFrameOverlay(const FrameOverlay& frame_overlay,
   }
 
   const String& prefix = hints_->TypedPrefix();
+  LocalFrame* frame = hints_->GetFrame();
+  const float scale = frame ? HintScaleForFrame(*frame) : 1.0f;
   for (const auto& candidate : hints_->Candidates()) {
     if (!candidate.element) {
       continue;
@@ -175,7 +222,7 @@ void HintOverlayDelegate::PaintFrameOverlay(const FrameOverlay& frame_overlay,
       continue;
     }
     PaintLabel(*canvas, candidate.viewport_rect.origin(), candidate.label,
-               prefix);
+               prefix, scale);
   }
 }
 
