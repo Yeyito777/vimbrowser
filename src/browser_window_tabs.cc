@@ -392,7 +392,12 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
     // after the previous chrome layout. Refresh the top-level layout now so the
     // sidebar separator overlay is repainted above the newly-active surface.
     Layout();
-    if (focus_area_ == FocusArea::kWebView) {
+    // The BrowserView is also the native key-event target while the sidebar
+    // has logical focus. Replacing the visible tab hides the old target, so
+    // focus the newly-visible view to keep sidebar j/k/Enter events flowing
+    // through BrowserClient without changing focus_area_ or page key routing.
+    if (focus_area_ == FocusArea::kWebView ||
+        focus_area_ == FocusArea::kTabSidebar) {
       tab.view->RequestFocus();
     }
     SyncA26KeyboardForActivePage();
