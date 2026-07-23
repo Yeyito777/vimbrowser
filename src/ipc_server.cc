@@ -39,6 +39,12 @@ class IpcCommandTask final : public CefTask {
 
   void Execute() override {
     if (owner_) {
+      {
+        std::lock_guard<std::mutex> lock(pending_->mutex);
+        if (pending_->done) {
+          return;
+        }
+      }
       owner_->HandleIpcCommandAsync(
           command_, [pending = pending_](std::string response) {
             {
@@ -167,6 +173,20 @@ void IpcServer::Stop() {
     server_fd_ = -1;
   }
 
+  const int client_fd = client_fd_.load();
+  if (client_fd >= 0) {
+    shutdown(client_fd, SHUT_RDWR);
+  }
+
+  std::function<void()> cancel_pending;
+  {
+    std::lock_guard<std::mutex> lock(pending_command_mutex_);
+    cancel_pending = cancel_pending_command_;
+  }
+  if (cancel_pending) {
+    cancel_pending();
+  }
+
   if (thread_.joinable()) {
     thread_.join();
   }
@@ -184,7 +204,9 @@ void IpcServer::Loop() {
       }
       continue;
     }
+    client_fd_.store(client_fd);
     HandleClient(client_fd);
+    client_fd_.store(-1);
     close(client_fd);
   }
 }
@@ -213,7 +235,30 @@ void IpcServer::HandleClient(int client_fd) {
   }
 
   auto pending = std::make_shared<PendingCommand>();
+  auto cancel_pending = [pending]() {
+    {
+      std::lock_guard<std::mutex> lock(pending->mutex);
+      if (pending->done) {
+        return;
+      }
+      pending->response = "ERR ipc server shutting down\n";
+      pending->done = true;
+    }
+    pending->cv.notify_one();
+  };
+  {
+    std::lock_guard<std::mutex> lock(pending_command_mutex_);
+    if (!running_) {
+      cancel_pending();
+    } else {
+      cancel_pending_command_ = cancel_pending;
+    }
+  }
   if (!CefPostTask(TID_UI, new IpcCommandTask(owner_, command, pending))) {
+    {
+      std::lock_guard<std::mutex> lock(pending_command_mutex_);
+      cancel_pending_command_ = nullptr;
+    }
     const std::string error = "ERR failed to post ipc command\n";
     const ssize_t ignored = write(client_fd, error.data(), error.size());
     (void)ignored;
@@ -225,6 +270,10 @@ void IpcServer::HandleClient(int client_fd) {
                             [&] { return pending->done; })) {
     pending->response = "ERR ipc command timed out\n";
     pending->done = true;
+  }
+  {
+    std::lock_guard<std::mutex> pending_lock(pending_command_mutex_);
+    cancel_pending_command_ = nullptr;
   }
   if (pending->response.empty() || pending->response.back() != '\n') {
     pending->response.push_back('\n');

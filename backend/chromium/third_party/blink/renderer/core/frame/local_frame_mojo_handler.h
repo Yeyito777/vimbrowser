@@ -120,6 +120,11 @@ class LocalFrameMojoHandler
   void Collapse(bool collapsed) final;
   void EnableViewSourceMode() final;
   void Focus() final;
+  void VimbrowserActivateElement(
+      const String& selector,
+      const DocumentToken& expected_document,
+      const base::UnguessableToken& activation_nonce,
+      VimbrowserActivateElementCallback callback) final;
   void ClearFocusedElement() final;
   void CopyImageAt(const gfx::Point& window_point) final;
   void SaveImageAt(const gfx::Point& window_point) final;

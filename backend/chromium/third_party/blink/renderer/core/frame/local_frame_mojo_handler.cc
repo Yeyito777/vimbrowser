@@ -35,8 +35,10 @@
 #include "third_party/blink/renderer/bindings/core/v8/script_function.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_fullscreen_options.h"
 #include "third_party/blink/renderer/core/dom/element_traversal.h"
+#include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
 #include "third_party/blink/renderer/core/dom/focus_params.h"
 #include "third_party/blink/renderer/core/dom/ignore_opens_during_unload_count_incrementer.h"
+#include "third_party/blink/renderer/core/dom/static_node_list.h"
 #include "third_party/blink/renderer/core/editing/editing_utilities.h"
 #include "third_party/blink/renderer/core/editing/frame_selection.h"
 #include "third_party/blink/renderer/core/editing/surrounding_text.h"
@@ -51,6 +53,7 @@
 #include "third_party/blink/renderer/core/frame/remote_frame_owner.h"
 #include "third_party/blink/renderer/core/frame/reporting_context.h"
 #include "third_party/blink/renderer/core/frame/savable_resources.h"
+#include "third_party/blink/renderer/core/frame/visual_viewport.h"
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
 #include "third_party/blink/renderer/core/fullscreen/fullscreen.h"
 #include "third_party/blink/renderer/core/html/html_element.h"
@@ -62,6 +65,8 @@
 #include "third_party/blink/renderer/core/input/event_handler.h"
 #include "third_party/blink/renderer/core/inspector/console_message.h"
 #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
+#include "third_party/blink/renderer/core/layout/hit_test_location.h"
+#include "third_party/blink/renderer/core/layout/hit_test_result.h"
 #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
 #include "third_party/blink/renderer/core/loader/mixed_content_checker.h"
 #include "third_party/blink/renderer/core/messaging/message_port.h"
@@ -71,9 +76,12 @@
 #include "third_party/blink/renderer/core/page/page.h"
 #include "third_party/blink/renderer/core/paint/timing/paint_timing.h"
 #include "third_party/blink/renderer/core/script/classic_script.h"
+#include "third_party/blink/renderer/core/style/computed_style.h"
 #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
 #include "third_party/blink/renderer/core/view_transition/page_swap_event.h"
 #include "third_party/blink/renderer/core/view_transition/view_transition_supplement.h"
+#include "third_party/blink/renderer/core/yeyito_hints/click_hints.h"
+#include "third_party/blink/renderer/platform/bindings/exception_state.h"
 #include "third_party/blink/renderer/platform/loader/fetch/resource_timing_utils.h"
 #include "third_party/blink/renderer/platform/widget/frame_widget.h"
 
@@ -87,6 +95,46 @@
 namespace blink {
 
 namespace {
+
+class ScopedVimbrowserFileActivationNonce {
+  STACK_ALLOCATED();
+
+ public:
+  ScopedVimbrowserFileActivationNonce(
+      Document& document,
+      const base::UnguessableToken& activation_nonce)
+      : document_(document), previous_(document.VimbrowserFileActivationNonce()) {
+    document_.SetVimbrowserFileActivationNonce(activation_nonce);
+  }
+
+  ~ScopedVimbrowserFileActivationNonce() {
+    document_.SetVimbrowserFileActivationNonce(std::move(previous_));
+  }
+
+ private:
+  Document& document_;
+  std::optional<base::UnguessableToken> previous_;
+};
+
+bool HasStrictlyVisibleStyle(Element& element) {
+  const ComputedStyle* element_style = element.GetComputedStyle();
+  if (!element_style ||
+      element_style->Visibility() != EVisibility::kVisible) {
+    return false;
+  }
+
+  for (Node& ancestor : FlatTreeTraversal::InclusiveAncestorsOf(element)) {
+    auto* ancestor_element = DynamicTo<Element>(ancestor);
+    if (!ancestor_element) {
+      continue;
+    }
+    const ComputedStyle* style = ancestor_element->GetComputedStyle();
+    if (!style || style->Opacity() == 0.0f) {
+      return false;
+    }
+  }
+  return true;
+}
 
 constexpr char kInvalidWorldID[] =
     "JavaScriptExecuteRequestInIsolatedWorld gets an invalid world id.";
@@ -642,6 +690,87 @@ void LocalFrameMojoHandler::EnableViewSourceMode() {
 
 void LocalFrameMojoHandler::Focus() {
   frame_->FocusImpl();
+}
+
+void LocalFrameMojoHandler::VimbrowserActivateElement(
+    const String& selector,
+    const DocumentToken& expected_document,
+    const base::UnguessableToken& activation_nonce,
+    VimbrowserActivateElementCallback callback) {
+  using Result = mojom::blink::VimbrowserElementActivationResult;
+
+  Document* document = GetDocument();
+  Page* page = GetPage();
+  if (!document || document->Token() != expected_document || !page ||
+      !frame_->View() || selector.empty()) {
+    std::move(callback).Run(Result::kDocumentUnavailable, 0);
+    return;
+  }
+
+  DummyExceptionStateForTesting exception_state;
+  StaticElementList* matches = document->QuerySelectorAll(
+      AtomicString(selector), exception_state);
+  if (exception_state.HadException() || !matches) {
+    std::move(callback).Run(Result::kInvalidSelector, 0);
+    return;
+  }
+
+  const unsigned match_count = matches->length();
+  if (match_count == 0) {
+    std::move(callback).Run(Result::kTargetNotFound, 0);
+    return;
+  }
+  if (match_count != 1) {
+    std::move(callback).Run(Result::kAmbiguousTarget, match_count);
+    return;
+  }
+
+  Element* element = matches->item(0);
+  if (!element || !element->isConnected()) {
+    std::move(callback).Run(Result::kTargetNotFound, 0);
+    return;
+  }
+
+  document->UpdateStyleAndLayout(DocumentUpdateReason::kInput);
+  if (!HasStrictlyVisibleStyle(*element)) {
+    std::move(callback).Run(Result::kTargetNotVisible, 1);
+    return;
+  }
+  gfx::RectF activation_rect(element->VisibleBoundsInLocalRoot());
+  const gfx::Size viewport_size = page->GetVisualViewport().Size();
+  activation_rect.Intersect(
+      gfx::RectF(0, 0, viewport_size.width(), viewport_size.height()));
+  if (activation_rect.IsEmpty()) {
+    std::move(callback).Run(Result::kTargetNotVisible, 1);
+    return;
+  }
+
+  const gfx::PointF activation_point = activation_rect.CenterPoint();
+  const PhysicalOffset point_in_local_root =
+      frame_->View()->ConvertFromRootFrame(
+          PhysicalOffset::FromPointFRound(activation_point));
+  HitTestResult hit = frame_->GetEventHandler().HitTestResultAtLocation(
+      HitTestLocation(point_in_local_root));
+  hit.SetToShadowHostIfInUAShadowRoot();
+  Node* hit_node = hit.InnerNode();
+  const bool target_on_event_path =
+      hit_node &&
+      (hit_node == element ||
+       FlatTreeTraversal::IsDescendantOf(*hit_node, *element));
+  if (hit.InnerNodeFrame() != frame_ || !target_on_event_path) {
+    std::move(callback).Run(Result::kTargetObscured, 1);
+    return;
+  }
+
+  ScopedVimbrowserFileActivationNonce nonce_scope(*document, activation_nonce);
+  const click_hints::ActivationResult activation =
+      click_hints::ActivateCandidate(*frame_, *element, activation_rect,
+                                     click_hints::ActivationAction::kLeftClick);
+  std::move(callback).Run(
+      activation == click_hints::ActivationResult::kDispatched
+          ? Result::kDispatched
+          : Result::kActivationIgnored,
+      1);
 }
 
 void LocalFrameMojoHandler::ClearFocusedElement() {

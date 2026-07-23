@@ -29,6 +29,11 @@ extern "C" void vimbrowser_send_browser_command_key_event(
     int browser_id,
     const CefKeyEvent* event);
 
+extern "C" bool vimbrowser_get_current_file_dialog_activation_nonce(
+    int browser_id,
+    uint64_t* activation_nonce_high,
+    uint64_t* activation_nonce_low);
+
 namespace vimbrowser {
 
 struct BrowserClient::NetworkRequestRecord {
@@ -904,6 +909,28 @@ void BrowserClient::OnBeforePopupAborted(CefRefPtr<CefBrowser> browser,
   if (owner_) {
     owner_->OnClientBeforePopupAborted(this, popup_id);
   }
+}
+
+bool BrowserClient::OnFileDialog(
+    CefRefPtr<CefBrowser> browser,
+    FileDialogMode mode,
+    const CefString& title,
+    const CefString& default_file_path,
+    const std::vector<CefString>& accept_filters,
+    const std::vector<CefString>& accept_extensions,
+    const std::vector<CefString>& accept_descriptions,
+    CefRefPtr<CefFileDialogCallback> callback) {
+  uint64_t activation_nonce_high = 0;
+  uint64_t activation_nonce_low = 0;
+  const bool has_activation_nonce =
+      browser && vimbrowser_get_current_file_dialog_activation_nonce(
+                     browser->GetIdentifier(), &activation_nonce_high,
+                     &activation_nonce_low);
+  return owner_ && owner_->OnClientFileDialog(
+                       this, browser, mode, accept_filters, accept_extensions,
+                       has_activation_nonce, activation_nonce_high,
+                       activation_nonce_low,
+                       std::move(callback));
 }
 
 void BrowserClient::DetachOwner() {

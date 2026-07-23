@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "base/auto_reset.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notimplemented.h"
 #include "base/strings/utf_string_conversions.h"
@@ -157,6 +158,8 @@ FileChooserParams SelectFileToFileChooserParams(
             FILE_PATH_LITERAL(".") + file_types->extensions[i][0]));
       }
     }
+    params.vimbrowser_activation_nonce =
+        file_types->vimbrowser_activation_nonce;
   }
 
   return params;
@@ -455,6 +458,12 @@ void CefFileDialogManager::SelectFileListenerDestroyed(
   }
 }
 
+std::optional<base::UnguessableToken>
+CefFileDialogManager::GetCurrentVimbrowserActivationNonce() const {
+  CEF_REQUIRE_UIT();
+  return current_vimbrowser_activation_nonce_;
+}
+
 CefFileDialogManager::RunFileChooserCallback
 CefFileDialogManager::MaybeRunDelegate(
     const blink::mojom::FileChooserParams& params,
@@ -525,10 +534,16 @@ CefFileDialogManager::MaybeRunDelegate(
 
       CefRefPtr<CefFileDialogCallbackImpl> callbackImpl(
           new CefFileDialogCallbackImpl(std::move(callback)));
-      const bool handled = handler->OnFileDialog(
-          browser_.get(), static_cast<cef_file_dialog_mode_t>(mode),
-          params.title, params.default_file_name.value(), accept_filters,
-          accept_extensions, accept_descriptions, callbackImpl.get());
+      bool handled = false;
+      {
+        base::AutoReset<std::optional<base::UnguessableToken>> nonce_scope(
+            &current_vimbrowser_activation_nonce_,
+            params.vimbrowser_activation_nonce);
+        handled = handler->OnFileDialog(
+            browser_.get(), static_cast<cef_file_dialog_mode_t>(mode),
+            params.title, params.default_file_name.value(), accept_filters,
+            accept_extensions, accept_descriptions, callbackImpl.get());
+      }
       if (!handled) {
         // May return nullptr if the client has already executed the callback.
         callback = callbackImpl->Disconnect();
@@ -537,6 +552,14 @@ CefFileDialogManager::MaybeRunDelegate(
                "callback";
       }
     }
+  }
+
+  // A tagged chooser belongs to one private browser activation operation. If
+  // the client did not claim it, cancel rather than exposing a native dialog or
+  // allowing a later unrelated handler to consume it.
+  if (params.vimbrowser_activation_nonce && !callback.is_null()) {
+    std::move(callback).Run({});
+    return {};
   }
 
   return callback;

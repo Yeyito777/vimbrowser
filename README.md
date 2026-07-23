@@ -78,6 +78,9 @@ scripts/vimbrowser-ipc tab-focus 3
 scripts/vimbrowser-ipc html 3
 scripts/vimbrowser-ipc screenshot 3 > tab.png
 scripts/vimbrowser-ipc js 3 'document.title'
+vimbrowser-cli upload-file 3 '#attachment' /home/me/report.pdf
+vimbrowser-cli upload-file 3 'activate:#browse-button' /home/me/resume.pdf
+vimbrowser-cli upload-file 3 chooser /home/me/resume.pdf
 scripts/vimbrowser-ipc network 3 list
 scripts/vimbrowser-ipc fps
 scripts/vimbrowser-ipc scroll 280
@@ -93,7 +96,8 @@ See [`docs/ipc.md`](docs/ipc.md) for protocol framing, command semantics, and
 compatibility rules. IPC now has stable tab IDs (separate from reorderable tab
 indexes), ID-based tab focus/delete/order/open commands, complete folder/sidebar
 inspection and control, native HTML/text/JS, backend tab screenshots, backend
-cookie inspection/mutation, and per-tab native network capture/replay.
+cookie inspection/mutation, secure browser-process local-file input assignment,
+and per-tab native network capture/replay.
 
 Performance tracking lives in [`docs/benchmarks.md`](docs/benchmarks.md). Run
 `make benchmark` for the deterministic local regression suite,

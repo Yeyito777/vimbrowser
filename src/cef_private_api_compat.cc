@@ -1,3 +1,6 @@
+#include <cstddef>
+#include <cstdint>
+
 #include "include/cef_browser.h"
 
 // The normal desktop build links these functions from vimbrowser's customized
@@ -25,3 +28,21 @@ extern "C" bool vimbrowser_browser_is_currently_audible(int) {
 extern "C" void vimbrowser_send_browser_command_key_event(
     int,
     const CefKeyEvent*) {}
+
+extern "C" bool vimbrowser_activate_element_by_selector(
+    int,
+    const char*,
+    size_t,
+    uint64_t*,
+    uint64_t*,
+    void (*)(void*, int, int),
+    void*) {
+  return false;
+}
+
+extern "C" bool vimbrowser_get_current_file_dialog_activation_nonce(
+    int,
+    uint64_t*,
+    uint64_t*) {
+  return false;
+}

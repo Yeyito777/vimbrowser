@@ -628,6 +628,8 @@ void FileSelectHelper::RunFileChooser(
 
 void FileSelectHelper::GetFileTypesInThreadPool(FileChooserParamsPtr params) {
   select_file_types_ = GetFileTypesFromAcceptType(params->accept_types);
+  select_file_types_->vimbrowser_activation_nonce =
+      params->vimbrowser_activation_nonce;
   select_file_types_->allowed_paths =
       params->need_local_path ? ui::SelectFileDialog::FileTypeInfo::NATIVE_PATH
                               : ui::SelectFileDialog::FileTypeInfo::ANY_PATH;

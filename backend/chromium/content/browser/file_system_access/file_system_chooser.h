@@ -6,6 +6,7 @@
 #define CONTENT_BROWSER_FILE_SYSTEM_ACCESS_FILE_SYSTEM_CHOOSER_H_
 
 #include <string>
+#include <optional>
 #include <vector>
 
 #include "base/files/file_path.h"
@@ -42,7 +43,9 @@ class CONTENT_EXPORT FileSystemChooser : public ui::SelectFileDialog::Listener {
             blink::mojom::AcceptsTypesInfoPtr accepts_types_info,
             std::u16string title,
             base::FilePath default_directory,
-            base::FilePath suggested_name);
+            base::FilePath suggested_name,
+            std::optional<base::UnguessableToken>
+                vimbrowser_activation_nonce = std::nullopt);
     Options(const Options&);
     ~Options();
 

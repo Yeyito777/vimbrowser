@@ -5,6 +5,7 @@
 module blink.mojom;
 
 import "mojo/public/mojom/base/string16.mojom";
+import "mojo/public/mojom/base/unguessable_token.mojom";
 import "third_party/blink/public/mojom/file_system_access/file_system_access_data_transfer_token.mojom";
 import "third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom";
 import "third_party/blink/public/mojom/file_system_access/file_system_access_error.mojom";
@@ -90,6 +91,7 @@ struct FilePickerOptions {
   TypeSpecificFilePickerOptionsUnion type_specific_options;
   string starting_directory_id;
   FilePickerStartInOptionsUnion? start_in_options;
+  mojo_base.mojom.UnguessableToken? vimbrowser_activation_nonce;
 };
 
 // Interface provided by the browser to the renderer as main entry point to the

@@ -743,7 +743,7 @@ void FileSystemAccessManagerImpl::SetDefaultPathAndShowPicker(
       GetSelectFileDialogType(options->type_specific_options),
       GetAndMoveAcceptsTypesInfo(options->type_specific_options),
       std::move(title), std::move(default_directory),
-      std::move(suggested_name_path));
+      std::move(suggested_name_path), options->vimbrowser_activation_nonce);
 
   if (auto_file_picker_result_for_test_) {
     DidChooseEntries(

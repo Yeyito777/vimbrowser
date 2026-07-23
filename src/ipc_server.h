@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -31,6 +33,9 @@ class IpcServer final {
   std::string socket_path_;
   std::atomic<bool> running_{false};
   int server_fd_ = -1;
+  std::atomic<int> client_fd_{-1};
+  std::mutex pending_command_mutex_;
+  std::function<void()> cancel_pending_command_;
   std::thread thread_;
 };
 

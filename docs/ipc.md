@@ -428,6 +428,148 @@ thread instead of the UI thread. The file is limited to 1 MiB; terminals,
 devices, FIFOs, and other non-regular paths (including `/dev/stdin`) are rejected
 so a malformed automation command cannot hang the browser.
 
+#### `upload-file <tabid> <base64-v1-json-payload>`
+
+Securely assigns explicit local files to one `<input type=file>` or atomically
+native-activates one custom Browse control and supplies the chooser it opens.
+The payload is compact JSON encoded with standard base64 so CSS selectors and
+paths are not corrupted by the protocol's whitespace framing:
+
+```json
+{
+  "version": 1,
+  "target": {"kind": "css", "value": "#attachment"},
+  "paths": ["/home/me/report.pdf"]
+}
+```
+
+`target.kind` is either:
+
+- `css`: `value` is a CSS selector which must match exactly one element
+- `index`: `value` is the explicit zero-based index among
+  `input[type="file"]` elements in the main document
+- `activate`: `value` is a CSS selector which must match exactly one visible
+  element in the main document. Chromium resolves it in Blink, registers the
+  pending upload first, native-activates the element with trusted mouse input,
+  and supplies the open-file chooser produced by that activation. The IPC reply
+  is held until the chooser is consumed or the short activation deadline
+  expires; no platform file-picker window is shown.
+- `chooser`: arms the next browser-native open-file chooser request from the
+  specified tab for 60 seconds; this target has no `value`
+
+CSS targets with zero or multiple matches fail; there is no fallback to another
+input. An index is only appropriate when the caller controls or otherwise knows
+the page's input ordering. In either mode, the resolved node is described again
+and rejected unless it is actually an `<input type=file>`.
+
+The browser decodes the payload, requires 1–32 absolute paths, canonicalizes each
+path on its blocking-file thread, opens it nonblocking, and verifies it is a
+readable regular file. It rejects multiple paths when the input lacks
+`multiple`, and checks `accept` extension/MIME constraints when the MIME type can
+be inferred from a filename extension. It then assigns the canonical paths using
+CEF's trusted browser-process DevTools connection and
+`DOM.setFileInputFiles`. Local file contents are never read by injected page
+JavaScript or included in IPC responses.
+
+Successful and command-specific error responses are structured JSON. Responses
+report file counts and input constraints but never include local paths, names, or
+file contents:
+
+```json
+{"ok":true,"tabid":3,"file_count":1,"target":{"kind":"css","match_count":1},"input":{"multiple":false,"accept":"application/pdf"}}
+```
+
+Clients should normally use `vimbrowser-cli upload-file`, which performs an
+additional path check and creates the versioned payload. Dynamic-site callers
+should wait for the intended input to exist and use a site-specific unique CSS
+selector rather than retrying with broader selectors.
+
+For a custom Browse button that creates an ephemeral input or calls the File
+System Access API from its click handler, use atomic native activation:
+
+```sh
+vimbrowser-cli upload-file @active \
+  'activate:#browse-resume' /absolute/path/resume.pdf
+```
+
+This is a single IPC transaction. The customized Chromium backend resolves one
+visible selector match in the current main document, verifies that the native
+hit test reaches that element or one of its flat-tree descendants, and activates
+that verified point through Blink's native mouse event path. This establishes the
+transient user activation required by file pickers without using page JavaScript.
+Covered, pointer-inert, transparent, and stale-document targets are rejected
+before dispatch.
+
+The browser generates an unguessable nonce for the operation and scopes it to the
+synchronous native activation. Blink copies that nonce into either a regular
+`<input type=file>` request or File System Access picker metadata, carries it
+through Chromium's chooser pipeline, and exposes it to CEF only during the
+corresponding `OnFileDialog` callback. Vimbrowser supplies paths only when the
+nonce and stable browser instance match; an unrelated same-tab chooser cannot
+consume the arm, and additional chooser requests from the activation are
+canceled instead of opening native UI. The chooser is intercepted before native
+UI is created and completed with `CefFileDialogCallback::Continue` after path
+revalidation.
+
+Zero or multiple selector matches, invisible or obscured targets, navigation,
+wrong dialog modes, constraint failures, deadline expiry, and controls that do
+not open a chooser all return structured errors. There is deliberately no
+fallback from a failed direct-input assignment to element activation because
+activation can have arbitrary page side effects.
+
+For upload controls that do not expose a persistent file input, use the explicit
+manual chooser target when a human should choose the control:
+
+```sh
+vimbrowser-cli upload-file @active chooser /absolute/path/resume.pdf
+# Within 60 seconds, the user clicks the intended "Browse" button in that tab.
+vimbrowser-cli upload-file-status @active --pretty
+```
+
+The arm is one-shot and tied to the stable tab ID and browser instance. Only one
+chooser upload can be armed in a window at once. It is canceled by main-frame
+navigation, tab closure, explicit `upload-file-cancel`, or expiration. It accepts
+only open/open-multiple requests—folder and save dialogs are never supplied with
+the armed paths. At chooser time the browser checks the actual CEF dialog mode,
+`accept` filters, and single/multiple constraint, then repeats regular-file path
+validation on the blocking-file thread before calling
+`CefFileDialogCallback::Continue`. A mismatch cancels that chooser rather than
+falling through to a different target.
+
+This path is implemented by `CefDialogHandler::OnFileDialog`, so it covers both
+ephemeral inputs created only during a trusted click and Chromium File System
+Access pickers such as `showOpenFilePicker`. It does not synthesize the click:
+arming paths and choosing the intended page control remain separate explicit
+actions. Status responses expose only state/count/mode and structured error
+codes, never paths or file contents.
+
+#### `upload-file-status <tabid>`
+
+Returns `none`, `armed`, `validating`, `consumed`, `failed`, `expired`, or
+`canceled` state for the chooser target, plus the non-sensitive file count,
+remaining arm lifetime, and observed dialog mode.
+
+#### `upload-file-cancel <tabid>`
+
+Explicitly cancels an `armed` or `validating` chooser upload. Any chooser
+callback already being validated is canceled instead of receiving files.
+
+Focused end-to-end coverage uses a controlled local form and its own temporary
+profile. It must only be launched on a nested X11 display:
+
+```sh
+xenv start vimbrowser-upload-test
+xenv exec -e vimbrowser-upload-test env VIMBROWSER_E2E_NESTED_X11=1 \
+  python3 tests/upload_file_e2e.py \
+  --binary "$PWD/build-source/Release/vimbrowser" \
+  --cli /home/yeyito/Workspace/exocortex/external-tools/vimbrowser-cli/bin/vimbrowser-cli \
+  --xenv-instance vimbrowser-upload-test
+xenv stop vimbrowser-upload-test
+```
+
+The test does not use host-display input automation, does not connect to the
+normal profile, and terminates only the isolated process group it creates.
+
 #### `cookies-url <url>`
 
 Atomically lists cookies visible for an explicit URL using the profile's global

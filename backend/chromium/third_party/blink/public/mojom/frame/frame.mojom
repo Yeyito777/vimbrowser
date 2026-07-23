@@ -855,6 +855,21 @@ interface NonAssociatedLocalFrameHost {
   MaybeStartOutermostMainFrameNavigation(array<url.mojom.Url> urls);
 };
 
+// Result of a vimbrowser browser-process request to activate one exact element.
+// This is deliberately narrower than script execution: Blink resolves the CSS
+// selector itself and dispatches the activation through its native input path.
+enum VimbrowserElementActivationResult {
+  kDispatched,
+  kDocumentUnavailable,
+  kInvalidSelector,
+  kTargetNotFound,
+  kAmbiguousTarget,
+  kTargetNotVisible,
+  kTargetObscured,
+  kActivationIgnored,
+  kBackendUnavailable,
+};
+
 // Implemented in Blink, this interface defines frame-specific methods that will
 // be invoked from the browser process (e.g. content::RenderFrameHostImpl).
 //
@@ -940,6 +955,16 @@ interface LocalFrame {
   // Notifies this frame that it is now focused.  This is used to
   // support cross-process focused frame changes.
   Focus();
+
+  // Resolves |selector| against this frame's current document and activates the
+  // single visible match through Blink's native mouse input path. The generated
+  // mouse press establishes transient user activation, allowing a causally
+  // opened file picker to be intercepted and completed by the browser process.
+  VimbrowserActivateElement(
+      string selector,
+      DocumentToken expected_document,
+      mojo_base.mojom.UnguessableToken activation_nonce)
+      => (VimbrowserElementActivationResult result, uint32 match_count);
 
   // Notifies this frame to clear the focused element (if any).
   ClearFocusedElement();

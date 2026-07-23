@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include "include/cef_client.h"
+#include "include/cef_dialog_handler.h"
 #include "include/cef_display_handler.h"
 #include "include/cef_life_span_handler.h"
 #include "include/cef_load_handler.h"
@@ -20,6 +21,7 @@ namespace vimbrowser {
 class BrowserWindow;
 
 class BrowserClient final : public CefClient,
+                            public CefDialogHandler,
                             public CefDisplayHandler,
                             public CefLifeSpanHandler,
                             public CefLoadHandler,
@@ -32,6 +34,7 @@ class BrowserClient final : public CefClient,
   explicit BrowserClient(BrowserWindow* owner = nullptr);
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+  CefRefPtr<CefDialogHandler> GetDialogHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
@@ -44,6 +47,15 @@ class BrowserClient final : public CefClient,
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforePopupAborted(CefRefPtr<CefBrowser> browser,
                             int popup_id) override;
+  bool OnFileDialog(
+      CefRefPtr<CefBrowser> browser,
+      FileDialogMode mode,
+      const CefString& title,
+      const CefString& default_file_path,
+      const std::vector<CefString>& accept_filters,
+      const std::vector<CefString>& accept_extensions,
+      const std::vector<CefString>& accept_descriptions,
+      CefRefPtr<CefFileDialogCallback> callback) override;
   void OnAddressChange(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefFrame> frame,
                        const CefString& url) override;

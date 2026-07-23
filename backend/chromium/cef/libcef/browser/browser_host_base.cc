@@ -1458,6 +1458,14 @@ void CefBrowserHostBase::SelectFileListenerDestroyed(
   }
 }
 
+std::optional<base::UnguessableToken>
+CefBrowserHostBase::GetCurrentVimbrowserFileDialogActivationNonce() const {
+  CEF_REQUIRE_UIT();
+  return file_dialog_manager_
+             ? file_dialog_manager_->GetCurrentVimbrowserActivationNonce()
+             : std::nullopt;
+}
+
 content::JavaScriptDialogManager*
 CefBrowserHostBase::GetJavaScriptDialogManager() {
   if (!javascript_dialog_manager_) {

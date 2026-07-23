@@ -1,12 +1,20 @@
 #include "browser_window.h"
 #include "browser_window_internal.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
+#include <map>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -25,10 +33,590 @@
 #include "include/cef_values.h"
 #include "include/wrapper/cef_closure_task.h"
 
+extern "C" bool vimbrowser_activate_element_by_selector(
+    int browser_id,
+    const char* selector,
+    size_t selector_size,
+    uint64_t* activation_nonce_high,
+    uint64_t* activation_nonce_low,
+    void (*callback)(void* user_data, int result, int match_count),
+    void* user_data);
+
 namespace vimbrowser {
 namespace {
 
 constexpr size_t kMaxJsFileBytes = 1024 * 1024;
+constexpr size_t kMaxUploadFiles = 32;
+constexpr size_t kMaxUploadSelectorBytes = 4096;
+constexpr size_t kMaxUploadPathBytes = 4096;
+constexpr size_t kMaxUploadPayloadBytes = 256 * 1024;
+constexpr int kAutomaticUploadChooserTimeoutMs = 3000;
+
+// Keep in sync with blink.mojom.VimbrowserElementActivationResult. This is a
+// deliberately tiny private C ABI between the shell and its customized CEF
+// backend, avoiding generated CEF API churn for a vimbrowser-only operation.
+enum class VimbrowserElementActivationResult {
+  kDispatched = 0,
+  kDocumentUnavailable = 1,
+  kInvalidSelector = 2,
+  kTargetNotFound = 3,
+  kAmbiguousTarget = 4,
+  kTargetNotVisible = 5,
+  kTargetObscured = 6,
+  kActivationIgnored = 7,
+  kBackendUnavailable = 8,
+};
+
+struct UploadFileRequest {
+  uint64_t tab_id = 0;
+  std::string target_kind;
+  std::string selector;
+  int input_index = -1;
+  std::vector<std::string> paths;
+};
+
+struct UploadFileValidation {
+  bool ok = false;
+  std::string error;
+  std::string error_code;
+  std::string error_message;
+  int error_file_index = -1;
+  std::vector<std::string> canonical_paths;
+};
+
+std::string UploadFileErrorJson(std::string_view code,
+                                std::string_view message,
+                                int file_index = -1,
+                                int match_count = -1) {
+  std::ostringstream out;
+  out << "{\"ok\":false,\"error\":{\"code\":\"" << JsonEscape(code)
+      << "\",\"message\":\"" << JsonEscape(message) << "\"";
+  if (file_index >= 0) {
+    out << ",\"file_index\":" << file_index;
+  }
+  if (match_count >= 0) {
+    out << ",\"match_count\":" << match_count;
+  }
+  out << "}}";
+  return out.str();
+}
+
+bool DecodeUploadFilePayload(const std::string& encoded,
+                             UploadFileRequest* request,
+                             std::string* error) {
+  auto fail = [error](std::string_view code, std::string_view message) {
+    if (error) {
+      *error = UploadFileErrorJson(code, message);
+    }
+    return false;
+  };
+  if (!request || encoded.empty() ||
+      encoded.size() > ((kMaxUploadPayloadBytes + 2) / 3) * 4 + 4) {
+    return fail("invalid_payload", "upload payload is missing or too large");
+  }
+
+  CefRefPtr<CefBinaryValue> decoded = CefBase64Decode(encoded);
+  if (!decoded || decoded->GetSize() == 0 ||
+      decoded->GetSize() > kMaxUploadPayloadBytes) {
+    return fail("invalid_payload", "upload payload is not valid base64");
+  }
+  std::vector<char> bytes(decoded->GetSize());
+  if (decoded->GetData(bytes.data(), bytes.size(), 0) != bytes.size()) {
+    return fail("invalid_payload", "upload payload could not be decoded");
+  }
+  CefRefPtr<CefValue> value =
+      CefParseJSON(bytes.data(), bytes.size(), JSON_PARSER_RFC);
+  if (!value || value->GetType() != VTYPE_DICTIONARY) {
+    return fail("invalid_payload", "upload payload is not a JSON object");
+  }
+  CefRefPtr<CefDictionaryValue> root = value->GetDictionary();
+  if (!root || root->GetType("version") != VTYPE_INT ||
+      root->GetInt("version") != 1 ||
+      root->GetType("target") != VTYPE_DICTIONARY ||
+      root->GetType("paths") != VTYPE_LIST) {
+    return fail("invalid_payload", "upload payload has an unsupported schema");
+  }
+
+  CefRefPtr<CefDictionaryValue> target = root->GetDictionary("target");
+  if (!target || target->GetType("kind") != VTYPE_STRING) {
+    return fail("invalid_target", "upload target is missing its kind");
+  }
+  request->target_kind = ToLowerAscii(target->GetString("kind").ToString());
+  if (request->target_kind == "css" ||
+      request->target_kind == "activate") {
+    if (target->GetType("value") != VTYPE_STRING) {
+      return fail("invalid_target", "CSS upload target must be a string");
+    }
+    request->selector = target->GetString("value").ToString();
+    if (request->selector.empty() ||
+        request->selector.size() > kMaxUploadSelectorBytes) {
+      return fail("invalid_target", "CSS upload target is empty or too long");
+    }
+  } else if (request->target_kind == "index") {
+    if (target->GetType("value") != VTYPE_INT) {
+      return fail("invalid_target", "upload input index must be an integer");
+    }
+    request->input_index = target->GetInt("value");
+    if (request->input_index < 0 || request->input_index > 10000) {
+      return fail("invalid_target", "upload input index is out of range");
+    }
+  } else if (request->target_kind == "chooser") {
+    // The target is the next browser-native open-file chooser from this tab.
+    // There is deliberately no selector or renderer-provided path in this mode.
+  } else {
+    return fail("invalid_target",
+                "upload target kind must be css, index, activate, or chooser");
+  }
+
+  CefRefPtr<CefListValue> paths = root->GetList("paths");
+  if (!paths || paths->GetSize() == 0 || paths->GetSize() > kMaxUploadFiles) {
+    return fail("invalid_path_count", "upload requires between 1 and 32 files");
+  }
+  request->paths.reserve(paths->GetSize());
+  for (size_t i = 0; i < paths->GetSize(); ++i) {
+    if (paths->GetType(i) != VTYPE_STRING) {
+      return fail("invalid_path", "every upload path must be a string");
+    }
+    std::string path = paths->GetString(i).ToString();
+    if (path.empty() || path.size() > kMaxUploadPathBytes) {
+      return fail("invalid_path", "an upload path is empty or too long");
+    }
+    request->paths.push_back(std::move(path));
+  }
+  return true;
+}
+
+UploadFileValidation ValidateUploadFilePaths(
+    const std::vector<std::string>& paths) {
+  UploadFileValidation result;
+  auto fail = [&result](std::string code,
+                        std::string message,
+                        int file_index) -> UploadFileValidation {
+    result.error_code = std::move(code);
+    result.error_message = std::move(message);
+    result.error_file_index = file_index;
+    result.error = UploadFileErrorJson(result.error_code, result.error_message,
+                                       result.error_file_index);
+    return result;
+  };
+  result.canonical_paths.reserve(paths.size());
+  for (size_t i = 0; i < paths.size(); ++i) {
+    const std::filesystem::path input(paths[i]);
+    if (!input.is_absolute()) {
+      return fail("path_not_absolute", "upload file path must be absolute",
+                  static_cast<int>(i));
+    }
+
+    std::error_code ec;
+    const std::filesystem::path canonical = std::filesystem::canonical(input, ec);
+    if (ec || canonical.empty()) {
+      return fail("path_not_found", "upload file path does not exist",
+                  static_cast<int>(i));
+    }
+    const std::string canonical_text = canonical.string();
+    if (canonical_text.size() > kMaxUploadPathBytes) {
+      return fail("path_too_long", "canonical upload file path is too long",
+                  static_cast<int>(i));
+    }
+
+    // Open nonblocking and inspect the descriptor so FIFOs/devices cannot wedge
+    // the browser and a path swap cannot make a special file pass the check.
+    const int fd = open(canonical_text.c_str(),
+                        O_RDONLY | O_CLOEXEC | O_NONBLOCK | O_NOFOLLOW);
+    if (fd < 0) {
+      return fail("path_not_readable", "upload file path is not readable",
+                  static_cast<int>(i));
+    }
+    struct stat info = {};
+    const bool inspected = fstat(fd, &info) == 0;
+    close(fd);
+    if (!inspected || !S_ISREG(info.st_mode)) {
+      return fail("path_not_regular", "upload file path is not a regular file",
+                  static_cast<int>(i));
+    }
+    result.canonical_paths.push_back(canonical_text);
+  }
+  result.ok = true;
+  return result;
+}
+
+std::vector<std::string> SplitCommaSeparated(std::string_view value) {
+  std::vector<std::string> parts;
+  size_t start = 0;
+  while (start <= value.size()) {
+    const size_t comma = value.find(',', start);
+    const size_t end = comma == std::string_view::npos ? value.size() : comma;
+    parts.push_back(Trim(std::string(value.substr(start, end - start))));
+    if (comma == std::string_view::npos) {
+      break;
+    }
+    start = comma + 1;
+  }
+  return parts;
+}
+
+bool UploadFileMatchesAccept(const std::string& path,
+                             const std::string& accept) {
+  if (Trim(accept).empty()) {
+    return true;
+  }
+  std::string extension =
+      ToLowerAscii(std::filesystem::path(path).extension().string());
+  std::string mime;
+  if (extension.size() > 1) {
+    mime = ToLowerAscii(CefGetMimeType(extension.substr(1)).ToString());
+  }
+
+  bool had_valid_constraint = false;
+  for (std::string token : SplitCommaSeparated(accept)) {
+    token = ToLowerAscii(std::move(token));
+    if (token.size() > 1 && token.front() == '.') {
+      had_valid_constraint = true;
+      if (extension == token) {
+        return true;
+      }
+      continue;
+    }
+    const size_t slash = token.find('/');
+    if (slash == std::string::npos || slash == 0 || slash + 1 >= token.size()) {
+      continue;  // Browsers ignore invalid accept tokens.
+    }
+    had_valid_constraint = true;
+    if (token.ends_with("/*")) {
+      const std::string prefix = token.substr(0, token.size() - 1);
+      if (!mime.empty() && mime.starts_with(prefix)) {
+        return true;
+      }
+    } else if (!mime.empty() && mime == token) {
+      return true;
+    }
+  }
+  return !had_valid_constraint;
+}
+
+std::string FileChooserAcceptConstraint(
+    const std::vector<CefString>& accept_filters,
+    const std::vector<CefString>& accept_extensions) {
+  std::string constraint;
+  auto append = [&constraint](std::string value) {
+    std::replace(value.begin(), value.end(), ';', ',');
+    if (value.empty()) {
+      return;
+    }
+    if (!constraint.empty()) {
+      constraint.push_back(',');
+    }
+    constraint += value;
+  };
+  for (const CefString& filter : accept_filters) {
+    append(filter.ToString());
+  }
+  if (constraint.empty()) {
+    for (const CefString& extensions : accept_extensions) {
+      append(extensions.ToString());
+    }
+  }
+  return constraint;
+}
+
+int NextUploadFileDevToolsMessageId() {
+  static int next_message_id = 800000000;
+  if (next_message_id >= 899000000) {
+    next_message_id = 800000000;
+  }
+  return next_message_id++;
+}
+
+class UploadFileDevToolsObserver final : public CefDevToolsMessageObserver {
+ public:
+  UploadFileDevToolsObserver(CefRefPtr<CefBrowserHost> host,
+                             UploadFileRequest request,
+                             IpcReplyCallback reply)
+      : host_(std::move(host)),
+        request_(std::move(request)),
+        reply_(std::move(reply)) {}
+
+  void Start() {
+    if (!host_) {
+      Finish(UploadFileErrorJson("no_browser_host", "tab has no browser host"));
+      return;
+    }
+    registration_ = host_->AddDevToolsMessageObserver(this);
+    state_ = State::kGetDocument;
+    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+    params->SetInt("depth", 0);
+    params->SetBool("pierce", true);
+    Send("DOM.getDocument", params);
+  }
+
+  void OnDevToolsMethodResult(CefRefPtr<CefBrowser> browser,
+                              int message_id,
+                              bool success,
+                              const void* result,
+                              size_t result_size) override {
+    if (completed_ || message_id == 0 || message_id != message_id_) {
+      return;
+    }
+    if (!success) {
+      const std::string code = state_ == State::kQuery &&
+                                       request_.target_kind == "css"
+                                   ? "invalid_selector"
+                                   : "devtools_error";
+      Finish(UploadFileErrorJson(
+          code, state_ == State::kSetFiles
+                    ? "browser rejected the file-input assignment"
+                    : "browser could not resolve the file-input target"));
+      return;
+    }
+
+    CefRefPtr<CefDictionaryValue> dict;
+    if (result && result_size > 0) {
+      CefRefPtr<CefValue> value =
+          CefParseJSON(result, result_size, JSON_PARSER_RFC);
+      if (!value || value->GetType() != VTYPE_DICTIONARY) {
+        Finish(UploadFileErrorJson("invalid_browser_response",
+                                   "browser returned invalid target metadata"));
+        return;
+      }
+      dict = value->GetDictionary();
+    }
+    if (!dict) {
+      dict = CefDictionaryValue::Create();
+    }
+
+    switch (state_) {
+      case State::kGetDocument:
+        HandleDocument(dict);
+        break;
+      case State::kQuery:
+        HandleQuery(dict);
+        break;
+      case State::kDescribe:
+        HandleDescribe(dict);
+        break;
+      case State::kSetFiles:
+        FinishSuccess();
+        break;
+      case State::kDone:
+        break;
+    }
+  }
+
+  void Timeout() {
+    Finish(UploadFileErrorJson("timeout", "file-input assignment timed out"));
+  }
+
+ private:
+  enum class State { kGetDocument, kQuery, kDescribe, kSetFiles, kDone };
+
+  void Send(const CefString& method, CefRefPtr<CefDictionaryValue> params) {
+    if (completed_ || !host_) {
+      return;
+    }
+    const int requested_id = NextUploadFileDevToolsMessageId();
+    message_id_ = requested_id;
+    const int actual_id = host_->ExecuteDevToolsMethod(requested_id, method, params);
+    if (actual_id == 0) {
+      Finish(UploadFileErrorJson("devtools_start_failed",
+                                 "browser could not start file-input assignment"));
+    } else {
+      message_id_ = actual_id;
+    }
+  }
+
+  void HandleDocument(CefRefPtr<CefDictionaryValue> result) {
+    if (result->GetType("root") != VTYPE_DICTIONARY) {
+      Finish(UploadFileErrorJson("document_unavailable",
+                                 "tab document is not available"));
+      return;
+    }
+    CefRefPtr<CefDictionaryValue> root = result->GetDictionary("root");
+    if (!root || root->GetType("nodeId") != VTYPE_INT ||
+        root->GetInt("nodeId") <= 0) {
+      Finish(UploadFileErrorJson("document_unavailable",
+                                 "tab document has no DOM root"));
+      return;
+    }
+    state_ = State::kQuery;
+    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+    params->SetInt("nodeId", root->GetInt("nodeId"));
+    params->SetString("selector", request_.target_kind == "css"
+                                      ? request_.selector
+                                      : "input[type=\"file\"]");
+    Send("DOM.querySelectorAll", params);
+  }
+
+  void HandleQuery(CefRefPtr<CefDictionaryValue> result) {
+    if (result->GetType("nodeIds") != VTYPE_LIST) {
+      Finish(UploadFileErrorJson("invalid_browser_response",
+                                 "browser returned no target matches"));
+      return;
+    }
+    CefRefPtr<CefListValue> nodes = result->GetList("nodeIds");
+    const int count = nodes ? static_cast<int>(nodes->GetSize()) : 0;
+    match_count_ = count;
+    int selected = -1;
+    if (request_.target_kind == "css") {
+      if (count == 0) {
+        Finish(UploadFileErrorJson("target_not_found",
+                                   "CSS target did not match an element", -1, 0));
+        return;
+      }
+      if (count != 1) {
+        Finish(UploadFileErrorJson(
+            "ambiguous_target", "CSS target matched more than one element", -1,
+            count));
+        return;
+      }
+      selected = nodes->GetInt(0);
+    } else {
+      if (request_.input_index >= count) {
+        Finish(UploadFileErrorJson(
+            "input_index_out_of_range", "file-input index is out of range", -1,
+            count));
+        return;
+      }
+      selected = nodes->GetInt(static_cast<size_t>(request_.input_index));
+    }
+    if (selected <= 0) {
+      Finish(UploadFileErrorJson("invalid_browser_response",
+                                 "browser returned an invalid target node"));
+      return;
+    }
+    node_id_ = selected;
+    state_ = State::kDescribe;
+    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+    params->SetInt("nodeId", node_id_);
+    params->SetInt("depth", 0);
+    Send("DOM.describeNode", params);
+  }
+
+  void HandleDescribe(CefRefPtr<CefDictionaryValue> result) {
+    if (result->GetType("node") != VTYPE_DICTIONARY) {
+      Finish(UploadFileErrorJson("invalid_browser_response",
+                                 "browser returned no target node metadata"));
+      return;
+    }
+    CefRefPtr<CefDictionaryValue> node = result->GetDictionary("node");
+    if (!node || node->GetType("nodeName") != VTYPE_STRING) {
+      Finish(UploadFileErrorJson("invalid_browser_response",
+                                 "browser returned incomplete target metadata"));
+      return;
+    }
+
+    std::map<std::string, std::string> attributes;
+    if (node->GetType("attributes") == VTYPE_LIST) {
+      CefRefPtr<CefListValue> list = node->GetList("attributes");
+      if (list) {
+        for (size_t i = 0; i + 1 < list->GetSize(); i += 2) {
+          if (list->GetType(i) == VTYPE_STRING &&
+              list->GetType(i + 1) == VTYPE_STRING) {
+            attributes[ToLowerAscii(list->GetString(i).ToString())] =
+                list->GetString(i + 1).ToString();
+          }
+        }
+      }
+    }
+    const auto type = attributes.find("type");
+    if (ToLowerAscii(node->GetString("nodeName").ToString()) != "input" ||
+        type == attributes.end() || ToLowerAscii(type->second) != "file") {
+      Finish(UploadFileErrorJson(
+          "target_not_file_input", "target is not an input of type file"));
+      return;
+    }
+
+    multiple_ = attributes.contains("multiple");
+    const auto accept = attributes.find("accept");
+    accept_ = accept == attributes.end() ? std::string() : accept->second;
+    if (!multiple_ && request_.paths.size() > 1) {
+      Finish(UploadFileErrorJson(
+          "multiple_not_allowed", "target file input does not allow multiple files"));
+      return;
+    }
+    for (size_t i = 0; i < request_.paths.size(); ++i) {
+      if (!UploadFileMatchesAccept(request_.paths[i], accept_)) {
+        Finish(UploadFileErrorJson(
+            "accept_mismatch", "upload file does not match the input accept constraint",
+            static_cast<int>(i)));
+        return;
+      }
+    }
+
+    CefRefPtr<CefListValue> files = CefListValue::Create();
+    files->SetSize(request_.paths.size());
+    for (size_t i = 0; i < request_.paths.size(); ++i) {
+      files->SetString(i, request_.paths[i]);
+    }
+    state_ = State::kSetFiles;
+    CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
+    params->SetInt("nodeId", node_id_);
+    params->SetList("files", files);
+    Send("DOM.setFileInputFiles", params);
+  }
+
+  void FinishSuccess() {
+    std::ostringstream out;
+    out << "{\"ok\":true,\"tabid\":" << request_.tab_id
+        << ",\"file_count\":" << request_.paths.size()
+        << ",\"target\":{\"kind\":\"" << request_.target_kind
+        << "\",\"match_count\":" << match_count_;
+    if (request_.target_kind == "index") {
+      out << ",\"index\":" << request_.input_index;
+    }
+    out << "},\"input\":{\"multiple\":" << (multiple_ ? "true" : "false")
+        << ",\"accept\":\"" << JsonEscape(accept_) << "\"}}";
+    Finish(out.str());
+  }
+
+  void Finish(std::string response) {
+    if (completed_) {
+      return;
+    }
+    completed_ = true;
+    state_ = State::kDone;
+    registration_ = nullptr;
+    host_ = nullptr;
+    request_.paths.clear();
+    if (reply_) {
+      auto reply = std::move(reply_);
+      reply(std::move(response));
+    }
+  }
+
+  CefRefPtr<CefBrowserHost> host_;
+  UploadFileRequest request_;
+  IpcReplyCallback reply_;
+  CefRefPtr<CefRegistration> registration_;
+  State state_ = State::kGetDocument;
+  int message_id_ = 0;
+  int node_id_ = 0;
+  int match_count_ = 0;
+  bool multiple_ = false;
+  bool completed_ = false;
+  std::string accept_;
+
+  IMPLEMENT_REFCOUNTING(UploadFileDevToolsObserver);
+  DISALLOW_COPY_AND_ASSIGN(UploadFileDevToolsObserver);
+};
+
+void StartUploadFileAssignment(CefRefPtr<CefBrowserHost> host,
+                               UploadFileRequest request,
+                               IpcReplyCallback reply) {
+  CefRefPtr<UploadFileDevToolsObserver> observer =
+      new UploadFileDevToolsObserver(std::move(host), std::move(request),
+                                     std::move(reply));
+  observer->Start();
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(
+          [](CefRefPtr<UploadFileDevToolsObserver> observer) {
+            if (observer) {
+              observer->Timeout();
+            }
+          },
+          observer),
+      30000);
+}
 
 int NextScreenshotDevToolsMessageId() {
   // Use an explicit positive ID instead of ExecuteDevToolsMethod(0)'s auto-ID so
@@ -374,8 +962,577 @@ void StartScreenshotDevToolsCapture(CefRefPtr<CefBrowserHost> host,
       30000);
 }
 
+struct FileChooserActivationContext {
+  CefRefPtr<BrowserWindow> owner;
+  uint64_t generation = 0;
+};
 
 }  // namespace
+
+std::string BrowserWindow::ArmFileChooserUpload(
+    uint64_t tab_id,
+    std::vector<std::string> paths) {
+  if (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+      file_chooser_upload_.phase == FileChooserUploadPhase::kValidating) {
+    return UploadFileErrorJson(
+        "chooser_already_armed",
+        "a file chooser upload is already armed; cancel it explicitly first");
+  }
+  if (!FindTabIndexById(tab_id)) {
+    return UploadFileErrorJson("no_such_tabid", "no tab has the requested id");
+  }
+
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kArmed;
+  file_chooser_upload_.tab_id = tab_id;
+  file_chooser_upload_.file_count = paths.size();
+  file_chooser_upload_.paths = std::move(paths);
+  file_chooser_upload_.expires_at =
+      std::chrono::steady_clock::now() + std::chrono::seconds(60);
+  file_chooser_upload_.error_code.clear();
+  file_chooser_upload_.error_message.clear();
+  file_chooser_upload_.error_file_index = -1;
+  file_chooser_upload_.dialog_mode = FILE_DIALOG_NUM_VALUES;
+  file_chooser_upload_.automatic_activation = false;
+  file_chooser_upload_.activation_selector.clear();
+  file_chooser_upload_.activation_match_count = 0;
+  file_chooser_upload_.activation_nonce_high = 0;
+  file_chooser_upload_.activation_nonce_low = 0;
+  file_chooser_upload_.chooser_callback = nullptr;
+  file_chooser_upload_.completion_reply = nullptr;
+
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ExpireFileChooserUpload, self,
+                     file_chooser_upload_.generation),
+      60000);
+  return FileChooserUploadStatusJson(tab_id);
+}
+
+void BrowserWindow::StartFileChooserActivationUpload(
+    uint64_t tab_id,
+    std::string selector,
+    std::vector<std::string> paths,
+    IpcReplyCallback reply) {
+  if (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+      file_chooser_upload_.phase == FileChooserUploadPhase::kValidating) {
+    reply(UploadFileErrorJson(
+        "chooser_already_armed",
+        "a file chooser upload is already armed; cancel it explicitly first"));
+    return;
+  }
+
+  std::string browser_error;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &browser_error);
+  if (!browser || !browser->GetHost()) {
+    reply(UploadFileErrorJson("tab_unavailable",
+                              "tab has no live browser backend"));
+    return;
+  }
+
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kArmed;
+  file_chooser_upload_.tab_id = tab_id;
+  file_chooser_upload_.file_count = paths.size();
+  file_chooser_upload_.paths = std::move(paths);
+  file_chooser_upload_.expires_at =
+      std::chrono::steady_clock::now() +
+      std::chrono::milliseconds(kAutomaticUploadChooserTimeoutMs);
+  file_chooser_upload_.error_code.clear();
+  file_chooser_upload_.error_message.clear();
+  file_chooser_upload_.error_file_index = -1;
+  file_chooser_upload_.dialog_mode = FILE_DIALOG_NUM_VALUES;
+  file_chooser_upload_.automatic_activation = true;
+  file_chooser_upload_.activation_selector = std::move(selector);
+  // A successful exact-target activation necessarily has one match. The backend
+  // callback will replace this value for structured zero/ambiguous failures.
+  file_chooser_upload_.activation_match_count = 1;
+  file_chooser_upload_.activation_nonce_high = 0;
+  file_chooser_upload_.activation_nonce_low = 0;
+  file_chooser_upload_.chooser_callback = nullptr;
+  file_chooser_upload_.completion_reply = std::move(reply);
+
+  auto context = std::make_unique<FileChooserActivationContext>();
+  context->owner = this;
+  context->generation = file_chooser_upload_.generation;
+  auto* context_ptr = context.release();
+  const bool started = vimbrowser_activate_element_by_selector(
+      browser->GetIdentifier(), file_chooser_upload_.activation_selector.data(),
+      file_chooser_upload_.activation_selector.size(),
+      &file_chooser_upload_.activation_nonce_high,
+      &file_chooser_upload_.activation_nonce_low,
+      +[](void* user_data, int result, int match_count) {
+        std::unique_ptr<FileChooserActivationContext> context(
+            static_cast<FileChooserActivationContext*>(user_data));
+        if (context && context->owner) {
+          context->owner->FinishFileChooserElementActivation(
+              context->generation, result, match_count);
+        }
+      },
+      context_ptr);
+  if (!started) {
+    delete context_ptr;
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "activation_backend_unavailable";
+    file_chooser_upload_.error_message =
+        "custom Chromium element activation backend is unavailable";
+    ReplyToAutomaticFileChooserUpload(false);
+    return;
+  }
+
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ExpireFileChooserUpload, self,
+                     file_chooser_upload_.generation),
+      kAutomaticUploadChooserTimeoutMs);
+}
+
+std::string BrowserWindow::FileChooserUploadStatusJson(uint64_t tab_id) const {
+  FileChooserUploadPhase phase = FileChooserUploadPhase::kNone;
+  if (file_chooser_upload_.tab_id == tab_id) {
+    phase = file_chooser_upload_.phase;
+  }
+  const char* state = "none";
+  switch (phase) {
+    case FileChooserUploadPhase::kNone: state = "none"; break;
+    case FileChooserUploadPhase::kArmed: state = "armed"; break;
+    case FileChooserUploadPhase::kValidating: state = "validating"; break;
+    case FileChooserUploadPhase::kConsumed: state = "consumed"; break;
+    case FileChooserUploadPhase::kFailed: state = "failed"; break;
+    case FileChooserUploadPhase::kExpired: state = "expired"; break;
+    case FileChooserUploadPhase::kCanceled: state = "canceled"; break;
+  }
+
+  long long expires_in_ms = 0;
+  if (phase == FileChooserUploadPhase::kArmed) {
+    expires_in_ms = std::max<long long>(
+        0, std::chrono::duration_cast<std::chrono::milliseconds>(
+               file_chooser_upload_.expires_at -
+               std::chrono::steady_clock::now())
+               .count());
+  }
+  const char* dialog_mode = "none";
+  if (file_chooser_upload_.tab_id == tab_id) {
+    switch (file_chooser_upload_.dialog_mode) {
+      case FILE_DIALOG_OPEN: dialog_mode = "open"; break;
+      case FILE_DIALOG_OPEN_MULTIPLE: dialog_mode = "open_multiple"; break;
+      case FILE_DIALOG_OPEN_FOLDER: dialog_mode = "open_folder"; break;
+      case FILE_DIALOG_SAVE: dialog_mode = "save"; break;
+      case FILE_DIALOG_NUM_VALUES: dialog_mode = "none"; break;
+    }
+  }
+
+  std::ostringstream out;
+  out << "{\"ok\":true,\"tabid\":" << tab_id
+      << ",\"target\":{\"kind\":\"chooser\"},\"chooser\":{\"state\":\""
+      << state << "\",\"file_count\":"
+      << (file_chooser_upload_.tab_id == tab_id
+              ? file_chooser_upload_.file_count
+              : 0)
+      << ",\"expires_in_ms\":" << expires_in_ms
+      << ",\"dialog_mode\":\"" << dialog_mode << "\"";
+  if (file_chooser_upload_.tab_id == tab_id &&
+      !file_chooser_upload_.error_code.empty()) {
+    out << ",\"error\":{\"code\":\""
+        << JsonEscape(file_chooser_upload_.error_code)
+        << "\",\"message\":\""
+        << JsonEscape(file_chooser_upload_.error_message) << "\"";
+    if (file_chooser_upload_.error_file_index >= 0) {
+      out << ",\"file_index\":"
+          << file_chooser_upload_.error_file_index;
+    }
+    out << "}";
+  }
+  out << "}}";
+  return out.str();
+}
+
+std::string BrowserWindow::CancelFileChooserUpload(uint64_t tab_id) {
+  if (file_chooser_upload_.tab_id == tab_id &&
+      (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+       file_chooser_upload_.phase == FileChooserUploadPhase::kValidating)) {
+    ++file_chooser_upload_.generation;
+    file_chooser_upload_.phase = FileChooserUploadPhase::kCanceled;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "canceled";
+    file_chooser_upload_.error_message =
+        "file chooser upload was canceled explicitly";
+    file_chooser_upload_.error_file_index = -1;
+    CefRefPtr<CefFileDialogCallback> chooser_callback =
+        std::move(file_chooser_upload_.chooser_callback);
+    if (chooser_callback) {
+      chooser_callback->Cancel();
+    }
+    ReplyToAutomaticFileChooserUpload(false);
+  }
+  return FileChooserUploadStatusJson(tab_id);
+}
+
+void BrowserWindow::FinishFileChooserElementActivation(uint64_t generation,
+                                                       int result,
+                                                       int match_count) {
+  if (file_chooser_upload_.generation != generation ||
+      !file_chooser_upload_.automatic_activation ||
+      (file_chooser_upload_.phase != FileChooserUploadPhase::kArmed &&
+       file_chooser_upload_.phase != FileChooserUploadPhase::kValidating)) {
+    return;
+  }
+  file_chooser_upload_.activation_match_count = match_count;
+  const auto activation_result =
+      static_cast<VimbrowserElementActivationResult>(result);
+  if (activation_result == VimbrowserElementActivationResult::kDispatched) {
+    return;
+  }
+
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+  file_chooser_upload_.paths.clear();
+  switch (activation_result) {
+    case VimbrowserElementActivationResult::kDocumentUnavailable:
+      file_chooser_upload_.error_code = "document_unavailable";
+      file_chooser_upload_.error_message =
+          "tab document is unavailable for native activation";
+      break;
+    case VimbrowserElementActivationResult::kInvalidSelector:
+      file_chooser_upload_.error_code = "invalid_selector";
+      file_chooser_upload_.error_message =
+          "activation target is not a valid CSS selector";
+      break;
+    case VimbrowserElementActivationResult::kTargetNotFound:
+      file_chooser_upload_.error_code = "target_not_found";
+      file_chooser_upload_.error_message =
+          "activation selector did not match an element";
+      break;
+    case VimbrowserElementActivationResult::kAmbiguousTarget:
+      file_chooser_upload_.error_code = "ambiguous_target";
+      file_chooser_upload_.error_message =
+          "activation selector matched more than one element";
+      break;
+    case VimbrowserElementActivationResult::kTargetNotVisible:
+      file_chooser_upload_.error_code = "target_not_visible";
+      file_chooser_upload_.error_message =
+          "activation target is not visible in the tab viewport";
+      break;
+    case VimbrowserElementActivationResult::kTargetObscured:
+      file_chooser_upload_.error_code = "target_obscured";
+      file_chooser_upload_.error_message =
+          "activation target is covered or not the native hit-test target";
+      break;
+    case VimbrowserElementActivationResult::kActivationIgnored:
+      file_chooser_upload_.error_code = "activation_ignored";
+      file_chooser_upload_.error_message =
+          "Blink did not dispatch the requested element activation";
+      break;
+    case VimbrowserElementActivationResult::kBackendUnavailable:
+    default:
+      file_chooser_upload_.error_code = "activation_backend_unavailable";
+      file_chooser_upload_.error_message =
+          "custom Chromium element activation backend became unavailable";
+      break;
+  }
+  CefRefPtr<CefFileDialogCallback> chooser_callback =
+      std::move(file_chooser_upload_.chooser_callback);
+  if (chooser_callback) {
+    chooser_callback->Cancel();
+  }
+  ReplyToAutomaticFileChooserUpload(false);
+}
+
+void BrowserWindow::ReplyToAutomaticFileChooserUpload(bool success) {
+  if (!file_chooser_upload_.automatic_activation ||
+      !file_chooser_upload_.completion_reply) {
+    return;
+  }
+
+  IpcReplyCallback reply = std::move(file_chooser_upload_.completion_reply);
+  if (!success) {
+    reply(UploadFileErrorJson(
+        file_chooser_upload_.error_code.empty()
+            ? std::string_view("upload_failed")
+            : std::string_view(file_chooser_upload_.error_code),
+        file_chooser_upload_.error_message.empty()
+            ? std::string_view("native chooser upload failed")
+            : std::string_view(file_chooser_upload_.error_message),
+        file_chooser_upload_.error_file_index,
+        file_chooser_upload_.error_code == "ambiguous_target"
+            ? file_chooser_upload_.activation_match_count
+            : -1));
+    return;
+  }
+
+  const char* dialog_mode = "none";
+  switch (file_chooser_upload_.dialog_mode) {
+    case FILE_DIALOG_OPEN: dialog_mode = "open"; break;
+    case FILE_DIALOG_OPEN_MULTIPLE: dialog_mode = "open_multiple"; break;
+    case FILE_DIALOG_OPEN_FOLDER: dialog_mode = "open_folder"; break;
+    case FILE_DIALOG_SAVE: dialog_mode = "save"; break;
+    case FILE_DIALOG_NUM_VALUES: dialog_mode = "none"; break;
+  }
+  std::ostringstream out;
+  out << "{\"ok\":true,\"tabid\":" << file_chooser_upload_.tab_id
+      << ",\"file_count\":" << file_chooser_upload_.file_count
+      << ",\"target\":{\"kind\":\"activate\",\"match_count\":"
+      << file_chooser_upload_.activation_match_count
+      << "},\"chooser\":{\"state\":\"consumed\",\"dialog_mode\":\""
+      << dialog_mode << "\"}}";
+  reply(out.str());
+}
+
+void BrowserWindow::ExpireFileChooserUpload(uint64_t generation) {
+  const bool automatic_pending =
+      file_chooser_upload_.automatic_activation &&
+      (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+       file_chooser_upload_.phase == FileChooserUploadPhase::kValidating);
+  if (file_chooser_upload_.generation != generation ||
+      (!automatic_pending &&
+       file_chooser_upload_.phase != FileChooserUploadPhase::kArmed)) {
+    return;
+  }
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kExpired;
+  file_chooser_upload_.paths.clear();
+  file_chooser_upload_.error_code = "expired";
+  file_chooser_upload_.error_message =
+      file_chooser_upload_.automatic_activation
+          ? "activated element did not open a file chooser before the deadline"
+          : "no file chooser request arrived before the 60 second deadline";
+  if (file_chooser_upload_.automatic_activation) {
+    file_chooser_upload_.error_code = "chooser_not_opened";
+  }
+  file_chooser_upload_.error_file_index = -1;
+  CefRefPtr<CefFileDialogCallback> chooser_callback =
+      std::move(file_chooser_upload_.chooser_callback);
+  if (chooser_callback) {
+    chooser_callback->Cancel();
+  }
+  ReplyToAutomaticFileChooserUpload(false);
+}
+
+void BrowserWindow::CancelFileChooserUploadForClient(BrowserClient* client,
+                                                      std::string code,
+                                                      std::string message) {
+  if (!client ||
+      (file_chooser_upload_.phase != FileChooserUploadPhase::kArmed &&
+       file_chooser_upload_.phase != FileChooserUploadPhase::kValidating)) {
+    return;
+  }
+  const std::optional<size_t> index =
+      FindTabIndexById(file_chooser_upload_.tab_id);
+  if (!index || tabs_[*index].client.get() != client) {
+    return;
+  }
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kCanceled;
+  file_chooser_upload_.paths.clear();
+  file_chooser_upload_.error_code = std::move(code);
+  file_chooser_upload_.error_message = std::move(message);
+  file_chooser_upload_.error_file_index = -1;
+  CefRefPtr<CefFileDialogCallback> chooser_callback =
+      std::move(file_chooser_upload_.chooser_callback);
+  if (chooser_callback) {
+    chooser_callback->Cancel();
+  }
+  ReplyToAutomaticFileChooserUpload(false);
+}
+
+bool BrowserWindow::OnClientFileDialog(
+    BrowserClient* client,
+    CefRefPtr<CefBrowser> browser,
+    cef_file_dialog_mode_t mode,
+    const std::vector<CefString>& accept_filters,
+    const std::vector<CefString>& accept_extensions,
+    bool has_activation_nonce,
+    uint64_t activation_nonce_high,
+    uint64_t activation_nonce_low,
+    CefRefPtr<CefFileDialogCallback> callback) {
+  const bool automatic_in_progress =
+      file_chooser_upload_.automatic_activation &&
+      (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+       file_chooser_upload_.phase == FileChooserUploadPhase::kValidating);
+  if (!client || !browser || !callback ||
+      (file_chooser_upload_.phase != FileChooserUploadPhase::kArmed &&
+       !automatic_in_progress)) {
+    return false;
+  }
+  const std::optional<size_t> index =
+      FindTabIndexById(file_chooser_upload_.tab_id);
+  if (!index || tabs_[*index].client.get() != client ||
+      !tabs_[*index].client->browser() ||
+      tabs_[*index].client->browser()->GetIdentifier() !=
+          browser->GetIdentifier()) {
+      return false;
+  }
+
+  if (file_chooser_upload_.automatic_activation) {
+    const bool matching_nonce =
+        has_activation_nonce &&
+        file_chooser_upload_.activation_nonce_high == activation_nonce_high &&
+        file_chooser_upload_.activation_nonce_low == activation_nonce_low;
+    if (!matching_nonce) {
+      // Do not let another chooser race the atomic operation or appear as a
+      // native modal. It cannot consume the armed paths without the nonce.
+      callback->Cancel();
+      return true;
+    }
+    if (std::chrono::steady_clock::now() >=
+        file_chooser_upload_.expires_at) {
+      ++file_chooser_upload_.generation;
+      file_chooser_upload_.phase = FileChooserUploadPhase::kExpired;
+      file_chooser_upload_.paths.clear();
+      file_chooser_upload_.error_code = "chooser_not_opened";
+      file_chooser_upload_.error_message =
+          "activated element did not open a file chooser before the deadline";
+      file_chooser_upload_.error_file_index = -1;
+      CefRefPtr<CefFileDialogCallback> chooser_callback =
+          std::move(file_chooser_upload_.chooser_callback);
+      if (chooser_callback) {
+        chooser_callback->Cancel();
+      }
+      callback->Cancel();
+      ReplyToAutomaticFileChooserUpload(false);
+      return true;
+    }
+    if (file_chooser_upload_.phase == FileChooserUploadPhase::kValidating) {
+      // Only one causally tagged chooser can be supplied. Cancel any additional
+      // request emitted by the same activation while the first is validating.
+      callback->Cancel();
+      return true;
+    }
+  } else if (has_activation_nonce) {
+    // Tagged requests are private automatic operations. The CEF backend will
+    // cancel this request if no matching automatic arm claims it.
+    return false;
+  }
+
+  file_chooser_upload_.dialog_mode = mode;
+  if (mode != FILE_DIALOG_OPEN && mode != FILE_DIALOG_OPEN_MULTIPLE) {
+    const bool automatic_activation =
+        file_chooser_upload_.automatic_activation;
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "wrong_dialog_mode";
+    file_chooser_upload_.error_message =
+        "armed upload only accepts open-file chooser requests";
+    file_chooser_upload_.error_file_index = -1;
+    if (automatic_activation) {
+      callback->Cancel();
+      ReplyToAutomaticFileChooserUpload(false);
+      return true;
+    }
+    return false;  // Preserve manual folder/save dialog behavior.
+  }
+  if (mode == FILE_DIALOG_OPEN && file_chooser_upload_.paths.size() > 1) {
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "multiple_not_allowed";
+    file_chooser_upload_.error_message =
+        "file chooser request only accepts one file";
+    file_chooser_upload_.error_file_index = -1;
+    callback->Cancel();
+    ReplyToAutomaticFileChooserUpload(false);
+    return true;
+  }
+
+  const std::string accept =
+      FileChooserAcceptConstraint(accept_filters, accept_extensions);
+  for (size_t i = 0; i < file_chooser_upload_.paths.size(); ++i) {
+    if (!UploadFileMatchesAccept(file_chooser_upload_.paths[i], accept)) {
+      file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+      file_chooser_upload_.paths.clear();
+      file_chooser_upload_.error_code = "accept_mismatch";
+      file_chooser_upload_.error_message =
+          "upload file does not match the chooser accept constraint";
+      file_chooser_upload_.error_file_index = static_cast<int>(i);
+      callback->Cancel();
+      ReplyToAutomaticFileChooserUpload(false);
+      return true;
+    }
+  }
+
+  file_chooser_upload_.phase = FileChooserUploadPhase::kValidating;
+  file_chooser_upload_.chooser_callback = callback;
+  const uint64_t generation = file_chooser_upload_.generation;
+  const std::vector<std::string> paths = file_chooser_upload_.paths;
+  CefRefPtr<BrowserWindow> self = this;
+  if (!CefPostTask(
+          TID_FILE_USER_BLOCKING,
+          base::BindOnce(
+              [](CefRefPtr<BrowserWindow> self, uint64_t generation,
+                 std::vector<std::string> paths,
+                 CefRefPtr<CefFileDialogCallback> callback) {
+                UploadFileValidation validation =
+                    ValidateUploadFilePaths(paths);
+                if (!CefPostTask(
+                        TID_UI,
+                        base::BindOnce(
+                            &BrowserWindow::FinishFileChooserUploadValidation,
+                            self, generation, validation.ok,
+                            std::move(validation.error_code),
+                            std::move(validation.error_message),
+                            validation.error_file_index,
+                            std::move(validation.canonical_paths), callback))) {
+                  callback->Cancel();
+                }
+              },
+              self, generation, paths, callback))) {
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "internal_error";
+    file_chooser_upload_.error_message =
+        "failed to start chooser-time file validation";
+    file_chooser_upload_.error_file_index = -1;
+    file_chooser_upload_.chooser_callback = nullptr;
+    callback->Cancel();
+    ReplyToAutomaticFileChooserUpload(false);
+  }
+  return true;
+}
+
+void BrowserWindow::FinishFileChooserUploadValidation(
+    uint64_t generation,
+    bool valid,
+    std::string error_code,
+    std::string error_message,
+    int error_file_index,
+    std::vector<std::string> canonical_paths,
+    CefRefPtr<CefFileDialogCallback> callback) {
+  if (!callback) {
+    return;
+  }
+  if (file_chooser_upload_.generation != generation ||
+      file_chooser_upload_.phase != FileChooserUploadPhase::kValidating) {
+    callback->Cancel();
+    return;
+  }
+  if (!valid) {
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = std::move(error_code);
+    file_chooser_upload_.error_message = std::move(error_message);
+    file_chooser_upload_.error_file_index = error_file_index;
+    file_chooser_upload_.chooser_callback = nullptr;
+    callback->Cancel();
+    ReplyToAutomaticFileChooserUpload(false);
+    return;
+  }
+
+  std::vector<CefString> files;
+  files.reserve(canonical_paths.size());
+  for (const std::string& path : canonical_paths) {
+    files.emplace_back(path);
+  }
+  file_chooser_upload_.phase = FileChooserUploadPhase::kConsumed;
+  file_chooser_upload_.paths.clear();
+  file_chooser_upload_.error_code.clear();
+  file_chooser_upload_.error_message.clear();
+  file_chooser_upload_.error_file_index = -1;
+  file_chooser_upload_.chooser_callback = nullptr;
+  callback->Continue(files);
+  ReplyToAutomaticFileChooserUpload(true);
+}
 
 void BrowserWindow::CompleteJsIpcRequest(uint64_t request_id, std::string response) {
   auto it = pending_js_ipc_.find(request_id);
@@ -875,6 +2032,28 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
   }
   if (command == "commands") {
     return IpcCommandsJson();
+  }
+  if (command == "upload-file-status" ||
+      command == "upload-file-cancel") {
+    if (argv.size() != 2) {
+      return UploadFileErrorJson(
+          "invalid_usage",
+          command == "upload-file-status"
+              ? "usage: upload-file-status <tabid>"
+              : "usage: upload-file-cancel <tabid>");
+    }
+    uint64_t tab_id = 0;
+    if (!ParseUint64Arg(argv[1], &tab_id) || tab_id == 0) {
+      return UploadFileErrorJson("invalid_tabid",
+                                 "tabid must be a positive integer");
+    }
+    if (!FindTabIndexById(tab_id)) {
+      return UploadFileErrorJson("no_such_tabid",
+                                 "no tab has the requested id");
+    }
+    return command == "upload-file-status"
+               ? FileChooserUploadStatusJson(tab_id)
+               : CancelFileChooserUpload(tab_id);
   }
   if (command == "folders") {
     return FoldersJson();
@@ -1548,6 +2727,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  screenshot <tabid>\n"
            "  js <tabid> <javascript>\n"
            "  js-file <tabid> <path>\n"
+           "  upload-file <tabid> <base64-v1-json-payload>\n"
+           "  upload-file-status <tabid>\n"
+           "  upload-file-cancel <tabid>\n"
            "  cookies <tabid> [url]\n"
            "  cookies-url <url>\n"
            "  cookie-delete <tabid> <name>\n"
@@ -1578,6 +2760,92 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
   }
 
   const std::string command = ToLowerAscii(argv[0]);
+
+  if (command == "upload-file") {
+    if (argv.size() != 3) {
+      reply(UploadFileErrorJson(
+          "invalid_usage",
+          "usage: upload-file <tabid> <base64-v1-json-payload>"));
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!ParseUint64Arg(argv[1], &tab_id) || tab_id == 0) {
+      reply(UploadFileErrorJson("invalid_tabid", "tabid must be a positive integer"));
+      return;
+    }
+    if (!FindTabIndexById(tab_id)) {
+      reply(UploadFileErrorJson("no_such_tabid", "no tab has the requested id"));
+      return;
+    }
+
+    UploadFileRequest request;
+    request.tab_id = tab_id;
+    std::string payload_error;
+    if (!DecodeUploadFilePayload(argv[2], &request, &payload_error)) {
+      reply(std::move(payload_error));
+      return;
+    }
+
+    CefRefPtr<BrowserWindow> self = this;
+    if (!CefPostTask(
+            TID_FILE_USER_BLOCKING,
+            base::BindOnce(
+                [](CefRefPtr<BrowserWindow> self, UploadFileRequest request,
+                   IpcReplyCallback reply) mutable {
+                  UploadFileValidation validation =
+                      ValidateUploadFilePaths(request.paths);
+                  if (!validation.ok) {
+                    reply(std::move(validation.error));
+                    return;
+                  }
+                  request.paths = std::move(validation.canonical_paths);
+                  if (!CefPostTask(
+                          TID_UI,
+                          base::BindOnce(
+                              [](CefRefPtr<BrowserWindow> self,
+                                 UploadFileRequest request,
+                                 IpcReplyCallback reply) mutable {
+                                std::string ignored_error;
+                                CefRefPtr<CefBrowser> browser =
+                                    self->BrowserForTabId(request.tab_id,
+                                                          &ignored_error);
+                                if (!browser || !browser->GetHost()) {
+                                  reply(UploadFileErrorJson(
+                                      "tab_unavailable",
+                                      "tab closed before file assignment"));
+                                  return;
+                                }
+                                if (request.target_kind == "chooser") {
+                                  reply(self->ArmFileChooserUpload(
+                                      request.tab_id,
+                                      std::move(request.paths)));
+                                  return;
+                                }
+                                if (request.target_kind == "activate") {
+                                  self->StartFileChooserActivationUpload(
+                                      request.tab_id,
+                                      std::move(request.selector),
+                                      std::move(request.paths),
+                                      std::move(reply));
+                                  return;
+                                }
+                                StartUploadFileAssignment(
+                                    browser->GetHost(), std::move(request),
+                                    std::move(reply));
+                              },
+                              self, std::move(request), reply))) {
+                    reply(UploadFileErrorJson(
+                        "internal_error",
+                        "failed to return file validation to the UI thread"));
+                  }
+                },
+                self, std::move(request), reply))) {
+      reply(UploadFileErrorJson(
+          "internal_error", "failed to start browser-side file validation"));
+    }
+    return;
+  }
+
   auto parse_tab_id = [&](size_t arg_index, uint64_t* tab_id) -> bool {
     if (argv.size() <= arg_index ||
         !ParseUint64Arg(argv[arg_index], tab_id) || *tab_id == 0) {

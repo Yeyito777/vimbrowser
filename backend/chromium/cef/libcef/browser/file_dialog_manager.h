@@ -8,10 +8,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <set>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
+#include "base/unguessable_token.h"
 #include "cef/include/cef_browser.h"
 #include "third_party/blink/public/mojom/choosers/file_chooser.mojom.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
@@ -71,6 +73,11 @@ class CefFileDialogManager {
   // Must be called when the |listener| passed to RunSelectFile is destroyed.
   void SelectFileListenerDestroyed(ui::SelectFileDialog::Listener* listener);
 
+  // Returns a value only during the synchronous CefDialogHandler::OnFileDialog
+  // dispatch for a chooser causally opened by vimbrowser native activation.
+  std::optional<base::UnguessableToken>
+  GetCurrentVimbrowserActivationNonce() const;
+
  private:
   using Extensions = std::vector<std::vector<base::FilePath::StringType>>;
   using Descriptions = std::vector<std::u16string>;
@@ -96,6 +103,9 @@ class CefFileDialogManager {
 
   // List of all currently active listeners.
   std::set<raw_ptr<ui::SelectFileDialog::Listener>> active_listeners_;
+
+  std::optional<base::UnguessableToken>
+      current_vimbrowser_activation_nonce_;
 
   base::WeakPtrFactory<CefFileDialogManager> weak_ptr_factory_{this};
 };

@@ -265,6 +265,11 @@ void ShowFilePickerImpl(ScriptPromiseResolverBase* resolver,
     return;
   }
 
+  if (window.document()) {
+    options->vimbrowser_activation_nonce =
+        window.document()->VimbrowserFileActivationNonce();
+  }
+
   FileSystemAccessManager::From(resolver->GetExecutionContext())
       ->ChooseEntries(
           std::move(options),
@@ -373,7 +378,8 @@ GlobalFileSystemAccess::showOpenFilePicker(ScriptState* script_state,
       mojom::blink::FilePickerOptions::New(
           mojom::blink::TypeSpecificFilePickerOptionsUnion::
               NewOpenFilePickerOptions(std::move(open_file_picker_options)),
-          std::move(starting_directory_id), std::move(start_in_options)),
+          std::move(starting_directory_id), std::move(start_in_options),
+          std::nullopt),
       exception_state, ShowFilePickerType::kSequence);
   return promise;
 }
@@ -428,7 +434,8 @@ ScriptPromise<FileSystemFileHandle> GlobalFileSystemAccess::showSaveFilePicker(
       mojom::blink::FilePickerOptions::New(
           mojom::blink::TypeSpecificFilePickerOptionsUnion::
               NewSaveFilePickerOptions(std::move(save_file_picker_options)),
-          std::move(starting_directory_id), std::move(start_in_options)),
+          std::move(starting_directory_id), std::move(start_in_options),
+          std::nullopt),
       exception_state, ShowFilePickerType::kHandle);
   return promise;
 }
@@ -478,7 +485,8 @@ GlobalFileSystemAccess::showDirectoryPicker(
       mojom::blink::FilePickerOptions::New(
           mojom::blink::TypeSpecificFilePickerOptionsUnion::
               NewDirectoryPickerOptions(std::move(directory_picker_options)),
-          std::move(starting_directory_id), std::move(start_in_options)),
+          std::move(starting_directory_id), std::move(start_in_options),
+          std::nullopt),
       exception_state, ShowFilePickerType::kDirectory);
   return promise;
 }

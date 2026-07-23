@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -112,6 +113,16 @@ class BrowserWindow final : public CefWindowDelegate,
       const CefString& requesting_origin,
       uint32_t requested_permissions,
       CefRefPtr<CefMediaAccessCallback> callback);
+  bool OnClientFileDialog(
+      BrowserClient* client,
+      CefRefPtr<CefBrowser> browser,
+      cef_file_dialog_mode_t mode,
+      const std::vector<CefString>& accept_filters,
+      const std::vector<CefString>& accept_extensions,
+      bool has_activation_nonce,
+      uint64_t activation_nonce_high,
+      uint64_t activation_nonce_low,
+      CefRefPtr<CefFileDialogCallback> callback);
   bool GetRootWindowScreenRectForClient(BrowserClient* client,
                                         CefRect& rect) const;
   void OnNativeHintOpenTab(BrowserClient* client, const std::string& url);
@@ -295,6 +306,36 @@ class BrowserWindow final : public CefWindowDelegate,
     bool mock = false;
   };
 
+  enum class FileChooserUploadPhase {
+    kNone,
+    kArmed,
+    kValidating,
+    kConsumed,
+    kFailed,
+    kExpired,
+    kCanceled,
+  };
+
+  struct FileChooserUpload {
+    FileChooserUploadPhase phase = FileChooserUploadPhase::kNone;
+    uint64_t generation = 0;
+    uint64_t tab_id = 0;
+    size_t file_count = 0;
+    std::vector<std::string> paths;
+    std::chrono::steady_clock::time_point expires_at;
+    std::string error_code;
+    std::string error_message;
+    int error_file_index = -1;
+    cef_file_dialog_mode_t dialog_mode = FILE_DIALOG_NUM_VALUES;
+    bool automatic_activation = false;
+    std::string activation_selector;
+    int activation_match_count = 0;
+    uint64_t activation_nonce_high = 0;
+    uint64_t activation_nonce_low = 0;
+    CefRefPtr<CefFileDialogCallback> chooser_callback;
+    IpcReplyCallback completion_reply;
+  };
+
  public:
   struct ContextMenuItem {
     int command_id = 0;
@@ -429,6 +470,30 @@ class BrowserWindow final : public CefWindowDelegate,
                                      uint64_t request_id,
                                      IpcReplyCallback reply);
   void HandleScreenshotIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
+  std::string ArmFileChooserUpload(uint64_t tab_id,
+                                   std::vector<std::string> paths);
+  void StartFileChooserActivationUpload(uint64_t tab_id,
+                                        std::string selector,
+                                        std::vector<std::string> paths,
+                                        IpcReplyCallback reply);
+  std::string FileChooserUploadStatusJson(uint64_t tab_id) const;
+  std::string CancelFileChooserUpload(uint64_t tab_id);
+  void ExpireFileChooserUpload(uint64_t generation);
+  void FinishFileChooserElementActivation(uint64_t generation,
+                                          int result,
+                                          int match_count);
+  void ReplyToAutomaticFileChooserUpload(bool success);
+  void CancelFileChooserUploadForClient(BrowserClient* client,
+                                        std::string code,
+                                        std::string message);
+  void FinishFileChooserUploadValidation(
+      uint64_t generation,
+      bool valid,
+      std::string error_code,
+      std::string error_message,
+      int error_file_index,
+      std::vector<std::string> canonical_paths,
+      CefRefPtr<CefFileDialogCallback> callback);
   std::string ActiveTabUrl() const;
   std::string ActiveTabTitle() const;
   CefRefPtr<CefBrowser> ActiveBrowser() const;
@@ -758,6 +823,7 @@ class BrowserWindow final : public CefWindowDelegate,
   size_t sidebar_scroll_offset_ = 0;
   SidebarPromptContext sidebar_prompt_;
   std::unordered_map<uint64_t, IpcReplyCallback> pending_js_ipc_;
+  FileChooserUpload file_chooser_upload_;
   size_t active_index_ = 0;
 
   CefRefPtr<CefWindow> window_;

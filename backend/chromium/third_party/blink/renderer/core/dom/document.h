@@ -42,6 +42,7 @@
 #include "base/memory/stack_allocated.h"
 #include "base/time/time.h"
 #include "base/timer/elapsed_timer.h"
+#include "base/unguessable_token.h"
 #include "base/uuid.h"
 #include "net/base/schemeful_site.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
@@ -978,6 +979,15 @@ class CORE_EXPORT Document : public ContainerNode,
       token_.emplace();
     }
     return token_.value();
+  }
+
+  const std::optional<base::UnguessableToken>&
+  VimbrowserFileActivationNonce() const {
+    return vimbrowser_file_activation_nonce_;
+  }
+  void SetVimbrowserFileActivationNonce(
+      std::optional<base::UnguessableToken> nonce) {
+    vimbrowser_file_activation_nonce_ = std::move(nonce);
   }
 
   // Return the document URL, or an empty URL if it's unavailable.
@@ -2622,6 +2632,11 @@ class CORE_EXPORT Document : public ContainerNode,
   // Mutable because the token is lazily-generated on demand if no token is
   // explicitly set.
   mutable std::optional<DocumentToken> token_;
+
+  // Set only for the synchronous duration of a vimbrowser native element
+  // activation. File picker requests created by that activation copy the nonce
+  // into browser-process chooser metadata before this value is restored.
+  std::optional<base::UnguessableToken> vimbrowser_file_activation_nonce_;
 
   DocumentLifecycle lifecycle_;
 

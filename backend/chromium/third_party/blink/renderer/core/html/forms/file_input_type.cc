@@ -220,6 +220,8 @@ void FileInputType::OpenPopupView() {
     params.use_media_capture = RuntimeEnabledFeatures::MediaCaptureEnabled() &&
                                input.FastHasAttribute(html_names::kCaptureAttr);
     params.requestor = document.Url();
+    params.vimbrowser_activation_nonce =
+        document.VimbrowserFileActivationNonce();
 
     UseCounter::Count(
         document, GetElement().GetExecutionContext()->IsSecureContext()

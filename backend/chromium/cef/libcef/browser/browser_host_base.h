@@ -347,6 +347,8 @@ class CefBrowserHostBase : public CefBrowserHost,
                      const base::FilePath::StringType& default_extension,
                      gfx::NativeWindow owning_window);
   void SelectFileListenerDestroyed(ui::SelectFileDialog::Listener* listener);
+  std::optional<base::UnguessableToken>
+  GetCurrentVimbrowserFileDialogActivationNonce() const;
 
   // Called from AlloyBrowserHostImpl::GetJavaScriptDialogManager and
   // ChromeBrowserDelegate::GetJavaScriptDialogManager.

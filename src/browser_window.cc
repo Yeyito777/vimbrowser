@@ -422,6 +422,8 @@ bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient* client,
 }
 
 void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
+  CancelFileChooserUploadForClient(client, "tab_closed",
+                                   "armed tab closed before file selection");
   CancelMediaPermissionRequestsForClient(client);
   if (!window_close_pending_ || !AllTabBrowsersClosed()) {
     return;
@@ -454,6 +456,8 @@ void BrowserWindow::OnClientLoadStart(BrowserClient* client, const std::string& 
   // the browser-side latch at the same document boundary so a pending navigation
   // can never leave the shell routing keys to an obsolete hint matcher.
   StopPageNativeHintsForClient(client);
+  CancelFileChooserUploadForClient(
+      client, "navigation", "armed tab navigated before file selection");
   if (a26_shell_ && ActiveTab() && ActiveTab()->client.get() == client) {
     website_mode_ = vim::Mode::kWebsiteNormal;
     RequestA26Keyboard(A26KeyboardPurpose::kHide);
@@ -1676,6 +1680,10 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
     ++state_save_generation_;
     SaveState();
     StopSidebarMouseWatcher();
+    if (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+        file_chooser_upload_.phase == FileChooserUploadPhase::kValidating) {
+      CancelFileChooserUpload(file_chooser_upload_.tab_id);
+    }
     if (ipc_server_) {
       ipc_server_->Stop();
       ipc_server_.reset();

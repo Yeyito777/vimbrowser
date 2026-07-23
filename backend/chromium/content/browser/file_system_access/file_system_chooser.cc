@@ -221,7 +221,8 @@ FileSystemChooser::Options::Options(
     blink::mojom::AcceptsTypesInfoPtr accepts_types_info,
     std::u16string title,
     base::FilePath default_directory,
-    base::FilePath suggested_name)
+    base::FilePath suggested_name,
+    std::optional<base::UnguessableToken> vimbrowser_activation_nonce)
     : type_(type),
       file_types_(ConvertAcceptsToFileTypeInfo(accepts_types_info)),
       // Set `default_file_type_index_` to a reasonable default value.
@@ -236,6 +237,8 @@ FileSystemChooser::Options::Options(
           ResolveSuggestedNameExtension(std::move(suggested_name),
                                         file_types_))) {
   CHECK(IsValidFileDialogType(type_));
+  file_types_.vimbrowser_activation_nonce =
+      std::move(vimbrowser_activation_nonce);
   // If suggested_name is empty, then ensure default path ends with a separator
   // so it can be parsed back into default_directory and suggested_name.
   if (!default_path_.empty() && default_path_ == default_directory) {

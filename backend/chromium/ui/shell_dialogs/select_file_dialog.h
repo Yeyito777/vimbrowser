@@ -6,12 +6,14 @@
 #define UI_SHELL_DIALOGS_SELECT_FILE_DIALOG_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
+#include "base/unguessable_token.h"
 #include "build/build_config.h"
 #include "ui/gfx/native_ui_types.h"
 #include "ui/shell_dialogs/base_shell_dialog.h"
@@ -134,6 +136,10 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
     // Original mime types for the specified extensions. Entries correspond to
     // |extensions|; if left blank then there was no mime type.
     std::vector<std::u16string> extension_mimetypes;
+
+    // Browser-generated causal identifier for a file picker opened during one
+    // vimbrowser native element activation. Ordinary dialogs leave this empty.
+    std::optional<base::UnguessableToken> vimbrowser_activation_nonce;
 
     // Specifies whether there will be a filter added for all files (i.e. *.*).
     bool include_all_files = false;
