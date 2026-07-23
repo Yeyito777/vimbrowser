@@ -936,6 +936,11 @@ CefRefPtr<CefOverlayController> CefWindowView::AddOverlayView(
   if (widget) {
     // Owned by the View hierarchy. Acts as a z-order reference for the overlay.
     auto overlay_host_view = AddChildView(std::make_unique<views::View>());
+    // This View is only a stacking marker for the native overlay Widget. It has
+    // no visual or input role. Layout managers such as FillLayout may stretch
+    // it across the whole Window, so allowing it to participate in hit testing
+    // would hide all content underneath from mouse and wheel events.
+    overlay_host_view->SetCanProcessEventsWithinSubtree(false);
 
     // Owned by the resulting Widget, after calling Init().
     auto* overlay_host = new CefOverlayViewHost(this, docking_mode);
