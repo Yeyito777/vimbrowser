@@ -1512,7 +1512,7 @@ void BrowserWindow::BuildA26Chrome() {
   a26_chrome_panel_ = CefPanel::CreatePanel(this);
   a26_chrome_panel_->SetID(kA26ChromePanelId);
   a26_chrome_panel_->SetBackgroundColor(theme::kAppBg);
-  // This ordinary root child reserves all bottom chrome/gesture space. The
+  // This ordinary root child reserves the bottom navigation space. The
   // interactive navigation row is a Window overlay above Chromium's native X11
   // child surface; otherwise the BrowserView can win hit-testing even though a
   // sibling Views panel paints on top of it.
@@ -1566,8 +1566,9 @@ void BrowserWindow::BuildA26Chrome() {
   StyleA26Button(a26_tabs_button_);
   a26_navigation_panel_->AddChildView(a26_tabs_button_);
 
-  // This final in-layout strip is intentionally empty. Moon's bottom-edge close
-  // gesture starts here, below every essential browser control.
+  // Keep the legacy child at zero height so old layout delegates remain stable.
+  // Moon classifies a tap versus an upward close swipe before forwarding input,
+  // so no empty gesture-only strip is needed below the navigation row.
   a26_bottom_reserve_panel_ = CefPanel::CreatePanel(this);
   a26_bottom_reserve_panel_->SetID(kA26BottomReservePanelId);
   a26_bottom_reserve_panel_->SetBackgroundColor(theme::kAppBg);

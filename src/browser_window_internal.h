@@ -147,10 +147,11 @@ inline constexpr int kContextMenuBorderWidth = 1;
 inline constexpr int kContextMenuHPadding = 10;
 inline constexpr int kContextMenuMaxVisibleRows = 18;
 // CEF Views sizes are device-independent logical coordinates. At the A26
-// launcher's 2.5 device scale these provide >=120px touch targets while keeping
-// Moon's final 180 physical pixels free for its bottom-edge close gesture.
+// launcher's 2.5 device scale these provide >=120px touch targets. Moon
+// distinguishes a bottom-edge swipe from a tap, so the navigation surface can
+// extend to the display edge without sacrificing the global close gesture.
 inline constexpr int kA26NavigationHeight = 64;
-inline constexpr int kA26BottomReserveHeight = 72;
+inline constexpr int kA26BottomReserveHeight = 0;
 inline constexpr int kA26ChromeHeight =
     kA26NavigationHeight + kA26BottomReserveHeight;
 inline constexpr int kA26TouchControlHeight = 52;

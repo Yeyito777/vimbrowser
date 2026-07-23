@@ -83,7 +83,7 @@ done
 
 require_literal src/browser_window.cc 'if (a26_shell_) {'
 require_literal src/browser_window.cc 'BuildA26Chrome();'
-require_literal src/browser_window_internal.h 'kA26BottomReserveHeight = 72'
+require_literal src/browser_window_internal.h 'kA26BottomReserveHeight = 0'
 require_literal src/app.cc 'purpose.empty() ? "text" : purpose'
 
 echo 'A26 static regression checks passed'

@@ -70,9 +70,10 @@ HTTPS remains end-to-end because Chromium uses `CONNECT` tunneling.
 ## Phone interaction and rendering
 
 The A26 build has a touch-first bottom bar with Back, Forward, editable URL/search,
-Reload/Stop, and tab cycling. It reserves the final 180 physical pixels for
-Moon's global swipe-to-close gesture rather than placing controls in that zone.
-Desktop builds retain their normal side UI and keyboard behavior.
+Reload/Stop, and tab cycling. The bar reaches the physical display edge without
+an empty gesture strip. Moon distinguishes taps from upward movement, so a swipe
+that begins there still closes the app while ordinary control taps are forwarded
+normally. Desktop builds retain their normal side UI and keyboard behavior.
 
 Editable browser and page fields request Moon's global on-screen keyboard over
 the root-only control socket. Moon keeps X focus on the browser, injects keys
