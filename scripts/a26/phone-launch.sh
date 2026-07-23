@@ -77,6 +77,24 @@ bind_dir_once_ro() {
   done
 }
 
+bind_dir_once_rw_data() {
+  source_path=$1
+  target_path=$2
+  bind_dir_once "$source_path" "$target_path"
+  mount -o remount,bind,rw,nosuid,nodev,noexec "$target_path"
+  mount_options=$(awk -v target="$target_path" '$2 == target { print $4; exit }' /proc/mounts)
+  case ",$mount_options," in
+    *,rw,*) ;;
+    *) die "bind destination is not read/write: $target_path" ;;
+  esac
+  for required in nosuid nodev noexec; do
+    case ",$mount_options," in
+      *,$required,*) ;;
+      *) die "bind destination lacks $required: $target_path" ;;
+    esac
+  done
+}
+
 mount_type_at() {
   mount_target=$1
   awk -v target="$mount_target" '$2 == target { print $3; exit }' /proc/mounts
@@ -147,11 +165,18 @@ bind_dir_once /tmp/.X11-unix "$root/tmp/.X11-unix"
 [ "$(stat -c '%a' /run/a26-shell/control.sock)" = 600 ] ||
   die "Moon control socket permissions are not 0600"
 bind_dir_once_ro /run/a26-shell "$root/run/a26-shell"
+[ -d /run/moon-audio ] || die "Moon audio runtime is unavailable"
+[ -p /run/moon-audio/pcm ] || die "Moon audio PCM endpoint is unavailable"
+[ -f /run/moon-audio/volume ] || die "Moon audio volume endpoint is unavailable"
+[ "$(stat -c '%u' /run/moon-audio/pcm)" = 1000 ] ||
+  die "Moon audio endpoint is not system-owned"
+bind_dir_once_rw_data /run/moon-audio "$root/run/moon-audio"
 cp /etc/resolv.conf "$root/etc/resolv.conf" 2>/dev/null || true
 mkdir -p "$root/var/lib/vimbrowser/profile" "$root/tmp"
 
 exec chroot "$root" /usr/bin/env -i \
   HOME=/var/lib/vimbrowser \
+  ALSA_CONFIG_PATH=/etc/asound.conf \
   DISPLAY="${DISPLAY:-:0}" \
   PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   XDG_CACHE_HOME=/var/lib/vimbrowser/.cache \

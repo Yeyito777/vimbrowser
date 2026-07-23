@@ -30,6 +30,13 @@ require_literal scripts/a26/install.sh \
 require_literal scripts/a26/phone-launch.sh \
   'bind_dir_once_ro /run/a26-shell "$root/run/a26-shell"'
 require_literal scripts/a26/phone-launch.sh \
+  'bind_dir_once_rw_data /run/moon-audio "$root/run/moon-audio"'
+require_literal scripts/a26/phone-launch.sh \
+  '[ -p /run/moon-audio/pcm ]'
+require_literal scripts/a26/phone-launch.sh 'ALSA_CONFIG_PATH=/etc/asound.conf'
+require_literal scripts/a26/asound-moon.conf 'file "/run/moon-audio/pcm"'
+require_literal scripts/a26/asound-moon.conf '48 kHz stereo signed-16-bit PCM'
+require_literal scripts/a26/phone-launch.sh \
   'mount -o remount,bind,ro,nosuid,nodev,noexec "$target_path"'
 require_literal scripts/a26/phone-launch.sh 'reject_symlink_components "$target_path"'
 require_literal scripts/a26/phone-launch.sh \

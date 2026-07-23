@@ -45,6 +45,15 @@ The native A26 environment now owns `wlan0` directly while Android's Java Wi-Fi
 framework is suspended, so the default launcher uses the phone's system-wide
 Linux route and DNS configuration. No browser-specific proxy is required.
 
+Browser audio uses Moon's system audio bridge rather than direct access to the
+Samsung ALSA devices. Chromium's normal Linux audio service opens a dedicated
+ALSA file PCM at `/run/moon-audio/pcm`; the app root bind-mounts only that
+root/system-owned runtime directory. Moon converts the fixed 48 kHz stereo
+signed-16-bit stream into an AudioTrack that was authorized before Android's
+Java framework was suspended. Physical volume keys and gain policy remain global
+Moon controls, so audio and volume continue working regardless of which Browser
+descendant window owns X focus.
+
 A loopback-only ADB proxy remains available as a recovery fallback. Start it,
 reverse its port, and launch the wrapper with an explicit proxy value:
 
@@ -86,6 +95,8 @@ nodes enters Samsung's downstream FIMC camera driver, and the stock AYB8 kernel
 can panic while an unprivileged media client probes its camera pipelines. Xorg
 continues to own the real display and input devices outside the nested root.
 Accelerated video encode and decode are disabled as a second layer of defense.
+The private root does not expose `/dev/snd`; speaker playback crosses only the
+bounded Moon PCM endpoint described above.
 
 This target exposes one additional CEF/X11 quirk: XTEST printable key presses
 reach the browser as raw events but do not synthesize a renderer CHAR event. The
