@@ -302,9 +302,15 @@ bool IsEnterKey(const CefKeyEvent &event) {
 }
 
 bool IsEscapeKey(const CefKeyEvent &event) {
-  return event.windows_key_code == 0x1B || event.native_key_code == 9 ||
-         event.native_key_code == 53 || event.character == 0x1B ||
-         event.unmodified_character == 0x1B;
+  if (event.windows_key_code == 0x1B || event.character == 0x1B ||
+      event.unmodified_character == 0x1B) {
+    return true;
+  }
+#if defined(__APPLE__)
+  return event.native_key_code == 53;
+#else
+  return event.native_key_code == 9;
+#endif
 }
 
 bool IsBackspaceKey(const CefKeyEvent &event) {
