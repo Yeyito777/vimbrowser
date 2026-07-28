@@ -877,29 +877,34 @@ def test_sidebar_open_keys_match_website_mode(h: Harness) -> None:
 
 def test_sidebar_reload_and_clipboard_keys_match_website_mode(h: Harness) -> None:
     reset_to_website_mode(h, focus_input=False)
-    h.ipc(["sidebar-focus", "sidebar"])
-    before_reload = h.ipc(["status"])
-    h.js("window.sidebarReloadMarker = 'present'; 'ok'")
-    h.key("r", pause=0.3)
 
-    deadline = time.time() + 5
-    marker_cleared = False
-    while time.time() < deadline:
-        try:
-            marker_cleared = h.js(
-                "JSON.stringify(typeof window.sidebarReloadMarker === 'undefined')"
-            )
-            if marker_cleared:
-                break
-        except Exception:
-            pass
-        time.sleep(0.05)
-    after_reload = h.ipc(["status"])
-    require(marker_cleared and
-            after_reload["active_tabid"] == before_reload["active_tabid"] and
-            after_reload["tabs"] == before_reload["tabs"],
-            "sidebar r did not reload the active page",
-            {"before": before_reload, "after": after_reload})
+    def assert_reload(key: str) -> None:
+        h.ipc(["sidebar-focus", "sidebar"])
+        before = h.ipc(["status"])
+        h.js("window.sidebarReloadMarker = 'present'; 'ok'")
+        h.key(key, pause=0.3)
+
+        deadline = time.time() + 5
+        marker_cleared = False
+        while time.time() < deadline:
+            try:
+                marker_cleared = h.js(
+                    "JSON.stringify(typeof window.sidebarReloadMarker === 'undefined')"
+                )
+                if marker_cleared:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.05)
+        after = h.ipc(["status"])
+        require(marker_cleared and
+                after["active_tabid"] == before["active_tabid"] and
+                after["tabs"] == before["tabs"],
+                f"sidebar {key} did not reload the active page",
+                {"before": before, "after": after})
+
+    assert_reload("r")
+    assert_reload("shift+r")
 
     run([
         "xenv", "run", "-e", h.env_name, "bash", "-lc",
@@ -925,6 +930,91 @@ def test_sidebar_reload_and_clipboard_keys_match_website_mode(h: Harness) -> Non
             after_P["url"] == "about:blank",
             "sidebar P did not open the clipboard in a new tab",
             {"before": before_P, "after": after_P})
+
+
+def test_sidebar_yanks_match_website_mode(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.ipc(["sidebar-focus", "sidebar"])
+    active = h.ipc(["status"])
+
+    run([
+        "xenv", "run", "-e", h.env_name, "bash", "-lc",
+        "printf %s sidebar-yank-sentinel | xclip -selection clipboard",
+    ], timeout=10)
+    time.sleep(0.1)
+
+    def read_clipboard() -> str:
+        return run([
+            "xenv", "exec", "-e", h.env_name,
+            "xclip", "-selection", "clipboard", "-o",
+        ], timeout=2)
+
+    def assert_yank(keys: tuple[str, ...], expected: str) -> None:
+        h.key(*keys, pause=0.2)
+        deadline = time.time() + 3
+        actual = ""
+        while time.time() < deadline:
+            actual = read_clipboard()
+            if actual == expected:
+                break
+            time.sleep(0.05)
+        require(actual == expected,
+                f"sidebar {' '.join(keys)} did not yank the website value",
+                {"expected": expected, "actual": actual})
+
+    assert_yank(("y", "y"), active["url"])
+    assert_yank(("y", "t"), active["title"])
+    assert_yank(("y", "m"), f"[{active['title']}]({active['url']})")
+
+    h.js("""
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: {writeText: text => {
+            window.sidebarYankedDom = text;
+            return Promise.resolve();
+          }}
+        });
+        window.sidebarYankedDom = '';
+        'ok'
+    """)
+    h.key("ctrl+shift+y", pause=0.2)
+    deadline = time.time() + 3
+    dom = ""
+    while time.time() < deadline:
+        dom = h.js("JSON.stringify(window.sidebarYankedDom)")
+        if "vimbrowser key regression" in dom:
+            break
+        time.sleep(0.05)
+    require("vimbrowser key regression" in dom and "id=\"input\"" in dom,
+            "sidebar Ctrl+Shift+Y did not yank the active page DOM",
+            {"dom_prefix": dom[:300]})
+
+    after = h.ipc(["status"])
+    require(after["mode"] == "SIDEBAR" and
+            after["active_tabid"] == active["active_tabid"],
+            "sidebar yank commands changed focus or active tab",
+            {"before": active, "after": after})
+
+
+def test_sidebar_ctrl_number_focuses_tabs(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url + "#ctrl-number-second"])
+    h.ipc(["open-tab", h.initial_url + "#ctrl-number-third"])
+    tabs = h.ipc(["tabs"])["tabs"]
+    require(len(tabs) == 3,
+            "Ctrl+number regression requires exactly three tabs", tabs)
+    h.ipc(["sidebar-focus", "sidebar"])
+
+    h.key("ctrl+1", pause=0.2)
+    after_first = h.ipc(["status"])
+    require(after_first["mode"] == "SIDEBAR" and
+            after_first["active_tabid"] == tabs[0]["id"],
+            "sidebar Ctrl+1 did not focus the first tab", after_first)
+
+    h.key("ctrl+3", pause=0.2)
+    after_third = h.ipc(["status"])
+    require(after_third["mode"] == "SIDEBAR" and
+            after_third["active_tabid"] == tabs[2]["id"],
+            "sidebar Ctrl+3 did not focus the third tab", after_third)
 
 
 def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
@@ -1625,6 +1715,8 @@ TESTS = [
     test_sidebar_t_opens_tab_focus_command,
     test_sidebar_open_keys_match_website_mode,
     test_sidebar_reload_and_clipboard_keys_match_website_mode,
+    test_sidebar_yanks_match_website_mode,
+    test_sidebar_ctrl_number_focuses_tabs,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_ipc_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,

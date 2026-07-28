@@ -20,7 +20,7 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `H` — history back
 - [x] `L` — history forward
 - [x] `r` — reload from website or sidebar focus
-- [x] `R` — hard reload / bypass cache
+- [x] `R` — hard reload / bypass cache from website or sidebar focus
 
 ## Open / clipboard
 
@@ -45,6 +45,7 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 - [x] `Ctrl-7` — focus tab 7
 - [x] `Ctrl-8` — focus tab 8
 - [x] `Ctrl-9` — focus tab 9
+- `Ctrl-1` through `Ctrl-9` work from either website or sidebar focus.
 - [x] `J` — next tab
 - [x] `K` — previous tab
 - [x] `d` — close tab
@@ -67,10 +68,10 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 
 ## Yank / copy
 
-- [x] `yy` — copy current URL
-- [x] `yt` — copy title
-- [x] `ym` — copy markdown link: `[title](url)`
-- [x] `Ctrl-Shift-Y` — yank DOM
+- [x] `yy` — copy current URL from website or sidebar focus
+- [x] `yt` — copy title from website or sidebar focus
+- [x] `ym` — copy markdown link from website or sidebar focus: `[title](url)`
+- [x] `Ctrl-Shift-Y` — yank DOM from website or sidebar focus
 
 ## Find in page
 

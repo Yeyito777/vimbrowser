@@ -2110,9 +2110,19 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   }
 
   if (focus_area_ == FocusArea::kTabSidebar) {
+    const bool shared_ctrl_tab =
+        ctrl && event.windows_key_code >= '1' &&
+        event.windows_key_code <= '9';
+    const bool shared_dom_yank =
+        ctrl && shift && IsCtrlKey(event, 'Y');
+    if (shared_ctrl_tab || shared_dom_yank) {
+      sidebar_pending_keys_.clear();
+      return HandleWebsiteCommandKey(event);
+    }
+
     const char shared_website_key = PlainKeyChar(event);
     if (shared_website_key == 'r' || shared_website_key == 'p' ||
-        shared_website_key == 'P') {
+        shared_website_key == 'P' || shared_website_key == 'R') {
       sidebar_pending_keys_.clear();
       return HandleWebsiteCommandKey(event);
     }
@@ -2143,6 +2153,17 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
 
   if (focus_area_ == FocusArea::kTabSidebar && IsPlain(event)) {
     const char sidebar_key = PlainKeyChar(event);
+    if (sidebar_pending_keys_ == "y") {
+      sidebar_pending_keys_.clear();
+      if (sidebar_key == 'y') {
+        YankActiveUrl();
+      } else if (sidebar_key == 't') {
+        YankActiveTitle();
+      } else if (sidebar_key == 'm') {
+        YankActiveMarkdown();
+      }
+      return true;
+    }
     if (sidebar_pending_keys_ == "g") {
       sidebar_pending_keys_.clear();
       if (sidebar_key == 'g' || sidebar_key == '0') {
@@ -2223,6 +2244,9 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
       return true;
     case 'N':
       JumpSidebarSearch(!sidebar_search_forward_);
+      return true;
+    case 'y':
+      sidebar_pending_keys_ = "y";
       return true;
     case 'g':
       sidebar_pending_keys_ = "g";

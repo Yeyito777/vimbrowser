@@ -267,8 +267,11 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   search in the same/opposite direction; `:noh` clears the current page search
   highlights while keeping the last search term available for repeat
 - in website-normal/normal web modes or with the sidebar focused, `r` reloads the
-  active page, `p` opens the clipboard in the current tab, and `P` opens the
-  clipboard in a new tab
+  active page, `R` reloads it while bypassing cache, `p` opens the clipboard in
+  the current tab, and `P` opens the clipboard in a new tab
+- from either website or sidebar focus, `Ctrl+1` through `Ctrl+9` focus that tab;
+  `yy`, `yt`, and `ym` copy the active page URL, title, and Markdown link, while
+  `Ctrl+Shift+Y` copies the active page DOM
 - in website-normal/normal web modes, `d` closes the current tab and `D` closes
   it while focusing the previous tab; closed tabs are destroyed in the CEF
   backend, so media and page activity stop
