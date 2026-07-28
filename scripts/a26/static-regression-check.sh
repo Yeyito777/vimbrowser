@@ -34,6 +34,10 @@ require_literal scripts/a26/phone-launch.sh \
 require_literal scripts/a26/phone-launch.sh \
   '[ -p /run/moon-audio/pcm ]'
 require_literal scripts/a26/phone-launch.sh 'ALSA_CONFIG_PATH=/etc/asound.conf'
+require_literal scripts/a26/phone-launch.sh 'dns_staging="$root/etc/.resolv.conf.$$"'
+require_literal scripts/a26/phone-launch.sh \
+  'Moon DNS configuration has no nameserver'
+require_literal scripts/a26/phone-launch.sh 'mv -f "$dns_staging" "$dns_target"'
 require_literal scripts/a26/asound-moon.conf 'file "/run/moon-audio/pcm"'
 require_literal scripts/a26/asound-moon.conf '48 kHz stereo signed-16-bit PCM'
 require_literal scripts/a26/phone-launch.sh \
@@ -56,6 +60,7 @@ require_literal scripts/a26/phone-launch.sh '--enable-unsafe-swiftshader'
 require_literal scripts/a26/phone-launch.sh '--disable-accelerated-video-decode'
 require_literal scripts/a26/phone-launch.sh '--disable-accelerated-video-encode'
 require_literal scripts/a26/phone-launch.sh '--no-zygote'
+require_literal scripts/a26/phone-launch.sh '--touch-events=enabled'
 require_literal scripts/a26/phone-launch.sh 'A26_VIMBROWSER_XTEST_CHAR_WORKAROUND=1'
 require_literal src/browser_window.cc 'character_event.type = KEYEVENT_CHAR;'
 if grep -F -- '      --disable-gpu \' scripts/a26/phone-launch.sh >/dev/null; then
@@ -71,6 +76,10 @@ fi
 # vocabulary content-free. These are intentionally literal static assertions.
 require_literal src/a26_keyboard.cc 'SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC'
 require_literal src/a26_keyboard.cc 'constexpr size_t kMaxResponseBytes = 4096;'
+require_literal src/browser_window.cc 'RestoreA26PageFocus'
+require_literal src/browser_window.cc \
+  'focus-independent delivery.'
+require_literal src/main.cc 'Linux; Android 15; SM-A266M'
 for command in \
   'keyboard hide\n' \
   'keyboard show text\n' \
@@ -83,6 +92,10 @@ done
 
 require_literal src/browser_window.cc 'if (a26_shell_) {'
 require_literal src/browser_window.cc 'BuildA26Chrome();'
+require_literal src/browser_window.cc 'XI_RawTouchBegin'
+require_literal src/browser_window.cc 'BrowserWindow::HandleA26TouchScroll'
+require_literal src/browser_window.cc 'root_height - 180'
+require_literal src/browser_window_commands.cc 'void BrowserWindow::HandleA26TouchScroll'
 require_literal src/browser_window_internal.h 'kA26BottomReserveHeight = 0'
 require_literal src/app.cc 'purpose.empty() ? "text" : purpose'
 

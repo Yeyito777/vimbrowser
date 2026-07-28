@@ -52,9 +52,16 @@ CefMouseEvent ScrollTargetMouseEvent(Tab* tab, CefRefPtr<CefWindow> window) {
 
 void SendScrollWheel(CefRefPtr<CefBrowser> browser,
                      const CefMouseEvent& event,
+                     int dx,
                      int dy) {
-  // CEF/Chromium wheel deltas use negative Y to scroll page content down.
-  browser->GetHost()->SendMouseWheelEvent(event, 0, -dy);
+  // CEF/Chromium wheel deltas use the opposite sign from content-space motion.
+  browser->GetHost()->SendMouseWheelEvent(event, -dx, -dy);
+}
+
+void SendScrollWheel(CefRefPtr<CefBrowser> browser,
+                     const CefMouseEvent& event,
+                     int dy) {
+  SendScrollWheel(browser, event, 0, dy);
 }
 
 void ExecuteJavaScriptInAllFrames(CefRefPtr<CefBrowser> browser,
@@ -573,6 +580,30 @@ void BrowserWindow::CancelCommand() {
     RefreshSidebar();
   }
   Layout();
+}
+
+void BrowserWindow::HandleA26TouchScroll(int x, int y, int dx, int dy) {
+  if (!a26_shell_ || (dx == 0 && dy == 0)) {
+    return;
+  }
+  CefRefPtr<CefBrowser> browser = ActiveBrowser();
+  if (!browser || !browser->GetHost()) {
+    return;
+  }
+
+  CefMouseEvent event;
+  event.x = std::max(0, x);
+  event.y = std::max(0, y);
+  event.modifiers = 0;
+  SendPdfViewerScrollHook(browser, dy);
+  SendScrollWheel(browser, event, dx, dy);
+}
+
+void BrowserWindow::HandleA26PinchZoom(bool zoom_in) {
+  if (!a26_shell_) {
+    return;
+  }
+  ZoomActivePage(zoom_in ? CEF_ZOOM_COMMAND_IN : CEF_ZOOM_COMMAND_OUT);
 }
 
 void BrowserWindow::ScrollActivePageBy(int dy) {

@@ -655,6 +655,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void FinishA26ChromeAction();
   void RequestA26Keyboard(A26KeyboardPurpose purpose);
   void SyncA26KeyboardForActivePage();
+  void RestoreA26PageFocus(uint64_t generation, uint64_t tab_id);
   void UpdateCommandView();
   void StartSidebarMouseWatcher();
   void StopSidebarMouseWatcher();
@@ -662,6 +663,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void UpdateSidebarMouseBounds();
   void UpdateA26MouseBounds();
   void HandleA26MouseControl(size_t control_index);
+  void HandleA26TouchScroll(int x, int y, int dx, int dy);
+  void HandleA26PinchZoom(bool zoom_in);
   void FocusA26UrlFromTouch();
   void ClearA26ControlDedup(int control_id, uint64_t generation);
   void HandleSidebarMouseRowClick(size_t row_index);
@@ -789,6 +792,7 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t status_output_generation_ = 0;
   uint64_t sidebar_delete_generation_ = 0;
   uint64_t a26_control_dedup_generation_ = 0;
+  uint64_t a26_page_focus_generation_ = 0;
   int a26_last_control_id_ = 0;
   uint64_t next_tab_id_ = 1;
   uint64_t next_folder_id_ = 1;

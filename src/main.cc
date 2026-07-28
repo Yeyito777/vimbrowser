@@ -355,6 +355,12 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   settings.remote_debugging_port = config.remote_debugging_port;
   settings.persist_session_cookies = true;
   settings.log_severity = LOGSEVERITY_WARNING;
+  if (config.a26_shell) {
+    SetCefString(
+        &settings.user_agent,
+        "Mozilla/5.0 (Linux; Android 15; SM-A266M) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36");
+  }
   SetCefString(&settings.root_cache_path, config.cache_path);
   SetCefString(&settings.cache_path, config.cache_path + "/default");
 

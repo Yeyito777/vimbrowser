@@ -18,6 +18,7 @@
 #include <limits>
 #include <sstream>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -1792,7 +1793,10 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefWindow> window,
   if (HandleMediaPermissionPromptKey(event)) {
     return true;
   }
-  if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
+  if (forwarding_key_to_page_) {
+    // SendKeyEvent can synchronously re-enter the top-level Views delegate for
+    // non-printable keys. Continue that nested pass to Blink instead of
+    // recursively forwarding the same event.
     return false;
   }
   if (mode_ != Mode::kNormal && IsCharEvent(event) && PlainKeyChar(event) == ':') {
@@ -1982,7 +1986,7 @@ bool BrowserWindow::HandleBrowserKeyEvent(const CefKeyEvent& event) {
   if (forwarding_key_to_devtools_) {
     return false;
   }
-  if (forwarding_key_to_page_ && (IsEscapeKey(event) || IsSpaceKey(event))) {
+  if (forwarding_key_to_page_) {
     return false;
   }
   if (mode_ != Mode::kNormal) {
@@ -4083,6 +4087,21 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
       }
     }
 
+    if (a26_xtest_char_workaround_ && website_mode_ == vim::Mode::kInsert &&
+        page_focused_editable && !IsPlainPrintableKey(event) &&
+        ShouldForwardFocusedEditableKey(event, true)) {
+      // A26's global keyboard targets the top-level X window. If a responsive
+      // page rebuild or the keyboard-driven window resize briefly moves CEF
+      // Views focus away from the BrowserView, returning false here drops
+      // Backspace/Enter/navigation while printable keys still work through the
+      // CHAR workaround above. Explicitly forward the complete special-key
+      // sequence to the active renderer so all editing keys have identical
+      // focus-independent delivery.
+      ForwardKeyToActivePage(event);
+      ResetWebsitePendingKeys();
+      return true;
+    }
+
     if (website_mode_ == vim::Mode::kInsert &&
         ShouldForwardFocusedEditableKey(event, page_focused_editable)) {
       ResetWebsitePendingKeys();
@@ -4855,7 +4874,7 @@ void BrowserWindow::RunSidebarMouseWatcher() {
   }
 
   int xi_major = 2;
-  int xi_minor = 0;
+  int xi_minor = a26_shell_ ? 2 : 0;
   if (XIQueryVersion(display, &xi_major, &xi_minor) != Success) {
     XCloseDisplay(display);
     sidebar_mouse_watcher_running_.store(false);
@@ -4908,6 +4927,12 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     Window browser_toplevel = 0;
     int root_x = 0;
     int root_y = 0;
+  };
+
+  struct A26TouchHit {
+    bool inside_page = false;
+    int logical_x = 0;
+    int logical_y = 0;
   };
 
   struct ChromeMouseHits {
@@ -5083,6 +5108,72 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     return hit;
   };
 
+  auto a26_touch_hit_test = [&](double raw_root_x, double raw_root_y) {
+    A26TouchHit hit;
+    const Window browser_window =
+        static_cast<Window>(a26_mouse_window_.load());
+    if (browser_window == 0 || !std::isfinite(raw_root_x) ||
+        !std::isfinite(raw_root_y)) {
+      return hit;
+    }
+
+    const Window browser_toplevel = toplevel_for_window(browser_window);
+    const int layout_width = a26_layout_width_.load();
+    const int layout_height = a26_layout_height_.load();
+    XWindowAttributes attributes = {};
+    int window_root_x = 0;
+    int window_root_y = 0;
+    Window translated_child = 0;
+    if (browser_toplevel == 0 || layout_width <= 0 || layout_height <= 0 ||
+        !XGetWindowAttributes(display, browser_toplevel, &attributes) ||
+        attributes.map_state != IsViewable || attributes.width <= 0 ||
+        attributes.height <= 0 ||
+        !XTranslateCoordinates(display, browser_toplevel, root, 0, 0,
+                               &window_root_x, &window_root_y,
+                               &translated_child)) {
+      return hit;
+    }
+
+    const int root_x = static_cast<int>(std::lround(raw_root_x));
+    const int root_y = static_cast<int>(std::lround(raw_root_y));
+    if (root_x < window_root_x || root_y < window_root_y ||
+        root_x >= window_root_x + attributes.width ||
+        root_y >= window_root_y + attributes.height) {
+      return hit;
+    }
+
+    hit.logical_x =
+        (root_x - window_root_x) * layout_width / attributes.width;
+    hit.logical_y =
+        (root_y - window_root_y) * layout_height / attributes.height;
+    const int page_height = std::max(0, layout_height - kA26ChromeHeight);
+    const int root_height = DisplayHeight(display, DefaultScreen(display));
+    // Moon owns the physical bottom-edge close gesture. Do not scroll the page
+    // for a contact that begins in its 180px reservation.
+    hit.inside_page = hit.logical_y >= 0 && hit.logical_y < page_height &&
+                      root_y < root_height - 180;
+    return hit;
+  };
+
+  auto raw_touch_axis = [](const XIRawEvent* event,
+                           int wanted) -> std::optional<double> {
+    if (!event || !event->valuators.mask || !event->raw_values || wanted < 0) {
+      return std::nullopt;
+    }
+    int value_index = 0;
+    for (int axis = 0; axis < event->valuators.mask_len * 8; ++axis) {
+      if (!XIMaskIsSet(event->valuators.mask, axis)) {
+        continue;
+      }
+      const double value = event->raw_values[value_index++];
+      if (axis == wanted) {
+        return std::isfinite(value) ? std::optional<double>(value)
+                                    : std::nullopt;
+      }
+    }
+    return std::nullopt;
+  };
+
   auto clear_hand_cursor = [&]() {
     if (hand_cursor_window != 0) {
       XUndefineCursor(display, hand_cursor_window);
@@ -5136,11 +5227,28 @@ void BrowserWindow::RunSidebarMouseWatcher() {
     XISetMask(mask, XI_ButtonRelease);
     XISetMask(mask, XI_Motion);
   }
-  XIEventMask event_mask = {};
-  event_mask.deviceid = XIAllMasterDevices;
-  event_mask.mask_len = sizeof(mask);
-  event_mask.mask = mask;
-  XISelectEvents(display, root, &event_mask, 1);
+  XIEventMask event_masks[2] = {};
+  event_masks[0].deviceid = XIAllMasterDevices;
+  event_masks[0].mask_len = sizeof(mask);
+  event_masks[0].mask = mask;
+  int event_mask_count = 1;
+  unsigned char touch_mask[XIMaskLen(XI_LASTEVENT)] = {};
+  const bool raw_touch_supported =
+      a26_shell_ && (xi_major > 2 || (xi_major == 2 && xi_minor >= 2));
+  if (raw_touch_supported) {
+    XISetMask(touch_mask, XI_RawTouchBegin);
+    XISetMask(touch_mask, XI_RawTouchUpdate);
+    XISetMask(touch_mask, XI_RawTouchEnd);
+    // Raw touch is reported through the attached master as well as the slave.
+    // Selecting all devices can duplicate a physical contact on some X servers.
+    event_masks[1].deviceid = XIAllMasterDevices;
+    event_masks[1].mask_len = sizeof(touch_mask);
+    event_masks[1].mask = touch_mask;
+    event_mask_count = 2;
+    std::cerr << "vimbrowser: A26 raw touch gestures ready (XI " << xi_major
+              << '.' << xi_minor << ")" << std::endl;
+  }
+  XISelectEvents(display, root, event_masks, event_mask_count);
   XFlush(display);
 
   const int fd = ConnectionNumber(display);
@@ -5150,6 +5258,20 @@ void BrowserWindow::RunSidebarMouseWatcher() {
   int a26_press_root_x = 0;
   int a26_press_root_y = 0;
   bool a26_press_moved = false;
+  struct A26TouchContact {
+    double start_root_x = 0.0;
+    double start_root_y = 0.0;
+    double root_x = 0.0;
+    double root_y = 0.0;
+    int start_logical_x = 0;
+    int start_logical_y = 0;
+    int logical_x = 0;
+    int logical_y = 0;
+    bool page_owned = false;
+    bool scrolling = false;
+  };
+  std::unordered_map<int, A26TouchContact> a26_touches;
+  double pinch_reference_distance = 0.0;
   while (sidebar_mouse_watcher_running_.load()) {
     fd_set readfds;
     FD_ZERO(&readfds);
@@ -5172,7 +5294,110 @@ void BrowserWindow::RunSidebarMouseWatcher() {
         continue;
       }
 
-      if (xevent.xcookie.evtype == XI_RawMotion ||
+      if (xevent.xcookie.evtype == XI_RawTouchBegin ||
+          xevent.xcookie.evtype == XI_RawTouchUpdate ||
+          xevent.xcookie.evtype == XI_RawTouchEnd) {
+        auto* raw = static_cast<XIRawEvent*>(xevent.xcookie.data);
+        if (raw) {
+          if (xevent.xcookie.evtype == XI_RawTouchBegin) {
+            const std::optional<double> root_x = raw_touch_axis(raw, 0);
+            const std::optional<double> root_y = raw_touch_axis(raw, 1);
+            if (root_x && root_y) {
+              const A26TouchHit hit = a26_touch_hit_test(*root_x, *root_y);
+              A26TouchContact contact;
+              contact.start_root_x = contact.root_x = *root_x;
+              contact.start_root_y = contact.root_y = *root_y;
+              contact.start_logical_x = contact.logical_x = hit.logical_x;
+              contact.start_logical_y = contact.logical_y = hit.logical_y;
+              contact.page_owned = hit.inside_page;
+              a26_touches[raw->detail] = contact;
+            }
+          } else if (xevent.xcookie.evtype == XI_RawTouchUpdate) {
+            auto contact_it = a26_touches.find(raw->detail);
+            if (contact_it != a26_touches.end()) {
+              A26TouchContact& contact = contact_it->second;
+              const int previous_logical_x = contact.logical_x;
+              const int previous_logical_y = contact.logical_y;
+              if (const std::optional<double> root_x = raw_touch_axis(raw, 0)) {
+                contact.root_x = *root_x;
+              }
+              if (const std::optional<double> root_y = raw_touch_axis(raw, 1)) {
+                contact.root_y = *root_y;
+              }
+              const A26TouchHit hit =
+                  a26_touch_hit_test(contact.root_x, contact.root_y);
+              if (hit.logical_x || hit.logical_y || hit.inside_page) {
+                contact.logical_x = hit.logical_x;
+                contact.logical_y = hit.logical_y;
+              }
+
+              std::vector<A26TouchContact*> page_contacts;
+              for (auto& [id, candidate] : a26_touches) {
+                (void)id;
+                if (candidate.page_owned) {
+                  page_contacts.push_back(&candidate);
+                }
+              }
+              if (page_contacts.size() >= 2) {
+                for (A26TouchContact* candidate : page_contacts) {
+                  candidate->scrolling = true;
+                }
+                const double dx = page_contacts[0]->root_x -
+                                  page_contacts[1]->root_x;
+                const double dy = page_contacts[0]->root_y -
+                                  page_contacts[1]->root_y;
+                const double distance = std::hypot(dx, dy);
+                if (pinch_reference_distance <= 0.0) {
+                  pinch_reference_distance = distance;
+                } else if (distance >= pinch_reference_distance * 1.18) {
+                  CefRefPtr<BrowserWindow> self = this;
+                  CefPostTask(TID_UI,
+                              base::BindOnce(&BrowserWindow::HandleA26PinchZoom,
+                                             self, true));
+                  pinch_reference_distance = distance;
+                } else if (distance <= pinch_reference_distance / 1.18) {
+                  CefRefPtr<BrowserWindow> self = this;
+                  CefPostTask(TID_UI,
+                              base::BindOnce(&BrowserWindow::HandleA26PinchZoom,
+                                             self, false));
+                  pinch_reference_distance = distance;
+                }
+              } else {
+                pinch_reference_distance = 0.0;
+                if (contact.page_owned) {
+                  const double total_dx = contact.root_x - contact.start_root_x;
+                  const double total_dy = contact.root_y - contact.start_root_y;
+                  if (contact.scrolling || std::hypot(total_dx, total_dy) >= 18.0) {
+                    const int content_dx = contact.scrolling
+                                               ? previous_logical_x - contact.logical_x
+                                               : contact.start_logical_x -
+                                                     contact.logical_x;
+                    const int content_dy = contact.scrolling
+                                               ? previous_logical_y - contact.logical_y
+                                               : contact.start_logical_y -
+                                                     contact.logical_y;
+                    contact.scrolling = true;
+                    if (content_dx != 0 || content_dy != 0) {
+                      CefRefPtr<BrowserWindow> self = this;
+                      CefPostTask(
+                          TID_UI,
+                          base::BindOnce(&BrowserWindow::HandleA26TouchScroll,
+                                         self, contact.logical_x,
+                                         contact.logical_y, content_dx,
+                                         content_dy));
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            a26_touches.erase(raw->detail);
+            if (a26_touches.size() < 2) {
+              pinch_reference_distance = 0.0;
+            }
+          }
+        }
+      } else if (xevent.xcookie.evtype == XI_RawMotion ||
           xevent.xcookie.evtype == XI_Motion) {
         ChromeMouseHits hits = update_hover_cursor();
         if (a26_pressed_control >= 0 || a26_page_pressed) {
@@ -5580,6 +5805,9 @@ void BrowserWindow::FinishA26ChromeAction() {
 }
 
 void BrowserWindow::RequestA26Keyboard(A26KeyboardPurpose purpose) {
+  if (purpose == A26KeyboardPurpose::kHide) {
+    ++a26_page_focus_generation_;
+  }
   if (a26_shell_ && a26_keyboard_) {
     a26_keyboard_->Request(purpose);
   }
@@ -5589,7 +5817,7 @@ void BrowserWindow::SyncA26KeyboardForActivePage() {
   if (!a26_shell_ || a26_url_focused_) {
     return;
   }
-  const Tab* tab = ActiveTab();
+  Tab* tab = ActiveTab();
   if (!tab || !tab->focused_editable_node) {
     RequestA26Keyboard(A26KeyboardPurpose::kHide);
     return;
@@ -5606,7 +5834,43 @@ void BrowserWindow::SyncA26KeyboardForActivePage() {
     purpose = A26KeyboardPurpose::kNumber;
   }
   website_mode_ = vim::Mode::kInsert;
+  focus_area_ = FocusArea::kWebView;
+  if (tab->view) {
+    tab->view->RequestFocus();
+  }
+  if (tab->client && tab->client->browser() &&
+      tab->client->browser()->GetHost()) {
+    tab->client->browser()->GetHost()->SetFocus(true);
+  }
   RequestA26Keyboard(purpose);
+
+  // Moon applies adjust-resize asynchronously after accepting the keyboard
+  // request. Restore the BrowserView once that X11 configure has settled; the
+  // generation and tab ID prevent stale callbacks from stealing focus after a
+  // blur, tab switch, navigation, or keyboard dismissal.
+  const uint64_t generation = ++a26_page_focus_generation_;
+  const uint64_t tab_id = tab->id;
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::RestoreA26PageFocus, self, generation,
+                     tab_id),
+      240);
+}
+
+void BrowserWindow::RestoreA26PageFocus(uint64_t generation, uint64_t tab_id) {
+  if (!a26_shell_ || generation != a26_page_focus_generation_ ||
+      focus_area_ != FocusArea::kWebView || a26_url_focused_) {
+    return;
+  }
+  Tab* tab = ActiveTab();
+  if (!tab || tab->id != tab_id || !tab->focused_editable_node || !tab->view ||
+      !tab->client || !tab->client->browser() ||
+      !tab->client->browser()->GetHost()) {
+    return;
+  }
+  tab->view->RequestFocus();
+  tab->client->browser()->GetHost()->SetFocus(true);
 }
 
 void BrowserWindow::SetStatusOutput(std::string message, int timeout_ms) {

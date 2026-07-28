@@ -171,7 +171,22 @@ bind_dir_once_ro /run/a26-shell "$root/run/a26-shell"
 [ "$(stat -c '%u' /run/moon-audio/pcm)" = 1000 ] ||
   die "Moon audio endpoint is not system-owned"
 bind_dir_once_rw_data /run/moon-audio "$root/run/moon-audio"
-cp /etc/resolv.conf "$root/etc/resolv.conf" 2>/dev/null || true
+dns_source=/etc/resolv.conf
+dns_target="$root/etc/resolv.conf"
+dns_staging="$root/etc/.resolv.conf.$$"
+[ -s "$dns_source" ] || die "Moon DNS configuration is unavailable"
+rm -f "$dns_staging"
+if ! cp "$dns_source" "$dns_staging"; then
+  rm -f "$dns_staging"
+  die "cannot stage browser DNS configuration"
+fi
+if ! grep -q '^[[:space:]]*nameserver[[:space:]]' "$dns_staging"; then
+  rm -f "$dns_staging"
+  die "Moon DNS configuration has no nameserver"
+fi
+chmod 0644 "$dns_staging"
+mv -f "$dns_staging" "$dns_target"
+[ -s "$dns_target" ] || die "browser DNS installation failed"
 mkdir -p "$root/var/lib/vimbrowser/profile" "$root/tmp"
 
 exec chroot "$root" /usr/bin/env -i \

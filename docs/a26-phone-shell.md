@@ -43,7 +43,10 @@ bottom-edge close gesture; vimbrowser owns the page surface and browser state.
 
 The native A26 environment now owns `wlan0` directly while Android's Java Wi-Fi
 framework is suspended, so the default launcher uses the phone's system-wide
-Linux route and DNS configuration. No browser-specific proxy is required.
+Linux route and DNS configuration. At launch, the nested Debian root receives
+an atomically installed, non-empty snapshot of Moon's resolver configuration;
+the launcher fails closed rather than starting Chromium with unusable DNS. No
+browser-specific proxy is required.
 
 Browser audio uses Moon's system audio bridge rather than direct access to the
 Samsung ALSA devices. Chromium's normal Linux audio service opens a dedicated
@@ -74,6 +77,16 @@ Reload/Stop, and tab cycling. The bar reaches the physical display edge without
 an empty gesture strip. Moon distinguishes taps from upward movement, so a swipe
 that begins there still closes the app while ordinary control taps are forwarded
 normally. Desktop builds retain their normal side UI and keyboard behavior.
+
+Samsung's Xorg driver classifies the panel as XI2 dependent touch even though it
+is physically direct, which prevents Chromium's normal direct-touch discovery.
+The A26-only XInput watcher therefore translates raw one-finger page drags into
+positioned horizontal/vertical Chromium wheel gestures and two-finger distance
+changes into page zoom. It keeps the physical bottom 180 pixels reserved for
+Moon, while short taps continue through Moon's existing XTEST path. This provides
+positioned page scrolling and pinch zoom without changing desktop behavior or
+pretending that windowed CEF supports synthetic
+`SendTouchEvent`.
 
 Editable browser and page fields request Moon's global on-screen keyboard over
 the root-only control socket. Moon keeps X focus on the browser, injects keys
@@ -111,6 +124,8 @@ store, or log field contents. URL-bar text remains on CEF Views' normal key path
 - the app still runs unsandboxed as root during this controlled bring-up;
 - the normal bottom-edge Moon gesture remains responsible for closing the app;
 - native hint/shader/FPS behavior still depends on the official-CEF compatibility
-  stubs described above.
+  stubs described above;
+- A26 page swipes are translated to Chromium wheel gestures, so arbitrary website
+  `touchstart`/`touchmove` handlers do not receive a native DOM touch stream.
 
 Do not use this proof build for routine untrusted browsing.
