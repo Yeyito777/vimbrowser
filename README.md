@@ -226,10 +226,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   mode, `Shift+j` / `Shift+k` focus the sidebar and continue from that same visual
   selection, following the visible sibling order inside the browsed folder rather
   than the tabs' backing-vector enumeration
-- sidebar `p` pins or unpins the selected tab or folder. Pinned items are
-  durable, share the leading `Pinned` section, and get the only section
-  separator in the list; unpinning returns an item to the top of the regular
-  entries
+- tabs and folders can be pinned through the IPC `tab-pin` / `folder-pin`
+  commands. Pinned items are durable, share the leading `Pinned` section, and
+  get the only section separator in the list; unpinning returns an item to the
+  top of the regular entries
 - sidebar `/` and `?` open Exocortex-style forward/backward live search over all
   folder names and tab titles/URLs, including results inside nested folders.
   `Escape` restores the exact pre-search folder and selection, `Enter` confirms
@@ -237,9 +237,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   `Enter` opens the selected result, and sidebar `:noh` clears the filter while
   revealing that result in its containing folder
 - sidebar `f` creates a folder in the current folder; `F` moves the selected tab,
-  folder, or visual range to `/`, `..`, or an autocompleted folder path; `r`
-  renames a folder; `e` / `E` reorder the selected sibling; and `x` unwraps a
-  folder while retaining its children. Press `v`/`V` to start or clear a
+  folder, or visual range to `/`, `..`, or an autocompleted folder path;
+  `:folder-rename` renames the selected folder; `e` / `E` reorder the selected
+  sibling; and `x` unwraps a folder while retaining its children. Press `v`/`V`
+  to start or clear a
   contiguous visual selection. `d`/`D` immediately deletes a focused tab or a
   tab-only visual range; selections containing folders still require `dd`/`DD`
   because recursive folder deletion closes/destroys all contained tab backends.
@@ -265,8 +266,9 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   `?` opens a backward in-page search prompt, and `n` / `N` repeat the last page
   search in the same/opposite direction; `:noh` clears the current page search
   highlights while keeping the last search term available for repeat
-- in website-normal/normal web modes, `p` opens the clipboard in the current tab
-  and `P` opens the clipboard in a new tab
+- in website-normal/normal web modes or with the sidebar focused, `r` reloads the
+  active page, `p` opens the clipboard in the current tab, and `P` opens the
+  clipboard in a new tab
 - in website-normal/normal web modes, `d` closes the current tab and `D` closes
   it while focusing the previous tab; closed tabs are destroyed in the CEF
   backend, so media and page activity stop

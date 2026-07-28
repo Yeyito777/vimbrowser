@@ -196,8 +196,7 @@ rejected, and contained tab backends are neither reloaded nor recreated.
 
 Pins or unpins a folder among its siblings. Omitting `on|off` toggles the current
 state. Pinned folders and tabs share one ordered `Pinned` section, and the state
-survives profile restarts. This is the IPC equivalent of pressing sidebar `p` on
-a folder.
+survives profile restarts.
 
 #### `tab-folder <tabid> <folderid|0>`
 

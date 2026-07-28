@@ -875,6 +875,58 @@ def test_sidebar_open_keys_match_website_mode(h: Harness) -> None:
     submit_open("shift+o", "sidebar", True)
 
 
+def test_sidebar_reload_and_clipboard_keys_match_website_mode(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.ipc(["sidebar-focus", "sidebar"])
+    before_reload = h.ipc(["status"])
+    h.js("window.sidebarReloadMarker = 'present'; 'ok'")
+    h.key("r", pause=0.3)
+
+    deadline = time.time() + 5
+    marker_cleared = False
+    while time.time() < deadline:
+        try:
+            marker_cleared = h.js(
+                "JSON.stringify(typeof window.sidebarReloadMarker === 'undefined')"
+            )
+            if marker_cleared:
+                break
+        except Exception:
+            pass
+        time.sleep(0.05)
+    after_reload = h.ipc(["status"])
+    require(marker_cleared and
+            after_reload["active_tabid"] == before_reload["active_tabid"] and
+            after_reload["tabs"] == before_reload["tabs"],
+            "sidebar r did not reload the active page",
+            {"before": before_reload, "after": after_reload})
+
+    run([
+        "xenv", "run", "-e", h.env_name, "bash", "-lc",
+        "printf %s about:blank | xclip -selection clipboard",
+    ], timeout=10)
+    time.sleep(0.1)
+
+    h.ipc(["sidebar-focus", "sidebar"])
+    before_p = h.ipc(["status"])
+    h.key("p", pause=0.3)
+    after_p = h.ipc(["status"])
+    require(after_p["active_tabid"] == before_p["active_tabid"] and
+            after_p["tabs"] == before_p["tabs"] and
+            after_p["url"] == "about:blank",
+            "sidebar p did not open the clipboard in the current tab",
+            {"before": before_p, "after": after_p})
+
+    before_P = h.ipc(["status"])
+    h.key("shift+p", pause=0.3)
+    after_P = h.ipc(["status"])
+    require(after_P["active_tabid"] != before_P["active_tabid"] and
+            after_P["tabs"] == before_P["tabs"] + 1 and
+            after_P["url"] == "about:blank",
+            "sidebar P did not open the clipboard in a new tab",
+            {"before": before_P, "after": after_P})
+
+
 def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
     initial_sidebar = h.ipc(["sidebar"])
     viewport_rows = int(initial_sidebar.get("viewport_rows") or 0)
@@ -1096,7 +1148,7 @@ def test_sidebar_d_focuses_next_visible_tab(h: Harness) -> None:
     h.ipc(["folder-delete", str(container["id"]), "recursive"])
 
 
-def test_sidebar_p_toggles_folder_pin(h: Harness) -> None:
+def test_ipc_toggles_folder_pin(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url])
     tabs = h.ipc(["tabs"])["tabs"]
     folder_reply = h.ipc(["folder-create", "0", "Pinned folder"])
@@ -1105,12 +1157,10 @@ def test_sidebar_p_toggles_folder_pin(h: Harness) -> None:
             "fixture did not create colliding tab/folder IDs",
             {"folder": folder, "tab": tabs[0]})
 
-    # Pin the colliding tab first so folder p must append to the shared pinned
+    # Pin the colliding tab first so folder-pin must append to the shared pinned
     # section without confusing equal numeric tab/folder IDs.
     h.ipc(["tab-pin", str(tabs[0]["id"]), "on"])
-    h.ipc(["sidebar-select", "folder", str(folder["id"])])
-    h.ipc(["sidebar-focus", "sidebar"])
-    h.key("p", pause=0.25)
+    h.ipc(["folder-pin", str(folder["id"]), "on"])
 
     pinned_folder = next(
         item for item in h.ipc(["folders"])["folders"]
@@ -1124,7 +1174,7 @@ def test_sidebar_p_toggles_folder_pin(h: Harness) -> None:
     ]
     row_kinds = [row["kind"] for row in sidebar["rows"]]
     require(pinned_folder["pinned"],
-            "sidebar p did not pin the selected folder", pinned_folder)
+            "folder-pin did not pin the selected folder", pinned_folder)
     require(pinned_entries == [("tab", tabs[0]["id"]),
                                ("folder", folder["id"])],
             "folder did not append to the shared pinned section", sidebar)
@@ -1132,13 +1182,13 @@ def test_sidebar_p_toggles_folder_pin(h: Harness) -> None:
             row_kinds.count("separator") == 1,
             "shared pinned section label/separator was not canonical", sidebar)
 
-    h.key("p", pause=0.25)
+    h.ipc(["folder-pin", str(folder["id"]), "off"])
     unpinned_folder = next(
         item for item in h.ipc(["folders"])["folders"]
         if item["id"] == folder["id"]
     )
     require(not unpinned_folder["pinned"],
-            "second sidebar p did not unpin the selected folder",
+            "folder-pin off did not unpin the selected folder",
             unpinned_folder)
 
 
@@ -1574,8 +1624,9 @@ TESTS = [
     test_sidebar_super_is_a_noop,
     test_sidebar_t_opens_tab_focus_command,
     test_sidebar_open_keys_match_website_mode,
+    test_sidebar_reload_and_clipboard_keys_match_website_mode,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
-    test_sidebar_p_toggles_folder_pin,
+    test_ipc_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
     test_sidebar_d_focuses_next_visible_tab,
     test_sidebar_keybinds_do_not_type,

@@ -19,13 +19,13 @@ Approved website-mode keybinds to port from the user's qutebrowser config/defaul
 
 - [x] `H` — history back
 - [x] `L` — history forward
-- [x] `r` — reload
+- [x] `r` — reload from website or sidebar focus
 - [x] `R` — hard reload / bypass cache
 
 ## Open / clipboard
 
-- [x] `p` — open clipboard in current tab
-- [x] `P` — open clipboard in new tab
+- [x] `p` — open clipboard in current tab from website or sidebar focus
+- [x] `P` — open clipboard in new tab from website or sidebar focus
 
 ## Hints
 

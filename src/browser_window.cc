@@ -2110,6 +2110,13 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
   }
 
   if (focus_area_ == FocusArea::kTabSidebar) {
+    const char shared_website_key = PlainKeyChar(event);
+    if (shared_website_key == 'r' || shared_website_key == 'p' ||
+        shared_website_key == 'P') {
+      sidebar_pending_keys_.clear();
+      return HandleWebsiteCommandKey(event);
+    }
+
     if (const std::optional<bool> open_new_tab =
             OpenCommandNewTabForKey(event)) {
       BeginCommand(*open_new_tab ? Mode::kCommandOpenNext
@@ -2198,18 +2205,12 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     case 'F':
       BeginMoveSidebarItemsPrompt();
       return true;
-    case 'r':
-      BeginRenameFolderPrompt();
-      return true;
     case 'x':
       UnwrapSelectedSidebarFolder();
       return true;
     case 'v':
     case 'V':
       ToggleSidebarVisualSelection();
-      return true;
-    case 'p':
-      ToggleSelectedSidebarItemPinned();
       return true;
     case '/':
       BeginSidebarSearch(true);
