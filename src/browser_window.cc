@@ -276,6 +276,23 @@ bool IsLoneSpaceShortcutEvent(const CefKeyEvent& event) {
   return IsSpaceKey(event) && !HasKeyModifier(event);
 }
 
+// Keep o/O interpretation identical everywhere normal-mode browser chrome owns
+// the key, regardless of which CEF key path produced it.
+std::optional<bool> OpenCommandNewTabForKey(const CefKeyEvent& event) {
+  if (!IsRawKeyDown(event) || !IsPlain(event)) {
+    return std::nullopt;
+  }
+
+  switch (PlainKeyChar(event)) {
+    case 'o':
+      return false;
+    case 'O':
+      return true;
+    default:
+      return std::nullopt;
+  }
+}
+
 }  // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
@@ -2092,12 +2109,13 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent& event) {
     return true;
   }
 
-  if (IsPlain(event) && event.windows_key_code == 'O') {
-    if (focus_area_ != FocusArea::kTabSidebar) {
-      return false;
+  if (focus_area_ == FocusArea::kTabSidebar) {
+    if (const std::optional<bool> open_new_tab =
+            OpenCommandNewTabForKey(event)) {
+      BeginCommand(*open_new_tab ? Mode::kCommandOpenNext
+                                 : Mode::kCommandOpenCurrent);
+      return true;
     }
-    BeginCommand(shift ? Mode::kCommandOpenNext : Mode::kCommandOpenCurrent);
-    return true;
   }
 
   if (shift && event.windows_key_code == 'J') {
@@ -4064,9 +4082,10 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         return *shortcut;
       }
 
-      if (IsPlain(event) && event.windows_key_code == 'O') {
-        BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
-                                                            : Mode::kCommandOpenCurrent);
+      if (const std::optional<bool> open_new_tab =
+              OpenCommandNewTabForKey(event)) {
+        BeginCommand(*open_new_tab ? Mode::kCommandOpenNext
+                                   : Mode::kCommandOpenCurrent);
         return true;
       }
 
@@ -4109,11 +4128,13 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent& event) {
         }
       }
 
-      if (website_mode_ == vim::Mode::kNormal && IsPlain(event) &&
-          event.windows_key_code == 'O') {
-        BeginCommand(event.modifiers & EVENTFLAG_SHIFT_DOWN ? Mode::kCommandOpenNext
-                                                            : Mode::kCommandOpenCurrent);
-        return true;
+      if (website_mode_ == vim::Mode::kNormal) {
+        if (const std::optional<bool> open_new_tab =
+                OpenCommandNewTabForKey(event)) {
+          BeginCommand(*open_new_tab ? Mode::kCommandOpenNext
+                                     : Mode::kCommandOpenCurrent);
+          return true;
+        }
       }
 
       if (website_mode_ == vim::Mode::kNormal &&

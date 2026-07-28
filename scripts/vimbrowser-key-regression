@@ -852,6 +852,29 @@ def test_sidebar_t_opens_tab_focus_command(h: Harness) -> None:
             "sidebar t command was not prefilled with :tab-focus ", after_commit)
 
 
+def test_sidebar_open_keys_match_website_mode(h: Harness) -> None:
+    target_keys = [*"about", "shift+semicolon", *"blank"]
+
+    def submit_open(key: str, focus: str, expect_new_tab: bool) -> None:
+        h.ipc(["sidebar-focus", focus])
+        before = h.ipc(["status"])
+        h.key(key, *target_keys, "Return", pause=0.3)
+        after = h.ipc(["status"])
+        expected_count = before["tabs"] + (1 if expect_new_tab else 0)
+        same_tab = after["active_tabid"] == before["active_tabid"]
+        require(after["tabs"] == expected_count and
+                same_tab == (not expect_new_tab) and
+                after["url"] == "about:blank",
+                f"{focus} {key} did not use the website open binding",
+                {"before": before, "after": after})
+
+    reset_to_website_mode(h, focus_input=False)
+    submit_open("o", "web", False)
+    submit_open("shift+o", "web", True)
+    submit_open("o", "sidebar", False)
+    submit_open("shift+o", "sidebar", True)
+
+
 def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
     initial_sidebar = h.ipc(["sidebar"])
     viewport_rows = int(initial_sidebar.get("viewport_rows") or 0)
@@ -1550,6 +1573,7 @@ TESTS = [
     test_sidebar_gg_and_G_jump_to_visible_ends,
     test_sidebar_super_is_a_noop,
     test_sidebar_t_opens_tab_focus_command,
+    test_sidebar_open_keys_match_website_mode,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
     test_sidebar_p_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
