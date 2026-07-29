@@ -4,6 +4,8 @@
 
 #include "third_party/blink/renderer/core/frame/local_frame_mojo_handler.h"
 
+#include <cmath>
+
 #include "base/metrics/histogram_functions.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/time/time.h"
@@ -35,6 +37,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/script_function.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_fullscreen_options.h"
 #include "third_party/blink/renderer/core/dom/element_traversal.h"
+#include "third_party/blink/renderer/core/dom/dom_node_ids.h"
 #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
 #include "third_party/blink/renderer/core/dom/focus_params.h"
 #include "third_party/blink/renderer/core/dom/ignore_opens_during_unload_count_incrementer.h"
@@ -82,6 +85,7 @@
 #include "third_party/blink/renderer/core/view_transition/view_transition_supplement.h"
 #include "third_party/blink/renderer/core/yeyito_hints/click_hints.h"
 #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+#include "third_party/blink/renderer/platform/wtf/hash_set.h"
 #include "third_party/blink/renderer/platform/loader/fetch/resource_timing_utils.h"
 #include "third_party/blink/renderer/platform/widget/frame_widget.h"
 
@@ -134,6 +138,102 @@ bool HasStrictlyVisibleStyle(Element& element) {
     }
   }
   return true;
+}
+
+String BoundedControlText(String value, unsigned max_length) {
+  if (value.IsNull()) {
+    return g_empty_string;
+  }
+  value = value.SimplifyWhiteSpace();
+  return value.length() > max_length ? value.Left(max_length) : value;
+}
+
+String ControlContext(Element& element, const String& own_text) {
+  Element* ancestor = element.parentElement();
+  String best = g_empty_string;
+  for (int depth = 0; ancestor && depth < 6;
+       ++depth, ancestor = ancestor->parentElement()) {
+    String text = BoundedControlText(ancestor->innerText(), 512);
+    if (!text.empty() && text != own_text) {
+      best = std::move(text);
+      if (best.length() >= own_text.length() + 8) {
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+mojom::blink::VimbrowserElementActivationResult ResolveInspectedElement(
+    LocalFrame& frame,
+    const DocumentToken& expected_document,
+    int32_t dom_node_id,
+    const std::optional<gfx::PointF>& expected_point,
+    Element** element_out,
+    gfx::RectF* rect_out,
+    gfx::PointF* point_out) {
+  using Result = mojom::blink::VimbrowserElementActivationResult;
+  Document* document = frame.GetDocument();
+  Page* page = frame.GetPage();
+  if (!document || document->Token() != expected_document || !page ||
+      !frame.View()) {
+    return Result::kStaleDocument;
+  }
+
+  Node* node = DOMNodeIds::NodeForId(dom_node_id);
+  Element* element = DynamicTo<Element>(node);
+  if (!element || !element->isConnected() ||
+      &element->GetDocument() != document) {
+    return Result::kStaleNode;
+  }
+  if (element->IsDisabledFormControl()) {
+    return Result::kTargetDisabled;
+  }
+
+  document->UpdateStyleAndLayout(DocumentUpdateReason::kInput);
+  if (!HasStrictlyVisibleStyle(*element)) {
+    return Result::kTargetNotVisible;
+  }
+  gfx::RectF activation_rect(element->VisibleBoundsInLocalRoot());
+  const gfx::Size viewport_size = page->GetVisualViewport().Size();
+  activation_rect.Intersect(
+      gfx::RectF(0, 0, viewport_size.width(), viewport_size.height()));
+  if (activation_rect.IsEmpty()) {
+    return Result::kTargetNotVisible;
+  }
+
+  const gfx::PointF activation_point =
+      expected_point.value_or(activation_rect.CenterPoint());
+  if (!std::isfinite(activation_point.x()) ||
+      !std::isfinite(activation_point.y()) ||
+      !activation_rect.Contains(activation_point)) {
+    return Result::kTargetObscured;
+  }
+  const PhysicalOffset point_in_local_root =
+      frame.View()->ConvertFromRootFrame(
+          PhysicalOffset::FromPointFRound(activation_point));
+  HitTestResult hit = frame.GetEventHandler().HitTestResultAtLocation(
+      HitTestLocation(point_in_local_root));
+  hit.SetToShadowHostIfInUAShadowRoot();
+  Node* hit_node = hit.InnerNode();
+  const bool target_on_event_path =
+      hit_node &&
+      (hit_node == element ||
+       FlatTreeTraversal::IsDescendantOf(*hit_node, *element));
+  if (hit.InnerNodeFrame() != &frame || !target_on_event_path) {
+    return Result::kTargetObscured;
+  }
+
+  if (element_out) {
+    *element_out = element;
+  }
+  if (rect_out) {
+    *rect_out = activation_rect;
+  }
+  if (point_out) {
+    *point_out = activation_point;
+  }
+  return Result::kDispatched;
 }
 
 constexpr char kInvalidWorldID[] =
@@ -771,6 +871,167 @@ void LocalFrameMojoHandler::VimbrowserActivateElement(
           ? Result::kDispatched
           : Result::kActivationIgnored,
       1);
+}
+
+void LocalFrameMojoHandler::VimbrowserInspectControls(
+    const DocumentToken& expected_document,
+    mojom::blink::VimbrowserControlQueryPtr query,
+    VimbrowserInspectControlsCallback callback) {
+  using Result = mojom::blink::VimbrowserControlInspectionResult;
+  Document* document = GetDocument();
+  Page* page = GetPage();
+  if (!document || document->Token() != expected_document || !page ||
+      !frame_->View() || !query) {
+    std::move(callback).Run(Result::kDocumentUnavailable, {}, 0, false);
+    return;
+  }
+
+  const uint32_t limit = std::clamp<uint32_t>(query->limit, 1, 100);
+  document->UpdateStyleAndLayout(DocumentUpdateReason::kInput);
+  HeapVector<HintCandidate> candidates;
+  click_hints::CollectCandidates(*frame_, candidates,
+                                 click_hints::CandidateGroup::kClickables);
+
+  Vector<mojom::blink::VimbrowserControlInfoPtr> controls;
+  HashSet<DOMNodeId> seen;
+  uint32_t match_count = 0;
+  bool truncated = false;
+  for (const HintCandidate& candidate : candidates) {
+    Element* element = candidate.element.Get();
+    if (!element || !element->isConnected() ||
+        &element->GetDocument() != document) {
+      continue;
+    }
+    const DOMNodeId node_id = DOMNodeIds::IdForNode(element);
+    if (node_id == kInvalidDOMNodeId || !seen.insert(node_id).is_new_entry) {
+      continue;
+    }
+
+    const String role = BoundedControlText(element->computedRole(), 128);
+    const String name = BoundedControlText(element->computedName(), 256);
+    const String text = BoundedControlText(element->innerText(), 256);
+    const String context = ControlContext(*element, text);
+    if (!query->role.empty() && role != query->role) {
+      continue;
+    }
+    if (!query->exact_name.empty() && name != query->exact_name) {
+      continue;
+    }
+    if (!query->context_contains.empty() &&
+        context.find(StringView(query->context_contains)) == String::npos) {
+      continue;
+    }
+    ++match_count;
+    if (controls.size() >= limit) {
+      truncated = true;
+      continue;
+    }
+
+    auto info = mojom::blink::VimbrowserControlInfo::New();
+    info->dom_node_id = node_id;
+    info->role = role;
+    info->name = name;
+    info->tag = BoundedControlText(element->tagName(), 128);
+    info->type = BoundedControlText(
+        element->FastGetAttribute(html_names::kTypeAttr), 128);
+    info->id = BoundedControlText(element->GetIdAttribute(), 256);
+    info->text = text;
+    info->context = context;
+    info->disabled = element->IsDisabledFormControl();
+    controls.push_back(std::move(info));
+  }
+  std::move(callback).Run(Result::kSuccess, std::move(controls), match_count,
+                          truncated);
+}
+
+void LocalFrameMojoHandler::VimbrowserPrepareElementActivation(
+    const DocumentToken& expected_document,
+    int32_t dom_node_id,
+    VimbrowserPrepareElementActivationCallback callback) {
+  gfx::PointF point;
+  const mojom::blink::VimbrowserElementActivationResult result =
+      ResolveInspectedElement(*frame_, expected_document, dom_node_id,
+                              std::nullopt, nullptr, nullptr, &point);
+  std::move(callback).Run(result, point);
+}
+
+void LocalFrameMojoHandler::VimbrowserValidateDescendantElementHit(
+    const DocumentToken& expected_local_root_document,
+    const LocalFrameToken& target_frame_token,
+    const DocumentToken& expected_target_document,
+    int32_t dom_node_id,
+    const gfx::PointF& expected_point,
+    VimbrowserValidateDescendantElementHitCallback callback) {
+  using Result = mojom::blink::VimbrowserElementActivationResult;
+  Document* local_root_document = GetDocument();
+  ::blink::LocalFrame* target_frame =
+      ::blink::LocalFrame::FromFrameToken(target_frame_token);
+  Document* target_document = target_frame ? target_frame->GetDocument() : nullptr;
+  if (!local_root_document ||
+      local_root_document->Token() != expected_local_root_document ||
+      !frame_->View() || &frame_->LocalFrameRoot() != frame_ ||
+      !target_frame || &target_frame->LocalFrameRoot() != frame_ ||
+      !target_document ||
+      target_document->Token() != expected_target_document) {
+    std::move(callback).Run(Result::kStaleFrame);
+    return;
+  }
+
+  Node* node = DOMNodeIds::NodeForId(dom_node_id);
+  Element* element = DynamicTo<Element>(node);
+  if (!element || !element->isConnected() ||
+      &element->GetDocument() != target_document) {
+    std::move(callback).Run(Result::kStaleNode);
+    return;
+  }
+  if (!std::isfinite(expected_point.x()) ||
+      !std::isfinite(expected_point.y())) {
+    std::move(callback).Run(Result::kTargetObscured);
+    return;
+  }
+
+  target_document->UpdateStyleAndLayout(DocumentUpdateReason::kInput);
+  HitTestResult hit = frame_->GetEventHandler().HitTestResultAtLocation(
+      HitTestLocation(PhysicalOffset::FromPointFRound(expected_point)));
+  hit.SetToShadowHostIfInUAShadowRoot();
+  Node* hit_node = hit.InnerNode();
+  const bool target_on_event_path =
+      hit_node &&
+      (hit_node == element ||
+       FlatTreeTraversal::IsDescendantOf(*hit_node, *element));
+  std::move(callback).Run(
+      hit.InnerNodeFrame() == target_frame && target_on_event_path
+          ? Result::kDispatched
+          : Result::kTargetObscured);
+}
+
+void LocalFrameMojoHandler::VimbrowserActivatePreparedElement(
+    const DocumentToken& expected_document,
+    int32_t dom_node_id,
+    const gfx::PointF& expected_point,
+    const base::UnguessableToken& activation_nonce,
+    VimbrowserActivatePreparedElementCallback callback) {
+  using Result = mojom::blink::VimbrowserElementActivationResult;
+  Element* element = nullptr;
+  const Result validation = ResolveInspectedElement(
+      *frame_, expected_document, dom_node_id, expected_point, &element,
+      nullptr, nullptr);
+  if (validation != Result::kDispatched || !element) {
+    std::move(callback).Run(validation);
+    return;
+  }
+
+  Document* document = GetDocument();
+  ScopedVimbrowserFileActivationNonce nonce_scope(*document, activation_nonce);
+  const gfx::RectF exact_point_rect(expected_point.x() - 0.5f,
+                                    expected_point.y() - 0.5f, 1.0f, 1.0f);
+  const click_hints::ActivationResult activation =
+      click_hints::ActivateCandidate(*frame_, *element, exact_point_rect,
+                                     click_hints::ActivationAction::kLeftClick);
+  std::move(callback).Run(
+      activation == click_hints::ActivationResult::kDispatched
+          ? Result::kDispatched
+          : Result::kActivationIgnored);
 }
 
 void LocalFrameMojoHandler::ClearFocusedElement() {

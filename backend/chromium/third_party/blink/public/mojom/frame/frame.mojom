@@ -868,6 +868,43 @@ enum VimbrowserElementActivationResult {
   kTargetObscured,
   kActivationIgnored,
   kBackendUnavailable,
+  kInvalidHandle,
+  kExpiredHandle,
+  kStaleFrame,
+  kStaleDocument,
+  kStaleNode,
+  kTargetDisabled,
+};
+
+// Read-only filter for browser-owned inspection of clickable controls in one
+// exact frame. Empty strings disable the corresponding filter. Metadata is
+// deliberately limited to labels and visible text; form values are never read.
+struct VimbrowserControlQuery {
+  string role;
+  string exact_name;
+  string context_contains;
+  uint32 limit;
+};
+
+// Renderer-private identity plus bounded, non-sensitive context for one
+// inspected control. dom_node_id never crosses vimbrowser's public IPC; CEF
+// exchanges it for a short-lived opaque capability before returning results.
+struct VimbrowserControlInfo {
+  int32 dom_node_id;
+  string role;
+  string name;
+  string tag;
+  string type;
+  string id;
+  string text;
+  string context;
+  bool disabled;
+};
+
+enum VimbrowserControlInspectionResult {
+  kSuccess,
+  kDocumentUnavailable,
+  kBackendUnavailable,
 };
 
 // Implemented in Blink, this interface defines frame-specific methods that will
@@ -965,6 +1002,47 @@ interface LocalFrame {
       DocumentToken expected_document,
       mojo_base.mojom.UnguessableToken activation_nonce)
       => (VimbrowserElementActivationResult result, uint32 match_count);
+
+  // Inspects clickable controls in this exact frame without activating them.
+  // Returned node IDs are renderer-private and are converted to browser-owned
+  // short-lived capabilities before any agent-facing response is produced.
+  VimbrowserInspectControls(
+      DocumentToken expected_document,
+      VimbrowserControlQuery query)
+      => (VimbrowserControlInspectionResult result,
+          array<VimbrowserControlInfo> controls,
+          uint32 match_count,
+          bool truncated);
+
+  // First half of exact-handle activation. Re-resolves the same node, validates
+  // its current local visibility/hit target, and chooses an internal point for
+  // browser-compositor OOPIF hit testing. The point is never exposed publicly.
+  VimbrowserPrepareElementActivation(
+      DocumentToken expected_document,
+      int32 dom_node_id)
+      => (VimbrowserElementActivationResult result,
+          gfx.mojom.PointF point_in_local_root);
+
+  // For a same-widget descendant frame, independently hit-tests from the
+  // local root so that content in an ancestor document cannot cover the exact
+  // inspected node. The browser still performs compositor hit testing first.
+  VimbrowserValidateDescendantElementHit(
+      DocumentToken expected_local_root_document,
+      blink.mojom.LocalFrameToken target_frame,
+      DocumentToken expected_target_document,
+      int32 dom_node_id,
+      gfx.mojom.PointF expected_point)
+      => (VimbrowserElementActivationResult result);
+
+  // Second half of exact-handle activation. Repeats node/document/local-hit
+  // validation at the browser-approved point and dispatches the trusted click
+  // while the chooser nonce is scoped to that exact document.
+  VimbrowserActivatePreparedElement(
+      DocumentToken expected_document,
+      int32 dom_node_id,
+      gfx.mojom.PointF expected_point,
+      mojo_base.mojom.UnguessableToken activation_nonce)
+      => (VimbrowserElementActivationResult result);
 
   // Notifies this frame to clear the focused element (if any).
   ClearFocusedElement();

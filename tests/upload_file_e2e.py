@@ -79,6 +79,69 @@ document.querySelector('#fsa-button').addEventListener('click', async () => {
 </script>
 """
 
+OOPIF_PICKER = """<!doctype html>
+<meta charset="utf-8">
+<title>cross-origin picker fixture</title>
+<section id="drive-section">
+  <h2>Choose an existing Drive file</h2>
+  <button id="drive-browse">Browse</button>
+  <output id="drive-result">idle</output>
+</section>
+<section id="computer-section">
+  <h2>Upload files from your computer</h2>
+  <button id="computer-browse">Browse</button>
+  <output id="computer-result">idle</output>
+</section>
+<script>
+function installPicker(buttonId, resultId) {
+  document.querySelector(buttonId).addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,application/pdf';
+    input.hidden = true;
+    input.addEventListener('change', () => {
+      document.querySelector(resultId).textContent =
+          input.files.length ? input.files[0].name : 'empty';
+      input.remove();
+    }, {once: true});
+    input.addEventListener('cancel', () => {
+      document.querySelector(resultId).textContent = 'canceled';
+      input.remove();
+    }, {once: true});
+    document.body.append(input);
+    input.click();
+  });
+}
+installPicker('#drive-browse', '#drive-result');
+installPicker('#computer-browse', '#computer-result');
+</script>
+"""
+
+SAME_PROCESS_PICKER = """<!doctype html>
+<meta charset="utf-8">
+<title>same-process picker fixture</title>
+<section>
+  <h2>Upload from this embedded form</h2>
+  <button id="same-process-browse">Browse</button>
+  <output id="same-process-result">idle</output>
+</section>
+<script>
+document.querySelector('#same-process-browse').addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,application/pdf';
+  input.hidden = true;
+  input.addEventListener('change', () => {
+    document.querySelector('#same-process-result').textContent =
+        input.files.length ? input.files[0].name : 'empty';
+    input.remove();
+  }, {once: true});
+  document.body.append(input);
+  input.click();
+});
+</script>
+"""
+
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:
@@ -120,8 +183,14 @@ class UploadFileEndToEndTests(unittest.TestCase):
         cls.root = Path(cls.tempdir.name)
         cls.profile = cls.root / "profile"
         cls.socket_path = cls.profile / "ipc.sock"
+        cls.browser_log_path = cls.root / "browser-stderr.log"
+        cls.browser_log = cls.browser_log_path.open("wb")
         cls.page = cls.root / "upload-form.html"
         cls.page.write_text(UPLOAD_FORM, encoding="utf-8")
+        cls.picker = cls.root / "picker.html"
+        cls.picker.write_text(OOPIF_PICKER, encoding="utf-8")
+        cls.same_process_picker = cls.root / "same-process-picker.html"
+        cls.same_process_picker.write_text(SAME_PROCESS_PICKER, encoding="utf-8")
         cls.first = cls.root / "first file.txt"
         cls.second = cls.root / "second.txt"
         cls.bad_type = cls.root / "not-text.png"
@@ -138,11 +207,25 @@ class UploadFileEndToEndTests(unittest.TestCase):
         cls.http_thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
         cls.http_thread.start()
         cls.page_url = f"http://127.0.0.1:{cls.httpd.server_port}/{cls.page.name}"
+        cls.picker_url = f"http://localhost:{cls.httpd.server_port}/{cls.picker.name}"
+        cls.same_process_picker_url = (
+            f"http://127.0.0.1:{cls.httpd.server_port}/"
+            f"{cls.same_process_picker.name}"
+        )
+        cls.page.write_text(
+            UPLOAD_FORM
+            + f'\n<iframe id="cross-origin-picker" src="{cls.picker_url}" '
+              'style="width:700px;height:420px"></iframe>\n'
+            + f'<iframe id="same-process-picker" src="{cls.same_process_picker_url}" '
+              'style="width:700px;height:220px"></iframe>\n',
+            encoding="utf-8",
+        )
 
         cls.browser = subprocess.Popen(
             [
                 str(BINARY),
                 "--disable-gpu",
+                "--site-per-process",
                 "--remote-debugging-port=0",
                 f"--profile-dir={cls.profile}",
                 cls.page_url,
@@ -150,7 +233,7 @@ class UploadFileEndToEndTests(unittest.TestCase):
             cwd=BINARY.parent,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=cls.browser_log,
             start_new_session=True,
         )
         deadline = time.monotonic() + 20
@@ -194,6 +277,9 @@ class UploadFileEndToEndTests(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 os.killpg(browser.pid, signal.SIGKILL)
                 browser.wait(timeout=5)
+        browser_log = getattr(cls, "browser_log", None)
+        if browser_log:
+            browser_log.close()
         tempdir = getattr(cls, "tempdir", None)
         if tempdir:
             cls.httpd.shutdown()
@@ -220,6 +306,16 @@ class UploadFileEndToEndTests(unittest.TestCase):
             timeout=8,
             check=False,
         )
+
+    @classmethod
+    def browser_log_tail(cls) -> str:
+        log = getattr(cls, "browser_log", None)
+        if log:
+            log.flush()
+        path = getattr(cls, "browser_log_path", None)
+        if not path or not path.exists():
+            return ""
+        return path.read_text(encoding="utf-8", errors="replace")[-8192:]
 
     def upload(self, target: str, *paths: Path) -> subprocess.CompletedProcess[str]:
         return self.run_cli(
@@ -252,6 +348,35 @@ class UploadFileEndToEndTests(unittest.TestCase):
                 return chooser
             time.sleep(0.05)
         self.fail(f"timed out waiting for chooser state {expected!r}: {chooser!r}")
+
+    def frame_tree(self) -> dict:
+        result = self.run_cli("frame-tree", str(self.tabid))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def frame_id_for_url(self, url: str, *, out_of_process: bool) -> str:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            tree = self.frame_tree()
+            matches = [
+                frame for frame in tree["frames"]
+                if frame.get("url", "").startswith(url)
+            ]
+            if len(matches) == 1:
+                self.assertEqual(
+                    matches[0]["out_of_process"], out_of_process, matches[0]
+                )
+                return matches[0]["id"]
+            time.sleep(0.05)
+        self.fail(f"picker frame for {url!r} was not uniquely available")
+
+    def picker_frame_id(self) -> str:
+        return self.frame_id_for_url(self.picker_url, out_of_process=True)
+
+    def frame_js_result(self, frame_id: str, expression: str):
+        result = self.run_cli("frame-js", str(self.tabid), frame_id, expression)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)["result"]
 
     def trusted_activation_point(self, selector: str) -> dict:
         if not XENV_INSTANCE:
@@ -428,6 +553,121 @@ JSON.stringify((() => {{
         self.wait_for_js_result(
             "document.querySelector('#fsa-result').textContent", self.resume.name
         )
+
+    def test_exact_handle_uploads_through_cross_origin_picker(self) -> None:
+        frame_id = self.picker_frame_id()
+        tree = self.frame_tree()
+        child = next(frame for frame in tree["frames"] if frame["id"] == frame_id)
+        self.assertEqual(child["parent_id"], tree["main_frame_id"])
+
+        ambiguous = self.run_cli(
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--role", "button", "--name-exact", "Browse", "--limit", "1",
+            "--require-one",
+        )
+        self.assertEqual(ambiguous.returncode, 1, ambiguous.stderr)
+        ambiguous_payload = json.loads(ambiguous.stdout)
+        self.assertEqual(
+            ambiguous_payload["error"]["code"], "ambiguous_target",
+            ambiguous.stdout + "\n" + self.browser_log_tail(),
+        )
+        self.assertIn("inspection", ambiguous_payload, ambiguous.stdout)
+        self.assertEqual(ambiguous_payload["inspection"]["match_count"], 2)
+        self.assertEqual(ambiguous_payload["inspection"]["returned_count"], 1)
+        self.assertTrue(ambiguous_payload["inspection"]["truncated"])
+
+        exact = self.run_cli(
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--role", "button", "--name-exact", "Browse",
+            "--context-contains", "Upload files from your computer",
+            "--require-one",
+        )
+        self.assertEqual(exact.returncode, 0, exact.stderr)
+        controls = json.loads(exact.stdout)["inspection"]["controls"]
+        self.assertEqual(len(controls), 1)
+        handle = controls[0]["handle"]
+
+        # Add an identical-looking decoy after inspection. Exact-node activation
+        # must still activate the originally inspected node, not re-run a selector.
+        self.assertTrue(self.frame_js_result(
+            frame_id,
+            "(()=>{const b=document.querySelector('#computer-browse');"
+            "const c=b.cloneNode(true);c.id='late-decoy';"
+            "b.before(c);return true})()",
+        ))
+        result = self.upload(f"handle:{handle}", self.resume)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["target"]["kind"], "handle")
+        self.assertEqual(payload["chooser"]["state"], "consumed")
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            value = self.frame_js_result(
+                frame_id,
+                "document.querySelector('#computer-result').textContent",
+            )
+            if value == self.resume.name:
+                break
+            time.sleep(0.05)
+        else:
+            self.fail("exact OOPIF handle did not upload to the intended control")
+        self.assertEqual(
+            self.frame_js_result(
+                frame_id, "document.querySelector('#drive-result').textContent"
+            ),
+            "idle",
+        )
+
+        replay = self.upload(f"handle:{handle}", self.resume)
+        self.assertEqual(replay.returncode, 1)
+        self.assertEqual(json.loads(replay.stdout)["error"]["code"], "invalid_handle")
+
+    def test_exact_handle_uploads_through_same_process_picker(self) -> None:
+        frame_id = self.frame_id_for_url(
+            self.same_process_picker_url, out_of_process=False
+        )
+        inspect_args = (
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--role", "button", "--name-exact", "Browse", "--require-one",
+        )
+
+        covered = self.run_cli(*inspect_args)
+        self.assertEqual(covered.returncode, 0, covered.stderr)
+        covered_handle = json.loads(covered.stdout)["inspection"]["controls"][0][
+            "handle"
+        ]
+        self.assertTrue(self.js_result(
+            "(()=>{const f=document.querySelector('#same-process-picker');"
+            "const r=f.getBoundingClientRect();const c=document.createElement('div');"
+            "c.id='same-process-cover';c.style.cssText=`position:fixed;left:${r.left}px;"
+            "top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:2147483647;"
+            "background:rgba(255,0,0,.1)`;document.body.append(c);return true})()"
+        ))
+        try:
+            obscured = self.upload(f"handle:{covered_handle}", self.resume)
+            self.assertEqual(obscured.returncode, 1)
+            self.assertEqual(
+                json.loads(obscured.stdout)["error"]["code"], "target_obscured"
+            )
+        finally:
+            self.js_result("document.querySelector('#same-process-cover')?.remove()")
+
+        exact = self.run_cli(*inspect_args)
+        self.assertEqual(exact.returncode, 0, exact.stderr)
+        handle = json.loads(exact.stdout)["inspection"]["controls"][0]["handle"]
+        result = self.upload(f"handle:{handle}", self.resume)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            value = self.frame_js_result(
+                frame_id,
+                "document.querySelector('#same-process-result').textContent",
+            )
+            if value == self.resume.name:
+                break
+            time.sleep(0.05)
+        else:
+            self.fail("exact same-process frame handle did not upload")
 
     def test_atomic_activation_accepts_a_hit_child_of_selected_control(self) -> None:
         name = "child-hit"
@@ -631,6 +871,47 @@ JSON.stringify((() => {{
         )
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["error"]["code"], "invalid_payload")
+
+    def test_z_backend_deadlines_release_stalled_renderer_operations(self) -> None:
+        frame_id = self.picker_frame_id()
+        inspected = self.run_cli(
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--role", "button", "--name-exact", "Browse",
+            "--context-contains", "Choose an existing Drive file",
+            "--require-one",
+        )
+        self.assertEqual(inspected.returncode, 0, inspected.stderr)
+        handle = json.loads(inspected.stdout)["inspection"]["controls"][0]["handle"]
+
+        scheduled = self.frame_js_result(
+            frame_id,
+            "(()=>{setTimeout(()=>{while(true){}},50);return true})()",
+        )
+        self.assertTrue(scheduled)
+        time.sleep(0.15)
+
+        started = time.monotonic()
+        activation = self.upload(f"handle:{handle}", self.resume)
+        activation_elapsed = time.monotonic() - started
+        self.assertEqual(activation.returncode, 1)
+        self.assertEqual(
+            json.loads(activation.stdout)["error"]["code"],
+            "activation_backend_unavailable",
+        )
+        self.assertLess(activation_elapsed, 4.0)
+
+        started = time.monotonic()
+        inspection = self.run_cli(
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--name-exact", "Browse",
+        )
+        inspection_elapsed = time.monotonic() - started
+        self.assertEqual(inspection.returncode, 1)
+        self.assertEqual(
+            json.loads(inspection.stdout)["error"]["code"],
+            "inspection_backend_unavailable",
+        )
+        self.assertLess(inspection_elapsed, 4.0)
 
 
 def main() -> None:

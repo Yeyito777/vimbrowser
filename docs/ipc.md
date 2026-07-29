@@ -427,6 +427,35 @@ thread instead of the UI thread. The file is limited to 1 MiB; terminals,
 devices, FIFOs, and other non-regular paths (including `/dev/stdin`) are rejected
 so a malformed automation command cannot hang the browser.
 
+#### Exact frame inspection
+
+`frame-tree <tabid>` returns the current primary frame tree with opaque CEF
+frame identifiers, parentage, URL/name, depth, focus, and whether each child is
+an out-of-process iframe. It does not activate or focus anything.
+
+`frame-html <tabid> <frameid>`, `frame-text <tabid> <frameid>`, and
+`frame-js <tabid> <frameid> <javascript>` are exact-frame counterparts of the
+main-document commands. The browser resolves the identifier against that tab;
+stale or cross-tab identifiers are rejected. This gives agent tooling explicit
+OOPIF addressability rather than pretending every tab has only one document.
+
+`inspect-controls <tabid> <base64-v1-json-query>` performs read-only native
+inspection of click candidates in one exact frame. The query contains the frame
+ID plus optional exact computed role/name and bounded surrounding-text filters.
+It returns every match up to a strict limit with role/name/tag/type/id/text and
+context metadata, but never form values, DOM node IDs, renderer process IDs, or
+coordinates. Each match receives a random `eh1_...` handle valid for 15 seconds.
+Inspection never chooses or activates the first match; clients should reject
+zero or multiple results when they require one target.
+
+Handles are browser-owned one-shot capabilities bound to the exact browser,
+`GlobalRenderFrameHostToken`, `DocumentToken`, and renderer-private DOM node ID.
+An identical replacement element cannot inherit a handle. Activation consumes
+the capability before validation and rejects expiration, replay, frame/document
+navigation, node removal/replacement, disabling, visibility changes, local hit
+changes, and OOPIF compositor-target mismatches. The internal activation point
+is selected by Blink and never crosses the public IPC boundary.
+
 #### `upload-file <tabid> <base64-v1-json-payload>`
 
 Securely assigns explicit local files to one `<input type=file>` or atomically
@@ -453,6 +482,11 @@ paths are not corrupted by the protocol's whitespace framing:
   and supplies the open-file chooser produced by that activation. The IPC reply
   is held until the chooser is consumed or the short activation deadline
   expires; no platform file-picker window is shown.
+- `handle`: `value` is a short-lived exact-node capability returned by
+  `inspect-controls`. This is the preferred path for controls inside
+  cross-origin/OOPIF documents. Chromium revalidates the stored frame,
+  document, node, local hit target, and compositor hit target before dispatch.
+  A handle is one-shot even if activation fails.
 - `chooser`: arms the next browser-native open-file chooser request from the
   specified tab for 60 seconds; this target has no `value`
 
@@ -490,6 +524,23 @@ System Access API from its click handler, use atomic native activation:
 vimbrowser-cli upload-file @active \
   'activate:#browse-resume' /absolute/path/resume.pdf
 ```
+
+For a cross-origin picker, inspect rather than guessing:
+
+```sh
+vimbrowser-cli frame-tree @active --pretty
+vimbrowser-cli inspect-controls @active --frame FRAME_ID \
+  --role button --name-exact Browse \
+  --context-contains 'Upload files' --require-one --pretty
+vimbrowser-cli upload-file @active \
+  'handle:eh1_HANDLE_FROM_INSPECTION' /absolute/path/resume.pdf
+```
+
+The handle upload arms the chooser before activating the exact stored node and
+uses the same causal nonce as main-document atomic activation. An unrelated
+chooser cannot consume the files. Same-process child-frame activation fails
+closed when Chromium cannot independently prove the ancestor compositor target;
+OOPIFs use Chromium's input-event router for that proof.
 
 This is a single IPC transaction. The customized Chromium backend resolves one
 visible selector match in the current main document, verifies that the native

@@ -41,6 +41,32 @@ extern "C" bool vimbrowser_activate_element_by_selector(
     uint64_t* activation_nonce_low,
     void (*callback)(void* user_data, int result, int match_count),
     void* user_data);
+extern "C" bool vimbrowser_frame_is_out_of_process(
+    int browser_id,
+    const char* frame_identifier,
+    size_t frame_identifier_size);
+extern "C" bool vimbrowser_inspect_frame_controls(
+    int browser_id,
+    const char* frame_identifier,
+    size_t frame_identifier_size,
+    const char* role,
+    size_t role_size,
+    const char* exact_name,
+    size_t exact_name_size,
+    const char* context_contains,
+    size_t context_contains_size,
+    uint32_t limit,
+    void (*callback)(void* user_data, int result, const char* json,
+                     size_t json_size),
+    void* user_data);
+extern "C" bool vimbrowser_activate_element_handle(
+    int browser_id,
+    const char* handle,
+    size_t handle_size,
+    uint64_t* activation_nonce_high,
+    uint64_t* activation_nonce_low,
+    void (*callback)(void* user_data, int result, int match_count),
+    void* user_data);
 
 namespace vimbrowser {
 namespace {
@@ -65,14 +91,29 @@ enum class VimbrowserElementActivationResult {
   kTargetObscured = 6,
   kActivationIgnored = 7,
   kBackendUnavailable = 8,
+  kInvalidHandle = 9,
+  kExpiredHandle = 10,
+  kStaleFrame = 11,
+  kStaleDocument = 12,
+  kStaleNode = 13,
+  kTargetDisabled = 14,
 };
 
 struct UploadFileRequest {
   uint64_t tab_id = 0;
   std::string target_kind;
   std::string selector;
+  std::string handle;
   int input_index = -1;
   std::vector<std::string> paths;
+};
+
+struct InspectControlsRequest {
+  std::string frame_id;
+  std::string role;
+  std::string exact_name;
+  std::string context_contains;
+  uint32_t limit = 100;
 };
 
 struct UploadFileValidation {
@@ -163,9 +204,18 @@ bool DecodeUploadFilePayload(const std::string& encoded,
   } else if (request->target_kind == "chooser") {
     // The target is the next browser-native open-file chooser from this tab.
     // There is deliberately no selector or renderer-provided path in this mode.
+  } else if (request->target_kind == "handle") {
+    if (target->GetType("value") != VTYPE_STRING) {
+      return fail("invalid_target", "inspected target handle must be a string");
+    }
+    request->handle = target->GetString("value").ToString();
+    if (!request->handle.starts_with("eh1_") ||
+        request->handle.size() > 128) {
+      return fail("invalid_target", "inspected target handle is malformed");
+    }
   } else {
     return fail("invalid_target",
-                "upload target kind must be css, index, activate, or chooser");
+                "upload target kind must be css, index, activate, handle, or chooser");
   }
 
   CefRefPtr<CefListValue> paths = root->GetList("paths");
@@ -182,6 +232,71 @@ bool DecodeUploadFilePayload(const std::string& encoded,
       return fail("invalid_path", "an upload path is empty or too long");
     }
     request->paths.push_back(std::move(path));
+  }
+  return true;
+}
+
+bool DecodeInspectControlsPayload(const std::string& encoded,
+                                  InspectControlsRequest* request,
+                                  std::string* error) {
+  auto fail = [error](std::string_view code, std::string_view message) {
+    if (error) {
+      *error = UploadFileErrorJson(code, message);
+    }
+    return false;
+  };
+  if (!request || encoded.empty() || encoded.size() > 16384) {
+    return fail("invalid_payload", "inspection payload is missing or too large");
+  }
+  CefRefPtr<CefBinaryValue> decoded = CefBase64Decode(encoded);
+  if (!decoded || decoded->GetSize() == 0 || decoded->GetSize() > 8192) {
+    return fail("invalid_payload", "inspection payload is not valid base64");
+  }
+  std::vector<char> bytes(decoded->GetSize());
+  if (decoded->GetData(bytes.data(), bytes.size(), 0) != bytes.size()) {
+    return fail("invalid_payload", "inspection payload could not be decoded");
+  }
+  CefRefPtr<CefValue> value =
+      CefParseJSON(bytes.data(), bytes.size(), JSON_PARSER_RFC);
+  if (!value || value->GetType() != VTYPE_DICTIONARY) {
+    return fail("invalid_payload", "inspection payload is not a JSON object");
+  }
+  CefRefPtr<CefDictionaryValue> root = value->GetDictionary();
+  if (!root || root->GetType("version") != VTYPE_INT ||
+      root->GetInt("version") != 1 ||
+      root->GetType("frame_id") != VTYPE_STRING ||
+      root->GetType("filter") != VTYPE_DICTIONARY) {
+    return fail("invalid_payload", "inspection payload has an unsupported schema");
+  }
+  request->frame_id = root->GetString("frame_id").ToString();
+  if (request->frame_id.empty() || request->frame_id.size() > 256) {
+    return fail("invalid_frame", "inspection frame identifier is invalid");
+  }
+  CefRefPtr<CefDictionaryValue> filter = root->GetDictionary("filter");
+  auto optional_string = [&](const char* key, size_t max,
+                             std::string* output) -> bool {
+    if (!filter->HasKey(key)) {
+      output->clear();
+      return true;
+    }
+    if (filter->GetType(key) != VTYPE_STRING) {
+      return false;
+    }
+    *output = filter->GetString(key).ToString();
+    return output->size() <= max;
+  };
+  if (!optional_string("role", 128, &request->role) ||
+      !optional_string("exact_name", 256, &request->exact_name) ||
+      !optional_string("context_contains", 512,
+                       &request->context_contains)) {
+    return fail("invalid_filter", "inspection filter is invalid or too long");
+  }
+  if (root->HasKey("limit")) {
+    if (root->GetType("limit") != VTYPE_INT || root->GetInt("limit") < 1 ||
+        root->GetInt("limit") > 100) {
+      return fail("invalid_limit", "inspection limit must be between 1 and 100");
+    }
+    request->limit = static_cast<uint32_t>(root->GetInt("limit"));
   }
   return true;
 }
@@ -967,6 +1082,13 @@ struct FileChooserActivationContext {
   uint64_t generation = 0;
 };
 
+struct InspectControlsContext {
+  uint64_t tab_id = 0;
+  std::string frame_id;
+  std::string frame_url;
+  IpcReplyCallback reply;
+};
+
 }  // namespace
 
 std::string BrowserWindow::ArmFileChooserUpload(
@@ -994,6 +1116,7 @@ std::string BrowserWindow::ArmFileChooserUpload(
   file_chooser_upload_.error_file_index = -1;
   file_chooser_upload_.dialog_mode = FILE_DIALOG_NUM_VALUES;
   file_chooser_upload_.automatic_activation = false;
+  file_chooser_upload_.activation_kind.clear();
   file_chooser_upload_.activation_selector.clear();
   file_chooser_upload_.activation_match_count = 0;
   file_chooser_upload_.activation_nonce_high = 0;
@@ -1044,6 +1167,7 @@ void BrowserWindow::StartFileChooserActivationUpload(
   file_chooser_upload_.error_file_index = -1;
   file_chooser_upload_.dialog_mode = FILE_DIALOG_NUM_VALUES;
   file_chooser_upload_.automatic_activation = true;
+  file_chooser_upload_.activation_kind = "activate";
   file_chooser_upload_.activation_selector = std::move(selector);
   // A successful exact-target activation necessarily has one match. The backend
   // callback will replace this value for structured zero/ambiguous failures.
@@ -1078,6 +1202,83 @@ void BrowserWindow::StartFileChooserActivationUpload(
     file_chooser_upload_.error_code = "activation_backend_unavailable";
     file_chooser_upload_.error_message =
         "custom Chromium element activation backend is unavailable";
+    ReplyToAutomaticFileChooserUpload(false);
+    return;
+  }
+
+  CefRefPtr<BrowserWindow> self = this;
+  CefPostDelayedTask(
+      TID_UI,
+      base::BindOnce(&BrowserWindow::ExpireFileChooserUpload, self,
+                     file_chooser_upload_.generation),
+      kAutomaticUploadChooserTimeoutMs);
+}
+
+void BrowserWindow::StartFileChooserHandleUpload(
+    uint64_t tab_id,
+    std::string handle,
+    std::vector<std::string> paths,
+    IpcReplyCallback reply) {
+  if (file_chooser_upload_.phase == FileChooserUploadPhase::kArmed ||
+      file_chooser_upload_.phase == FileChooserUploadPhase::kValidating) {
+    reply(UploadFileErrorJson(
+        "chooser_already_armed",
+        "a file chooser upload is already armed; cancel it explicitly first"));
+    return;
+  }
+  std::string browser_error;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &browser_error);
+  if (!browser || !browser->GetHost()) {
+    reply(UploadFileErrorJson("tab_unavailable",
+                              "tab has no live browser backend"));
+    return;
+  }
+
+  ++file_chooser_upload_.generation;
+  file_chooser_upload_.phase = FileChooserUploadPhase::kArmed;
+  file_chooser_upload_.tab_id = tab_id;
+  file_chooser_upload_.file_count = paths.size();
+  file_chooser_upload_.paths = std::move(paths);
+  file_chooser_upload_.expires_at =
+      std::chrono::steady_clock::now() +
+      std::chrono::milliseconds(kAutomaticUploadChooserTimeoutMs);
+  file_chooser_upload_.error_code.clear();
+  file_chooser_upload_.error_message.clear();
+  file_chooser_upload_.error_file_index = -1;
+  file_chooser_upload_.dialog_mode = FILE_DIALOG_NUM_VALUES;
+  file_chooser_upload_.automatic_activation = true;
+  file_chooser_upload_.activation_kind = "handle";
+  file_chooser_upload_.activation_selector.clear();
+  file_chooser_upload_.activation_match_count = 1;
+  file_chooser_upload_.activation_nonce_high = 0;
+  file_chooser_upload_.activation_nonce_low = 0;
+  file_chooser_upload_.chooser_callback = nullptr;
+  file_chooser_upload_.completion_reply = std::move(reply);
+
+  auto context = std::make_unique<FileChooserActivationContext>();
+  context->owner = this;
+  context->generation = file_chooser_upload_.generation;
+  auto* context_ptr = context.release();
+  const bool started = vimbrowser_activate_element_handle(
+      browser->GetIdentifier(), handle.data(), handle.size(),
+      &file_chooser_upload_.activation_nonce_high,
+      &file_chooser_upload_.activation_nonce_low,
+      +[](void* user_data, int result, int match_count) {
+        std::unique_ptr<FileChooserActivationContext> context(
+            static_cast<FileChooserActivationContext*>(user_data));
+        if (context && context->owner) {
+          context->owner->FinishFileChooserElementActivation(
+              context->generation, result, match_count);
+        }
+      },
+      context_ptr);
+  if (!started) {
+    delete context_ptr;
+    file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
+    file_chooser_upload_.paths.clear();
+    file_chooser_upload_.error_code = "activation_backend_unavailable";
+    file_chooser_upload_.error_message =
+        "custom Chromium element-handle backend is unavailable";
     ReplyToAutomaticFileChooserUpload(false);
     return;
   }
@@ -1226,6 +1427,36 @@ void BrowserWindow::FinishFileChooserElementActivation(uint64_t generation,
       file_chooser_upload_.error_message =
           "Blink did not dispatch the requested element activation";
       break;
+    case VimbrowserElementActivationResult::kInvalidHandle:
+      file_chooser_upload_.error_code = "invalid_handle";
+      file_chooser_upload_.error_message =
+          "inspected element handle is unknown or already consumed";
+      break;
+    case VimbrowserElementActivationResult::kExpiredHandle:
+      file_chooser_upload_.error_code = "expired_handle";
+      file_chooser_upload_.error_message =
+          "inspected element handle expired before activation";
+      break;
+    case VimbrowserElementActivationResult::kStaleFrame:
+      file_chooser_upload_.error_code = "stale_frame";
+      file_chooser_upload_.error_message =
+          "inspected element frame is no longer active";
+      break;
+    case VimbrowserElementActivationResult::kStaleDocument:
+      file_chooser_upload_.error_code = "stale_document";
+      file_chooser_upload_.error_message =
+          "inspected element document changed before activation";
+      break;
+    case VimbrowserElementActivationResult::kStaleNode:
+      file_chooser_upload_.error_code = "stale_node";
+      file_chooser_upload_.error_message =
+          "inspected element was removed or replaced before activation";
+      break;
+    case VimbrowserElementActivationResult::kTargetDisabled:
+      file_chooser_upload_.error_code = "target_disabled";
+      file_chooser_upload_.error_message =
+          "inspected element became disabled before activation";
+      break;
     case VimbrowserElementActivationResult::kBackendUnavailable:
     default:
       file_chooser_upload_.error_code = "activation_backend_unavailable";
@@ -1274,7 +1505,10 @@ void BrowserWindow::ReplyToAutomaticFileChooserUpload(bool success) {
   std::ostringstream out;
   out << "{\"ok\":true,\"tabid\":" << file_chooser_upload_.tab_id
       << ",\"file_count\":" << file_chooser_upload_.file_count
-      << ",\"target\":{\"kind\":\"activate\",\"match_count\":"
+      << ",\"target\":{\"kind\":\""
+      << (file_chooser_upload_.activation_kind == "handle" ? "handle"
+                                                            : "activate")
+      << "\",\"match_count\":"
       << file_chooser_upload_.activation_match_count
       << "},\"chooser\":{\"state\":\"consumed\",\"dialog_mode\":\""
       << dialog_mode << "\"}}";
@@ -1544,7 +1778,125 @@ void BrowserWindow::CompleteJsIpcRequest(uint64_t request_id, std::string respon
   reply(std::move(response));
 }
 
+std::string BrowserWindow::FrameTreeJson(uint64_t tab_id) const {
+  std::string error;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error);
+  if (!browser) {
+    return UploadFileErrorJson("tab_unavailable",
+                               "tab has no live browser backend");
+  }
+  std::vector<CefString> frame_ids;
+  browser->GetFrameIdentifiers(frame_ids);
+  CefRefPtr<CefFrame> main = browser->GetMainFrame();
+  std::ostringstream out;
+  out << "{\"ok\":true,\"tabid\":" << tab_id << ",\"main_frame_id\":\""
+      << JsonEscape(main ? main->GetIdentifier().ToString() : std::string())
+      << "\",\"frames\":[";
+  bool first = true;
+  for (const CefString& id : frame_ids) {
+    CefRefPtr<CefFrame> frame = browser->GetFrameByIdentifier(id);
+    if (!frame || !frame->IsValid()) {
+      continue;
+    }
+    CefRefPtr<CefFrame> parent = frame->GetParent();
+    int depth = 0;
+    for (CefRefPtr<CefFrame> current = parent; current && depth < 64;
+         current = current->GetParent()) {
+      ++depth;
+    }
+    if (!first) {
+      out << ',';
+    }
+    first = false;
+    const std::string frame_id = id.ToString();
+    out << "{\"id\":\"" << JsonEscape(frame_id)
+        << "\",\"parent_id\":";
+    if (parent) {
+      out << "\"" << JsonEscape(parent->GetIdentifier().ToString()) << "\"";
+    } else {
+      out << "null";
+    }
+    out << ",\"name\":\"" << JsonEscape(frame->GetName().ToString())
+        << "\",\"url\":\"" << JsonEscape(frame->GetURL().ToString())
+        << "\",\"main\":" << (frame->IsMain() ? "true" : "false")
+        << ",\"focused\":" << (frame->IsFocused() ? "true" : "false")
+        << ",\"depth\":" << depth << ",\"out_of_process\":"
+        << (vimbrowser_frame_is_out_of_process(
+                browser->GetIdentifier(), frame_id.data(), frame_id.size())
+                ? "true"
+                : "false")
+        << '}';
+  }
+  out << "]}";
+  return out.str();
+}
+
+void BrowserWindow::HandleInspectControlsIpcCommand(
+    uint64_t tab_id,
+    std::string encoded_query,
+    IpcReplyCallback reply) {
+  InspectControlsRequest request;
+  std::string payload_error;
+  if (!DecodeInspectControlsPayload(encoded_query, &request, &payload_error)) {
+    reply(std::move(payload_error));
+    return;
+  }
+  std::string browser_error;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &browser_error);
+  CefRefPtr<CefFrame> frame =
+      browser ? browser->GetFrameByIdentifier(request.frame_id) : nullptr;
+  if (!browser || !frame || !frame->IsValid()) {
+    reply(UploadFileErrorJson("stale_frame",
+                              "inspection frame is not active in this tab"));
+    return;
+  }
+
+  auto context = std::make_unique<InspectControlsContext>();
+  context->tab_id = tab_id;
+  context->frame_id = request.frame_id;
+  context->frame_url = frame->GetURL().ToString();
+  context->reply = std::move(reply);
+  auto* context_ptr = context.release();
+  const bool started = vimbrowser_inspect_frame_controls(
+      browser->GetIdentifier(), request.frame_id.data(), request.frame_id.size(),
+      request.role.data(), request.role.size(), request.exact_name.data(),
+      request.exact_name.size(), request.context_contains.data(),
+      request.context_contains.size(), request.limit,
+      +[](void* user_data, int result, const char* json, size_t json_size) {
+        std::unique_ptr<InspectControlsContext> context(
+            static_cast<InspectControlsContext*>(user_data));
+        if (!context || !context->reply) {
+          return;
+        }
+        if (result != 0) {
+          context->reply(UploadFileErrorJson(
+              result == 1 ? "stale_document" : "inspection_backend_unavailable",
+              result == 1
+                  ? "frame document changed or became unavailable during inspection"
+                  : "custom Chromium control inspection backend is unavailable"));
+          return;
+        }
+        const std::string inspection =
+            json && json_size ? std::string(json, json_size) : "{}";
+        std::ostringstream out;
+        out << "{\"ok\":true,\"tabid\":" << context->tab_id
+            << ",\"frame\":{\"id\":\""
+            << JsonEscape(context->frame_id) << "\",\"url\":\""
+            << JsonEscape(context->frame_url) << "\"},\"inspection\":"
+            << inspection << '}';
+        context->reply(out.str());
+      },
+      context_ptr);
+  if (!started) {
+    std::unique_ptr<InspectControlsContext> cleanup(context_ptr);
+    cleanup->reply(UploadFileErrorJson(
+        "inspection_backend_unavailable",
+        "custom Chromium control inspection backend is unavailable"));
+  }
+}
+
 void BrowserWindow::HandleHtmlIpcCommand(uint64_t tab_id,
+                                         std::string frame_id,
                                          bool text,
                                          IpcReplyCallback reply) {
   std::string error;
@@ -1553,9 +1905,11 @@ void BrowserWindow::HandleHtmlIpcCommand(uint64_t tab_id,
     reply(error);
     return;
   }
-  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+  CefRefPtr<CefFrame> frame = frame_id.empty()
+                                  ? browser->GetMainFrame()
+                                  : browser->GetFrameByIdentifier(frame_id);
   if (!frame) {
-    reply("ERR tab has no main frame\n");
+    reply("ERR tab has no requested frame\n");
     return;
   }
   CefRefPtr<IpcStringVisitor> visitor(new IpcStringVisitor(std::move(reply)));
@@ -1567,6 +1921,7 @@ void BrowserWindow::HandleHtmlIpcCommand(uint64_t tab_id,
 }
 
 void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
+                                       std::string frame_id,
                                        std::string code,
                                        IpcReplyCallback reply,
                                        int timeout_ms) {
@@ -1576,9 +1931,11 @@ void BrowserWindow::HandleJsIpcCommand(uint64_t tab_id,
     reply(error);
     return;
   }
-  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+  CefRefPtr<CefFrame> frame = frame_id.empty()
+                                  ? browser->GetMainFrame()
+                                  : browser->GetFrameByIdentifier(frame_id);
   if (!frame) {
-    reply("ERR tab has no main frame\n");
+    reply("ERR tab has no requested frame\n");
     return;
   }
 
@@ -1622,7 +1979,7 @@ void BrowserWindow::FinishJsFileForIpc(uint64_t tab_id,
     reply(std::move(error));
     return;
   }
-  HandleJsIpcCommand(tab_id, std::move(code), std::move(reply));
+  HandleJsIpcCommand(tab_id, {}, std::move(code), std::move(reply));
 }
 
 void BrowserWindow::HandleCookiesIpcCommand(uint64_t tab_id,
@@ -2722,10 +3079,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string& command_line) {
            "  zoom [tabid] <in|out|reset|level>\n"
            "  scroll <dy> [count]\n"
            "  scroll-tab <tabid> <dy> [count]\n"
+           "  frame-tree <tabid>\n"
+           "  inspect-controls <tabid> <base64-v1-json-query>\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
+           "  frame-html <tabid> <frameid>\n"
+           "  frame-text <tabid> <frameid>\n"
            "  screenshot <tabid>\n"
            "  js <tabid> <javascript>\n"
+           "  frame-js <tabid> <frameid> <javascript>\n"
            "  js-file <tabid> <path>\n"
            "  upload-file <tabid> <base64-v1-json-payload>\n"
            "  upload-file-status <tabid>\n"
@@ -2829,6 +3191,14 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
                                       std::move(reply));
                                   return;
                                 }
+                                if (request.target_kind == "handle") {
+                                  self->StartFileChooserHandleUpload(
+                                      request.tab_id,
+                                      std::move(request.handle),
+                                      std::move(request.paths),
+                                      std::move(reply));
+                                  return;
+                                }
                                 StartUploadFileAssignment(
                                     browser->GetHost(), std::move(request),
                                     std::move(reply));
@@ -2859,16 +3229,49 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
     return true;
   };
 
-  if (command == "html" || command == "text") {
+  if (command == "frame-tree") {
     if (argv.size() != 2) {
-      reply("ERR usage: html|text <tabid>\n");
+      reply(UploadFileErrorJson("invalid_usage",
+                                "usage: frame-tree <tabid>"));
       return;
     }
     uint64_t tab_id = 0;
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    HandleHtmlIpcCommand(tab_id, command == "text", std::move(reply));
+    reply(FrameTreeJson(tab_id));
+    return;
+  }
+
+  if (command == "inspect-controls") {
+    if (argv.size() != 3) {
+      reply(UploadFileErrorJson(
+          "invalid_usage",
+          "usage: inspect-controls <tabid> <base64-v1-json-query>"));
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleInspectControlsIpcCommand(tab_id, argv[2], std::move(reply));
+    return;
+  }
+
+  if (command == "html" || command == "text" ||
+      command == "frame-html" || command == "frame-text") {
+    const bool frame_specific = command.starts_with("frame-");
+    if (argv.size() != (frame_specific ? 3U : 2U)) {
+      reply("ERR usage: html|text <tabid> OR frame-html|frame-text <tabid> <frameid>\n");
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleHtmlIpcCommand(tab_id, frame_specific ? argv[2] : std::string(),
+                         command == "text" || command == "frame-text",
+                         std::move(reply));
     return;
   }
 
@@ -2885,16 +3288,19 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string& command_line,
     return;
   }
 
-  if (command == "js") {
-    if (argv.size() < 3) {
-      reply("ERR usage: js <tabid> <javascript>\n");
+  if (command == "js" || command == "frame-js") {
+    const bool frame_specific = command == "frame-js";
+    if (argv.size() < (frame_specific ? 4U : 3U)) {
+      reply("ERR usage: js <tabid> <javascript> OR frame-js <tabid> <frameid> <javascript>\n");
       return;
     }
     uint64_t tab_id = 0;
     if (!parse_tab_id(1, &tab_id)) {
       return;
     }
-    HandleJsIpcCommand(tab_id, JoinArgs(argv, 2), std::move(reply));
+    HandleJsIpcCommand(tab_id, frame_specific ? argv[2] : std::string(),
+                       JoinArgs(argv, frame_specific ? 3 : 2),
+                       std::move(reply));
     return;
   }
 

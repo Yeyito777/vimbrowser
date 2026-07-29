@@ -328,6 +328,7 @@ class BrowserWindow final : public CefWindowDelegate,
     int error_file_index = -1;
     cef_file_dialog_mode_t dialog_mode = FILE_DIALOG_NUM_VALUES;
     bool automatic_activation = false;
+    std::string activation_kind;
     std::string activation_selector;
     int activation_match_count = 0;
     uint64_t activation_nonce_high = 0;
@@ -441,8 +442,16 @@ class BrowserWindow final : public CefWindowDelegate,
   void AppendTabJson(std::string& out, const Tab& tab, size_t index) const;
   uint64_t ActiveTabId() const;
   void CompleteJsIpcRequest(uint64_t request_id, std::string response);
-  void HandleHtmlIpcCommand(uint64_t tab_id, bool text, IpcReplyCallback reply);
+  std::string FrameTreeJson(uint64_t tab_id) const;
+  void HandleInspectControlsIpcCommand(uint64_t tab_id,
+                                       std::string encoded_query,
+                                       IpcReplyCallback reply);
+  void HandleHtmlIpcCommand(uint64_t tab_id,
+                            std::string frame_id,
+                            bool text,
+                            IpcReplyCallback reply);
   void HandleJsIpcCommand(uint64_t tab_id,
+                          std::string frame_id,
                           std::string code,
                           IpcReplyCallback reply,
                           int timeout_ms = 10000);
@@ -476,6 +485,10 @@ class BrowserWindow final : public CefWindowDelegate,
                                         std::string selector,
                                         std::vector<std::string> paths,
                                         IpcReplyCallback reply);
+  void StartFileChooserHandleUpload(uint64_t tab_id,
+                                    std::string handle,
+                                    std::vector<std::string> paths,
+                                    IpcReplyCallback reply);
   std::string FileChooserUploadStatusJson(uint64_t tab_id) const;
   std::string CancelFileChooserUpload(uint64_t tab_id);
   void ExpireFileChooserUpload(uint64_t generation);

@@ -4,9 +4,11 @@
 
 #include "cef/libcef/browser/browser_host_base.h"
 
+#include <algorithm>
 #include <tuple>
 
 #include "base/logging.h"
+#include "base/unguessable_token.h"
 #include "cef/libcef/browser/browser_guest_util.h"
 #include "cef/libcef/browser/browser_info_manager.h"
 #include "cef/libcef/browser/browser_platform_delegate.h"
@@ -234,6 +236,64 @@ CefRefPtr<CefBrowserHostBase> CefBrowserHostBase::GetBrowserForBrowserId(
   }
 
   return nullptr;
+}
+
+std::string CefBrowserHostBase::RegisterVimbrowserElementHandle(
+    const content::GlobalRenderFrameHostToken& frame_token,
+    const blink::DocumentToken& document_token,
+    int dom_node_id) {
+  CEF_REQUIRE_UIT_RETURN(std::string());
+  const base::TimeTicks now = base::TimeTicks::Now();
+  for (auto it = vimbrowser_element_handles_.begin();
+       it != vimbrowser_element_handles_.end();) {
+    if (it->second.expires_at <= now) {
+      it = vimbrowser_element_handles_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  while (vimbrowser_element_handles_.size() >= 512) {
+    auto oldest = std::min_element(
+        vimbrowser_element_handles_.begin(), vimbrowser_element_handles_.end(),
+        [](const auto& left, const auto& right) {
+          return left.second.expires_at < right.second.expires_at;
+        });
+    if (oldest == vimbrowser_element_handles_.end()) {
+      break;
+    }
+    vimbrowser_element_handles_.erase(oldest);
+  }
+
+  std::string capability;
+  do {
+    capability =
+        "eh1_" + base::UnguessableToken::Create().ToString();
+  } while (vimbrowser_element_handles_.contains(capability));
+  vimbrowser_element_handles_.emplace(
+      capability,
+      VimbrowserElementHandle{frame_token, document_token, dom_node_id,
+                              now + base::Seconds(15)});
+  return capability;
+}
+
+CefBrowserHostBase::VimbrowserElementHandleResult
+CefBrowserHostBase::ConsumeVimbrowserElementHandle(
+    const std::string& capability,
+    VimbrowserElementHandle* handle) {
+  CEF_REQUIRE_UIT_RETURN(VimbrowserElementHandleResult::kInvalid);
+  auto it = vimbrowser_element_handles_.find(capability);
+  if (it == vimbrowser_element_handles_.end()) {
+    return VimbrowserElementHandleResult::kInvalid;
+  }
+  VimbrowserElementHandle value = it->second;
+  vimbrowser_element_handles_.erase(it);  // One-shot even when validation fails.
+  if (value.expires_at <= base::TimeTicks::Now()) {
+    return VimbrowserElementHandleResult::kExpired;
+  }
+  if (handle) {
+    *handle = std::move(value);
+  }
+  return VimbrowserElementHandleResult::kSuccess;
 }
 
 // static

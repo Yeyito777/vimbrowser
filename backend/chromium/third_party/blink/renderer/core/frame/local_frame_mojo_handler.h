@@ -125,6 +125,27 @@ class LocalFrameMojoHandler
       const DocumentToken& expected_document,
       const base::UnguessableToken& activation_nonce,
       VimbrowserActivateElementCallback callback) final;
+  void VimbrowserInspectControls(
+      const DocumentToken& expected_document,
+      mojom::blink::VimbrowserControlQueryPtr query,
+      VimbrowserInspectControlsCallback callback) final;
+  void VimbrowserPrepareElementActivation(
+      const DocumentToken& expected_document,
+      int32_t dom_node_id,
+      VimbrowserPrepareElementActivationCallback callback) final;
+  void VimbrowserValidateDescendantElementHit(
+      const DocumentToken& expected_local_root_document,
+      const LocalFrameToken& target_frame,
+      const DocumentToken& expected_target_document,
+      int32_t dom_node_id,
+      const gfx::PointF& expected_point,
+      VimbrowserValidateDescendantElementHitCallback callback) final;
+  void VimbrowserActivatePreparedElement(
+      const DocumentToken& expected_document,
+      int32_t dom_node_id,
+      const gfx::PointF& expected_point,
+      const base::UnguessableToken& activation_nonce,
+      VimbrowserActivatePreparedElementCallback callback) final;
   void ClearFocusedElement() final;
   void CopyImageAt(const gfx::Point& window_point) final;
   void SaveImageAt(const gfx::Point& window_point) final;

@@ -40,6 +40,40 @@ extern "C" bool vimbrowser_activate_element_by_selector(
   return false;
 }
 
+extern "C" bool vimbrowser_frame_is_out_of_process(
+    int,
+    const char*,
+    size_t) {
+  return false;
+}
+
+extern "C" bool vimbrowser_inspect_frame_controls(
+    int,
+    const char*,
+    size_t,
+    const char*,
+    size_t,
+    const char*,
+    size_t,
+    const char*,
+    size_t,
+    uint32_t,
+    void (*)(void*, int, const char*, size_t),
+    void*) {
+  return false;
+}
+
+extern "C" bool vimbrowser_activate_element_handle(
+    int,
+    const char*,
+    size_t,
+    uint64_t*,
+    uint64_t*,
+    void (*)(void*, int, int),
+    void*) {
+  return false;
+}
+
 extern "C" bool vimbrowser_get_current_file_dialog_activation_nonce(
     int,
     uint64_t*,

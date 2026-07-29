@@ -6,9 +6,13 @@
 #define CEF_LIBCEF_BROWSER_BROWSER_HOST_BASE_H_
 #pragma once
 
+#include <map>
+#include <string>
+
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/synchronization/lock.h"
+#include "base/time/time.h"
 #include "cef/include/cef_browser.h"
 #include "cef/include/cef_client.h"
 #include "cef/include/cef_unresponsive_process_callback.h"
@@ -24,6 +28,8 @@
 #include "cef/libcef/browser/media_stream_registrar.h"
 #include "cef/libcef/browser/request_context_impl.h"
 #include "components/find_in_page/find_notification_details.h"
+#include "content/public/browser/global_routing_id.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 
 class RenderViewContextMenuObserver;
 
@@ -154,6 +160,30 @@ class CefBrowserHostBase : public CefBrowserHost,
       gfx::NativeWindow owning_window);
   // Returns the browser associated with the specified browser ID.
   static CefRefPtr<CefBrowserHostBase> GetBrowserForBrowserId(int browser_id);
+
+  struct VimbrowserElementHandle {
+    content::GlobalRenderFrameHostToken frame_token;
+    blink::DocumentToken document_token;
+    int dom_node_id = 0;
+    base::TimeTicks expires_at;
+  };
+
+  enum class VimbrowserElementHandleResult {
+    kSuccess,
+    kInvalid,
+    kExpired,
+  };
+
+  // Registers/consumes a short-lived, one-shot browser-owned capability for an
+  // exact DOM node. These methods are private vimbrowser backend plumbing and
+  // must be called on Chromium's UI thread.
+  std::string RegisterVimbrowserElementHandle(
+      const content::GlobalRenderFrameHostToken& frame_token,
+      const blink::DocumentToken& document_token,
+      int dom_node_id);
+  VimbrowserElementHandleResult ConsumeVimbrowserElementHandle(
+      const std::string& capability,
+      VimbrowserElementHandle* handle);
 
   // Returns the browser most likely to be focused. This may be somewhat iffy
   // with windowless browsers as there is no guarantee that the client has only
@@ -526,6 +556,9 @@ class CefBrowserHostBase : public CefBrowserHost,
 
   // Runtime override for CDP accessibility tree viewport collapse.
   std::optional<bool> ax_viewport_collapse_;
+
+  std::map<std::string, VimbrowserElementHandle>
+      vimbrowser_element_handles_;
 
  private:
   IMPLEMENT_REFCOUNTING(CefBrowserHostBase);

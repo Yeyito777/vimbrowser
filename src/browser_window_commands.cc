@@ -885,7 +885,7 @@ void BrowserWindow::StartMuseScorePdfDownload() {
   SetStatusOutput("MuseScore: extracting score pages...", 0);
   CefRefPtr<BrowserWindow> self = this;
   HandleJsIpcCommand(
-      tab->id, MuseScoreMetadataScript(),
+      tab->id, {}, MuseScoreMetadataScript(),
       [self](std::string response) {
         self->OnMuseScoreMetadata(std::move(response));
       },
