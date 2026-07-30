@@ -661,7 +661,12 @@ void BrowserWindow::CancelCommand() {
                     : previous_focus_area_;
   UpdateModeIndicator();
   if (Tab *tab = ActiveTab(); tab) {
-    if (focus_area_ == FocusArea::kWebView) {
+    // The sidebar uses the active BrowserView as its native key-event target.
+    // Explicitly restore that focus after hiding the command textfield;
+    // otherwise macOS can leave the hidden field focused and it swallows the
+    // next sidebar key.
+    if (focus_area_ == FocusArea::kWebView ||
+        focus_area_ == FocusArea::kTabSidebar) {
       tab->view->RequestFocus();
     }
   }

@@ -840,11 +840,31 @@ def test_sidebar_t_opens_tab_focus_command(h: Harness) -> None:
     target_id = str(tabs[0]["id"])
     h.ipc(["tab-focus", str(tabs[-1]["id"])])
     h.ipc(["sidebar-focus", "sidebar"])
+    before = h.ipc(["status"])
 
     h.key("t", pause=0.2)
     command_mode = h.ipc(["status"])
     require(command_mode.get("mode") == "CMD-I",
             "sidebar t did not open the tab-focus command line", command_mode)
+
+    h.key("Escape", pause=0.2)
+    command_normal = h.ipc(["status"])
+    require(command_normal.get("mode") == "CMD-N",
+            "first Escape did not leave command insert mode", command_normal)
+
+    h.key("Escape", pause=0.2)
+    after_cancel = h.ipc(["status"])
+    require(after_cancel.get("mode") == "SIDEBAR" and
+            after_cancel.get("active_tabid") == before.get("active_tabid") and
+            after_cancel.get("sidebar_selected_id") ==
+                before.get("sidebar_selected_id"),
+            "second Escape did not restore sidebar focus", after_cancel)
+
+    h.key("t", pause=0.2)
+    reopened = h.ipc(["status"])
+    require(reopened.get("mode") == "CMD-I",
+            "sidebar t was swallowed after cancelling the command line",
+            reopened)
 
     h.key(*target_id, "Return", pause=0.3)
     after_commit = h.ipc(["status"])
