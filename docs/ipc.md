@@ -33,6 +33,10 @@ Each connection carries exactly one command and one response.
 
 Current command text is simple whitespace-tokenized UTF-8-ish text. This keeps the protocol scriptable; commands that need spaces in a URL/search query join the remaining arguments themselves.
 
+Opaque JavaScript is transported by automation clients through `js-base64` and
+`frame-js-base64`. Their final argument is standard base64 over the exact UTF-8
+source, avoiding command-line whitespace normalization and newline framing.
+
 Responses are either:
 
 - JSON objects for structured state-changing/status/debug commands.

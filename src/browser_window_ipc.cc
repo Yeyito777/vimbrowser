@@ -68,6 +68,29 @@ constexpr size_t kMaxUploadFiles = 32;
 constexpr size_t kMaxUploadSelectorBytes = 4096;
 constexpr size_t kMaxUploadPathBytes = 4096;
 constexpr size_t kMaxUploadPayloadBytes = 256 * 1024;
+
+bool DecodeBase64JsPayload(const std::string& encoded,
+                           std::string* code,
+                           std::string* error) {
+  if (!code || !error || encoded.empty() ||
+      encoded.size() > ((kMaxJsFileBytes + 2) / 3) * 4 + 4) {
+    if (error) *error = "JavaScript payload is missing or too large";
+    return false;
+  }
+  CefRefPtr<CefBinaryValue> decoded = CefBase64Decode(encoded);
+  if (!decoded || decoded->GetSize() == 0 ||
+      decoded->GetSize() > kMaxJsFileBytes) {
+    *error = "JavaScript payload is not valid base64";
+    return false;
+  }
+  std::vector<char> bytes(decoded->GetSize());
+  if (decoded->GetData(bytes.data(), bytes.size(), 0) != bytes.size()) {
+    *error = "JavaScript payload could not be decoded";
+    return false;
+  }
+  code->assign(bytes.data(), bytes.size());
+  return true;
+}
 constexpr int kAutomaticUploadChooserTimeoutMs = 3000;
 
 // Keep in sync with blink.mojom.VimbrowserElementActivationResult. This is a
@@ -3212,6 +3235,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  screenshot <tabid>\n"
            "  js <tabid> <javascript>\n"
            "  frame-js <tabid> <frameid> <javascript>\n"
+           "  js-base64 <tabid> <base64-utf8-javascript>\n"
+           "  frame-js-base64 <tabid> <frameid> <base64-utf8-javascript>\n"
            "  js-file <tabid> <path>\n"
            "  upload-file <tabid> <base64-v1-json-payload>\n"
            "  upload-file-status <tabid>\n"
@@ -3424,6 +3449,28 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
     HandleJsIpcCommand(tab_id, frame_specific ? argv[2] : std::string(),
                        JoinArgs(argv, frame_specific ? 3 : 2),
                        std::move(reply));
+    return;
+  }
+
+  if (command == "js-base64" || command == "frame-js-base64") {
+    const bool frame_specific = command == "frame-js-base64";
+    if (argv.size() != (frame_specific ? 4U : 3U)) {
+      reply("ERR usage: js-base64 <tabid> <base64-utf8-javascript> OR frame-js-base64 <tabid> <frameid> <base64-utf8-javascript>\n");
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    std::string code;
+    std::string error;
+    if (!DecodeBase64JsPayload(argv[frame_specific ? 3 : 2], &code,
+                               &error)) {
+      reply("ERR " + error + "\n");
+      return;
+    }
+    HandleJsIpcCommand(tab_id, frame_specific ? argv[2] : std::string(),
+                       std::move(code), std::move(reply));
     return;
   }
 

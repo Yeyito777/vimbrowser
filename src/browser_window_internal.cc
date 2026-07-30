@@ -1119,6 +1119,8 @@ const std::vector<IpcCommandInfo> &IpcCommandList() {
       {"screenshot", "screenshot <tabid>", "capture a tab as a PNG without changing focus", "image/png;base64"},
       {"js", "js <tabid> <javascript>", "evaluate JavaScript in the tab renderer", "json"},
       {"frame-js", "frame-js <tabid> <frameid> <javascript>", "evaluate JavaScript in one exact current child frame", "json"},
+      {"js-base64", "js-base64 <tabid> <base64-utf8-javascript>", "evaluate exact base64-encoded UTF-8 JavaScript in the tab renderer", "json"},
+      {"frame-js-base64", "frame-js-base64 <tabid> <frameid> <base64-utf8-javascript>", "evaluate exact base64-encoded UTF-8 JavaScript in one current child frame", "json"},
       {"js-file", "js-file <tabid> <path>", "evaluate JavaScript loaded from a file", "json"},
       {"upload-file", "upload-file <tabid> <base64-v1-json-payload>", "assign files to an input or atomically native-activate an exact chooser control", "json"},
       {"upload-file-status", "upload-file-status <tabid>", "inspect next-file-chooser upload state without exposing paths", "json"},
