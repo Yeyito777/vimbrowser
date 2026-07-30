@@ -1414,6 +1414,31 @@ def test_ctrl_jk_cycle_focus_not_hints(h: Harness) -> None:
             "Ctrl+K still started hover hints", after_ctrl_k)
 
 
+def test_ctrl_ms_toggle_sidebar(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+
+    h.key("ctrl+s", pause=0.2)
+    after_s_hide = h.ipc(["status"])
+    require(after_s_hide.get("mode") == "WEBSITE",
+            "Ctrl+S did not hide the sidebar and retain webview focus",
+            after_s_hide)
+
+    h.key("ctrl+s", pause=0.2)
+    after_s_show = h.ipc(["status"])
+    require(after_s_show.get("mode") == "SIDEBAR",
+            "Ctrl+S did not show and focus the sidebar", after_s_show)
+
+    h.key("ctrl+m", pause=0.2)
+    after_m_hide = h.ipc(["status"])
+    require(after_m_hide.get("mode") == "WEBSITE",
+            "Ctrl+M no longer hides the sidebar", after_m_hide)
+
+    h.key("ctrl+m", pause=0.2)
+    after_m_show = h.ipc(["status"])
+    require(after_m_show.get("mode") == "SIDEBAR",
+            "Ctrl+M no longer shows and focuses the sidebar", after_m_show)
+
+
 def test_ctrl_lh_start_right_click_and_hover_hints(h: Harness) -> None:
     reset_to_website_mode(h, focus_input=False)
     h.clear()
@@ -1799,6 +1824,7 @@ TESTS = [
     test_sidebar_keybinds_do_not_type,
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,
+    test_ctrl_ms_toggle_sidebar,
     test_ctrl_lh_start_right_click_and_hover_hints,
     test_hints_work_before_full_page_load_and_survive_navigation,
     test_cold_start_launch_url_restores_saved_tabs_at_bottom,

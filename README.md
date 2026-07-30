@@ -212,7 +212,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   and benchmarks on the fast path; set `VIMBROWSER_NETWORK_CAPTURE=1` or pass
   `--enable-vimbrowser-network-capture` when you need IPC `network` diagnostics
 - `Ctrl+j` / `Ctrl+k` cycle focus between the tab sidebar and the web view
-- `Ctrl+m` toggles the tab sidebar
+- `Ctrl+m` / `Ctrl+s` toggle the tab sidebar
 - when the tab sidebar is focused, `o` opens the command line to navigate the
   current tab
 - when the tab sidebar is focused, `O` opens the command line to open a new tab

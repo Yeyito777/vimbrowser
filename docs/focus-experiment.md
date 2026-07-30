@@ -222,8 +222,8 @@ Answered for the first experimental pass:
 
 Remaining notes/questions after these answers:
 
-- `Ctrl+m` toggles the tab sidebar. Opening the sidebar focuses it; hiding the
-  sidebar returns focus to the web view.
+- `Ctrl+m` / `Ctrl+s` toggle the tab sidebar. Opening the sidebar focuses it;
+  hiding the sidebar returns focus to the web view.
 - The current experimental code uses focus-cycle behavior for both `Ctrl+j` and
   `Ctrl+k` because there are only two non-command focus targets so far.
 - Website-view mode skeleton:

@@ -4098,7 +4098,7 @@ bool BrowserWindow::HandleGlobalFocusKey(const CefKeyEvent &event) {
     return true;
   }
 
-  if (IsCtrlKey(event, 'M')) {
+  if (IsCtrlKey(event, 'M') || IsCtrlKey(event, 'S')) {
     ToggleSidebar();
     return true;
   }
