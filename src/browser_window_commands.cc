@@ -624,7 +624,7 @@ void BrowserWindow::CommitCommand() {
     } else {
       RecordOpenHistory(text);
     }
-    AddTabAfterActive(url, true);
+    AddTabAfterSelection(url, true);
   } else if (Tab *tab = ActiveTab();
              tab && tab->client && tab->client->browser()) {
     if (is_search_engine_invocation) {
@@ -859,7 +859,7 @@ void BrowserWindow::OpenClipboard(bool new_tab) {
   const std::string url = ResolveUrlOrSearch(text);
   RecordOpenHistory(text);
   if (new_tab) {
-    AddTabAfterActive(url, true);
+    AddTabAfterSelection(url, true);
   } else if (CefRefPtr<CefBrowser> browser = ActiveBrowser()) {
     last_tab_close_placeholder_ = false;
     if (active_index_ < tabs_.size()) {

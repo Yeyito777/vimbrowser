@@ -875,6 +875,60 @@ def test_sidebar_open_keys_match_website_mode(h: Harness) -> None:
     submit_open("shift+o", "sidebar", True)
 
 
+def test_sidebar_new_tabs_follow_selection(h: Harness) -> None:
+    h.ipc(["open-tab", h.initial_url + "#anchor-middle"])
+    h.ipc(["open-tab", h.initial_url + "#active-last"])
+    initial_tabs = h.ipc(["tabs"])["tabs"]
+    require(len(initial_tabs) >= 3,
+            "new-tab insertion regression requires at least three tabs",
+            initial_tabs)
+    selected = initial_tabs[0]
+    active = initial_tabs[-1]
+    folder_reply = h.ipc(["folder-create", "0", "New-tab insertion anchor"])
+    folder = max(folder_reply["folders"], key=lambda item: item["id"])
+    h.ipc(["tab-folder", str(selected["id"]), str(folder["id"])])
+
+    def select_without_activating() -> None:
+        h.ipc(["tab-focus", str(active["id"])])
+        h.ipc(["sidebar-select", "tab", str(selected["id"])])
+        h.ipc(["sidebar-focus", "sidebar"])
+        status = h.ipc(["status"])
+        require(status.get("active_tabid") == active["id"] and
+                status.get("sidebar_selected_id") == selected["id"],
+                "fixture did not separate sidebar selection from active tab",
+                status)
+
+    select_without_activating()
+    target_keys = [*"about", "shift+semicolon", *"blank"]
+    h.key("shift+o", *target_keys, "Return", pause=0.3)
+    after_O = h.ipc(["tabs"])
+    ids_after_O = [tab["id"] for tab in after_O["tabs"]]
+    opened_O = next(tab for tab in after_O["tabs"]
+                    if tab["id"] == after_O["active_tabid"])
+    require(ids_after_O.index(after_O["active_tabid"]) ==
+                ids_after_O.index(selected["id"]) + 1 and
+            opened_O["folder_id"] == folder["id"],
+            "sidebar O did not insert beside the selected tab in its folder",
+            after_O)
+
+    run([
+        "xenv", "run", "-e", h.env_name, "bash", "-lc",
+        "printf %s about:blank | xclip -selection clipboard",
+    ], timeout=10)
+    time.sleep(0.1)
+    select_without_activating()
+    h.key("shift+p", pause=0.3)
+    after_P = h.ipc(["tabs"])
+    ids_after_P = [tab["id"] for tab in after_P["tabs"]]
+    opened_P = next(tab for tab in after_P["tabs"]
+                    if tab["id"] == after_P["active_tabid"])
+    require(ids_after_P.index(after_P["active_tabid"]) ==
+                ids_after_P.index(selected["id"]) + 1 and
+            opened_P["folder_id"] == folder["id"],
+            "sidebar P did not insert beside the selected tab in its folder",
+            after_P)
+
+
 def test_sidebar_reload_and_clipboard_keys_match_website_mode(h: Harness) -> None:
     reset_to_website_mode(h, focus_input=False)
 
@@ -1714,6 +1768,7 @@ TESTS = [
     test_sidebar_super_is_a_noop,
     test_sidebar_t_opens_tab_focus_command,
     test_sidebar_open_keys_match_website_mode,
+    test_sidebar_new_tabs_follow_selection,
     test_sidebar_reload_and_clipboard_keys_match_website_mode,
     test_sidebar_yanks_match_website_mode,
     test_sidebar_ctrl_number_focuses_tabs,

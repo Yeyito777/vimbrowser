@@ -385,7 +385,8 @@ class BrowserWindow final : public CefWindowDelegate,
   void AddTab(std::string url,
               bool activate,
               std::string context_name = {});
-  void AddTabAfterActive(std::string url, bool activate);
+  void AddTabAfterSelection(std::string url, bool activate);
+  std::optional<size_t> NewTabInsertionAnchorIndex() const;
   void InsertTab(std::string url,
                  size_t index,
                  bool activate,

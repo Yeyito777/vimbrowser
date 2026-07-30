@@ -708,7 +708,7 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
     }
     native_hints_active_ = false;
     if (hint_open_tab) {
-      AddTabAfterActive(target_url, activate);
+      AddTabAfterSelection(target_url, activate);
     } else {
       AddTab(target_url, activate, source_context);
     }
@@ -987,7 +987,7 @@ void BrowserWindow::OnNativeHintOpenTab(BrowserClient *client,
   native_hints_active_ = false;
   website_mode_ = vim::Mode::kWebsiteNormal;
   ResetWebsitePendingKeys();
-  AddTabAfterActive(url, true);
+  AddTabAfterSelection(url, true);
   UpdateModeIndicator();
 }
 
@@ -1045,7 +1045,7 @@ void BrowserWindow::OnDevToolsNativeHintOpenTab(const std::string &url) {
 
   native_hints_active_ = false;
   ResetWebsitePendingKeys();
-  AddTabAfterActive(url, true);
+  AddTabAfterSelection(url, true);
   UpdateModeIndicator();
 }
 
@@ -2268,11 +2268,7 @@ bool BrowserWindow::HandleNormalModeKey(const CefKeyEvent &event) {
       if (sidebar_selected_item_.type == SidebarItemType::kTab) {
         if (const std::optional<size_t> index =
                 FindTabIndexById(sidebar_selected_item_.id)) {
-          InsertTab(tabs_[*index].url, *index + 1, true, false,
-                    tabs_[*index].folder_id,
-                    SidebarSortOrderAfterItem(
-                        {SidebarItemType::kTab, tabs_[*index].id}),
-                    false, tabs_[*index].context);
+          AddTabAfterSelection(tabs_[*index].url, true);
         }
       }
       return true;

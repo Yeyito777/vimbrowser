@@ -859,7 +859,7 @@ bool BrowserWindow::OnNativeContextMenuCommand(
       return true;
     case kContextCommandOpenLinkNewTab:
       if (!link_url.empty()) {
-        AddTabAfterActive(link_url, true);
+        AddTabAfterSelection(link_url, true);
       }
       return true;
     case kContextCommandCopyLinkAddress:
@@ -876,7 +876,7 @@ bool BrowserWindow::OnNativeContextMenuCommand(
       return true;
     case kContextCommandOpenSourceNewTab:
       if (!menu.source_url.empty()) {
-        AddTabAfterActive(menu.source_url, true);
+        AddTabAfterSelection(menu.source_url, true);
       }
       return true;
     case kContextCommandCopySourceAddress:

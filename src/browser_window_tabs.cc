@@ -51,19 +51,31 @@ void BrowserWindow::AddTab(std::string url,
             false, std::move(context_name));
 }
 
-void BrowserWindow::AddTabAfterActive(std::string url, bool activate) {
-  const size_t insert_index =
-      active_index_ < tabs_.size() ? active_index_ + 1 : tabs_.size();
-  const uint64_t folder_id = NewTabFolderId();
-  uint64_t sort_order = 0;
-  std::string context_name;
-  if (active_index_ < tabs_.size() &&
-      tabs_[active_index_].folder_id == folder_id) {
-    sort_order = SidebarSortOrderAfterItem(
-        {SidebarItemType::kTab, tabs_[active_index_].id});
+std::optional<size_t> BrowserWindow::NewTabInsertionAnchorIndex() const {
+  if (focus_area_ == FocusArea::kTabSidebar &&
+      sidebar_selected_item_.type == SidebarItemType::kTab) {
+    if (const std::optional<size_t> selected =
+            FindTabIndexById(sidebar_selected_item_.id)) {
+      return selected;
+    }
   }
   if (active_index_ < tabs_.size()) {
-    context_name = tabs_[active_index_].context;
+    return active_index_;
+  }
+  return std::nullopt;
+}
+
+void BrowserWindow::AddTabAfterSelection(std::string url, bool activate) {
+  const std::optional<size_t> anchor = NewTabInsertionAnchorIndex();
+  const size_t insert_index = anchor ? *anchor + 1 : tabs_.size();
+  const uint64_t folder_id =
+      anchor ? tabs_[*anchor].folder_id : NewTabFolderId();
+  uint64_t sort_order = 0;
+  std::string context_name;
+  if (anchor) {
+    sort_order = SidebarSortOrderAfterItem(
+        {SidebarItemType::kTab, tabs_[*anchor].id});
+    context_name = tabs_[*anchor].context;
   }
   InsertTab(std::move(url), insert_index, activate, false, folder_id,
             sort_order, false, std::move(context_name));
