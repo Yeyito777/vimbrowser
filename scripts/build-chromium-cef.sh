@@ -85,6 +85,9 @@ treat_warnings_as_errors=false
 use_partition_alloc_as_malloc=false
 use_qt5=false
 use_qt6=false
+# The build command below passes Siso-only flags. Keep the backend explicit so
+# autoninja never falls back to Ninja when generated gclient metadata is absent.
+use_siso=true
 chrome_pgo_phase=0
 EOF
 

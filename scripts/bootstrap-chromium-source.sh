@@ -17,6 +17,7 @@ if [[ ! -x "${depot_tools}/gn" || ! -x "${depot_tools}/autoninja" ||
   rm -rf "${depot_tools}"
   git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "${depot_tools}"
 fi
+"${depot_tools}/ensure_bootstrap"
 export PATH="${depot_tools}:$PATH"
 
 if [[ ! -f "${chromium_src}/BUILD.gn" || ! -d "${chromium_src}/cef" ]]; then
