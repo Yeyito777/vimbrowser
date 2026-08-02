@@ -48,6 +48,7 @@ class CORE_EXPORT Hints final : public GarbageCollected<Hints>,
  private:
   enum class HintMode {
     kClick,
+    kCopyText,
     kHover,
     kFocus,
   };
@@ -75,6 +76,8 @@ class CORE_EXPORT Hints final : public GarbageCollected<Hints>,
                                     bool is_browser_command) const;
   bool IsHoverHintModeEntryKey(const WebKeyboardEvent& event,
                                bool is_browser_command) const;
+  bool IsCopyTextHintModeEntryKey(const WebKeyboardEvent& event,
+                                  bool is_browser_command) const;
   bool IsScrollableHintModeEntryKey(const WebKeyboardEvent& event,
                                     bool is_browser_command) const;
   ActivationTarget ActivationTargetForClickEntryKey(

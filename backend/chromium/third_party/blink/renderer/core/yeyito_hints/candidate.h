@@ -21,6 +21,7 @@ struct HintCandidate {
   Member<Element> element;
   gfx::RectF viewport_rect;
   String label;
+  String copy_text;
 };
 
 }  // namespace blink

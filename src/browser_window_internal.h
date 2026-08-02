@@ -122,6 +122,7 @@ inline constexpr int kAcceleratorCommandDeleteCompletion = 5011;
 inline constexpr int kAcceleratorCommandEnter = 5012;
 inline constexpr int kAcceleratorCommandEscape = 5013;
 inline constexpr int kAcceleratorCommandShiftEscape = 5014;
+inline constexpr int kAcceleratorHintCopyText = 5015;
 inline constexpr int kSidebarRowBaseId = 2000;
 inline constexpr int kAutocompleteRowBaseId = 6000;
 inline constexpr int kContextMenuRowBaseId = 7000;

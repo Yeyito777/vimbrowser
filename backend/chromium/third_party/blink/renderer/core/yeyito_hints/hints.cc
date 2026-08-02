@@ -16,6 +16,7 @@
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/inspector/console_message.h"
 #include "third_party/blink/renderer/core/yeyito_hints/click_hints.h"
+#include "third_party/blink/renderer/core/yeyito_hints/copy_hints.h"
 #include "third_party/blink/renderer/core/yeyito_hints/hover_hints.h"
 #include "third_party/blink/renderer/core/yeyito_hints/labels.h"
 #include "third_party/blink/renderer/core/yeyito_hints/overlay.h"
@@ -354,6 +355,9 @@ void Hints::CollectCandidates() {
       click_hints::CollectCandidates(*frame, candidates_, group);
       return;
     }
+    case HintMode::kCopyText:
+      copy_hints::CollectCandidates(*frame, candidates_);
+      return;
     case HintMode::kHover:
       hover_hints::CollectCandidates(*frame, candidates_);
       return;
@@ -405,6 +409,10 @@ Hints::HintEntry Hints::EntryForKeyEvent(
     return {true, HintMode::kHover, ActivationTarget::kCurrentTab};
   }
 
+  if (IsCopyTextHintModeEntryKey(event, is_browser_command)) {
+    return {true, HintMode::kCopyText, ActivationTarget::kCurrentTab};
+  }
+
   if (IsScrollableHintModeEntryKey(event, is_browser_command)) {
     return {true, HintMode::kFocus, ActivationTarget::kCurrentTab};
   }
@@ -426,6 +434,12 @@ bool Hints::IsHoverHintModeEntryKey(const WebKeyboardEvent& event,
                                     bool is_browser_command) const {
   return is_browser_command && HasOnlyControlModifier(event) &&
          event.windows_key_code == VK_H;
+}
+
+bool Hints::IsCopyTextHintModeEntryKey(const WebKeyboardEvent& event,
+                                       bool is_browser_command) const {
+  return is_browser_command && HasOnlyControlModifier(event) &&
+         event.windows_key_code == VK_Y;
 }
 
 bool Hints::IsScrollableHintModeEntryKey(const WebKeyboardEvent& event,
@@ -523,6 +537,10 @@ void Hints::ActivateCandidate(HintCandidate& candidate) {
       }
       return;
     }
+    case HintMode::kCopyText:
+      copy_hints::ActivateCandidate(*frame, candidate);
+      Stop(true);
+      return;
     case HintMode::kHover:
       hover_hints::ActivateCandidate(*frame, *element, rect);
       Stop(true);

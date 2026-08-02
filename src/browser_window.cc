@@ -1095,6 +1095,8 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   window_->SetAccelerator(kAcceleratorHintRightClick, 'L', false, true, false,
                           true);
   window_->SetAccelerator(kAcceleratorHintHover, 'H', false, true, false, true);
+  window_->SetAccelerator(kAcceleratorHintCopyText, 'Y', false, true, false,
+                          true);
   window_->SetAccelerator(kAcceleratorFocusNext, 'J', false, true, false, true);
   window_->SetAccelerator(kAcceleratorFocusPrevious, 'K', false, true, false,
                           true);
@@ -1984,34 +1986,38 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
       !(focus_area_ == FocusArea::kDevTools &&
         devtools_mode_ == vim::Mode::kInsert)) {
     if ((command_id == kAcceleratorHintRightClick ||
-         command_id == kAcceleratorHintHover) &&
+         command_id == kAcceleratorHintHover ||
+         command_id == kAcceleratorHintCopyText) &&
         focus_area_ == FocusArea::kDevTools) {
+      const char hint_key = command_id == kAcceleratorHintRightClick
+                                ? 'L'
+                                : command_id == kAcceleratorHintHover ? 'H'
+                                                                      : 'Y';
       CefKeyEvent event;
       event.type = KEYEVENT_RAWKEYDOWN;
-      event.windows_key_code =
-          command_id == kAcceleratorHintRightClick ? 'L' : 'H';
-      event.native_key_code = NativeKeyCodeForSyntheticKey(
-          event.windows_key_code,
-          command_id == kAcceleratorHintRightClick ? 'l' : 'h');
+      event.windows_key_code = hint_key;
+      event.native_key_code =
+          NativeKeyCodeForSyntheticKey(hint_key, LowerAsciiChar(hint_key));
       event.character = 0;
-      event.unmodified_character =
-          command_id == kAcceleratorHintRightClick ? 'l' : 'h';
+      event.unmodified_character = LowerAsciiChar(hint_key);
       event.modifiers = EVENTFLAG_CONTROL_DOWN;
       return StartDevToolsNativeHints(event);
     }
     if ((command_id == kAcceleratorHintRightClick ||
-         command_id == kAcceleratorHintHover) &&
+         command_id == kAcceleratorHintHover ||
+         command_id == kAcceleratorHintCopyText) &&
         focus_area_ == FocusArea::kWebView) {
+      const char hint_key = command_id == kAcceleratorHintRightClick
+                                ? 'L'
+                                : command_id == kAcceleratorHintHover ? 'H'
+                                                                      : 'Y';
       CefKeyEvent event;
       event.type = KEYEVENT_RAWKEYDOWN;
-      event.windows_key_code =
-          command_id == kAcceleratorHintRightClick ? 'L' : 'H';
-      event.native_key_code = NativeKeyCodeForSyntheticKey(
-          event.windows_key_code,
-          command_id == kAcceleratorHintRightClick ? 'l' : 'h');
+      event.windows_key_code = hint_key;
+      event.native_key_code =
+          NativeKeyCodeForSyntheticKey(hint_key, LowerAsciiChar(hint_key));
       event.character = 0;
-      event.unmodified_character =
-          command_id == kAcceleratorHintRightClick ? 'l' : 'h';
+      event.unmodified_character = LowerAsciiChar(hint_key);
       event.modifiers = EVENTFLAG_CONTROL_DOWN;
       return StartNativeHints(event);
     }
@@ -4448,9 +4454,12 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent &event) {
       HasOnlyControlModifier(event) && IsCtrlKey(event, 'L');
   const bool hover_hints =
       HasOnlyControlModifier(event) && IsCtrlKey(event, 'H');
+  const bool copy_text_hints =
+      HasOnlyControlModifier(event) && IsCtrlKey(event, 'Y');
   const bool scrollable_hints =
       HasOnlyControlModifier(event) && IsSpaceKey(event);
-  if (!click_hints && !right_click_hints && !hover_hints && !scrollable_hints) {
+  if (!click_hints && !right_click_hints && !hover_hints && !copy_text_hints &&
+      !scrollable_hints) {
     return false;
   }
 
@@ -4482,6 +4491,13 @@ bool BrowserWindow::StartNativeHints(const CefKeyEvent &event) {
     browser_event.windows_key_code = 'H';
     browser_event.unmodified_character = 'h';
   }
+  if (copy_text_hints) {
+    // Blink's native hint dispatcher recognizes Ctrl+Y as the copy-text hint
+    // entry command. Preserve the semantic key explicitly for the renderer
+    // round-trip.
+    browser_event.windows_key_code = 'Y';
+    browser_event.unmodified_character = 'y';
+  }
   if (scrollable_hints) {
     // Some toolkits deliver Ctrl+Space to the browser chrome as a control
     // character with no virtual key. Blink's native hint dispatcher keys off
@@ -4505,11 +4521,13 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent &event) {
   const bool click_hints = IsPlainLetterKey(event, 'f');
   const bool right_click_hints = ctrl_only && IsCtrlKey(event, 'L');
   const bool hover_hints = ctrl_only && IsCtrlKey(event, 'H');
+  const bool copy_text_hints = ctrl_only && IsCtrlKey(event, 'Y');
   const bool scrollable_hints =
       ctrl_only && (IsSpaceKey(event) || event.windows_key_code == 0 ||
                     event.native_key_code ==
                         NativeKeyCodeForSyntheticKey(0x20, ' '));
-  if (!click_hints && !right_click_hints && !hover_hints && !scrollable_hints) {
+  if (!click_hints && !right_click_hints && !hover_hints && !copy_text_hints &&
+      !scrollable_hints) {
     return false;
   }
 
@@ -4533,6 +4551,10 @@ bool BrowserWindow::StartDevToolsNativeHints(const CefKeyEvent &event) {
   if (hover_hints) {
     browser_event.windows_key_code = 'H';
     browser_event.unmodified_character = 'h';
+  }
+  if (copy_text_hints) {
+    browser_event.windows_key_code = 'Y';
+    browser_event.unmodified_character = 'y';
   }
   if (scrollable_hints) {
     // Keep this exactly parallel to Ctrl+Space scrollable hints for normal
@@ -4686,10 +4708,6 @@ bool BrowserWindow::HandleWebsiteCommandKey(const CefKeyEvent &event) {
   if (ctrl && !shift) {
     if (IsCtrlKey(event, 'E')) {
       ScrollActivePageBy(kSmallScrollPx);
-      return true;
-    }
-    if (IsCtrlKey(event, 'Y')) {
-      ScrollActivePageBy(-kSmallScrollPx);
       return true;
     }
     if (IsCtrlKey(event, 'D')) {

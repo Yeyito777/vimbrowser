@@ -263,6 +263,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   that element
 - in website-normal/normal web modes, `Ctrl+h` starts browser hover hints;
   selecting a label dispatches a synthetic hover/mouse-move over that element
+- in website-normal/normal web modes, `Ctrl+y` starts browser copy-text hints;
+  selecting a label copies that visible text block to the clipboard
 - in website-normal/normal web modes, `Ctrl+Space` starts browser
   scrollable hints; selecting a label focuses that scroll container and makes
   subsequent `j`/`k`/page-scroll commands target it

@@ -6,6 +6,8 @@ blink_core_sources_yeyito_hints = [
   "candidate.h",
   "click_hints.cc",
   "click_hints.h",
+  "copy_hints.cc",
+  "copy_hints.h",
   "hints.cc",
   "hints.h",
   "hover_hints.cc",
