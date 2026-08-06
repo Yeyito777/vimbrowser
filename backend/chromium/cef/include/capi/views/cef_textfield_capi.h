@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=31ce43576bef12a4a1170b325bcff30b444bd9bd$
+// $hash=396797b0b66813ae52bfd40d4677289055bad445$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_TEXTFIELD_CAPI_H_
@@ -242,6 +242,16 @@ typedef struct _cef_textfield_t {
   /// Set the accessible name that will be exposed to assistive technology (AT).
   ///
   void (CEF_CALLBACK *set_accessible_name)(struct _cef_textfield_t* self, const cef_string_t* name);
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+  ///
+  /// Sets an instant background color to display while the mouse is hovering
+  /// over this Textfield. This replaces the default animated hover effect and
+  /// does not modify the text color. Call set_background_color() to configure
+  /// the non-hovered background.
+  ///
+  void (CEF_CALLBACK *set_hover_background_color)(struct _cef_textfield_t* self, cef_color_t color);
+#endif
 } cef_textfield_t;
 
 

@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b21b956149741b861833fcfc89b47babe10d0c52$
+// $hash=081ea3cc0041199e90d2b344dfa9fc449c292115$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_TEXTFIELD_CTOCPP_H_
@@ -63,6 +63,9 @@ class CefTextfieldCToCpp
   void SetPlaceholderText(const CefString& text) override;
   CefString GetPlaceholderText() override;
   void SetPlaceholderTextColor(cef_color_t color) override;
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+  void SetHoverBackgroundColor(cef_color_t color) override;
+#endif
   void SetAccessibleName(const CefString& name) override;
 
   // CefView methods.

@@ -8,7 +8,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=02caa063c846d95459a2514c8b571ad04f537e7f$
+// $hash=0a0b7ebf055ca77572e375a883559ccc185ccee2$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_TEXTFIELD_DELEGATE_CAPI_VERSIONS_H_
@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 struct _cef_textfield_0_t;
+struct _cef_textfield_999999_t;
 
 typedef struct _cef_textfield_delegate_0_t {
   cef_view_delegate_0_t base;

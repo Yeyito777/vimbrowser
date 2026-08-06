@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e20ed98d27134c9328af5698d0b30d27879b67bf$
+// $hash=9d4fe48c814c82ac6a65d774e2a2d5fa10632eb4$
 //
 
 #include "libcef_dll/cpptoc/views/textfield_delegate_cpptoc.h"
@@ -555,6 +555,23 @@ NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetPlaceholderTextColor(cef_co
   _struct->set_placeholder_text_color(_struct,
       color);
 }
+
+#if CEF_API_ADDED(CEF_EXPERIMENTAL)
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetHoverBackgroundColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_hover_background_color) {
+    return;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_hover_background_color(_struct,
+      color);
+}
+#endif  // CEF_API_ADDED(CEF_EXPERIMENTAL)
 
 NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetAccessibleName(const CefString& name) {
   shutdown_checker::AssertNotShutdown();

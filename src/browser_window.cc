@@ -3813,6 +3813,7 @@ bool BrowserWindow::RefreshSidebar() {
     if (!row) {
       return text_color;
     }
+    row->SetHoverBackgroundColor(theme::kSidebarSelBg);
     if (display.selected || display.active) {
       row->ApplyTextColor(theme::kAccent, CefRange(0, 1));
     }

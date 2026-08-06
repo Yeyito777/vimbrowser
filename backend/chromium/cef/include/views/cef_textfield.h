@@ -259,6 +259,15 @@ class CefTextfield : public CefView {
   virtual void SetPlaceholderTextColor(cef_color_t color) = 0;
 
   ///
+  /// Sets an instant background color to display while the mouse is hovering
+  /// over this Textfield. This replaces the default animated hover effect and
+  /// does not modify the text color. Call SetBackgroundColor() to configure the
+  /// non-hovered background.
+  ///
+  /*--cef(added=experimental)--*/
+  virtual void SetHoverBackgroundColor(cef_color_t color) = 0;
+
+  ///
   /// Set the accessible name that will be exposed to assistive technology (AT).
   ///
   /*--cef()--*/

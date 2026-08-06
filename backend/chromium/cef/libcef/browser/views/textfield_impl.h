@@ -57,6 +57,7 @@ class CefTextfieldImpl
   void SetPlaceholderText(const CefString& text) override;
   CefString GetPlaceholderText() override;
   void SetPlaceholderTextColor(cef_color_t color) override;
+  void SetHoverBackgroundColor(cef_color_t color) override;
   void SetAccessibleName(const CefString& name) override;
 
   // CefView methods:

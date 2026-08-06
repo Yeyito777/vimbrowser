@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=12d920ca1d27a3b0b8e128beb7c237fb65e40829$
+// $hash=b40a6edcf41cee212871c619e8c84b457e3f0b93$
 //
 
 #include "include/cef_api_hash.h"
@@ -39,6 +39,30 @@ CEF_EXPORT cef_textfield_0_t* cef_textfield_create(struct _cef_textfield_delegat
 
   // Return type: refptr_same
   return CefTextfieldCppToC_Wrap(_retval);
+}
+
+// HELPER FUNCTIONS - Do not edit by hand.
+
+cef_textfield_0_t* CefTextfieldCppToC_Wrap(CefRefPtr<CefTextfield> c) {
+  const int version = cef_api_version();
+  if (version >= 999999) {
+    return reinterpret_cast<cef_textfield_0_t*>(CefTextfield_999999_CppToC::Wrap(c));
+  }
+  if (version >= 0) {
+    return CefTextfield_0_CppToC::Wrap(c);
+  }
+  NOTREACHED() << __func__ << " called with invalid version " << version;
+}
+
+CefRefPtr<CefTextfield> CefTextfieldCppToC_Unwrap(cef_textfield_0_t* s) {
+  const int version = cef_api_version();
+  if (version >= 999999) {
+    return CefTextfield_999999_CppToC::Unwrap(reinterpret_cast<cef_textfield_999999_t*>(s));
+  }
+  if (version >= 0) {
+    return CefTextfield_0_CppToC::Unwrap(s);
+  }
+  NOTREACHED() << __func__ << " called with invalid version " << version;
 }
 
 namespace {
@@ -1589,7 +1613,7 @@ int CEF_CALLBACK textfield_convert_point_from_view(struct _cef_view_0_t* self, c
 
 CefTextfield_0_CppToC::CefTextfield_0_CppToC() {
   const int version = cef_api_version();
-  LOG_IF(FATAL, version < 0) << __func__ << " called with invalid version " << version;
+  LOG_IF(FATAL, version < 0 || version >= 999999) << __func__ << " called with invalid version " << version;
 
   GetStruct()->set_password_input = textfield_set_password_input;
   GetStruct()->is_password_input = textfield_is_password_input;
@@ -1687,5 +1711,1668 @@ template<> CefRefPtr<CefTextfield> CefCppToCRefCounted<CefTextfield_0_CppToC, Ce
 }
 
 template<> CefWrapperType CefCppToCRefCounted<CefTextfield_0_CppToC, CefTextfield, cef_textfield_0_t>::kWrapperType = WT_TEXTFIELD;
+
+namespace {
+
+// MEMBER FUNCTIONS FOR VERSION 999999 - Body may be edited by hand.
+
+void CEF_CALLBACK textfield_set_password_input_999999(struct _cef_textfield_999999_t* self, int password_input) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetPasswordInput(
+      password_input?true:false);
+}
+
+int CEF_CALLBACK textfield_is_password_input_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(self)->IsPasswordInput();
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_read_only_999999(struct _cef_textfield_999999_t* self, int read_only) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetReadOnly(
+      read_only?true:false);
+}
+
+int CEF_CALLBACK textfield_is_read_only_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(self)->IsReadOnly();
+
+  // Return type: bool
+  return _retval;
+}
+
+cef_string_userfree_t CEF_CALLBACK textfield_get_text_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefString _retval = CefTextfield_999999_CppToC::Get(self)->GetText();
+
+  // Return type: string
+  return _retval.DetachToUserFree();
+}
+
+void CEF_CALLBACK textfield_set_text_999999(struct _cef_textfield_999999_t* self, const cef_string_t* text) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: text; type: string_byref_const
+  DCHECK(text);
+  if (!text) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetText(
+      CefString(text));
+}
+
+void CEF_CALLBACK textfield_append_text_999999(struct _cef_textfield_999999_t* self, const cef_string_t* text) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: text; type: string_byref_const
+  DCHECK(text);
+  if (!text) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->AppendText(
+      CefString(text));
+}
+
+void CEF_CALLBACK textfield_insert_or_replace_text_999999(struct _cef_textfield_999999_t* self, const cef_string_t* text) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: text; type: string_byref_const
+  DCHECK(text);
+  if (!text) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->InsertOrReplaceText(
+      CefString(text));
+}
+
+int CEF_CALLBACK textfield_has_selection_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(self)->HasSelection();
+
+  // Return type: bool
+  return _retval;
+}
+
+cef_string_userfree_t CEF_CALLBACK textfield_get_selected_text_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefString _retval = CefTextfield_999999_CppToC::Get(self)->GetSelectedText();
+
+  // Return type: string
+  return _retval.DetachToUserFree();
+}
+
+void CEF_CALLBACK textfield_select_all_999999(struct _cef_textfield_999999_t* self, int reversed) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SelectAll(
+      reversed?true:false);
+}
+
+void CEF_CALLBACK textfield_clear_selection_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->ClearSelection();
+}
+
+cef_range_t CEF_CALLBACK textfield_get_selected_range_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefRange();
+  }
+
+  // Execute
+  cef_range_t _retval = CefTextfield_999999_CppToC::Get(self)->GetSelectedRange();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_select_range_999999(struct _cef_textfield_999999_t* self, const cef_range_t* range) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: range; type: simple_byref_const
+  DCHECK(range);
+  if (!range) {
+    return;
+  }
+
+  // Translate param: range; type: simple_byref_const
+  CefRange rangeVal = range?*range:CefRange();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SelectRange(
+      rangeVal);
+}
+
+size_t CEF_CALLBACK textfield_get_cursor_position_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  size_t _retval = CefTextfield_999999_CppToC::Get(self)->GetCursorPosition();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_text_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetTextColor(
+      color);
+}
+
+cef_color_t CEF_CALLBACK textfield_get_text_color_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  cef_color_t _retval = CefTextfield_999999_CppToC::Get(self)->GetTextColor();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_selection_text_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetSelectionTextColor(
+      color);
+}
+
+cef_color_t CEF_CALLBACK textfield_get_selection_text_color_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  cef_color_t _retval = CefTextfield_999999_CppToC::Get(self)->GetSelectionTextColor();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_selection_background_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetSelectionBackgroundColor(
+      color);
+}
+
+cef_color_t CEF_CALLBACK textfield_get_selection_background_color_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  cef_color_t _retval = CefTextfield_999999_CppToC::Get(self)->GetSelectionBackgroundColor();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_font_list_999999(struct _cef_textfield_999999_t* self, const cef_string_t* font_list) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: font_list; type: string_byref_const
+  DCHECK(font_list);
+  if (!font_list) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetFontList(
+      CefString(font_list));
+}
+
+void CEF_CALLBACK textfield_apply_text_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color, const cef_range_t* range) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: range; type: simple_byref_const
+  DCHECK(range);
+  if (!range) {
+    return;
+  }
+
+  // Translate param: range; type: simple_byref_const
+  CefRange rangeVal = range?*range:CefRange();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->ApplyTextColor(
+      color,
+      rangeVal);
+}
+
+void CEF_CALLBACK textfield_apply_text_style_999999(struct _cef_textfield_999999_t* self, cef_text_style_t style, int add, const cef_range_t* range) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: range; type: simple_byref_const
+  DCHECK(range);
+  if (!range) {
+    return;
+  }
+
+  // Translate param: range; type: simple_byref_const
+  CefRange rangeVal = range?*range:CefRange();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->ApplyTextStyle(
+      style,
+      add?true:false,
+      rangeVal);
+}
+
+int CEF_CALLBACK textfield_is_command_enabled_999999(struct _cef_textfield_999999_t* self, cef_text_field_commands_t command_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(self)->IsCommandEnabled(
+      command_id);
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_execute_command_999999(struct _cef_textfield_999999_t* self, cef_text_field_commands_t command_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->ExecuteCommand(
+      command_id);
+}
+
+void CEF_CALLBACK textfield_clear_edit_history_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->ClearEditHistory();
+}
+
+void CEF_CALLBACK textfield_set_placeholder_text_999999(struct _cef_textfield_999999_t* self, const cef_string_t* text) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: text; type: string_byref_const
+  DCHECK(text);
+  if (!text) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetPlaceholderText(
+      CefString(text));
+}
+
+cef_string_userfree_t CEF_CALLBACK textfield_get_placeholder_text_999999(struct _cef_textfield_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefString _retval = CefTextfield_999999_CppToC::Get(self)->GetPlaceholderText();
+
+  // Return type: string
+  return _retval.DetachToUserFree();
+}
+
+void CEF_CALLBACK textfield_set_placeholder_text_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetPlaceholderTextColor(
+      color);
+}
+
+void CEF_CALLBACK textfield_set_hover_background_color_999999(struct _cef_textfield_999999_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetHoverBackgroundColor(
+      color);
+}
+
+void CEF_CALLBACK textfield_set_accessible_name_999999(struct _cef_textfield_999999_t* self, const cef_string_t* name) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: name; type: string_byref_const
+  DCHECK(name);
+  if (!name) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(self)->SetAccessibleName(
+      CefString(name));
+}
+
+struct _cef_browser_view_0_t* CEF_CALLBACK textfield_as_browser_view_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefBrowserView> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->AsBrowserView();
+
+  // Return type: refptr_same
+  return CefBrowserViewCppToC_Wrap(_retval);
+}
+
+struct _cef_button_0_t* CEF_CALLBACK textfield_as_button_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefButton> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->AsButton();
+
+  // Return type: refptr_same
+  return CefButtonCppToC_Wrap(_retval);
+}
+
+struct _cef_panel_0_t* CEF_CALLBACK textfield_as_panel_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefPanel> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->AsPanel();
+
+  // Return type: refptr_same
+  return CefPanelCppToC_Wrap(_retval);
+}
+
+struct _cef_scroll_view_0_t* CEF_CALLBACK textfield_as_scroll_view_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefScrollView> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->AsScrollView();
+
+  // Return type: refptr_same
+  return CefScrollViewCppToC_Wrap(_retval);
+}
+
+cef_textfield_0_t* CEF_CALLBACK textfield_as_textfield_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefTextfield> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->AsTextfield();
+
+  // Return type: refptr_same
+  return CefTextfieldCppToC_Wrap(_retval);
+}
+
+cef_string_userfree_t CEF_CALLBACK textfield_get_type_string_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefString _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetTypeString();
+
+  // Return type: string
+  return _retval.DetachToUserFree();
+}
+
+cef_string_userfree_t CEF_CALLBACK textfield_to_string_999999(struct _cef_view_0_t* self, int include_children) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefString _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ToString(
+      include_children?true:false);
+
+  // Return type: string
+  return _retval.DetachToUserFree();
+}
+
+int CEF_CALLBACK textfield_is_valid_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsValid();
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_is_attached_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsAttached();
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_is_same_999999(struct _cef_view_0_t* self, cef_view_0_t* that) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: that; type: refptr_same
+  DCHECK(that);
+  if (!that) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsSame(
+      CefViewCppToC_Unwrap(that));
+
+  // Return type: bool
+  return _retval;
+}
+
+struct _cef_view_delegate_0_t* CEF_CALLBACK textfield_get_delegate_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefViewDelegate> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetDelegate();
+
+  // Return type: refptr_diff
+  return CefViewDelegateCToCpp_Unwrap(_retval);
+}
+
+struct _cef_window_0_t* CEF_CALLBACK textfield_get_window_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefWindow> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetWindow();
+
+  // Return type: refptr_same
+  return CefWindowCppToC_Wrap(_retval);
+}
+
+int CEF_CALLBACK textfield_get_id_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  int _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetID();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_id_999999(struct _cef_view_0_t* self, int id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetID(
+      id);
+}
+
+int CEF_CALLBACK textfield_get_group_id_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  int _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetGroupID();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_group_id_999999(struct _cef_view_0_t* self, int group_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetGroupID(
+      group_id);
+}
+
+cef_view_0_t* CEF_CALLBACK textfield_get_parent_view_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefView> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetParentView();
+
+  // Return type: refptr_same
+  return CefViewCppToC_Wrap(_retval);
+}
+
+cef_view_0_t* CEF_CALLBACK textfield_get_view_for_id_999999(struct _cef_view_0_t* self, int id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return NULL;
+  }
+
+  // Execute
+  CefRefPtr<CefView> _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetViewForID(
+      id);
+
+  // Return type: refptr_same
+  return CefViewCppToC_Wrap(_retval);
+}
+
+void CEF_CALLBACK textfield_set_bounds_999999(struct _cef_view_0_t* self, const cef_rect_t* bounds) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: bounds; type: simple_byref_const
+  DCHECK(bounds);
+  if (!bounds) {
+    return;
+  }
+
+  // Translate param: bounds; type: simple_byref_const
+  CefRect boundsVal = bounds?*bounds:CefRect();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetBounds(
+      boundsVal);
+}
+
+cef_rect_t CEF_CALLBACK textfield_get_bounds_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefRect();
+  }
+
+  // Execute
+  cef_rect_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetBounds();
+
+  // Return type: simple
+  return _retval;
+}
+
+cef_rect_t CEF_CALLBACK textfield_get_bounds_in_screen_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefRect();
+  }
+
+  // Execute
+  cef_rect_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetBoundsInScreen();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_size_999999(struct _cef_view_0_t* self, const cef_size_t* size) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: size; type: simple_byref_const
+  DCHECK(size);
+  if (!size) {
+    return;
+  }
+
+  // Translate param: size; type: simple_byref_const
+  CefSize sizeVal = size?*size:CefSize();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetSize(
+      sizeVal);
+}
+
+cef_size_t CEF_CALLBACK textfield_get_size_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefSize();
+  }
+
+  // Execute
+  cef_size_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetSize();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_position_999999(struct _cef_view_0_t* self, const cef_point_t* position) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: position; type: simple_byref_const
+  DCHECK(position);
+  if (!position) {
+    return;
+  }
+
+  // Translate param: position; type: simple_byref_const
+  CefPoint positionVal = position?*position:CefPoint();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetPosition(
+      positionVal);
+}
+
+cef_point_t CEF_CALLBACK textfield_get_position_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefPoint();
+  }
+
+  // Execute
+  cef_point_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetPosition();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_insets_999999(struct _cef_view_0_t* self, const cef_insets_t* insets) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: insets; type: simple_byref_const
+  DCHECK(insets);
+  if (!insets) {
+    return;
+  }
+
+  // Translate param: insets; type: simple_byref_const
+  CefInsets insetsVal = insets?*insets:CefInsets();
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetInsets(
+      insetsVal);
+}
+
+cef_insets_t CEF_CALLBACK textfield_get_insets_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefInsets();
+  }
+
+  // Execute
+  cef_insets_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetInsets();
+
+  // Return type: simple
+  return _retval;
+}
+
+cef_size_t CEF_CALLBACK textfield_get_preferred_size_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefSize();
+  }
+
+  // Execute
+  cef_size_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetPreferredSize();
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_size_to_preferred_size_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SizeToPreferredSize();
+}
+
+cef_size_t CEF_CALLBACK textfield_get_minimum_size_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefSize();
+  }
+
+  // Execute
+  cef_size_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetMinimumSize();
+
+  // Return type: simple
+  return _retval;
+}
+
+cef_size_t CEF_CALLBACK textfield_get_maximum_size_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return CefSize();
+  }
+
+  // Execute
+  cef_size_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetMaximumSize();
+
+  // Return type: simple
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_get_height_for_width_999999(struct _cef_view_0_t* self, int width) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  int _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetHeightForWidth(
+      width);
+
+  // Return type: simple
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_invalidate_layout_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->InvalidateLayout();
+}
+
+void CEF_CALLBACK textfield_set_visible_999999(struct _cef_view_0_t* self, int visible) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetVisible(
+      visible?true:false);
+}
+
+int CEF_CALLBACK textfield_is_visible_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsVisible();
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_is_drawn_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsDrawn();
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_enabled_999999(struct _cef_view_0_t* self, int enabled) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetEnabled(
+      enabled?true:false);
+}
+
+int CEF_CALLBACK textfield_is_enabled_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsEnabled();
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_set_focusable_999999(struct _cef_view_0_t* self, int focusable) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetFocusable(
+      focusable?true:false);
+}
+
+int CEF_CALLBACK textfield_is_focusable_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsFocusable();
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_is_accessibility_focusable_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->IsAccessibilityFocusable();
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_has_focus_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->HasFocus();
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK textfield_request_focus_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->RequestFocus();
+}
+
+void CEF_CALLBACK textfield_set_background_color_999999(struct _cef_view_0_t* self, cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->SetBackgroundColor(
+      color);
+}
+
+cef_color_t CEF_CALLBACK textfield_get_background_color_999999(struct _cef_view_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  cef_color_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetBackgroundColor();
+
+  // Return type: simple
+  return _retval;
+}
+
+cef_color_t CEF_CALLBACK textfield_get_theme_color_999999(struct _cef_view_0_t* self, int color_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+
+  // Execute
+  cef_color_t _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->GetThemeColor(
+      color_id);
+
+  // Return type: simple
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_to_screen_999999(struct _cef_view_0_t* self, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointToScreen(
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_from_screen_999999(struct _cef_view_0_t* self, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointFromScreen(
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_to_window_999999(struct _cef_view_0_t* self, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointToWindow(
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_from_window_999999(struct _cef_view_0_t* self, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointFromWindow(
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_to_view_999999(struct _cef_view_0_t* self, cef_view_0_t* view, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: view; type: refptr_same
+  DCHECK(view);
+  if (!view) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointToView(
+      CefViewCppToC_Unwrap(view),
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK textfield_convert_point_from_view_999999(struct _cef_view_0_t* self, cef_view_0_t* view, cef_point_t* point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return 0;
+  }
+  // Verify param: view; type: refptr_same
+  DCHECK(view);
+  if (!view) {
+    return 0;
+  }
+  // Verify param: point; type: simple_byref
+  DCHECK(point);
+  if (!point) {
+    return 0;
+  }
+
+  // Translate param: point; type: simple_byref
+  CefPoint pointVal = point?*point:CefPoint();
+
+  // Execute
+  bool _retval = CefTextfield_999999_CppToC::Get(reinterpret_cast<cef_textfield_999999_t*>(self))->ConvertPointFromView(
+      CefViewCppToC_Unwrap(view),
+      pointVal);
+
+  // Restore param: point; type: simple_byref
+  if (point) {
+    *point = pointVal;
+  }
+
+  // Return type: bool
+  return _retval;
+}
+
+}  // namespace
+
+// CONSTRUCTOR FOR VERSION 999999 - Do not edit by hand.
+
+CefTextfield_999999_CppToC::CefTextfield_999999_CppToC() {
+  const int version = cef_api_version();
+  LOG_IF(FATAL, version < 999999) << __func__ << " called with invalid version " << version;
+
+  GetStruct()->set_password_input = textfield_set_password_input_999999;
+  GetStruct()->is_password_input = textfield_is_password_input_999999;
+  GetStruct()->set_read_only = textfield_set_read_only_999999;
+  GetStruct()->is_read_only = textfield_is_read_only_999999;
+  GetStruct()->get_text = textfield_get_text_999999;
+  GetStruct()->set_text = textfield_set_text_999999;
+  GetStruct()->append_text = textfield_append_text_999999;
+  GetStruct()->insert_or_replace_text = textfield_insert_or_replace_text_999999;
+  GetStruct()->has_selection = textfield_has_selection_999999;
+  GetStruct()->get_selected_text = textfield_get_selected_text_999999;
+  GetStruct()->select_all = textfield_select_all_999999;
+  GetStruct()->clear_selection = textfield_clear_selection_999999;
+  GetStruct()->get_selected_range = textfield_get_selected_range_999999;
+  GetStruct()->select_range = textfield_select_range_999999;
+  GetStruct()->get_cursor_position = textfield_get_cursor_position_999999;
+  GetStruct()->set_text_color = textfield_set_text_color_999999;
+  GetStruct()->get_text_color = textfield_get_text_color_999999;
+  GetStruct()->set_selection_text_color = textfield_set_selection_text_color_999999;
+  GetStruct()->get_selection_text_color = textfield_get_selection_text_color_999999;
+  GetStruct()->set_selection_background_color = textfield_set_selection_background_color_999999;
+  GetStruct()->get_selection_background_color = textfield_get_selection_background_color_999999;
+  GetStruct()->set_font_list = textfield_set_font_list_999999;
+  GetStruct()->apply_text_color = textfield_apply_text_color_999999;
+  GetStruct()->apply_text_style = textfield_apply_text_style_999999;
+  GetStruct()->is_command_enabled = textfield_is_command_enabled_999999;
+  GetStruct()->execute_command = textfield_execute_command_999999;
+  GetStruct()->clear_edit_history = textfield_clear_edit_history_999999;
+  GetStruct()->set_placeholder_text = textfield_set_placeholder_text_999999;
+  GetStruct()->get_placeholder_text = textfield_get_placeholder_text_999999;
+  GetStruct()->set_placeholder_text_color = textfield_set_placeholder_text_color_999999;
+  GetStruct()->set_accessible_name = textfield_set_accessible_name_999999;
+  GetStruct()->set_hover_background_color = textfield_set_hover_background_color_999999;
+  GetStruct()->base.as_browser_view = textfield_as_browser_view_999999;
+  GetStruct()->base.as_button = textfield_as_button_999999;
+  GetStruct()->base.as_panel = textfield_as_panel_999999;
+  GetStruct()->base.as_scroll_view = textfield_as_scroll_view_999999;
+  GetStruct()->base.as_textfield = textfield_as_textfield_999999;
+  GetStruct()->base.get_type_string = textfield_get_type_string_999999;
+  GetStruct()->base.to_string = textfield_to_string_999999;
+  GetStruct()->base.is_valid = textfield_is_valid_999999;
+  GetStruct()->base.is_attached = textfield_is_attached_999999;
+  GetStruct()->base.is_same = textfield_is_same_999999;
+  GetStruct()->base.get_delegate = textfield_get_delegate_999999;
+  GetStruct()->base.get_window = textfield_get_window_999999;
+  GetStruct()->base.get_id = textfield_get_id_999999;
+  GetStruct()->base.set_id = textfield_set_id_999999;
+  GetStruct()->base.get_group_id = textfield_get_group_id_999999;
+  GetStruct()->base.set_group_id = textfield_set_group_id_999999;
+  GetStruct()->base.get_parent_view = textfield_get_parent_view_999999;
+  GetStruct()->base.get_view_for_id = textfield_get_view_for_id_999999;
+  GetStruct()->base.set_bounds = textfield_set_bounds_999999;
+  GetStruct()->base.get_bounds = textfield_get_bounds_999999;
+  GetStruct()->base.get_bounds_in_screen = textfield_get_bounds_in_screen_999999;
+  GetStruct()->base.set_size = textfield_set_size_999999;
+  GetStruct()->base.get_size = textfield_get_size_999999;
+  GetStruct()->base.set_position = textfield_set_position_999999;
+  GetStruct()->base.get_position = textfield_get_position_999999;
+  GetStruct()->base.set_insets = textfield_set_insets_999999;
+  GetStruct()->base.get_insets = textfield_get_insets_999999;
+  GetStruct()->base.get_preferred_size = textfield_get_preferred_size_999999;
+  GetStruct()->base.size_to_preferred_size = textfield_size_to_preferred_size_999999;
+  GetStruct()->base.get_minimum_size = textfield_get_minimum_size_999999;
+  GetStruct()->base.get_maximum_size = textfield_get_maximum_size_999999;
+  GetStruct()->base.get_height_for_width = textfield_get_height_for_width_999999;
+  GetStruct()->base.invalidate_layout = textfield_invalidate_layout_999999;
+  GetStruct()->base.set_visible = textfield_set_visible_999999;
+  GetStruct()->base.is_visible = textfield_is_visible_999999;
+  GetStruct()->base.is_drawn = textfield_is_drawn_999999;
+  GetStruct()->base.set_enabled = textfield_set_enabled_999999;
+  GetStruct()->base.is_enabled = textfield_is_enabled_999999;
+  GetStruct()->base.set_focusable = textfield_set_focusable_999999;
+  GetStruct()->base.is_focusable = textfield_is_focusable_999999;
+  GetStruct()->base.is_accessibility_focusable = textfield_is_accessibility_focusable_999999;
+  GetStruct()->base.has_focus = textfield_has_focus_999999;
+  GetStruct()->base.request_focus = textfield_request_focus_999999;
+  GetStruct()->base.set_background_color = textfield_set_background_color_999999;
+  GetStruct()->base.get_background_color = textfield_get_background_color_999999;
+  GetStruct()->base.get_theme_color = textfield_get_theme_color_999999;
+  GetStruct()->base.convert_point_to_screen = textfield_convert_point_to_screen_999999;
+  GetStruct()->base.convert_point_from_screen = textfield_convert_point_from_screen_999999;
+  GetStruct()->base.convert_point_to_window = textfield_convert_point_to_window_999999;
+  GetStruct()->base.convert_point_from_window = textfield_convert_point_from_window_999999;
+  GetStruct()->base.convert_point_to_view = textfield_convert_point_to_view_999999;
+  GetStruct()->base.convert_point_from_view = textfield_convert_point_from_view_999999;
+}
+
+// DESTRUCTOR FOR VERSION 999999 - Do not edit by hand.
+
+CefTextfield_999999_CppToC::~CefTextfield_999999_CppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
+template<> CefRefPtr<CefTextfield> CefCppToCRefCounted<CefTextfield_999999_CppToC, CefTextfield, cef_textfield_999999_t>::UnwrapDerived(CefWrapperType type, cef_textfield_999999_t* s) {
+  NOTREACHED() << __func__ << " called with unexpected class type " << type;
+}
+
+template<> CefWrapperType CefCppToCRefCounted<CefTextfield_999999_CppToC, CefTextfield, cef_textfield_999999_t>::kWrapperType = WT_TEXTFIELD;
 
 

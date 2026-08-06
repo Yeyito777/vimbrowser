@@ -8,7 +8,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=6cb7b15c5121e392660304dd9db63ebeebea9304$
+// $hash=eaa3497943c961c6a5c8bf80846f9ae5dd14be7b$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_TEXTFIELD_CAPI_VERSIONS_H_
@@ -60,6 +60,42 @@ typedef struct _cef_textfield_0_t {
   void (CEF_CALLBACK *set_placeholder_text_color)(struct _cef_textfield_0_t* self, cef_color_t color);
   void (CEF_CALLBACK *set_accessible_name)(struct _cef_textfield_0_t* self, const cef_string_t* name);
 } cef_textfield_0_t;
+
+typedef struct _cef_textfield_999999_t {
+  cef_view_0_t base;
+  void (CEF_CALLBACK *set_password_input)(struct _cef_textfield_999999_t* self, int password_input);
+  int (CEF_CALLBACK *is_password_input)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_read_only)(struct _cef_textfield_999999_t* self, int read_only);
+  int (CEF_CALLBACK *is_read_only)(struct _cef_textfield_999999_t* self);
+  cef_string_userfree_t (CEF_CALLBACK *get_text)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_text)(struct _cef_textfield_999999_t* self, const cef_string_t* text);
+  void (CEF_CALLBACK *append_text)(struct _cef_textfield_999999_t* self, const cef_string_t* text);
+  void (CEF_CALLBACK *insert_or_replace_text)(struct _cef_textfield_999999_t* self, const cef_string_t* text);
+  int (CEF_CALLBACK *has_selection)(struct _cef_textfield_999999_t* self);
+  cef_string_userfree_t (CEF_CALLBACK *get_selected_text)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *select_all)(struct _cef_textfield_999999_t* self, int reversed);
+  void (CEF_CALLBACK *clear_selection)(struct _cef_textfield_999999_t* self);
+  cef_range_t (CEF_CALLBACK *get_selected_range)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *select_range)(struct _cef_textfield_999999_t* self, const cef_range_t* range);
+  size_t (CEF_CALLBACK *get_cursor_position)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_text_color)(struct _cef_textfield_999999_t* self, cef_color_t color);
+  cef_color_t (CEF_CALLBACK *get_text_color)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_selection_text_color)(struct _cef_textfield_999999_t* self, cef_color_t color);
+  cef_color_t (CEF_CALLBACK *get_selection_text_color)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_selection_background_color)(struct _cef_textfield_999999_t* self, cef_color_t color);
+  cef_color_t (CEF_CALLBACK *get_selection_background_color)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_font_list)(struct _cef_textfield_999999_t* self, const cef_string_t* font_list);
+  void (CEF_CALLBACK *apply_text_color)(struct _cef_textfield_999999_t* self, cef_color_t color, const cef_range_t* range);
+  void (CEF_CALLBACK *apply_text_style)(struct _cef_textfield_999999_t* self, cef_text_style_t style, int add, const cef_range_t* range);
+  int (CEF_CALLBACK *is_command_enabled)(struct _cef_textfield_999999_t* self, cef_text_field_commands_t command_id);
+  void (CEF_CALLBACK *execute_command)(struct _cef_textfield_999999_t* self, cef_text_field_commands_t command_id);
+  void (CEF_CALLBACK *clear_edit_history)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_placeholder_text)(struct _cef_textfield_999999_t* self, const cef_string_t* text);
+  cef_string_userfree_t (CEF_CALLBACK *get_placeholder_text)(struct _cef_textfield_999999_t* self);
+  void (CEF_CALLBACK *set_placeholder_text_color)(struct _cef_textfield_999999_t* self, cef_color_t color);
+  void (CEF_CALLBACK *set_accessible_name)(struct _cef_textfield_999999_t* self, const cef_string_t* name);
+  void (CEF_CALLBACK *set_hover_background_color)(struct _cef_textfield_999999_t* self, cef_color_t color);
+} cef_textfield_999999_t;
 
 CEF_EXPORT cef_textfield_0_t* cef_textfield_create(struct _cef_textfield_delegate_0_t* delegate);
 

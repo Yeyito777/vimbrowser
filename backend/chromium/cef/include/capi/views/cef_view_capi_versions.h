@@ -8,7 +8,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=d6fd4fb021ef8bcb0347f27130b90967f82e8a4b$
+// $hash=721a38e85f597e0abd8485be6f32d1a2fb37855a$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_VIEW_CAPI_VERSIONS_H_
@@ -30,6 +30,7 @@ struct _cef_button_0_t;
 struct _cef_panel_0_t;
 struct _cef_scroll_view_0_t;
 struct _cef_textfield_0_t;
+struct _cef_textfield_999999_t;
 struct _cef_window_0_t;
 
 typedef struct _cef_view_0_t {

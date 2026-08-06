@@ -224,14 +224,19 @@ void CefTextfieldImpl::SetPlaceholderTextColor(cef_color_t color) {
   root_view()->set_placeholder_text_color(color);
 }
 
+void CefTextfieldImpl::SetHoverBackgroundColor(cef_color_t color) {
+  CEF_REQUIRE_VALID_RETURN_VOID();
+  root_view()->SetHoverBackgroundColor(color);
+}
+
 void CefTextfieldImpl::SetBackgroundColor(cef_color_t color) {
   CEF_REQUIRE_VALID_RETURN_VOID();
-  root_view()->SetBackgroundColor(color);
+  root_view()->SetCefBackgroundColor(color);
 }
 
 cef_color_t CefTextfieldImpl::GetBackgroundColor() {
   CEF_REQUIRE_VALID_RETURN(0U);
-  return root_view()->GetBackgroundColor();
+  return root_view()->GetCefBackgroundColor();
 }
 
 void CefTextfieldImpl::SetAccessibleName(const CefString& name) {

@@ -29,6 +29,34 @@ void CefTextfieldView::Initialize() {
   SetBorder(views::CreateEmptyBorder(gfx::Insets()));
 }
 
+void CefTextfieldView::SetCefBackgroundColor(SkColor color) {
+  configured_background_color_ = color;
+  if (!mouse_hovered_ || !hover_background_color_) {
+    views::Textfield::SetBackgroundColor(color);
+  }
+}
+
+SkColor CefTextfieldView::GetCefBackgroundColor() const {
+  return configured_background_color_.value_or(
+      views::Textfield::GetBackgroundColor());
+}
+
+void CefTextfieldView::SetHoverBackgroundColor(SkColor color) {
+  if (!configured_background_color_) {
+    configured_background_color_ = views::Textfield::GetBackgroundColor();
+  }
+  hover_background_color_ = color;
+
+  // Chromium's standard Textfield hover is an opaque animated ink-drop layer
+  // above the glyphs. Sidebar rows need an immediate background-only state so
+  // their normal and per-range text colors remain untouched.
+  RemoveHoverEffect();
+  mouse_hovered_ = IsMouseHovered();
+  views::Textfield::SetBackgroundColor(
+      mouse_hovered_ ? *hover_background_color_
+                     : *configured_background_color_);
+}
+
 bool CefTextfieldView::HandleKeyEvent(views::Textfield* sender,
                                       const ui::KeyEvent& key_event) {
   DCHECK_EQ(sender, this);
@@ -61,6 +89,22 @@ bool CefTextfieldView::SkipDefaultKeyEventProcessing(
     return true;
   }
   return ParentClass::SkipDefaultKeyEventProcessing(event);
+}
+
+void CefTextfieldView::OnMouseEntered(const ui::MouseEvent& event) {
+  ParentClass::OnMouseEntered(event);
+  mouse_hovered_ = true;
+  if (hover_background_color_) {
+    views::Textfield::SetBackgroundColor(*hover_background_color_);
+  }
+}
+
+void CefTextfieldView::OnMouseExited(const ui::MouseEvent& event) {
+  ParentClass::OnMouseExited(event);
+  mouse_hovered_ = false;
+  if (hover_background_color_ && configured_background_color_) {
+    views::Textfield::SetBackgroundColor(*configured_background_color_);
+  }
 }
 
 BEGIN_METADATA(CefTextfieldView)
