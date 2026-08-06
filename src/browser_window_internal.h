@@ -24,11 +24,35 @@ inline constexpr const char kShaderRefreshScript[] = R"JS(
   const refresh = () => {
     const root = document.documentElement;
     if (!root) return;
-    const oldDisplay = root.style.display;
-    root.style.display = 'none';
+    const scroller = document.scrollingElement || root;
+    const scrollLeft = scroller.scrollLeft;
+    const scrollTop = scroller.scrollTop;
+    const oldDisplay = root.style.getPropertyValue('display');
+    const oldDisplayPriority = root.style.getPropertyPriority('display');
+    const restoreProperty = (style, name, value, priority) => {
+      if (value) {
+        style.setProperty(name, value, priority);
+      } else {
+        style.removeProperty(name);
+      }
+    };
+    const restoreScroll = () => {
+      window.scrollTo({
+        left: scrollLeft,
+        top: scrollTop,
+        behavior: 'instant',
+      });
+    };
+
+    // Collapsing the root forces Blink to resolve every computed style against
+    // the updated native shader state. It also temporarily reduces the
+    // document's scroll range to zero, so preserve and synchronously restore
+    // the frame's scroll offset around that refresh.
+    root.style.setProperty('display', 'none', 'important');
     void root.offsetHeight;
-    root.style.display = oldDisplay;
+    restoreProperty(root.style, 'display', oldDisplay, oldDisplayPriority);
     void root.offsetHeight;
+    restoreScroll();
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', refresh, {once: true});
