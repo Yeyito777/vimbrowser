@@ -685,6 +685,7 @@ class BrowserWindow final : public CefWindowDelegate,
   void FocusA26UrlFromTouch();
   void ClearA26ControlDedup(int control_id, uint64_t generation);
   void HandleSidebarMouseRowClick(size_t row_index);
+  void HandleSidebarMouseWheel(int direction);
   void UpdateModeIndicator();
   void SetShowModeIndicator(bool visible);
   void UpdateFpsIndicator();

@@ -560,6 +560,17 @@ class Harness:
         run(["xenv", "key", "-e", self.env_name, *keys], timeout=10)
         time.sleep(pause)
 
+    def move_mouse(self, x: int, y: int, *, pause: float = 0.1) -> None:
+        run(["xenv", "move", "-e", self.env_name, str(x), str(y)],
+            timeout=10)
+        time.sleep(pause)
+
+    def scroll(self, direction: str, clicks: int = 1,
+               *, pause: float = 0.2) -> None:
+        run(["xenv", "scroll", "-e", self.env_name, direction, str(clicks)],
+            timeout=10)
+        time.sleep(pause)
+
     def reset(self, *, focus_input: bool = True) -> None:
         global RUN_ID
         RUN_ID += 1
@@ -1224,6 +1235,50 @@ def test_sidebar_ctrl_scroll_keys_are_cursor_aware(h: Harness) -> None:
             "sidebar Ctrl-scroll activated a row instead of only selecting it")
 
 
+def test_sidebar_mouse_wheel_scrolls_overflow(h: Harness) -> None:
+    initial_sidebar = h.ipc(["sidebar"])
+    viewport_rows = int(initial_sidebar.get("viewport_rows") or 0)
+    require(viewport_rows >= 4,
+            "sidebar viewport is too short for wheel-scroll regression",
+            initial_sidebar)
+
+    # Exercise overflow with native sidebar rows while avoiding the cost of a
+    # renderer process per fixture item.
+    for index in range(viewport_rows + 8):
+        h.ipc(["folder-create", "0", f"wheel-regression-{index:03d}"])
+
+    sidebar = h.ipc(["sidebar"])
+    entries = [row for row in sidebar["rows"] if row["kind"] == "entry"]
+    require(len(entries) > viewport_rows,
+            "sidebar wheel fixture did not overflow the viewport", sidebar)
+
+    first = entries[0]
+    h.ipc(["sidebar-select", first["item_type"], str(first["item_id"])])
+    active_tab = h.ipc(["status"])["active_tabid"]
+
+    # Keep the pointer over the native sidebar and use xenv's isolated XInput
+    # wheel events. One down notch uses the same sticky-cursor line motion as
+    # Exocortex Ctrl+E; wheel-up reverses the viewport without activating a row.
+    h.move_mouse(80, 100)
+    h.scroll("down")
+    after_down = h.ipc(["sidebar"])
+    require(after_down.get("focused") is True and
+            after_down.get("scroll_offset") == 1 and
+            after_down.get("selected_type") == entries[1]["item_type"] and
+            after_down.get("selected_id") == entries[1]["item_id"],
+            "mouse wheel-down did not scroll the overflowing sidebar",
+            after_down)
+
+    h.scroll("up")
+    after_up = h.ipc(["sidebar"])
+    require(after_up.get("scroll_offset") == 0 and
+            after_up.get("selected_id") == entries[1]["item_id"],
+            "mouse wheel-up did not reverse the sidebar viewport",
+            after_up)
+    require(h.ipc(["status"])["active_tabid"] == active_tab,
+            "sidebar wheel scrolling activated a row")
+
+
 def test_shift_jk_uses_focused_sidebar_order_inside_folder(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url + "#shift-a"])
     h.ipc(["open-tab", h.initial_url + "#shift-b"])
@@ -1818,6 +1873,7 @@ TESTS = [
     test_sidebar_yanks_match_website_mode,
     test_sidebar_ctrl_number_focuses_tabs,
     test_sidebar_ctrl_scroll_keys_are_cursor_aware,
+    test_sidebar_mouse_wheel_scrolls_overflow,
     test_ipc_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
     test_sidebar_d_focuses_next_visible_tab,

@@ -5467,6 +5467,8 @@ void BrowserWindow::RunSidebarMouseWatcher() {
 
   const int fd = ConnectionNumber(display);
   Time last_button_time = 0;
+  int last_button_detail = 0;
+  bool last_button_event_was_raw = false;
   int a26_pressed_control = -1;
   bool a26_page_pressed = false;
   int a26_press_root_x = 0;
@@ -5646,8 +5648,27 @@ void BrowserWindow::RunSidebarMouseWatcher() {
             event_time = device->time;
           }
         }
-        if (detail == 1 && event_time != last_button_time) {
+        const bool button_event_is_raw =
+            xevent.xcookie.evtype == XI_RawButtonPress;
+        const bool duplicate_button_event =
+            detail == last_button_detail && event_time == last_button_time &&
+            button_event_is_raw != last_button_event_was_raw;
+        if (!duplicate_button_event) {
+          last_button_detail = detail;
           last_button_time = event_time;
+          last_button_event_was_raw = button_event_is_raw;
+        }
+        if ((detail == 4 || detail == 5) && !duplicate_button_event) {
+          ChromeMouseHits hits = update_hover_cursor();
+          if (!hits.context_menu.menu_visible &&
+              hits.sidebar.inside_sidebar) {
+            CefRefPtr<BrowserWindow> self = this;
+            CefPostTask(
+                TID_UI,
+                base::BindOnce(&BrowserWindow::HandleSidebarMouseWheel, self,
+                               detail == 5 ? 1 : -1));
+          }
+        } else if (detail == 1 && !duplicate_button_event) {
           ChromeMouseHits hits = update_hover_cursor();
           if (hits.context_menu.menu_visible) {
             CefRefPtr<BrowserWindow> self = this;
@@ -5842,6 +5863,22 @@ void BrowserWindow::HandleSidebarMouseRowClick(size_t row_index) {
     }
   }
   SetFocusArea(FocusArea::kTabSidebar);
+}
+
+void BrowserWindow::HandleSidebarMouseWheel(int direction) {
+  if (!window_ || !sidebar_visible_ || direction == 0) {
+    return;
+  }
+
+  // Match Exocortex's sidebar wheel behavior by routing each wheel notch
+  // through the cursor-aware one-line viewport motion. The selected row stays
+  // sticky while it remains visible and advances only when it would otherwise
+  // leave the viewport, so repeated wheel events can traverse all overflow
+  // rows without losing the keyboard cursor on display-only section chrome.
+  if (focus_area_ != FocusArea::kTabSidebar) {
+    SetFocusArea(FocusArea::kTabSidebar);
+  }
+  ScrollSidebarByKey(direction > 0 ? 'E' : 'Y');
 }
 
 void BrowserWindow::UpdateModeIndicator() {

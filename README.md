@@ -230,6 +230,10 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   mode, `Shift+j` / `Shift+k` focus the sidebar and continue from that same visual
   selection, following the visible sibling order inside the browsed folder rather
   than the tabs' backing-vector enumeration
+- sidebar rows use a height-bounded Exocortex-style viewport when tabs/folders
+  overflow the available space. The mouse wheel scrolls that viewport one row at
+  a time with the same sticky-cursor behavior as `Ctrl+E` / `Ctrl+Y`; `Ctrl+D` /
+  `Ctrl+U` and `Ctrl+F` / `Ctrl+B` provide half- and full-page scrolling
 - tabs and folders can be pinned through the IPC `tab-pin` / `folder-pin`
   commands. Pinned items are durable, share the leading `Pinned` section, and
   get the only section separator in the list; unpinning returns an item to the
