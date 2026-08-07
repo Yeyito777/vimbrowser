@@ -92,9 +92,10 @@ source `scripts/vimbrowser-ipc` fallback. Set
 separate test instance.
 
 See [`docs/ipc.md`](docs/ipc.md) for protocol framing, command semantics, and
-compatibility rules. IPC now has stable tab IDs (separate from reorderable tab
-indexes), ID-based tab focus/delete/order/open commands, complete folder/sidebar
-inspection and control, native HTML/text/JS, backend tab screenshots, backend
+compatibility rules. IPC now has profile-persistent stable tab IDs (separate
+from reorderable tab indexes), ID-based tab focus/delete/order/open commands,
+complete folder/sidebar inspection and control, native HTML/text/JS, backend tab
+screenshots, backend
 cookie inspection/mutation, secure browser-process local-file input assignment,
 and per-tab native network capture/replay.
 

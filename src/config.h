@@ -14,6 +14,7 @@ inline constexpr size_t kMaxOpenHistoryEntries = 1000;
 struct Config {
   std::string initial_url = "https://example.com";
   std::vector<std::string> initial_urls;
+  std::vector<uint64_t> initial_tab_ids;
   std::vector<uint64_t> initial_tab_folder_ids;
   std::vector<uint64_t> initial_tab_sort_orders;
   std::vector<bool> initial_tab_pinned;
@@ -23,6 +24,7 @@ struct Config {
   std::string state_path;
   std::string dwm_save_argv;
   size_t active_index = 0;
+  uint64_t next_tab_id = 1;
   int remote_debugging_port = 0;
   bool disable_gpu = false;
   bool explicit_profile_dir = false;
@@ -47,7 +49,9 @@ struct SavedSidebarFolder {
 struct AppState {
   std::vector<std::string> tabs;
   // These vectors are kept index-aligned with |tabs|. Zero means the sidebar
-  // root for folder ids and "assign a legacy/default order" for sort orders.
+  // root for folder ids, "assign a fresh persistent id" for tab ids, and
+  // "assign a legacy/default order" for sort orders.
+  std::vector<uint64_t> tab_ids;
   std::vector<uint64_t> tab_folder_ids;
   std::vector<uint64_t> tab_sort_orders;
   std::vector<bool> tab_pinned;
@@ -57,6 +61,8 @@ struct AppState {
   std::map<std::string, uint32_t> media_permission_grants;
   std::map<std::string, uint32_t> media_permission_denials;
   size_t active_index = 0;
+  // Zero is reserved to represent an exhausted uint64_t id namespace.
+  uint64_t next_tab_id = 1;
   uint64_t sidebar_folder_id = 0;
   uint64_t next_sidebar_folder_id = 1;
   bool show_mode_indicator = true;

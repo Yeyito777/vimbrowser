@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(vimbrowser LANGUAGES C CXX)
+include(CTest)
 if(APPLE)
   enable_language(OBJCXX)
 endif()
@@ -253,6 +254,18 @@ endif()
 add_executable(vimbrowser-ipc
   src/ipc_client.c
 )
+
+if(BUILD_TESTING)
+  add_executable(vimbrowser-config-state-test
+    tests/config_state_test.cc
+    src/config.cc
+    src/config.h
+  )
+  target_include_directories(vimbrowser-config-state-test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  )
+  add_test(NAME vimbrowser-config-state COMMAND vimbrowser-config-state-test)
+endif()
 
 target_compile_definitions(vimbrowser-ipc PRIVATE
   VIMBROWSER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"

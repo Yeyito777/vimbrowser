@@ -344,15 +344,18 @@ void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
 } // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
+                             std::vector<uint64_t> initial_tab_ids,
                              std::vector<uint64_t> initial_tab_folder_ids,
                              std::vector<uint64_t> initial_tab_sort_orders,
                              std::vector<bool> initial_tab_pinned,
-                             size_t active_index, bool show_mode_indicator,
+                             size_t active_index, uint64_t next_tab_id,
+                             bool show_mode_indicator,
                              bool show_fps_indicator, bool show_statusline,
                              bool shader_enabled, std::string state_path,
                              std::string dwm_save_argv,
                              std::string root_cache_path, bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
+      initial_tab_ids_(std::move(initial_tab_ids)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
@@ -363,7 +366,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
       show_statusline_(show_statusline), shader_enabled_(shader_enabled),
-      a26_shell_(a26_shell) {
+      a26_shell_(a26_shell), next_tab_id_(next_tab_id) {
   const char* xtest_workaround = std::getenv("A26_VIMBROWSER_XTEST_CHAR_WORKAROUND");
   a26_xtest_char_workaround_ =
       a26_shell_ && xtest_workaround && std::string_view(xtest_workaround) == "1";
@@ -404,12 +407,29 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
+  initial_tab_ids_.resize(initial_urls_.size(), 0);
   initial_tab_folder_ids_.resize(initial_urls_.size(), 0);
   initial_tab_sort_orders_.resize(initial_urls_.size(), 0);
   initial_tab_pinned_.resize(initial_urls_.size(), false);
   for (uint64_t &folder_id : initial_tab_folder_ids_) {
     if (folder_id != 0 && !folder_ids.contains(folder_id)) {
       folder_id = 0;
+    }
+  }
+  // State files are external input. Preserve every valid unique id, replace
+  // duplicates through the allocator, and ensure a stale counter can never
+  // collide with a restored tab. A zero next id is the explicit exhausted
+  // namespace sentinel and remains zero.
+  std::unordered_set<uint64_t> restored_tab_ids;
+  for (uint64_t &tab_id : initial_tab_ids_) {
+    if (tab_id == 0 || !restored_tab_ids.insert(tab_id).second) {
+      tab_id = 0;
+      continue;
+    }
+    if (next_tab_id_ != 0 && tab_id >= next_tab_id_) {
+      next_tab_id_ = tab_id == std::numeric_limits<uint64_t>::max()
+                         ? 0
+                         : tab_id + 1;
     }
   }
   if (initial_active_index_ >= initial_urls_.size()) {
@@ -1127,7 +1147,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
     InsertTab(initial_urls_[i], tabs_.size(), activate,
               lazy_restore_background_tabs && !activate,
               initial_tab_folder_ids_[i], initial_tab_sort_orders_[i],
-              initial_tab_pinned_[i]);
+              initial_tab_pinned_[i], {}, initial_tab_ids_[i]);
   }
   bulk_tab_update_ = false;
   RefreshSidebar();
@@ -6321,6 +6341,7 @@ void BrowserWindow::SaveState() const {
   // from this URL-only state format makes it impossible to restore one in the
   // default context after restart.
   state.active_index = 0;
+  state.next_tab_id = next_tab_id_;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
   state.show_statusline = show_statusline_;
@@ -6346,6 +6367,7 @@ void BrowserWindow::SaveState() const {
         state.active_index = state.tabs.size();
       }
       state.tabs.push_back(tab.url);
+      state.tab_ids.push_back(tab.id);
       state.tab_folder_ids.push_back(tab.folder_id);
       state.tab_sort_orders.push_back(tab.sidebar_sort_order);
       state.tab_pinned.push_back(tab.pinned);

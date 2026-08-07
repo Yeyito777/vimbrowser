@@ -55,10 +55,12 @@ class BrowserWindow final : public CefWindowDelegate,
                             public CefTextfieldDelegate {
  public:
   BrowserWindow(std::vector<std::string> initial_urls,
+                std::vector<uint64_t> initial_tab_ids,
                 std::vector<uint64_t> initial_tab_folder_ids,
                 std::vector<uint64_t> initial_tab_sort_orders,
                 std::vector<bool> initial_tab_pinned,
                 size_t active_index,
+                uint64_t next_tab_id,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
                 bool show_statusline,
@@ -387,6 +389,7 @@ class BrowserWindow final : public CefWindowDelegate,
               std::string context_name = {});
   void AddTabAfterSelection(std::string url, bool activate);
   std::optional<size_t> NewTabInsertionAnchorIndex() const;
+  uint64_t AllocateTabId(uint64_t restored_id = 0);
   void InsertTab(std::string url,
                  size_t index,
                  bool activate,
@@ -394,7 +397,8 @@ class BrowserWindow final : public CefWindowDelegate,
                  uint64_t folder_id = 0,
                  uint64_t sidebar_sort_order = 0,
                  bool pinned = false,
-                 std::string context_name = {});
+                 std::string context_name = {},
+                 uint64_t restored_id = 0);
   bool AddContextTab(std::string context_name,
                      std::string url,
                      std::string* error);
@@ -735,6 +739,7 @@ class BrowserWindow final : public CefWindowDelegate,
                                    const std::string& image_url);
 
   std::vector<std::string> initial_urls_;
+  std::vector<uint64_t> initial_tab_ids_;
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
   std::vector<bool> initial_tab_pinned_;

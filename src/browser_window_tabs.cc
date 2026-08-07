@@ -4,8 +4,10 @@
 #include "browser_window_internal.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -81,6 +83,25 @@ void BrowserWindow::AddTabAfterSelection(std::string url, bool activate) {
             sort_order, false, std::move(context_name));
 }
 
+uint64_t BrowserWindow::AllocateTabId(uint64_t restored_id) {
+  if (restored_id != 0) {
+    if (next_tab_id_ != 0 && restored_id >= next_tab_id_) {
+      next_tab_id_ = restored_id == std::numeric_limits<uint64_t>::max()
+                         ? 0
+                         : restored_id + 1;
+    }
+    return restored_id;
+  }
+
+  if (next_tab_id_ == 0) {
+    std::cerr << "vimbrowser: exhausted persistent tab id namespace\n";
+    std::abort();
+  }
+  const uint64_t id = next_tab_id_;
+  next_tab_id_ = id == std::numeric_limits<uint64_t>::max() ? 0 : id + 1;
+  return id;
+}
+
 void BrowserWindow::InsertTab(std::string url,
                               size_t index,
                               bool activate,
@@ -88,13 +109,14 @@ void BrowserWindow::InsertTab(std::string url,
                               uint64_t folder_id,
                               uint64_t sidebar_sort_order,
                               bool pinned,
-                              std::string context_name) {
+                              std::string context_name,
+                              uint64_t restored_id) {
   last_tab_close_placeholder_ = false;
   const size_t insert_index = std::min(index, tabs_.size());
   const bool deferred_load = defer_load && !activate;
 
   Tab tab;
-  SetTabId(tab, next_tab_id_++);
+  SetTabId(tab, AllocateTabId(restored_id));
   SetTabUrl(tab, std::move(url));
   tab.context = std::move(context_name);
   tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;
@@ -294,7 +316,7 @@ void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
   last_tab_close_placeholder_ = false;
 
   Tab tab;
-  SetTabId(tab, next_tab_id_++);
+  SetTabId(tab, AllocateTabId());
   SetTabUrl(tab, std::move(url));
   tab.context = std::move(context_name);
   tab.folder_id = SidebarFolderExists(folder_id) ? folder_id : 0;

@@ -7,8 +7,10 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <unistd.h>
 
@@ -455,9 +457,16 @@ AppState ReadAppState(const std::string& state_path) {
       const std::string tab = UnescapeStateValue(std::string_view(line).substr(4));
       if (!tab.empty()) {
         state.tabs.push_back(tab);
+        state.tab_ids.push_back(0);
         state.tab_folder_ids.push_back(0);
         state.tab_sort_orders.push_back(0);
         state.tab_pinned.push_back(false);
+      }
+    } else if (StartsWith(line, "tab_id=") && !state.tab_ids.empty()) {
+      uint64_t tab_id = 0;
+      if (ParseStateUint64(std::string_view(line).substr(7), &tab_id) &&
+          tab_id != 0) {
+        state.tab_ids.back() = tab_id;
       }
     } else if (StartsWith(line, "tab_folder=") &&
                !state.tab_folder_ids.empty()) {
@@ -509,6 +518,8 @@ AppState ReadAppState(const std::string& state_path) {
       if (end != value.c_str()) {
         state.active_index = static_cast<size_t>(active);
       }
+    } else if (StartsWith(line, "next_tab_id=")) {
+      ParseStateUint64(std::string_view(line).substr(12), &state.next_tab_id);
     } else if (StartsWith(line, "sidebar_folder=")) {
       ParseStateUint64(std::string_view(line).substr(15),
                        &state.sidebar_folder_id);
@@ -534,6 +545,25 @@ AppState ReadAppState(const std::string& state_path) {
 
   if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {
     state.active_index = state.tabs.size() - 1;
+  }
+  // A malformed state file must never give two restored tabs the same identity.
+  // Keep the first occurrence and let the normal persistent allocator replace
+  // later duplicates. Also repair stale nonzero allocator values from older or
+  // manually edited state files so newly created tabs cannot collide.
+  std::unordered_set<uint64_t> tab_ids;
+  uint64_t largest_tab_id = 0;
+  for (uint64_t& tab_id : state.tab_ids) {
+    if (tab_id == 0 || !tab_ids.insert(tab_id).second) {
+      tab_id = 0;
+      continue;
+    }
+    largest_tab_id = std::max(largest_tab_id, tab_id);
+  }
+  if (state.next_tab_id != 0 && state.next_tab_id <= largest_tab_id) {
+    state.next_tab_id =
+        largest_tab_id == std::numeric_limits<uint64_t>::max()
+            ? 0
+            : largest_tab_id + 1;
   }
   if (state.open_history.size() > kMaxOpenHistoryEntries) {
     state.open_history.erase(
@@ -572,6 +602,7 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     file << "showstatusline=" << (state.show_statusline ? "on" : "off") << '\n';
     file << "shader=" << (state.shader_enabled ? "on" : "off") << '\n';
     file << "active=" << state.active_index << '\n';
+    file << "next_tab_id=" << state.next_tab_id << '\n';
     file << "sidebar_folder=" << state.sidebar_folder_id << '\n';
     file << "next_sidebar_folder_id=" << state.next_sidebar_folder_id << '\n';
     for (const SavedSidebarFolder& folder : state.sidebar_folders) {
@@ -588,6 +619,11 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
       const std::string& tab = state.tabs[i];
       if (!tab.empty()) {
         file << "tab=" << EscapeStateValue(tab) << '\n';
+        const uint64_t tab_id =
+            i < state.tab_ids.size() ? state.tab_ids[i] : 0;
+        if (tab_id != 0) {
+          file << "tab_id=" << tab_id << '\n';
+        }
         const uint64_t folder_id = i < state.tab_folder_ids.size()
                                        ? state.tab_folder_ids[i]
                                        : 0;
@@ -748,6 +784,7 @@ Config ParseConfig(int argc, char* argv[]) {
     } else if (!arg.empty() && arg[0] != '-') {
       const std::string url = ResolveUrlOrSearch(std::string(arg));
       config.initial_urls.push_back(url);
+      config.initial_tab_ids.push_back(0);
       config.initial_tab_folder_ids.push_back(0);
       config.initial_tab_sort_orders.push_back(0);
       config.initial_tab_pinned.push_back(false);
@@ -756,6 +793,7 @@ Config ParseConfig(int argc, char* argv[]) {
   }
 
   const AppState state = ReadAppState(config.state_path);
+  config.next_tab_id = state.next_tab_id;
   config.show_mode_indicator = state.show_mode_indicator;
   config.show_fps_indicator = state.show_fps_indicator;
   config.show_statusline = state.show_statusline;
@@ -777,12 +815,14 @@ Config ParseConfig(int argc, char* argv[]) {
   if (!config.explicit_initial_urls.empty()) {
     if (!state.tabs.empty()) {
       config.initial_urls = state.tabs;
+      config.initial_tab_ids = state.tab_ids;
       config.initial_tab_folder_ids = state.tab_folder_ids;
       config.initial_tab_sort_orders = state.tab_sort_orders;
       config.initial_tab_pinned = state.tab_pinned;
       config.initial_urls.insert(config.initial_urls.end(),
                                  config.explicit_initial_urls.begin(),
                                  config.explicit_initial_urls.end());
+      config.initial_tab_ids.resize(config.initial_urls.size(), 0);
       config.initial_tab_folder_ids.resize(config.initial_urls.size(), 0);
       config.initial_tab_sort_orders.resize(config.initial_urls.size(), 0);
       config.initial_tab_pinned.resize(config.initial_urls.size(), false);
@@ -794,6 +834,7 @@ Config ParseConfig(int argc, char* argv[]) {
     }
   } else if (!state.tabs.empty()) {
     config.initial_urls = state.tabs;
+    config.initial_tab_ids = state.tab_ids;
     config.initial_tab_folder_ids = state.tab_folder_ids;
     config.initial_tab_sort_orders = state.tab_sort_orders;
     config.initial_tab_pinned = state.tab_pinned;
@@ -801,6 +842,7 @@ Config ParseConfig(int argc, char* argv[]) {
     config.initial_url = config.initial_urls[config.active_index];
   } else {
     config.initial_urls.push_back(config.initial_url);
+    config.initial_tab_ids.push_back(0);
     config.initial_tab_folder_ids.push_back(0);
     config.initial_tab_sort_orders.push_back(0);
     config.initial_tab_pinned.push_back(false);

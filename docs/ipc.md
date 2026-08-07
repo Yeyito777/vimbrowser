@@ -64,11 +64,22 @@ The client is intentionally thin. Protocol semantics belong in the browser comma
 
 `tabid` and tab index are deliberately different:
 
-- `tabid` is a runtime-stable monotonically increasing integer assigned when a tab backend is created.
-- `tabid` is not reused during the process lifetime.
+- `tabid` is a stable monotonically increasing integer assigned when a tab is created.
+- For tabs restored from a persistent profile state, `tabid` survives browser
+  restarts and remains attached to the same saved tab even after reordering.
+- The persistent profile allocator is saved too, so IDs belonging to closed or
+  transient tabs are not reused after a restart.
+- Legacy state files without saved IDs are migrated automatically on their next
+  save; each restored tab receives a fresh unique ID once.
 - `tabid` does not change when tabs are reordered.
 - `index` is the current zero-based position in the tab vector and can change.
 - `tab` is the one-based UI-friendly position.
+
+Named isolated request-context tabs are intentionally transient shell state and
+are not restored. Their IDs therefore cannot identify a tab after restart,
+although those consumed IDs are still never reused by that persistent profile.
+An instance-local state path likewise provides persistence only while that state
+file remains available; use `--profile-dir` for durable automation identity.
 
 Use ID-based commands for automation. Keep `tab <1-based-index>` only for legacy index-style scripts.
 

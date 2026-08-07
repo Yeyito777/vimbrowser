@@ -242,18 +242,22 @@ std::string EvalJsForIpc(CefRefPtr<CefFrame> frame, const std::string &code) {
 } // namespace
 
 App::App(std::vector<std::string> initial_urls,
+         std::vector<uint64_t> initial_tab_ids,
          std::vector<uint64_t> initial_tab_folder_ids,
          std::vector<uint64_t> initial_tab_sort_orders,
          std::vector<bool> initial_tab_pinned, size_t active_index,
+         uint64_t next_tab_id,
          bool show_mode_indicator, bool show_fps_indicator,
          bool show_statusline, bool shader_enabled, std::string state_path,
          std::string dwm_save_argv, std::string root_cache_path,
          bool disable_gpu, bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
+      initial_tab_ids_(std::move(initial_tab_ids)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
-      active_index_(active_index), show_mode_indicator_(show_mode_indicator),
+      active_index_(active_index), next_tab_id_(next_tab_id),
+      show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
       show_statusline_(show_statusline), shader_enabled_(shader_enabled),
       state_path_(std::move(state_path)),
@@ -314,8 +318,9 @@ bool App::OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine>,
 
 void App::OnContextInitialized() {
   CefRefPtr<BrowserWindow> window(new BrowserWindow(
-      initial_urls_, initial_tab_folder_ids_, initial_tab_sort_orders_,
-      initial_tab_pinned_, active_index_, show_mode_indicator_,
+      initial_urls_, initial_tab_ids_, initial_tab_folder_ids_,
+      initial_tab_sort_orders_, initial_tab_pinned_, active_index_, next_tab_id_,
+      show_mode_indicator_,
       show_fps_indicator_, show_statusline_, shader_enabled_, state_path_,
       dwm_save_argv_, root_cache_path_, a26_shell_));
   window->Create();
