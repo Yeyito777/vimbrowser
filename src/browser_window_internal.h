@@ -246,6 +246,7 @@ bool IsCtrlSemicolonKey(const CefKeyEvent &event);
 int NativeKeyCodeForSyntheticKey(int windows_key_code,
                                  char16_t unmodified_character);
 bool IsCommonCtrlEditingKey(const CefKeyEvent &event);
+char NativeEditingShortcutKey(const CefKeyEvent &event);
 bool ShouldForwardFocusedEditableKey(const CefKeyEvent &event,
                                      bool focus_on_editable_field);
 std::string Trim(std::string value);

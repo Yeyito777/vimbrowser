@@ -4135,6 +4135,56 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent &event) {
     // real insert-mode keypress (notably another `i`/`I`) is not eaten.
     suppress_next_website_char_.reset();
 
+    // Route native editing chords through CEF's focused-frame commands. A CEF
+    // Views shell does not have Chrome's Cocoa/GTK Edit-menu accelerator layer,
+    // so merely passing these key events through never executes their default
+    // Copy/Paste/etc. action. Using the frame API keeps the behavior identical
+    // across the macOS Command and Linux Control primary modifiers.
+    if (const char key = NativeEditingShortcutKey(event)) {
+      ResetWebsitePendingKeys();
+      CefRefPtr<CefBrowser> browser = ActiveBrowser();
+      CefRefPtr<CefFrame> frame = browser ? browser->GetFocusedFrame() : nullptr;
+      if (!frame && browser) {
+        frame = browser->GetMainFrame();
+      }
+      if (!frame) {
+        return false;
+      }
+
+      const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+      switch (key) {
+      case 'a':
+        frame->SelectAll();
+        break;
+      case 'c':
+        frame->Copy();
+        break;
+      case 'v':
+        if (shift) {
+          frame->PasteAndMatchStyle();
+        } else {
+          frame->Paste();
+        }
+        break;
+      case 'x':
+        frame->Cut();
+        break;
+      case 'y':
+        frame->Redo();
+        break;
+      case 'z':
+        if (shift) {
+          frame->Redo();
+        } else {
+          frame->Undo();
+        }
+        break;
+      default:
+        return false;
+      }
+      return true;
+    }
+
     if (IsEscapeKey(event)) {
       ResetWebsitePendingKeys();
       if (website_mode_ == vim::Mode::kInsert) {

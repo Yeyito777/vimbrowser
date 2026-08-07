@@ -51,6 +51,9 @@ for (const t of ['keydown','keypress','keyup','beforeinput','input',
       type: e.type,
       key: e.key,
       code: e.code,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
       target: e.target && e.target.id || e.target.tagName,
       value: document.getElementById('input').value,
       scrollY: window.scrollY
@@ -1494,6 +1497,46 @@ def test_ctrl_ms_toggle_sidebar(h: Harness) -> None:
             "Ctrl+M no longer shows and focuses the sidebar", after_m_show)
 
 
+def test_native_editing_shortcuts_execute_in_website_mode(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=True)
+    paste_text = "native-paste-sentinel"
+    run([
+        "xenv", "run", "-e", h.env_name, "bash", "-lc",
+        f"printf %s {shlex.quote(paste_text)} | xclip -selection clipboard",
+    ], timeout=10)
+    time.sleep(0.1)
+
+    h.key("ctrl+v", pause=0.25)
+    after_paste = h.snapshot()
+    require(after_paste["value"] == paste_text,
+            "native Paste did not execute in the focused page control",
+            after_paste)
+
+    copy_text = "native-copy-sentinel"
+    h.js(f"""
+        const input = document.getElementById('input');
+        input.value = {json.dumps(copy_text)};
+        input.focus();
+        input.select();
+        'ok'
+    """)
+    h.key("ctrl+c", pause=0.25)
+    copied = run([
+        "xenv", "exec", "-e", h.env_name,
+        "xclip", "-selection", "clipboard", "-o",
+    ], timeout=2)
+    require(copied == copy_text,
+            "native Copy did not write the page selection to the clipboard",
+            {"expected": copy_text, "actual": copied})
+
+    h.js("document.getElementById('input').value=''; 'ok'")
+    h.key("ctrl+shift+v", pause=0.25)
+    after_plain_paste = h.snapshot()
+    require(after_plain_paste["value"] == copy_text,
+            "native Paste and Match Style did not execute in the page control",
+            after_plain_paste)
+
+
 def test_ctrl_lh_start_right_click_and_hover_hints(h: Harness) -> None:
     reset_to_website_mode(h, focus_input=False)
     h.clear()
@@ -1881,6 +1924,7 @@ TESTS = [
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,
     test_ctrl_ms_toggle_sidebar,
+    test_native_editing_shortcuts_execute_in_website_mode,
     test_ctrl_lh_start_right_click_and_hover_hints,
     test_hints_work_before_full_page_load_and_survive_navigation,
     test_cold_start_launch_url_restores_saved_tabs_at_bottom,

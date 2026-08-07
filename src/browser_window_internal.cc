@@ -570,6 +570,49 @@ bool IsCommonCtrlEditingKey(const CefKeyEvent &event) {
          IsCtrlKey(event, 'y') || IsCtrlKey(event, 'z');
 }
 
+char NativeEditingShortcutKey(const CefKeyEvent &event) {
+#if defined(__APPLE__)
+  const bool primary = event.modifiers & EVENTFLAG_COMMAND_DOWN;
+  const uint32_t conflicting_modifiers =
+      EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN | EVENTFLAG_ALTGR_DOWN;
+#else
+  const bool primary = event.modifiers & EVENTFLAG_CONTROL_DOWN;
+  const uint32_t conflicting_modifiers =
+      EVENTFLAG_COMMAND_DOWN | EVENTFLAG_ALT_DOWN | EVENTFLAG_ALTGR_DOWN;
+#endif
+  if (!primary || (event.modifiers & conflicting_modifiers)) {
+    return '\0';
+  }
+
+  auto matches = [&event](char key) {
+    const char lower =
+        static_cast<char>(std::tolower(static_cast<unsigned char>(key)));
+    const char upper =
+        static_cast<char>(std::toupper(static_cast<unsigned char>(key)));
+    return event.windows_key_code == lower ||
+           event.windows_key_code == upper || event.character == lower ||
+           event.character == upper || event.unmodified_character == lower ||
+           event.unmodified_character == upper;
+  };
+
+  const bool shift = event.modifiers & EVENTFLAG_SHIFT_DOWN;
+  if (shift) {
+    if (matches('v')) {
+      return 'v';
+    }
+    if (matches('z')) {
+      return 'z';
+    }
+    return '\0';
+  }
+  for (const char key : {'a', 'c', 'v', 'x', 'y', 'z'}) {
+    if (matches(key)) {
+      return key;
+    }
+  }
+  return '\0';
+}
+
 bool ShouldForwardFocusedEditableKey(const CefKeyEvent &event,
                                      bool focus_on_editable_field) {
   if (!focus_on_editable_field) {
