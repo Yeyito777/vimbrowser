@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/shelf_types.h"
 #include "ash/webui/mall/app_id.h"
 #include "base/containers/to_vector.h"

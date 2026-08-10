@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "ash/constants/chrome_webui_url_constants.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/new_window_delegate.h"
 #include "ash/public/cpp/test/test_new_window_delegate.h"
 #include "ash/webui/projector_app/public/cpp/projector_app_constants.h"

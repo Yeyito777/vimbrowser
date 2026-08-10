@@ -9,7 +9,7 @@
 
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/shelf_model.h"
 #include "ash/public/cpp/shelf_model_observer.h"
 #include "base/memory/scoped_refptr.h"

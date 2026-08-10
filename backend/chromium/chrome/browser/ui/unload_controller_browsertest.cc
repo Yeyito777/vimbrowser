@@ -4,7 +4,7 @@
 
 #include "chrome/browser/ui/unload_controller.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/json/json_reader.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/values.h"

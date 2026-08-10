@@ -14,7 +14,7 @@
 #include "ash/app_list/views/app_list_item_view.h"
 #include "ash/app_list/views/apps_grid_view.h"
 #include "ash/ash_element_identifiers.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/app_menu_constants.h"
 #include "ash/public/cpp/shelf_item.h"
 #include "ash/public/cpp/shelf_model.h"

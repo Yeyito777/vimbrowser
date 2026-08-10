@@ -12,7 +12,7 @@
 #include "ash/constants/ash_switches.h"
 #include "ash/constants/personalization_entry_point.h"
 #include "ash/constants/url_constants.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/constants/webui_url_constants.h"
 #include "ash/public/cpp/locale_update_controller.h"
 #include "ash/public/cpp/login_types.h"

@@ -8,7 +8,7 @@
 #include <optional>
 #include <set>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/command_line.h"
 #include "base/json/values_util.h"
 #include "base/memory/raw_ptr.h"

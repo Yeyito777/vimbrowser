@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/check.h"
 #include "base/feature_list.h"
 #include "base/functional/bind.h"

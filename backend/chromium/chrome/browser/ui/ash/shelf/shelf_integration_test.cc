@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/shelf_model.h"
 #include "ash/root_window_controller.h"
 #include "ash/shelf/shelf.h"

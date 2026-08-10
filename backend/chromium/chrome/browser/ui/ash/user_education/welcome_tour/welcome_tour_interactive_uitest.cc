@@ -4,7 +4,7 @@
 
 #include "ash/ash_element_identifiers.h"
 #include "ash/constants/ash_features.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/app_list/app_list_features.h"
 #include "ash/shell.h"
 #include "ash/strings/grit/ash_strings.h"

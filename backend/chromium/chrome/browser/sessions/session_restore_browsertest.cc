@@ -154,7 +154,7 @@
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/json/json_reader.h"
 #include "chrome/browser/web_applications/test/web_app_test_observers.h"
 #endif  // BUILDFLAG(IS_CHROMEOS)

@@ -64,7 +64,7 @@
 #if BUILDFLAG(IS_CHROMEOS)
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/edusumer/graduation_utils.h"
 #include "ash/webui/system_apps/public/system_web_app_type.h"
 #include "chrome/browser/browser_process.h"

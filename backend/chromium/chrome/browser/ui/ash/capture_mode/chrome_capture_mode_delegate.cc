@@ -15,7 +15,7 @@
 #include "ash/capture_mode/capture_mode_types.h"
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/capture_mode/capture_mode_api.h"
 #include "ash/public/cpp/capture_mode/capture_mode_delegate.h"
 #include "ash/strings/grit/ash_strings.h"

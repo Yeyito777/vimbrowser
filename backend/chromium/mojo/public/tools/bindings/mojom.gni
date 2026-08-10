@@ -1815,7 +1815,7 @@ template("mojom") {
       java_srcjar_target_name = target_name + "_java_sources"
 
       action(java_srcjar_target_name) {
-        script = "//build/android/gyp/zip.py"
+        script = "//build/config/zip.py"
         inputs = []
         if (output_file_base_paths != []) {
           foreach(base_path, output_file_base_paths) {

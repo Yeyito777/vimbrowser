@@ -4,7 +4,7 @@
 
 #include "chrome/browser/chromeos/office_web_app/office_web_app.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/test/run_until.h"
 #include "base/test/test_future.h"
 #include "chrome/browser/web_applications/test/fake_web_contents_manager.h"

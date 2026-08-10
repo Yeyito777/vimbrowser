@@ -7,7 +7,7 @@
 #include <optional>
 
 #include "ash/ash_element_identifiers.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/user_education/user_education_types.h"
 #include "ash/user_education/user_education_util.h"
 #include "base/check.h"

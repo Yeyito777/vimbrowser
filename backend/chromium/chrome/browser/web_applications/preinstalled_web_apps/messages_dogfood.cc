@@ -4,7 +4,7 @@
 
 #include "chrome/browser/web_applications/preinstalled_web_apps/messages_dogfood.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "chrome/browser/web_applications/mojom/user_display_mode.mojom.h"
 
 namespace web_app {

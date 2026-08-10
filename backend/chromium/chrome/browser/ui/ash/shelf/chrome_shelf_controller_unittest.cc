@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/display/display_configuration_controller.h"
 #include "ash/multi_user/multi_user_window_manager.h"
 #include "ash/public/cpp/app_list/internal_app_id_constants.h"

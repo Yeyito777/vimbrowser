@@ -4,7 +4,7 @@
 
 #include "chrome/browser/chromeos/enterprise/cloud_storage/one_drive_pref_observer.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/check_deref.h"
 #include "base/check_is_test.h"
 #include "base/functional/bind.h"

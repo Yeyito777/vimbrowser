@@ -369,13 +369,6 @@ def GetRequiredArgs():
     # Enable use of the RLZ library as required by CDM storage ID.
     result['enable_rlz'] = True
 
-  if platform == 'linux':
-    # Don't generate Chromium installer packages. This avoids GN dependency
-    # errors with CEF (see issue #2301).
-    # Due to the way this variable is declared in chrome/installer/BUILD.gn it
-    # can't be enforced by assert().
-    result['enable_linux_installer'] = False
-
   return result
 
 

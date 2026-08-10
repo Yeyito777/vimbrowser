@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include "ash/constants/web_app_id_constants.h"
 #include "base/base64.h"
 #include "base/check.h"
 #include "base/check_op.h"
@@ -79,6 +78,7 @@
 #include "url/gurl.h"
 
 #if BUILDFLAG(IS_CHROMEOS)
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/webui/system_apps/public/system_web_app_type.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chromeos/ash/components/browser_context_helper/browser_context_types.h"

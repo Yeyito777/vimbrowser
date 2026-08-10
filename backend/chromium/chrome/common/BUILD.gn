@@ -546,6 +546,7 @@ static_library("constants") {
     "pref_font_script_names-inl.h",
     "pref_font_webkit_names.h",
     "pref_names.h",
+    "web_app_id_constants.h",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 

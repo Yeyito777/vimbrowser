@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/webui/projector_app/public/cpp/projector_app_constants.h"
 #include "base/auto_reset.h"
 #include "base/check_is_test.h"

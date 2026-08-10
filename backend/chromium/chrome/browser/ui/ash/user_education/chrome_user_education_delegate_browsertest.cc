@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/webui/system_apps/public/system_web_app_type.h"
 #include "base/metrics/histogram_base.h"
 #include "base/test/metrics/histogram_tester.h"

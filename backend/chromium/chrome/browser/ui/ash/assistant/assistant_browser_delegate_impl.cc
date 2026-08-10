@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "ash/constants/ash_features.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/new_window_delegate.h"
 #include "base/check_is_test.h"
 #include "base/containers/fixed_flat_set.h"

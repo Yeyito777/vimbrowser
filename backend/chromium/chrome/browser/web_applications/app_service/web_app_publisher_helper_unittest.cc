@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/check.h"
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"

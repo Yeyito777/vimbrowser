@@ -4,8 +4,7 @@
 
 #include "chrome/browser/apps/app_service/metrics/app_service_metrics.h"
 
-#include "ash/constants/web_app_id_constants.h"
-#include "ash/webui/mall/app_id.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/notreached.h"
 #include "base/time/time.h"

@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "ash/webui/settings/public/constants/routes_util.h"
 #include "base/compiler_specific.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"

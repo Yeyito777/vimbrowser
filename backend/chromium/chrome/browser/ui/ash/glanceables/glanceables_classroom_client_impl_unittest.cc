@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "ash/constants/ash_pref_names.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/glanceables/classroom/glanceables_classroom_types.h"
 #include "base/command_line.h"
 #include "base/functional/bind.h"

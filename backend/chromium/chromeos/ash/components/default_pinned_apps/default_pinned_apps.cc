@@ -5,7 +5,7 @@
 #include "chromeos/ash/components/default_pinned_apps/default_pinned_apps.h"
 
 #include "ash/constants/ash_switches.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/webui/mall/app_id.h"
 #include "build/branding_buildflags.h"
 #include "chromeos/ash/components/file_manager/app_id.h"

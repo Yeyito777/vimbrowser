@@ -4,7 +4,7 @@
 
 #include "chrome/browser/web_applications/preinstalled_web_apps/google_chat.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "chrome/browser/web_applications/external_install_options.h"

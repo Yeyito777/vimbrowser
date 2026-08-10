@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "ash/constants/ash_features.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/constants/webui_url_constants.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"

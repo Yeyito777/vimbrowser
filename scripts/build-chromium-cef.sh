@@ -102,7 +102,6 @@ EOF
 else
   cat >> "${args_tmp}" <<EOF
 target_cpu="${target_cpu}"
-enable_linux_installer=false
 use_sysroot=true
 cef_use_gtk=false
 EOF

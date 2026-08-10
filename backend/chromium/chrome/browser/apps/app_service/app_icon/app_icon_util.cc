@@ -4,7 +4,6 @@
 
 #include "chrome/browser/apps/app_service/app_icon/app_icon_util.h"
 
-#include "ash/public/cpp/shelf_types.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"

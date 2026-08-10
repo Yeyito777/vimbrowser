@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/test/scoped_feature_list.h"
 #include "chrome/browser/apps/link_capturing/link_capturing_feature_test_support.h"

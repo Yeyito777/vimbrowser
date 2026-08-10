@@ -4,7 +4,7 @@
 
 #include "chrome/browser/web_applications/ash/migrations/adobe_express_oem_to_default_migration.h"
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_filter.h"
 #include "chrome/browser/web_applications/web_app_management_type.h"

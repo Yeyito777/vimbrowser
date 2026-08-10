@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/public/cpp/notification_utils.h"
 #include "base/byte_size.h"
 #include "base/feature_list.h"

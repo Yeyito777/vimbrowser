@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "ash/constants/ash_switches.h"
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "ash/constants/webui_url_constants.h"
 #include "chrome/browser/ash/system_web_apps/system_web_app_manager.h"
 #include "chrome/browser/profiles/profile_manager.h"

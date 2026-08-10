@@ -28,7 +28,7 @@
 #include "chrome/browser/web_applications/preinstalled_web_apps/youtube.h"
 
 #if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/feature_list.h"
 #include "chrome/browser/apps/user_type_filter.h"
 #include "chrome/browser/profiles/profile.h"

@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "ash/constants/ash_pref_names.h"
 #include "base/feature_list.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"

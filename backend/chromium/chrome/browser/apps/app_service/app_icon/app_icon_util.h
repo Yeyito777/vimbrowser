@@ -8,7 +8,6 @@
 #include <map>
 #include <vector>
 
-#include "ash/public/cpp/shelf_types.h"
 #include "base/files/file_path.h"
 #include "components/services/app_service/public/cpp/icon_effects.h"
 #include "components/services/app_service/public/cpp/icon_types.h"

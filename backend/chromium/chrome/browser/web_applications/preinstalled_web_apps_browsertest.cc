@@ -6,7 +6,7 @@
 
 #include <array>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/files/file_path.h"
 #include "base/test/bind.h"
 #include "base/test/scoped_feature_list.h"

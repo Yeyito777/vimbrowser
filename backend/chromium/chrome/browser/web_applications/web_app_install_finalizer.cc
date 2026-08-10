@@ -8,7 +8,7 @@
 #include <optional>
 #include <utility>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/barrier_callback.h"
 #include "base/check_is_test.h"
 #include "base/containers/flat_set.h"
