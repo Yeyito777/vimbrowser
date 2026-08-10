@@ -452,35 +452,6 @@ test("libcef_static_unittests") {
   ]
 }
 
-# Source files that are linked into libcef and cef_framework and implement
-# interfaces exposed to ceftests via the include/test directory. These sources
-# may access Chromium/CEF internals. This is defined as a separate target from
-# libcef_static to avoid introducing testonly dependencies there.
-source_set("libcef_test_support") {
-  testonly = true
-
-  sources = [
-    "libcef/browser/test/test_helpers_impl.cc",
-    "libcef/browser/test/test_server_impl.cc",
-    "libcef/browser/test/test_server_impl.h",
-    "libcef/common/test/api_version_test_impl.cc",
-    "libcef/common/test/translator_test_impl.cc",
-  ]
-
-  deps = [
-    ":libcef_static",
-    "//net:test_support",
-
-    # Support for UI input events.
-    "//ui/views:test_support",
-  ]
-
-  configs += [
-    ":libcef_includes_config",
-  ]
-}
-
-
 #
 # libcef_static target.
 #
@@ -1685,7 +1656,6 @@ libcef_sources_common = includes_common +
 
 libcef_deps_common = [
   ":libcef_static",
-  ":libcef_test_support",
   ":make_pack_header_resources",
   ":make_pack_header_strings",
   ":make_pack_header_command_ids",
@@ -1793,9 +1763,6 @@ if (is_mac) {
   }
 
   mac_framework_bundle("cef_framework") {
-    # Necessary because the libcef_test_support target is testonly.
-    testonly = true
-
     output_name = cef_framework_name
 
     framework_version = "A"
@@ -1845,9 +1812,6 @@ if (is_mac) {
   }
 } else {
   shared_library("libcef") {
-    # Necessary because the libcef_test_support target is testonly.
-    testonly = true
-
     sources = libcef_sources_common
 
     deps = libcef_deps_common

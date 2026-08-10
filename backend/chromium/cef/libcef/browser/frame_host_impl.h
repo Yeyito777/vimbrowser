@@ -113,8 +113,6 @@ class CefFrameHostImpl : public CefFrame, public cef::mojom::BrowserFrame {
   // Called from CefBrowserHostBase::DidStopLoading.
   void MaybeSendDidStopLoading();
 
-  void ExecuteJavaScriptWithUserGestureForTests(const CefString& javascript);
-
   // Returns the RFH currently associated with this frame. May return nullptr if
   // this frame is currenly detached. Do not directly compare RFH pointers; use
   // IsSameFrame() instead. Must be called on the UI thread.

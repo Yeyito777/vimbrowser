@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b722f0fb1669cbf7e6e6a397a596f6b677db8e7a$
+// $hash=10331e836d92dfab016591e7a43d7635c747effd$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_WINDOW_CAPI_H_
@@ -291,33 +291,6 @@ typedef struct _cef_window_t {
   /// Retrieve the platform window handle for this Window.
   ///
   cef_window_handle_t (CEF_CALLBACK *get_window_handle)(struct _cef_window_t* self);
-
-  ///
-  /// Simulate a key press. |key_code| is the VKEY_* value from Chromium's
-  /// ui/events/keycodes/keyboard_codes.h header (VK_* values on Windows).
-  /// |event_flags| is some combination of EVENTFLAG_SHIFT_DOWN,
-  /// EVENTFLAG_CONTROL_DOWN and/or EVENTFLAG_ALT_DOWN. This function is exposed
-  /// primarily for testing purposes.
-  ///
-  void (CEF_CALLBACK *send_key_press)(struct _cef_window_t* self, int key_code, uint32_t event_flags);
-
-  ///
-  /// Simulate a mouse move. The mouse cursor will be moved to the specified
-  /// (screen_x, screen_y) position. This function is exposed primarily for
-  /// testing purposes.
-  ///
-  void (CEF_CALLBACK *send_mouse_move)(struct _cef_window_t* self, int screen_x, int screen_y);
-
-  ///
-  /// Simulate mouse down and/or mouse up events. |button| is the mouse button
-  /// type. If |mouse_down| is true (1) a mouse down event will be sent. If
-  /// |mouse_up| is true (1) a mouse up event will be sent. If both are true (1)
-  /// a mouse down event will be sent followed by a mouse up event (equivalent
-  /// to clicking the mouse button). The events will be sent using the current
-  /// cursor position so make sure to call send_mouse_move() first to position
-  /// the mouse. This function is exposed primarily for testing purposes.
-  ///
-  void (CEF_CALLBACK *send_mouse_events)(struct _cef_window_t* self, cef_mouse_button_type_t button, int mouse_down, int mouse_up);
 
   ///
   /// Set the keyboard accelerator for the specified |command_id|. |key_code|

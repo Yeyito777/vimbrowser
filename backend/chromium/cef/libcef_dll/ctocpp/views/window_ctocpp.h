@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d5b5e14ae8e57c97ad59da294aee18d116dc2fdf$
+// $hash=3204bd938d3826b6d5bdd22179b05288638400b7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_
@@ -71,9 +71,6 @@ class CefWindowCToCpp
   CefRect GetClientAreaBoundsInScreen() override;
   void SetDraggableRegions(const std::vector<CefDraggableRegion>& regions) override;
   CefWindowHandle GetWindowHandle() override;
-  void SendKeyPress(int key_code, uint32_t event_flags) override;
-  void SendMouseMove(int screen_x, int screen_y) override;
-  void SendMouseEvents(cef_mouse_button_type_t button, bool mouse_down, bool mouse_up) override;
   void SetAccelerator(int command_id, int key_code, bool shift_pressed, bool ctrl_pressed, bool alt_pressed, bool high_priority) override;
   void RemoveAccelerator(int command_id) override;
   void RemoveAllAccelerators() override;

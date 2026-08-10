@@ -19,7 +19,6 @@
 #include "cef/libcef/browser/views/window_view.h"
 #include "components/constrained_window/constrained_window_views.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
-#include "ui/base/test/ui_controls.h"
 #include "ui/compositor/compositor.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/controls/button/menu_button.h"
@@ -31,50 +30,10 @@
 #endif  // defined(USE_AURA)
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/aura/test/ui_controls_aurawin.h"
 #include "ui/display/win/screen_win.h"
-#elif BUILDFLAG(IS_OZONE)
-#include "ui/aura/env.h"
-#include "ui/aura/test/event_generator_delegate_aura.h"
-#include "ui/events/test/event_generator.h"
-#include "ui/ozone/public/ozone_platform.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
 #endif
 
 namespace {
-
-#if BUILDFLAG(IS_OZONE)
-// Returns true if running on the Wayland platform.
-bool IsRunningOnWayland() {
-  return ui::OzonePlatform::GetPlatformNameForTest() == "wayland";
-}
-#endif
-
-// Based on chrome/test/base/interactive_ui_tests_main.cc.
-// Note: On Ozone/Wayland, ui_controls requires a test compositor with
-// WaylandProxy infrastructure. Instead, we use ui::test::EventGenerator
-// which dispatches events directly to the window event dispatcher.
-void InitializeUITesting() {
-  static bool initialized = false;
-  if (!initialized) {
-#if BUILDFLAG(IS_WIN)
-    aura::test::EnableUIControlsAuraWin();
-#elif BUILDFLAG(IS_OZONE)
-    if (IsRunningOnWayland()) {
-      // On Wayland, we use EventGenerator instead of ui_controls.
-      ui::test::EventGeneratorDelegate::SetFactoryFunction(
-          base::BindRepeating(&aura::test::EventGeneratorDelegateAura::Create));
-    } else {
-      // On X11, ui_controls works fine.
-      ui_controls::EnableUIControls();
-    }
-#else
-    ui_controls::EnableUIControls();
-#endif
-
-    initialized = true;
-  }
-}
 
 #if defined(USE_AURA)
 
@@ -628,174 +587,6 @@ void CefWindowImpl::SetDraggableRegions(
 CefWindowHandle CefWindowImpl::GetWindowHandle() {
   CEF_REQUIRE_VALID_RETURN(kNullWindowHandle);
   return view_util::GetWindowHandle(widget_);
-}
-
-#if BUILDFLAG(IS_OZONE)
-void CefWindowImpl::EnsureEventGenerator(const gfx::Point& screen_point) {
-  // Find the window at the given screen coordinates. This handles cases where
-  // the target is a popup menu or other window that's not the main window.
-  aura::Window* target_root_window = nullptr;
-  aura::Window* capture_window = nullptr;
-  aura::Window* bounds_window = nullptr;
-
-  aura::Window::Windows windows =
-      views::DesktopWindowTreeHostPlatform::GetAllOpenWindows();
-  for (aura::Window* window : windows) {
-    // Prioritize windows with capture (e.g., popup menus).
-    if (window->HasCapture()) {
-      capture_window = window->GetRootWindow();
-    }
-    if (window->GetBoundsInScreen().Contains(screen_point)) {
-      bounds_window = window->GetRootWindow();
-    }
-  }
-
-  // Prefer the window with capture, then the window at the point.
-  target_root_window = capture_window ? capture_window : bounds_window;
-
-  // Fall back to this widget's window if no window found.
-  if (!target_root_window) {
-    gfx::NativeWindow native_window = view_util::GetNativeWindow(widget_);
-    if (native_window) {
-      target_root_window = native_window->GetRootWindow();
-    }
-  }
-
-  if (!target_root_window) {
-    // Clear any existing EventGenerator to avoid using a stale one.
-    event_generator_.reset();
-    event_generator_root_window_ = nullptr;
-    return;
-  }
-
-  // Only recreate EventGenerator if targeting a different root window.
-  if (event_generator_ && event_generator_root_window_ == target_root_window) {
-    return;
-  }
-
-  event_generator_ =
-      std::make_unique<ui::test::EventGenerator>(target_root_window);
-  event_generator_root_window_ = target_root_window;
-}
-#endif
-
-void CefWindowImpl::SendKeyPress(int key_code, uint32_t event_flags) {
-  CEF_REQUIRE_VALID_RETURN_VOID();
-  InitializeUITesting();
-
-  gfx::NativeWindow native_window = view_util::GetNativeWindow(widget_);
-  if (!native_window) {
-    return;
-  }
-
-#if BUILDFLAG(IS_OZONE)
-  if (IsRunningOnWayland()) {
-    // On Wayland, use EventGenerator which dispatches events directly
-    // to the window event dispatcher without requiring test compositor support.
-    gfx::Rect bounds = widget_->GetWindowBoundsInScreen();
-    EnsureEventGenerator(bounds.CenterPoint());
-    if (!event_generator_) {
-      return;
-    }
-
-    int flags = ui::EF_NONE;
-    if (event_flags & EVENTFLAG_CONTROL_DOWN) {
-      flags |= ui::EF_CONTROL_DOWN;
-    }
-    if (event_flags & EVENTFLAG_SHIFT_DOWN) {
-      flags |= ui::EF_SHIFT_DOWN;
-    }
-    if (event_flags & EVENTFLAG_ALT_DOWN) {
-      flags |= ui::EF_ALT_DOWN;
-    }
-    // Use PressAndReleaseKeyAndModifierKeys which properly presses modifier
-    // keys before the main key, ensuring accelerators work correctly.
-    event_generator_->PressAndReleaseKeyAndModifierKeys(
-        static_cast<ui::KeyboardCode>(key_code), flags);
-    return;
-  }
-#endif
-
-  ui_controls::SendKeyPress(native_window,
-                            static_cast<ui::KeyboardCode>(key_code),
-                            !!(event_flags & EVENTFLAG_CONTROL_DOWN),
-                            !!(event_flags & EVENTFLAG_SHIFT_DOWN),
-                            !!(event_flags & EVENTFLAG_ALT_DOWN),
-                            false);  // Command key is not supported by Aura.
-}
-
-void CefWindowImpl::SendMouseMove(int screen_x, int screen_y) {
-  CEF_REQUIRE_VALID_RETURN_VOID();
-  InitializeUITesting();
-
-  gfx::Point point(screen_x, screen_y);
-
-#if BUILDFLAG(IS_OZONE)
-  if (IsRunningOnWayland()) {
-    EnsureEventGenerator(point);
-    if (event_generator_) {
-      event_generator_->MoveMouseTo(point);
-    }
-    return;
-  }
-#endif
-
-  // Converts to pixel coordinates internally on Windows.
-  ui_controls::SendMouseMove(point.x(), point.y());
-}
-
-void CefWindowImpl::SendMouseEvents(cef_mouse_button_type_t button,
-                                    bool mouse_down,
-                                    bool mouse_up) {
-  CEF_REQUIRE_VALID_RETURN_VOID();
-  if (!mouse_down && !mouse_up) {
-    return;
-  }
-
-  InitializeUITesting();
-
-#if BUILDFLAG(IS_OZONE)
-  if (IsRunningOnWayland()) {
-    // Use the last known mouse position to find the correct target window.
-    gfx::Point mouse_location = aura::Env::GetInstance()->last_mouse_location();
-    EnsureEventGenerator(mouse_location);
-    if (!event_generator_) {
-      return;
-    }
-
-    int flag = ui::EF_LEFT_MOUSE_BUTTON;
-    if (button == MBT_MIDDLE) {
-      flag = ui::EF_MIDDLE_MOUSE_BUTTON;
-    } else if (button == MBT_RIGHT) {
-      flag = ui::EF_RIGHT_MOUSE_BUTTON;
-    }
-
-    if (mouse_down) {
-      event_generator_->PressButton(flag);
-    }
-    if (mouse_up) {
-      event_generator_->ReleaseButton(flag);
-    }
-    return;
-  }
-#endif
-
-  ui_controls::MouseButton type = ui_controls::LEFT;
-  if (button == MBT_MIDDLE) {
-    type = ui_controls::MIDDLE;
-  } else if (button == MBT_RIGHT) {
-    type = ui_controls::RIGHT;
-  }
-
-  int state = 0;
-  if (mouse_down) {
-    state |= ui_controls::DOWN;
-  }
-  if (mouse_up) {
-    state |= ui_controls::UP;
-  }
-
-  ui_controls::SendMouseEvents(type, state);
 }
 
 void CefWindowImpl::SetAccelerator(int command_id,

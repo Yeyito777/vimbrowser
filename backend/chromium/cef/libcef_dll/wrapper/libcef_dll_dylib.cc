@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dfba1a93d5e5f09b23cbc8a167d2e96a6eb9bd0b$
+// $hash=49890081d284e6eec1b6935b5ef3a88f7ae17d12$
 //
 
 
@@ -56,10 +56,6 @@
 #include "include/capi/cef_waitable_event_capi.h"
 #include "include/capi/cef_xml_reader_capi.h"
 #include "include/capi/cef_zip_reader_capi.h"
-#include "include/capi/test/cef_api_version_test_capi.h"
-#include "include/capi/test/cef_test_helpers_capi.h"
-#include "include/capi/test/cef_test_server_capi.h"
-#include "include/capi/test/cef_translator_test_capi.h"
 #include "include/capi/views/cef_browser_view_capi.h"
 #include "include/capi/views/cef_display_capi.h"
 #include "include/capi/views/cef_label_button_capi.h"
@@ -147,9 +143,6 @@ decltype(&cef_begin_tracing) cef_begin_tracing;
 decltype(&cef_end_tracing) cef_end_tracing;
 decltype(&cef_now_from_system_trace_time) cef_now_from_system_trace_time;
 decltype(&cef_register_extension) cef_register_extension;
-decltype(&cef_execute_java_script_with_user_gesture_for_tests) cef_execute_java_script_with_user_gesture_for_tests;
-decltype(&cef_set_data_directory_for_tests) cef_set_data_directory_for_tests;
-decltype(&cef_is_feature_enabled_for_tests) cef_is_feature_enabled_for_tests;
 decltype(&cef_browser_host_create_browser) cef_browser_host_create_browser;
 decltype(&cef_browser_host_create_browser_sync) cef_browser_host_create_browser_sync;
 decltype(&cef_browser_host_get_browser_by_identifier) cef_browser_host_get_browser_by_identifier;
@@ -244,61 +237,6 @@ decltype(&cef_list_value_create) cef_list_value_create;
 decltype(&cef_waitable_event_create) cef_waitable_event_create;
 decltype(&cef_xml_reader_create) cef_xml_reader_create;
 decltype(&cef_zip_reader_create) cef_zip_reader_create;
-decltype(&cef_api_version_test_create) cef_api_version_test_create;
-decltype(&cef_api_version_test_ref_ptr_library_create) cef_api_version_test_ref_ptr_library_create;
-#if CEF_API_ADDED(13301)
-decltype(&cef_api_version_test_ref_ptr_library_create_with_default) cef_api_version_test_ref_ptr_library_create_with_default;
-#endif
-decltype(&cef_api_version_test_ref_ptr_library_child_create) cef_api_version_test_ref_ptr_library_child_create;
-#if CEF_API_ADDED(13301)
-decltype(&cef_api_version_test_ref_ptr_library_child_create_with_default) cef_api_version_test_ref_ptr_library_child_create_with_default;
-#endif
-#if CEF_API_REMOVED(13301)
-decltype(&cef_api_version_test_ref_ptr_library_child_child_create) cef_api_version_test_ref_ptr_library_child_child_create;
-#endif
-#if CEF_API_RANGE(13301, 13302)
-decltype(&cef_api_version_test_ref_ptr_library_child_child_v1_create) cef_api_version_test_ref_ptr_library_child_child_v1_create;
-#endif
-#if CEF_API_RANGE(13301, 13302)
-decltype(&cef_api_version_test_ref_ptr_library_child_child_v1_create_with_default) cef_api_version_test_ref_ptr_library_child_child_v1_create_with_default;
-#endif
-#if CEF_API_ADDED(13302)
-decltype(&cef_api_version_test_ref_ptr_library_child_child_v2_create) cef_api_version_test_ref_ptr_library_child_child_v2_create;
-#endif
-#if CEF_API_ADDED(13302)
-decltype(&cef_api_version_test_ref_ptr_library_child_child_v2_create_with_default) cef_api_version_test_ref_ptr_library_child_child_v2_create_with_default;
-#endif
-decltype(&cef_api_version_test_scoped_library_create) cef_api_version_test_scoped_library_create;
-#if CEF_API_ADDED(13301)
-decltype(&cef_api_version_test_scoped_library_create_with_default) cef_api_version_test_scoped_library_create_with_default;
-#endif
-decltype(&cef_api_version_test_scoped_library_child_create) cef_api_version_test_scoped_library_child_create;
-#if CEF_API_ADDED(13301)
-decltype(&cef_api_version_test_scoped_library_child_create_with_default) cef_api_version_test_scoped_library_child_create_with_default;
-#endif
-#if CEF_API_REMOVED(13301)
-decltype(&cef_api_version_test_scoped_library_child_child_create) cef_api_version_test_scoped_library_child_child_create;
-#endif
-#if CEF_API_RANGE(13301, 13302)
-decltype(&cef_api_version_test_scoped_library_child_child_v1_create) cef_api_version_test_scoped_library_child_child_v1_create;
-#endif
-#if CEF_API_RANGE(13301, 13302)
-decltype(&cef_api_version_test_scoped_library_child_child_v1_create_with_default) cef_api_version_test_scoped_library_child_child_v1_create_with_default;
-#endif
-#if CEF_API_ADDED(13302)
-decltype(&cef_api_version_test_scoped_library_child_child_v2_create) cef_api_version_test_scoped_library_child_child_v2_create;
-#endif
-#if CEF_API_ADDED(13302)
-decltype(&cef_api_version_test_scoped_library_child_child_v2_create_with_default) cef_api_version_test_scoped_library_child_child_v2_create_with_default;
-#endif
-decltype(&cef_test_server_create_and_start) cef_test_server_create_and_start;
-decltype(&cef_translator_test_create) cef_translator_test_create;
-decltype(&cef_translator_test_ref_ptr_library_create) cef_translator_test_ref_ptr_library_create;
-decltype(&cef_translator_test_ref_ptr_library_child_create) cef_translator_test_ref_ptr_library_child_create;
-decltype(&cef_translator_test_ref_ptr_library_child_child_create) cef_translator_test_ref_ptr_library_child_child_create;
-decltype(&cef_translator_test_scoped_library_create) cef_translator_test_scoped_library_create;
-decltype(&cef_translator_test_scoped_library_child_create) cef_translator_test_scoped_library_child_create;
-decltype(&cef_translator_test_scoped_library_child_child_create) cef_translator_test_scoped_library_child_child_create;
 decltype(&cef_browser_view_create) cef_browser_view_create;
 decltype(&cef_browser_view_get_for_browser) cef_browser_view_get_for_browser;
 decltype(&cef_display_get_primary) cef_display_get_primary;
@@ -453,9 +391,6 @@ INIT_ENTRY(cef_begin_tracing);
 INIT_ENTRY(cef_end_tracing);
 INIT_ENTRY(cef_now_from_system_trace_time);
 INIT_ENTRY(cef_register_extension);
-INIT_ENTRY(cef_execute_java_script_with_user_gesture_for_tests);
-INIT_ENTRY(cef_set_data_directory_for_tests);
-INIT_ENTRY(cef_is_feature_enabled_for_tests);
 INIT_ENTRY(cef_browser_host_create_browser);
 INIT_ENTRY(cef_browser_host_create_browser_sync);
 INIT_ENTRY(cef_browser_host_get_browser_by_identifier);
@@ -550,61 +485,6 @@ INIT_ENTRY(cef_list_value_create);
 INIT_ENTRY(cef_waitable_event_create);
 INIT_ENTRY(cef_xml_reader_create);
 INIT_ENTRY(cef_zip_reader_create);
-INIT_ENTRY(cef_api_version_test_create);
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_create);
-#if CEF_API_ADDED(13301)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_create_with_default);
-#endif
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_create);
-#if CEF_API_ADDED(13301)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_create_with_default);
-#endif
-#if CEF_API_REMOVED(13301)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_child_create);
-#endif
-#if CEF_API_RANGE(13301, 13302)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_child_v1_create);
-#endif
-#if CEF_API_RANGE(13301, 13302)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_child_v1_create_with_default);
-#endif
-#if CEF_API_ADDED(13302)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_child_v2_create);
-#endif
-#if CEF_API_ADDED(13302)
-INIT_ENTRY(cef_api_version_test_ref_ptr_library_child_child_v2_create_with_default);
-#endif
-INIT_ENTRY(cef_api_version_test_scoped_library_create);
-#if CEF_API_ADDED(13301)
-INIT_ENTRY(cef_api_version_test_scoped_library_create_with_default);
-#endif
-INIT_ENTRY(cef_api_version_test_scoped_library_child_create);
-#if CEF_API_ADDED(13301)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_create_with_default);
-#endif
-#if CEF_API_REMOVED(13301)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_child_create);
-#endif
-#if CEF_API_RANGE(13301, 13302)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_child_v1_create);
-#endif
-#if CEF_API_RANGE(13301, 13302)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_child_v1_create_with_default);
-#endif
-#if CEF_API_ADDED(13302)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_child_v2_create);
-#endif
-#if CEF_API_ADDED(13302)
-INIT_ENTRY(cef_api_version_test_scoped_library_child_child_v2_create_with_default);
-#endif
-INIT_ENTRY(cef_test_server_create_and_start);
-INIT_ENTRY(cef_translator_test_create);
-INIT_ENTRY(cef_translator_test_ref_ptr_library_create);
-INIT_ENTRY(cef_translator_test_ref_ptr_library_child_create);
-INIT_ENTRY(cef_translator_test_ref_ptr_library_child_child_create);
-INIT_ENTRY(cef_translator_test_scoped_library_create);
-INIT_ENTRY(cef_translator_test_scoped_library_child_create);
-INIT_ENTRY(cef_translator_test_scoped_library_child_child_create);
 INIT_ENTRY(cef_browser_view_create);
 INIT_ENTRY(cef_browser_view_get_for_browser);
 INIT_ENTRY(cef_display_get_primary);
@@ -938,18 +818,6 @@ NO_SANITIZE("cfi-icall") int cef_register_extension(const cef_string_t* extensio
   return g_libcef_pointers.cef_register_extension(extension_name, javascript_code, handler);
 }
 
-NO_SANITIZE("cfi-icall") void cef_execute_java_script_with_user_gesture_for_tests(struct _cef_frame_t* frame, const cef_string_t* javascript) {
-  g_libcef_pointers.cef_execute_java_script_with_user_gesture_for_tests(frame, javascript);
-}
-
-NO_SANITIZE("cfi-icall") void cef_set_data_directory_for_tests(const cef_string_t* dir) {
-  g_libcef_pointers.cef_set_data_directory_for_tests(dir);
-}
-
-NO_SANITIZE("cfi-icall") int cef_is_feature_enabled_for_tests(const cef_string_t* feature_name) {
-  return g_libcef_pointers.cef_is_feature_enabled_for_tests(feature_name);
-}
-
 NO_SANITIZE("cfi-icall") int cef_browser_host_create_browser(const struct _cef_window_info_t* windowInfo, struct _cef_client_t* client, const cef_string_t* url, const struct _cef_browser_settings_t* settings, struct _cef_dictionary_value_t* extra_info, struct _cef_request_context_t* request_context) {
   return g_libcef_pointers.cef_browser_host_create_browser(windowInfo, client, url, settings, extra_info, request_context);
 }
@@ -1252,142 +1120,6 @@ NO_SANITIZE("cfi-icall") struct _cef_xml_reader_t* cef_xml_reader_create(struct 
 
 NO_SANITIZE("cfi-icall") struct _cef_zip_reader_t* cef_zip_reader_create(struct _cef_stream_reader_t* stream) {
   return g_libcef_pointers.cef_zip_reader_create(stream);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_t* cef_api_version_test_create() {
-  return g_libcef_pointers.cef_api_version_test_create();
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_t* cef_api_version_test_ref_ptr_library_create() {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_create();
-}
-
-#if CEF_API_ADDED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_t* cef_api_version_test_ref_ptr_library_create_with_default(int value) {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_create_with_default(value);
-}
-#endif
-
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_t* cef_api_version_test_ref_ptr_library_child_create() {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_create();
-}
-
-#if CEF_API_ADDED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_t* cef_api_version_test_ref_ptr_library_child_create_with_default(int value, int other_value) {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_create_with_default(value, other_value);
-}
-#endif
-
-#if CEF_API_REMOVED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_child_t* cef_api_version_test_ref_ptr_library_child_child_create() {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_child_create();
-}
-#endif
-
-#if CEF_API_RANGE(13301, 13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_child_v1_t* cef_api_version_test_ref_ptr_library_child_child_v1_create() {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_child_v1_create();
-}
-#endif
-
-#if CEF_API_RANGE(13301, 13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_child_v1_t* cef_api_version_test_ref_ptr_library_child_child_v1_create_with_default(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_child_v1_create_with_default(value, other_value, other_other_value);
-}
-#endif
-
-#if CEF_API_ADDED(13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_child_v2_t* cef_api_version_test_ref_ptr_library_child_child_v2_create() {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_child_v2_create();
-}
-#endif
-
-#if CEF_API_ADDED(13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_ref_ptr_library_child_child_v2_t* cef_api_version_test_ref_ptr_library_child_child_v2_create_with_default(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_api_version_test_ref_ptr_library_child_child_v2_create_with_default(value, other_value, other_other_value);
-}
-#endif
-
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_t* cef_api_version_test_scoped_library_create() {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_create();
-}
-
-#if CEF_API_ADDED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_t* cef_api_version_test_scoped_library_create_with_default(int value) {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_create_with_default(value);
-}
-#endif
-
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_t* cef_api_version_test_scoped_library_child_create() {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_create();
-}
-
-#if CEF_API_ADDED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_t* cef_api_version_test_scoped_library_child_create_with_default(int value, int other_value) {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_create_with_default(value, other_value);
-}
-#endif
-
-#if CEF_API_REMOVED(13301)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_child_t* cef_api_version_test_scoped_library_child_child_create() {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_child_create();
-}
-#endif
-
-#if CEF_API_RANGE(13301, 13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_child_v1_t* cef_api_version_test_scoped_library_child_child_v1_create() {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_child_v1_create();
-}
-#endif
-
-#if CEF_API_RANGE(13301, 13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_child_v1_t* cef_api_version_test_scoped_library_child_child_v1_create_with_default(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_child_v1_create_with_default(value, other_value, other_other_value);
-}
-#endif
-
-#if CEF_API_ADDED(13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_child_v2_t* cef_api_version_test_scoped_library_child_child_v2_create() {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_child_v2_create();
-}
-#endif
-
-#if CEF_API_ADDED(13302)
-NO_SANITIZE("cfi-icall") struct _cef_api_version_test_scoped_library_child_child_v2_t* cef_api_version_test_scoped_library_child_child_v2_create_with_default(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_api_version_test_scoped_library_child_child_v2_create_with_default(value, other_value, other_other_value);
-}
-#endif
-
-NO_SANITIZE("cfi-icall") struct _cef_test_server_t* cef_test_server_create_and_start(uint16_t port, int https_server, cef_test_cert_type_t https_cert_type, struct _cef_test_server_handler_t* handler) {
-  return g_libcef_pointers.cef_test_server_create_and_start(port, https_server, https_cert_type, handler);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_t* cef_translator_test_create() {
-  return g_libcef_pointers.cef_translator_test_create();
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_ref_ptr_library_t* cef_translator_test_ref_ptr_library_create(int value) {
-  return g_libcef_pointers.cef_translator_test_ref_ptr_library_create(value);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_ref_ptr_library_child_t* cef_translator_test_ref_ptr_library_child_create(int value, int other_value) {
-  return g_libcef_pointers.cef_translator_test_ref_ptr_library_child_create(value, other_value);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_ref_ptr_library_child_child_t* cef_translator_test_ref_ptr_library_child_child_create(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_translator_test_ref_ptr_library_child_child_create(value, other_value, other_other_value);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_scoped_library_t* cef_translator_test_scoped_library_create(int value) {
-  return g_libcef_pointers.cef_translator_test_scoped_library_create(value);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_scoped_library_child_t* cef_translator_test_scoped_library_child_create(int value, int other_value) {
-  return g_libcef_pointers.cef_translator_test_scoped_library_child_create(value, other_value);
-}
-
-NO_SANITIZE("cfi-icall") struct _cef_translator_test_scoped_library_child_child_t* cef_translator_test_scoped_library_child_child_create(int value, int other_value, int other_other_value) {
-  return g_libcef_pointers.cef_translator_test_scoped_library_child_child_create(value, other_value, other_other_value);
 }
 
 NO_SANITIZE("cfi-icall") struct _cef_browser_view_t* cef_browser_view_create(struct _cef_client_t* client, const cef_string_t* url, const struct _cef_browser_settings_t* settings, struct _cef_dictionary_value_t* extra_info, struct _cef_request_context_t* request_context, struct _cef_browser_view_delegate_t* delegate) {

@@ -19,11 +19,6 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_OZONE)
-#include "ui/events/test/event_generator.h"
-#include "ui/gfx/geometry/point.h"
-#endif
-
 namespace views {
 class MenuButton;
 }
@@ -84,11 +79,6 @@ class CefWindowImpl
   void SetDraggableRegions(
       const std::vector<CefDraggableRegion>& regions) override;
   CefWindowHandle GetWindowHandle() override;
-  void SendKeyPress(int key_code, uint32_t event_flags) override;
-  void SendMouseMove(int screen_x, int screen_y) override;
-  void SendMouseEvents(cef_mouse_button_type_t button,
-                       bool mouse_down,
-                       bool mouse_up) override;
   void SetAccelerator(int command_id,
                       int key_code,
                       bool shift_pressed,
@@ -160,13 +150,6 @@ class CefWindowImpl
   // Initialize the Widget.
   void CreateWidget(gfx::AcceleratedWidget parent_widget);
 
-#if BUILDFLAG(IS_OZONE)
-  // Ensure the EventGenerator is created for input simulation at the given
-  // screen coordinates. The EventGenerator is recreated if the target window
-  // changes (e.g., when clicking on a popup menu).
-  void EnsureEventGenerator(const gfx::Point& screen_point);
-#endif
-
   raw_ptr<views::Widget> widget_ = nullptr;
 
   // True if the window has been initialized.
@@ -190,15 +173,6 @@ class CefWindowImpl
 
   // True if this window was shown using ShowAsBrowserModalDialog().
   bool shown_as_browser_modal_ = false;
-
-#if BUILDFLAG(IS_OZONE)
-  // Used for input event simulation on Wayland where ui_controls is not
-  // available without a test compositor.
-  std::unique_ptr<ui::test::EventGenerator> event_generator_;
-  // The root window that event_generator_ was created for (stored as void*
-  // since we only use it for comparison).
-  raw_ptr<void> event_generator_root_window_ = nullptr;
-#endif
 
   IMPLEMENT_REFCOUNTING_DELETE_ON_UIT(CefWindowImpl);
 };
