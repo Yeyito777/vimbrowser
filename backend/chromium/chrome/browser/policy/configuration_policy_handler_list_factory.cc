@@ -133,7 +133,6 @@
 #include "components/sync/base/pref_names.h"
 #include "components/sync/service/sync_policy_handler.h"
 #include "components/themes/theme_color_policy_handler.h"
-#include "components/translate/core/browser/translate_pref_names.h"
 #include "components/unified_consent/pref_names.h"
 #include "components/variations/pref_names.h"
 #include "components/variations/service/variations_service.h"
@@ -385,9 +384,6 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
   { key::kTabCaptureAllowedByOrigins,
     prefs::kTabCaptureAllowedByOrigins,
     base::Value::Type::LIST },
-  { key::kTranslateEnabled,
-    translate::prefs::kOfferTranslateEnabled,
-    base::Value::Type::BOOLEAN },
   { key::kWindowCaptureAllowedByOrigins,
     prefs::kWindowCaptureAllowedByOrigins,
     base::Value::Type::LIST },
@@ -1971,9 +1967,6 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
     base::Value::Type::INTEGER },
   { key::kLiveCaptionEnabled,
     prefs::kLiveCaptionEnabled,
-    base::Value::Type::BOOLEAN },
-  { key::kLiveTranslateEnabled,
-    prefs::kLiveTranslateEnabled,
     base::Value::Type::BOOLEAN },
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
         // || BUILDFLAG(IS_CHROMEOS)

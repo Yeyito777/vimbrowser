@@ -409,7 +409,6 @@ std::vector<actions::ActionId> AppBrowserController::GetTitleBarPageActions()
   std::vector<actions::ActionId> types_enabled = {
       kActionFind,
       kActionShowPasswordsBubbleOrPage,
-      kActionShowTranslate,
       kActionZoomNormal,
       kActionShowFileSystemAccess,
       kActionShowCookieControls,

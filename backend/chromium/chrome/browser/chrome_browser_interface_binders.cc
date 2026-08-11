@@ -27,7 +27,6 @@
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
 #include "chrome/browser/speech/on_device_speech_recognition_impl.h"
-#include "chrome/browser/translate/translate_frame_binder.h"
 #include "chrome/browser/ui/search_engines/search_engine_tab_helper.h"
 #include "chrome/common/buildflags.h"
 #include "chrome/common/pref_names.h"
@@ -53,7 +52,6 @@
 #include "components/security_state/core/security_state.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "components/spellcheck/spellcheck_buildflags.h"
-#include "components/translate/content/common/translate.mojom.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -461,9 +459,6 @@ void PopulateChromeFrameBinders(
   if (pm_registry) {
     pm_registry->GetBinders().ExposeInterfacesToRenderFrame(map);
   }
-
-  map->Add<translate::mojom::ContentTranslateDriver>(
-      &translate::BindContentTranslateDriver);
 
   map->Add<optimization_guide::mojom::ModelBroker>(&BindModelBroker);
 

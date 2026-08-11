@@ -151,7 +151,6 @@ test("components_unittests") {
       "test/data/shared_highlighting/",
       "test/data/storage/",
       "test/data/subresource_filter/",
-      "test/data/translate/",
       "test/data/ui_devtools/",
       "test/data/unzip_service/",
       "test/data/update_client/",
@@ -251,7 +250,6 @@ test("components_unittests") {
     "//components/keyed_service/core:unit_tests",
     "//components/language/core/browser:unit_tests",
     "//components/language/core/common:unit_tests",
-    "//components/language/core/language_model:unit_tests",
     "//components/language_detection/core:unit_tests",
     "//components/language_detection/core/browser:unit_tests",
     "//components/lens:unit_tests",
@@ -368,8 +366,6 @@ test("components_unittests") {
     "//components/themes:unit_tests",
     "//components/tpcd/metadata/browser:unit_tests",
     "//components/tpcd/metadata/common:unit_tests",
-    "//components/translate/core/browser:unit_tests",
-    "//components/translate/core/common:unit_tests",
     "//components/translate/core/language_detection:unit_tests",
     "//components/ukm:unit_tests",
     "//components/undo:unit_tests",
@@ -551,8 +547,6 @@ test("components_unittests") {
       "//components/subresource_filter/content/renderer:unit_tests",
       "//components/touch_to_search/core/browser:unit_tests",
       "//components/tracing:unit_tests",
-      "//components/translate/content/browser:unit_tests",
-      "//components/translate/content/renderer:unit_tests",
       "//components/ukm/content:unit_tests",
       "//components/url_rewrite:unit_tests",
       "//components/user_education/common:unit_tests",
@@ -607,7 +601,6 @@ test("components_unittests") {
       "//components/shared_highlighting/ios:unit_tests",
       "//components/signin/ios/browser:unit_tests",
       "//components/signin/public/identity_manager/objc:unit_tests",
-      "//components/translate/ios/browser:unit_tests",
       "//components/ukm/ios:unit_tests",
       "//components/webauthn/ios:unit_tests",
     ]
@@ -715,7 +708,6 @@ test("components_unittests") {
       "//components/signin/public/android:java",
       "//components/signin/public/android:signin_java_test_support",
       "//components/sync_preferences/cross_device_pref_tracker/android:java",
-      "//components/translate/content/android:unit_tests",
       "//components/variations:variations_associated_data",
       "//components/variations/android:variations_java",
       "//components/visited_url_ranking/internal:internal_java",
@@ -928,7 +920,6 @@ test("components_unittests") {
     ]
   }
 
-
   # The following unit tests cause build failures due to the absence of
   # supported APIs on tvOS.
   if (is_ios && target_platform == "tvos") {
@@ -963,7 +954,6 @@ test("components_unittests") {
       "//components/shared_highlighting/ios:unit_tests",
       "//components/signin/ios/browser:unit_tests",
       "//components/signin/public/identity_manager/objc:unit_tests",
-      "//components/translate/ios/browser:unit_tests",
       "//components/ukm/ios:unit_tests",
       "//components/user_data_importer/utility:unit_tests",
       "//components/webauthn/ios:unit_tests",
@@ -989,7 +979,6 @@ test("components_unittests") {
     "PrivacyMathTest.GetNumStatesDoesNotCrash",
     "RegistrationInfoTest.Parses",
     "SourceRegistrationTest.Parses",
-    "TranslateUtilFuzzTest.GetTranslateSecurityOriginDoesNotCrash",
     "TriggerRegistrationTest.Parses",
   ]
 }

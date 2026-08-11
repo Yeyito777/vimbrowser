@@ -10,7 +10,6 @@
 #include "components/live_caption/caption_bubble_context.h"
 #include "components/live_caption/caption_bubble_controller.h"
 #include "components/live_caption/pref_names.h"
-#include "components/live_caption/views/translation_view_wrapper_base.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/testing_pref_service.h"
@@ -132,16 +131,14 @@ class MockCaptionControllerDelegate : public CaptionControllerBase::Delegate {
  public:
   explicit MockCaptionControllerDelegate(
       std::unique_ptr<CaptionBubbleController> bubble_controller) {
-    EXPECT_CALL(*this, CreateCaptionBubbleController(_, _, _))
+    EXPECT_CALL(*this, CreateCaptionBubbleController(_, _))
         .WillOnce(Return(std::move(bubble_controller)));
   }
   ~MockCaptionControllerDelegate() override = default;
 
   MOCK_METHOD(std::unique_ptr<CaptionBubbleController>,
               CreateCaptionBubbleController,
-              (CaptionBubbleSettings*,
-               const std::string&,
-               std::unique_ptr<TranslationViewWrapperBase>),
+              (CaptionBubbleSettings*, const std::string&),
               (override));
 
   void AddCaptionStyleObserver(ui::NativeThemeObserver*) override {}

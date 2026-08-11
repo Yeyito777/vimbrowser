@@ -195,10 +195,6 @@ static_library("ui") {
     "webui/sync_internals/chrome_sync_internals_message_handler.h",
     "webui/sync_internals/sync_internals_ui.cc",
     "webui/sync_internals/sync_internals_ui.h",
-    "webui/translate_internals/chrome_translate_internals_handler.cc",
-    "webui/translate_internals/chrome_translate_internals_handler.h",
-    "webui/translate_internals/translate_internals_ui.cc",
-    "webui/translate_internals/translate_internals_ui.h",
     "webui/usb_internals/usb_internals_page_handler.cc",
     "webui/usb_internals/usb_internals_page_handler.h",
     "webui/usb_internals/usb_internals_ui.cc",
@@ -421,7 +417,6 @@ static_library("ui") {
     "//chrome/browser/ui/toolbar",
     "//chrome/browser/ui/toolbar:impl",
     "//chrome/browser/ui/toolbar/chrome_labs",
-    "//chrome/browser/ui/translate",
     "//chrome/browser/ui/webauthn",
     "//chrome/browser/ui/webid",
     "//chrome/browser/ui/webui",
@@ -617,7 +612,6 @@ static_library("ui") {
     "//components/sync_sessions",
     "//components/tab_groups",
     "//components/tracing:tracing_config",
-    "//components/translate/translate_internals",
     "//components/ui_devtools",
     "//components/ukm",
     "//components/ukm/content",
@@ -1007,7 +1001,6 @@ static_library("ui") {
       "//components/sensitive_content",
       "//components/subresource_filter/core/browser",
       "//components/thin_webview",
-      "//components/translate/content/android",
       "//components/webauthn/android",
       "//content/public/browser",
       "//device/vr/buildflags",
@@ -1530,7 +1523,6 @@ static_library("ui") {
       "//chrome/browser/ui/tabs/saved_tab_groups:impl",
       "//chrome/browser/ui/task_manager",
       "//chrome/browser/ui/thumbnails",
-      "//chrome/browser/ui/translate:impl",
       "//chrome/browser/ui/views/glic",
       "//chrome/browser/ui/views/tabs/glic",
       "//chrome/browser/ui/views/tabs/glic:impl",
@@ -1890,10 +1882,6 @@ static_library("ui") {
       # TODO(crbug.com/429171097): Remove this circular dependency when
       # c/b/ui/bubble_anchor_util.h gets componentized.
       "//chrome/browser/ui/tab_sharing:impl",
-
-      # TODO(crbug.com/430013958): Remove this circular dependency when
-      # `translate_bubble_factory.cc` stop including c/b/ui/browser_window.h.
-      "//chrome/browser/ui/translate:impl",
 
       # TODO(crbug.com/430078439): Remove this circular dependency when
       # .cc files stop including browser.h, browser_window.h and browser_navigator.h.
@@ -4571,14 +4559,6 @@ static_library("ui") {
       "views/theme_copying_widget.h",
       "views/title_origin_label.cc",
       "views/title_origin_label.h",
-      "views/translate/partial_translate_bubble_view.cc",
-      "views/translate/partial_translate_bubble_view.h",
-      "views/translate/translate_bubble_controller.cc",
-      "views/translate/translate_bubble_controller.h",
-      "views/translate/translate_bubble_view.cc",
-      "views/translate/translate_bubble_view.h",
-      "views/translate/translate_page_action_controller.cc",
-      "views/translate/translate_page_action_controller.h",
       "views/update_recommended_message_box.cc",
       "views/update_recommended_message_box.h",
       "views/upgrade_notification_controller.cc",
@@ -4901,10 +4881,6 @@ static_library("ui") {
       "//ui/lottie",
       "//ui/views:buildflags",
     ]
-
-    # This dependency is needed because translate_bubble_view.h declares free-functions in
-    # translate_bubble_test_utils.h as `friend`.
-    deps += [ "//chrome/browser/ui/translate:test_support" ]
 
     # TODO(crbug.com/413572035): Move into build files of the actual modules depending
     # on this once they are fully modularized. eg: views/autofill, views/user_education.
@@ -5500,7 +5476,6 @@ static_library("ui_public_dependencies") {
     "//components/segmentation_platform/public",
     "//components/sync",
     "//components/sync_user_events",
-    "//components/translate/content/browser",
     "//content/public/browser",
     "//mojo/public/cpp/bindings",
     "//services/webnn/public/cpp",
@@ -5728,7 +5703,6 @@ static_library("test_support") {
     "//components/payments/content",
     "//components/permissions",
     "//components/sessions",
-    "//components/translate/content/browser",
     "//components/url_formatter",
     "//components/zoom",
     "//content/public/browser",

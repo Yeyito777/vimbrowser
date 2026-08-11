@@ -73,7 +73,6 @@ source_set("common_syncable_prefs_database") {
     "//components/saved_tab_groups/public",
     "//components/sharing_message",
     "//components/sync_preferences/cross_device_pref_tracker/prefs",
-    "//components/translate/core/browser",
     "//components/variations/service",
   ]
 }

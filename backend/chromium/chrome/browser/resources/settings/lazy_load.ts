@@ -156,7 +156,6 @@ export {SettingsAxAnnotationsSectionElement} from './a11y_page/ax_annotations_se
 // </if>
 // <if expr="not is_chromeos">
 export {SettingsLiveCaptionElement} from './a11y_page/live_caption.js';
-export {SettingsLiveTranslateElement} from './a11y_page/live_translate.js';
 // </if>
 
 export {isFeatureDisabledByPolicy, SettingsAiPolicyIndicator} from './ai_page/ai_policy_indicator.js';

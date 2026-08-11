@@ -9,8 +9,6 @@
 #include "base/feature_list.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
-#include "chrome/browser/accessibility_annotator/content_annotator/content_annotator_service_factory.h"
-#include "chrome/browser/accessibility_annotator/content_annotator/content_annotator_tab_helper.h"
 #include "chrome/browser/actor/actor_keyed_service.h"
 #include "chrome/browser/actor/actor_tab_data.h"
 #include "chrome/browser/actor/ui/actor_ui_tab_controller.h"
@@ -73,7 +71,6 @@
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_delegate.h"
 #include "chrome/browser/ui/toolbar/pinned_toolbar/pinned_toolbar_actions_model.h"
-#include "chrome/browser/ui/toolbar/pinned_toolbar/pinned_translate_action_listener.h"
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/views/bookmarks/bookmark_page_action_controller.h"
 #include "chrome/browser/ui/views/commerce/discounts_page_action_view_controller.h"
@@ -90,7 +87,6 @@
 #include "chrome/browser/ui/views/passwords/manage_passwords_page_action_controller.h"
 #include "chrome/browser/ui/views/side_panel/customize_chrome/side_panel_controller_views.h"
 #include "chrome/browser/ui/views/side_panel/extensions/extension_side_panel_manager.h"
-#include "chrome/browser/ui/views/translate/translate_page_action_controller.h"
 #include "chrome/browser/ui/views/zoom/zoom_view_controller.h"
 #include "chrome/browser/ui/web_applications/pwa_install_page_action.h"
 #include "chrome/browser/ui/webui/webui_embedding_context.h"
@@ -198,9 +194,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
         page_actions::PageActionPropertiesProvider());
     page_action_controller_ = std::move(page_action_controller);
 
-    translate_page_action_controller_ =
-        std::make_unique<TranslatePageActionController>(tab);
-
     memory_saver_chip_controller_ =
         std::make_unique<memory_saver::MemorySaverChipController>(
             *page_action_controller_);
@@ -303,9 +296,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
         std::make_unique<permissions::PermissionIndicatorsTabData>(
             tab.GetContents());
 
-    pinned_translate_action_listener_ =
-        std::make_unique<PinnedTranslateActionListener>(&tab);
-
     if (!profile->IsIncognitoProfile()) {
       // TODO(crbug.com/40863325): Consider using the in-memory cache instead.
       commerce_ui_tab_helper_ =
@@ -402,15 +392,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
               tab, tab);
     }
 
-    if (accessibility_annotator::
-            ContentAnnotatorService* content_annotator_service =
-                accessibility_annotator::ContentAnnotatorServiceFactory::
-                    GetForProfile(profile)) {
-      content_annotator_tab_helper_ =
-          std::make_unique<accessibility_annotator::ContentAnnotatorTabHelper>(
-              tab, *content_annotator_service,
-              ChromeTranslateClient::FromWebContents(tab.GetContents()));
-    }
   }  // IsInNormalWindow() end.
 
   // This block instantiates the page action controllers that depends on the
@@ -467,7 +448,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
           tab.GetContents(),
           sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
               profile),
-          ChromeTranslateClient::FromWebContents(tab.GetContents()),
           favicon::ContentFaviconDriver::FromWebContents(tab.GetContents()));
 
   from_gws_navigation_and_keep_alive_request_observer_ =
@@ -633,7 +613,6 @@ void TabFeatures::WillDiscardContents(tabs::TabInterface* tab,
           new_contents,
           sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
               profile),
-          ChromeTranslateClient::FromWebContents(new_contents),
           favicon::ContentFaviconDriver::FromWebContents(new_contents));
 
   if (permission_indicators_tab_data_) {

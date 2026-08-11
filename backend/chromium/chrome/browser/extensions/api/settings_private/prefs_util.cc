@@ -63,8 +63,6 @@
 #include "components/signin/public/base/signin_pref_names.h"
 #include "components/supervised_user/core/common/pref_names.h"
 #include "components/themes/pref_names.h"
-#include "components/translate/core/browser/translate_pref_names.h"
-#include "components/translate/core/browser/translate_prefs.h"
 #include "components/unified_consent/pref_names.h"
 #include "components/url_formatter/url_fixer.h"
 #include "extensions/browser/extension_pref_value_map.h"
@@ -447,22 +445,12 @@ const PrefsUtil::TypedPrefMap& PrefsUtil::GetAllowlistedKeys() {
       settings_api::PrefType::kBoolean;
 
   // Languages page
-  (*s_allowlist)[translate::prefs::kOfferTranslateEnabled] =
-      settings_api::PrefType::kBoolean;
-  (*s_allowlist)[translate::prefs::kBlockedLanguages] =
-      settings_api::PrefType::kList;
-  (*s_allowlist)[translate::prefs::kPrefNeverPromptSitesWithTime] =
-      settings_api::PrefType::kList;
   (*s_allowlist)[language::prefs::kSelectedLanguages] =
       settings_api::PrefType::kString;
   (*s_allowlist)[language::prefs::kForcedLanguages] =
       settings_api::PrefType::kList;
   (*s_allowlist)[::language::prefs::kAcceptLanguages] =
       settings_api::PrefType::kString;
-  (*s_allowlist)[translate::prefs::kPrefTranslateRecentTarget] =
-      settings_api::PrefType::kString;
-  (*s_allowlist)[translate::prefs::kPrefAlwaysTranslateList] =
-      settings_api::PrefType::kList;
 #if BUILDFLAG(IS_CHROMEOS)
   (*s_allowlist)[ash::prefs::kLanguageImeMenuActivated] =
       settings_api::PrefType::kBoolean;
@@ -591,10 +579,6 @@ const PrefsUtil::TypedPrefMap& PrefsUtil::GetAllowlistedKeys() {
       settings_api::PrefType::kString;
   (*s_allowlist)[::prefs::kLiveCaptionMaskOffensiveWords] =
       settings_api::PrefType::kBoolean;
-  (*s_allowlist)[::prefs::kLiveTranslateEnabled] =
-      settings_api::PrefType::kBoolean;
-  (*s_allowlist)[::prefs::kLiveTranslateTargetLanguageCode] =
-      settings_api::PrefType::kString;
   (*s_allowlist)[::prefs::kAccessibilityAXTreeFixingEnabled] =
       settings_api::PrefType::kBoolean;
   (*s_allowlist)[::prefs::kAccessibilityMainNodeAnnotationsEnabled] =

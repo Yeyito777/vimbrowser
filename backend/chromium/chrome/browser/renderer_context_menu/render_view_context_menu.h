@@ -281,15 +281,6 @@ class RenderViewContextMenu
   // Gets the extension (if any) associated with the WebContents that we're in.
   const extensions::Extension* GetExtension() const;
 
-  // Queries the Translate service to obtain the user's Translate target
-  // language and returns the language name in its same locale.
-  // On an already translated page, full page translation uses the current page
-  // language as the target language while partial translation uses the last
-  // used target language. |is_full_page_translation| controls the desired
-  // outcome.
-  std::u16string GetTargetLanguageDisplayName(
-      bool is_full_page_translation) const;
-
   bool IsInProgressiveWebApp() const;
   bool IsLinkToIsolatedWebApp() const;
 
@@ -312,8 +303,6 @@ class RenderViewContextMenu
   void AppendCopyItem();
   void AppendLinkToTextItems();
   void AppendPrintItem();
-  void AppendPartialTranslateItem();
-  void AppendTranslateItem();
   void AppendMediaRouterItem();
   void AppendReadAnythingItem();
   void AppendGlicItems();
@@ -361,7 +350,6 @@ class RenderViewContextMenu
   bool IsReloadEnabled() const;
   bool IsViewSourceEnabled() const;
   bool IsDevCommandEnabled(int id) const;
-  bool IsTranslateEnabled() const;
   bool IsSaveLinkAsEnabled() const;
   bool IsSaveImageAsEnabled() const;
   bool IsSaveAsEnabled() const;
@@ -408,8 +396,6 @@ class RenderViewContextMenu
   void ExecRestartPackagedApp();
   void ExecPrint();
   void ExecRouteMedia();
-  void ExecTranslate();
-  void ExecPartialTranslate();
   void ExecLanguageSettings(int event_flags);
   void ExecProtocolHandlerSettings(int event_flags);
   void ExecPictureInPicture();
@@ -434,15 +420,6 @@ class RenderViewContextMenu
 
   // ProtocolHandlerRegistry::Observer:
   void OnProtocolHandlerRegistryChanged() override;
-
-  // Whether or not translation on this page can be triggered. This method
-  // checks multiple criteria, e.g. whether translation is disabled by a policy
-  // or whether the current page can be translated.
-  bool CanTranslate(bool menu_logging);
-
-  // Whether or not partial translation is supported for the current target
-  // language.
-  bool CanPartiallyTranslateTargetLanguage();
 
   // Under the correct conditions, issues a preconnection to the Lens URL and
   // warms up a renderer process.

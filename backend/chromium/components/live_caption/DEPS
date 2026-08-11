@@ -7,7 +7,6 @@ include_rules = [
   "+components/prefs",
   "+components/pref_registry",
   "+components/soda",
-  "+components/translate/core/browser",
   "+content/public/test",
   "+components/strings",
   "+components/sync_preferences",

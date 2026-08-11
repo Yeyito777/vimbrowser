@@ -336,7 +336,6 @@ source_set("impl") {
       "//chrome/browser/user_education",
       "//components/headless/policy",
       "//components/live_caption",
-      "//components/live_caption:live_translate",
     ]
     sources += [
       "persistent_renderer_prefs_manager.cc",

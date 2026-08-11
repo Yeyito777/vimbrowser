@@ -37,7 +37,6 @@
 #include "components/live_caption/caption_bubble_settings.h"
 #include "components/live_caption/live_caption_bubble_settings.h"
 #include "components/live_caption/pref_names.h"
-#include "components/live_caption/views/translation_view_wrapper.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/testing_pref_service.h"
@@ -61,14 +60,10 @@ class CaptionBubbleBrowserTest : public UiBrowserTest {
   void SetUpOnMainThread() override {
     pref_service_.registry()->RegisterBooleanPref(
         prefs::kLiveCaptionBubbleExpanded, false);
-    pref_service_.registry()->RegisterBooleanPref(prefs::kLiveTranslateEnabled,
-                                                  false);
     pref_service_.registry()->RegisterBooleanPref(prefs::kLiveCaptionEnabled,
                                                   false);
     pref_service_.registry()->RegisterStringPref(
         prefs::kLiveCaptionLanguageCode, kEnglishLanguage);
-    pref_service_.registry()->RegisterStringPref(
-        prefs::kLiveTranslateTargetLanguageCode, kEnglishLanguage);
     UiBrowserTest::SetUpOnMainThread();
   }
 
@@ -96,7 +91,6 @@ class CaptionBubbleBrowserTest : public UiBrowserTest {
     base::OnceClosure destroyed_callback;
     auto bubble = std::make_unique<CaptionBubble>(
         settings_.get(),
-        std::make_unique<TranslationViewWrapper>(settings_.get()),
         application_locale, std::move(destroyed_callback));
     bubble_ = bubble.get();
     views::BubbleDialogDelegateView::CreateBubble(std::move(bubble))->Show();

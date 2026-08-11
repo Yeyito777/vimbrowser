@@ -904,24 +904,6 @@ sharing_hub::SharingHubBubbleView* WebUIBrowserWindow::ShowSharingHubBubble(
 }
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-ShowTranslateBubbleResult WebUIBrowserWindow::ShowTranslateBubble(
-    content::WebContents* contents,
-    translate::TranslateStep step,
-    const std::string& source_language,
-    const std::string& target_language,
-    translate::TranslateErrors error_type,
-    bool is_user_gesture) {
-  NOTIMPLEMENTED_LOG_ONCE();
-  return ShowTranslateBubbleResult::kBrowserWindowNotValid;
-}
-
-void WebUIBrowserWindow::StartPartialTranslate(
-    const std::string& source_language,
-    const std::string& target_language,
-    const std::u16string& text_selection) {
-  NOTIMPLEMENTED_LOG_ONCE();
-}
-
 DownloadBubbleUIController*
 WebUIBrowserWindow::GetDownloadBubbleUIController() {
   NOTIMPLEMENTED_LOG_ONCE();

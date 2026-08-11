@@ -27,7 +27,6 @@ namespace captions {
 class CaptionBubbleContext;
 class CaptionBubbleController;
 class CaptionBubbleSettings;
-class TranslationViewWrapperBase;
 
 class CaptionControllerBase : public ui::NativeThemeObserver {
  public:
@@ -41,9 +40,7 @@ class CaptionControllerBase : public ui::NativeThemeObserver {
     virtual std::unique_ptr<CaptionBubbleController>
     CreateCaptionBubbleController(
         CaptionBubbleSettings* caption_bubble_settings,
-        const std::string& application_locale,
-        std::unique_ptr<TranslationViewWrapperBase>
-            translation_view_wrapper) = 0;
+        const std::string& application_locale) = 0;
 
     virtual void AddCaptionStyleObserver(ui::NativeThemeObserver* observer) = 0;
 
@@ -139,9 +136,6 @@ class CaptionControllerBase : public ui::NativeThemeObserver {
   const std::string& application_locale() const;
   PrefChangeRegistrar* pref_change_registrar() const;
   CaptionBubbleController* caption_bubble_controller() const;
-
-  virtual std::unique_ptr<TranslationViewWrapperBase>
-  CreateTranslationViewWrapper();
 
   // Called when the size of the listener set goes to or from zero.  This allows
   // subclasses to handle SODA installation as needed on a per-platform basis.

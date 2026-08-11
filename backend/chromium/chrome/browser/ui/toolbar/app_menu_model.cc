@@ -1423,14 +1423,6 @@ void AppMenuModel::LogMenuMetrics(int command_id) {
       LogMenuAction(MENU_ACTION_OPEN_GLIC);
       break;
 
-    case IDC_SHOW_TRANSLATE:
-      if (!uma_action_recorded_) {
-        base::UmaHistogramMediumTimes("WrenchMenu.TimeToAction.ShowTranslate",
-                                      delta);
-      }
-      LogMenuAction(MENU_ACTION_SHOW_TRANSLATE);
-      break;
-
     // Edit menu.
     case IDC_CUT:
       if (!uma_action_recorded_) {
@@ -2193,9 +2185,6 @@ void AppMenuModel::Build() {
         BrowserUserEducationInterface::From(browser())->MaybeShowNewBadgeFor(
             lens::features::kLensOverlay));
   }
-
-  AddItemWithStringIdAndVectorIcon(this, IDC_SHOW_TRANSLATE, IDS_SHOW_TRANSLATE,
-                                   kTranslateIcon);
 
   CreateFindAndEditSubMenu();
 

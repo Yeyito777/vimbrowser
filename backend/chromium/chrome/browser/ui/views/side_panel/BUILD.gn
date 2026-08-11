@@ -155,8 +155,6 @@ source_set("side_panel") {
     "//components/search",
     "//components/strings:components_strings",
     "//components/strings:components_strings_grit",
-    "//components/translate/core/browser",
-    "//components/translate/core/common",
     "//components/user_education/common",
     "//components/vector_icons",
     "//components/web_modal",

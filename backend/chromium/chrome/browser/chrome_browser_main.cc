@@ -67,8 +67,6 @@
 #include "chrome/browser/sessions/chrome_serialized_navigation_driver.h"
 #include "chrome/browser/shell_integration.h"
 #include "chrome/browser/startup_data.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
-#include "chrome/browser/translate/translate_service.h"
 #include "chrome/browser/ui/actions/chrome_actions.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/browser/ui/javascript_dialogs/chrome_javascript_app_modal_dialog_view_factory.h"
@@ -117,7 +115,6 @@
 #include "components/spellcheck/spellcheck_buildflags.h"
 #include "components/startup_metric_utils/browser/startup_metric_utils.h"
 #include "components/tracing/common/background_tracing_utils.h"
-#include "components/translate/core/browser/translate_metrics_logger_impl.h"
 #include "components/variations/service/variations_service.h"
 #include "components/variations/synthetic_trials_active_group_id_provider.h"
 #include "components/variations/variations_ids_provider.h"
@@ -1569,8 +1566,6 @@ void ChromeBrowserMainParts::PostProfileInit(Profile* profile,
 
   language::LanguageUsageMetrics::RecordAcceptLanguages(
       profile->GetPrefs()->GetString(language::prefs::kAcceptLanguages));
-  translate::TranslateMetricsLoggerImpl::LogApplicationStartMetrics(
-      ChromeTranslateClient::CreateTranslatePrefs(profile->GetPrefs()));
 // On ChromeOS results in a crash. https://crbug.com/1151558
 #if !BUILDFLAG(IS_CHROMEOS)
   language::LanguageUsageMetrics::RecordPageLanguages(
@@ -1839,7 +1834,6 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
 
   // Post-profile init ---------------------------------------------------------
 
-  TranslateService::Initialize();
   if (base::FeatureList::IsEnabled(features::kGeoLanguage) ||
       language::GetOverrideLanguageModel() ==
           language::OverrideLanguageModel::GEO) {
@@ -2150,8 +2144,6 @@ void ChromeBrowserMainParts::PostMainMessageLoopRun() {
   for (auto& chrome_extra_part : chrome_extra_parts_) {
     chrome_extra_part->PostMainMessageLoopRun();
   }
-
-  TranslateService::Shutdown();
 
 #if BUILDFLAG(ENABLE_PROCESS_SINGLETON)
   ChromeProcessSingleton::GetInstance()->Cleanup();

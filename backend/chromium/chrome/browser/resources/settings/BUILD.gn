@@ -267,7 +267,6 @@ build_webui("build") {
   if (!is_chromeos) {
     web_component_files += [
       "a11y_page/live_caption.ts",
-      "a11y_page/live_translate.ts",
       "clear_browsing_data_dialog/clear_browsing_data_account_indicator.ts",
       "default_browser_page/default_browser_page.ts",
       "languages_page/add_languages_dialog.ts",

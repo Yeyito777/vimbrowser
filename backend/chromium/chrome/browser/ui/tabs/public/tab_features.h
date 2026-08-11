@@ -25,7 +25,6 @@ class LensOverlayController;
 class LensOverlayHomeworkPageActionController;
 class LensSearchController;
 class MemorySaverChipTabHelper;
-class PinnedTranslateActionListener;
 class Profile;
 class PwaInstallPageActionController;
 class RecordReplayPageActionController;
@@ -36,7 +35,6 @@ class RollBackModeBInfoBarController;
 class SidePanelRegistry;
 class TabResourceUsageTabHelper;
 class TabUIHelper;
-class TranslatePageActionController;
 class QwacWebContentsObserver;
 class ManagePasswordsPageActionController;
 class BookmarkBarPreloadPipelineManager;
@@ -49,10 +47,6 @@ class SkillsUiTabControllerInterface;
 namespace back_to_opener {
 class BackToOpenerController;
 }  // namespace back_to_opener
-
-namespace accessibility_annotator {
-class ContentAnnotatorTabHelper;
-}  // namespace accessibility_annotator
 
 namespace autofill {
 class BubbleManager;
@@ -399,10 +393,6 @@ class TabFeatures {
   // Responsible for commerce related features.
   std::unique_ptr<commerce::CommerceUiTabHelper> commerce_ui_tab_helper_;
 
-  // Responsible for updating status indicator of the pinned translate button.
-  std::unique_ptr<PinnedTranslateActionListener>
-      pinned_translate_action_listener_;
-
   // The tab-scoped extension side-panel manager. There is a separate
   // window-scoped extension side-panel manager.
   std::unique_ptr<extensions::ExtensionSidePanelManager>
@@ -452,10 +442,6 @@ class TabFeatures {
   // Responsible for managing the "Manage Passwords" page action.
   std::unique_ptr<ManagePasswordsPageActionController>
       manage_passwords_page_action_controller_;
-
-  // Responsible for managing the "Translate" page action.
-  std::unique_ptr<TranslatePageActionController>
-      translate_page_action_controller_;
 
   // Responsible for managing the "PWA Install" page action.
   std::unique_ptr<PwaInstallPageActionController>
@@ -586,9 +572,6 @@ class TabFeatures {
   std::unique_ptr<enterprise_reporting::SaasUsageNavigationObserver>
       saas_usage_navigation_observer_;
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
-
-  std::unique_ptr<accessibility_annotator::ContentAnnotatorTabHelper>
-      content_annotator_tab_helper_;
 
 #if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<indigo::IndigoPageActionController>

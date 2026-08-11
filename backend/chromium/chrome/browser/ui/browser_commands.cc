@@ -51,7 +51,6 @@
 #include "chrome/browser/sessions/tab_restore_service_factory.h"
 #include "chrome/browser/sharing_hub/sharing_hub_features.h"
 #include "chrome/browser/tab_group_sync/tab_group_sync_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/accelerator_utils.h"
 #include "chrome/browser/ui/autofill/address_bubbles_controller.h"
 #include "chrome/browser/ui/autofill/payments/filled_card_information_bubble_controller_impl.h"
@@ -165,8 +164,6 @@
 #include "components/tabs/public/tab_group.h"
 #include "components/tabs/public/tab_group_tab_collection.h"
 #include "components/tabs/public/tab_interface.h"
-#include "components/translate/core/browser/language_state.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/user_education/common/feature_promo/feature_promo_controller.h"
 #include "components/web_modal/web_contents_modal_dialog_manager.h"
 #include "components/webapps/common/web_app_id.h"
@@ -1937,51 +1934,6 @@ void StartTabOrganizationRequest(Browser* browser) {
       TabOrganizationServiceFactory::GetForProfile(browser->profile());
 
   service->RestartSessionAndShowUI(browser);
-}
-
-void ShowTranslateBubble(BrowserWindowInterface* bwi) {
-  if (!bwi->GetWindow()->IsActive()) {
-    return;
-  }
-
-  WebContents* const web_contents =
-      bwi->GetTabStripModel()->GetActiveWebContents();
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(web_contents);
-
-  if (!chrome_translate_client) {
-    return;
-  }
-
-  // The Translate bubble will not show if a text field is focused, so we clear
-  // focus here as the user has intentionally opened the bubble.
-  web_contents->ClearFocusedElement();
-
-  std::string source_language;
-  std::string target_language;
-  chrome_translate_client->GetTranslateLanguages(web_contents, &source_language,
-                                                 &target_language);
-
-  // If the source language matches the target language, we change the source
-  // language to unknown, so that we display "Detected Language".
-  if (source_language == target_language) {
-    source_language = language_detection::kUnknownLanguageCode;
-  }
-
-  translate::TranslateStep step = translate::TRANSLATE_STEP_BEFORE_TRANSLATE;
-  auto* language_state =
-      chrome_translate_client->GetTranslateManager()->GetLanguageState();
-
-  if (language_state->translation_pending()) {
-    step = translate::TRANSLATE_STEP_TRANSLATING;
-  } else if (language_state->translation_error()) {
-    step = translate::TRANSLATE_STEP_TRANSLATE_ERROR;
-  } else if (language_state->IsPageTranslated()) {
-    step = translate::TRANSLATE_STEP_AFTER_TRANSLATE;
-  }
-  bwi->GetBrowserForMigrationOnly()->window()->ShowTranslateBubble(
-      web_contents, step, source_language, target_language,
-      translate::TranslateErrors::NONE, true);
 }
 
 void ManagePasswordsForPage(BrowserWindowInterface* bwi) {

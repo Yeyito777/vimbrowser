@@ -38,12 +38,6 @@ TestBrowserAutofillManager::GetPaymentsBnplManager() {
   return &mock_bnpl_manager_;
 }
 
-void TestBrowserAutofillManager::OnLanguageDetermined(
-    const translate::LanguageDetectionDetails& details) {
-  AutofillManager::OnLanguageDetermined(details);
-  ASSERT_TRUE(waiter_.Wait(0));
-}
-
 void TestBrowserAutofillManager::OnFormsSeen(
     const std::vector<FormData>& updated_forms,
     const std::vector<FormGlobalId>& removed_forms) {

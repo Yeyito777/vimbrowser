@@ -133,7 +133,6 @@
 #include "components/subresource_filter/core/common/constants.h"
 #include "components/supervised_user/core/browser/device_parental_controls.h"
 #include "components/supervised_user/core/browser/device_parental_controls_noop_impl.h"
-#include "components/translate/core/browser/translate_download_manager.h"
 #include "components/ukm/ukm_service.h"
 #include "components/update_client/net/network_chromium.h"
 #include "components/update_client/update_query_params.h"
@@ -1681,11 +1680,6 @@ void BrowserProcessImpl::OnLocaleChanged(const std::string& new_locale) {
   // into ApplicationLocaleStorage.
   ChromeContentBrowserClient::SetApplicationLocale(new_locale);
 
-  // TODO(crbug.com/406985310): Implement ApplicationLocaleStorage::Observer for
-  // TranslateDownloadManager, or refactor //components/translate so that it can
-  // directly depend on ApplicationLocaleStorage.
-  translate::TranslateDownloadManager::GetInstance()->set_application_locale(
-      new_locale);
 }
 
 void BrowserProcessImpl::Pin() {

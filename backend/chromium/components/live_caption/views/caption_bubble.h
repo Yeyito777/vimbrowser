@@ -16,7 +16,6 @@
 #include "build/buildflag.h"
 #include "components/live_caption/caption_bubble_settings.h"
 #include "components/live_caption/views/caption_bubble_model.h"
-#include "components/live_caption/views/translation_view_wrapper_base.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/gfx/animation/slide_animation.h"
 #include "ui/gfx/font.h"
@@ -74,8 +73,7 @@ extern const ui::ClassProperty<bool>* const kIsCaptionBubbleKey;
 //  visible on all workspaces. It is draggable in and out of the tab.
 //
 class CaptionBubble : public views::BubbleDialogDelegateView,
-                      public gfx::AnimationDelegate,
-                      public TranslationViewWrapperBase::Delegate {
+                      public gfx::AnimationDelegate {
   METADATA_HEADER(CaptionBubble, views::BubbleDialogDelegateView)
 
  public:
@@ -87,7 +85,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
 
   CaptionBubble(
       CaptionBubbleSettings* caption_bubble_settings,
-      std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper,
       const std::string& application_locale,
       base::OnceClosure destroyed_callback);
   CaptionBubble(const CaptionBubble&) = delete;
@@ -118,7 +115,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   views::Button* GetBackToTabButtonForTesting();
   views::MdTextButton* GetScrollLockButtonForTesting();
   views::View* GetHeaderForTesting();
-  TranslationViewWrapperBase* GetTranslationViewWrapperForTesting();
   void SetNewFontListGetterForTesting(NewFontListGetter callback);
 
   void SetCaptionBubbleStyle();
@@ -159,8 +155,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   void SwapButtons(views::Button* first_button,
                    views::Button* second_button,
                    bool show_first_button);
-  // TranslationViewWrapperBase::Delegate:
-  void CaptionSettingsButtonPressed() override;
   void ScrollLockButtonPressed();
 
   // Called by CaptionBubbleModel to notify this object that the model's text
@@ -219,10 +213,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   void SetTextColor();
   void SetBackgroundColor();
 
-  // TranslationViewWrapperBase::Delegate:
-  void OnLanguageChanged(const std::string& display_language) override;
-  void UpdateLanguageDirection(const std::string& display_language) override;
-
   // Places the bubble at the bottom center of the context widget for the active
   // model, ensuring that it's positioned where the user will spot it. If there
   // are multiple browser windows open, and the user plays media on the second
@@ -262,7 +252,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   raw_ptr<ScrollLockButton> scroll_lock_button_;
   raw_ptr<views::View> header_container_;
   raw_ptr<views::View> left_header_container_;
-  raw_ptr<views::View> translate_header_container_;
   raw_ptr<views::ImageView> generic_error_icon_;
   raw_ptr<views::View> generic_error_message_;
   raw_ptr<views::ImageButton> back_to_tab_button_;
@@ -284,8 +273,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   std::optional<ui::CaptionStyle> caption_style_;
   raw_ptr<CaptionBubbleModel> model_ = nullptr;
   const raw_ptr<CaptionBubbleSettings> caption_bubble_settings_;
-  std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper_;
-
   OnErrorClickedCallback error_clicked_callback_;
   OnDoNotShowAgainClickedCallback error_silenced_callback_;
   base::ScopedClosureRunner destroyed_callback_;

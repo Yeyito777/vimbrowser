@@ -23,10 +23,7 @@
 #include "components/live_caption/caption_bubble_context.h"
 #include "components/live_caption/caption_bubble_settings.h"
 #include "components/live_caption/views/format_constants.h"
-#include "components/live_caption/views/translation_view_wrapper_base.h"
 #include "components/strings/grit/components_strings.h"
-#include "components/translate/core/browser/translate_download_manager.h"
-#include "components/translate/core/browser/translate_ui_languages_manager.h"
 #include "components/vector_icons/vector_icons.h"
 #include "media/base/media_switches.h"
 #include "third_party/re2/src/re2/re2.h"
@@ -552,15 +549,13 @@ END_METADATA
 
 CaptionBubble::CaptionBubble(
     CaptionBubbleSettings* caption_bubble_settings,
-    std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper,
     const std::string& application_locale,
     base::OnceClosure destroyed_callback)
     : views::BubbleDialogDelegateView(nullptr,
                                       views::BubbleBorder::TOP_LEFT,
                                       views::BubbleBorder::DIALOG_SHADOW,
-                                      true),
+      true),
       caption_bubble_settings_(caption_bubble_settings),
-      translation_view_wrapper_(std::move(translation_view_wrapper)),
       destroyed_callback_(std::move(destroyed_callback)),
       application_locale_(application_locale),
       is_expanded_(caption_bubble_settings_->GetLiveCaptionBubbleExpanded()),
@@ -612,8 +607,6 @@ void CaptionBubble::Init() {
 
   views::View* right_header_container = new views::View();
   views::View* left_header_container = new views::View();
-  views::View* translate_header_container = new views::View();
-
   views::View* content_container = new views::View();
   content_container->SetLayoutManager(std::make_unique<views::FlexLayout>())
       ->SetOrientation(views::LayoutOrientation::kVertical)
@@ -779,9 +772,6 @@ void CaptionBubble::Init() {
   collapse_button_ =
       content_container->AddChildView(std::move(collapse_button));
 
-  translation_view_wrapper_->Init(translate_header_container,
-                                  /*delegate=*/this);
-
   std::unique_ptr<views::BoxLayout> right_header_container_layout =
       std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kHorizontal);
@@ -791,17 +781,6 @@ void CaptionBubble::Init() {
       views::BoxLayout::CrossAxisAlignment::kCenter);
   right_header_container->SetLayoutManager(
       std::move(right_header_container_layout));
-  std::unique_ptr<views::BoxLayout> translate_header_container_layout =
-      std::make_unique<views::BoxLayout>(
-          views::BoxLayout::Orientation::kHorizontal, gfx::Insets(),
-          kLanguageButtonImageLabelSpacing);
-  translate_header_container_layout->set_main_axis_alignment(
-      views::BoxLayout::MainAxisAlignment::kCenter);
-  translate_header_container->SetLayoutManager(
-      std::move(translate_header_container_layout));
-  translate_header_container_ = left_header_container->AddChildViewRaw(
-      std::move(translate_header_container));
-
   std::unique_ptr<views::BoxLayout> left_header_container_layout =
       std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kHorizontal,
@@ -841,9 +820,6 @@ void CaptionBubble::Init() {
     button->layer()->SetOpacity(0);
   }
 
-  translate_header_container_->SetPaintToLayer();
-  translate_header_container_->layer()->SetFillsBoundsOpaquely(false);
-  translate_header_container_->layer()->SetOpacity(0);
   download_progress_label_->SetPaintToLayer();
   download_progress_label_->layer()->SetFillsBoundsOpaquely(false);
   download_progress_label_->layer()->SetOpacity(0);
@@ -979,10 +955,6 @@ void CaptionBubble::SwapButtons(views::Button* first_button,
   }
 }
 
-void CaptionBubble::CaptionSettingsButtonPressed() {
-  model_->GetContext()->GetOpenCaptionSettingsCallback().Run();
-}
-
 void CaptionBubble::ScrollLockButtonPressed() {
   // Flip scroll lock button state.
   scroll_lock_button_->FlipLock();
@@ -1008,7 +980,6 @@ void CaptionBubble::SetModel(CaptionBubbleModel* model) {
   if (model_) {
     model_->SetObserver(this);
     back_to_tab_button_->SetVisible(model_->GetContext()->IsActivatable());
-    translation_view_wrapper_->UpdateLanguageLabel();
   } else {
     UpdateBubbleVisibility();
   }
@@ -1019,8 +990,6 @@ void CaptionBubble::AnimationProgressed(const gfx::Animation* animation) {
   for (views::View* button : buttons) {
     button->layer()->SetOpacity(animation->GetCurrentValue());
   }
-  translate_header_container_->layer()->SetOpacity(
-      animation->GetCurrentValue());
   download_progress_label_->layer()->SetOpacity(animation->GetCurrentValue());
 
   if (IsScrollabilityEnabled()) {
@@ -1051,10 +1020,6 @@ void CaptionBubble::OnTextChanged() {
 }
 
 void CaptionBubble::OnDownloadProgressTextChanged() {
-  if (!caption_bubble_settings_->IsLiveTranslateFeatureEnabled()) {
-    return;
-  }
-
   DCHECK(model_);
   download_progress_label_->SetText(model_->GetDownloadProgressText());
   download_progress_label_->SetVisible(true);
@@ -1075,10 +1040,6 @@ void CaptionBubble::OnLanguagePackInstalled() {
 }
 
 void CaptionBubble::OnAutoDetectedLanguageChanged() {
-  std::string auto_detected_language_code =
-      model_->GetAutoDetectedLanguageCode();
-  translation_view_wrapper_->OnAutoDetectedLanguageChanged(
-      auto_detected_language_code);
 }
 
 bool CaptionBubble::ThemeColorsChanged() {
@@ -1188,8 +1149,7 @@ void CaptionBubble::UpdateBubbleVisibility() {
 
   // Show the widget if it has text or an error or download progress to display.
   if (!model_->GetFullText().empty() || model_->HasError() ||
-      (caption_bubble_settings_->IsLiveTranslateFeatureEnabled() &&
-       download_progress_label_->GetVisible())) {
+      download_progress_label_->GetVisible()) {
     ShowInactive();
     return;
   }
@@ -1263,12 +1223,10 @@ void CaptionBubble::SetTextSizeAndFontFamily() {
   label_->SetMaximumWidth(kMaxWidthDip * textScaleFactor - kSidePaddingDip * 2);
   title_->SetLineHeight(kLineHeightDip * textScaleFactor);
 
-  download_progress_label_->SetLineHeight(kLiveTranslateLabelLineHeightDip *
+  download_progress_label_->SetLineHeight(kDownloadProgressLineHeightDip *
                                           textScaleFactor);
   download_progress_label_->SetFontList(
-      GetFontList(kLiveTranslateLabelFontSizePx));
-  translation_view_wrapper_->SetTextSizeAndFontFamily(
-      textScaleFactor, GetFontList(kLiveTranslateLabelFontSizePx));
+      GetFontList(kDownloadProgressFontSizePx));
   generic_error_text_->SetLineHeight(kLineHeightDip * textScaleFactor);
   generic_error_icon_->SetImageSize(
       gfx::Size(kErrorImageSizeDip * textScaleFactor,
@@ -1288,15 +1246,10 @@ void CaptionBubble::SetTextColor() {
       color_provider->GetColor(ui::kColorLiveCaptionBubbleForegroundDefault);
   SkColor header_color =
       color_provider->GetColor(ui::kColorLiveCaptionBubbleButtonIcon);
-  SkColor language_label_color =
-      color_provider->GetColor(ui::kColorRefPrimary80);
-  SkColor language_label_border_color =
-      color_provider->GetColor(ui::kColorRefSecondary50);
   SkColor icon_disabled_color =
       color_provider->GetColor(ui::kColorLiveCaptionBubbleButtonIconDisabled);
 
-  // Update Live Translate label style with the default colors before parsing
-  // the CSS color string.
+  // Set the download-progress label color before parsing the CSS color string.
   download_progress_label_->SetEnabledColor(primary_color);
 
   if (caption_style_) {
@@ -1304,11 +1257,6 @@ void CaptionBubble::SetTextColor() {
                                           &primary_color, color_provider);
     ParseNonTransparentRGBACSSColorString(caption_style_->text_color,
                                           &header_color, color_provider);
-    ParseNonTransparentRGBACSSColorString(
-        caption_style_->text_color, &language_label_color, color_provider);
-    ParseNonTransparentRGBACSSColorString(caption_style_->text_color,
-                                          &language_label_border_color,
-                                          color_provider);
   }
 
   label_->SetEnabledColor(primary_color);
@@ -1317,9 +1265,6 @@ void CaptionBubble::SetTextColor() {
 
   generic_error_icon_->SetImage(ui::ImageModel::FromVectorIcon(
       vector_icons::kErrorOutlineIcon, primary_color));
-
-  translation_view_wrapper_->SetTextColor(
-      language_label_color, language_label_border_color, header_color);
 
 #if BUILDFLAG(IS_WIN)
 
@@ -1385,21 +1330,6 @@ void CaptionBubble::SetBackgroundColor() {
 
   views::BubbleDialogDelegateView::SetBackgroundColor(background_color);
   GetWidget()->SetColorModeOverride(ui::ColorProviderKey::ColorMode::kDark);
-}
-
-void CaptionBubble::OnLanguageChanged(const std::string& display_language) {
-  UpdateLanguageDirection(display_language);
-  SetTextColor();
-  Redraw();
-}
-
-void CaptionBubble::UpdateLanguageDirection(
-    const std::string& display_language) {
-  label_->SetHorizontalAlignment(
-      base::i18n::GetTextDirectionForLocale(display_language.c_str()) ==
-              base::i18n::TextDirection::RIGHT_TO_LEFT
-          ? gfx::HorizontalAlignment::ALIGN_RIGHT
-          : gfx::HorizontalAlignment::ALIGN_LEFT);
 }
 
 void CaptionBubble::RepositionInContextRect(CaptionBubbleModel::Id model_id,
@@ -1485,8 +1415,6 @@ void CaptionBubble::UpdateContentSize() {
   left_header_container_->SetPreferredSize(
       gfx::Size(left_header_width, button_size.height()));
   download_progress_label_->SetPreferredSize(gfx::Size(width, content_height));
-
-  translation_view_wrapper_->UpdateContentSize();
 
 #if BUILDFLAG(IS_WIN)
   // The Media Foundation renderer error message should not scale with the
@@ -1584,11 +1512,6 @@ CaptionBubble::GetButtons() {
       back_to_tab_button_.get(), close_button_.get(), expand_button_.get(),
       collapse_button_.get()};
 
-  std::vector<raw_ptr<views::View, VectorExperimental>> language_buttons =
-      translation_view_wrapper_->GetButtons();
-  buttons.insert(buttons.end(), language_buttons.begin(),
-                 language_buttons.end());
-
   return buttons;
 }
 
@@ -1639,11 +1562,6 @@ views::MdTextButton* CaptionBubble::GetScrollLockButtonForTesting() {
 
 views::View* CaptionBubble::GetHeaderForTesting() {
   return header_container_.get();
-}
-
-TranslationViewWrapperBase*
-CaptionBubble::GetTranslationViewWrapperForTesting() {
-  return translation_view_wrapper_.get();
 }
 
 void CaptionBubble::OnTitleTextChanged() {

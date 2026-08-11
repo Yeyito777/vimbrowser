@@ -14,7 +14,6 @@
 #include "components/autofill/core/common/aliases.h"
 #include "components/compose/core/browser/compose_metrics.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/render_frame_host.h"
 
@@ -81,7 +80,6 @@ class ComposeEnabling {
       bool writingsuggestions_attribute,
       Profile* profile,
       PrefService* prefs,
-      translate::TranslateManager* translate_manager,
       const url::Origin& top_level_frame_origin,
       const url::Origin& element_frame_origin,
       GURL url,
@@ -91,19 +89,14 @@ class ComposeEnabling {
       autofill::AutofillSuggestionTriggerSource trigger_source);
 
   bool ShouldTriggerContextMenu(Profile* profile,
-                                translate::TranslateManager* translate_manager,
                                 content::RenderFrameHost* rfh,
                                 content::ContextMenuParams& params);
 
   compose::ComposeHintDecision GetOptimizationGuidanceForUrl(const GURL& url,
                                                              Profile* profile);
 
-  // Checks if the page assessed language is supported by Compose.
-  bool IsPageLanguageSupported(translate::TranslateManager* translate_manager);
-
  private:
   base::expected<void, compose::ComposeShowStatus> PageLevelChecks(
-      translate::TranslateManager* translate_manager,
       GURL url,
       const url::Origin& top_level_frame_origin,
       const url::Origin& element_frame_origin,

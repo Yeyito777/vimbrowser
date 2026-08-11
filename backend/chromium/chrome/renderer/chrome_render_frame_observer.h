@@ -43,10 +43,6 @@ class PhishingClassifierDelegate;
 class PhishingImageEmbedderDelegate;
 }  // namespace safe_browsing
 
-namespace translate {
-class TranslateAgent;
-}
-
 namespace web_cache {
 class WebCacheImpl;
 }
@@ -163,8 +159,8 @@ class ChromeRenderFrameObserver : public content::RenderFrameObserver,
   // is reached.
   void CapturePageText(blink::WebMeaningfulLayout layout_type);
 
-  // Returns true if |CapturePageText| should be run for Translate or Phishing.
-  bool ShouldCapturePageTextForTranslateOrPhishing(
+  // Returns true if |CapturePageText| should be run for phishing detection.
+  bool ShouldCapturePageTextForPhishing(
       blink::WebMeaningfulLayout layout_type) const;
 
   // Check if the image need to downscale.
@@ -189,7 +185,6 @@ class ChromeRenderFrameObserver : public content::RenderFrameObserver,
   static bool IsAnimatedWebp(const std::vector<uint8_t>& image_data);
 
   // Have the same lifetime as us.
-  raw_ptr<translate::TranslateAgent> translate_agent_;
   raw_ptr<optimization_guide::PageTextAgent> page_text_agent_;
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   raw_ptr<safe_browsing::PhishingClassifierDelegate> phishing_classifier_ =

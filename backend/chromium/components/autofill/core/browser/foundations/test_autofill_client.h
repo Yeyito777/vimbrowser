@@ -77,8 +77,6 @@
 #include "components/prefs/pref_service.h"
 #include "components/signin/public/identity_manager/account_capabilities_test_mutator.h"
 #include "components/signin/public/identity_manager/identity_test_environment.h"
-#include "components/translate/core/browser/language_state.h"
-#include "components/translate/core/browser/mock_translate_driver.h"
 #include "components/ukm/test_ukm_recorder.h"
 #include "components/version_info/channel.h"
 #include "services/metrics/public/cpp/delegating_ukm_recorder.h"
@@ -302,14 +300,6 @@ class TestAutofillClientTemplate : public T {
 
   security_state::SecurityLevel GetSecurityLevelForUmaHistograms() override {
     return security_level_;
-  }
-
-  translate::LanguageState* GetLanguageState() override {
-    return &mock_translate_driver_.GetLanguageState();
-  }
-
-  translate::TranslateDriver* GetTranslateDriver() override {
-    return &mock_translate_driver_;
   }
 
   GeoIpCountryCode GetVariationConfigCountryCode() const override {
@@ -796,7 +786,6 @@ class TestAutofillClientTemplate : public T {
   std::vector<Suggestion> suggestions_;
 
   // A mock translate driver which provides the language state.
-  translate::testing::MockTranslateDriver mock_translate_driver_;
 
   // The last URL submitted in the primary main frame by the user. Set in the
   // constructor.

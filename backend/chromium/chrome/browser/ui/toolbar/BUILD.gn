@@ -62,7 +62,6 @@ source_set("toolbar") {
       "//components/favicon/core",
       "//components/prefs",
       "//components/tabs:public",
-      "//components/translate/content/browser",
       "//content/public/browser",
       "//extensions/browser",
       "//extensions/common",

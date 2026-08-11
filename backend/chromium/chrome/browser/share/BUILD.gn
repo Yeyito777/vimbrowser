@@ -53,7 +53,6 @@ source_set("share") {
       ":jni_headers",
       "//chrome/android:chrome_jni_headers",
       "//components/history/core/browser",
-      "//components/translate/content/browser",
       "//components/ukm/content",
       "//ui/android",
       "//url",

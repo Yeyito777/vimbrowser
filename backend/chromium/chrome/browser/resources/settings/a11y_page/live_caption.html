@@ -89,9 +89,6 @@
         label="$i18n{captionsMaskOffensiveWordsTitle}">
     </settings-toggle-button>
   </cr-collapse>
-  <template is="dom-if" if="[[enableLiveTranslate_]]">
-    <settings-live-translate prefs="{{prefs}}"></settings-live-translate>
-  </template>
 </template>
 <template is="dom-if" if="[[showAddLanguagesDialog_]]" restamp>
   <settings-add-languages-dialog id="addLanguagesDialog"

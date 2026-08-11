@@ -18,9 +18,7 @@
 #include "chrome/common/extensions/api/tabs.h"
 #include "chrome/common/extensions/api/windows.h"
 #include "components/safe_browsing/buildflags.h"
-#include "components/translate/core/browser/translate_driver.h"
 #include "components/zoom/zoom_controller.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "extensions/browser/api/execute_code_function.h"
 #include "extensions/browser/api/web_contents_capture_client.h"
 #include "extensions/browser/extension_function.h"
@@ -427,33 +425,10 @@ class TabsUngroupFunction : public ExtensionFunction {
   bool UngroupTab(int tab_id, std::string* error);
   DECLARE_EXTENSION_FUNCTION("tabs.ungroup", TABS_UNGROUP)
 };
-class TabsDetectLanguageFunction
-    : public ExtensionFunction,
-      public content::WebContentsObserver,
-      public translate::TranslateDriver::LanguageDetectionObserver {
+class TabsDetectLanguageFunction : public ExtensionFunction {
  private:
   ~TabsDetectLanguageFunction() override = default;
   ResponseAction Run() override;
-
-  // Starts the language detection process, which is asynchronous.
-  ResponseAction StartLanguageDetection(content::WebContents* contents);
-
-  // content::WebContentsObserver:
-  void NavigationEntryCommitted(
-      const content::LoadCommittedDetails& load_details) override;
-  void WebContentsDestroyed() override;
-
-  // translate::TranslateDriver::LanguageDetectionObserver:
-  void OnTranslateDriverDestroyed(translate::TranslateDriver* driver) override;
-  void OnLanguageDetermined(
-      const translate::LanguageDetectionDetails& details) override;
-
-  // Resolves the API call with the detected `language`.
-  void RespondWithLanguage(const std::string& language);
-
-  // Indicates if this instance is observing the tabs' WebContents and the
-  // ContentTranslateDriver, in which case the observers must be unregistered.
-  bool is_observing_ = false;
 
   DECLARE_EXTENSION_FUNCTION("tabs.detectLanguage", TABS_DETECTLANGUAGE)
 };

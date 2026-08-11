@@ -6,8 +6,6 @@ source_set("content_annotator") {
   sources = [
     "content_annotator_service_factory.cc",
     "content_annotator_service_factory.h",
-    "content_annotator_tab_helper.cc",
-    "content_annotator_tab_helper.h",
   ]
 
   deps = [
@@ -18,13 +16,11 @@ source_set("content_annotator") {
     "//chrome/browser/page_content_annotations:extraction_service",
     "//chrome/browser/passage_embeddings",
     "//chrome/browser/profiles:profile",
-    "//chrome/browser/translate",
     "//chrome/browser/ui/tabs",
     "//components/accessibility_annotator/content/content_annotator",
     "//components/accessibility_annotator/core:features",
     "//components/keyed_service/core",
     "//components/optimization_guide/core",
-    "//components/translate/core/browser",
   ]
 }
 
@@ -32,7 +28,6 @@ source_set("unit_tests") {
   testonly = true
   sources = [
     "content_annotator_service_factory_unittest.cc",
-    "content_annotator_tab_helper_unittest.cc",
   ]
   deps = [
     ":content_annotator",

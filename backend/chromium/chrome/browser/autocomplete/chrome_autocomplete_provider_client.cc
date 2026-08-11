@@ -43,7 +43,6 @@
 #include "chrome/browser/signin/identity_manager_factory.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/tab_group_sync/tab_group_sync_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/browser_command_controller.h"
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_features.h"
@@ -79,7 +78,6 @@
 #include "components/signin/public/identity_manager/accounts_in_cookie_jar_info.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "components/sync/service/sync_service.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/unified_consent/url_keyed_data_collection_consent_helper.h"
 #include "components/variations/service/variations_service.h"
 #include "content/public/browser/navigation_entry.h"
@@ -791,22 +789,4 @@ void ChromeAutocompleteProviderClient::IssueContextualSearchRequest(
 #endif  // !BUILDFLAG(IS_ANDROID)
 }
 
-void ChromeAutocompleteProviderClient::PromptPageTranslation() {
-#if !BUILDFLAG(IS_ANDROID)
-  BrowserWindowInterface* const bwi =
-      GetLastActiveBrowserWindowInterfaceWithAnyProfile();
-  content::WebContents* contents = nullptr;
-  if (bwi) {
-    contents = bwi->GetTabStripModel()->GetActiveWebContents();
-  }
-  if (contents) {
-    ChromeTranslateClient* translate_client =
-        ChromeTranslateClient::FromWebContents(contents);
-    if (translate_client) {
-      DCHECK_NE(nullptr, translate_client->GetTranslateManager());
-      translate_client->GetTranslateManager()->ShowTranslateUI(
-          /*auto_translate=*/true, /*triggered_from_menu=*/true);
-    }
-  }
-#endif  // !BUILDFLAG(IS_ANDROID)
-}
+void ChromeAutocompleteProviderClient::PromptPageTranslation() {}

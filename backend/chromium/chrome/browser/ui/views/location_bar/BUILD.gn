@@ -114,7 +114,6 @@ source_set("impl") {
       "//chrome/browser/sharing_hub",
       "//chrome/browser/signin",
       "//chrome/browser/themes",
-      "//chrome/browser/translate",
       "//chrome/browser/ui:ui_features",
       "//chrome/browser/ui/actions",
       "//chrome/browser/ui/autofill/payments",

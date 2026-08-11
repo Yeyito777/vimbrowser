@@ -10,8 +10,7 @@
 namespace captions {
 
 inline constexpr int kLineHeightDip = 24;
-inline constexpr int kLiveTranslateLabelLineHeightDip = 18;
-inline constexpr int kLiveTranslateImageWidthDip = 16;
+inline constexpr int kDownloadProgressLineHeightDip = 18;
 inline constexpr int kLanguageButtonImageLabelSpacing = 4;
 inline constexpr auto kLanguageButtonInsets = gfx::Insets::TLBR(2, 8, 2, 6);
 inline constexpr int kScrollLockButtonImageLabelSpacing = 4;
@@ -36,7 +35,7 @@ inline constexpr char kTertiaryFont[] = "sans-serif";
 inline constexpr char kArabicFont[] = "Noto Sans Arabic UI";
 #endif
 inline constexpr int kFontSizePx = 16;
-inline constexpr int kLiveTranslateLabelFontSizePx = 11;
+inline constexpr int kDownloadProgressFontSizePx = 11;
 inline constexpr double kDefaultRatioInParentX = 0.5;
 inline constexpr double kDefaultRatioInParentY = 1;
 inline constexpr int kErrorImageSizeDip = 20;

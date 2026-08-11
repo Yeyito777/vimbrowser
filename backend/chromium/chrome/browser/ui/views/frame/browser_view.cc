@@ -68,7 +68,6 @@
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/accelerator_table.h"
 #include "chrome/browser/ui/actions/chrome_action_id.h"
 #include "chrome/browser/ui/autofill/autofill_bubble_base.h"
@@ -215,8 +214,6 @@
 #include "chrome/browser/ui/views/toolbar/pinned_toolbar_actions_container.h"
 #include "chrome/browser/ui/views/toolbar/reload_control.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_view.h"
-#include "chrome/browser/ui/views/translate/translate_bubble_controller.h"
-#include "chrome/browser/ui/views/translate/translate_bubble_view.h"
 #include "chrome/browser/ui/views/update_recommended_message_box.h"
 #include "chrome/browser/ui/views/user_education/browser_user_education_service.h"
 #include "chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.h"
@@ -260,8 +257,6 @@
 #include "components/tabs/public/split_tab_data.h"
 #include "components/tabs/public/tab_group.h"
 #include "components/tabs/public/tab_interface.h"
-#include "components/translate/core/browser/language_state.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/user_education/common/feature_promo/feature_promo_handle.h"
 #include "components/user_education/common/feature_promo/feature_promo_result.h"
 #include "components/user_education/common/help_bubble/help_bubble_factory_registry.h"
@@ -2131,8 +2126,6 @@ void BrowserView::OnActiveTabChanged(content::WebContents* old_contents,
   // Update all the UI bits.
   UpdateTitleBar();
 
-  CHECK_DEREF(TranslateBubbleController::From(browser_.get())).CloseBubble();
-
   // This is only done once when the app is first opened so that there is only
   // one subscriber per web contents.
   if (AppUsesUnframedMode() && !old_contents) {
@@ -3301,67 +3294,6 @@ sharing_hub::SharingHubBubbleView* BrowserView::ShowSharingHubBubble(
   return bubble;
 }
 #endif  // BUILDFLAG(IS_CHROMEOS)
-
-ShowTranslateBubbleResult BrowserView::ShowTranslateBubble(
-    content::WebContents* web_contents,
-    translate::TranslateStep step,
-    const std::string& source_language,
-    const std::string& target_language,
-    translate::TranslateErrors error_type,
-    bool is_user_gesture) {
-  views::View* contents_view = GetActiveContentsWebView();
-
-  if (contents_view->HasFocus() && !GetLocationBarView()->IsMouseHovered() &&
-      web_contents->IsFocusedElementEditable()) {
-    return ShowTranslateBubbleResult::kEditableFieldIsActive;
-  }
-
-  ChromeTranslateClient::FromWebContents(web_contents)
-      ->GetTranslateManager()
-      ->GetLanguageState()
-      ->SetTranslateEnabled(true);
-
-  if (IsMinimized()) {
-    return ShowTranslateBubbleResult::kBrowserWindowMinimized;
-  }
-
-  views::Button* highlighted_icon =
-      toolbar_button_provider()->GetPageActionView(kActionShowTranslate);
-
-  views::BubbleAnchor anchor =
-      toolbar_button_provider()->GetBubbleAnchor(kActionShowTranslate);
-  if (bubble_anchor_util::IsHighlightable(anchor)) {
-    // No need for a separate highlight.
-    highlighted_icon = nullptr;
-  }
-  CHECK_DEREF(TranslateBubbleController::From(browser_.get()))
-      .ShowTranslateBubble(web_contents, anchor, highlighted_icon, step,
-                           source_language, target_language, error_type,
-                           is_user_gesture ? TranslateBubbleView::USER_GESTURE
-                                           : TranslateBubbleView::AUTOMATIC);
-
-  return ShowTranslateBubbleResult::kSuccess;
-}
-
-void BrowserView::StartPartialTranslate(const std::string& source_language,
-                                        const std::string& target_language,
-                                        const std::u16string& text_selection) {
-  // Show the Translate icon and enabled the associated command to show the
-  // Translate UI.
-  ChromeTranslateClient::FromWebContents(GetActiveWebContents())
-      ->GetTranslateManager()
-      ->GetLanguageState()
-      ->SetTranslateEnabled(true);
-
-  views::Button* translate_icon =
-      toolbar_button_provider()->GetPageActionView(kActionShowTranslate);
-
-  CHECK_DEREF(TranslateBubbleController::From(browser_.get()))
-      .StartPartialTranslate(
-          GetActiveWebContents(),
-          toolbar_button_provider()->GetBubbleAnchor(kActionShowTranslate),
-          translate_icon, source_language, target_language, text_selection);
-}
 
 DownloadBubbleUIController* BrowserView::GetDownloadBubbleUIController() {
 #if !BUILDFLAG(IS_CHROMEOS)

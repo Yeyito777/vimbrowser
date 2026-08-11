@@ -68,11 +68,6 @@ namespace syncer {
 class SyncService;
 }
 
-namespace translate {
-class LanguageState;
-class TranslateDriver;
-}  // namespace translate
-
 namespace ukm {
 class UkmRecorder;
 }
@@ -461,13 +456,6 @@ class AutofillClient {
   // Gets the security level used for recording histograms for the current
   // context if possible, SECURITY_LEVEL_COUNT otherwise.
   virtual security_state::SecurityLevel GetSecurityLevelForUmaHistograms() = 0;
-
-  // Returns the language state, if available.
-  virtual const translate::LanguageState* GetLanguageState() = 0;
-
-  // Returns the translate driver, if available, which is used to observe the
-  // page language for language-dependent heuristics.
-  virtual translate::TranslateDriver* GetTranslateDriver() = 0;
 
   // Retrieves the country code of the user from Chrome variation service.
   // If the variation service is not available, return an empty string.

@@ -88,8 +88,6 @@
 #include "chrome/browser/sharing_hub/sharing_hub_features.h"
 #include "chrome/browser/supervised_user/supervised_user_url_filtering_service_factory.h"
 #include "chrome/browser/sync/send_tab_to_self_sync_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
-#include "chrome/browser/translate/translate_service.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_finder.h"
@@ -118,7 +116,6 @@
 #include "chrome/browser/ui/tabs/public/tab_features.h"
 #include "chrome/browser/ui/tabs/split_tab_metrics.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
-#include "chrome/browser/ui/translate/partial_translate_bubble_model.h"
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/user_education/browser_user_education_interface.h"
 #include "chrome/browser/ui/web_applications/app_browser_controller.h"
@@ -183,10 +180,6 @@
 #include "components/strings/grit/components_strings.h"
 #include "components/supervised_user/core/browser/supervised_user_preferences.h"
 #include "components/supervised_user/core/browser/supervised_user_url_filtering_service.h"
-#include "components/translate/core/browser/translate_download_manager.h"
-#include "components/translate/core/browser/translate_manager.h"
-#include "components/translate/core/browser/translate_prefs.h"
-#include "components/translate/core/common/translate_util.h"
 #include "components/url_formatter/url_formatter.h"
 #include "components/user_prefs/user_prefs.h"
 #include "components/vector_icons/vector_icons.h"
@@ -449,7 +442,7 @@ const std::map<int, int>& GetIdcToUmaMap(UmaEnumIdLookupType type) {
        {IDC_CONTENT_CONTEXT_INSPECTELEMENT, 29},
        {IDC_CONTENT_CONTEXT_INSPECTBACKGROUNDPAGE, 30},
        {IDC_CONTENT_CONTEXT_VIEWPAGEINFO, 31},
-       {IDC_CONTENT_CONTEXT_TRANSLATE, 32},
+       // Removed: page translation, 32.
        {IDC_CONTENT_CONTEXT_RELOADFRAME, 33},
        {IDC_CONTENT_CONTEXT_VIEWFRAMESOURCE, 34},
        {IDC_CONTENT_CONTEXT_VIEWFRAMEINFO, 35},
@@ -531,7 +524,7 @@ const std::map<int, int>& GetIdcToUmaMap(UmaEnumIdLookupType type) {
        // Removed: {IDC_FOLLOW, 119},
        // Removed: {IDC_UNFOLLOW, 120},
        // Removed: {IDC_CONTENT_CONTEXT_AUTOFILL_CUSTOM_FIRST, 121},
-       {IDC_CONTENT_CONTEXT_PARTIAL_TRANSLATE, 123},
+       // Removed: partial translation, 123.
        // Removed: {IDC_CONTENT_CONTEXT_ADD_A_NOTE, 124},
        {IDC_LIVE_CAPTION, 125},
        // Removed: {IDC_CONTENT_CONTEXT_PDF_OCR, 126},
@@ -1246,25 +1239,6 @@ void RenderViewContextMenu::InitMenu() {
     AppendReadAnythingItem();
   }
 
-  // Partial Translate is not supported on ChromeOS.
-#if !BUILDFLAG(IS_CHROMEOS)
-  if (content_type_->SupportsGroup(
-          ContextMenuContentType::ITEM_GROUP_PARTIAL_TRANSLATE) &&
-      search::DefaultSearchProviderIsGoogle(GetProfile()) &&
-      CanTranslate(/*menu_logging=*/false)) {
-    // If the target language isn't supported in partial translation, fall
-    // back to showing the full page translate menu item. Partial translate
-    // uses a different backend that supports a subset of translation
-    // languages, so the current full page target language may not be
-    // supported.
-    if (CanPartiallyTranslateTargetLanguage()) {
-      AppendPartialTranslateItem();
-    } else {
-      AppendTranslateItem();
-    }
-  }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
-
   // Writing direction options are not currently supported by pepper plugins.
   if (editable && params_.misspelled_word.empty() &&
       !content_type_->SupportsGroup(
@@ -1610,17 +1584,6 @@ void RenderViewContextMenu::AppendPrintPreviewItems() {
 const Extension* RenderViewContextMenu::GetExtension() const {
   return extensions::ProcessManager::Get(browser_context_)
       ->GetExtensionForWebContents(source_web_contents_);
-}
-
-std::u16string RenderViewContextMenu::GetTargetLanguageDisplayName(
-    bool is_full_page_translation) const {
-  std::string source;
-  std::string target;
-
-  ChromeTranslateClient::FromWebContents(embedder_web_contents_)
-      ->GetTranslateLanguages(embedder_web_contents_, &source, &target,
-                              is_full_page_translation);
-  return l10n_util::GetDisplayNameForLocale(target, target, true);
 }
 
 #if BUILDFLAG(ENABLE_COMPOSE)
@@ -2342,9 +2305,6 @@ void RenderViewContextMenu::AppendPageItems() {
     menu_model_.AddSeparator(ui::NORMAL_SEPARATOR);
   }
 
-  if (CanTranslate(/*menu_logging=*/true)) {
-    AppendTranslateItem();
-  }
 }
 
 void RenderViewContextMenu::AppendExitFullscreenItem() {
@@ -2417,24 +2377,6 @@ void RenderViewContextMenu::AppendPrintItem() {
     menu_model_.AddItemWithStringId(IDC_PRINT, IDS_CONTENT_CONTEXT_PRINT);
   }
 #endif  // BUILDFLAG(ENABLE_PRINTING)
-}
-
-void RenderViewContextMenu::AppendPartialTranslateItem() {
-  menu_model_.AddItem(
-      IDC_CONTENT_CONTEXT_PARTIAL_TRANSLATE,
-      l10n_util::GetStringFUTF16(
-          IDS_CONTENT_CONTEXT_PARTIAL_TRANSLATE,
-          GetTargetLanguageDisplayName(/*is_full_page_translation=*/false)));
-}
-
-void RenderViewContextMenu::AppendTranslateItem() {
-  menu_model_.AddItemWithIcon(
-      IDC_CONTENT_CONTEXT_TRANSLATE,
-      l10n_util::GetStringFUTF16(
-          IDS_CONTENT_CONTEXT_TRANSLATE,
-          GetTargetLanguageDisplayName(/*is_full_page_translation=*/true)),
-      ui::ImageModel::FromVectorIcon(vector_icons::kTranslateIcon,
-                                     ui::kColorMenuIcon, kTabMenuIconSize));
 }
 
 void RenderViewContextMenu::AppendMediaRouterItem() {
@@ -2930,12 +2872,6 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
     case IDC_CONTENT_CONTEXT_RELOAD_PACKAGED_APP:
     case IDC_CONTENT_CONTEXT_RESTART_PACKAGED_APP:
       return IsDevCommandEnabled(id);
-
-    case IDC_CONTENT_CONTEXT_TRANSLATE:
-      return navigation_allowed && IsTranslateEnabled();
-
-    case IDC_CONTENT_CONTEXT_PARTIAL_TRANSLATE:
-      return navigation_allowed;
 
     case IDC_CONTENT_CONTEXT_OPENLINKBOOKMARKAPP:
     case IDC_CONTENT_CONTEXT_OPENLINKINPROFILE:
@@ -3549,14 +3485,6 @@ void RenderViewContextMenu::ExecuteCommand(int id, int event_flags) {
       ExecInspectElement();
       break;
 
-    case IDC_CONTENT_CONTEXT_TRANSLATE:
-      ExecTranslate();
-      break;
-
-    case IDC_CONTENT_CONTEXT_PARTIAL_TRANSLATE:
-      ExecPartialTranslate();
-      break;
-
     case IDC_CONTENT_CONTEXT_RELOADFRAME:
       source_web_contents_->ReloadFocusedFrame();
       break;
@@ -3862,31 +3790,6 @@ bool RenderViewContextMenu::IsDevCommandEnabled(int id) const {
   }
 
   return true;
-}
-
-bool RenderViewContextMenu::IsTranslateEnabled() const {
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(embedder_web_contents_);
-  // If no |chrome_translate_client| attached with this WebContents, or
-  // the translate manager has been shut down, or we're viewing in a
-  // MimeHandlerViewGuest translate will be disabled.
-  if (!chrome_translate_client ||
-      !chrome_translate_client->GetTranslateManager() ||
-      !!extensions::MimeHandlerViewGuest::FromRenderFrameHost(
-          GetRenderFrameHost())) {
-    return false;
-  }
-  std::string source_lang =
-      chrome_translate_client->GetLanguageState().source_language();
-  // Note that we intentionally enable the menu even if the source and
-  // target languages are identical.  This is to give a way to user to
-  // translate a page that might contains text fragments in a different
-  // language.
-  return ((params_.edit_flags & ContextMenuDataEditFlags::kCanTranslate) !=
-          0) &&
-         !source_lang.empty() &&  // Did we receive the page language yet?
-         // Disable on the Instant Extended NTP.
-         !search::IsInstantNTP(embedder_web_contents_);
 }
 
 bool RenderViewContextMenu::IsSaveLinkAsEnabled() const {
@@ -4785,35 +4688,6 @@ void RenderViewContextMenu::ExecRouteMedia() {
       media_router::MediaRouterDialogActivationLocation::CONTEXTUAL_MENU);
 }
 
-void RenderViewContextMenu::ExecTranslate() {
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(embedder_web_contents_);
-  if (!chrome_translate_client) {
-    return;
-  }
-
-  translate::TranslateManager* manager =
-      chrome_translate_client->GetTranslateManager();
-  DCHECK(manager);
-  manager->ShowTranslateUI(/*auto_translate=*/true,
-                           /*triggered_from_menu=*/true);
-}
-
-void RenderViewContextMenu::ExecPartialTranslate() {
-  std::string source_language;
-  std::string target_language;
-
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(embedder_web_contents_);
-  if (chrome_translate_client) {
-    chrome_translate_client->GetTranslateLanguages(
-        embedder_web_contents_, &source_language, &target_language,
-        /*for_display=*/false);
-    GetBrowser()->window()->StartPartialTranslate(
-        source_language, target_language, params_.selection_text);
-  }
-}
-
 void RenderViewContextMenu::ExecLanguageSettings(int event_flags) {
 // Open the browser language settings.
 // Exception: On Ash, the browser language settings consists solely of a link to
@@ -5022,22 +4896,6 @@ ToastController* RenderViewContextMenu::GetToastController() const {
 #endif
 
   return browser ? browser->GetFeatures().toast_controller() : nullptr;
-}
-
-bool RenderViewContextMenu::CanTranslate(bool menu_logging) {
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(embedder_web_contents_);
-  return chrome_translate_client &&
-         chrome_translate_client->GetTranslateManager()->CanManuallyTranslate(
-             menu_logging);
-}
-
-bool RenderViewContextMenu::CanPartiallyTranslateTargetLanguage() {
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(embedder_web_contents_);
-  return chrome_translate_client &&
-         chrome_translate_client->GetTranslateManager()
-             ->CanPartiallyTranslateTargetLanguage();
 }
 
 void RenderViewContextMenu::MaybePrepareForLensQuery() {

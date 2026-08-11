@@ -32,7 +32,6 @@
 #include "components/media_router/common/providers/cast/certificate/switches.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/startup_metric_utils/browser/startup_metric_utils.h"
-#include "components/translate/core/common/translate_switches.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "google_apis/gaia/gaia_switches.h"
@@ -94,8 +93,6 @@ const char* const kBadFlags[] = {
     switches::kSingleProcess,
 
     // These flags disable or undermine the Same Origin Policy.
-    translate::switches::kTranslateSecurityOrigin,
-
     // These flags undermine HTTPS / connection security.
     switches::kDisableWebRtcEncryption,
     switches::kIgnoreCertificateErrors,
@@ -103,8 +100,6 @@ const char* const kBadFlags[] = {
 
     // These flags change the URLs that handle PII.
     switches::kGaiaUrl,
-    translate::switches::kTranslateScriptURL,
-
 #if BUILDFLAG(ENABLE_EXTENSIONS)
     // These flags enable extensions running scripts on chrome:// and
     // chrome-extension:// URLs.

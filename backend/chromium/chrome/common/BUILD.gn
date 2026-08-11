@@ -226,8 +226,6 @@ static_library("common_lib") {
     "//components/services/heap_profiling/public/cpp",
     "//components/strings",
     "//components/supervised_user/core/common",
-    "//components/translate/content/common",
-    "//components/translate/core/common",
     "//components/url_formatter",
     "//components/variations",
     "//components/variations/net",

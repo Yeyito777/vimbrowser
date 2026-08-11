@@ -80,7 +80,6 @@
 #include "chrome/browser/strike_database/strike_database_factory.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/tpcd/metadata/manager_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/find_bar/find_bar_state.h"
 #include "chrome/browser/ui/find_bar/find_bar_state_factory.h"
 #include "chrome/browser/webdata_services/web_data_service_factory.h"
@@ -742,9 +741,6 @@ void ChromeBrowsingDataRemoverDelegate::RemoveEmbedderData(
         ProtocolHandlerRegistryFactory::GetForBrowserContext(profile_);
     if (handler_registry)
       handler_registry->ClearUserDefinedHandlers(delete_begin_, delete_end_);
-
-    ChromeTranslateClient::CreateTranslatePrefs(prefs)
-        ->DeleteNeverPromptSitesBetween(delete_begin_, delete_end_);
 
     host_content_settings_map_->ClearSettingsForOneTypeWithPredicate(
         ContentSettingsType::PERMISSION_AUTOREVOCATION_DATA, delete_begin,

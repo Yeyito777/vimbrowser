@@ -18,7 +18,6 @@ inline constexpr auto kActionIds = std::to_array<actions::ActionId>({
     kActionAiMode,
     kActionSidePanelShowLensOverlayResults,
     kActionLensOverlayHomework,
-    kActionShowTranslate,
     kActionIndigo,
     kActionShowMemorySaverChip,
     kActionShowJsOptimizationsIcon,

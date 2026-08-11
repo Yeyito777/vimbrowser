@@ -1469,19 +1469,11 @@ TEST_F(VideoOverlayWindowViewsTest, LiveCaption_GestureTap) {
       overlay_window().live_caption_dialog_for_testing();
   views::ToggleButton* live_caption_toggle_button =
       live_caption_dialog->live_caption_button_for_testing();
-  views::ToggleButton* live_translate_toggle_button =
-      live_caption_dialog->live_translate_button_for_testing();
-  views::Combobox* target_language_combobox =
-      live_caption_dialog->target_language_combobox_for_testing();
-
   profile().GetPrefs()->SetBoolean(prefs::kLiveCaptionEnabled, false);
-  profile().GetPrefs()->SetBoolean(prefs::kLiveTranslateEnabled, false);
 
   ASSERT_NE(nullptr, live_caption_button);
   ASSERT_NE(nullptr, live_caption_dialog);
   ASSERT_NE(nullptr, live_caption_toggle_button);
-  ASSERT_NE(nullptr, live_translate_toggle_button);
-  ASSERT_NE(nullptr, target_language_combobox);
 
   // Click the live caption button to display the live caption dialog.
   WaitForLayout();
@@ -1498,20 +1490,7 @@ TEST_F(VideoOverlayWindowViewsTest, LiveCaption_GestureTap) {
   WaitForLayout();
   EXPECT_TRUE(profile().GetPrefs()->GetBoolean(prefs::kLiveCaptionEnabled));
 
-  // Tap the live translate button to enable live translate.
-  EXPECT_FALSE(profile().GetPrefs()->GetBoolean(prefs::kLiveTranslateEnabled));
-  GestureTapOnView(live_translate_toggle_button);
-  WaitForLayout();
-  EXPECT_TRUE(profile().GetPrefs()->GetBoolean(prefs::kLiveTranslateEnabled));
-
-  // Tap the target language combobox to open the target language selection.
-  EXPECT_FALSE(target_language_combobox->IsMenuRunning());
-  GestureTapOnView(target_language_combobox);
-  WaitForLayout();
-  EXPECT_TRUE(target_language_combobox->IsMenuRunning());
-
   profile().GetPrefs()->SetBoolean(prefs::kLiveCaptionEnabled, false);
-  profile().GetPrefs()->SetBoolean(prefs::kLiveTranslateEnabled, false);
 }
 
 #endif  // BUILDFLAG(IS_MAC)

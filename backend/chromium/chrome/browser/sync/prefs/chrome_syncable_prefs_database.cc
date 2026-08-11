@@ -22,7 +22,6 @@
 #include "components/privacy_sandbox/privacy_sandbox_prefs.h"
 #include "components/sync/base/data_type.h"
 #include "components/sync_preferences/syncable_prefs_database.h"
-#include "components/translate/core/browser/translate_prefs.h"
 
 #if BUILDFLAG(IS_CHROMEOS)
 #include "ash/constants/ash_pref_names.h"
@@ -214,8 +213,7 @@ enum {
   kExtensionCommands = 100153,
   kExtensionsUIDeveloperMode = 100154,
   kHttpsOnlyModeEnabled = 100155,
-  kLiveTranslateEnabled = 100156,
-  kLiveTranslateTargetLanguageCode = 100157,
+  // IDs 100156 and 100157 were used by removed Live Translate preferences.
   kNetworkEasterEggHighScore = 100158,
   kNetworkPredictionOptions = 100159,
   kNetworkQualities = 100160,
@@ -1550,14 +1548,6 @@ constexpr auto kChromeSyncablePrefsAllowlist = base::MakeFixedFlatMap<
       sync_preferences::MergeBehavior::kNone}},
     {prefs::kHttpsOnlyModeEnabled,
      {syncable_prefs_ids::kHttpsOnlyModeEnabled, syncer::PREFERENCES,
-      sync_preferences::PrefSensitivity::kNone,
-      sync_preferences::MergeBehavior::kNone}},
-    {prefs::kLiveTranslateEnabled,
-     {syncable_prefs_ids::kLiveTranslateEnabled, syncer::PREFERENCES,
-      sync_preferences::PrefSensitivity::kNone,
-      sync_preferences::MergeBehavior::kNone}},
-    {prefs::kLiveTranslateTargetLanguageCode,
-     {syncable_prefs_ids::kLiveTranslateTargetLanguageCode, syncer::PREFERENCES,
       sync_preferences::PrefSensitivity::kNone,
       sync_preferences::MergeBehavior::kNone}},
     {prefs::kNetworkEasterEggHighScore,

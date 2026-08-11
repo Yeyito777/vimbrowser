@@ -455,7 +455,6 @@ if (!is_android) {
       "//chrome/browser",
       "//chrome/test:test_support",
       "//components/mirroring/mojom:service",
-      "//components/translate/content/common",
     ]
     dict = "providers/dial/fuzzer_data/dial_internal_message_fuzzer.dict"
     seed_corpus = "providers/dial/fuzzer_data/corpus/"

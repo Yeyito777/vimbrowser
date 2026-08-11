@@ -88,7 +88,6 @@ class TabStripModel;
 class TabStripServiceFeature;
 class ToastController;
 class ToastService;
-class TranslateBubbleController;
 class UpgradeNotificationController;
 class VerticalTabIphController;
 class WebUIBrowserExclusiveAccessContext;
@@ -693,8 +692,6 @@ class BrowserWindowFeatures {
 
   std::unique_ptr<tab_groups::SharedTabGroupFeedbackController>
       shared_tab_group_feedback_controller_;
-
-  std::unique_ptr<TranslateBubbleController> translate_bubble_controller_;
 
   std::unique_ptr<TabSearchToolbarButtonController>
       tab_search_toolbar_button_controller_;

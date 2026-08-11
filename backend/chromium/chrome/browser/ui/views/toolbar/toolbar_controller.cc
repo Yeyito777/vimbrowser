@@ -353,7 +353,6 @@ std::string ToolbarController::GetActionNameFromElementIdentifier(
            "PinnedShowPasswordsBubbleOrPageButton"},
           {kActionShowPaymentsBubbleOrPage,
            "PinnedShowPaymentsBubbleOrPageButton"},
-          {kActionShowTranslate, "PinnedShowTranslateButton"},
           {kActionSidePanelShowBookmarks, "PinnedShowBookmarkSidePanelButton"},
           {kActionSidePanelShowReadAnything,
            "PinnedShowReadAnythingSidePanelButton"},

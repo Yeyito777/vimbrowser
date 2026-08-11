@@ -12,7 +12,6 @@
 #include "components/affiliations/core/browser/affiliation_utils.h"
 #include "components/optimization_guide/core/model_quality/model_quality_log_entry.h"
 #include "components/optimization_guide/core/model_quality/model_quality_logs_uploader_service.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/variations/service/variations_service.h"
 #include "content/public/browser/web_contents.h"
 
@@ -27,9 +26,7 @@ ActorLoginQualityLogger::ActorLoginQualityLogger() {
 
 ActorLoginQualityLogger::~ActorLoginQualityLogger() = default;
 
-void ActorLoginQualityLogger::SetDomainAndLanguage(
-    translate::TranslateManager* translate_manager,
-    const GURL& url) {
+void ActorLoginQualityLogger::SetDomain(const GURL& url) {
   // This should only be set once per log entry, by the first
   // request.
   if (log_data_.mutable_actor_login()->mutable_quality()->has_domain()) {
@@ -38,10 +35,6 @@ void ActorLoginQualityLogger::SetDomainAndLanguage(
   log_data_.mutable_actor_login()->mutable_quality()->set_domain(
       affiliations::GetExtendedTopLevelDomain(url,
                                               /*psl_extensions=*/{}));
-  if (translate_manager) {
-    log_data_.mutable_actor_login()->mutable_quality()->set_language(
-        translate_manager->GetLanguageState()->source_language());
-  }
 }
 
 void ActorLoginQualityLogger::SetGetCredentialsDetails(

@@ -66,8 +66,6 @@ source_set("impl") {
     "//components/lens:features",
     "//components/search",
     "//components/strings:components_strings",
-    "//components/translate/core/browser",
-    "//components/translate/core/common",
     "//content/public/browser",
     "//content/public/common",
     "//extensions/buildflags",

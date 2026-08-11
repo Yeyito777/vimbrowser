@@ -30,8 +30,6 @@
 #include "components/sync/base/data_type.h"
 #include "components/sync/base/features.h"
 #include "components/sync_preferences/cross_device_pref_tracker/prefs/cross_device_pref_names.h"
-#include "components/translate/core/browser/translate_pref_names.h"
-#include "components/translate/core/browser/translate_prefs.h"
 #include "components/variations/service/google_groups_manager_prefs.h"
 
 namespace sync_preferences {
@@ -97,18 +95,9 @@ enum {
   kCookieControlsMode = 47,
   kSafeBrowsingEnabled = 48,
   // kSyncedDefaultSearchProviderGUID = 49, (deprecated)
-  kPrefForceTriggerTranslateCount = 50,
+  // IDs 50-61 were used by removed page-translation preferences.
   // kPrefNeverPromptSitesDeprecated = 51, (deprecated)
-  kPrefTranslateAcceptedCount = 52,
-  kPrefTranslateAutoAlwaysCount = 53,
-  kPrefTranslateAutoNeverCount = 54,
-  kPrefTranslateDeniedCount = 55,
   // kPrefTranslateIgnoredCount = 56, (no longer synced)
-  kBlockedLanguages = 57,
-  kOfferTranslateEnabled = 58,
-  kPrefAlwaysTranslateList = 59,
-  kPrefNeverPromptSitesWithTime = 60,
-  kPrefTranslateRecentTarget = 61,
   kDogfoodGroupsSyncPrefName = 62,
   kSyncableMergeableDictPrefForTesting = 63,  // For tests.
   kAutofillPaymentCvcStorage = 64,
@@ -327,39 +316,6 @@ constexpr auto kCommonSyncablePrefsAllowlist =
           PrefSensitivity::kNone, MergeBehavior::kNone}},
         {tab_groups::prefs::kAutoPinNewTabGroups,
          {syncable_prefs_ids::kAutoPinNewTabGroups, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefForceTriggerTranslateCount,
-         {syncable_prefs_ids::kPrefForceTriggerTranslateCount,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefTranslateAcceptedCount,
-         {syncable_prefs_ids::kPrefTranslateAcceptedCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-        {translate::TranslatePrefs::kPrefTranslateAutoAlwaysCount,
-         {syncable_prefs_ids::kPrefTranslateAutoAlwaysCount,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefTranslateAutoNeverCount,
-         {syncable_prefs_ids::kPrefTranslateAutoNeverCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-        {translate::TranslatePrefs::kPrefTranslateDeniedCount,
-         {syncable_prefs_ids::kPrefTranslateDeniedCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kBlockedLanguages,
-         {syncable_prefs_ids::kBlockedLanguages, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kOfferTranslateEnabled,
-         {syncable_prefs_ids::kOfferTranslateEnabled, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kPrefAlwaysTranslateList,
-         {syncable_prefs_ids::kPrefAlwaysTranslateList, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kPrefNeverPromptSitesWithTime,
-         {syncable_prefs_ids::kPrefNeverPromptSitesWithTime,
-          syncer::PREFERENCES, PrefSensitivity::kSensitiveRequiresHistory,
-          MergeBehavior::kNone}},
-        {translate::prefs::kPrefTranslateRecentTarget,
-         {syncable_prefs_ids::kPrefTranslateRecentTarget, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
 // For Ash, the OS_PRIORITY_PREFERENCES equivalent is defined in
 // chrome/browser/sync/prefs/chrome_syncable_prefs_database.cc instead.

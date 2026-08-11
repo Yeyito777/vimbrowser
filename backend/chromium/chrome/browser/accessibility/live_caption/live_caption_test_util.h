@@ -35,9 +35,6 @@ class LiveCaptionBrowserTest : public InProcessBrowserTest {
 
   void SetLiveCaptionEnabledOnProfile(bool enabled, Profile* profile);
 
-  // Enables/disables the live translate pref.
-  void SetLiveTranslateEnabled(bool enabled);
-
  private:
   base::test::ScopedFeatureList scoped_feature_list_;
 };

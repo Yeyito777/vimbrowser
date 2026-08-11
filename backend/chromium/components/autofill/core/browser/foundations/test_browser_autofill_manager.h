@@ -40,8 +40,6 @@ class TestBrowserAutofillManager : public BrowserAutofillManager {
   // AutofillManager overrides.
   // The overrides ensure that the thread is blocked until the form has been
   // parsed.
-  void OnLanguageDetermined(
-      const translate::LanguageDetectionDetails& details) override;
   void OnFormsSeen(const std::vector<FormData>& updated_forms,
                    const std::vector<FormGlobalId>& removed_forms) override;
   void OnCaretMovedInFormField(const FormData& form,

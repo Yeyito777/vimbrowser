@@ -82,7 +82,6 @@
 #include "chrome/browser/tab_contents/navigation_metrics_recorder.h"
 #include "chrome/browser/task_manager/web_contents_tags.h"
 #include "chrome/browser/tpcd/metadata/devtools_observer.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/trusted_vault/trusted_vault_encryption_keys_tab_helper.h"
 #include "chrome/browser/ui/autofill/autofill_client_provider.h"
 #include "chrome/browser/ui/autofill/autofill_client_provider_factory.h"
@@ -163,7 +162,6 @@
 #include "base/functional/bind.h"
 #include "base/memory/ptr_util.h"
 #include "chrome/browser/android/oom_intervention/oom_intervention_tab_helper.h"
-#include "chrome/browser/android/persisted_tab_data/language_persisted_tab_data_android.h"
 #include "chrome/browser/android/persisted_tab_data/sensitivity_persisted_tab_data_android.h"
 #include "chrome/browser/android/policy/policy_auditor_bridge.h"
 #include "chrome/browser/android/tab_android.h"
@@ -176,7 +174,6 @@
 #include "chrome/browser/plugins/plugin_observer_android.h"
 #include "chrome/browser/ui/android/context_menu_helper.h"
 #include "chrome/browser/ui/javascript_dialogs/javascript_tab_modal_dialog_manager_delegate_android.h"
-#include "components/content_capture/common/content_capture_features.h"
 #include "components/facilitated_payments/core/features/features.h"
 #include "components/page_load_metrics/browser/features.h"
 #include "components/sensitive_content/android/android_sensitive_content_client.h"
@@ -392,38 +389,6 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
       web_contents);
 #endif
   ChromeSecurityStateTabHelper::CreateForWebContents(web_contents);
-  ChromeTranslateClient::CreateForWebContents(web_contents);
-#if BUILDFLAG(IS_ANDROID)
-  // Register LanguagePersistedTabDataAndroid for non-incognito tabs to
-  // persist language details.
-  if (!profile->IsOffTheRecord() &&
-      content_capture::features::ShouldSendMetadataForDataShare()) {
-    if (auto* tab = TabAndroid::FromWebContents(web_contents); tab) {
-      LanguagePersistedTabDataAndroid::From(
-          tab,
-          base::BindOnce(
-              [](base::WeakPtr<content::WebContents> web_contents,
-                 PersistedTabDataAndroid* persisted_tab_data) {
-                if (!web_contents) {
-                  return;
-                }
-                ChromeTranslateClient* chrome_translate_client =
-                    ChromeTranslateClient::FromWebContents(web_contents.get());
-
-                if (!chrome_translate_client) {
-                  return;
-                }
-
-                auto* language_persisted_tab_data_android =
-                    static_cast<LanguagePersistedTabDataAndroid*>(
-                        persisted_tab_data);
-                language_persisted_tab_data_android->RegisterTranslateDriver(
-                    chrome_translate_client->translate_driver());
-              },
-              web_contents->GetWeakPtr()));
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   client_hints::ClientHintsWebContentsObserver::CreateForWebContents(
       web_contents);
   commerce::CommerceTabHelper::CreateForWebContents(

@@ -17,8 +17,6 @@
 #include "components/live_caption/live_caption_controller.h"
 #include "components/live_caption/views/caption_bubble.h"
 #include "components/live_caption/views/caption_bubble_model.h"
-#include "components/live_caption/views/translation_view_wrapper.h"
-#include "components/live_caption/views/translation_view_wrapper_base.h"
 #include "components/prefs/pref_service.h"
 #include "components/soda/soda_installer.h"
 #include "components/strings/grit/components_strings.h"
@@ -29,21 +27,17 @@ namespace captions {
 // Static
 std::unique_ptr<CaptionBubbleController> CaptionBubbleController::Create(
     CaptionBubbleSettings* caption_bubble_settings,
-    const std::string& application_locale,
-    std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper) {
+    const std::string& application_locale) {
   return std::make_unique<CaptionBubbleControllerViews>(
-      caption_bubble_settings, application_locale,
-      std::move(translation_view_wrapper));
+      caption_bubble_settings, application_locale);
 }
 
 CaptionBubbleControllerViews::CaptionBubbleControllerViews(
     CaptionBubbleSettings* caption_bubble_settings,
-    const std::string& application_locale,
-    std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper)
+    const std::string& application_locale)
     : application_locale_(application_locale) {
   caption_bubble_ = new CaptionBubble(
-      caption_bubble_settings, std::move(translation_view_wrapper),
-      application_locale,
+      caption_bubble_settings, application_locale,
       base::BindOnce(&CaptionBubbleControllerViews::OnCaptionBubbleDestroyed,
                      base::Unretained(this)));
   caption_widget_ =

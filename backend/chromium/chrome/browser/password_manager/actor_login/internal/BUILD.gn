@@ -25,7 +25,6 @@ source_set("delegate") {
   deps = [
     "//base",
     "//chrome/browser/glic",
-    "//chrome/browser/translate",
     "//chrome/browser/ui/browser_window",
     "//chrome/browser/webid",
     "//chrome/common:buildflags",

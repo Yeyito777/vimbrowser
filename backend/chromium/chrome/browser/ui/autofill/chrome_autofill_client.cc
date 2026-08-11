@@ -56,7 +56,6 @@
 #include "chrome/browser/signin/signin_promo_util.h"
 #include "chrome/browser/strike_database/strike_database_factory.h"
 #include "chrome/browser/sync/sync_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/autofill/address_bubbles_controller.h"
 #include "chrome/browser/ui/autofill/autofill_bubble_controller_base.h"
 #include "chrome/browser/ui/autofill/autofill_suggestion_controller.h"
@@ -145,7 +144,6 @@
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "components/strike_database/strike_database.h"
 #include "components/sync/service/sync_service.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/unified_consent/pref_names.h"
 #include "components/variations/service/google_groups_manager.h"
 #include "components/variations/service/variations_service.h"
@@ -724,28 +722,6 @@ ChromeAutofillClient::GetSecurityLevelForUmaHistograms() {
   }
 
   return helper->GetSecurityLevel();
-}
-
-const translate::LanguageState* ChromeAutofillClient::GetLanguageState() {
-  // TODO(crbug.com/41430413): iOS vs other platforms extracts the language from
-  // the top level frame vs whatever frame directly holds the form.
-  auto* translate_manager =
-      ChromeTranslateClient::GetManagerFromWebContents(web_contents());
-  if (translate_manager) {
-    return translate_manager->GetLanguageState();
-  }
-  return nullptr;
-}
-
-translate::TranslateDriver* ChromeAutofillClient::GetTranslateDriver() {
-  // TODO(crbug.com/41430413): iOS vs other platforms extracts the language from
-  // the top level frame vs whatever frame directly holds the form.
-  auto* translate_client =
-      ChromeTranslateClient::FromWebContents(web_contents());
-  if (translate_client) {
-    return translate_client->translate_driver();
-  }
-  return nullptr;
 }
 
 GeoIpCountryCode ChromeAutofillClient::GetVariationConfigCountryCode() const {

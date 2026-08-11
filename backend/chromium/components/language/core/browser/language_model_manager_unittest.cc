@@ -5,22 +5,28 @@
 #include "components/language/core/browser/language_model_manager.h"
 
 #include <memory>
+#include <vector>
 
 #include "components/language/core/browser/language_model.h"
 #include "components/language/core/browser/language_prefs.h"
-#include "components/language/core/language_model/fluent_language_model.h"
-#include "components/language/core/language_model/ulp_language_model.h"
 #include "components/prefs/testing_pref_service.h"
 #include "components/sync_preferences/testing_pref_service_syncable.h"
-#include "components/translate/core/browser/translate_prefs.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace language {
 
+namespace {
+
+class EmptyLanguageModel : public LanguageModel {
+ public:
+  std::vector<LanguageDetails> GetLanguages() override { return {}; }
+};
+
+}  // namespace
+
 struct PrefRegistration {
   explicit PrefRegistration(user_prefs::PrefRegistrySyncable* registry) {
     language::LanguagePrefs::RegisterProfilePrefs(registry);
-    translate::TranslatePrefs::RegisterProfilePrefs(registry);
   }
 };
 
@@ -31,7 +37,7 @@ class LanguageModelManagerTest : public testing::Test {
 
   void SetUp() override {
     manager_.AddModel(LanguageModelManager::ModelType::FLUENT,
-                      std::make_unique<FluentLanguageModel>(&prefs_));
+                      std::make_unique<EmptyLanguageModel>());
   }
 
   sync_preferences::TestingPrefServiceSyncable prefs_;
@@ -70,7 +76,7 @@ TEST_F(LanguageModelManagerTest, GetLanguageModelTest) {
   EXPECT_EQ(manager_.GetLanguageModel(LanguageModelManager::ModelType::ULP),
             nullptr);
   manager_.AddModel(LanguageModelManager::ModelType::ULP,
-                    std::make_unique<ULPLanguageModel>());
+                    std::make_unique<EmptyLanguageModel>());
   EXPECT_NE(manager_.GetLanguageModel(LanguageModelManager::ModelType::ULP),
             nullptr);
 }

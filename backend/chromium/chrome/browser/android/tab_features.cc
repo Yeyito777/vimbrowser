@@ -33,7 +33,6 @@ TabFeatures::TabFeatures(content::WebContents* web_contents, Profile* profile) {
           web_contents,
           sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
               profile),
-          ChromeTranslateClient::FromWebContents(web_contents),
           favicon::ContentFaviconDriver::FromWebContents(web_contents));
 
   if (base::FeatureList::IsEnabled(net::features::kVerifyQWACs)) {
