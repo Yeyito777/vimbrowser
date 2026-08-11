@@ -94,9 +94,6 @@ source_set("configs") {
         "//chrome/browser/ui/webui/default_browser:default_browser_modal",
       ]
     }
-  } else {
-    #is_android
-    deps += [ "//chrome/browser/ui/webui/notifications_internals" ]
   }
 
   if (safe_browsing_mode != 0) {

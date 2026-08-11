@@ -43,9 +43,6 @@ declare_args() {
   enable_background_contents = !is_android
   enable_background_mode = !is_android && !is_chromeos
 
-  # Enables usage of notifications via Chrome's MessageCenter.
-  enable_chrome_notifications = is_mac || is_win || is_linux
-
   # Skips unmigrated actor files in the build on Android. This is temporary, and
   # will eventually be removed once migration is done. Adding this flag likely
   # means the code needs to be adapted for Android. Once adapted, the final code
@@ -70,6 +67,10 @@ declare_args() {
 
   # optimize_webui was moved to ui/base/ui_features.gni
 }
+
+# Vimbrowser does not ship Chrome's browser-facing notification UI. Service
+# workers and push messaging remain independent of this presentation layer.
+enable_chrome_notifications = false
 
 if (!enable_cef) {
 # Logging must be disabled by default in all official builds (including special

@@ -834,7 +834,6 @@ test("components_unittests") {
     deps += [
       "//components/safe_browsing/content/browser:unit_tests",
       "//components/safe_browsing/content/browser/download:unittests",
-      "//components/safe_browsing/content/browser/notification_content_detection:unittests",
       "//components/safe_browsing/content/common:file_type_policies_unittest",
       "//components/safe_browsing/content/common:unit_tests",
       "//components/safe_browsing/core/browser:intelligent_scan_delegate_unittest",

@@ -21,7 +21,6 @@ source_set("reading_list") {
   deps = [
     "//base",
     "//chrome/app:generated_resources",
-    "//chrome/browser/notifications/scheduler/public",
     "//components/bookmarks/browser",
     "//components/keyed_service/core",
     "//components/reading_list/core",
@@ -37,7 +36,6 @@ source_set("unit_tests") {
   deps = [
     ":android",
     "//base/test:test_support",
-    "//chrome/browser/notifications/scheduler/test:test_support",
     "//components/bookmarks/browser",
     "//components/reading_list/core",
     "//components/reading_list/core:test_support",

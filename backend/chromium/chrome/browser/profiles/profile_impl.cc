@@ -64,8 +64,6 @@
 #include "chrome/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "chrome/browser/heavy_ad_intervention/heavy_ad_service_factory.h"
 #include "chrome/browser/k_anonymity_service/k_anonymity_service_factory.h"
-#include "chrome/browser/notifications/platform_notification_service_factory.h"
-#include "chrome/browser/notifications/platform_notification_service_impl.h"
 #include "chrome/browser/origin_trials/origin_trials_factory.h"
 #include "chrome/browser/password_manager/account_password_store_factory.h"
 #include "chrome/browser/password_manager/profile_password_store_factory.h"
@@ -108,8 +106,6 @@
 #include "chrome/browser/ui/signin/dice_migration_service.h"
 #include "chrome/browser/ui/startup/startup_browser_creator.h"
 #include "chrome/browser/ui/webui/prefs_internals_source.h"
-#include "chrome/browser/updates/announcement_notification/announcement_notification_service.h"
-#include "chrome/browser/updates/announcement_notification/announcement_notification_service_factory.h"
 #include "chrome/browser/webid/federated_identity_api_permission_context.h"
 #include "chrome/browser/webid/federated_identity_api_permission_context_factory.h"
 #include "chrome/browser/webid/federated_identity_auto_reauthn_permission_context.h"
@@ -862,13 +858,6 @@ void ProfileImpl::DoFinalInit(CreateMode create_mode) {
   }
 #endif  // BUILDFLAG(IS_ANDROID)
 
-  // The announcement notification  service might not be available for some
-  // irregular profiles, like the System Profile.
-  if (AnnouncementNotificationService* announcement_notification =
-          AnnouncementNotificationServiceFactory::GetForProfile(this)) {
-    announcement_notification->MaybeShowNotification();
-  }
-
   // Request an OriginTrialsControllerDelegate to ensure it is initialized.
   // OriginTrialsControllerDelegate needs to be explicitly created here instead
   // of using the common pattern for initializing with the profile (override
@@ -1318,7 +1307,7 @@ storage::SpecialStoragePolicy* ProfileImpl::GetSpecialStoragePolicy() {
 content::PlatformNotificationService*
 ProfileImpl::GetPlatformNotificationService() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  return PlatformNotificationServiceFactory::GetForProfile(this);
+  return nullptr;
 }
 
 content::PushMessagingService* ProfileImpl::GetPushMessagingService() {

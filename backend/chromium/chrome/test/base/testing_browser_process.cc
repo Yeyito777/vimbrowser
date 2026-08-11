@@ -21,8 +21,6 @@
 #include "chrome/browser/global_features.h"
 #include "chrome/browser/lifetime/application_lifetime.h"
 #include "chrome/browser/media/webrtc/webrtc_log_uploader.h"
-#include "chrome/browser/notifications/notification_platform_bridge.h"
-#include "chrome/browser/notifications/stub_notification_platform_bridge.h"
 #include "chrome/browser/notifications/system_notification_helper.h"
 #include "chrome/browser/permissions/chrome_permissions_client.h"
 #include "chrome/browser/policy/chrome_browser_policy_connector.h"
@@ -484,15 +482,6 @@ NotificationUIManager* TestingBrowserProcess::notification_ui_manager() {
 #else
   return nullptr;
 #endif
-}
-
-NotificationPlatformBridge*
-TestingBrowserProcess::notification_platform_bridge() {
-  if (!notification_platform_bridge_.get()) {
-    notification_platform_bridge_ =
-        std::make_unique<StubNotificationPlatformBridge>();
-  }
-  return notification_platform_bridge_.get();
 }
 
 #if !BUILDFLAG(IS_ANDROID)

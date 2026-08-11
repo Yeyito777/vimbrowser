@@ -179,7 +179,6 @@ class BrowserProcessImpl : public BrowserProcess,
   variations::VariationsService* variations_service() override;
   BrowserProcessPlatformPart* platform_part() override;
   NotificationUIManager* notification_ui_manager() override;
-  NotificationPlatformBridge* notification_platform_bridge() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -257,7 +256,6 @@ class BrowserProcessImpl : public BrowserProcess,
 
   void CreateProfileManager();
   void CreateIconManager();
-  void CreateNotificationPlatformBridge();
   void CreateNotificationUIManager();
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void CreateSafeBrowsingService();
@@ -360,10 +358,6 @@ class BrowserProcessImpl : public BrowserProcess,
 #endif
 
   std::unique_ptr<StatusTray> status_tray_;
-
-  bool created_notification_bridge_ = false;
-
-  std::unique_ptr<NotificationPlatformBridge> notification_bridge_;
 
   // Use SystemNotificationHelper::GetInstance to get this instance.
   std::unique_ptr<SystemNotificationHelper> system_notification_helper_;

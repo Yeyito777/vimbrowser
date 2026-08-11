@@ -4,7 +4,7 @@
 
 #include "chrome/browser/notifications/system_notification_helper.h"
 
-#include "chrome/browser/notifications/notification_display_service_impl.h"
+#include "chrome/browser/notifications/notification_display_service.h"
 
 namespace {
 
@@ -31,24 +31,11 @@ SystemNotificationHelper::~SystemNotificationHelper() {
 }
 
 void SystemNotificationHelper::Display(
-    const message_center::Notification& notification) {
-  GetSystemService()->Display(NotificationHandler::Type::TRANSIENT,
-                              notification, /*metadata=*/nullptr);
-}
+    const message_center::Notification& notification) {}
 
-void SystemNotificationHelper::Close(const std::string& notification_id) {
-  GetSystemService()->Close(NotificationHandler::Type::TRANSIENT,
-                            notification_id);
-}
+void SystemNotificationHelper::Close(const std::string& notification_id) {}
 
 void SystemNotificationHelper::SetSystemServiceForTesting(
     std::unique_ptr<NotificationDisplayService> service) {
   system_service_ = std::move(service);
 }
-
-NotificationDisplayService* SystemNotificationHelper::GetSystemService() {
-  if (!system_service_)
-    system_service_ = std::make_unique<NotificationDisplayServiceImpl>(nullptr);
-  return system_service_.get();
-}
-

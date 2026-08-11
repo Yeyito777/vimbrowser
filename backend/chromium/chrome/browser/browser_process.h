@@ -41,7 +41,6 @@ class GlobalFeatures;
 class GpuModeManager;
 class IconManager;
 class MediaFileSystemRegistry;
-class NotificationPlatformBridge;
 class NotificationUIManager;
 class PrefService;
 class ProfileManager;
@@ -179,11 +178,9 @@ class BrowserProcess {
 
   virtual BrowserProcessPlatformPart* platform_part() = 0;
 
-  // Returns the manager for desktop notifications.
-  // TODO(miguelg) This is in the process of being deprecated in favour of
-  // NotificationPlatformBridge + NotificationDisplayService
+  // Returns the legacy manager for desktop notifications. Vimbrowser builds
+  // without Chrome notifications, so implementations return nullptr.
   virtual NotificationUIManager* notification_ui_manager() = 0;
-  virtual NotificationPlatformBridge* notification_platform_bridge() = 0;
 
   // Replacement for IOThread. It owns and manages the
   // NetworkContext which will use the network service when the network service

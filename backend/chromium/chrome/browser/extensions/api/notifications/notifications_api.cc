@@ -24,8 +24,6 @@
 #include "chrome/browser/extensions/api/notifications/extension_notification_handler.h"
 #include "chrome/browser/notifications/notification_common.h"
 #include "chrome/browser/notifications/notification_handler.h"
-#include "chrome/browser/notifications/notifier_state_tracker.h"
-#include "chrome/browser/notifications/notifier_state_tracker_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/extensions/api/notifications/notification_style.h"
 #include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
@@ -530,11 +528,7 @@ bool NotificationsApiFunction::UpdateNotification(
 }
 
 bool NotificationsApiFunction::AreExtensionNotificationsAllowed() const {
-  NotifierStateTracker* notifier_state_tracker =
-      NotifierStateTrackerFactory::GetForProfile(GetProfile());
-
-  return notifier_state_tracker->IsNotifierEnabled(message_center::NotifierId(
-      message_center::NotifierType::APPLICATION, extension_->id()));
+  return false;
 }
 
 bool NotificationsApiFunction::IsNotificationsApiEnabled() const {

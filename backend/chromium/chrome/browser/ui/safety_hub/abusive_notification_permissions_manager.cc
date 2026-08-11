@@ -25,7 +25,6 @@
 #include "components/content_settings/core/common/features.h"
 #include "components/permissions/notifications_engagement_service.h"
 #include "components/prefs/pref_service.h"
-#include "components/safe_browsing/content/browser/notification_content_detection/notification_content_detection_constants.h"
 #include "components/safe_browsing/core/browser/db/v4_protocol_manager_util.h"
 #include "components/safe_browsing/core/browser/safe_browsing_metrics_collector.h"
 #include "components/safe_browsing/core/common/features.h"
@@ -41,6 +40,8 @@ namespace {
 constexpr char kAbusiveNotificationPermissionRevocationHistogram[] =
     "Settings.SafetyHub.AbusiveNotificationPermissionRevocation";
 constexpr char kPermissionChangedHistogramSuffix[] = "PermissionChanged";
+constexpr char kSuspiciousNotificationShowOriginalKey[] =
+    "suspicious-notification-show-original";
 
 void UpdateNotificationPermission(HostContentSettingsMap* hcsm,
                                   GURL url,
@@ -118,9 +119,9 @@ bool HasShowOriginalSuspiciousNotification(HostContentSettingsMap* hcsm,
   }
   DCHECK(stored_value.is_dict());
   DCHECK(stored_value.GetDict().contains(
-      safe_browsing::kSuspiciousNotificationShowOriginalKey));
+      kSuspiciousNotificationShowOriginalKey));
   return stored_value.GetDict()
-      .FindBool(safe_browsing::kSuspiciousNotificationShowOriginalKey)
+      .FindBool(kSuspiciousNotificationShowOriginalKey)
       .value_or(false);
 }
 

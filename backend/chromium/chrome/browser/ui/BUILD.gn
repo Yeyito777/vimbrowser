@@ -426,8 +426,6 @@ static_library("ui") {
     "//chrome/browser/ui/webui/accessibility:impl",
     "//chrome/browser/ui/webui/bluetooth_internals",
     "//chrome/browser/ui/zoom",
-    "//chrome/browser/updates/announcement_notification",
-    "//chrome/browser/updates/announcement_notification:impl",
     "//chrome/browser/vr",
     "//chrome/browser/webauthn",
     "//chrome/browser/webnn",
@@ -781,7 +779,6 @@ static_library("ui") {
     "//chrome/browser/ui/file_system_access:impl",
 
     "//chrome/browser/content_settings:content_settings_util_impl",
-    "//chrome/browser/updates/announcement_notification:impl",
     "//chrome/browser/prefs:impl",
 
     "//chrome/browser/task_manager:impl",
@@ -950,7 +947,6 @@ static_library("ui") {
       "//chrome/browser/flags:flags_android",
       "//chrome/browser/image_decoder",
       "//chrome/browser/keyboard_accessory/android:public",
-      "//chrome/browser/notifications/scheduler/public",
       "//chrome/browser/password_manager/android:utils",
       "//chrome/browser/resources/feed_internals:resources",
       "//chrome/browser/touch_to_fill/autofill/android",
@@ -965,8 +961,6 @@ static_library("ui") {
       "//chrome/browser/ui/exclusive_access",
       "//chrome/browser/ui/plus_addresses",
       "//chrome/browser/ui/plus_addresses:impl",
-      "//chrome/browser/ui/webui/notifications_internals",
-      "//chrome/browser/ui/webui/notifications_internals:impl",
       "//components/android_autofill/browser:android",
       "//components/autofill/android:payments_autofill_cc",
       "//components/autofill/android:payments_jni_headers",

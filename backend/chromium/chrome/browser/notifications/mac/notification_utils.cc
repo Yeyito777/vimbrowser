@@ -13,7 +13,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/notifications/notification_display_service_impl.h"
-#include "chrome/browser/notifications/notification_platform_bridge.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/themes/theme_service.h"
@@ -69,8 +68,7 @@ void DoProcessMacNotificationResponse(
                 std::move(info->reply), /*by_user=*/true,
                 /*is_suspicious=*/false, base::DoNothing());
   profile_manager->LoadProfile(
-      NotificationPlatformBridge::GetProfileBaseNameFromProfileId(
-          info->meta->id->profile->id),
+      base::FilePath::FromUTF8Unsafe(info->meta->id->profile->id),
       info->meta->id->profile->incognito, std::move(callback));
 }
 
@@ -205,8 +203,7 @@ mac_notifications::mojom::NotificationPtr CreateMacNotification(
     Profile* profile,
     const message_center::Notification& notification) {
   auto profile_identifier = mac_notifications::mojom::ProfileIdentifier::New(
-      NotificationPlatformBridge::GetProfileId(profile),
-      profile->IsOffTheRecord());
+      profile->GetBaseName().AsUTF8Unsafe(), profile->IsOffTheRecord());
   auto notification_identifier =
       mac_notifications::mojom::NotificationIdentifier::New(
           notification.id(), std::move(profile_identifier));

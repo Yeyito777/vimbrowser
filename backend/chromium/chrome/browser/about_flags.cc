@@ -49,7 +49,6 @@
 #include "chrome/browser/navigation_predictor/search_engine_preconnector.h"
 #include "chrome/browser/net/stub_resolver_config_reader.h"
 #include "chrome/browser/net/system_network_context_manager.h"
-#include "chrome/browser/notifications/scheduler/public/features.h"
 #include "chrome/browser/page_info/page_info_features.h"
 #include "chrome/browser/permissions/notifications_permission_revocation_config.h"
 #include "chrome/browser/permissions/quiet_notification_permission_ui_config.h"
@@ -2674,14 +2673,6 @@ const FeatureEntry::FeatureVariation kWebFeedAwarenessVariations[] = {
 };
 
 #endif  // BUILDFLAG(IS_ANDROID)
-
-const FeatureEntry::Choice kNotificationSchedulerChoices[] = {
-    {flags_ui::kGenericExperimentChoiceDefault, "", ""},
-    {flag_descriptions::
-         kNotificationSchedulerImmediateBackgroundTaskDescription,
-     notifications::switches::kNotificationSchedulerImmediateBackgroundTask,
-     ""},
-};
 
 #if BUILDFLAG(IS_ANDROID)
 
@@ -8300,15 +8291,6 @@ const FeatureEntry kFeatureEntries[] = {
      flag_descriptions::kUseSharedImageInOOPVDDescription, kOsLinux | kOsCrOS,
      FEATURE_VALUE_TYPE(media::kUseSharedImageInOOPVDProcess)},
 #endif  // BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)
-
-    {"notification-scheduler", flag_descriptions::kNotificationSchedulerName,
-     flag_descriptions::kNotificationSchedulerDescription, kOsAndroid,
-     FEATURE_VALUE_TYPE(notifications::features::kNotificationScheduleService)},
-
-    {"notification-scheduler-debug-options",
-     flag_descriptions::kNotificationSchedulerDebugOptionName,
-     flag_descriptions::kNotificationSchedulerDebugOptionDescription,
-     kOsAndroid, MULTI_VALUE_TYPE(kNotificationSchedulerChoices)},
 
 #if BUILDFLAG(IS_ANDROID)
 

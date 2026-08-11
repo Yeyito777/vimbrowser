@@ -27,12 +27,12 @@ declare_args() {
   # like mojo).
   has_platform_accessibility_support = false
 
-  # Whether the message center should be included for displaying notifications.
-  enable_message_center =
-      is_win || is_mac || is_linux || is_chromeos || is_fuchsia
-
   enable_hidpi = true
 }
+
+# Vimbrowser retains the public notification value types used by shared media
+# code, but not Chromium's notification center or popup implementation.
+enable_message_center = false
 
 # Android does have platform accessibility support that's implemented using
 # BrowserAccessibilityManager. But unlike Windows, Mac and Linux it does not use

@@ -72,7 +72,6 @@
 #include "chrome/browser/metrics/chrome_metrics_services_manager_client.h"
 #include "chrome/browser/metrics/metrics_reporting_state.h"
 #include "chrome/browser/net/system_network_context_manager.h"
-#include "chrome/browser/notifications/notification_platform_bridge.h"
 #include "chrome/browser/notifications/system_notification_helper.h"
 #include "chrome/browser/optimization_guide/model_execution/optimization_guide_global_state.h"
 #include "chrome/browser/permissions/chrome_permissions_client.h"
@@ -965,13 +964,6 @@ NotificationUIManager* BrowserProcessImpl::notification_ui_manager() {
 #endif
 }
 
-NotificationPlatformBridge* BrowserProcessImpl::notification_platform_bridge() {
-  if (!created_notification_bridge_) {
-    CreateNotificationPlatformBridge();
-  }
-  return notification_bridge_.get();
-}
-
 policy::ChromeBrowserPolicyConnector*
 BrowserProcessImpl::browser_policy_connector() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -1555,12 +1547,6 @@ void BrowserProcessImpl::CreateIconManager() {
   DCHECK(!created_icon_manager_ && !icon_manager_);
   created_icon_manager_ = true;
   icon_manager_ = std::make_unique<IconManager>();
-}
-
-void BrowserProcessImpl::CreateNotificationPlatformBridge() {
-  DCHECK(!notification_bridge_);
-  notification_bridge_ = NotificationPlatformBridge::Create();
-  created_notification_bridge_ = true;
 }
 
 void BrowserProcessImpl::CreateNotificationUIManager() {

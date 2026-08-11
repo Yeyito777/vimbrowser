@@ -10,8 +10,6 @@
 #include "chrome/browser/extensions/api/notifications/extension_notification_display_helper.h"
 #include "chrome/browser/extensions/api/notifications/extension_notification_display_helper_factory.h"
 #include "chrome/browser/notifications/notification_common.h"
-#include "chrome/browser/notifications/notifier_state_tracker.h"
-#include "chrome/browser/notifications/notifier_state_tracker_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/extensions/api/notifications.h"
 #include "extensions/browser/app_window/app_window.h"
@@ -19,7 +17,6 @@
 #include "extensions/browser/app_window/native_app_window.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension_id.h"
-#include "ui/message_center/public/cpp/notifier_id.h"
 #include "url/gurl.h"
 
 namespace extensions {
@@ -111,10 +108,7 @@ void ExtensionNotificationHandler::DisableNotifications(
     const GURL& origin,
     const std::optional<std::string>& notification_id,
     const std::optional<bool>& is_suspicious) {
-  message_center::NotifierId notifier_id(
-      message_center::NotifierType::APPLICATION, origin.GetHost());
-  NotifierStateTrackerFactory::GetForProfile(profile)->SetNotifierEnabled(
-      notifier_id, false /* enabled */);
+  // Vimbrowser rejects the extension notifications API before presentation.
 }
 
 // There are not settings to open, but on the chance the notification shows with

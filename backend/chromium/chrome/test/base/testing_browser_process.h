@@ -36,7 +36,6 @@
 #endif
 
 class BackgroundModeManager;
-class NotificationPlatformBridge;
 class NotificationUIManager;
 class PrefService;
 class TestingPrefServiceSimple;
@@ -149,7 +148,6 @@ class TestingBrowserProcess
   BrowserProcessPlatformPart* platform_part() override;
 
   NotificationUIManager* notification_ui_manager() override;
-  NotificationPlatformBridge* notification_platform_bridge() override;
 #if !BUILDFLAG(IS_ANDROID)
   IntranetRedirectDetector* intranet_redirect_detector() override;
 #endif
@@ -298,7 +296,6 @@ class TestingBrowserProcess
   std::unique_ptr<NotificationUIManager> notification_ui_manager_;
 #endif
 
-  std::unique_ptr<NotificationPlatformBridge> notification_platform_bridge_;
   std::unique_ptr<SystemNotificationHelper> system_notification_helper_;
   scoped_refptr<DownloadRequestLimiter> download_request_limiter_;
 
