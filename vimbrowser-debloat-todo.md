@@ -243,12 +243,31 @@ These are reference measurements, not final acceptance values.
 
 ## P. Residual unsupported-platform and product sweep
 
-- [ ] **P01:** Inventory remaining Android-only directories embedded under
+- [x] **P01:** Inventory remaining Android-only directories embedded under
       `chrome/browser`, `content`, `components`, `media`, `services`, `ui`,
       `third_party`, `tools`, and `build`.
+  - The checkpoint inventory and reproducible classification are recorded in
+    `docs/debloat-android-inventory.md` against commit `f27836adf8`.
+  - 532 Android-bearing roots contain 23,276 files and approximately 2.58
+    million lines; 520 roots/22,273 files have no descendant production target
+    or tracked source input in the Linux `libcef` graph.
+  - Twelve active directory exceptions, 2,825 standalone Android-named files,
+    35 additional Chromium-owned Java/JNI roots, and 3,565 Android-referencing
+    build/metadata files are classified explicitly rather than guessed from
+    names.
 - [ ] **P02:** Remove remaining Android browser/product Java, JNI, resources,
       tests, build rules, manifests, and packaging after disconnecting every
       retained GN reference.
+  - [ ] Delete the 520 production-disconnected Android-bearing roots and 35
+        Chromium-owned generic Java/JNI roots from the P01 checkpoint.
+  - [ ] Remove their GN/GNI/resource/test/manifest/packaging branches instead of
+        leaving unsupported `is_android` paths.
+  - [ ] Disconnect WebAPK, desktop remote-Android DevTools, Blink Android-font
+        mojom, and Android-only entries in shared Skia/ANGLE/GL/media lists.
+  - [ ] Remove Android-only Perfetto/Catapult schemas, importers, and trace
+        resources from their cross-platform aggregates.
+  - [ ] Retain `*_non_android*` implementations; defer cross-platform web
+        payment code to stage A and Rust target/toolchain source pruning to P04.
 - [ ] **P03:** Remove residual iOS, Windows, ChromeOS, Fuchsia, Cast, and Wayland
       branches/files that survived because they are embedded in shared
       directories.
