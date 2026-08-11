@@ -8,7 +8,6 @@
 #include <stddef.h>
 
 #include "build/build_config.h"
-#include "chromeos/constants/chromeos_features.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/color_palette.h"
 
@@ -39,9 +38,6 @@ const size_t kMaxVisiblePopupNotifications = 3;
 
 // DIP dimension; H size of the whole card.
 const int kNotificationWidth = 360;
-
-// DIP dimension; H size of the whole card.
-const int kChromeOSNotificationWidth = 400;
 
 // Within a notification ///////////////////////////////////////////////////////
 
@@ -120,11 +116,7 @@ constexpr int kNotificationBorderThickness = 1;
 constexpr int kMarginBetweenItemsInList = 8;
 
 // Horizontal & vertical space around & between popup notifications.
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr int kMarginBetweenPopups = 8;
-#else
 constexpr int kMarginBetweenPopups = 10;
-#endif
 
 // Radius of the rounded corners of a notification.
 // The corners are only rounded in Chrome OS.
@@ -135,13 +127,7 @@ constexpr int kNotificationResizeAnimationDurationMs = 200;
 
 // Returns the width of the notification.
 inline int GetNotificationWidth() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return chromeos::features::IsNotificationWidthIncreaseEnabled()
-             ? kChromeOSNotificationWidth
-             : kNotificationWidth;
-#else
   return kNotificationWidth;
-#endif
 }
 
 // Returns the character limit per line; character limit = pixels per line *

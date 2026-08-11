@@ -13,7 +13,6 @@ import "chrome/browser/web_applications/proto/web_app_related_applications.proto
 import "chrome/browser/web_applications/proto/web_app_share_target.proto";
 import "chrome/browser/web_applications/proto/web_app_tab_strip.proto";
 import "chrome/browser/web_applications/proto/web_app_url_pattern.proto";
-import "chromeos/ash/experiences/system_web_apps/types/proto/system_web_app_data.proto";
 
 option optimize_for = LITE_RUNTIME;
 
@@ -95,10 +94,6 @@ message ChromeOSData {
   optional bool oem_installed = 5;
   optional bool handles_file_open_intents = 6;
   reserved 7;
-}
-
-message ClientData {
-  optional ash.SystemWebAppDataProto system_web_app_data = 1;
 }
 
 // Properties for a WebApp's shortcuts menu item.
@@ -364,7 +359,7 @@ message WebApp {
 
   reserved 27;
 
-  optional ClientData client_data = 28;
+  reserved 28;
 
   // This enum should be synced with |CaptureLinks| in
   // third_party/blink/public/mojom/manifest/capture_links.mojom

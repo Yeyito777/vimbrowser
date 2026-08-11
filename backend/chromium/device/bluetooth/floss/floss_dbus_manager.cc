@@ -16,7 +16,6 @@
 #include "dbus/message.h"
 #include "dbus/object_manager.h"
 #include "dbus/object_proxy.h"
-#include "device/bluetooth/chromeos/bluetooth_utils.h"
 #include "device/bluetooth/floss/fake_floss_adapter_client.h"
 #include "device/bluetooth/floss/fake_floss_admin_client.h"
 #include "device/bluetooth/floss/fake_floss_advertiser_client.h"

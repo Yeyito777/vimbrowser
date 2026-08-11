@@ -79,8 +79,6 @@
 #include "chromeos/components/kiosk/kiosk_utils.h"
 #include "chromeos/components/mgs/managed_guest_session_utils.h"
 #include "chromeos/constants/chromeos_features.h"
-#else
-#include "chromeos/ash/components/policy/device_local_account/device_local_account_type.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)

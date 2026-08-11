@@ -15,7 +15,6 @@
 #include "base/system/sys_info.h"
 #include "base/threading/thread.h"
 #include "build/build_config.h"
-#include "chromeos/constants/chromeos_features.h"
 #include "dbus/bus.h"
 #include "dbus/dbus_statistics.h"
 #include "dbus/message.h"
