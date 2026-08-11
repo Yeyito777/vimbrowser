@@ -47,10 +47,6 @@ bool PDFiumPermissions::HasPermission(DocumentPermission permission) const {
       case DocumentPermission::kCopyAccessible:
         // Check the same copy bit for all copying permissions.
         return HasPermissionBits(kPDFPermissionBit05CopyMask);
-      case DocumentPermission::kPrintLowQuality:
-      case DocumentPermission::kPrintHighQuality:
-        // Check the same printing bit for all printing permissions.
-        return HasPermissionBits(kPDFPermissionBit03PrintMask);
     }
     NOTREACHED();
   } else {
@@ -61,11 +57,6 @@ bool PDFiumPermissions::HasPermission(DocumentPermission permission) const {
         return HasPermissionBits(kPDFPermissionBit05CopyMask);
       case DocumentPermission::kCopyAccessible:
         return HasPermissionBits(kPDFPermissionBit10CopyAccessibleMask);
-      case DocumentPermission::kPrintLowQuality:
-        return HasPermissionBits(kPDFPermissionBit03PrintMask);
-      case DocumentPermission::kPrintHighQuality:
-        return HasPermissionBits(kPDFPermissionBit03PrintMask |
-                                 kPDFPermissionBit12PrintHighQualityMask);
     }
     NOTREACHED();
   }

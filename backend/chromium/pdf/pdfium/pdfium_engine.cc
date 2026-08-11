@@ -65,7 +65,6 @@
 #include "pdf/pdfium/pdfium_text_fragment_finder.h"
 #include "pdf/pdfium/pdfium_unsupported_features.h"
 #include "pdf/region_data.h"
-#include "printing/mojom/print.mojom-shared.h"
 #include "printing/units.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/input/web_keyboard_event.h"
@@ -681,8 +680,7 @@ PDFiumEngine::PDFiumEngine(PDFiumEngineClient* client,
       form_filler_(this, script_option),
       mouse_down_state_(PDFiumPage::NONSELECTABLE_AREA,
                         PDFiumPage::LinkTarget()),
-      engine_creation_time_(base::TimeTicks::Now()),
-      print_(this) {
+      engine_creation_time_(base::TimeTicks::Now()) {
 #if defined(PDF_ENABLE_V8)
   if (script_option != PDFiumFormFiller::ScriptOption::kNoJavaScript) {
     DCHECK(IsV8Initialized());
@@ -695,10 +693,8 @@ PDFiumEngine::PDFiumEngine(PDFiumEngineClient* client,
 }
 
 PDFiumEngine::~PDFiumEngine() {
-  if (!client_->IsPrintPreview()) {
-    base::UmaHistogramLongTimes("PDF.EngineLifetime",
-                                base::TimeTicks::Now() - engine_creation_time_);
-  }
+  base::UmaHistogramLongTimes("PDF.EngineLifetime",
+                              base::TimeTicks::Now() - engine_creation_time_);
 #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
   if (searchifier_ && searchifier_->PerformedOCR()) {
     base::UmaHistogramBoolean("PDF.SearchifySuccessful2", has_searchify_text_);
@@ -815,7 +811,7 @@ void PDFiumEngine::Paint(const gfx::Rect& rect,
   // painting the visible pages.
   base::TimeTicks begin_time = base::TimeTicks::Now();
 
-  if (!first_paint_metric_reported_ && !client_->IsPrintPreview()) {
+  if (!first_paint_metric_reported_) {
     first_paint_metric_reported_ = true;
     base::UmaHistogramMediumTimes("PDF.FirstPaintTime",
                                   begin_time - engine_creation_time_);
@@ -927,25 +923,6 @@ bool PDFiumEngine::HandleDocumentLoad(std::unique_ptr<UrlLoader> loader,
 
 std::unique_ptr<URLLoaderWrapper> PDFiumEngine::CreateURLLoader() {
   return std::make_unique<URLLoaderWrapperImpl>(client_->CreateUrlLoader());
-}
-
-void PDFiumEngine::AppendPage(PDFiumEngine* engine, int index) {
-  CHECK(engine);
-  CHECK(PageIndexInBounds(index));
-
-  // Unload and delete the blank page before appending.
-  pages_[index]->Unload();
-  pages_[index]->set_calculated_links(false);
-  gfx::Size curr_page_size = GetPageSize(index);
-  FPDFPage_Delete(doc(), index);
-  FPDF_ImportPages(doc(), static_cast<PDFiumEngine*>(engine)->doc(), "1",
-                   index);
-  gfx::Size new_page_size = GetPageSize(index);
-  if (curr_page_size != new_page_size) {
-    DCHECK(document_loaded_);
-    LoadPageInfo();
-  }
-  client_->Invalidate(GetPageScreenRect(index));
 }
 
 std::vector<uint8_t> PDFiumEngine::GetSaveData() {
@@ -1292,7 +1269,6 @@ void PDFiumEngine::SearchForFragment(
 
 void PDFiumEngine::SetCaretBrowsingEnabled(bool enabled) {
   CHECK(features::kPdfInk2TextHighlighting.Get());
-  CHECK(!client_->IsPrintPreview());
 
   if (pages_.empty() || (caret_ && caret_->enabled() == enabled)) {
     return;
@@ -1396,58 +1372,6 @@ bool PDFiumEngine::HandleInputEvent(const blink::WebInputEvent& event) {
   }
 
   return rv;
-}
-
-void PDFiumEngine::PrintBegin() {
-  FORM_DoDocumentAAction(form(), FPDFDOC_AACTION_WP);
-#if BUILDFLAG(ENABLE_PDF_INK2)
-  RegenerateContents();
-#endif
-}
-
-std::vector<uint8_t> PDFiumEngine::PrintPages(
-    base::span<const int> page_indices,
-    const blink::WebPrintParams& print_params) {
-  if (page_indices.empty()) {
-    return std::vector<uint8_t>();
-  }
-
-  return print_params.rasterize_pdf
-             ? PrintPagesAsRasterPdf(page_indices, print_params)
-             : PrintPagesAsPdf(page_indices, print_params);
-}
-
-std::vector<uint8_t> PDFiumEngine::PrintPagesAsRasterPdf(
-    base::span<const int> page_indices,
-    const blink::WebPrintParams& print_params) {
-  DCHECK(HasPermission(DocumentPermission::kPrintLowQuality));
-
-  // If document is not downloaded yet, disable printing.
-  if (doc() && !doc_loader_->IsDocumentComplete()) {
-    return std::vector<uint8_t>();
-  }
-
-  KillFormFocus();
-
-  return print_.PrintPagesAsPdf(page_indices, print_params);
-}
-
-std::vector<uint8_t> PDFiumEngine::PrintPagesAsPdf(
-    base::span<const int> page_indices,
-    const blink::WebPrintParams& print_params) {
-  DCHECK(HasPermission(DocumentPermission::kPrintHighQuality));
-  DCHECK(doc());
-
-  KillFormFocus();
-
-  for (int page_index : page_indices) {
-    pages_[page_index]->GetPage();
-    if (!IsPageVisible(page_index)) {
-      pages_[page_index]->Unload();
-    }
-  }
-
-  return print_.PrintPagesAsPdf(page_indices, print_params);
 }
 
 void PDFiumEngine::KillFormFocus() {
@@ -1595,10 +1519,6 @@ void PDFiumEngine::SetFormSelectedText(FPDF_FORMHANDLE form_handle,
   }
 }
 
-void PDFiumEngine::PrintEnd() {
-  FORM_DoDocumentAAction(form(), FPDFDOC_AACTION_DP);
-}
-
 PDFiumEngine::PointData PDFiumEngine::GetPointData(const gfx::PointF& point) {
   PointData point_data;
   std::optional<uint32_t> page;
@@ -1626,10 +1546,7 @@ PDFiumEngine::PointData PDFiumEngine::GetPointData(const gfx::PointF& point) {
   PDFiumPage::Area result = pages_[page.value()]->GetCharInfo(
       point_data.pdf_point, &point_data.char_index, &point_data.char_bounds,
       &point_data.form_type, &point_data.target);
-  point_data.area =
-      (client_->IsPrintPreview() && result == PDFiumPage::WEBLINK_AREA)
-          ? PDFiumPage::NONSELECTABLE_AREA
-          : result;
+  point_data.area = result;
   return point_data;
 }
 
@@ -3025,27 +2942,6 @@ void PDFiumEngine::HandleLongPress(const blink::WebTouchEvent& event) {
   OnMouseDown(mouse_event);
 }
 
-bool PDFiumEngine::GetPrintScaling() {
-  return !!FPDF_VIEWERREF_GetPrintScaling(doc());
-}
-
-int PDFiumEngine::GetCopiesToPrint() {
-  return FPDF_VIEWERREF_GetNumCopies(doc());
-}
-
-printing::mojom::DuplexMode PDFiumEngine::GetDuplexMode() {
-  switch (FPDF_VIEWERREF_GetDuplex(doc())) {
-    case Simplex:
-      return printing::mojom::DuplexMode::kSimplex;
-    case DuplexFlipShortEdge:
-      return printing::mojom::DuplexMode::kShortEdge;
-    case DuplexFlipLongEdge:
-      return printing::mojom::DuplexMode::kLongEdge;
-    default:
-      return printing::mojom::DuplexMode::kUnknownDuplexMode;
-  }
-}
-
 std::optional<gfx::SizeF> PDFiumEngine::GetPageSizeInPoints(
     int page_index) const {
   FS_SIZEF size_in_points;
@@ -3072,45 +2968,6 @@ std::optional<gfx::Size> PDFiumEngine::GetUniformPageSizePoints() {
   return gfx::Size(
       ConvertUnit(page_size.width(), kPixelsPerInch, kPointsPerInch),
       ConvertUnit(page_size.height(), kPixelsPerInch, kPointsPerInch));
-}
-
-void PDFiumEngine::AppendBlankPages(size_t num_pages) {
-  DCHECK_GT(num_pages, 0U);
-
-  if (!doc()) {
-    return;
-  }
-
-  selection_.clear();
-  pending_pages_.clear();
-
-  // Delete all pages except the first one.
-  while (pages_.size() > 1) {
-    pages_.pop_back();
-    FPDFPage_Delete(doc(), pages_.size());
-  }
-
-  // Create blank pages with the same size as the first page.
-  gfx::Size page_0_size = GetPageSize(0);
-  float page_0_width_in_points =
-      ConvertUnitFloat(page_0_size.width(), kPixelsPerInch, kPointsPerInch);
-  float page_0_height_in_points =
-      ConvertUnitFloat(page_0_size.height(), kPixelsPerInch, kPointsPerInch);
-
-  for (size_t i = 1; i < num_pages; ++i) {
-    {
-      // Add a new page to the document, but delete the FPDF_PAGE object.
-      ScopedFPDFPage temp_page(FPDFPage_New(doc(), i, page_0_width_in_points,
-                                            page_0_height_in_points));
-    }
-
-    auto page = std::make_unique<PDFiumPage>(this, i);
-    page->MarkAvailable();
-    pages_.push_back(std::move(page));
-  }
-
-  DCHECK(document_loaded_);
-  LoadPageInfo();
 }
 
 gfx::Size PDFiumEngine::plugin_size() const {
@@ -3381,13 +3238,11 @@ void PDFiumEngine::LoadForm() {
                                     kFormHighlightColor);
     SetFormHighlight(true);
 
-    if (!client_->IsPrintPreview()) {
-      static constexpr FPDF_ANNOTATION_SUBTYPE kFocusableAnnotSubtypes[] = {
-          FPDF_ANNOT_LINK, FPDF_ANNOT_HIGHLIGHT, FPDF_ANNOT_WIDGET};
-      FPDF_BOOL ret = FPDFAnnot_SetFocusableSubtypes(
-          form(), kFocusableAnnotSubtypes, std::size(kFocusableAnnotSubtypes));
-      DCHECK(ret);
-    }
+    static constexpr FPDF_ANNOTATION_SUBTYPE kFocusableAnnotSubtypes[] = {
+        FPDF_ANNOT_LINK, FPDF_ANNOT_HIGHLIGHT, FPDF_ANNOT_WIDGET};
+    FPDF_BOOL ret = FPDFAnnot_SetFocusableSubtypes(
+        form(), kFocusableAnnotSubtypes, std::size(kFocusableAnnotSubtypes));
+    DCHECK(ret);
   }
 }
 
@@ -3869,9 +3724,6 @@ int PDFiumEngine::GetRenderingFlags() const {
   int flags = FPDF_LCD_TEXT;
   if (render_grayscale_) {
     flags |= FPDF_GRAYSCALE;
-  }
-  if (client_->IsPrintPreview()) {
-    flags |= FPDF_PRINTING;
   }
   if (render_annots_) {
     flags |= FPDF_ANNOT;
@@ -4930,7 +4782,7 @@ void PDFiumEngine::ScheduleSearchifyIfNeeded(PDFiumPage* page) {
   CHECK(page);
   CHECK(page->available());
 
-  if (client_->IsPrintPreview() || page->IsPageSearchified()) {
+  if (page->IsPageSearchified()) {
     return;
   }
 

@@ -92,13 +92,6 @@ IN_PROC_BROWSER_TEST_F(LogWebUIUrlTest, TestDinoPage) {
   RunTest(base::UTF8ToUTF16(url.GetWithEmptyPath().spec()), url);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
-IN_PROC_BROWSER_TEST_F(LogWebUIUrlTest, TestChromeUntrustedPage) {
-  RunTest(u"", GURL(base::StrCat(
-                   {chrome::kChromeUIUntrustedPrintURL, "1/1/print.pdf"})));
-}
-#endif
-
 // Tests that WebUI.ShownURL is logged after showing a WebUI.
 IN_PROC_BROWSER_TEST_F(LogWebUIUrlTest, ShownWebUI) {
   const GURL url(chrome::kChromeUIHistoryURL);

@@ -156,10 +156,6 @@ class TestingBrowserProcess
   void CreateDevToolsProtocolHandler() override;
   void CreateDevToolsAutoOpener() override;
   bool IsShuttingDown() override;
-  printing::PrintJobManager* print_job_manager() override;
-  printing::PrintPreviewDialogController* print_preview_dialog_controller()
-      override;
-  printing::BackgroundPrintingManager* background_printing_manager() override;
   supervised_user::DeviceParentalControls& device_parental_controls() override;
 #if BUILDFLAG(IS_ANDROID)
   // Additional convenience accessor to device_parental_controls() that returns
@@ -308,17 +304,6 @@ class TestingBrowserProcess
 
   std::unique_ptr<embedder_support::OriginTrialsSettingsStorage>
       origin_trials_settings_storage_;
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  std::unique_ptr<printing::PrintJobManager> print_job_manager_;
-#endif
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  std::unique_ptr<printing::BackgroundPrintingManager>
-      background_printing_manager_;
-  std::unique_ptr<printing::PrintPreviewDialogController>
-      print_preview_dialog_controller_;
-#endif
 
 // TODO(crbug.com/474377651): instead ForTesting(), offer proper fake.
 #if BUILDFLAG(IS_ANDROID)

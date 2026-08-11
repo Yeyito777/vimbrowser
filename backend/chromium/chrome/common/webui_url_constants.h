@@ -24,7 +24,6 @@
 #include "components/signin/public/base/signin_buildflags.h"
 #include "content/public/common/url_constants.h"
 #include "media/media_buildflags.h"
-#include "printing/buildflags/buildflags.h"
 
 namespace chrome {
 
@@ -248,7 +247,6 @@ inline constexpr char kChromeUIPolicyTestURL[] = "chrome://policy/test";
 inline constexpr char kChromeUIPolicyURL[] = "chrome://policy/";
 inline constexpr char kChromeUIPredictorsHost[] = "predictors";
 inline constexpr char kChromeUIPrefsInternalsHost[] = "prefs-internals";
-inline constexpr char kChromeUIPrintURL[] = "chrome://print/";
 inline constexpr char16_t kChromeUIPrivacySandboxFledgeURL[] =
     u"chrome://settings/adPrivacy/sites";
 inline constexpr char kChromeUIPrivacySandboxInternalsHost[] =
@@ -325,8 +323,6 @@ inline constexpr char kChromeUIUntrustedFavicon2URL[] =
     "chrome-untrusted://favicon2/";
 inline constexpr char kChromeUIUntrustedImageEditorURL[] =
     "chrome-untrusted://image-editor/";
-inline constexpr char kChromeUIUntrustedPrintURL[] =
-    "chrome-untrusted://print/";
 inline constexpr char kChromeUIUntrustedThemeURL[] =
     "chrome-untrusted://theme/";
 inline constexpr char kChromeUIUntrustedWebUITestURL[] =
@@ -490,10 +486,6 @@ inline constexpr char kChromeUIUpdaterURL[] = "chrome://updater/";
     defined(USE_AURA)
 inline constexpr char kChromeUITabModalConfirmDialogHost[] =
     "tab-modal-confirm-dialog";
-#endif
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-inline constexpr char kChromeUIPrintHost[] = "print";
 #endif
 
 #if BUILDFLAG(ENABLE_SESSION_SERVICE)

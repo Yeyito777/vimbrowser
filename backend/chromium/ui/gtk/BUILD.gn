@@ -7,7 +7,6 @@ import("//build/config/linux/gtk/gtk.gni")
 import("//build/config/linux/pkg_config.gni")
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
-import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
 import("//tools/generate_stubs/rules.gni")
 
@@ -103,15 +102,6 @@ component("gtk") {
     "window_frame_provider_gtk.h",
   ]
 
-  if (enable_printing) {
-    sources += [
-      "printing/print_dialog_gtk.cc",
-      "printing/print_dialog_gtk.h",
-      "printing/printing_gtk_util.cc",
-      "printing/printing_gtk_util.h",
-    ]
-  }
-
   defines = [ "IS_GTK_IMPL" ]
   configs += [
     "//build/config/linux/pangocairo",
@@ -122,7 +112,6 @@ component("gtk") {
     ":gtk_stubs",
     "//base",
     "//cc/paint",
-    "//printing/buildflags",
     "//skia",
 
     # GTK pulls pangoft2, which requires HarfBuzz symbols. When linking
@@ -152,14 +141,6 @@ component("gtk") {
     "//ui/views",
     "//url",
   ]
-
-  if (enable_printing) {
-    deps += [ "//printing" ]
-  }
-
-  if (use_cups) {
-    deps += [ "//printing/mojom" ]
-  }
 
   if (ozone_platform_x11) {
     sources += [

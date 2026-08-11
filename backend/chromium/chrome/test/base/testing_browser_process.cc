@@ -27,7 +27,6 @@
 #include "chrome/browser/permissions/chrome_permissions_client.h"
 #include "chrome/browser/policy/chrome_browser_policy_connector.h"
 #include "chrome/browser/prefs/browser_prefs.h"
-#include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/resource_coordinator/resource_coordinator_parts.h"
 #include "chrome/browser/safe_browsing/safe_browsing_service.h"
@@ -52,7 +51,6 @@
 #include "content/public/browser/network_service_instance.h"
 #include "extensions/buildflags/buildflags.h"
 #include "media/media_buildflags.h"
-#include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/buildflags.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/test/test_network_connection_tracker.h"
@@ -78,11 +76,6 @@
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "chrome/browser/extensions/chrome_extensions_browser_client.h"
-#endif
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "chrome/browser/printing/background_printing_manager.h"
-#include "chrome/browser/printing/print_preview_dialog_controller.h"
 #endif
 
 #if !BUILDFLAG(IS_ANDROID)
@@ -514,46 +507,6 @@ void TestingBrowserProcess::CreateDevToolsAutoOpener() {}
 
 bool TestingBrowserProcess::IsShuttingDown() {
   return is_shutting_down_;
-}
-
-printing::PrintJobManager* TestingBrowserProcess::print_job_manager() {
-#if BUILDFLAG(ENABLE_PRINTING)
-  if (!print_job_manager_.get()) {
-    print_job_manager_ = std::make_unique<printing::PrintJobManager>();
-  }
-  return print_job_manager_.get();
-#else
-  NOTIMPLEMENTED();
-  return nullptr;
-#endif
-}
-
-printing::PrintPreviewDialogController*
-TestingBrowserProcess::print_preview_dialog_controller() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  if (!print_preview_dialog_controller_) {
-    print_preview_dialog_controller_ =
-        std::make_unique<printing::PrintPreviewDialogController>();
-  }
-  return print_preview_dialog_controller_.get();
-#else
-  NOTIMPLEMENTED();
-  return nullptr;
-#endif
-}
-
-printing::BackgroundPrintingManager*
-TestingBrowserProcess::background_printing_manager() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  if (!background_printing_manager_.get()) {
-    background_printing_manager_ =
-        std::make_unique<printing::BackgroundPrintingManager>();
-  }
-  return background_printing_manager_.get();
-#else
-  NOTIMPLEMENTED();
-  return nullptr;
-#endif
 }
 
 #if BUILDFLAG(IS_ANDROID)

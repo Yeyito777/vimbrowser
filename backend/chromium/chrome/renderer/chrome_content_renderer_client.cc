@@ -303,12 +303,6 @@ using UsesKeyboardAccessoryForSuggestions =
 
 namespace {
 
-#if BUILDFLAG(ENABLE_PDF)
-std::vector<url::Origin> GetAdditionalPdfInternalPluginAllowedOrigins() {
-  return {url::Origin::Create(GURL(chrome::kChromeUIPrintURL))};
-}
-#endif  // BUILDFLAG(ENABLE_PDF)
-
 #if BUILDFLAG(ENABLE_PLUGINS)
 void AppendParams(
     const std::vector<WebPluginMimeType::Param>& additional_params,
@@ -848,7 +842,7 @@ bool ChromeContentRendererClient::IsPluginHandledExternally(
     // otherwise, let Blink try to create the in-process PDF plugin.
     if (IsPdfInternalPluginAllowedOrigin(
             render_frame->GetWebFrame()->GetSecurityOrigin(),
-            GetAdditionalPdfInternalPluginAllowedOrigins())) {
+            {})) {
       return true;
     }
   }
@@ -1062,8 +1056,7 @@ WebPlugin* ChromeContentRendererClient::CreatePlugin(
 #if BUILDFLAG(ENABLE_PDF)
         if (info.path.value() == ChromeContentClient::kPDFInternalPluginPath) {
           return pdf::CreateInternalPlugin(
-              std::move(params), render_frame,
-              GetAdditionalPdfInternalPluginAllowedOrigins());
+              std::move(params), render_frame, {});
         }
 #endif  // BUILDFLAG(ENABLE_PDF)
 

@@ -335,14 +335,6 @@ static_library("common_lib") {
     ]
   }
 
-  # Printing.
-  if (enable_printing) {
-    public_deps += [
-      "//components/printing/common",
-      "//printing",
-    ]
-  }
-
   if (is_android) {
     sources += [
       "chrome_descriptors_android.h",

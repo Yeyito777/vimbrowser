@@ -41,7 +41,6 @@ class TestClient : public PDFiumEngineClient {
   std::vector<SearchStringResult> SearchString(const std::u16string& needle,
                                                const std::u16string& haystack,
                                                bool case_sensitive) override;
-  bool IsPrintPreview() const override;
   SkColor GetBackgroundColor() const override;
   void SetSelectedText(const std::string& selected_text) override;
   void SetLinkUnderCursor(const std::string& link_under_cursor) override;

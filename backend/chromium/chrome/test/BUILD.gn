@@ -743,40 +743,6 @@ static_library("test_support") {
     ]
   }
 
-  if (enable_printing) {
-    sources += [
-      "../browser/printing/print_test_utils.cc",
-      "../browser/printing/print_test_utils.h",
-    ]
-
-    if (is_chromeos) {
-      sources += [
-        "chromeos/printing/fake_local_printer_chromeos.cc",
-        "chromeos/printing/fake_local_printer_chromeos.h",
-        "chromeos/printing/mock_local_printer_chromeos.cc",
-        "chromeos/printing/mock_local_printer_chromeos.h",
-      ]
-      if (use_cups) {
-        sources += [
-          "../browser/extensions/api/printing/fake_print_job_controller.cc",
-          "../browser/extensions/api/printing/fake_print_job_controller.h",
-          "../browser/extensions/api/printing/printing_test_utils.cc",
-          "../browser/extensions/api/printing/printing_test_utils.h",
-        ]
-        public_deps += [
-          "//chrome/services/printing/public/mojom",
-          "//chromeos/printing",
-          "//printing/backend:test_support",
-        ]
-      }
-    }
-
-    public_deps += [
-      "//printing",
-      "//printing/backend",
-      "//printing/mojom",
-    ]
-  }
 
   if (enable_print_preview) {
     sources += [
@@ -4424,22 +4390,6 @@ if (!is_android) {
         "//pdf/loader",
       ]
 
-      if (enable_printing) {
-        sources += [ "../browser/pdf/pdf_extension_printing_test.cc" ]
-
-        # TODO(crbug.com/40892214): All printToPdf tests consistently fail on ChromeOS
-        if (!is_chromeos) {
-          sources += [
-            "../browser/devtools/protocol/devtools_printtopdf_browsertest.cc",
-          ]
-          deps += [
-            "//components/headless/test",
-            "//components/printing/browser",
-            "//pdf",
-          ]
-        }
-      }
-
       if (enable_smart_card) {
         sources += [ "../browser/devtools/protocol/smart_card_emulation_handler_browsertest.cc" ]
       }
@@ -6094,52 +6044,6 @@ if (!is_android) {
     if (is_win) {
       # Runtime dependencies.
       data_deps += [ "//media/cdm/win/test:media_foundation_clear_key_cdm" ]
-    }
-    if (enable_oop_printing) {
-      sources += [ "../browser/printing/print_backend_browsertest.cc" ]
-      deps += [
-        "//chrome/services/printing:lib",
-        "//components/printing/browser",
-        "//components/printing/common:mojo_interfaces",
-        "//printing:test_support",
-        "//printing/backend",
-      ]
-    }
-    if (enable_print_preview) {
-      sources += [
-        "../browser/printing/print_browsertest.cc",
-        "../browser/printing/print_browsertest.h",
-        "../browser/printing/print_preview_dialog_controller_browsertest.cc",
-        "../browser/printing/pwg_raster_converter_browsertest.cc",
-        "../browser/printing/test_print_preview_observer.cc",
-        "../browser/printing/test_print_preview_observer.h",
-        "../browser/printing/test_print_view_manager.cc",
-        "../browser/printing/test_print_view_manager.h",
-        "../browser/ui/webui/print_preview/print_preview_ui_browsertest.cc",
-      ]
-      deps += [
-        ":print_preview_test_support",
-        "//printing:test_support",
-      ]
-
-      if (enable_pdf) {
-        sources +=
-            [ "../browser/printing/pdf_nup_converter_client_browsertest.cc" ]
-        deps += [ "//pdf" ]
-      }
-
-      if (!is_chromeos) {
-        sources +=
-            [ "../browser/printing/system_access_process_print_browsertest.cc" ]
-      }
-
-      if (is_posix) {
-        sources += [ "../browser/ui/webui/print_preview/pdf_printer_handler_posix_browsertest.cc" ]
-      }
-
-      if (is_win) {
-        sources += [ "../browser/ui/webui/print_preview/pdf_printer_handler_win_browsertest.cc" ]
-      }
     }
     if (enable_paint_preview) {
       sources += [
@@ -10533,66 +10437,6 @@ test("unit_tests") {
     ]
   }
 
-  if (enable_printing) {
-    sources += [
-      "../browser/policy/printing_restrictions_policy_handler_unittest.cc",
-      "../browser/printing/print_job_unittest.cc",
-    ]
-
-    deps += [
-      "//chrome/common/printing",
-      "//chrome/common/printing:unit_tests",
-      "//components/printing/common:mojo_interfaces",
-      "//printing",
-      "//printing:test_support",
-      "//printing/backend",
-      "//printing/mojom",
-    ]
-
-    if (is_chromeos) {
-      sources +=
-          [ "../browser/printing/local_printer_utils_chromeos_unittest.cc" ]
-    }
-
-    if (enable_print_preview) {
-      sources += [
-        "../browser/printing/print_preview_dialog_controller_unittest.cc",
-        "../browser/printing/print_preview_sticky_settings_unittest.cc",
-        "../browser/printing/print_preview_test.cc",
-        "../browser/printing/print_preview_test.h",
-        "../browser/printing/print_view_manager_unittest.cc",
-        "../browser/ui/webui/print_preview/extension_printer_handler_unittest.cc",
-        "../browser/ui/webui/print_preview/fake_print_render_frame.cc",
-        "../browser/ui/webui/print_preview/fake_print_render_frame.h",
-        "../browser/ui/webui/print_preview/parse_data_path_unittest.cc",
-        "../browser/ui/webui/print_preview/pdf_printer_handler_unittest.cc",
-        "../browser/ui/webui/print_preview/print_preview_handler_unittest.cc",
-        "../browser/ui/webui/print_preview/print_preview_ui_unittest.cc",
-        "../browser/ui/webui/print_preview/print_preview_ui_untrusted_unittest.cc",
-        "../browser/ui/webui/print_preview/print_preview_utils_unittest.cc",
-      ]
-
-      if (is_chromeos) {
-        sources += [
-          "../browser/ui/webui/print_preview/local_printer_handler_chromeos_unittest.cc",
-          "../browser/ui/webui/print_preview/print_preview_handler_chromeos_unittest.cc",
-        ]
-        deps += [ "//components/session_manager/test:test_support" ]
-      } else {
-        sources += [ "../browser/ui/webui/print_preview/local_printer_handler_default_unittest.cc" ]
-      }
-    } else {
-      sources += [ "../browser/printing/print_view_manager_basic_unittest.cc" ]
-    }
-
-    if (enable_oop_printing) {
-      sources +=
-          [ "../browser/printing/print_backend_service_manager_unittest.cc" ]
-
-      public_deps += [ "//chrome/services/printing/public/mojom" ]
-    }
-  }
-
   if (enable_session_service) {
     sources += [
       "../browser/sessions/app_session_service_unittest.cc",
@@ -12389,9 +12233,6 @@ if (!is_android && !is_chromeos_device) {
         "//ui/display:display_manager_test_api",
         "//ui/display/manager",
       ]
-      if (enable_printing) {
-        deps += [ "//components/printing/common:mojo_interfaces" ]
-      }
     } else {  # ! is_chromeos
       # Non-ChromeOS notifications tests.
       sources += [
@@ -13175,26 +13016,6 @@ if (is_linux || is_mac || is_win) {
       "//testing/scripts/variations_smoke_test_data/",
       "//testing/scripts/variations_smoke_test_data/http_server/",
       "//third_party/webdriver/pylib/",
-    ]
-  }
-}
-
-if (!is_android && enable_print_preview) {
-  static_library("print_preview_test_support") {
-    testonly = true
-
-    sources = [
-      "../browser/printing/test_print_preview_dialog_cloned_observer.cc",
-      "../browser/printing/test_print_preview_dialog_cloned_observer.h",
-      "../browser/printing/test_print_view_manager_for_request_preview.cc",
-      "../browser/printing/test_print_view_manager_for_request_preview.h",
-    ]
-
-    deps = [
-      "//base",
-      "//chrome/browser",
-      "//components/printing/common:mojo_interfaces",
-      "//content/public/browser",
     ]
   }
 }

@@ -4,7 +4,6 @@
 
 #include "pdf/pdfium/pdfium_on_demand_searchifier.h"
 
-#include <array>
 #include <memory>
 #include <string>
 #include <utility>
@@ -20,7 +19,6 @@
 #include "base/time/time.h"
 #include "pdf/accessibility_structs.h"
 #include "pdf/pdfium/pdfium_page.h"
-#include "pdf/pdfium/pdfium_print.h"
 #include "pdf/pdfium/pdfium_range.h"
 #include "pdf/pdfium/pdfium_test_base.h"
 #include "pdf/test/test_client.h"
@@ -39,11 +37,6 @@ using VisualAnnotationPtr = screen_ai::mojom::VisualAnnotationPtr;
 
 constexpr base::TimeDelta kOcrDelay = base::Milliseconds(100);
 
-base::FilePath GetReferenceFilePathForPrint(std::string_view test_filename) {
-  return base::FilePath(FILE_PATH_LITERAL("pdfium_print"))
-      .AppendASCII(test_filename);
-}
-
 class SearchifierTestClient : public TestClient {
  public:
   explicit SearchifierTestClient(bool use_skia_renderer)
@@ -51,8 +44,6 @@ class SearchifierTestClient : public TestClient {
   SearchifierTestClient(const SearchifierTestClient&) = delete;
   SearchifierTestClient& operator=(const SearchifierTestClient&) = delete;
   ~SearchifierTestClient() override = default;
-
-  bool IsPrintPreview() const override { return is_print_preview_; }
 
   void OnSearchifyStateChange(bool busy) override {
     if (busy) {
@@ -62,13 +53,10 @@ class SearchifierTestClient : public TestClient {
     }
   }
 
-  void set_for_print_preview() { is_print_preview_ = true; }
-
   int busy_state_changed_count() const { return busy_state_changed_count_; }
   int idle_state_changed_count() const { return idle_state_changed_count_; }
 
  private:
-  bool is_print_preview_ = false;
   int busy_state_changed_count_ = 0;
   int idle_state_changed_count_ = 0;
 };
@@ -106,12 +94,6 @@ class PDFiumOnDemandSearchifierTest : public PDFiumTestBase {
       const base::FilePath::CharType* test_filename) {
     engine_ = InitializeEngine(&client_, test_filename);
     return engine_.get();
-  }
-
-  [[nodiscard]] PDFiumEngine* CreatePreviewEngine(
-      const base::FilePath::CharType* test_filename) {
-    client_.set_for_print_preview();
-    return CreateEngine(test_filename);
   }
 
   void TearDown() override {
@@ -527,20 +509,6 @@ TEST_P(PDFiumOnDemandSearchifierTest, MultiplePagesWithUnload) {
   EXPECT_TRUE(page3_info.value().is_searchified);
 }
 
-TEST_P(PDFiumOnDemandSearchifierTest, OnePageWithImagesInPrintPreview) {
-  PDFiumEngine* engine =
-      CreatePreviewEngine(FILE_PATH_LITERAL("image_alt_text.pdf"));
-  ASSERT_TRUE(engine);
-
-  PDFiumPage& page = GetPDFiumPage(*engine, 0);
-
-  // Load the page to trigger Searchify, but it should not do anything for Print
-  // Preview.
-  page.GetPage();
-  ASSERT_FALSE(engine->IsPageScheduledForSearchify(0));
-  ASSERT_FALSE(engine->GetSearchifierForTesting());
-}
-
 TEST_P(PDFiumOnDemandSearchifierTest,
        OcrDisconnectionBeforeGettingMaxImageDimension) {
   constexpr int kPageCount = 4;
@@ -772,74 +740,6 @@ TEST_P(PDFiumOnDemandSearchifierTest, UpdateWithUnloadLockedPage) {
 
   // Page is expected to be searchified now.
   EXPECT_TRUE(page0.IsPageSearchified());
-}
-
-TEST_P(PDFiumOnDemandSearchifierTest, Bug405433817) {
-  PDFiumEngine* engine = CreateEngine(FILE_PATH_LITERAL("bug_405433817.pdf"));
-  ASSERT_TRUE(engine);
-
-  PDFiumPage& page = GetPDFiumPage(*engine, 0);
-
-  // Load the page to trigger searchify checking.
-  page.GetPage();
-  ASSERT_TRUE(engine->IsPageScheduledForSearchify(0));
-
-  PDFiumPrint print(engine);
-
-  static constexpr std::array<int, 1> kPageIndices = {0};
-  const blink::WebPrintParams print_params = GetDefaultPrintParams();
-  std::vector<uint8_t> pdf_data =
-      print.PrintPagesAsPdf(kPageIndices, print_params);
-  CheckFuzzyPdfRendering(pdf_data, 0, /*size_in_points=*/{200, 300},
-                         GetReferenceFilePathForPrint("bug_405433817.png"));
-
-  PDFiumOnDemandSearchifier* searchifier = engine->GetSearchifierForTesting();
-  ASSERT_TRUE(searchifier);
-  ASSERT_TRUE(searchifier->IsPageScheduled(0));
-
-  StartSearchify(/*empty_results=*/true);
-  ASSERT_TRUE(WaitForIdleState(searchifier));
-
-  ASSERT_EQ(performed_ocrs(), 1);
-  EXPECT_TRUE(page.IsPageSearchified());
-
-  pdf_data = print.PrintPagesAsPdf(kPageIndices, print_params);
-  CheckFuzzyPdfRendering(pdf_data, 0, /*size_in_points=*/{200, 300},
-                         GetReferenceFilePathForPrint("bug_405433817.png"));
-}
-
-TEST_P(PDFiumOnDemandSearchifierTest, Bug406530484) {
-  PDFiumEngine* engine = CreateEngine(FILE_PATH_LITERAL("bug_406530484.pdf"));
-  ASSERT_TRUE(engine);
-
-  PDFiumPage& page = GetPDFiumPage(*engine, 0);
-
-  // Load the page to trigger searchify checking.
-  page.GetPage();
-  ASSERT_TRUE(engine->IsPageScheduledForSearchify(0));
-
-  PDFiumPrint print(engine);
-
-  static constexpr std::array<int, 1> kPageIndices = {0};
-  const blink::WebPrintParams print_params = GetDefaultPrintParams();
-  std::vector<uint8_t> pdf_data =
-      print.PrintPagesAsPdf(kPageIndices, print_params);
-  CheckPdfRendering(pdf_data, 0, /*size_in_points=*/{200, 300},
-                    GetReferenceFilePathForPrint("bug_406530484.png"));
-
-  PDFiumOnDemandSearchifier* searchifier = engine->GetSearchifierForTesting();
-  ASSERT_TRUE(searchifier);
-  ASSERT_TRUE(searchifier->IsPageScheduled(0));
-
-  StartSearchify(/*empty_results=*/true);
-  ASSERT_TRUE(WaitForIdleState(searchifier));
-
-  ASSERT_EQ(performed_ocrs(), 1);
-  EXPECT_TRUE(page.IsPageSearchified());
-
-  pdf_data = print.PrintPagesAsPdf(kPageIndices, print_params);
-  CheckPdfRendering(pdf_data, 0, /*size_in_points=*/{200, 300},
-                    GetReferenceFilePathForPrint("bug_406530484.png"));
 }
 
 INSTANTIATE_TEST_SUITE_P(All, PDFiumOnDemandSearchifierTest, testing::Bool());

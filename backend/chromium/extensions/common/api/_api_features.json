@@ -548,15 +548,6 @@
   "power.reportActivity": {
     "platforms": ["chromeos"]
   },
-  "printerProvider": {
-    "dependencies": ["permission:printerProvider"],
-    "contexts": ["privileged_extension"]
-  },
-  "printerProviderInternal": {
-    "internal": true,
-    "dependencies": ["permission:printerProvider"],
-    "contexts": ["privileged_extension"]
-  },
   "runtime": {
     "channel": "stable",
     "extension_types": [

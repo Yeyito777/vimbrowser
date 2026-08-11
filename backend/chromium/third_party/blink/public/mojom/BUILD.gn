@@ -370,10 +370,7 @@ mojom("mojom_platform") {
       "//ui/latency/mojom",
     ]
   } else {
-    sources += [
-      "direct_sockets/direct_sockets.mojom",
-      "printing/web_printing.mojom",
-    ]
+    sources += [ "direct_sockets/direct_sockets.mojom" ]
   }
 
   if (is_mac) {
@@ -1039,41 +1036,6 @@ mojom("mojom_platform") {
           [ "//third_party/blink/common/user_agent/user_agent_mojom_traits.cc" ]
     },
   ]
-  if (is_chromeos && use_cups) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "blink.mojom.WebPrintJobTemplateAttributes"
-            cpp = "::std::unique_ptr<::printing::PrintSettings>"
-            move_only = true
-            nullable_is_same_type = true
-          },
-          {
-            mojom = "blink.mojom.WebPrintingSides"
-            cpp = "::printing::mojom::DuplexMode"
-          },
-          {
-            mojom = "blink.mojom.WebPrinterState"
-            cpp = "ipp_pstate_t"
-          },
-          {
-            mojom = "blink.mojom.WebPrinterStateReason"
-            cpp = "::printing::PrinterStatus::PrinterReason::Reason"
-          },
-        ]
-        traits_headers =
-            [ "//chrome/browser/printing/web_api/web_printing_mojom_traits.h" ]
-        traits_sources =
-            [ "//chrome/browser/printing/web_api/web_printing_mojom_traits.cc" ]
-        traits_public_deps = [ "//printing:settings" ]
-        traits_deps = [
-          "//printing/backend",
-          "//printing/mojom",
-        ]
-      },
-    ]
-  }
   blink_cpp_typemaps = [
     {
       types = [

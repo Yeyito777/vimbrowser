@@ -225,17 +225,6 @@ static_library("utility") {
     configs += [ "//build/config/linux/nss" ]
   }
 
-  if (enable_printing) {
-    deps += [
-      "//components/services/print_compositor",
-      "//components/services/print_compositor/public/mojom",
-    ]
-
-    if (!is_android) {
-      deps += [ "//chrome/services/printing:lib" ]
-    }
-  }
-
   if (safe_browsing_mode == 1) {
     deps += [
       "//chrome/services/file_util",

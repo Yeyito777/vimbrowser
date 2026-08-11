@@ -19,17 +19,13 @@
 #include "pdf/pdfium/pdfium_api_wrappers.h"
 #include "pdf/pdfium/pdfium_document.h"
 #include "pdf/pdfium/pdfium_document_metadata.h"
-#include "pdf/pdfium/pdfium_mem_buffer_file_write.h"
-#include "pdf/pdfium/pdfium_print.h"
 #include "pdf/pdfium/pdfium_unsupported_features.h"
-#include "printing/nup_parameters.h"
 #include "services/screen_ai/buildflags/buildflags.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/pdfium/public/cpp/fpdf_scopers.h"
 #include "third_party/pdfium/public/fpdf_attachment.h"
 #include "third_party/pdfium/public/fpdf_catalog.h"
 #include "third_party/pdfium/public/fpdf_doc.h"
-#include "third_party/pdfium/public/fpdf_ppo.h"
 #include "third_party/pdfium/public/fpdf_structtree.h"
 #include "third_party/pdfium/public/fpdfview.h"
 #include "ui/gfx/geometry/rect.h"
@@ -52,32 +48,6 @@ namespace chrome_pdf {
 namespace {
 
 const char kPDFTableCellHeadersAttribute[] = "Headers";
-
-ScopedFPDFDocument CreatePdfDoc(
-    std::vector<base::span<const uint8_t>> input_buffers) {
-  if (input_buffers.empty()) {
-    return nullptr;
-  }
-
-  ScopedFPDFDocument doc(FPDF_CreateNewDocument());
-  size_t index = 0;
-  for (auto input_buffer : input_buffers) {
-    ScopedFPDFDocument single_page_doc = LoadPdfData(input_buffer);
-    if (!FPDF_ImportPages(doc.get(), single_page_doc.get(), "1", index++)) {
-      return nullptr;
-    }
-  }
-
-  return doc;
-}
-
-bool IsValidPrintableArea(const gfx::Size& page_size,
-                          const gfx::Rect& printable_area) {
-  return !printable_area.IsEmpty() && printable_area.x() >= 0 &&
-         printable_area.y() >= 0 &&
-         printable_area.right() <= page_size.width() &&
-         printable_area.bottom() <= page_size.height();
-}
 
 base::Value ConvertAttributeValueToBaseValue(
     FPDF_STRUCTELEMENT_ATTR_VALUE attr_value) {
@@ -312,16 +282,6 @@ PDFiumEngineExports::PDFiumEngineExports() = default;
 
 PDFiumEngineExports::~PDFiumEngineExports() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<FlattenPdfResult> PDFiumEngineExports::CreateFlattenedPdf(
-    base::span<const uint8_t> input_buffer) {
-  ScopedUnsupportedFeature scoped_unsupported_feature(
-      ScopedUnsupportedFeature::kNoEngine);
-  ScopedFPDFDocument doc = LoadPdfData(input_buffer);
-  return doc ? PDFiumPrint::CreateFlattenedPdf(std::move(doc)) : std::nullopt;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
 #if BUILDFLAG(IS_WIN)
 bool PDFiumEngineExports::RenderPDFPageToDC(
     base::span<const uint8_t> pdf_buffer,
@@ -356,46 +316,6 @@ bool PDFiumEngineExports::RenderPDFPageToBitmap(
   }
   ScopedFPDFPage page(FPDF_LoadPage(doc.get(), page_index));
   return RenderPageToBitmap(page.get(), settings, bitmap_buffer);
-}
-
-std::vector<uint8_t> PDFiumEngineExports::ConvertPdfPagesToNupPdf(
-    std::vector<base::span<const uint8_t>> input_buffers,
-    size_t pages_per_sheet,
-    const gfx::Size& page_size,
-    const gfx::Rect& printable_area) {
-  if (!IsValidPrintableArea(page_size, printable_area)) {
-    return std::vector<uint8_t>();
-  }
-
-  ScopedUnsupportedFeature scoped_unsupported_feature(
-      ScopedUnsupportedFeature::kNoEngine);
-  ScopedFPDFDocument doc = CreatePdfDoc(std::move(input_buffers));
-  if (!doc) {
-    return std::vector<uint8_t>();
-  }
-
-  return PDFiumPrint::CreateNupPdf(std::move(doc), pages_per_sheet, page_size,
-                                   printable_area);
-}
-
-std::vector<uint8_t> PDFiumEngineExports::ConvertPdfDocumentToNupPdf(
-    base::span<const uint8_t> input_buffer,
-    size_t pages_per_sheet,
-    const gfx::Size& page_size,
-    const gfx::Rect& printable_area) {
-  if (!IsValidPrintableArea(page_size, printable_area)) {
-    return std::vector<uint8_t>();
-  }
-
-  ScopedUnsupportedFeature scoped_unsupported_feature(
-      ScopedUnsupportedFeature::kNoEngine);
-  ScopedFPDFDocument doc = LoadPdfData(input_buffer);
-  if (!doc) {
-    return std::vector<uint8_t>();
-  }
-
-  return PDFiumPrint::CreateNupPdf(std::move(doc), pages_per_sheet, page_size,
-                                   printable_area);
 }
 
 bool PDFiumEngineExports::GetPDFDocInfo(base::span<const uint8_t> pdf_buffer,

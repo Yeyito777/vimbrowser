@@ -351,11 +351,6 @@ are declared in tools/grit/grit_args.gni.
         <part file="password_manager_ui_strings.grdp" />
       </if>
 
-      <!-- Printing specific strings -->
-      <if expr="enable_printing">
-        <part file="printing_strings.grdp" />
-      </if>
-
       <!-- Skills specific strings -->
       <part file="skills_strings.grdp" />
 

@@ -42,8 +42,6 @@ components/payments_strings.grdp
 components/pdf_strings.grdp
 components/permissions_strings.grdp
 components/policy_strings.grdp
-components/print_media_strings.grdp
-components/printing_component_strings.grdp
 components/privacy_sandbox_chrome_strings.grdp
 components/protocol_handler_strings.grdp
 components/reset_password_strings.grdp

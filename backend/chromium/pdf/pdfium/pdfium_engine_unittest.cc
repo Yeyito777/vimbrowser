@@ -136,7 +136,6 @@ class MockTestClient : public TestClient {
               FormFieldFocusChange,
               (PDFiumEngineClient::FocusFieldType),
               (override));
-  MOCK_METHOD(bool, IsPrintPreview, (), (const override));
   MOCK_METHOD(void, DocumentFocusChanged, (bool), (override));
   MOCK_METHOD(void, SetLinkUnderCursor, (const std::string&), (override));
   MOCK_METHOD(void, ScrollToX, (int, bool), (override));
@@ -281,52 +280,6 @@ TEST_P(PDFiumEngineTest, InitializeWithRectanglesMultiPagesPdfInTwoUpView) {
   ExpectPageRect(*engine, 2, {72, 346, 266, 333});
   ExpectPageRect(*engine, 3, {340, 346, 266, 333});
   ExpectPageRect(*engine, 4, {68, 689, 266, 333});
-}
-
-TEST_P(PDFiumEngineTest, AppendBlankPagesWithFewerPages) {
-  NiceMock<MockTestClient> client(/*use_skia_renderer=*/GetParam());
-  {
-    InSequence normal_then_append;
-    EXPECT_CALL(client, ProposeDocumentLayout(LayoutWithSize(343, 1664)))
-        .Times(2);
-    EXPECT_CALL(client, ProposeDocumentLayout(LayoutWithSize(276, 1037)));
-  }
-
-  std::unique_ptr<PDFiumEngine> engine = InitializeEngine(
-      &client, FILE_PATH_LITERAL("rectangles_multi_pages.pdf"));
-  ASSERT_TRUE(engine);
-
-  engine->AppendBlankPages(3);
-  ASSERT_EQ(3, engine->GetNumberOfPages());
-
-  ExpectPageRect(*engine, 0, {5, 3, 266, 333});
-  ExpectPageRect(*engine, 1, {5, 350, 266, 333});
-  ExpectPageRect(*engine, 2, {5, 697, 266, 333});
-}
-
-TEST_P(PDFiumEngineTest, AppendBlankPagesWithMorePages) {
-  NiceMock<MockTestClient> client(/*use_skia_renderer=*/GetParam());
-  {
-    InSequence normal_then_append;
-    EXPECT_CALL(client, ProposeDocumentLayout(LayoutWithSize(343, 1664)))
-        .Times(2);
-    EXPECT_CALL(client, ProposeDocumentLayout(LayoutWithSize(276, 2425)));
-  }
-
-  std::unique_ptr<PDFiumEngine> engine = InitializeEngine(
-      &client, FILE_PATH_LITERAL("rectangles_multi_pages.pdf"));
-  ASSERT_TRUE(engine);
-
-  engine->AppendBlankPages(7);
-  ASSERT_EQ(7, engine->GetNumberOfPages());
-
-  ExpectPageRect(*engine, 0, {5, 3, 266, 333});
-  ExpectPageRect(*engine, 1, {5, 350, 266, 333});
-  ExpectPageRect(*engine, 2, {5, 697, 266, 333});
-  ExpectPageRect(*engine, 3, {5, 1044, 266, 333});
-  ExpectPageRect(*engine, 4, {5, 1391, 266, 333});
-  ExpectPageRect(*engine, 5, {5, 1738, 266, 333});
-  ExpectPageRect(*engine, 6, {5, 2085, 266, 333});
 }
 
 TEST_P(PDFiumEngineTest, ProposeDocumentLayoutWithOverlap) {
@@ -819,25 +772,6 @@ TEST_P(PDFiumEngineTest, LinkNavigates) {
   EXPECT_TRUE(engine->HandleInputEvent(
       CreateLeftClickWebMouseEventAtPosition(kMiddlePosition)));
   EXPECT_TRUE(engine->HandleInputEvent(
-      CreateLeftClickWebMouseUpEventAtPosition(kMiddlePosition)));
-}
-
-// Test case for crbug.com/699000
-TEST_P(PDFiumEngineTest, LinkDisabledInPrintPreview) {
-  NiceMock<MockTestClient> client(/*use_skia_renderer=*/GetParam());
-  std::unique_ptr<PDFiumEngine> engine =
-      InitializeEngine(&client, FILE_PATH_LITERAL("link_annots.pdf"));
-  ASSERT_TRUE(engine);
-  EXPECT_CALL(client, IsPrintPreview()).WillRepeatedly(Return(true));
-
-  // Plugin size chosen so all pages of the document are visible.
-  engine->PluginSizeUpdated({1024, 4096});
-
-  EXPECT_CALL(client, NavigateTo(_, _)).Times(0);
-  constexpr gfx::PointF kMiddlePosition(100, 230);
-  EXPECT_TRUE(engine->HandleInputEvent(
-      CreateLeftClickWebMouseEventAtPosition(kMiddlePosition)));
-  EXPECT_FALSE(engine->HandleInputEvent(
       CreateLeftClickWebMouseUpEventAtPosition(kMiddlePosition)));
 }
 
@@ -3013,47 +2947,6 @@ TEST_P(PDFiumEngineInkDrawTest, RotatedPdf) {
 // Don't be concerned about any slight rendering differences in AGG vs. Skia,
 // covering one of these is sufficient for checking how data is written out.
 INSTANTIATE_TEST_SUITE_P(All, PDFiumEngineInkDrawTest, testing::Values(false));
-
-using PDFiumEngineInkPrintTest = PDFiumTestBase;
-
-TEST_P(PDFiumEngineInkPrintTest, InkStrokes) {
-  NiceMock<MockTestClient> client(/*use_skia_renderer=*/GetParam());
-  std::unique_ptr<PDFiumEngine> engine =
-      InitializeEngine(&client, FILE_PATH_LITERAL("blank.pdf"));
-  ASSERT_TRUE(engine);
-
-  // Draw a stroke.
-  static constexpr auto kInputs = std::to_array<PdfInkInputData>({
-      {{5.0f, 5.0f}, base::Seconds(0.0f)},
-      {{50.0f, 5.0f}, base::Seconds(0.1f)},
-  });
-  std::optional<ink::StrokeInputBatch> batch = CreateInkInputBatch(kInputs);
-  ASSERT_TRUE(batch.has_value());
-  auto brush = std::make_unique<PdfInkBrush>(PdfInkBrush::Type::kPen,
-                                             SK_ColorRED, /*size=*/4.0f);
-  ink::Stroke stroke(brush->ink_brush(), batch.value());
-  static constexpr std::array<int, 1> kPagesToPrint = {0};
-  static constexpr InkStrokeId kStrokeId(0);
-  engine->ApplyStroke(kPagesToPrint[0], kStrokeId, stroke);
-
-  blink::WebPrintParams print_params = GetDefaultPrintParams();
-  print_params.printable_area_in_css_pixels = kPrintableAreaRect;
-  print_params.print_scaling_option =
-      printing::mojom::PrintScalingOption::kFitToPaper;
-
-  engine->PrintBegin();
-  std::vector<uint8_t> pdf_data =
-      engine->PrintPages(kPagesToPrint, print_params);
-  engine->PrintEnd();
-
-  base::FilePath expected_output = GetInkTestDataFilePath(
-      FILE_PATH_LITERAL("applied_stroke_printed_fit_to_page.png"));
-  CheckPdfRendering(pdf_data, kPagesToPrint[0], {612, 792}, expected_output);
-}
-
-// Don't be concerned about any slight rendering differences in AGG vs. Skia,
-// covering one of these is sufficient for checking how data is written out.
-INSTANTIATE_TEST_SUITE_P(All, PDFiumEngineInkPrintTest, testing::Values(false));
 
 class PDFiumEngineCaretTest : public PDFiumDrawSelectionTestBase {
  public:

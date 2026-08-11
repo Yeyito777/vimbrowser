@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "base/containers/flat_set.h"
-#include "base/containers/queue.h"
 #include "base/functional/callback_forward.h"
 #include "base/i18n/rtl.h"
 #include "base/memory/raw_ptr.h"
@@ -32,7 +31,6 @@
 #include "pdf/pdfium/pdfium_engine_client.h"
 #include "pdf/pdfium/pdfium_form_filler.h"
 #include "pdf/post_message_receiver.h"
-#include "pdf/preview_mode_client.h"
 #include "pdf/v8_value_converter.h"
 #include "services/screen_ai/buildflags/buildflags.h"
 #include "third_party/blink/public/mojom/annotation/annotation.mojom.h"
@@ -42,7 +40,6 @@
 #include "third_party/blink/public/web/web_plugin.h"
 #include "third_party/blink/public/web/web_plugin_container.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
-#include "third_party/blink/public/web/web_print_params.h"
 #include "third_party/blink/public/web/web_view_observer.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -68,7 +65,6 @@ class WebInputEvent;
 class WebURL;
 class WebURLRequest;
 struct WebAssociatedURLLoaderOptions;
-struct WebPrintPresetOptions;
 }  // namespace blink
 
 namespace gfx {
@@ -79,10 +75,6 @@ class Range;
 namespace net {
 class SiteForCookies;
 }  // namespace net
-
-namespace printing {
-class MetafileSkia;
-}  // namespace printing
 
 namespace chrome_pdf {
 
@@ -105,7 +97,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
                                public PostMessageReceiver::Client,
                                public PaintManager::Client,
                                public PdfAccessibilityActionHandler,
-                               public PreviewModeClient::Client,
                                public blink::mojom::AnnotationAgentContainer {
  public:
   // Do not save files larger than 100 MB. This cap should be kept in sync with
@@ -227,9 +218,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
     // Notifies the frame's client that the plugin stopped loading.
     virtual void DidStopLoading() = 0;
 
-    // Prints the plugin element.
-    virtual void Print() {}
-
     // Sends over a string to be recorded by user metrics as a computed action.
     // When you use this, you need to also update the rules for extracting known
     // actions in tools/metrics/actions/extract_actions.py.
@@ -300,12 +288,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   void DidReceiveData(base::span<const char> data) override;
   void DidFinishLoading() override;
   void DidFailLoading(const blink::WebURLError& error) override;
-  bool SupportsPaginatedPrint() override;
-  bool GetPrintPresetOptionsFromDocument(
-      blink::WebPrintPresetOptions* print_preset_options) override;
-  int PrintBegin(const blink::WebPrintParams& print_params) override;
-  void PrintPage(int page_index, cc::PaintCanvas* canvas) override;
-  void PrintEnd() override;
   bool HasSelection() const override;
   blink::WebString SelectionAsText() const override;
   blink::WebString SelectionAsMarkup() const override;
@@ -385,7 +367,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
              const std::string& bcc,
              const std::string& subject,
              const std::string& body) override;
-  void Print() override;
   void SubmitForm(const std::string& url,
                   const void* data,
                   int length) override;
@@ -399,7 +380,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   void DocumentHasUnsupportedFeature(const std::string& feature) override;
   void DocumentLoadProgress(uint32_t available, uint32_t doc_size) override;
   void FormFieldFocusChange(PDFiumEngineClient::FocusFieldType type) override;
-  bool IsPrintPreview() const override;
   SkColor GetBackgroundColor() const override;
   void SelectionChanged(const gfx::Rect& left, const gfx::Rect& right) override;
   void CaretChanged(const gfx::Rect& caret_rect) override;
@@ -461,10 +441,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   void HandleAccessibilityAction(
       const AccessibilityActionData& action_data) override;
   void LoadOrReloadAccessibility() override;
-
-  // PreviewModeClient::Client:
-  void PreviewDocumentLoadComplete() override;
-  void PreviewDocumentLoadFailed() override;
 
   // `blink::mojom::AnnotationAgentContainer`:
   void CreateAgent(
@@ -583,15 +559,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
     uint32_t color;
   };
 
-  // Metadata about an available preview page.
-  struct PreviewPageInfo {
-    // Data source URL.
-    std::string url;
-
-    // Page index in destination document.
-    int dest_page_index = -1;
-  };
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
   class PdfInkModuleClientImpl;
 #endif  // BUILDFLAG(ENABLE_PDF_INK2)
@@ -636,7 +603,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   void HandleGetSuggestedFileName(const base::DictValue& message);
   void HandleGetThumbnailMessage(const base::DictValue& message);
   void HandleHighlightTextFragmentsMessage(const base::DictValue& message);
-  void HandlePrintMessage(const base::DictValue& /*message*/);
   void HandleReleaseSaveInBlockBuffers(const base::DictValue& /*message*/);
   void HandleRotateClockwiseMessage(const base::DictValue& /*message*/);
   void HandleRotateCounterclockwiseMessage(const base::DictValue& /*message*/);
@@ -733,13 +699,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   // TODO(crbug.com/40199248): Consider handling composition events.
   void HandleImeCommit(const blink::WebString& text);
 
-  // Callback to print without re-entrancy issues. The callback prevents the
-  // invocation of printing in the middle of an event handler, which is risky;
-  // see crbug.com/66334.
-  // TODO(crbug.com/40185029): Re-evaluate the need for a callback when parts of
-  // the plugin are moved off the main thread.
-  void OnInvokePrintDialog();
-
   void ResetRecentlySentFindUpdate();
 
   // Records metrics about the document metadata.
@@ -763,24 +722,6 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   // Sends the loading progress, where `percentage` represents the progress, or
   // -1 for loading error.
   void SendLoadingProgress(double percentage);
-
-  // Handles message for resetting Print Preview.
-  void HandleResetPrintPreviewModeMessage(const base::DictValue& message);
-
-  // Handles message for loading a preview page.
-  void HandleLoadPreviewPageMessage(const base::DictValue& message);
-
-  // Starts loading the next available preview page into a blank page.
-  void LoadAvailablePreviewPage();
-
-  // Handles `LoadUrl()` result for a preview page.
-  void DidOpenPreview(std::unique_ptr<UrlLoader> loader, Result result);
-
-  // Continues loading the next preview page.
-  void LoadNextPreviewPage();
-
-  // Sends a notification that the print preview has loaded.
-  void SendPrintPreviewLoadedNotification();
 
   // Sends the thumbnail image data.
   void SendThumbnail(base::DictValue reply,
@@ -1003,50 +944,11 @@ class PdfViewWebPlugin final : public PDFiumEngineClient,
   // Whether the document is in edit mode.
   bool edit_mode_ = false;
 
-  // Only instantiated when not print previewing.
   std::unique_ptr<MetricsHandler> metrics_handler_;
 
   // Keeps track of which unsupported features have been reported to avoid
   // spamming the metrics if a feature shows up many times per document.
   base::flat_set<std::string> unsupported_features_reported_;
-
-  // The metafile in which to save the printed output. Assigned a value only
-  // between `PrintBegin()` and `PrintEnd()` calls.
-  raw_ptr<printing::MetafileSkia> printing_metafile_ = nullptr;
-
-  // The indices of pages to print.
-  std::vector<int> pages_to_print_;
-
-  // Assigned a value only between `PrintBegin()` and `PrintEnd()` calls.
-  std::optional<blink::WebPrintParams> print_params_;
-
-  // For identifying actual print operations to avoid double logging of UMA.
-  bool print_pages_called_;
-
-  // Whether the plugin is loaded in Print Preview.
-  bool is_print_preview_ = false;
-
-  // Number of pages in Print Preview (non-PDF). 0 if previewing a PDF, and -1
-  // if not in Print Preview.
-  int print_preview_page_count_ = -1;
-
-  // Number of pages loaded in Print Preview (non-PDF). Always less than or
-  // equal to `print_preview_page_count_`.
-  int print_preview_loaded_page_count_ = -1;
-
-  // The PreviewModeClient used for print preview. Will be passed to
-  // `preview_engine_`.
-  std::unique_ptr<PreviewModeClient> preview_client_;
-
-  // Engine used to render individual preview pages. This will use the
-  // `PreviewModeClient` interface.
-  std::unique_ptr<PDFiumEngine> preview_engine_;
-
-  // Document load state for the Print Preview engine.
-  DocumentLoadState preview_document_load_state_ = DocumentLoadState::kComplete;
-
-  // Queue of available preview pages to load next.
-  base::queue<PreviewPageInfo> preview_pages_info_;
 
   // Buffer for saving data by Web UI.
   // `SaveBlockToBuffer` allocates this variable when WebUI requests saving the

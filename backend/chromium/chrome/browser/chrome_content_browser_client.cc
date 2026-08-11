@@ -378,7 +378,6 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "pdf/buildflags.h"
-#include "printing/buildflags/buildflags.h"
 #include "sandbox/policy/features.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"
 #include "sandbox/policy/switches.h"
@@ -531,7 +530,6 @@
 #include "chrome/browser/metrics/usage_scenario/chrome_responsiveness_calculator_delegate.h"
 #include "chrome/browser/new_tab_page/new_tab_page_util.h"
 #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
-#include "chrome/browser/printing/print_preview_dialog_controller.h"
 #include "chrome/browser/screen_ai/screen_ai_install_state.h"
 #include "chrome/browser/search/instant_service.h"
 #include "chrome/browser/search/instant_service_factory.h"
@@ -2865,10 +2863,6 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
           prefs->GetBoolean(prefs::kDisable3DAPIs)) {
         // Turn this policy into a command line switch.
         command_line->AppendSwitch(switches::kDisable3DAPIs);
-      }
-
-      if (prefs->GetBoolean(prefs::kPrintPreviewDisabled)) {
-        command_line->AppendSwitch(switches::kDisablePrintPreview);
       }
 
       if (prefs->GetBoolean(prefs::kDataUrlInSvgUseEnabled)) {
@@ -5338,9 +5332,6 @@ bool ChromeContentBrowserClient::PreSpawnChild(
     case sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges:
     case sandbox::mojom::Sandbox::kXrCompositing:
     case sandbox::mojom::Sandbox::kCdm:
-#if BUILDFLAG(ENABLE_PRINTING)
-    case sandbox::mojom::Sandbox::kPrintBackend:
-#endif
     case sandbox::mojom::Sandbox::kPrintCompositor:
     case sandbox::mojom::Sandbox::kScreenAI:
     case sandbox::mojom::Sandbox::kAudio:
@@ -7708,14 +7699,6 @@ ChromeContentBrowserClient::MaybeOverrideSourceURLForClipboardAccess(
     content::RenderFrameHost* render_frame_host,
     const GURL& original_url) {
   DCHECK(render_frame_host);
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  if (printing::PrintPreviewDialogController::IsPrintPreviewURL(original_url)) {
-    return printing::PrintPreviewDialogController::GetInstance()
-        ->GetInitiator(WebContents::FromRenderFrameHost(render_frame_host))
-        ->GetPrimaryMainFrame()
-        ->GetLastCommittedURL();
-  }
-#endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
   return std::nullopt;
 }
 

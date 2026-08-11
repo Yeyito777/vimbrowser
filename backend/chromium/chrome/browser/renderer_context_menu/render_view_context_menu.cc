@@ -2305,14 +2305,6 @@ void RenderViewContextMenu::AppendPluginItems() {
   } else {
     menu_model_.AddItemWithStringId(IDC_CONTENT_CONTEXT_SAVEPLUGINAS,
                                     IDS_CONTENT_CONTEXT_SAVEPAGEAS);
-    // The "Print" menu item should always be included for plugins. If
-    // content_type_->SupportsGroup(ContextMenuContentType::ITEM_GROUP_PRINT)
-    // is true the item will be added inside AppendPrintItem(). Otherwise we
-    // add "Print" here.
-    if (!content_type_->SupportsGroup(
-            ContextMenuContentType::ITEM_GROUP_PRINT)) {
-      menu_model_.AddItemWithStringId(IDC_PRINT, IDS_CONTENT_CONTEXT_PRINT);
-    }
   }
 }
 
@@ -2326,7 +2318,6 @@ void RenderViewContextMenu::AppendPageItems() {
   MaybeAppendOpenGlicItem();
   menu_model_.AddItemWithStringId(IDC_SAVE_PAGE,
                                   IDS_CONTENT_CONTEXT_SAVEPAGEAS);
-  menu_model_.AddItemWithStringId(IDC_PRINT, IDS_CONTENT_CONTEXT_PRINT);
   AppendLiveCaptionItem();
   AppendMediaRouterItem();
 
@@ -3093,9 +3084,7 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
       return IsSavePageEnabled();
 
     case IDC_CONTENT_CONTEXT_RELOADFRAME:
-      return params_.is_subframe &&
-             params_.frame_url.DeprecatedGetOriginAsURL() !=
-                 chrome::kChromeUIPrintURL;
+      return params_.is_subframe;
 
     case IDC_CONTENT_CONTEXT_UNDO:
       return !!(params_.edit_flags & ContextMenuDataEditFlags::kCanUndo);
@@ -4082,6 +4071,7 @@ bool RenderViewContextMenu::IsPasteAndMatchStyleEnabled() const {
 }
 
 bool RenderViewContextMenu::IsPrintPreviewEnabled() const {
+#if BUILDFLAG(ENABLE_PRINTING)
   if (IsGlicWindow(this, browser_context_) &&
       base::FeatureList::IsEnabled(features::kGlicPrintMenuItem) &&
       glic::GlicEnabling::IsMultiInstanceEnabled()) {
@@ -4096,6 +4086,9 @@ bool RenderViewContextMenu::IsPrintPreviewEnabled() const {
 
   Browser* browser = GetBrowser();
   return browser && chrome::CanPrint(browser);
+#else
+  return false;
+#endif
 }
 
 bool RenderViewContextMenu::IsQRCodeGeneratorEnabled() const {

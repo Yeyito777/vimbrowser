@@ -61,6 +61,7 @@ disable_fieldtrial_testing_config=true
 enable_background_mode=false
 enable_backup_ref_ptr_support=false
 enable_downgrade_processing=false
+enable_printing=false
 enable_resource_allowlist_generation=false
 enable_widevine=true
 # Sites such as X/Twitter and Steam serve MP4/H.264/AAC media.  Chromium's

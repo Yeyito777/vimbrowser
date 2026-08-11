@@ -60,7 +60,6 @@
 #include "chrome/browser/preloading/prefetch/prefetch_service/prefetch_origin_decider.h"
 #include "chrome/browser/preloading/prefetch/search_prefetch/search_prefetch_service.h"
 #include "chrome/browser/preloading/preloading_prefs.h"
-#include "chrome/browser/printing/print_preview_sticky_settings.h"
 #include "chrome/browser/privacy_sandbox/notice/notice_storage.h"
 #include "chrome/browser/profiles/chrome_version_service.h"
 #include "chrome/browser/profiles/profile_attributes_entry.h"
@@ -97,7 +96,6 @@
 #include "chrome/browser/ui/webui/flags/flags_ui.h"
 #include "chrome/browser/ui/webui/ntp/new_tab_ui.h"
 #include "chrome/browser/ui/webui/policy/policy_ui.h"
-#include "chrome/browser/ui/webui/print_preview/policy_settings.h"
 #include "chrome/browser/updates/announcement_notification/announcement_notification_service.h"
 #include "chrome/browser/webauthn/webauthn_pref_names.h"
 #include "chrome/common/buildflags.h"
@@ -210,7 +208,6 @@
 #include "extensions/buildflags/buildflags.h"
 #include "net/http/http_server_properties_manager.h"
 #include "pdf/buildflags.h"
-#include "printing/buildflags/buildflags.h"
 #include "rlz/buildflags/buildflags.h"
 
 #if BUILDFLAG(ENABLE_BACKGROUND_MODE)
@@ -414,8 +411,6 @@
 #include "chrome/browser/ash/policy/status_collector/status_collector.h"
 #include "chrome/browser/ash/power/power_metrics_reporter.h"
 #include "chrome/browser/ash/preferences/preferences.h"
-#include "chrome/browser/ash/printing/cups_printers_manager.h"
-#include "chrome/browser/ash/printing/enterprise/enterprise_printers_provider.h"
 #include "chrome/browser/ash/release_notes/release_notes_storage.h"
 #include "chrome/browser/ash/scanning/chrome_scanning_app_delegate.h"
 #include "chrome/browser/ash/settings/hardware_data_usage_controller.h"
@@ -482,9 +477,6 @@
 #include "components/onc/onc_pref_names.h"  // nogncheck
 #include "components/quirks/quirks_manager.h"
 #include "components/user_manager/user_manager_impl.h"
-#if BUILDFLAG(USE_CUPS)
-#include "chrome/browser/extensions/api/printing/printing_api_handler.h"
-#endif  // BUILDFLAG(USE_CUPS)
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
@@ -1898,11 +1890,6 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry,
   registry->RegisterBooleanPref(prefs::kPdfXfaFormsEnabled, false);
 #endif  // BUILDFLAG(IS_CHROMEOS)
 #endif  // BUILDFLAG(ENABLE_PDF)
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  printing::PolicySettings::RegisterProfilePrefs(registry);
-  printing::PrintPreviewStickySettings::RegisterProfilePrefs(registry);
-#endif
 
 #if BUILDFLAG(ENABLE_RLZ)
   ChromeRLZTrackerDelegate::RegisterProfilePrefs(registry);

@@ -179,7 +179,6 @@ export class Viewport {
     // Set to a default zoom manager - used in tests.
     this.setZoomManager(new InactiveZoomManager(this.getZoom.bind(this), 1));
 
-    // Print Preview
     if (this.window_ === document.documentElement ||
         // Necessary check since during testing a fake DOM element is used.
         !(this.window_ instanceof HTMLElement)) {

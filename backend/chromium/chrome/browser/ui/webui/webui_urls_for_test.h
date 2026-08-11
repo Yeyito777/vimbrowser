@@ -271,7 +271,6 @@ static constexpr const char* const kChromeUntestedUrls[] = {
     "chrome-untrusted://lens",
     "chrome-untrusted://lens-overlay",
     "chrome-untrusted://ntp-microsoft-auth",
-    "chrome-untrusted://print",
     "chrome-untrusted://read-anything-side-panel.top-chrome",
     "chrome://access-code-cast",
 #if !defined(NDEBUG)

@@ -106,7 +106,6 @@ export class ViewerToolbarElement extends CrLitElement {
 
       displayAnnotations_: {type: Boolean},
       fittingType_: {type: Number},
-      printingEnabled_: {type: Boolean},
       viewportZoomPercent_: {type: Number},
 
       pdfGlicSummarizeEnabled_: {type: Boolean},
@@ -151,7 +150,6 @@ export class ViewerToolbarElement extends CrLitElement {
   private accessor fittingType_: FittingType = FittingType.FIT_TO_PAGE;
   protected accessor moreMenuOpen_: boolean = false;
   protected accessor loading_: boolean = true;
-  protected accessor printingEnabled_: boolean = false;
   private accessor viewportZoomPercent_: number = 0;
 
   protected accessor pdfGlicSummarizeEnabled_: boolean = false;
@@ -226,7 +224,6 @@ export class ViewerToolbarElement extends CrLitElement {
   }
 
   private updateLoadTimeData_() {
-    this.printingEnabled_ = loadTimeData.getBoolean('printingEnabled');
     this.pdfGlicSummarizeEnabled_ =
         loadTimeData.getBoolean('pdfGlicSummarizeEnabled');
     // <if expr="enable_pdf_ink2">
@@ -265,10 +262,6 @@ export class ViewerToolbarElement extends CrLitElement {
     return this.pdfInk2Enabled;
   }
   // </if>
-
-  protected onPrintClick_() {
-    this.dispatchEvent(new CustomEvent('print'));
-  }
 
   protected onRotateClick_() {
     this.dispatchEvent(new CustomEvent('rotate-left'));

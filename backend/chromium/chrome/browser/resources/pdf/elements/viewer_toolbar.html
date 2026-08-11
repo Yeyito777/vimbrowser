@@ -117,10 +117,6 @@ import {AnnotationMode} from '../constants.js';
 </if>
         .isFormFieldFocused="${this.isFormFieldFocused_()}">
     </viewer-download-controls>
-    <cr-icon-button id="print" iron-icon="pdf:print"
-        ?hidden="${!this.printingEnabled_}" title="$i18n{tooltipPrint}"
-        aria-label="$i18n{tooltipPrint}" @click="${this.onPrintClick_}">
-    </cr-icon-button>
     <cr-icon-button id="more" iron-icon="pdf:more"
         title="$i18n{moreActions}" aria-label="$i18n{moreActions}"
         @click="${this.onMoreClick_}"></cr-icon-button>

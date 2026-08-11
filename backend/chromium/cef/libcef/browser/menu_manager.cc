@@ -418,7 +418,6 @@ void CefMenuManager::CreateDefaultModel() {
     model_->AddItem(MENU_ID_FORWARD, GetLabel(IDS_CONTENT_CONTEXT_FORWARD));
 
     model_->AddSeparator();
-    model_->AddItem(MENU_ID_PRINT, GetLabel(IDS_CONTENT_CONTEXT_PRINT));
     model_->AddItem(MENU_ID_VIEW_SOURCE,
                     GetLabel(IDS_CONTENT_CONTEXT_VIEWPAGESOURCE));
 
@@ -500,9 +499,6 @@ void CefMenuManager::ExecuteDefaultCommand(int command_id) {
     case MENU_ID_FIND:
       // TODO(cef): Implement.
       NOTIMPLEMENTED();
-      break;
-    case MENU_ID_PRINT:
-      browser_->Print();
       break;
     case MENU_ID_VIEW_SOURCE:
       browser_->GetFocusedFrame()->ViewSource();

@@ -40,7 +40,6 @@
 #include "extensions/browser/api/hid/hid_connection_resource.h"
 #include "extensions/browser/api/hid/hid_device_manager.h"
 #include "extensions/browser/api/networking_private/networking_private_event_router_factory.h"
-#include "extensions/browser/api/printer_provider/printer_provider_api_factory.h"
 #include "extensions/browser/api/protocol_handlers/protocol_handlers_manager.h"
 #include "extensions/browser/api/socket/socket.h"
 #include "extensions/browser/api/socket/tcp_socket.h"
@@ -134,7 +133,6 @@ void EnsureApiBrowserContextKeyedServiceFactoriesBuilt() {
     BUILDFLAG(IS_MAC)
   NetworkingPrivateEventRouterFactory::GetInstance();
 #endif
-  PrinterProviderAPIFactory::GetInstance();
   SystemInfoAPI::GetFactoryInstance();
   UsbDeviceManager::GetFactoryInstance();
 #if BUILDFLAG(IS_CHROMEOS)

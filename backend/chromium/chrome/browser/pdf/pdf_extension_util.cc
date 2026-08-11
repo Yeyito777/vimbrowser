@@ -4,13 +4,11 @@
 
 #include "chrome/browser/pdf/pdf_extension_util.h"
 
-#include <algorithm>
-#include <array>
+#include <iterator>
 #include <string>
 #include <vector>
 
 #include "base/feature_list.h"
-#include "base/notreached.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "build/branding_buildflags.h"
@@ -134,7 +132,6 @@ base::DictValue GetPdfViewerStrings() {
       {"tooltipDocumentOutline", IDS_PDF_TOOLTIP_DOCUMENT_OUTLINE},
       {"tooltipDownload", IDS_PDF_TOOLTIP_DOWNLOAD},
       {"tooltipDownloadAttachment", IDS_PDF_TOOLTIP_DOWNLOAD_ATTACHMENT},
-      {"tooltipPrint", IDS_PDF_TOOLTIP_PRINT},
       {"tooltipRotateCCW", IDS_PDF_TOOLTIP_ROTATE_CCW},
       {"tooltipThumbnails", IDS_PDF_TOOLTIP_THUMBNAILS},
       {"zoomTextInputAriaLabel", IDS_PDF_ZOOM_TEXT_INPUT_ARIA_LABEL},
@@ -246,14 +243,6 @@ base::DictValue GetPdfViewerStrings() {
   return dict;
 }
 
-bool IsPrintingEnabled(content::BrowserContext* context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ash::IsUserBrowserContext(context);
-#else
-  return true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-}
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
 bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
   PrefService* prefs =
@@ -321,16 +310,9 @@ std::string GetManifest() {
   return manifest_contents;
 }
 
-base::DictValue GetStrings(PdfViewerContext context) {
+base::DictValue GetStrings() {
   base::DictValue dict = GetCommonStrings();
-  if (context == PdfViewerContext::kPdfViewer ||
-      context == PdfViewerContext::kAll) {
-    dict.Merge(GetPdfViewerStrings());
-  }
-  if (context == PdfViewerContext::kPrintPreview ||
-      context == PdfViewerContext::kAll) {
-    // Nothing to do yet, since there are no PrintPreview-only strings.
-  }
+  dict.Merge(GetPdfViewerStrings());
   return dict;
 }
 
@@ -349,8 +331,6 @@ base::DictValue GetAdditionalData(content::BrowserContext* context) {
   dict.Set("pdfUseShowSaveFilePicker",
            base::FeatureList::IsEnabled(
                chrome_pdf::features::kPdfUseShowSaveFilePicker));
-  dict.Set("printingEnabled", IsPrintingEnabled(context));
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
   const bool use_ink2 = IsPdfInk2AnnotationsEnabled(context);
   dict.Set("pdfInk2Enabled", use_ink2);
@@ -368,41 +348,9 @@ base::DictValue GetAdditionalData(content::BrowserContext* context) {
   return dict;
 }
 
-std::vector<webui::ResourcePath> GetResources(PdfViewerContext context) {
-  static constexpr auto kExcludeFromPdfViewer =
-      std::to_array<std::string_view>({
-          "pdf/index_print.html",
-          "pdf/main_print.js",
-          "pdf/pdf_print_wrapper.js",
-      });
-  static constexpr auto kExcludeFromPrintPreview =
-      std::to_array<std::string_view>({
-          "pdf/index.html",
-          "pdf/main.js",
-          "pdf/pdf_viewer_wrapper.js",
-      });
-  base::span<const std::string_view> exclusions;
-
-  switch (context) {
-    case PdfViewerContext::kPdfViewer:
-      exclusions = kExcludeFromPdfViewer;
-      break;
-    case PdfViewerContext::kPrintPreview:
-      exclusions = kExcludeFromPrintPreview;
-      break;
-    default:
-      NOTREACHED();
-  }
-
-  std::vector<webui::ResourcePath> resources;
-  resources.reserve(std::size(kPdfResources));
-  for (const webui::ResourcePath& resource : kPdfResources) {
-    if (std::ranges::contains(exclusions, resource.path)) {
-      continue;
-    }
-    resources.push_back(resource);
-  }
-  return resources;
+std::vector<webui::ResourcePath> GetResources() {
+  return std::vector<webui::ResourcePath>(std::begin(kPdfResources),
+                                          std::end(kPdfResources));
 }
 
 bool MaybeDispatchSaveEvent(content::RenderFrameHost* embedder_host) {

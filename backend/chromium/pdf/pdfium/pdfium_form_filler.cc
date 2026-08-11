@@ -247,11 +247,6 @@ void PDFiumFormFiller::Form_ExecuteNamedAction(FPDF_FORMFILLINFO* param,
   EngineInIsolateScope engine_scope = GetEngineInIsolateScope(param);
   PDFiumEngine* engine = engine_scope.engine();
   std::string action(named_action);
-  if (action == "Print") {
-    engine->client_->Print();
-    return;
-  }
-
   int index = engine->last_focused_page_;
   /* Don't try to calculate the most visible page if we don't have a left click
      before this event (this code originally copied Form_GetCurrentPage which of
@@ -674,21 +669,15 @@ void PDFiumFormFiller::Form_Mail(IPDF_JSPLATFORM* param,
 }
 
 // static
-void PDFiumFormFiller::Form_Print(IPDF_JSPLATFORM* param,
-                                  FPDF_BOOL ui,
-                                  int start,
-                                  int end,
-                                  FPDF_BOOL silent,
-                                  FPDF_BOOL shrink_to_fit,
-                                  FPDF_BOOL print_as_image,
-                                  FPDF_BOOL reverse,
-                                  FPDF_BOOL annotations) {
-  // No way to pass the extra information to the print dialog using JavaScript.
-  // Just opening it is fine for now.
-  EngineInIsolateScope engine_scope = GetEngineInIsolateScope(param);
-  PDFiumEngine* engine = engine_scope.engine();
-  engine->client_->Print();
-}
+void PDFiumFormFiller::Form_Print(IPDF_JSPLATFORM*,
+                                  FPDF_BOOL,
+                                  int,
+                                  int,
+                                  FPDF_BOOL,
+                                  FPDF_BOOL,
+                                  FPDF_BOOL,
+                                  FPDF_BOOL,
+                                  FPDF_BOOL) {}
 
 // static
 void PDFiumFormFiller::Form_SubmitForm(IPDF_JSPLATFORM* param,

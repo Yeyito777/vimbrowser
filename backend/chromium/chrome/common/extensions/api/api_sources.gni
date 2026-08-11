@@ -138,12 +138,6 @@ if (enable_extensions) {
       "wm_desks_private.idl",
     ]
 
-    if (use_cups) {
-      schema_sources_ += [
-        "printing.idl",
-        "printing_metrics.idl",
-      ]
-    }
   }
 
   if (is_linux || is_win || is_chromeos) {

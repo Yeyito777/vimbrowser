@@ -172,8 +172,6 @@ if (enable_pdf) {
       "pdfium/pdfium_page.h",
       "pdfium/pdfium_permissions.cc",
       "pdfium/pdfium_permissions.h",
-      "pdfium/pdfium_print.cc",
-      "pdfium/pdfium_print.h",
       "pdfium/pdfium_range.cc",
       "pdfium/pdfium_range.h",
       "pdfium/pdfium_rotation.cc",
@@ -182,8 +180,6 @@ if (enable_pdf) {
       "pdfium/pdfium_text_fragment_finder.h",
       "pdfium/pdfium_unsupported_features.cc",
       "pdfium/pdfium_unsupported_features.h",
-      "preview_mode_client.cc",
-      "preview_mode_client.h",
       "region_data.cc",
       "region_data.h",
       "text_search.cc",
@@ -201,7 +197,6 @@ if (enable_pdf) {
     configs += [ ":strict" ]
 
     public_deps = [
-      "//printing/mojom",
       "//skia",
       "//v8",
     ]
@@ -252,13 +247,6 @@ if (enable_pdf) {
         "pdfium/pdfium_font_win.h",
       ]
       deps += [ "//third_party/re2" ]
-    }
-
-    if (is_chromeos) {
-      sources += [
-        "flatten_pdf_result.cc",
-        "flatten_pdf_result.h",
-      ]
     }
 
     if (enable_pdf_ink2) {
@@ -514,7 +502,6 @@ if (enable_pdf) {
       "pdfium/pdfium_form_filler_unittest.cc",
       "pdfium/pdfium_page_unittest.cc",
       "pdfium/pdfium_permissions_unittest.cc",
-      "pdfium/pdfium_print_unittest.cc",
       "pdfium/pdfium_range_unittest.cc",
       "pdfium/pdfium_test_base.cc",
       "pdfium/pdfium_test_base.h",

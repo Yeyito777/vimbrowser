@@ -306,12 +306,6 @@ IN_PROC_BROWSER_TEST_P(PDFExtensionJSTest, PostMessageProxy) {
   RunTestsInJsModule("post_message_proxy_test.js", "test.pdf");
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-IN_PROC_BROWSER_TEST_P(PDFExtensionJSTest, Printing) {
-  RunTestsInJsModule("printing_icon_test.js", "test.pdf");
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
 IN_PROC_BROWSER_TEST_P(PDFExtensionJSTest, ViewerFilePicker) {
   base::ScopedAllowBlockingForTesting allow_blocking;
 

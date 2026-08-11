@@ -38,10 +38,8 @@
 #include "pdf/pdfium/pdfium_engine_client.h"
 #include "pdf/pdfium/pdfium_form_filler.h"
 #include "pdf/pdfium/pdfium_page.h"
-#include "pdf/pdfium/pdfium_print.h"
 #include "pdf/pdfium/pdfium_range.h"
 #include "pdf/region_data.h"
-#include "printing/mojom/print.mojom-forward.h"
 #include "services/screen_ai/buildflags/buildflags.h"
 #include "third_party/pdfium/public/cpp/fpdf_scopers.h"
 #include "third_party/pdfium/public/fpdf_formfill.h"
@@ -62,10 +60,6 @@
 #include <windows.h>
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "pdf/flatten_pdf_result.h"
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
 #include "pdf/pdf_ink_ids.h"
 #include "pdf/pdf_ink_metrics_handler.h"
@@ -83,7 +77,6 @@ class WebInputEvent;
 class WebKeyboardEvent;
 class WebMouseEvent;
 class WebTouchEvent;
-struct WebPrintParams;
 }  // namespace blink
 
 #if BUILDFLAG(ENABLE_PDF_INK2)
@@ -122,8 +115,6 @@ enum class FontMappingMode {
 enum class DocumentPermission {
   kCopy,
   kCopyAccessible,
-  kPrintLowQuality,
-  kPrintHighQuality,
 };
 
 // Do one time initialization of the SDK.
@@ -226,11 +217,6 @@ class PDFiumEngine : public DocumentLoader::Client,
                      std::vector<gfx::Rect>& pending);
   void PostPaint();
   virtual bool HandleInputEvent(const blink::WebInputEvent& event);
-  void PrintBegin();
-  virtual std::vector<uint8_t> PrintPages(
-      base::span<const int> page_indices,
-      const blink::WebPrintParams& print_params);
-  void PrintEnd();
   void StartFind(const std::u16string& text, bool case_sensitive);
   bool SelectFindResult(bool forward);
   void StopFind();
@@ -336,16 +322,6 @@ class PDFiumEngine : public DocumentLoader::Client,
   // Set color / grayscale rendering modes.
   virtual void SetGrayscale(bool grayscale);
 
-  // Gets the PDF document's print scaling preference. True if the document can
-  // be scaled to fit.
-  bool GetPrintScaling();
-
-  // Returns number of copies to be printed.
-  int GetCopiesToPrint();
-
-  // Returns the duplex setting.
-  printing::mojom::DuplexMode GetDuplexMode();
-
   // Gets the size of the page in points for the page at `page_index`. Any
   // fractional portion of the size is retained in the result.  Returns
   // `std::nullopt` if the indicated page index is not available.
@@ -354,14 +330,6 @@ class PDFiumEngine : public DocumentLoader::Client,
   // Returns the uniform page size of the document in points. Returns
   // `std::nullopt` if the document has more than one page size.
   virtual std::optional<gfx::Size> GetUniformPageSizePoints();
-
-  // Append blank pages to make a 1-page document to a `num_pages` document.
-  // Always retain the first page data.
-  void AppendBlankPages(size_t num_pages);
-
-  // Append the first page of the document loaded with the `engine` to this
-  // document at page `index`.
-  void AppendPage(PDFiumEngine* engine, int index);
 
   virtual std::vector<uint8_t> GetSaveData();
 
@@ -874,14 +842,6 @@ class PDFiumEngine : public DocumentLoader::Client,
   // Returns whether the text selection was extended to `index`.
   bool ExtendSelectionByChar(const PageCharacterIndex& index);
 
-  std::vector<uint8_t> PrintPagesAsRasterPdf(
-      base::span<const int> page_indices,
-      const blink::WebPrintParams& print_params);
-
-  std::vector<uint8_t> PrintPagesAsPdf(
-      base::span<const int> page_indices,
-      const blink::WebPrintParams& print_params);
-
   // Checks if `page` has selected text in a form element. If so, sets that as
   // the plugin's text selection.
   void SetFormSelectedText(FPDF_FORMHANDLE form_handle, FPDF_PAGE page);
@@ -1367,8 +1327,6 @@ class PDFiumEngine : public DocumentLoader::Client,
   // When true, interactive portions of the content, such as forms and links,
   // are restricted.
   bool read_only_ = false;
-
-  PDFiumPrint print_;
 
   // The text caret on the PDF, excluding AcroForms. Once initialized, it will
   // not be destroyed until the destructor is called. The caret needs to store

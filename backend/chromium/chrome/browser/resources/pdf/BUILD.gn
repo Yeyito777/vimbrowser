@@ -13,7 +13,6 @@ build_webui("build") {
   static_files = [
     "index.css",
     "index.html",
-    "index_print.html",
     "pdf_embedder.css",
   ]
 
@@ -65,7 +64,6 @@ build_webui("build") {
     "navigator.ts",
     "open_pdf_params_parser.ts",
     "pdf_internal_plugin_wrapper.ts",
-    "pdf_print_wrapper.ts",
     "pdf_scripting_api.ts",
     "pdf_viewer_base.ts",
     "pdf_viewer_private_proxy.ts",
@@ -74,18 +72,6 @@ build_webui("build") {
     "swipe_detector.ts",
     "viewport.ts",
     "zoom_manager.ts",
-
-    # Files only used in Print Preview's PDF viewer UI.
-    "elements/viewer_page_indicator.html.ts",
-    "elements/viewer_page_indicator.ts",
-    "elements/viewer_zoom_button.html.ts",
-    "elements/viewer_zoom_button.ts",
-    "elements/viewer_zoom_toolbar.html.ts",
-    "elements/viewer_zoom_toolbar.ts",
-    "main_print.ts",
-    "pdf_viewer_print.html.ts",
-    "pdf_viewer_print.ts",
-    "toolbar_manager.ts",
   ]
 
   if (enable_pdf_ink2) {
@@ -150,12 +136,6 @@ build_webui("build") {
     "elements/viewer_toolbar.css",
     "pdf_viewer.css",
     "pdf_viewer_shared_style.css",
-
-    # Files only used in Print Preview's PDF Viewer UI.
-    "elements/viewer_page_indicator.css",
-    "elements/viewer_zoom_button.css",
-    "elements/viewer_zoom_toolbar.css",
-    "pdf_viewer_print.css",
   ]
 
   if (enable_pdf_ink2) {
@@ -224,15 +204,9 @@ build_webui("build") {
   optimize = optimize_webui
   if (optimize) {
     optimize_webui_host = "chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai"
-    optimize_webui_in_files = [
-      "pdf_viewer_wrapper.js",
-      "pdf_print_wrapper.js",
-    ]
+    optimize_webui_in_files = [ "pdf_viewer_wrapper.js" ]
     optimize_webui_excludes = [
       "browser_api.js",
-
-      # Exclude pdf_scripting_api so that Print Preview can import
-      # pdfCreateOutOfProcessPlugin without importing the entire PDF bundle.
       "pdf_scripting_api.js",
     ]
     extra_grdp_deps += [ ":build_excluded_grdp" ]
@@ -271,7 +245,6 @@ if (optimize_webui) {
     input_files = [
       "browser_api.js",
       "main.js",
-      "main_print.js",
       "pdf_scripting_api.js",
     ]
     input_files_base_dir =

@@ -83,8 +83,6 @@ if (enable_extensions) {
     "mime_handler_view_guest_internal.json",
     "mojo_private.webidl",
     "networking_private.webidl",
-    "printer_provider_internal.webidl",
-    "printer_provider.webidl",
     "scripts_internal.webidl",
     "socket.idl",
     "sockets_tcp_server.idl",

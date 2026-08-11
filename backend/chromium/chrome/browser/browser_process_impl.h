@@ -33,7 +33,6 @@
 #include "components/safe_browsing/buildflags.h"
 #include "extensions/buildflags/buildflags.h"
 #include "media/media_buildflags.h"
-#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
@@ -188,10 +187,6 @@ class BrowserProcessImpl : public BrowserProcess,
   void CreateDevToolsProtocolHandler() override;
   void CreateDevToolsAutoOpener() override;
   bool IsShuttingDown() override;
-  printing::PrintJobManager* print_job_manager() override;
-  printing::PrintPreviewDialogController* print_preview_dialog_controller()
-      override;
-  printing::BackgroundPrintingManager* background_printing_manager() override;
   supervised_user::DeviceParentalControls& device_parental_controls() override;
 #if !BUILDFLAG(IS_ANDROID)
   IntranetRedirectDetector* intranet_redirect_detector() override;
@@ -264,8 +259,6 @@ class BrowserProcessImpl : public BrowserProcess,
   void CreateIconManager();
   void CreateNotificationPlatformBridge();
   void CreateNotificationUIManager();
-  void CreatePrintPreviewDialogController();
-  void CreateBackgroundPrintingManager();
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void CreateSafeBrowsingService();
 #endif
@@ -353,14 +346,6 @@ class BrowserProcessImpl : public BrowserProcess,
   std::unique_ptr<DevToolsAutoOpener> devtools_auto_opener_;
 #endif
 
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  std::unique_ptr<printing::PrintPreviewDialogController>
-      print_preview_dialog_controller_;
-
-  std::unique_ptr<printing::BackgroundPrintingManager>
-      background_printing_manager_;
-#endif
-
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
 
@@ -401,11 +386,6 @@ class BrowserProcessImpl : public BrowserProcess,
   bool shutting_down_ = false;
 
   bool tearing_down_ = false;
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  // Ensures that all the print jobs are finished before closing the browser.
-  std::unique_ptr<printing::PrintJobManager> print_job_manager_;
-#endif
 
   base::CallbackListSubscription on_locale_changed_callback_subscription_;
 

@@ -251,8 +251,9 @@ if (is_linux) {
 # Set by GetRequiredArgs() in //cef/tools/gn_args.py.
 #
 
-# Enable support for Print Preview.
-assert(enable_print_preview)
+# Printing is intentionally excluded from vimbrowser. PDF viewing is controlled
+# separately by enable_pdf and remains enabled.
+assert(!enable_printing)
 
 # Enable support for Widevine CDM.
 assert(enable_widevine)
@@ -504,8 +505,6 @@ source_set("libcef_static") {
     "libcef/browser/browser_platform_delegate_lookup.h",
     "libcef/browser/browser_platform_delegate_popup.cc",
     "libcef/browser/browser_platform_delegate_printing.cc",
-    "libcef/browser/browser_platform_delegate_printing_prefs.cc",
-    "libcef/browser/browser_platform_delegate_printing_prefs.h",
     "libcef/browser/browser_platform_delegate_vimbrowser.cc",
     "libcef/browser/browser_platform_delegate_web_contents.cc",
     "libcef/browser/vimbrowser_browser_api.cc",
@@ -678,9 +677,6 @@ source_set("libcef_static") {
     "libcef/browser/prefs/renderer_prefs.cc",
     "libcef/browser/prefs/renderer_prefs.h",
     "libcef/browser/print_settings_impl.cc",
-    "libcef/browser/print_settings_impl.h",
-    "libcef/browser/printing/print_util.cc",
-    "libcef/browser/printing/print_util.h",
     "libcef/browser/process_util_impl.cc",
     "libcef/browser/request_context_handler_map.cc",
     "libcef/browser/request_context_handler_map.h",
@@ -914,7 +910,6 @@ source_set("libcef_static") {
     "//chrome:resources",
     "//chrome:strings",
     "//chrome/common:buildflags",
-    "//chrome/services/printing:lib",
     "//components/certificate_transparency",
     "//components/component_updater",
     "//components/content_settings/core/browser",
@@ -930,12 +925,7 @@ source_set("libcef_static") {
     "//components/pdf/renderer",
     "//components/plugins/renderer",
     "//components/pref_registry",
-    "//components/printing/browser",
-    "//components/printing/common",
-    "//components/printing/renderer",
     "//components/proxy_config",
-    "//components/services/print_compositor/public/cpp",
-    "//components/services/print_compositor/public/mojom",
     "//components/update_client",
     "//components/url_formatter",
     "//components/user_prefs",
@@ -1025,8 +1015,6 @@ source_set("libcef_static") {
       "libcef/browser/native/browser_platform_delegate_native_linux.h",
       "libcef/browser/osr/browser_platform_delegate_osr_linux.cc",
       "libcef/browser/osr/browser_platform_delegate_osr_linux.h",
-      "libcef/browser/printing/print_dialog_linux.cc",
-      "libcef/browser/printing/print_dialog_linux.h",
       "libcef/common/util_linux.h",
       "libcef/common/util_linux.cc",
     ]

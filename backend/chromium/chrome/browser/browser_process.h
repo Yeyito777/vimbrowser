@@ -122,12 +122,6 @@ class ChromeBrowserPolicyConnector;
 class PolicyService;
 }  // namespace policy
 
-namespace printing {
-class BackgroundPrintingManager;
-class PrintJobManager;
-class PrintPreviewDialogController;
-}  // namespace printing
-
 namespace resource_coordinator {
 class ResourceCoordinatorParts;
 class TabManager;
@@ -217,12 +211,6 @@ class BrowserProcess {
   virtual void CreateDevToolsAutoOpener() = 0;
 
   virtual bool IsShuttingDown() = 0;
-
-  virtual printing::PrintJobManager* print_job_manager() = 0;
-  virtual printing::PrintPreviewDialogController*
-  print_preview_dialog_controller() = 0;
-  virtual printing::BackgroundPrintingManager*
-  background_printing_manager() = 0;
 
   // Returns a handle to the manager of device parental controls, which
   // are independent from the profile. This handler is member of browser process

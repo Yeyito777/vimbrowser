@@ -216,33 +216,3 @@ export function createBrowserApi(): Promise<BrowserApi> {
         });
       });
 }
-
-/**
- * Creates a BrowserApi instance for an extension not running as a mime handler.
- * @return A promise to a BrowserApi instance constructed from the URL.
- */
-export function createBrowserApiForPrintPreview(): Promise<BrowserApi> {
-  const url = window.location.search.substring(1);
-  const streamInfo: StreamInfoWithExtras = {
-    streamUrl: url,
-    originalUrl: url,
-    responseHeaders: {},
-    embedded: window.parent !== window,
-    tabId: -1,
-    mimeType: '',
-  };
-  return new Promise<void>(function(resolve) {
-           if (!chrome.tabs) {
-             resolve();
-             return;
-           }
-           chrome.tabs.getCurrent(function(tab) {
-             streamInfo.tabId = tab!.id!;
-             streamInfo.tabUrl = tab!.url;
-             resolve();
-           });
-         })
-      .then(function() {
-        return BrowserApi.create(streamInfo, ZoomBehavior.NONE);
-      });
-}

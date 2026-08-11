@@ -16,7 +16,9 @@ if (is_android) {
 if (enable_printing_tests) {
   import("//build/config/ios/bundle_data_from_filelist.gni")
 } else {
-  assert(enable_printing)
+  # The PDF viewer reuses low-level metafile and geometry types from this target
+  # even when the browser printing feature is disabled.
+  assert(enable_printing || enable_pdf)
 }
 
 if (is_win || enable_print_preview) {

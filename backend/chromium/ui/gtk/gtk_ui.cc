@@ -72,8 +72,6 @@
 #include "ui/gtk/native_theme_gtk.h"
 #include "ui/gtk/nav_button_provider_gtk.h"
 #include "ui/gtk/os_settings_provider_gtk.h"
-#include "ui/gtk/printing/print_dialog_gtk.h"
-#include "ui/gtk/printing/printing_gtk_util.h"
 #include "ui/gtk/select_file_dialog_linux_gtk.h"
 #include "ui/gtk/settings_provider_gtk.h"
 #include "ui/gtk/window_frame_provider_gtk.h"
@@ -812,17 +810,6 @@ ui::TextEditCommand GtkUi::GetTextEditCommandForEvent(const ui::Event& event,
 
   return key_bindings_handler_->MatchEvent(event);
 }
-
-#if BUILDFLAG(ENABLE_PRINTING)
-std::unique_ptr<printing::PrintDialogLinuxInterface> GtkUi::CreatePrintDialog(
-    printing::PrintingContextLinux* context) {
-  return std::make_unique<PrintDialogGtk>(context, platform_.get());
-}
-
-gfx::Size GtkUi::GetPdfPaperSize(printing::PrintingContextLinux* context) {
-  return GetPdfPaperSizeDeviceUnitsGtk(context);
-}
-#endif
 
 void GtkUi::OnThemeChanged(GtkSettings* settings, GtkParamSpec* param) {
   colors_.clear();

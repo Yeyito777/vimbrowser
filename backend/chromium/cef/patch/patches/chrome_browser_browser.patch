@@ -152,14 +152,6 @@ index 00b9254990f2428a5e3205448d75bf7ede720454..b5cbb1ade0cd13eeddafc02a6256a60a
    # TODO(crbug.com/41437292): Remove this circular dependency.
    # Any circular includes must depend on the target "//chrome/browser:browser_public_dependencies".
    # These are all-platform circular includes.
-@@ -5345,6 +5358,7 @@ static_library("ui") {
-   if (enable_printing) {
-     deps += [
-       "//components/printing/browser",
-+      "//components/printing/common:mojo_interfaces",
-       "//printing",
-     ]
-   }
 diff --git chrome/browser/ui/browser.cc chrome/browser/ui/browser.cc
 index dd77f2fda3db2e7974003085a22981cad3f6c794..0df30170309e12185348f2a7b20d0e6b4a210499 100644
 --- chrome/browser/ui/browser.cc

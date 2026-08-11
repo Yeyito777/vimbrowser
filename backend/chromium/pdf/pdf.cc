@@ -62,14 +62,6 @@ void SetUseSkiaRendererPolicy(bool use_skia) {
   g_use_skia_renderer_enabled_by_policy = use_skia;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<FlattenPdfResult> CreateFlattenedPdf(
-    base::span<const uint8_t> input_buffer) {
-  ScopedSdkInitializer scoped_sdk_initializer(/*enable_v8=*/false);
-  return PDFiumEngineExports::Get()->CreateFlattenedPdf(input_buffer);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
 #if BUILDFLAG(IS_WIN)
 bool RenderPDFPageToDC(base::span<const uint8_t> pdf_buffer,
                        int page_index,
@@ -160,28 +152,6 @@ bool RenderPDFPageToBitmap(base::span<const uint8_t> pdf_buffer,
       options.render_device_type == RenderDeviceType::kPrinter);
   return engine_exports->RenderPDFPageToBitmap(pdf_buffer, page_index, settings,
                                                bitmap_buffer);
-}
-
-std::vector<uint8_t> ConvertPdfPagesToNupPdf(
-    std::vector<base::span<const uint8_t>> input_buffers,
-    size_t pages_per_sheet,
-    const gfx::Size& page_size,
-    const gfx::Rect& printable_area) {
-  ScopedSdkInitializer scoped_sdk_initializer(/*enable_v8=*/false);
-  PDFiumEngineExports* engine_exports = PDFiumEngineExports::Get();
-  return engine_exports->ConvertPdfPagesToNupPdf(
-      std::move(input_buffers), pages_per_sheet, page_size, printable_area);
-}
-
-std::vector<uint8_t> ConvertPdfDocumentToNupPdf(
-    base::span<const uint8_t> input_buffer,
-    size_t pages_per_sheet,
-    const gfx::Size& page_size,
-    const gfx::Rect& printable_area) {
-  ScopedSdkInitializer scoped_sdk_initializer(/*enable_v8=*/false);
-  PDFiumEngineExports* engine_exports = PDFiumEngineExports::Get();
-  return engine_exports->ConvertPdfDocumentToNupPdf(
-      input_buffer, pages_per_sheet, page_size, printable_area);
 }
 
 #if BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)

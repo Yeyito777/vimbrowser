@@ -16,7 +16,6 @@
 #include "cef/libcef/browser/hang_monitor.h"
 #include "cef/libcef/browser/image_impl.h"
 #include "cef/libcef/browser/navigation_entry_impl.h"
-#include "cef/libcef/browser/printing/print_util.h"
 #include "cef/libcef/browser/thread_util.h"
 #include "cef/libcef/common/frame_util.h"
 #include "cef/libcef/common/net/url_util.h"
@@ -664,19 +663,6 @@ void CefBrowserHostBase::DownloadImage(
 }
 
 void CefBrowserHostBase::Print() {
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(CEF_UIT, base::BindOnce(&CefBrowserHostBase::Print, this));
-    return;
-  }
-
-  auto web_contents = GetWebContents();
-  if (!web_contents) {
-    return;
-  }
-
-  const bool print_preview_disabled =
-      !platform_delegate_ || !platform_delegate_->IsPrintPreviewSupported();
-  print_util::Print(web_contents, print_preview_disabled);
 }
 
 void CefBrowserHostBase::PrintToPDF(const CefString& path,
@@ -688,12 +674,9 @@ void CefBrowserHostBase::PrintToPDF(const CefString& path,
     return;
   }
 
-  auto web_contents = GetWebContents();
-  if (!web_contents) {
-    return;
+  if (callback) {
+    callback->OnPdfPrintFinished(CefString(), false);
   }
-
-  print_util::PrintToPDF(web_contents, path, settings, callback);
 }
 
 void CefBrowserHostBase::Find(const CefString& searchText,

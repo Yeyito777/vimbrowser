@@ -60,8 +60,8 @@ blink::WebPlugin* CreateInternalPlugin(
   // Only create the in-process plugin within a PDF renderer.
   CHECK(IsPdfRenderer());
 
-  // Origins allowed to embed the internal plugin are trusted (the PDF viewer
-  // and Print Preview), and should never directly create the in-process plugin.
+  // Origins allowed to embed the internal plugin are trusted and should never
+  // directly create the in-process plugin.
   // Likewise, they should not share a process with this frame.
   //
   // See crbug.com/1259635 and crbug.com/1261758 for examples of previous bugs.

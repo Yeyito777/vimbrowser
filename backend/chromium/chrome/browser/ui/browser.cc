@@ -70,7 +70,6 @@
 #include "chrome/browser/policy/developer_tools_policy_handler.h"
 #include "chrome/browser/prefs/incognito_mode_prefs.h"
 #include "chrome/browser/preloading/preloading_prefs.h"
-#include "chrome/browser/printing/background_printing_manager.h"
 #include "chrome/browser/profiles/keep_alive/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/keep_alive/scoped_profile_keep_alive.h"
 #include "chrome/browser/profiles/profile.h"
@@ -274,10 +273,6 @@
 
 #if BUILDFLAG(ENABLE_CAPTIVE_PORTAL_DETECTION)
 #include "components/captive_portal/content/captive_portal_tab_helper.h"
-#endif
-
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "components/printing/browser/print_composite_client.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PAINT_PREVIEW)
@@ -3004,19 +2999,6 @@ void Browser::GetAIPageContent(
         return result->proto.SerializeAsString();
       }).Then(std::move(callback)));
 }
-
-#if BUILDFLAG(ENABLE_PRINTING)
-void Browser::PrintCrossProcessSubframe(
-    content::WebContents* web_contents,
-    const gfx::Rect& rect,
-    int document_cookie,
-    content::RenderFrameHost* subframe_host) const {
-  auto* client = printing::PrintCompositeClient::FromWebContents(web_contents);
-  if (client) {
-    client->PrintCrossProcessSubframe(rect, document_cookie, subframe_host);
-  }
-}
-#endif
 
 #if BUILDFLAG(ENABLE_PAINT_PREVIEW)
 void Browser::CapturePaintPreviewOfSubframe(

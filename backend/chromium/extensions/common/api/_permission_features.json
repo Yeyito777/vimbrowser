@@ -561,12 +561,6 @@
     "dependencies": ["behavior:imprivata_login_screen_extension"],
     "extension_types": ["login_screen_extension"]
   }],
-  "printerProvider": {
-    "channel": "stable",
-    "extension_types": ["extension", "platform_app" ],
-    // "desktop_android" is not supported.
-    "platforms": ["chromeos", "linux", "mac", "win"]
-  },
   // Note: runtime is not actually a permission, but some systems check these
   // values to verify restrictions.
   "runtime": {

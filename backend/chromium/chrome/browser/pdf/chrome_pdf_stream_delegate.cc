@@ -29,14 +29,8 @@
 #include "extensions/common/constants.h"
 #include "net/http/http_response_headers.h"
 #include "pdf/pdf_features.h"
-#include "printing/buildflags/buildflags.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "ui/gfx/color_palette.h"
 #include "url/gurl.h"
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "chrome/common/webui_url_constants.h"
-#endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
 
 namespace {
 
@@ -173,21 +167,6 @@ std::optional<GURL> ChromePdfStreamDelegate::MapToOriginalUrl(
         }
       }
     }
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  } else if (stream_url.GetWithEmptyPath() ==
-             chrome::kChromeUIUntrustedPrintURL) {
-    CHECK_EQ(embedder_frame->GetLastCommittedURL().GetHost(),
-             chrome::kChromeUIPrintHost);
-
-    // Print Preview doesn't have access to `chrome.mimeHandlerPrivate`, so just
-    // use values that match those set by `PDFViewerPPElement`.
-    original_url = stream_url;
-    info.background_color = gfx::kGoogleGrey300;
-    info.full_frame = false;
-    info.allow_javascript = false;
-    info.use_skia = ShouldEnableSkiaRenderer(contents);
-    info.allow_xfa_forms = false;
-#endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
   } else {
     return std::nullopt;
   }

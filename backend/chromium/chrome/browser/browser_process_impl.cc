@@ -79,8 +79,6 @@
 #include "chrome/browser/policy/chrome_browser_policy_connector.h"
 #include "chrome/browser/prefs/browser_prefs.h"
 #include "chrome/browser/prefs/chrome_pref_service_factory.h"
-#include "chrome/browser/printing/background_printing_manager.h"
-#include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/resource_coordinator/resource_coordinator_parts.h"
 #include "chrome/browser/serial/serial_policy_allowed_ports.h"
@@ -156,7 +154,6 @@
 #include "extensions/common/constants.h"
 #include "media/media_buildflags.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "ui/base/idle/idle.h"
@@ -234,10 +231,6 @@ void OnLocalStatePrefsLoaded();
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "chrome/browser/plugins/chrome_plugin_service_filter.h"
 #include "content/public/browser/plugin_service.h"
-#endif
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "chrome/browser/printing/print_preview_dialog_controller.h"
 #endif
 
 #if BUILDFLAG(ENABLE_SESSION_SERVICE)
@@ -362,10 +355,6 @@ void BrowserProcessImpl::Init() {
 #endif
 
   download_status_updater_ = std::make_unique<DownloadStatusUpdater>();
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  print_job_manager_ = std::make_unique<printing::PrintJobManager>();
-#endif
 
 #if !BUILDFLAG(IS_ANDROID)
   if (!base::FeatureList::IsEnabled(features::kInstantUsesSpareRenderer)) {
@@ -1061,43 +1050,6 @@ bool BrowserProcessImpl::IsShuttingDown() {
   return shutting_down_ || tearing_down_;
 }
 
-printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if BUILDFLAG(ENABLE_PRINTING)
-  return print_job_manager_.get();
-#else
-  NOTREACHED();
-#endif
-}
-
-printing::PrintPreviewDialogController*
-BrowserProcessImpl::print_preview_dialog_controller() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  if (!print_preview_dialog_controller_.get()) {
-    CreatePrintPreviewDialogController();
-  }
-  return print_preview_dialog_controller_.get();
-#else
-  NOTIMPLEMENTED();
-  return NULL;
-#endif
-}
-
-printing::BackgroundPrintingManager*
-BrowserProcessImpl::background_printing_manager() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  if (!background_printing_manager_) {
-    CreateBackgroundPrintingManager();
-  }
-  return background_printing_manager_.get();
-#else
-  NOTIMPLEMENTED();
-  return NULL;
-#endif
-}
-
 supervised_user::DeviceParentalControls&
 BrowserProcessImpl::device_parental_controls() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -1634,26 +1586,6 @@ void BrowserProcessImpl::CreateStatusTray() {
   status_tray_ = StatusTray::Create();
 }
 
-void BrowserProcessImpl::CreatePrintPreviewDialogController() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  DCHECK(!print_preview_dialog_controller_);
-  print_preview_dialog_controller_ =
-      std::make_unique<printing::PrintPreviewDialogController>();
-#else
-  NOTIMPLEMENTED();
-#endif
-}
-
-void BrowserProcessImpl::CreateBackgroundPrintingManager() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  DCHECK(!background_printing_manager_);
-  background_printing_manager_ =
-      std::make_unique<printing::BackgroundPrintingManager>();
-#else
-  NOTIMPLEMENTED();
-#endif
-}
-
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 void BrowserProcessImpl::CreateSafeBrowsingService() {
   DCHECK(!safe_browsing_service_);
@@ -1780,13 +1712,6 @@ void BrowserProcessImpl::Unpin() {
 #if !BUILDFLAG(IS_ANDROID)
   KeepAliveRegistry::GetInstance()->SetIsShuttingDown();
 #endif  // !BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  // Wait for the pending print jobs to finish. Don't do this later, since
-  // this might cause a nested run loop to run, and we don't want pending
-  // tasks to run once teardown has started.
-  print_job_manager_->Shutdown();
-#endif
 
 #if defined(LEAK_SANITIZER)
   // Check for memory leaks now, before we start shutting down threads. Doing

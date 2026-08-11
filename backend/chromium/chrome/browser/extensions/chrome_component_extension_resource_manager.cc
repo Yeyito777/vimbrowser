@@ -130,13 +130,11 @@ ChromeComponentExtensionResourceManager::Data::Data() {
 #endif
 
 #if BUILDFLAG(ENABLE_PDF)
-  AddComponentResourceEntries(pdf_extension_util::GetResources(
-      pdf_extension_util::PdfViewerContext::kPdfViewer));
+  AddComponentResourceEntries(pdf_extension_util::GetResources());
 
   // ResourceBundle is not always initialized in unit tests.
   if (ui::ResourceBundle::HasSharedInstance()) {
-    base::DictValue dict = pdf_extension_util::GetStrings(
-        pdf_extension_util::PdfViewerContext::kPdfViewer);
+    base::DictValue dict = pdf_extension_util::GetStrings();
 
     ui::TemplateReplacements pdf_viewer_replacements;
     ui::TemplateReplacementsFromDictionaryValue(dict, &pdf_viewer_replacements);
