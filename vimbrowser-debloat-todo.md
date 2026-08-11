@@ -32,6 +32,9 @@ committing and pushing the stage.
 
 - [x] Keep normal web browsing, navigation, tabs, windows, history, and
       bookmarks. These may be simplified later, not removed.
+- [x] Present ordinary web popups as tabs while preserving opener/WindowProxy
+      semantics; retain a native floating window only for document
+      Picture-in-Picture.
 - [x] Keep downloads.
 - [x] Keep uploads and trusted file chooser support.
 - [x] Keep cookies, localStorage, IndexedDB, Cache Storage, and other ordinary

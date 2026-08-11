@@ -147,6 +147,7 @@ struct VimbrowserHandleActivationState {
   CefRefPtr<CefBrowserHostBase> browser;
   CefBrowserHostBase::VimbrowserElementHandle handle;
   base::UnguessableToken activation_nonce;
+  bool grant_user_activation = false;
   std::shared_ptr<VimbrowserActivationCompletion> completion;
 };
 
@@ -212,7 +213,7 @@ void ActivatePreparedHandle(
       state);
   frame->GetAssociatedLocalFrame()->VimbrowserActivatePreparedElement(
       state->handle.document_token, state->handle.dom_node_id, expected_point,
-      state->activation_nonce,
+      state->activation_nonce, state->grant_user_activation,
       mojo::WrapCallbackWithDefaultInvokeIfNotRun(
           std::move(callback), Result::kBackendUnavailable));
 }
@@ -504,6 +505,7 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_handle(
     int browser_id,
     const char* capability,
     size_t capability_size,
+    bool grant_user_activation,
     uint64_t* activation_nonce_high,
     uint64_t* activation_nonce_low,
     VimbrowserElementActivationCallback callback,
@@ -540,6 +542,7 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_handle(
   state->browser = browser;
   state->handle = std::move(handle);
   state->activation_nonce = base::UnguessableToken::Create();
+  state->grant_user_activation = grant_user_activation;
   state->completion = std::make_shared<VimbrowserActivationCompletion>();
   state->completion->callback = callback;
   state->completion->user_data = user_data;

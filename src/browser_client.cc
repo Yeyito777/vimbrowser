@@ -1064,6 +1064,15 @@ bool BrowserClient::OnBeforePopup(
     return true;
   }
 
+  // Document Picture-in-Picture is intentionally a distinct floating media
+  // surface, not an ordinary web popup. Leave it on CEF's narrowly retained
+  // native PIP path; every other popup keeps its real browsing context but is
+  // attached to the vimbrowser tab strip by OnPopupBrowserViewCreated().
+  if (target_disposition == CEF_WOD_NEW_PICTURE_IN_PICTURE) {
+    client = nullptr;
+    return false;
+  }
+
   settings.tab_to_links = STATE_ENABLED;
   ApplyBrowserFontSettings(settings);
 

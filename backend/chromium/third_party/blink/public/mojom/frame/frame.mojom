@@ -1036,12 +1036,15 @@ interface LocalFrame {
 
   // Second half of exact-handle activation. Repeats node/document/local-hit
   // validation at the browser-approved point and dispatches the trusted click
-  // while the chooser nonce is scoped to that exact document.
+  // while the chooser nonce is scoped to that exact document. When requested by
+  // the privileged general-control IPC path, transient user activation is
+  // granted only after validation and immediately before dispatch.
   VimbrowserActivatePreparedElement(
       DocumentToken expected_document,
       int32 dom_node_id,
       gfx.mojom.PointF expected_point,
-      mojo_base.mojom.UnguessableToken activation_nonce)
+      mojo_base.mojom.UnguessableToken activation_nonce,
+      bool grant_user_activation)
       => (VimbrowserElementActivationResult result);
 
   // Notifies this frame to clear the focused element (if any).

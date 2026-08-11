@@ -55,6 +55,7 @@ extern "C" bool vimbrowser_activate_element_handle(
     int browser_id,
     const char* handle,
     size_t handle_size,
+    bool grant_user_activation,
     uint64_t* activation_nonce_high,
     uint64_t* activation_nonce_low,
     void (*callback)(void* user_data, int result, int match_count),
@@ -113,6 +114,60 @@ enum class VimbrowserElementActivationResult {
   kStaleNode = 13,
   kTargetDisabled = 14,
 };
+
+struct VimbrowserElementActivationError {
+  std::string_view code;
+  std::string_view message;
+};
+
+VimbrowserElementActivationError ElementActivationErrorForResult(
+    VimbrowserElementActivationResult result) {
+  switch (result) {
+    case VimbrowserElementActivationResult::kDocumentUnavailable:
+      return {"document_unavailable",
+              "tab document is unavailable for native activation"};
+    case VimbrowserElementActivationResult::kInvalidSelector:
+      return {"invalid_selector",
+              "activation target is not a valid CSS selector"};
+    case VimbrowserElementActivationResult::kTargetNotFound:
+      return {"target_not_found", "activation target was not found"};
+    case VimbrowserElementActivationResult::kAmbiguousTarget:
+      return {"ambiguous_target",
+              "activation target resolved to more than one element"};
+    case VimbrowserElementActivationResult::kTargetNotVisible:
+      return {"target_not_visible",
+              "activation target is not visible in the tab viewport"};
+    case VimbrowserElementActivationResult::kTargetObscured:
+      return {"target_obscured",
+              "activation target is covered or not the native hit-test target"};
+    case VimbrowserElementActivationResult::kActivationIgnored:
+      return {"activation_ignored",
+              "Blink did not dispatch the requested element activation"};
+    case VimbrowserElementActivationResult::kInvalidHandle:
+      return {"invalid_handle",
+              "inspected element handle is unknown or already consumed"};
+    case VimbrowserElementActivationResult::kExpiredHandle:
+      return {"expired_handle",
+              "inspected element handle expired before activation"};
+    case VimbrowserElementActivationResult::kStaleFrame:
+      return {"stale_frame", "inspected element frame is no longer active"};
+    case VimbrowserElementActivationResult::kStaleDocument:
+      return {"stale_document",
+              "inspected element document changed before activation"};
+    case VimbrowserElementActivationResult::kStaleNode:
+      return {"stale_node",
+              "inspected element was removed or replaced before activation"};
+    case VimbrowserElementActivationResult::kTargetDisabled:
+      return {"target_disabled",
+              "inspected element became disabled before activation"};
+    case VimbrowserElementActivationResult::kDispatched:
+      return {"", ""};
+    case VimbrowserElementActivationResult::kBackendUnavailable:
+    default:
+      return {"activation_backend_unavailable",
+              "custom Chromium element activation backend became unavailable"};
+  }
+}
 
 struct UploadFileRequest {
   uint64_t tab_id = 0;
@@ -1203,6 +1258,11 @@ struct InspectControlsContext {
   IpcReplyCallback reply;
 };
 
+struct ActivateControlContext {
+  uint64_t tab_id = 0;
+  IpcReplyCallback reply;
+};
+
 }  // namespace
 
 std::string BrowserWindow::ArmFileChooserUpload(
@@ -1371,6 +1431,7 @@ void BrowserWindow::StartFileChooserHandleUpload(
   auto* context_ptr = context.release();
   const bool started = vimbrowser_activate_element_handle(
       browser->GetIdentifier(), handle.data(), handle.size(),
+      false,
       &file_chooser_upload_.activation_nonce_high,
       &file_chooser_upload_.activation_nonce_low,
       +[](void* user_data, int result, int match_count) {
@@ -1501,79 +1562,10 @@ void BrowserWindow::FinishFileChooserElementActivation(uint64_t generation,
   ++file_chooser_upload_.generation;
   file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
   file_chooser_upload_.paths.clear();
-  switch (activation_result) {
-    case VimbrowserElementActivationResult::kDocumentUnavailable:
-      file_chooser_upload_.error_code = "document_unavailable";
-      file_chooser_upload_.error_message =
-          "tab document is unavailable for native activation";
-      break;
-    case VimbrowserElementActivationResult::kInvalidSelector:
-      file_chooser_upload_.error_code = "invalid_selector";
-      file_chooser_upload_.error_message =
-          "activation target is not a valid CSS selector";
-      break;
-    case VimbrowserElementActivationResult::kTargetNotFound:
-      file_chooser_upload_.error_code = "target_not_found";
-      file_chooser_upload_.error_message =
-          "activation selector did not match an element";
-      break;
-    case VimbrowserElementActivationResult::kAmbiguousTarget:
-      file_chooser_upload_.error_code = "ambiguous_target";
-      file_chooser_upload_.error_message =
-          "activation selector matched more than one element";
-      break;
-    case VimbrowserElementActivationResult::kTargetNotVisible:
-      file_chooser_upload_.error_code = "target_not_visible";
-      file_chooser_upload_.error_message =
-          "activation target is not visible in the tab viewport";
-      break;
-    case VimbrowserElementActivationResult::kTargetObscured:
-      file_chooser_upload_.error_code = "target_obscured";
-      file_chooser_upload_.error_message =
-          "activation target is covered or not the native hit-test target";
-      break;
-    case VimbrowserElementActivationResult::kActivationIgnored:
-      file_chooser_upload_.error_code = "activation_ignored";
-      file_chooser_upload_.error_message =
-          "Blink did not dispatch the requested element activation";
-      break;
-    case VimbrowserElementActivationResult::kInvalidHandle:
-      file_chooser_upload_.error_code = "invalid_handle";
-      file_chooser_upload_.error_message =
-          "inspected element handle is unknown or already consumed";
-      break;
-    case VimbrowserElementActivationResult::kExpiredHandle:
-      file_chooser_upload_.error_code = "expired_handle";
-      file_chooser_upload_.error_message =
-          "inspected element handle expired before activation";
-      break;
-    case VimbrowserElementActivationResult::kStaleFrame:
-      file_chooser_upload_.error_code = "stale_frame";
-      file_chooser_upload_.error_message =
-          "inspected element frame is no longer active";
-      break;
-    case VimbrowserElementActivationResult::kStaleDocument:
-      file_chooser_upload_.error_code = "stale_document";
-      file_chooser_upload_.error_message =
-          "inspected element document changed before activation";
-      break;
-    case VimbrowserElementActivationResult::kStaleNode:
-      file_chooser_upload_.error_code = "stale_node";
-      file_chooser_upload_.error_message =
-          "inspected element was removed or replaced before activation";
-      break;
-    case VimbrowserElementActivationResult::kTargetDisabled:
-      file_chooser_upload_.error_code = "target_disabled";
-      file_chooser_upload_.error_message =
-          "inspected element became disabled before activation";
-      break;
-    case VimbrowserElementActivationResult::kBackendUnavailable:
-    default:
-      file_chooser_upload_.error_code = "activation_backend_unavailable";
-      file_chooser_upload_.error_message =
-          "custom Chromium element activation backend became unavailable";
-      break;
-  }
+  const VimbrowserElementActivationError error =
+      ElementActivationErrorForResult(activation_result);
+  file_chooser_upload_.error_code = error.code;
+  file_chooser_upload_.error_message = error.message;
   CefRefPtr<CefFileDialogCallback> chooser_callback =
       std::move(file_chooser_upload_.chooser_callback);
   if (chooser_callback) {
@@ -3227,6 +3219,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  scroll-tab <tabid> <dy> [count]\n"
            "  frame-tree <tabid>\n"
            "  inspect-controls <tabid> <base64-v1-json-query>\n"
+           "  activate-control <tabid> <exact-node-handle>\n"
            "  key <[ctrl+][shift+][alt+][cmd+]key>\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
@@ -3403,6 +3396,75 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       return;
     }
     HandleInspectControlsIpcCommand(tab_id, argv[2], std::move(reply));
+    return;
+  }
+
+  if (command == "activate-control") {
+    if (argv.size() != 3) {
+      reply(UploadFileErrorJson(
+          "invalid_usage",
+          "usage: activate-control <tabid> <exact-node-handle>"));
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    const std::string& handle = argv[2];
+    if (!handle.starts_with("eh1_") || handle.size() > 128) {
+      reply(UploadFileErrorJson("invalid_handle",
+                                "inspected element handle is malformed"));
+      return;
+    }
+    std::string browser_error;
+    CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &browser_error);
+    if (!browser || !browser->GetHost()) {
+      reply(UploadFileErrorJson("tab_unavailable",
+                                "tab has no live browser backend"));
+      return;
+    }
+
+    auto* context = new ActivateControlContext{tab_id, std::move(reply)};
+    uint64_t ignored_nonce_high = 0;
+    uint64_t ignored_nonce_low = 0;
+    const bool started = vimbrowser_activate_element_handle(
+        browser->GetIdentifier(), handle.data(), handle.size(), true,
+        &ignored_nonce_high, &ignored_nonce_low,
+        +[](void* user_data, int result, int match_count) {
+          std::unique_ptr<ActivateControlContext> context(
+              static_cast<ActivateControlContext*>(user_data));
+          if (!context || !context->reply) {
+            return;
+          }
+          const auto activation_result =
+              static_cast<VimbrowserElementActivationResult>(result);
+          if (activation_result !=
+              VimbrowserElementActivationResult::kDispatched) {
+            const VimbrowserElementActivationError error =
+                ElementActivationErrorForResult(activation_result);
+            context->reply(UploadFileErrorJson(
+                error.code, error.message, -1,
+                activation_result ==
+                        VimbrowserElementActivationResult::kAmbiguousTarget
+                    ? match_count
+                    : -1));
+            return;
+          }
+          std::ostringstream out;
+          out << "{\"ok\":true,\"tabid\":" << context->tab_id
+              << ",\"target\":{\"kind\":\"handle\"},"
+                 "\"activation\":{\"dispatched\":true,"
+                 "\"user_activation\":true}}";
+          context->reply(out.str());
+        },
+        context);
+    if (!started) {
+      IpcReplyCallback startup_reply = std::move(context->reply);
+      delete context;
+      startup_reply(UploadFileErrorJson(
+          "activation_backend_unavailable",
+          "custom Chromium element activation backend is unavailable"));
+    }
     return;
   }
 

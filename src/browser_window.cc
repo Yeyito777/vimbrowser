@@ -500,6 +500,12 @@ bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient *client,
 }
 
 void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
+  pending_popups_.erase(
+      std::remove_if(pending_popups_.begin(), pending_popups_.end(),
+                     [client](const PendingPopup& popup) {
+                       return popup.client.get() == client;
+                     }),
+      pending_popups_.end());
   CancelFileChooserUploadForClient(client, "tab_closed",
                                    "armed tab closed before file selection");
   CancelMediaPermissionRequestsForClient(client);
@@ -719,7 +725,7 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
 
   const bool hint_open_tab = native_hints_active_ && ActiveTab() &&
                              ActiveTab()->client.get() == client;
-  const uint64_t opener_tab_id = hint_open_tab ? ActiveTab()->id : 0;
+  const uint64_t opener_tab_id = source->id;
   const std::string source_context = source->context;
 
   if (!popup_client) {
@@ -737,15 +743,27 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
   }
 
   pending_popups_.push_back({popup_client, popup_id, target_url, activate,
-                             opener_tab_id, hint_open_tab, source_context});
+                             opener_tab_id, true, source_context});
   return false;
 }
 
-void BrowserWindow::OnClientBeforePopupAborted(BrowserClient *, int popup_id) {
+void BrowserWindow::OnClientBeforePopupAborted(BrowserClient* client,
+                                               int popup_id) {
+  uint64_t opener_tab_id = 0;
+  for (const Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      opener_tab_id = tab.id;
+      break;
+    }
+  }
   pending_popups_.erase(std::remove_if(pending_popups_.begin(),
                                        pending_popups_.end(),
-                                       [popup_id](const PendingPopup &popup) {
-                                         return popup.popup_id == popup_id;
+                                       [popup_id, opener_tab_id](
+                                           const PendingPopup& popup) {
+                                         return popup.popup_id == popup_id &&
+                                                (opener_tab_id == 0 ||
+                                                 popup.opener_tab_id ==
+                                                     opener_tab_id);
                                        }),
                         pending_popups_.end());
 }
@@ -832,18 +850,38 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
   }
 
   CefRefPtr<CefBrowser> popup_browser = popup_browser_view->GetBrowser();
-  CefRefPtr<CefClient> cef_client = popup_browser && popup_browser->GetHost()
-                                        ? popup_browser->GetHost()->GetClient()
-                                        : nullptr;
-  if (!cef_client) {
+  if (!popup_browser) {
     return false;
   }
 
+  // Chrome-style CEF reaches this callback after OnAfterCreated, so browser
+  // identity is the strongest correlation. Alloy reaches it earlier, before the
+  // pending BrowserClient has a browser; in that case correlate by the exact
+  // opener BrowserView and request order. Do not rely solely on CefClient wrapper
+  // identity because the client crosses CEF's C/C++ API boundary.
   auto pending = std::find_if(
       pending_popups_.begin(), pending_popups_.end(),
-      [cef_client](const PendingPopup &popup) {
-        return static_cast<CefClient *>(popup.client.get()) == cef_client.get();
+      [popup_browser](const PendingPopup &popup) {
+        CefRefPtr<CefBrowser> candidate =
+            popup.client ? popup.client->browser() : nullptr;
+        return candidate && candidate->IsSame(popup_browser);
       });
+  if (pending == pending_popups_.end()) {
+    uint64_t callback_opener_tab_id = 0;
+    for (const Tab& tab : tabs_) {
+      if (tab.view && browser_view && tab.view->IsSame(browser_view)) {
+        callback_opener_tab_id = tab.id;
+        break;
+      }
+    }
+    if (callback_opener_tab_id != 0) {
+      pending = std::find_if(
+          pending_popups_.begin(), pending_popups_.end(),
+          [callback_opener_tab_id](const PendingPopup& popup) {
+            return popup.opener_tab_id == callback_opener_tab_id;
+          });
+    }
+  }
   if (pending == pending_popups_.end()) {
     return false;
   }

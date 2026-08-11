@@ -789,6 +789,14 @@ void BrowserWindow::CloseTabBackend(Tab& tab) {
   if (tab.id != 0 && tab.id == devtools_opener_tab_id_) {
     CloseDevTools();
   }
+  pending_popups_.erase(
+      std::remove_if(
+          pending_popups_.begin(), pending_popups_.end(),
+          [&tab](const PendingPopup& popup) {
+            return popup.opener_tab_id == tab.id ||
+                   popup.client.get() == tab.client.get();
+          }),
+      pending_popups_.end());
   if (tab.view) {
     tab.view->SetVisible(false);
     if (content_inner_panel_) {

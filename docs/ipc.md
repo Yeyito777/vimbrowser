@@ -482,6 +482,36 @@ navigation, node removal/replacement, disabling, visibility changes, local hit
 changes, and OOPIF compositor-target mismatches. The internal activation point
 is selected by Blink and never crosses the public IPC boundary.
 
+#### `activate-control <tabid> <exact-node-handle>`
+
+Consumes one `eh1_...` handle returned by `inspect-controls` and performs one
+privileged native click. This is the general control-activation path for actions
+that require Chromium transient user activation, such as an OAuth button whose
+handler calls `window.open()`. It does not accept selectors, indexes, coordinates,
+or arbitrary JavaScript.
+
+Before granting activation, Chromium repeats all capability checks and verifies
+the exact node is still connected, enabled, strictly visible, and the native hit
+target in both its local frame and the browser compositor. Only then does Blink
+grant `kInteraction` user activation immediately around the click dispatch. The
+handle is consumed before validation, so failures and successful actions are both
+one-shot. Ordinary `element.click()`, synthetic key events, and unrelated page
+script remain untrusted and subject to Chromium's popup blocker.
+
+```sh
+vimbrowser-cli frame-tree @active --pretty
+vimbrowser-cli inspect-controls @active --frame FRAME_ID \
+  --role button --name-exact 'Log in with Google' --require-one --pretty
+vimbrowser-cli activate-control @active eh1_HANDLE_FROM_INSPECTION
+```
+
+Ordinary web popups retain their real Chromium browsing context—including
+`window.opener`, the `WindowProxy` returned by `window.open()`, `postMessage()`,
+named-window reuse, POST targets, and `window.close()`—but vimbrowser embeds that
+BrowserView as a tab adjacent to its opener. CEF is not allowed to fall back to an
+unmanaged top-level web window if tab capture fails; the popup is closed instead.
+Document Picture-in-Picture remains the sole native floating browsing surface.
+
 #### `upload-file <tabid> <base64-v1-json-payload>`
 
 Securely assigns explicit local files to one `<input type=file>` or atomically

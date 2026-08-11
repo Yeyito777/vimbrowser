@@ -1010,6 +1010,7 @@ void LocalFrameMojoHandler::VimbrowserActivatePreparedElement(
     int32_t dom_node_id,
     const gfx::PointF& expected_point,
     const base::UnguessableToken& activation_nonce,
+    bool grant_user_activation,
     VimbrowserActivatePreparedElementCallback callback) {
   using Result = mojom::blink::VimbrowserElementActivationResult;
   Element* element = nullptr;
@@ -1022,6 +1023,15 @@ void LocalFrameMojoHandler::VimbrowserActivatePreparedElement(
   }
 
   Document* document = GetDocument();
+  if (grant_user_activation) {
+    // This browser-process-only operation is reached only after a short-lived,
+    // one-shot exact-node capability has been consumed and the element has
+    // passed renderer, ancestor, and compositor hit testing. Grant activation
+    // for this single validated native action instead of weakening Blink's
+    // popup policy for script-generated clicks in general.
+    frame_->NotifyUserActivation(
+        mojom::blink::UserActivationNotificationType::kInteraction);
+  }
   ScopedVimbrowserFileActivationNonce nonce_scope(*document, activation_nonce);
   const gfx::RectF exact_point_rect(expected_point.x() - 0.5f,
                                     expected_point.y() - 0.5f, 1.0f, 1.0f);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Isolated end-to-end coverage for the upload-file IPC command.
+"""Isolated end-to-end coverage for trusted control and upload IPC.
 
 This test starts its own profile and browser process. It intentionally refuses
 to run unless the caller marks the display as a nested X11 environment; use the
@@ -44,6 +44,11 @@ UPLOAD_FORM = """<!doctype html>
 <output id="dynamic-result">idle</output>
 <button id="fsa-button">Browse FSA résumé</button>
 <output id="fsa-result">idle</output>
+<hr>
+<button id="oauth-button">Log in with Google</button>
+<output id="oauth-result">idle</output>
+<button id="document-pip-button">Open document picture-in-picture</button>
+<output id="document-pip-result">idle</output>
 <script>
 document.querySelector('#dynamic-button').addEventListener('click', () => {
   const input = document.createElement('input');
@@ -76,6 +81,58 @@ document.querySelector('#fsa-button').addEventListener('click', async () => {
     result.textContent = error.name;
   }
 });
+window.oauthMessages = [];
+window.oauthOpenCount = 0;
+window.oauthWindowReturned = false;
+window.oauthActivationObserved = false;
+window.oauthReusedWindow = false;
+window.addEventListener('message', event => {
+  if (event.origin !== location.origin) return;
+  window.oauthMessages.push(event.data);
+  document.querySelector('#oauth-result').textContent = String(event.data);
+});
+document.querySelector('#oauth-button').addEventListener('click', () => {
+  window.oauthActivationObserved = navigator.userActivation.isActive;
+  const popup = window.open('/oauth-child.html', 'vimbrowser-oauth-test',
+                            'popup,width=520,height=640');
+  ++window.oauthOpenCount;
+  window.oauthWindowReturned = popup !== null;
+  if (!window.oauthFirstWindow && popup) window.oauthFirstWindow = popup;
+  window.oauthReusedWindow = !!popup && popup === window.oauthFirstWindow;
+  window.oauthPopup = popup;
+});
+document.querySelector('#document-pip-button').addEventListener('click', async () => {
+  const result = document.querySelector('#document-pip-result');
+  try {
+    window.documentPipWindow = await documentPictureInPicture.requestWindow({
+      width: 360,
+      height: 240,
+    });
+    window.documentPipWindow.document.body.textContent = 'PIP fixture';
+    result.textContent = 'opened';
+  } catch (error) {
+    result.textContent = error.name;
+  }
+});
+</script>
+"""
+
+OAUTH_CHILD = """<!doctype html>
+<meta charset="utf-8">
+<title>OAuth child fixture</title>
+<h1>OAuth child</h1>
+<output id="child-result">ready</output>
+<script>
+window.childHasOpener = window.opener !== null;
+window.childMessages = [];
+window.addEventListener('message', event => {
+  if (event.origin !== location.origin) return;
+  window.childMessages.push(event.data);
+  document.querySelector('#child-result').textContent = String(event.data);
+  if (event.data === 'ping') window.opener.postMessage('pong', location.origin);
+  if (event.data === 'close') window.close();
+});
+if (window.opener) window.opener.postMessage('ready', location.origin);
 </script>
 """
 
@@ -91,6 +148,10 @@ OOPIF_PICKER = """<!doctype html>
   <h2>Upload files from your computer</h2>
   <button id="computer-browse">Browse</button>
   <output id="computer-result">idle</output>
+</section>
+<section id="oauth-section">
+  <h2>Cross-origin authentication</h2>
+  <button id="oopif-oauth">Open OAuth popup</button>
 </section>
 <script>
 function installPicker(buttonId, resultId) {
@@ -114,6 +175,13 @@ function installPicker(buttonId, resultId) {
 }
 installPicker('#drive-browse', '#drive-result');
 installPicker('#computer-browse', '#computer-result');
+document.querySelector('#oopif-oauth').addEventListener('click', () => {
+  window.oopifActivationObserved = navigator.userActivation.isActive;
+  window.oopifPopup = window.open('/oauth-child.html',
+                                  'vimbrowser-oopif-oauth-test',
+                                  'popup,width=480,height=600');
+  window.oopifPopupReturned = window.oopifPopup !== null;
+});
 </script>
 """
 
@@ -191,6 +259,8 @@ class UploadFileEndToEndTests(unittest.TestCase):
         cls.picker.write_text(OOPIF_PICKER, encoding="utf-8")
         cls.same_process_picker = cls.root / "same-process-picker.html"
         cls.same_process_picker.write_text(SAME_PROCESS_PICKER, encoding="utf-8")
+        cls.oauth_child = cls.root / "oauth-child.html"
+        cls.oauth_child.write_text(OAUTH_CHILD, encoding="utf-8")
         cls.first = cls.root / "first file.txt"
         cls.second = cls.root / "second.txt"
         cls.bad_type = cls.root / "not-text.png"
@@ -254,10 +324,12 @@ class UploadFileEndToEndTests(unittest.TestCase):
             raise RuntimeError("isolated vimbrowser IPC socket did not become ready")
 
         ready_deadline = time.monotonic() + 10
+        last_ready_result: subprocess.CompletedProcess[str] | None = None
         while time.monotonic() < ready_deadline:
             result = cls.run_cli(
                 "js", str(cls.tabid), "document.readyState",
             )
+            last_ready_result = result
             if result.returncode == 0:
                 try:
                     if json.loads(result.stdout).get("result") == "complete":
@@ -265,7 +337,12 @@ class UploadFileEndToEndTests(unittest.TestCase):
                 except json.JSONDecodeError:
                     pass
             time.sleep(0.05)
-        raise RuntimeError("controlled upload form did not finish loading")
+        raise RuntimeError(
+            "controlled upload form did not finish loading; "
+            f"last stdout={getattr(last_ready_result, 'stdout', '')!r}, "
+            f"stderr={getattr(last_ready_result, 'stderr', '')!r}\n"
+            f"browser log:\n{cls.browser_log_tail()}"
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -291,16 +368,23 @@ class UploadFileEndToEndTests(unittest.TestCase):
     def run_cli(cls, *args: str) -> subprocess.CompletedProcess[str]:
         if not args:
             raise ValueError("CLI command is required")
+        command_args = list(args)
+        stdin_payload: str | None = None
+        if command_args[0] in {"js", "frame-js"}:
+            if len(command_args) < 3:
+                raise ValueError(f"{command_args[0]} test call requires a payload")
+            stdin_payload = command_args.pop()
         return subprocess.run(
             [
                 str(CLI),
-                args[0],
+                command_args[0],
                 "--socket",
                 str(cls.socket_path),
                 "--timeout",
                 "5",
-                *args[1:],
+                *command_args[1:],
             ],
+            input=stdin_payload,
             capture_output=True,
             text=True,
             timeout=8,
@@ -315,7 +399,7 @@ class UploadFileEndToEndTests(unittest.TestCase):
         path = getattr(cls, "browser_log_path", None)
         if not path or not path.exists():
             return ""
-        return path.read_text(encoding="utf-8", errors="replace")[-8192:]
+        return path.read_text(encoding="utf-8", errors="replace")[-32768:]
 
     def upload(self, target: str, *paths: Path) -> subprocess.CompletedProcess[str]:
         return self.run_cli(
@@ -353,6 +437,57 @@ class UploadFileEndToEndTests(unittest.TestCase):
         result = self.run_cli("frame-tree", str(self.tabid))
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
+
+    def tabs(self) -> dict:
+        result = self.run_cli("tabs", "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def wait_for_tab_count(self, expected: int, timeout: float = 5) -> dict:
+        deadline = time.monotonic() + timeout
+        payload = {}
+        while time.monotonic() < deadline:
+            payload = self.tabs()
+            if len(payload.get("tabs", [])) == expected:
+                return payload
+            time.sleep(0.05)
+        self.fail(f"timed out waiting for {expected} tabs: {payload!r}")
+
+    def wait_for_window_count(self, expected: int, timeout: float = 5) -> list[dict]:
+        deadline = time.monotonic() + timeout
+        windows: list[dict] = []
+        while time.monotonic() < deadline:
+            windows = self.xenv_windows()
+            if len(windows) == expected:
+                return windows
+            time.sleep(0.05)
+        self.fail(f"timed out waiting for {expected} native windows: {windows!r}")
+
+    def inspect_exact_control(self, frame_id: str, name: str) -> str:
+        result = self.run_cli(
+            "inspect-controls", str(self.tabid), "--frame", frame_id,
+            "--role", "button", "--name-exact", name, "--require-one",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        controls = json.loads(result.stdout)["inspection"]["controls"]
+        self.assertEqual(len(controls), 1)
+        return controls[0]["handle"]
+
+    def activate_control(self, handle: str) -> subprocess.CompletedProcess[str]:
+        return self.run_cli("activate-control", str(self.tabid), handle)
+
+    def xenv_windows(self) -> list[dict]:
+        if not XENV_INSTANCE:
+            self.skipTest("--xenv-instance is required for native-window assertions")
+        result = subprocess.run(
+            ["xenv", "window", "-e", XENV_INSTANCE, "list", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)["windows"]
 
     def frame_id_for_url(self, url: str, *, out_of_process: bool) -> str:
         deadline = time.monotonic() + 5
@@ -669,6 +804,143 @@ JSON.stringify((() => {{
         else:
             self.fail("exact same-process frame handle did not upload")
 
+    def test_popup_a_untrusted_dom_click_remains_blocked(self) -> None:
+        # Earlier chooser tests intentionally generate real input. A navigation
+        # clears any residual transient activation so this assertion measures a
+        # plain DOM click rather than inheriting an unrelated physical gesture.
+        reloaded = self.run_cli("reload", str(self.tabid))
+        self.assertEqual(reloaded.returncode, 0, reloaded.stderr)
+        self.wait_for_js_result("document.readyState", "complete")
+        self.wait_for_js_result("navigator.userActivation.isActive", False)
+        before = len(self.tabs()["tabs"])
+        result = self.js_result(
+            "document.querySelector('#oauth-button').click();"
+            "JSON.stringify({returned:window.oauthWindowReturned,"
+            "activation:window.oauthActivationObserved})"
+        )
+        state = json.loads(result)
+        self.assertFalse(state["activation"])
+        self.assertFalse(state["returned"])
+        self.assertEqual(len(self.tabs()["tabs"]), before)
+
+    def test_popup_b_trusted_exact_activation_preserves_oauth_semantics(self) -> None:
+        before_tabs = self.tabs()
+        before_count = len(before_tabs["tabs"])
+        before_windows = self.xenv_windows()
+        main_frame_id = self.frame_tree()["main_frame_id"]
+        initial_open_count = self.js_result("window.oauthOpenCount")
+
+        first_handle = self.inspect_exact_control(
+            main_frame_id, "Log in with Google"
+        )
+        activated = self.activate_control(first_handle)
+        self.assertEqual(
+            activated.returncode, 0,
+            activated.stderr + "\n" + activated.stdout + "\n" +
+            self.browser_log_tail(),
+        )
+        activation_payload = json.loads(activated.stdout)
+        self.assertTrue(activation_payload["activation"]["dispatched"])
+        self.assertTrue(activation_payload["activation"]["user_activation"])
+
+        opened = self.wait_for_tab_count(before_count + 1)
+        popup_tabs = [
+            tab for tab in opened["tabs"]
+            if tab["id"] != self.tabid and "oauth-child.html" in tab["url"]
+        ]
+        self.assertEqual(len(popup_tabs), 1, opened)
+        popup_tabid = int(popup_tabs[0]["id"])
+        self.assertEqual(len(self.xenv_windows()), len(before_windows))
+        self.assertTrue(self.js_result("window.oauthWindowReturned"))
+        self.assertTrue(self.js_result("window.oauthActivationObserved"))
+        self.wait_for_js_result("window.oauthMessages.includes('ready')", True)
+
+        child_opener = self.run_cli(
+            "js", str(popup_tabid), "window.childHasOpener"
+        )
+        self.assertEqual(child_opener.returncode, 0, child_opener.stderr)
+        self.assertTrue(json.loads(child_opener.stdout)["result"])
+        self.assertTrue(self.js_result(
+            "window.oauthPopup.postMessage('ping', location.origin); true"
+        ))
+        self.wait_for_js_result("window.oauthMessages.includes('pong')", True)
+
+        # Reopening the same named popup must reuse the same tab/WindowProxy
+        # instead of creating a second tab or a native window.
+        second_handle = self.inspect_exact_control(
+            main_frame_id, "Log in with Google"
+        )
+        second = self.activate_control(second_handle)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.wait_for_js_result("window.oauthOpenCount", initial_open_count + 2)
+        self.assertTrue(self.js_result("window.oauthReusedWindow"))
+        self.assertEqual(len(self.tabs()["tabs"]), before_count + 1)
+        self.assertEqual(len(self.xenv_windows()), len(before_windows))
+
+        replay = self.activate_control(second_handle)
+        self.assertEqual(replay.returncode, 1)
+        self.assertEqual(json.loads(replay.stdout)["error"]["code"],
+                         "invalid_handle")
+
+        self.assertTrue(self.js_result(
+            "window.oauthPopup.postMessage('close', location.origin); true"
+        ))
+        closed = self.wait_for_tab_count(before_count)
+        self.assertEqual(closed["active_tabid"], self.tabid)
+        self.assertEqual(len(self.xenv_windows()), len(before_windows))
+
+    def test_popup_c_oopif_exact_activation_opens_a_tab(self) -> None:
+        before_count = len(self.tabs()["tabs"])
+        before_windows = self.xenv_windows()
+        frame_id = self.picker_frame_id()
+        handle = self.inspect_exact_control(frame_id, "Open OAuth popup")
+        activated = self.activate_control(handle)
+        self.assertEqual(activated.returncode, 0, activated.stderr)
+
+        opened = self.wait_for_tab_count(before_count + 1)
+        popup_tabs = [
+            tab for tab in opened["tabs"] if "oauth-child.html" in tab["url"]
+        ]
+        self.assertEqual(len(popup_tabs), 1, opened)
+        popup_tabid = int(popup_tabs[0]["id"])
+        self.assertEqual(len(self.xenv_windows()), len(before_windows))
+        self.assertTrue(self.frame_js_result(frame_id, "window.oopifPopupReturned"))
+        self.assertTrue(
+            self.frame_js_result(frame_id, "window.oopifActivationObserved")
+        )
+        child_opener = self.run_cli(
+            "js", str(popup_tabid), "window.childHasOpener"
+        )
+        self.assertEqual(child_opener.returncode, 0, child_opener.stderr)
+        self.assertTrue(json.loads(child_opener.stdout)["result"])
+
+        self.assertTrue(self.frame_js_result(
+            frame_id,
+            "window.oopifPopup.postMessage('close', location.origin); true",
+        ))
+        self.wait_for_tab_count(before_count)
+        self.assertEqual(len(self.xenv_windows()), len(before_windows))
+
+    def test_popup_d_document_pip_remains_a_native_media_surface(self) -> None:
+        if not self.js_result("typeof documentPictureInPicture !== 'undefined'"):
+            self.skipTest("Document Picture-in-Picture is unavailable")
+        before_tabs = len(self.tabs()["tabs"])
+        before_windows = len(self.xenv_windows())
+        main_frame_id = self.frame_tree()["main_frame_id"]
+        handle = self.inspect_exact_control(
+            main_frame_id, "Open document picture-in-picture"
+        )
+        activated = self.activate_control(handle)
+        self.assertEqual(activated.returncode, 0, activated.stderr)
+        self.wait_for_js_result(
+            "document.querySelector('#document-pip-result').textContent",
+            "opened",
+        )
+        self.assertEqual(len(self.tabs()["tabs"]), before_tabs)
+        self.wait_for_window_count(before_windows + 1)
+        self.assertTrue(self.js_result("window.documentPipWindow.close(); true"))
+        self.wait_for_window_count(before_windows)
+
     def test_atomic_activation_accepts_a_hit_child_of_selected_control(self) -> None:
         name = "child-hit"
         self.install_atomic_picker_fixture(name, child_target=True)
@@ -758,7 +1030,7 @@ JSON.stringify((() => {{
         self.assertEqual(ambiguous.returncode, 1)
         payload = json.loads(ambiguous.stdout)
         self.assertEqual(payload["error"]["code"], "ambiguous_target")
-        self.assertEqual(payload["error"]["match_count"], 2)
+        self.assertEqual(payload["error"]["match_count"], 4)
 
     def test_atomic_activation_reports_control_without_chooser(self) -> None:
         result = self.upload("activate:#ordinary", self.resume)

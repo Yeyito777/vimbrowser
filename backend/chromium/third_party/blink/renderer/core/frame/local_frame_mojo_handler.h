@@ -145,6 +145,7 @@ class LocalFrameMojoHandler
       int32_t dom_node_id,
       const gfx::PointF& expected_point,
       const base::UnguessableToken& activation_nonce,
+      bool grant_user_activation,
       VimbrowserActivatePreparedElementCallback callback) final;
   void ClearFocusedElement() final;
   void CopyImageAt(const gfx::Point& window_point) final;

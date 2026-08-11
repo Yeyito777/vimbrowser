@@ -76,6 +76,7 @@ scripts/vimbrowser-ipc screenshot 3 > tab.png
 scripts/vimbrowser-ipc js 3 'document.title'
 vimbrowser-cli frame-tree 3 --pretty
 vimbrowser-cli inspect-controls 3 --frame FRAME_ID --role button --name-exact Browse --require-one
+vimbrowser-cli activate-control 3 eh1_INSPECTED_TARGET
 vimbrowser-cli upload-file 3 '#attachment' /home/me/report.pdf
 vimbrowser-cli upload-file 3 'activate:#browse-button' /home/me/resume.pdf
 vimbrowser-cli upload-file 3 'handle:eh1_INSPECTED_TARGET' /home/me/resume.pdf
