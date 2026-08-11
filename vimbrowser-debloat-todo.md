@@ -19,6 +19,17 @@ committing and pushing the stage.
       `pre-cleanup`.
 - [x] The browser installed during notification validation was built from the
       finished notification worktree and passed the local integration benchmark.
+- [x] Isolate continued debloat work from the normal installed/running browser.
+  - Stable runtime remains at `build-source/Release` and is checksum-guarded.
+  - Chromium builds use `backend/chromium/out/Debloat_GN_x64`.
+  - CEF, shell build, install prefix, profile, and IPC socket live under
+    `/home/yeyito/Workspace/vimbrowser-debloat-sandbox`.
+  - `scripts/debloat-sandbox.sh` is the required build/install/test wrapper.
+  - Sandbox `make install` never writes `~/.local/bin` and no promotion command
+    exists; stable promotion is a separate explicit decision.
+  - Baseline sandbox `make`, sandbox `make install`, CTest, and local benchmark
+    passed; representative GN/runtime files have distinct inodes, and the
+    stable runtime checksum remained unchanged after every operation.
 - [x] Finish the stashed notification/Message Center presentation cleanup.
   - Recovery source was the immutable stash commit
     `e9ce063757d4f169d690e62a0e8c706bec13bad9`.
