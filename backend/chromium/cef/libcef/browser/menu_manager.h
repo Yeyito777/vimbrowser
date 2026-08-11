@@ -13,9 +13,6 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/web_contents_observer.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/spellcheck/common/spellcheck_common.h"
-#endif
 
 namespace content {
 class RenderFrameHost;
@@ -43,8 +40,7 @@ class CefMenuManager : public CefMenuModelImpl::Delegate,
   bool IsShowingContextMenu();
 
   // Create the context menu.
-  bool CreateContextMenu(const content::ContextMenuParams& params,
-                         bool query_spellcheck = true);
+  bool CreateContextMenu(const content::ContextMenuParams& params);
   void CancelContextMenu();
 
  private:
@@ -66,12 +62,6 @@ class CefMenuManager : public CefMenuModelImpl::Delegate,
 
   // Returns true if the specified id is a custom context menu command.
   bool IsCustomContextMenuCommand(int command_id);
-
-#if BUILDFLAG(IS_WIN)
-  void OnGetPlatformSuggestionsComplete(
-      const spellcheck::PerLanguageSuggestions&
-          platform_per_language_suggestions);
-#endif
 
   // AlloyBrowserHostImpl pointer is guaranteed to outlive this object.
   raw_ptr<AlloyBrowserHostImpl> browser_;

@@ -91,13 +91,6 @@
 #include "chrome/browser/media/android/cdm/media_drm_storage_factory.h"
 #endif
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "chrome/browser/spellchecker/spell_check_initialization_host_impl.h"
-#include "components/spellcheck/common/spellcheck.mojom.h"
-#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
-#include "chrome/browser/spellchecker/spell_check_panel_host_impl.h"
-#endif
-#endif
 
 #if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/badging/badge_manager.h"

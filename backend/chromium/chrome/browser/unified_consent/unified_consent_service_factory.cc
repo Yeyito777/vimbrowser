@@ -14,7 +14,6 @@
 #include "components/embedder_support/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
-#include "components/spellcheck/browser/pref_names.h"
 #include "components/sync_preferences/pref_service_syncable.h"
 #include "components/unified_consent/unified_consent_metrics.h"
 #include "components/unified_consent/unified_consent_service.h"
@@ -36,7 +35,6 @@ std::vector<std::string> GetSyncedServicePrefNames() {
   return {
     prefs::kSearchSuggestEnabled, prefs::kSafeBrowsingEnabled,
         prefs::kSafeBrowsingScoutReportingEnabled,
-        spellcheck::prefs::kSpellCheckUseSpellingService,
         commerce::kPriceEmailNotificationsEnabled,
 #if BUILDFLAG(IS_ANDROID)
         prefs::kContextualSearchEnabled

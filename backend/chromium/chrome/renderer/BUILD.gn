@@ -10,7 +10,6 @@ import("//components/guest_view/buildflags/buildflags.gni")
 import("//components/offline_pages/buildflags/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/signin/features.gni")
-import("//components/spellcheck/spellcheck_build_features.gni")
 import("//components/surface_embed/buildflags/buildflags.gni")
 import("//content/public/common/features.gni")
 import("//extensions/buildflags/buildflags.gni")
@@ -308,10 +307,6 @@ static_library("renderer") {
 
   if (enable_extensions) {
     deps += [ "//chrome/renderer/controlled_frame" ]
-  }
-
-  if (enable_spellcheck) {
-    deps += [ "//components/spellcheck/renderer" ]
   }
 
   if (enable_paint_preview) {

@@ -108,10 +108,6 @@
     // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
-  "autotestPrivate": {
-    "dependencies": ["permission:autotestPrivate"],
-    "contexts": ["privileged_extension"]
-  },
   "bookmarkManagerPrivate": {
     "channel": "stable",
     "contexts": ["webui"],
@@ -656,28 +652,6 @@
     "dependencies": ["permission:gcm"],
     "contexts": ["privileged_extension"]
   },
-  "languageSettingsPrivate": [{
-    "dependencies": ["permission:languageSettingsPrivate"],
-    "contexts": ["privileged_extension"]
-  }, {
-    "channel": "stable",
-    "contexts": ["webui"],
-    "matches": [
-      // TODO(maybelle): Audit and remove chrome://settings or
-      // chrome://os-settings as appropriate
-      "chrome://os-settings/*",
-      "chrome://settings/*"
-    ]
-  },
-  {
-    "channel": "stable",
-    "contexts": [
-      "webui_untrusted"
-    ],
-    "matches": [
-      "chrome-untrusted://lens-overlay/*"
-    ]
-  }],
   "login": [{
     "dependencies": ["behavior:imprivata_extension", "permission:login"],
     "contexts": ["privileged_extension"],

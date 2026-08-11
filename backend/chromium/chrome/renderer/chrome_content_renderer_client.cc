@@ -250,15 +250,6 @@
 #include "components/paint_preview/renderer/paint_preview_recorder_impl.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "components/spellcheck/renderer/spellcheck.h"
-#include "components/spellcheck/renderer/spellcheck_provider.h"
-
-#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
-#include "components/spellcheck/renderer/spellcheck_panel.h"
-#endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
-#endif  // BUILDFLAG(ENABLE_SPELLCHECK)
-
 #if BUILDFLAG(ENABLE_SURFACE_EMBED)
 #include "components/surface_embed/common/features.h"
 #include "components/surface_embed/renderer/create_plugin.h"

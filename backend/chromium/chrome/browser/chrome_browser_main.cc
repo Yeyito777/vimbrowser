@@ -251,11 +251,6 @@
 #include "chrome/browser/win/parental_controls.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
 
-#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "components/spellcheck/browser/pref_names.h"
-#include "components/spellcheck/common/spellcheck_features.h"
-#endif
 #endif  // BUILDFLAG(IS_WIN)
 
 // Feature-specific #includes, in alphabetical order.

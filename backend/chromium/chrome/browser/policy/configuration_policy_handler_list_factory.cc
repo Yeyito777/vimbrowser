@@ -49,8 +49,6 @@
 #include "chrome/browser/profiles/guest_mode_policy_handler.h"
 #include "chrome/browser/search/ntp_custom_background_enabled_policy_handler.h"
 #include "chrome/browser/sessions/restore_on_startup_policy_handler.h"
-#include "chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.h"
-#include "chrome/browser/spellchecker/spellcheck_language_policy_handler.h"
 #include "chrome/browser/ssl/secure_origin_policy_handler.h"
 #include "chrome/browser/ui/toolbar/chrome_labs/chrome_labs_prefs.h"
 #include "chrome/browser/webauthn/webauthn_pref_names.h"
@@ -252,9 +250,6 @@
 #include "chrome/browser/policy/printing_restrictions_policy_handler.h"
 #endif
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "components/spellcheck/browser/pref_names.h"
-#endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "chrome/browser/browser_switcher/browser_switcher_prefs.h"

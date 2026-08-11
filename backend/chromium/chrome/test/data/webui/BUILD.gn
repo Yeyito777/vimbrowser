@@ -267,7 +267,6 @@ source_set("browser_tests") {
       "//components/safe_browsing/core/common",
       "//components/search",
       "//components/site_engagement/content",
-      "//components/spellcheck/browser",
       "//components/user_education/common",
       "//net:test_support",
     ]

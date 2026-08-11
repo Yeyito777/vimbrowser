@@ -9,7 +9,6 @@
 #include "chrome/common/pref_names.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "components/prefs/pref_service.h"
-#include "components/spellcheck/browser/pref_names.h"
 
 PrivacyMetricsService::PrivacyMetricsService(
     PrefService* pref_service,
@@ -34,9 +33,4 @@ void PrivacyMetricsService::RecordStartupMetrics() {
   base::UmaHistogramBoolean(
       "Settings.AutocompleteSearches.OnStartup2",
       pref_service_->GetBoolean(::prefs::kSearchSuggestEnabled));
-
-  base::UmaHistogramBoolean(
-      "Settings.AdvancedSpellcheck.OnStartup2",
-      pref_service_->GetBoolean(
-          ::spellcheck::prefs::kSpellCheckUseSpellingService));
 }

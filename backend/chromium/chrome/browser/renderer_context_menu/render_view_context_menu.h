@@ -54,8 +54,6 @@ class LinkToTextMenuObserver;
 class PrintPreviewContextMenuObserver;
 class Profile;
 class ReadWriteCardObserver;
-class SpellingMenuObserver;
-class SpellingOptionsSubMenuObserver;
 class ToastController;
 
 namespace content {
@@ -124,10 +122,6 @@ class RenderViewContextMenu
   ~RenderViewContextMenu() override;
 
   void MenuClosed(ui::SimpleMenuModel* source) override;
-
-  // Adds the spell check service item to the context menu.
-  static void AddSpellCheckServiceItem(ui::SimpleMenuModel* menu,
-                                       bool is_checked);
 
   // RenderViewContextMenuBase:
   bool IsCommandIdChecked(int command_id) const override;
@@ -326,8 +320,6 @@ class RenderViewContextMenu
   void AppendRotationItems();
   void AppendSpellingAndSearchSuggestionItems();
   void AppendOtherEditableItems();
-  void AppendLanguageSettings();
-  void AppendSpellingSuggestionItems();
   // Returns true if the items were appended. This might not happen in all
   // cases, e.g. these are only appended if a screen reader is enabled.
   bool AppendAccessibilityLabelsItems();
@@ -524,21 +516,10 @@ class RenderViewContextMenu
   // An observer returned via MenuCreatedCallback that will be called first.
   std::unique_ptr<RenderViewContextMenuObserver> first_observer_;
 
-  // An observer that handles spelling suggestions, "Add to dictionary", and
-  // "Use enhanced spell check" items.
-  std::unique_ptr<SpellingMenuObserver> spelling_suggestions_menu_observer_;
-
   // An observer that handles accessibility labels items.
   std::unique_ptr<AccessibilityLabelsMenuObserver>
       accessibility_labels_menu_observer_;
   ui::SimpleMenuModel accessibility_labels_submenu_model_;
-
-#if !BUILDFLAG(IS_MAC)
-  // An observer that handles the submenu for showing spelling options. This
-  // submenu lets users select the spelling language, for example.
-  std::unique_ptr<SpellingOptionsSubMenuObserver>
-      spelling_options_submenu_observer_;
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
   // An observer that handles "Open with <app>" items.

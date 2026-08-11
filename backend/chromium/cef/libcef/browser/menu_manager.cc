@@ -21,11 +21,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "third_party/blink/public/mojom/context_menu/context_menu.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
-#include "components/spellcheck/browser/spellcheck_platform.h"
-#endif
 
 namespace {
 
@@ -127,8 +122,7 @@ bool CefMenuManager::IsShowingContextMenu() {
   return web_contents()->IsShowingContextMenu();
 }
 
-bool CefMenuManager::CreateContextMenu(const content::ContextMenuParams& params,
-                                       bool query_spellcheck) {
+bool CefMenuManager::CreateContextMenu(const content::ContextMenuParams& params) {
   // The renderer may send the "show context menu" message multiple times, one
   // for each right click mouse event it receives. Normally, this doesn't happen
   // because mouse events are not forwarded once the context menu is showing.
@@ -141,23 +135,6 @@ bool CefMenuManager::CreateContextMenu(const content::ContextMenuParams& params,
   }
 
   params_ = params;
-
-#if BUILDFLAG(IS_WIN)
-  // System spellcheck suggestions need to be queried asynchronously.
-  if (query_spellcheck && !params_.misspelled_word.empty() &&
-      params_.dictionary_suggestions.empty()) {
-    SpellcheckService* spellcheck_service =
-        SpellcheckServiceFactory::GetForContext(
-            browser_->web_contents()->GetBrowserContext());
-    if (spellcheck_service) {
-      spellcheck_platform::GetPerLanguageSuggestions(
-          spellcheck_service->platform_spell_checker(), params_.misspelled_word,
-          base::BindOnce(&CefMenuManager::OnGetPlatformSuggestionsComplete,
-                         weak_ptr_factory_.GetWeakPtr()));
-    }
-    return true;
-  }
-#endif
 
   model_->Clear();
 
@@ -383,32 +360,6 @@ void CefMenuManager::CreateDefaultModel() {
       model_->SetEnabled(MENU_ID_SELECT_ALL, false);
     }
 
-    if (!params_.misspelled_word.empty()) {
-      // Always add a separator before the list of dictionary suggestions or
-      // "No spelling suggestions".
-      model_->AddSeparator();
-
-      if (!params_.dictionary_suggestions.empty()) {
-        for (size_t i = 0; i < params_.dictionary_suggestions.size() &&
-                           MENU_ID_SPELLCHECK_SUGGESTION_0 + i <=
-                               MENU_ID_SPELLCHECK_SUGGESTION_LAST;
-             ++i) {
-          model_->AddItem(MENU_ID_SPELLCHECK_SUGGESTION_0 + static_cast<int>(i),
-                          params_.dictionary_suggestions[i]);
-        }
-
-        // When there are dictionary suggestions add a separator before "Add to
-        // dictionary".
-        model_->AddSeparator();
-      } else {
-        model_->AddItem(MENU_ID_NO_SPELLING_SUGGESTIONS,
-                        GetLabel(IDS_CONTENT_CONTEXT_NO_SPELLING_SUGGESTIONS));
-        model_->SetEnabled(MENU_ID_NO_SPELLING_SUGGESTIONS, false);
-      }
-
-      model_->AddItem(MENU_ID_ADD_TO_DICTIONARY,
-                      GetLabel(IDS_CONTENT_CONTEXT_ADD_TO_DICTIONARY));
-    }
   } else if (!params_.selection_text.empty()) {
     // Something is selected.
     model_->AddItem(MENU_ID_COPY, GetLabel(IDS_CONTENT_CONTEXT_COPY));
@@ -435,18 +386,6 @@ void CefMenuManager::ExecuteDefaultCommand(int command_id) {
     if (web_contents()) {
       web_contents()->ExecuteCustomContextMenuCommand(
           command_id - MENU_ID_CUSTOM_FIRST, params_.link_followed);
-    }
-    return;
-  }
-
-  // If the user chose a replacement word for a misspelling, replace it here.
-  if (command_id >= MENU_ID_SPELLCHECK_SUGGESTION_0 &&
-      command_id <= MENU_ID_SPELLCHECK_SUGGESTION_LAST) {
-    const size_t suggestion_index =
-        static_cast<size_t>(command_id) - MENU_ID_SPELLCHECK_SUGGESTION_0;
-    if (suggestion_index < params_.dictionary_suggestions.size()) {
-      browser_->ReplaceMisspelling(
-          params_.dictionary_suggestions[suggestion_index]);
     }
     return;
   }
@@ -504,11 +443,6 @@ void CefMenuManager::ExecuteDefaultCommand(int command_id) {
       browser_->GetFocusedFrame()->ViewSource();
       break;
 
-    // Spell checking.
-    case MENU_ID_ADD_TO_DICTIONARY:
-      browser_->GetHost()->AddWordToDictionary(params_.misspelled_word);
-      break;
-
     default:
       break;
   }
@@ -532,18 +466,3 @@ bool CefMenuManager::IsCustomContextMenuCommand(int command_id) {
   }
   return false;
 }
-
-#if BUILDFLAG(IS_WIN)
-void CefMenuManager::OnGetPlatformSuggestionsComplete(
-    const spellcheck::PerLanguageSuggestions&
-        platform_per_language_suggestions) {
-  std::vector<std::u16string> combined_suggestions;
-  spellcheck::FillSuggestions(platform_per_language_suggestions,
-                              &combined_suggestions);
-
-  params_.dictionary_suggestions = combined_suggestions;
-
-  // Now that we have spelling suggestions, call CreateContextMenu again.
-  CreateContextMenu(params_, /*query_spellcheck=*/false);
-}
-#endif

@@ -201,8 +201,6 @@ source_set("sync_integration_tests_impl") {
     if (!is_mac) {
       # Dictionary sync is disabled on Mac.
       sources += [
-        "single_client_dictionary_sync_test.cc",
-        "two_client_dictionary_sync_test.cc",
       ]
     }
     if (is_win || is_mac || is_linux) {
@@ -278,7 +276,6 @@ source_set("sync_integration_tests_impl") {
       "//components/search_engines",
       "//components/send_tab_to_self",
       "//components/skills/public",
-      "//components/spellcheck/common",
       "//components/sync",
       "//components/trusted_vault",
       "//components/trusted_vault:test_support",
@@ -580,10 +577,6 @@ source_set("sync_integration_test_support") {
 
     if (!is_mac) {
       sources += [
-        "dictionary_helper.cc",
-        "dictionary_helper.h",
-        "dictionary_load_observer.cc",
-        "dictionary_load_observer.h",
       ]
     }
   }

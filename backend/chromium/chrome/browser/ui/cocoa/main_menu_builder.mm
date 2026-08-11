@@ -234,21 +234,6 @@ NSMenuItem* BuildEditMenu(NSApplication* nsapp,
                           .action(@selector(centerSelectionInVisibleArea:))
                           .key_equivalent(@"j", NSEventModifierFlagCommand),
               }),
-              Item(IDS_EDIT_SPELLING_GRAMMAR_MAC)
-                  .tag(IDC_SPELLCHECK_MENU)
-                  .submenu({
-                      Item(IDS_EDIT_SHOW_SPELLING_GRAMMAR_MAC)
-                          .action(@selector(showGuessPanel:))
-                          .key_equivalent(@":", NSEventModifierFlagCommand),
-                      Item(IDS_EDIT_CHECK_DOCUMENT_MAC)
-                          .action(@selector(checkSpelling:))
-                          .key_equivalent(@";", NSEventModifierFlagCommand),
-                      Item(IDS_EDIT_CHECK_SPELLING_TYPING_MAC)
-                          .action(@selector
-                                  (toggleContinuousSpellChecking:)),
-                      Item(IDS_EDIT_CHECK_GRAMMAR_MAC)
-                          .action(@selector(toggleGrammarChecking:)),
-                  }),
               Item(IDS_EDIT_SUBSTITUTIONS_MAC)
                   .submenu({
                       Item(IDS_EDIT_SHOW_SUBSTITUTIONS_MAC)

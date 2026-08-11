@@ -13,7 +13,6 @@
 #include "build/build_config.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/security_events/security_event_recorder.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "chrome/browser/themes/theme_local_data_batch_uploader.h"
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_syncable_service.h"

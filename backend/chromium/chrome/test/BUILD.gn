@@ -31,7 +31,6 @@ import("//components/optimization_guide/features.gni")
 import("//components/os_crypt/sync/features.gni")
 import("//components/safe_browsing/buildflags.gni")
 import("//components/soda/buildflags.gni")
-import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/browser/devtools/features.gni")
 import("//content/public/common/features.gni")
 import("//crypto/features.gni")
@@ -588,7 +587,6 @@ static_library("test_support") {
     "//components/segmentation_platform/public",
     "//components/segmentation_platform/public:test_support",
     "//components/signin/core/browser",
-    "//components/spellcheck/renderer",
     "//components/subresource_filter/core/browser:test_support",
     "//components/subresource_filter/core/common:test_support",
     "//components/tpcd/metadata/browser",
@@ -2120,7 +2118,6 @@ if (is_android) {
       "//components/site_engagement/content",
       "//components/site_isolation",
       "//components/spellcheck:buildflags",
-      "//components/spellcheck/renderer",
       "//components/subresource_filter/core/browser:test_support",
       "//components/subresource_filter/core/common:test_support",
       "//components/sync:test_support",
@@ -3056,11 +3053,6 @@ if (!is_android) {
       "//components/soda",
       "//components/soda:constants",
       "//components/spellcheck:buildflags",
-      "//components/spellcheck/browser",
-      "//components/spellcheck/common",
-      "//components/spellcheck/common:interfaces",
-      "//components/spellcheck/common:spellcheck_result",
-      "//components/spellcheck/renderer",
       "//components/strings",
       "//components/subresource_filter/core/browser",
       "//components/subresource_filter/core/browser:test_support",
@@ -3722,8 +3714,6 @@ if (!is_android) {
       "../browser/renderer_context_menu/accessibility_labels_bubble_model_browsertest.cc",
       "../browser/renderer_context_menu/accessibility_labels_menu_observer_browsertest.cc",
       "../browser/renderer_context_menu/render_view_context_menu_browsertest.cc",
-      "../browser/renderer_context_menu/spelling_bubble_model_browsertest.cc",
-      "../browser/renderer_context_menu/spelling_menu_observer_browsertest.cc",
       "../browser/renderer_host/javascript_optimizer_feature_browsertest.cc",
       "../browser/renderer_host/render_process_host_chrome_browsertest.cc",
       "../browser/repost_form_warning_browsertest.cc",
@@ -3758,7 +3748,6 @@ if (!is_android) {
       "../browser/site_isolation/isolated_sandboxed_iframe_browsertest.cc",
       "../browser/site_isolation/origin_agent_cluster_browsertest.cc",
       "../browser/site_isolation/site_details_browsertest.cc",
-      "../browser/spellchecker/spellcheck_service_browsertest.cc",
       "../browser/ssl/certificate_transparency_browsertest.cc",
       "../browser/ssl/connection_help_tab_helper_browsertest.cc",
       "../browser/ssl/https_upgrades_browsertest.cc",
@@ -4478,7 +4467,6 @@ if (!is_android) {
         "../browser/printing/pdf_to_emf_converter_browsertest.cc",
         "../browser/process_singleton_browsertest.cc",
         "../browser/profiles/profile_shortcut_manager_browsertest_win.cc",
-        "../browser/spellchecker/spell_check_host_chrome_impl_win_browsertest.cc",
         "../browser/ui/color/win/native_chrome_color_mixer_win_browsertest.cc",
         "../browser/ui/startup/startup_browser_creator_triggered_reset_browsertest_win.cc",
         "../browser/ui/views/sync/inline_login_ui_browsertest.cc",
@@ -4521,7 +4509,6 @@ if (!is_android) {
         "../browser/mac/auth_session_request_browsertest.mm",
         "../browser/renderer_host/chrome_render_widget_host_view_mac_history_swiper_browsertest.mm",
         "../browser/shell_integration_mac_browsertest.mm",
-        "../browser/spellchecker/spell_check_host_chrome_impl_mac_browsertest.cc",
         "../browser/ui/cocoa/accelerators_cocoa_browsertest.mm",
         "../browser/ui/cocoa/applescript/bookmark_applescript_test_utils.h",
         "../browser/ui/cocoa/applescript/bookmark_applescript_test_utils.mm",
@@ -4549,7 +4536,6 @@ if (!is_android) {
       sources -= [
         # TODO(groby): This test depends on hunspell and we cannot run it on
         # Mac, which does not use hunspell by default.
-        "../browser/spellchecker/spellcheck_service_browsertest.cc",
       ]
 
       data_deps += [
@@ -5996,7 +5982,6 @@ if (!is_android) {
       sources += [
         # This test is for the spelling options submenu that's only for Windows,
         # ChromeOS, and Linux.
-        "../browser/renderer_context_menu/spelling_options_submenu_observer_browsertest.cc",
       ]
     }
     if (is_linux || is_mac) {
@@ -6083,11 +6068,6 @@ if (!is_android) {
 
     if (enable_session_service) {
       deps += [ "//chrome/browser/ui/webui/tab_strip_internals:browser_tests" ]
-    }
-
-    if (enable_spellcheck) {
-      sources +=
-          [ "../browser/site_isolation/spellcheck_per_process_browsertest.cc" ]
     }
 
     sources +=
@@ -7429,10 +7409,6 @@ test("unit_tests") {
     "//components/site_isolation",
     "//components/skills:features",
     "//components/spellcheck:buildflags",
-    "//components/spellcheck/browser",
-    "//components/spellcheck/common",
-    "//components/spellcheck/common:spellcheck_result",
-    "//components/spellcheck/renderer",
     "//components/sqlite_proto",
     "//components/strings",
     "//components/subresource_filter/core/browser",
@@ -7840,12 +7816,6 @@ test("unit_tests") {
     # but when we tried to pull it up to the common.gypi level, it broke
     # other things like the ui and startup tests. *shrug*
     ldflags = [ "-Wl,-ObjC" ]
-  } else {
-    # !is_mac
-    deps += [
-      "//chrome/tools/convert_dict:lib",
-      "//third_party/hunspell",
-    ]
   }
 
   if (enable_paint_preview) {
@@ -9421,55 +9391,6 @@ test("unit_tests") {
     deps += [ "//chrome/browser/background/extensions:unit_tests" ]
   }
 
-  if (enable_spellcheck) {
-    sources +=
-        [ "../browser/spellchecker/spellcheck_custom_dictionary_unittest.cc" ]
-
-    if (is_chromeos || is_linux || is_win) {
-      sources += [ "../browser/spellchecker/spellcheck_language_policy_handlers_unittest.cc" ]
-    }
-
-    if (is_mac) {
-      sources += [
-        "../browser/spellchecker/spell_check_host_chrome_impl_mac_unittest.cc",
-      ]
-    } else {
-      sources += [
-        # This tests the function GetSpellCheckLanguages which is not used on
-        # Mac.
-        "../browser/spellchecker/spellcheck_service_unittest.cc",
-
-        # This tests Chrome's spellchecker which Mac doesn't use.
-        "../tools/convert_dict/aff_reader_unittest.cc",
-        "../tools/convert_dict/convert_dict_unittest.cc",
-      ]
-    }
-
-    data += [
-      "data/convert_dict/affix-flags.aff",
-      "data/convert_dict/empty.aff",
-      "data/convert_dict/indexed-affix.aff",
-      "data/convert_dict/leading-comment.aff",
-      "data/convert_dict/other-commands.aff",
-      "data/convert_dict/prefix-suffix.aff",
-      "data/convert_dict/rep.aff",
-    ]
-
-    if (use_renderer_spellchecker) {
-      sources +=
-          [ "../browser/spellchecker/spell_check_host_chrome_impl_unittest.cc" ]
-    }
-
-    if (enable_spelling_service) {
-      sources +=
-          [ "../browser/spellchecker/spelling_service_client_unittest.cc" ]
-    }
-
-    if (use_browser_spellchecker && enable_spelling_service) {
-      sources += [ "../browser/spellchecker/spelling_request_unittest.cc" ]
-    }
-  }
-
   # Unit tests that run on Win/Mac/Linux and Android desktop.
   if (enable_extensions_core) {
     sources += [
@@ -9667,8 +9588,6 @@ test("unit_tests") {
       "../browser/extensions/api/image_writer_private/write_from_file_operation_unittest.cc",
       "../browser/extensions/api/image_writer_private/write_from_url_operation_unittest.cc",
       "../browser/extensions/api/image_writer_private/xz_extractor_unittest.cc",
-      "../browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc",
-      "../browser/extensions/api/language_settings_private/language_settings_private_delegate_unittest.cc",
       "../browser/extensions/api/notifications/extension_notification_handler_unittest.cc",
       "../browser/extensions/api/page_capture/page_capture_api_unittest.cc",
       "../browser/extensions/api/passwords_private/password_access_auth_timeout_handler_unittest.cc",
@@ -11330,7 +11249,6 @@ if (!is_android) {
         "//skia",
         "//testing/gmock",
         "//testing/gtest",
-        "//third_party/hunspell",
         "//third_party/icu",
         "//third_party/libpng:libpng_for_testonly",
         "//ui/base:test_support",
@@ -11719,7 +11637,6 @@ if (!is_android && !is_chromeos_device) {
       "//skia",
       "//testing/gmock",
       "//testing/gtest",
-      "//third_party/hunspell",
       "//third_party/icu",
       "//third_party/libpng:libpng_for_testonly",
       "//ui/base:base_interactive_ui_tests",
@@ -12298,7 +12215,6 @@ if (!is_android && !is_chromeos_device) {
         "../browser/app_controller_mac_interactive_uitest.mm",
         "../browser/global_keyboard_shortcuts_interactive_uitest_mac.mm",
         "../browser/notifications/mac/notification_interactive_uitest_mac.mm",
-        "../browser/spellchecker/spellcheck_mac_view_interactive_uitest.mm",
         "../browser/ui/cocoa/apps/quit_with_apps_controller_mac_interactive_uitest.mm",
         "../browser/ui/cocoa/confirm_quit_panel_controller_interactive_uitest.mm",
         "../browser/ui/cocoa/status_bubble_mac_interactive_uitest.mm",
@@ -12551,7 +12467,6 @@ if (!is_android) {
     sources = [
       "../browser/sync/test/integration/performance/autofill_sync_perf_test.cc",
       "../browser/sync/test/integration/performance/bookmarks_sync_perf_test.cc",
-      "../browser/sync/test/integration/performance/dictionary_sync_perf_test.cc",
       "../browser/sync/test/integration/performance/extensions_sync_perf_test.cc",
       "../browser/sync/test/integration/performance/passwords_sync_perf_test.cc",
       "../browser/sync/test/integration/performance/sessions_sync_perf_test.cc",
@@ -12572,7 +12487,6 @@ if (!is_android) {
       "//chrome/browser/ui",
       "//components/bookmarks/browser",
       "//components/password_manager/core/browser",
-      "//components/spellcheck/common",
       "//components/sync",
       "//testing/gmock",
       "//testing/gtest",
@@ -12583,7 +12497,6 @@ if (!is_android) {
 
     if (is_mac) {
       # Dictionary sync is disabled on Mac.
-      sources -= [ "../browser/sync/test/integration/performance/dictionary_sync_perf_test.cc" ]
 
       # The sync_performance_tests do not run on mac without this flag.
       # Search for comments about "xcode_settings" elsewhere in this file.
@@ -12704,7 +12617,6 @@ if (!is_android) {
       "//skia",
       "//testing/gmock",
       "//testing/gtest",
-      "//third_party/hunspell",
       "//third_party/icu",
       "//third_party/libpng:libpng_for_testonly",
       "//ui/base:test_support",

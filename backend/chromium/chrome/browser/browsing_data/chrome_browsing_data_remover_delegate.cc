@@ -77,8 +77,6 @@
 #include "chrome/browser/share/share_history.h"
 #include "chrome/browser/share/share_ranking.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "chrome/browser/strike_database/strike_database_factory.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/tpcd/metadata/manager_factory.h"
@@ -794,17 +792,6 @@ void ChromeBrowsingDataRemoverDelegate::RemoveEmbedderData(
         // whole tree and check timestamps against delete_begin and delete_end.
         NOTIMPLEMENTED();
       }
-    }
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // DATA_TYPE_LOCAL_CUSTOM_DICTIONARY
-  if (remove_mask & constants::DATA_TYPE_LOCAL_CUSTOM_DICTIONARY) {
-    auto* spellcheck = SpellcheckServiceFactory::GetForContext(profile_);
-    if (spellcheck) {
-      auto* dict = spellcheck->GetCustomDictionary();
-      if (dict)
-        dict->Clear();
     }
   }
 

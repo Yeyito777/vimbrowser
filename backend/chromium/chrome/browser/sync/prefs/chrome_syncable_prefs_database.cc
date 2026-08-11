@@ -20,7 +20,6 @@
 #include "components/live_caption/pref_names.h"
 #include "components/performance_manager/public/user_tuning/prefs.h"
 #include "components/privacy_sandbox/privacy_sandbox_prefs.h"
-#include "components/spellcheck/browser/pref_names.h"
 #include "components/sync/base/data_type.h"
 #include "components/sync_preferences/syncable_prefs_database.h"
 #include "components/translate/core/browser/translate_prefs.h"
@@ -1609,10 +1608,6 @@ constexpr auto kChromeSyncablePrefsAllowlist = base::MakeFixedFlatMap<
       sync_preferences::MergeBehavior::kMergeableListWithRewriteOnUpdate}},
     {prefs::kDeprecatedUserColorDoNotUse,
      {syncable_prefs_ids::kUserColor, syncer::PREFERENCES,
-      sync_preferences::PrefSensitivity::kNone,
-      sync_preferences::MergeBehavior::kNone}},
-    {spellcheck::prefs::kSpellCheckEnable,
-     {syncable_prefs_ids::kSpellCheckEnable, syncer::PREFERENCES,
       sync_preferences::PrefSensitivity::kNone,
       sync_preferences::MergeBehavior::kNone}},
 #if !BUILDFLAG(IS_ANDROID)

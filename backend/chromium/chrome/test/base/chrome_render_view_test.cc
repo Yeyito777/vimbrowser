@@ -18,7 +18,6 @@
 #include "components/autofill/content/renderer/password_generation_agent.h"
 #include "components/autofill/content/renderer/test_password_autofill_agent.h"
 #include "components/input/native_web_keyboard_event.h"
-#include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/spellcheck_buildflags.h"
 #include "extensions/buildflags/buildflags.h"
 #include "testing/gmock/include/gmock/gmock.h"

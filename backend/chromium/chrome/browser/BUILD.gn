@@ -26,7 +26,6 @@ import("//components/offline_pages/buildflags/features.gni")
 import("//components/on_device_translation/buildflags/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/os_crypt/sync/features.gni")
-import("//components/spellcheck/spellcheck_build_features.gni")
 import("//components/surface_embed/buildflags/buildflags.gni")
 import("//content/public/common/features.gni")
 import("//crypto/features.gni")
@@ -3953,10 +3952,6 @@ static_library("browser") {
       "renderer_context_menu/link_to_text_menu_observer.h",
       "renderer_context_menu/render_view_context_menu.cc",
       "renderer_context_menu/render_view_context_menu.h",
-      "renderer_context_menu/spelling_bubble_model.cc",
-      "renderer_context_menu/spelling_bubble_model.h",
-      "renderer_context_menu/spelling_menu_observer.cc",
-      "renderer_context_menu/spelling_menu_observer.h",
       "repost_form_warning_controller.cc",
       "repost_form_warning_controller.h",
       "resource_coordinator/discard_metrics_lifecycle_unit_observer.cc",
@@ -6992,8 +6987,6 @@ static_library("browser") {
       "policy/messaging_layer/util/manual_test_heartbeat_event.h",
       "policy/messaging_layer/util/manual_test_heartbeat_event_factory.cc",
       "policy/messaging_layer/util/manual_test_heartbeat_event_factory.h",
-      "renderer_context_menu/spelling_options_submenu_observer.cc",
-      "renderer_context_menu/spelling_options_submenu_observer.h",
     ]
   }
 
@@ -7962,55 +7955,6 @@ static_library("browser") {
         [ "//chrome/browser/ui/webui/tab_strip_internals:impl" ]
   }
 
-  if (enable_spellcheck) {
-    sources += [
-      "spellchecker/spell_check_host_chrome_impl.cc",
-      "spellchecker/spell_check_host_chrome_impl.h",
-      "spellchecker/spell_check_initialization_host_impl.cc",
-      "spellchecker/spell_check_initialization_host_impl.h",
-      "spellchecker/spellcheck_custom_dictionary.cc",
-      "spellchecker/spellcheck_custom_dictionary.h",
-      "spellchecker/spellcheck_factory.cc",
-      "spellchecker/spellcheck_factory.h",
-      "spellchecker/spellcheck_hunspell_dictionary.cc",
-      "spellchecker/spellcheck_hunspell_dictionary.h",
-      "spellchecker/spellcheck_service.cc",
-      "spellchecker/spellcheck_service.h",
-    ]
-
-    if (use_browser_spellchecker && enable_spelling_service) {
-      sources += [
-        "spellchecker/spelling_request.cc",
-        "spellchecker/spelling_request.h",
-      ]
-    }
-
-    if (is_win || is_linux || is_chromeos) {
-      sources += [
-        "spellchecker/spellcheck_language_blocklist_policy_handler.cc",
-        "spellchecker/spellcheck_language_blocklist_policy_handler.h",
-        "spellchecker/spellcheck_language_policy_handler.cc",
-        "spellchecker/spellcheck_language_policy_handler.h",
-      ]
-    }
-
-    if (has_spellcheck_panel) {
-      sources += [
-        "spellchecker/spell_check_panel_host_impl.cc",
-        "spellchecker/spell_check_panel_host_impl.h",
-      ]
-    }
-
-    deps += [
-      "//components/spellcheck/browser",
-      "//components/spellcheck/common",
-    ]
-
-    if (!is_android) {
-      deps += [ "//third_party/hunspell" ]
-    }
-  }
-
   if (enable_vr) {
     sources += [
       "vr/chrome_xr_integration_client.cc",
@@ -8959,15 +8903,6 @@ static_library("test_support") {
     ]
   }
 
-  if (has_spellcheck_panel) {
-    sources += [
-      "spellchecker/test/spellcheck_mock_panel_host.cc",
-      "spellchecker/test/spellcheck_mock_panel_host.h",
-      "spellchecker/test/spellcheck_panel_browsertest_helper.cc",
-      "spellchecker/test/spellcheck_panel_browsertest_helper.h",
-    ]
-    deps += [ "//components/spellcheck/common" ]
-  }
   if (enable_bound_session_credentials) {
     sources += [
       "../browser/signin/bound_session_credentials/bound_session_test_cookie_manager.cc",

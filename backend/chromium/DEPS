@@ -2226,9 +2226,6 @@ deps = {
       'dep_type': 'cipd',
   },
 
-  'src/third_party/hunspell_dictionaries':
-    Var('chromium_git') + '/chromium/deps/hunspell_dictionaries.git' + '@' + 'cccf64a8acc951afe3f47fee023908e55699bc58',
-
   'src/third_party/icu':
     Var('chromium_git') + '/chromium/deps/icu.git' + '@' + 'ee5f27adc28bd3f15b2c293f726d14d2e336cbd5',
 
@@ -3515,12 +3512,6 @@ deps = {
   'src/chrome/browser/resources/webui_browser/internal': {
       'url': Var('chrome_git') + '/chrome/browser/resources/webui_browser/internal.git' + '@' +
         '54ba496f51ce3792b7ef8161558985b192ac078b',
-      'condition': 'checkout_src_internal',
-  },
-
-  'src/chrome/browser/spellchecker/internal': {
-      'url': Var('chrome_git') + '/chrome/spellchecker/internal.git' + '@' +
-        'a22002a5b3cf7c6b872b25712af97a5664a350e2', # from svn revision 24388
       'condition': 'checkout_src_internal',
   },
 

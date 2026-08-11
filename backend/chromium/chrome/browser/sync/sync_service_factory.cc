@@ -43,7 +43,6 @@
 #include "chrome/browser/sharing/sharing_message_bridge_factory.h"
 #include "chrome/browser/signin/about_signin_internals_factory.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
 #include "chrome/browser/supervised_user/family_link_settings_service_factory.h"
 #include "chrome/browser/supervised_user/supervised_user_service_factory.h"
 #include "chrome/browser/sync/account_bookmark_sync_service_factory.h"
@@ -77,7 +76,6 @@
 #include "components/saved_tab_groups/public/features.h"
 #include "components/saved_tab_groups/public/tab_group_sync_service.h"
 #include "components/send_tab_to_self/send_tab_to_self_sync_service.h"
-#include "components/spellcheck/browser/pref_names.h"
 #include "components/sync/base/command_line_switches.h"
 #include "components/sync/base/features.h"
 #include "components/sync/engine/net/http_bridge.h"
@@ -564,7 +562,6 @@ SyncServiceFactory::SyncServiceFactory()
 #if !BUILDFLAG(IS_ANDROID)
   DependsOn(skills::SkillsServiceFactory::GetInstance());
 #endif  // !BUILDFLAG(IS_ANDROID)
-  DependsOn(SpellcheckServiceFactory::GetInstance());
   DependsOn(SyncInvalidationsServiceFactory::GetInstance());
   DependsOn(supervised_user::FamilyLinkSettingsServiceFactory::GetInstance());
   DependsOn(SessionSyncServiceFactory::GetInstance());

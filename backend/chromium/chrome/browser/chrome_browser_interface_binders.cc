@@ -152,10 +152,6 @@
 #include "third_party/blink/public/mojom/printing/web_printing.mojom.h"
 #endif
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"
-#include "components/spellcheck/common/spellcheck.mojom.h"
-#endif
 
 namespace chrome::internal {
 

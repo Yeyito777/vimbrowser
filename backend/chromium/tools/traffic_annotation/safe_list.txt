@@ -147,7 +147,6 @@ missing_new_fields,chrome/browser/safe_browsing/extension_telemetry/extension_te
 missing_new_fields,chrome/browser/safe_browsing/incident_reporting/incident_report_uploader_impl.cc
 missing_new_fields,chrome/browser/sharing/shared_clipboard/remote_copy_message_handler.cc
 missing_new_fields,chrome/browser/sharing/web_push/web_push_sender.cc
-missing_new_fields,chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 missing_new_fields,chrome/browser/ssl/certificate_error_reporter.cc
 missing_new_fields,chrome/browser/ssl/sct_reporting_service.cc
 missing_new_fields,chrome/browser/supervised_user/child_accounts/permission_request_creator_apiary.cc
@@ -234,7 +233,6 @@ missing_new_fields,components/search_provider_logos/logo_service_impl.cc
 missing_new_fields,components/security_interstitials/content/common_name_mismatch_handler.cc
 missing_new_fields,components/signin/internal/identity_manager/account_fetcher_service.cc
 missing_new_fields,components/signin/internal/identity_manager/gaia_cookie_manager_service.cc
-missing_new_fields,components/spellcheck/browser/spelling_service_client.cc
 missing_new_fields,components/sync/service/sync_stopped_reporter.cc
 missing_new_fields,components/sync/engine/net/http_bridge.cc
 missing_new_fields,components/translate/core/browser/translate_url_fetcher.cc

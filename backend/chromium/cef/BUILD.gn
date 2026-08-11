@@ -960,7 +960,6 @@ source_set("libcef_static") {
     "//third_party/brotli:dec",
     "//third_party/cld_3/src/src:cld_3",
     "//third_party/crashpad/crashpad/handler",
-    "//third_party/hunspell",
     "//third_party/leveldatabase",
     "//third_party/libxml:libxml",
     "//third_party/widevine/cdm:headers",

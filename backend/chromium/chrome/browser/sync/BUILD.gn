@@ -148,7 +148,6 @@ source_set("sync") {
     "//components/sharing_message",
     "//components/skills/public",
     "//components/spellcheck:buildflags",
-    "//components/spellcheck/browser",
     "//components/strings:components_strings_grit",
     "//components/sync_bookmarks",
     "//components/sync_preferences:features",

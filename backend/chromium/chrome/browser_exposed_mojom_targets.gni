@@ -175,7 +175,6 @@ browser_exposed_mojom_targets = [
   "//components/services/storage/public/mojom/filesystem:filesystem",
   "//components/services/unzip/public/mojom:mojom",
   "//components/site_engagement/core/mojom:mojo_bindings",
-  "//components/spellcheck/common:interfaces",
   "//components/subresource_filter/content/mojom:mojom",
   "//components/subresource_filter/core/mojom:mojom",
   "//components/tab_groups/public/mojom:mojo_bindings",

@@ -17,9 +17,6 @@
 #include "components/web_cache/renderer/web_cache_impl.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "components/spellcheck/renderer/spellcheck.h"
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
 #include "base/allocator/buildflags.h"
