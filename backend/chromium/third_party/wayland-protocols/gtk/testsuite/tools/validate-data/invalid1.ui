@@ -1,5 +1,0 @@
-<interface>
-  <child>
-    <object class="GtkLabel"/>
-  </child>
-</interface>

@@ -104,6 +104,12 @@ else
 target_cpu="${target_cpu}"
 use_sysroot=true
 cef_use_gtk=false
+# Vimbrowser is an X11 browser. Retain headless Ozone for off-screen CEF use,
+# but do not compile or expose the Wayland backend.
+ozone_auto_platforms=false
+ozone_platform="x11"
+ozone_platform_headless=true
+ozone_platform_x11=true
 EOF
 fi
 

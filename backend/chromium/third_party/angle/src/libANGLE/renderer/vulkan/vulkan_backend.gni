@@ -199,15 +199,6 @@ if (angle_use_x11) {
   ]
 }
 
-if (angle_use_wayland) {
-  vulkan_backend_sources += [
-    "linux/wayland/DisplayVkWayland.cpp",
-    "linux/wayland/DisplayVkWayland.h",
-    "linux/wayland/WindowSurfaceVkWayland.cpp",
-    "linux/wayland/WindowSurfaceVkWayland.h",
-  ]
-}
-
 if (angle_has_build && angle_use_gbm) {
   vulkan_backend_sources += [
     "linux/gbm/DisplayVkGbm.cpp",

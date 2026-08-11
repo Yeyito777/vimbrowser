@@ -1,8 +1,0 @@
-container { }
-
-/* We need to contain something because 0x0 nodes
-   cause NULL textures */
-color {
-  bounds: -1 -1 1 1;
-  color: transparent;
-}

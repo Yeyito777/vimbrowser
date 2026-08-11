@@ -25,8 +25,6 @@
 #include "ui/display/screen.h"
 #include "ui/events/event.h"
 #include "ui/linux/linux_ui.h"
-#include "ui/ozone/platform_selection.h"
-#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/extensions/x11_extension.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/platform_window/platform_window_init_properties.h"
@@ -129,8 +127,8 @@ void DesktopWindowTreeHostLinux::UpdateFrameHints() {
   } else {
     // Content window can have a window_targeter that allows located events fall
     // to the window underneath it. There is no window underneath the content
-    // window from aura's point of view so wayland platform needs to know about
-    // it.
+    // window from aura's point of view, so the platform window needs to know
+    // about it.
     gfx::Rect hit_test_rect_mouse_dp{
         platform_window()->GetBoundsInDIP().size()};
     gfx::Rect hit_test_rect_touch_dp = gfx::Rect{hit_test_rect_mouse_dp};
@@ -210,7 +208,7 @@ gfx::Point DesktopWindowTreeHostLinux::GetLocationOnScreenInPixels() const {
 void DesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
   // In Windows, the native events sent to chrome are separated into client
   // and non-client versions of events, which we record on our LocatedEvent
-  // structures. On X11/Wayland, we emulate the concept of non-client. Before we
+  // structures. On X11, we emulate the concept of non-client. Before we
   // pass this event to the cross platform event handling framework, we need to
   // make sure it is appropriately marked as non-client if it's in the non
   // client area, or otherwise, we can get into a state where the a window is
@@ -345,16 +343,7 @@ void DesktopWindowTreeHostLinux::AddAdditionalInitProperties(
   properties->wm_class_class = params.wm_class_class;
   properties->wm_role_name = params.wm_role_name;
 
-  properties->wayland_app_id = params.wayland_app_id;
-
-  // See CEF issue #3937.
-  if (std::string(ui::GetOzonePlatformName()) == "wayland") {
-    if (!properties->parent_widget) {
-      properties->parent_widget = params.parent_widget;
-    }
-  } else {
-    properties->parent_widget = params.parent_widget;
-  }
+  properties->parent_widget = params.parent_widget;
 
   DCHECK(!properties->x11_extension_delegate);
   properties->x11_extension_delegate = this;
@@ -371,32 +360,15 @@ DesktopWindowTreeHostLinux::GetKeyboardLayoutMap() {
 }
 
 bool DesktopWindowTreeHostLinux::SupportsMouseLock() {
-  auto* wayland_extension = ui::GetWaylandToplevelExtension(*platform_window());
-  if (!wayland_extension) {
-    return false;
-  }
-
-  return wayland_extension->SupportsPointerLock();
+  return false;
 }
 
 void DesktopWindowTreeHostLinux::LockMouse(aura::Window* window) {
   DesktopWindowTreeHostPlatform::LockMouse(window);
-
-  if (SupportsMouseLock()) {
-    auto* wayland_extension =
-        ui::GetWaylandToplevelExtension(*platform_window());
-    wayland_extension->LockPointer(true /*enabled*/);
-  }
 }
 
 void DesktopWindowTreeHostLinux::UnlockMouse(aura::Window* window) {
   DesktopWindowTreeHostPlatform::UnlockMouse(window);
-
-  if (SupportsMouseLock()) {
-    auto* wayland_extension =
-        ui::GetWaylandToplevelExtension(*platform_window());
-    wayland_extension->LockPointer(false /*enabled*/);
-  }
 }
 
 void DesktopWindowTreeHostLinux::OnCompleteSwapWithNewSize(

@@ -16,11 +16,9 @@
 #include "chrome/browser/ui/views/frame/browser_native_widget_aura_linux.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view.h"
-#include "chrome/browser/ui/views/tabs/dragging/tab_drag_controller.h"
 #include "chrome/browser/ui/views/tabs/tab_strip.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/skia/include/core/SkRRect.h"
-#include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
 #include "ui/base/mojom/window_show_state.mojom.h"
 #include "ui/base/ui_base_features.h"
 #include "ui/gfx/geometry/rect.h"
@@ -29,7 +27,6 @@
 #include "ui/linux/linux_ui.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/ozone/public/ozone_platform.h"
-#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/extensions/x11_extension.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 
@@ -46,16 +43,6 @@ bool ShouldCreateGlobalMenuBar() {
 absl::flat_hash_set<std::string>& SentStartupIds() {
   static base::NoDestructor<absl::flat_hash_set<std::string>> sent_startup_ids;
   return *sent_startup_ids;
-}
-
-// Returns the event source for the active tab drag session.
-std::optional<ui::mojom::DragEventSource> GetCurrentTabDragEventSource() {
-  if (auto* source_context = TabDragController::GetSourceContext()) {
-    if (auto* drag_controller = source_context->GetDragController()) {
-      return drag_controller->event_source();
-    }
-  }
-  return std::nullopt;
 }
 
 bool IsShowingFrame(bool use_custom_frame,
@@ -145,16 +132,6 @@ void BrowserDesktopWindowTreeHostLinux::TabDraggingKindChanged(
     bool is_dragging_window = tab_drag_kind == TabDragKind::kAllTabs;
     if (is_dragging_window != was_dragging_window) {
       x11_extension->SetOverrideRedirect(is_dragging_window);
-    }
-  }
-
-  if (auto* wayland_extension =
-          ui::GetWaylandToplevelExtension(*platform_window())) {
-    if (tab_drag_kind != TabDragKind::kNone) {
-      if (auto event_source = GetCurrentTabDragEventSource()) {
-        wayland_extension->StartWindowDraggingSessionIfNeeded(
-            *event_source, /*allow_system_drag=*/true);
-      }
     }
   }
 }

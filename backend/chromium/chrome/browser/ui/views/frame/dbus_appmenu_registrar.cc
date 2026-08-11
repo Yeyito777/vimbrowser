@@ -15,7 +15,6 @@
 #include "dbus/bus.h"
 #include "dbus/object_path.h"
 #include "dbus/object_proxy.h"
-#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/extensions/x11_extension.h"
 
 namespace {
@@ -42,15 +41,11 @@ void DbusAppmenuRegistrar::OnMenuBarCreated(DbusAppmenu* menu) {
 
 void DbusAppmenuRegistrar::OnMenuBarDestroyed(DbusAppmenu* menu) {
   DCHECK(menus_.contains(menu));
-  if (menus_[menu] == kRegistered) {
-    if (auto* toplevel_extension =
-            ui::GetWaylandToplevelExtension(*menu->platform_window())) {
-      toplevel_extension->UnsetAppmenu();
-    } else if (ui::GetX11Extension(*menu->platform_window())) {
-      dbus_utils::CallMethod<"u", "">(
-          registrar_proxy_, kAppMenuRegistrarInterface, "UnregisterWindow",
-          base::DoNothing(), menu->browser_frame_id());
-    }
+  if (menus_[menu] == kRegistered &&
+      ui::GetX11Extension(*menu->platform_window())) {
+    dbus_utils::CallMethod<"u", "">(
+        registrar_proxy_, kAppMenuRegistrarInterface, "UnregisterWindow",
+        base::DoNothing(), menu->browser_frame_id());
   }
   menus_.erase(menu);
 }
@@ -80,10 +75,7 @@ void DbusAppmenuRegistrar::RegisterMenu(DbusAppmenu* menu) {
   DCHECK(menus_[menu] == kInitializeSucceeded || menus_[menu] == kRegistered);
   menus_[menu] = kRegistered;
 
-  if (auto* toplevel_extension =
-          ui::GetWaylandToplevelExtension(*menu->platform_window())) {
-    toplevel_extension->SetAppmenu(bus_->GetConnectionName(), menu->GetPath());
-  } else if (ui::GetX11Extension(*menu->platform_window())) {
+  if (ui::GetX11Extension(*menu->platform_window())) {
     dbus_utils::CallMethod<"uo", "">(
         registrar_proxy_, kAppMenuRegistrarInterface, "RegisterWindow",
         base::DoNothing(), menu->browser_frame_id(),

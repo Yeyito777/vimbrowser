@@ -311,10 +311,6 @@ if (is_win || is_linux || is_chromeos || is_android || is_fuchsia || is_apple) {
     if (angle_use_x11) {
       sources += [ "egl_tests/EGLX11VisualTest.cpp" ]
     }
-    if (angle_use_wayland) {
-      sources += [ "egl_tests/EGLWaylandTest.cpp" ]
-    }
-
     deps = [
       ":angle_common_test_utils_shared",
       "$angle_root:angle_gl_enum_utils",

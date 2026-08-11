@@ -7,9 +7,6 @@ import("gni/angle.gni")
 if (angle_enable_vulkan) {
   import("//build_overrides//vulkan_headers.gni")
 }
-if (angle_use_wayland) {
-  import("//build_overrides/wayland.gni")
-}
 if (angle_enable_wgpu) {
   import("//build_overrides/dawn.gni")
   import("//build_overrides/tint.gni")
@@ -652,13 +649,6 @@ config("angle_gl_visibility_config") {
   }
 }
 
-config("angle_vulkan_wayland_config") {
-  if (angle_enable_vulkan && angle_use_wayland &&
-      defined(vulkan_wayland_include_dirs)) {
-    include_dirs = vulkan_wayland_include_dirs
-  }
-}
-
 config("angle_gpu_info_util_config") {
   include_dirs = [
     "include",
@@ -719,10 +709,6 @@ angle_static_library("angle_gpu_info_util") {
         "Xi",
         "Xext",
       ]
-    }
-
-    if (angle_use_wayland && angle_has_build) {
-      public_deps += [ ":angle_wayland" ]
     }
   }
 
@@ -1209,34 +1195,6 @@ angle_source_set("angle_gl_enum_utils") {
     "src/common/gl_enum_utils_autogen.cpp",
     "src/common/gl_enum_utils_autogen.h",
   ]
-}
-
-if (angle_use_wayland) {
-  config("angle_wayland_config") {
-    if ("$wayland_gn_dir" == "") {
-      libs = [
-        "wayland-client",
-        "wayland-egl",
-      ]
-    }
-
-    include_dirs = [
-      "$wayland_dir/egl",
-      "$wayland_dir/src",
-    ]
-  }
-
-  group("angle_wayland") {
-    public_configs = [ ":angle_wayland_config" ]
-
-    if ("$wayland_gn_dir" != "") {
-      # Use third-party targets
-      public_deps = [
-        "$wayland_gn_dir:wayland_client",
-        "$wayland_gn_dir:wayland_egl",
-      ]
-    }
-  }
 }
 
 if (!defined(angle_abseil_cpp_dir)) {

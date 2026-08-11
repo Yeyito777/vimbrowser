@@ -82,7 +82,6 @@ declare_args() {
       ozone_platform_x11 = true
     } else if (is_linux) {
       ozone_platform = "x11"
-      ozone_platform_wayland = true
       ozone_platform_x11 = true
     } else if (is_fuchsia) {
       ozone_platform = "flatland"
@@ -110,6 +109,8 @@ if (is_a_target_toolchain) {
                          ozone_platform_flatland || ozone_platform_headless ||
                          ozone_platform_x11 || ozone_platform_wayland),
       "Must set use_ozone to select ozone platforms")
+  assert(!ozone_platform_wayland,
+         "Wayland support has been removed from vimbrowser")
 }
 
 # TODO(petermcneeley): Backwards compatiblity support for VM images.
