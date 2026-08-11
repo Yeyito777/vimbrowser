@@ -119,7 +119,6 @@ class UtilityProcessSandboxBrowserTest
       case Sandbox::kAudio:
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       case Sandbox::kShapeDetection:
-      case Sandbox::kOnDeviceTranslation:
 #if BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)
       case Sandbox::kHardwareVideoDecoding:
 #endif  // BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)

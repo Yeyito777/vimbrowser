@@ -134,12 +134,6 @@ enum Sandbox {
   // Nearby Presence.
   [EnableIf=is_chromeos] kNearby,
 
-  // Hosts On Device Translation service.
-  // Currently the sandboxing of the On Device Translation service needs
-  // a dedicated sandbox type on macOS, Linux and ChromeOS.
-  // On Windows the kService sandbox type is used.
-  [EnableIf=is_linux|is_mac|is_chromeos] kOnDeviceTranslation,
-
   // Like kUtility but allows loading of the shape detection internal library.
   [EnableIf=is_chromeos|is_linux] kShapeDetection,
 };

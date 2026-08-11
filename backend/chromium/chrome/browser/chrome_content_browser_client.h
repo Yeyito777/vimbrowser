@@ -29,7 +29,6 @@
 #include "chrome/common/renderer_configuration.mojom.h"
 #include "components/file_access/scoped_file_access.h"
 #include "components/guest_view/buildflags/buildflags.h"
-#include "components/on_device_translation/buildflags/buildflags.h"
 #include "components/safe_browsing/buildflags.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/content_browser_client.h"
@@ -50,7 +49,6 @@
 #include "services/network/public/cpp/permissions_policy/permissions_policy_declaration.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom-forward.h"
 #include "third_party/blink/public/mojom/worker/shared_worker_info.mojom.h"
 #include "ui/base/clipboard/clipboard_metadata.h"
 
@@ -1136,15 +1134,6 @@ class ChromeContentBrowserClient : public content::ContentBrowserClient {
       content::RenderFrameHost* rfh,
       mojo::PendingReceiver<blink::mojom::AIManager> receiver) override;
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-  void BindTranslationManager(
-      content::RenderProcessHost* host,
-      content::BrowserContext* browser_context,
-      base::SupportsUserData* context_user_data,
-      const url::Origin& origin,
-      mojo::PendingReceiver<blink::mojom::TranslationManager> receiver)
-      override;
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
   // Binds to a new instance of
   // `language_detection::ContentLanguageDetectionDriver` which receives the

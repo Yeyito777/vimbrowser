@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//components/on_device_translation/buildflags/features.gni")
 import("//components/signin/features.gni")
 import("//extensions/buildflags/buildflags.gni")
 
@@ -378,10 +377,6 @@ source_set("policy_specific_browser_tests") {
     deps += [ "//chrome/browser/safe_browsing/android:test_support" ]
   }
 
-  if (enable_on_device_translation) {
-    sources += [ "test/translator_api_policy_browsertest.cc" ]
-    deps += [ "//chrome/browser/on_device_translation:test_support" ]
-  }
 }
 
 source_set("browser_tests") {

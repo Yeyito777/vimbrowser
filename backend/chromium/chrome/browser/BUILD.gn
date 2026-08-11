@@ -23,7 +23,6 @@ import("//components/enterprise/buildflags/buildflags.gni")
 import("//components/guest_view/buildflags/buildflags.gni")
 import("//components/lens/features.gni")
 import("//components/offline_pages/buildflags/features.gni")
-import("//components/on_device_translation/buildflags/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/os_crypt/sync/features.gni")
 import("//components/surface_embed/buildflags/buildflags.gni")
@@ -6900,7 +6899,6 @@ static_library("browser") {
       "//chrome/browser/updates:update_metrics",
       "//chrome/services/system_signals/public/cpp/browser",
       "//chrome/updater:browser_sources",
-      "//components/on_device_translation",
       "//components/supervised_user/core/common:features",
       "//components/themes:policy",
     ]
@@ -7799,12 +7797,6 @@ static_library("browser") {
       ]
     }
   }
-  if (enable_on_device_translation) {
-    deps += [
-      "//chrome/browser/on_device_translation",
-      "//components/on_device_translation",
-    ]
-  }
 
   if (enable_pdf) {
     deps += [
@@ -8134,7 +8126,6 @@ static_library("browser_public_dependencies") {
     "//components/enterprise/common/proto:legacy_tech_events_proto",
     "//components/input",
     "//components/media_router/common/mojom:media_controller",
-    "//components/on_device_translation/buildflags",
     "//components/optimization_guide:machine_learning_tflite_buildflags",
     "//components/optimization_guide/core",
     "//components/page_image_service/mojom:mojo_bindings",
@@ -8396,7 +8387,6 @@ static_library("browser_generated_files") {
       "//chrome/browser/enterprise/connectors/device_trust/attestation/common/proto:google_key_proto",
       "//chrome/browser/enterprise/connectors/device_trust/attestation/common/proto:interface_proto",
       "//chrome/browser/ui/webui/app_home:mojo_bindings",
-      "//chrome/browser/ui/webui/on_device_translation_internals:mojo_bindings",
       "//chrome/browser/ui/webui/whats_new:mojo_bindings",
     ]
   }

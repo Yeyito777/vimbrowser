@@ -266,7 +266,6 @@
 #include "components/no_state_prefetch/browser/no_state_prefetch_manager.h"
 #include "components/no_state_prefetch/common/no_state_prefetch_final_status.h"
 #include "components/no_state_prefetch/common/no_state_prefetch_url_loader_throttle.h"
-#include "components/on_device_translation/buildflags/buildflags.h"
 #include "components/page_load_metrics/browser/metrics_web_contents_observer.h"
 #include "components/password_manager/core/browser/features/password_features.h"
 #include "components/password_manager/core/browser/password_manager_metrics_util.h"
@@ -687,10 +686,6 @@
 #include "chrome/browser/offline_pages/offline_page_url_loader_request_interceptor.h"
 #endif
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-#include "chrome/browser/on_device_translation/translation_manager_impl.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom.h"
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
 #if BUILDFLAG(FULL_SAFE_BROWSING)
 #include "chrome/browser/enterprise/connectors/analysis/content_analysis_delegate.h"
@@ -734,9 +729,6 @@
 #include "components/feed/feed_feature_list.h"
 #endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-#include "components/on_device_translation/component_manager.h"
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
 #if BUILDFLAG(ENABLE_REQUEST_HEADER_INTEGRITY)
 #include "chrome/common/request_header_integrity/request_header_integrity_url_loader_throttle.h"  // nogncheck crbug.com/1125897
@@ -8109,19 +8101,6 @@ bool ChromeContentBrowserClient::SetupEmbedderSandboxParameters(
         sandbox::policy::kParamScreenAiComponentPath,
         screen_ai_binary_path.value());
   }
-  if (sandbox_type == sandbox::mojom::Sandbox::kOnDeviceTranslation) {
-    auto translatekit_binary_path =
-        on_device_translation::ComponentManager::GetInstance()
-            .GetTranslateKitComponentPath();
-    if (translatekit_binary_path.empty()) {
-      VLOG(1) << "TranslationKit component not found.";
-      return false;
-    }
-    return serializer->SetParameter(
-        sandbox::policy::kParamTranslatekitComponentPath,
-        translatekit_binary_path.value());
-  }
-
   return false;
 }
 
@@ -8725,18 +8704,6 @@ void ChromeContentBrowserClient::BindAIManager(
   ai_manager->AddReceiver(std::move(receiver));
 }
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-void ChromeContentBrowserClient::BindTranslationManager(
-    content::RenderProcessHost* host,
-    content::BrowserContext* browser_context,
-    base::SupportsUserData* context_user_data,
-    const url::Origin& origin,
-    mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-  on_device_translation::TranslationManagerImpl::Bind(
-      host, browser_context, context_user_data, origin,
-      g_browser_process->component_updater(), std::move(receiver));
-}
-#endif
 
 namespace {
 

@@ -77,10 +77,6 @@ constexpr char kTtsSandbox[] = "tts";
 constexpr char kNearbySandbox[] = "nearby";
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-constexpr char kOnDeviceTranslationSandbox[] = "on_device_translation";
-#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-
 }  // namespace
 
 using sandbox::mojom::Sandbox;
@@ -161,9 +157,6 @@ void SetCommandLineFlagsForSandboxType(base::CommandLine* command_line,
     case Sandbox::kScreenAI:
 #endif
     case Sandbox::kSpeechRecognition:
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-    case Sandbox::kOnDeviceTranslation:
-#endif
       DCHECK(command_line->GetSwitchValueASCII(switches::kProcessType) ==
              switches::kUtilityProcess);
       DCHECK(!command_line->HasSwitch(switches::kServiceSandboxType));
@@ -257,10 +250,6 @@ std::string StringFromUtilitySandboxType(Sandbox sandbox_type) {
       return kPrintBackendSandbox;
     case Sandbox::kScreenAI:
       return kScreenAISandbox;
-#endif
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-    case Sandbox::kOnDeviceTranslation:
-      return kOnDeviceTranslationSandbox;
 #endif
 #if BUILDFLAG(IS_WIN)
     case Sandbox::kXrCompositing:
@@ -385,11 +374,6 @@ sandbox::mojom::Sandbox UtilitySandboxTypeFromString(
   }
   if (sandbox_string == kScreenAISandbox) {
     return Sandbox::kScreenAI;
-  }
-#endif
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-  if (sandbox_string == kOnDeviceTranslationSandbox) {
-    return Sandbox::kOnDeviceTranslation;
   }
 #endif
 #if BUILDFLAG(IS_FUCHSIA)

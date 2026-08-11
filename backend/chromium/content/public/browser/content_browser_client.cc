@@ -1903,13 +1903,6 @@ void ContentBrowserClient::BindAIManager(
   EchoAIManagerImpl::Create(std::move(receiver));
 }
 
-void ContentBrowserClient::BindTranslationManager(
-    RenderProcessHost* process_host,
-    BrowserContext* browser_context,
-    base::SupportsUserData* context_user_data,
-    const url::Origin& origin,
-    mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {}
-
 namespace {
 // TODO(https://crbug.com/383035345): Use BASE_FEATURE_PARAM.
 const base::FeatureParam<std::string> kLanguageDetectionLocalFileModelPath{

@@ -20,7 +20,6 @@
 #include "sandbox/policy/mac/mirroring.sb.h"
 #include "sandbox/policy/mac/network.sb.h"
 #include "sandbox/policy/mac/on_device_model_execution.sb.h"
-#include "sandbox/policy/mac/on_device_translation.sb.h"
 #include "sandbox/policy/mac/print_backend.sb.h"
 #include "sandbox/policy/mac/print_compositor.sb.h"
 #include "sandbox/policy/mac/proxy_resolver.sb.h"
@@ -71,8 +70,6 @@ std::string GetSandboxProfile(sandbox::mojom::Sandbox sandbox_type) {
         return kSeatbeltPolicyString_speech_recognition;
       case sandbox::mojom::Sandbox::kOnDeviceModelExecution:
         return kSeatbeltPolicyString_on_device_model_execution;
-      case sandbox::mojom::Sandbox::kOnDeviceTranslation:
-        return kSeatbeltPolicyString_on_device_translation;
       case sandbox::mojom::Sandbox::kProxyResolver:
         return kSeatbeltPolicyString_proxy_resolver;
       // `kService` and `kUtility` are the same on OS_MAC, so fallthrough.

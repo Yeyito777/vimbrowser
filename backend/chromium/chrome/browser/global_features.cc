@@ -25,7 +25,6 @@
 #include "chrome/browser/safe_browsing/application_advanced_protection_status_detector.h"
 #include "chrome/browser/ui/browser_window/public/global_browser_collection.h"
 #include "components/application_locale_storage/application_locale_storage.h"
-#include "components/on_device_translation/buildflags/buildflags.h"
 #include "components/safe_browsing/core/common/features.h"
 #include "media/base/media_switches.h"
 #include "net/net_buildflags.h"
@@ -67,9 +66,6 @@
 #include "components/unexportable_keys/unexportable_key_service_impl.h"
 #endif  // BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-#include "chrome/browser/on_device_translation/installer_impl.h"
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
 namespace {
 
@@ -140,10 +136,6 @@ void GlobalFeatures::PostBrowserProcessInit() {
   ip_address_space_overrides_prefs_observer_ = std::make_unique<
       local_network_access::IPAddressSpaceOverridesPrefsObserver>(
       g_browser_process->local_state());
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-  on_device_translation_installer_ = std::make_unique<
-      on_device_translation::OnDeviceTranslationInstallerImpl>();
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
 #if !BUILDFLAG(IS_ANDROID)
   profile_launch_observer_ = std::make_unique<ProfileLaunchObserver>();

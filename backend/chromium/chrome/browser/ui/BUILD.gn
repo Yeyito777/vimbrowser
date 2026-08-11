@@ -3063,10 +3063,6 @@ static_library("ui") {
       "webui/intro/intro_handler.h",
       "webui/intro/intro_ui.cc",
       "webui/intro/intro_ui.h",
-      "webui/on_device_translation_internals/on_device_translation_internals_page_handler_impl.cc",
-      "webui/on_device_translation_internals/on_device_translation_internals_page_handler_impl.h",
-      "webui/on_device_translation_internals/on_device_translation_internals_ui.cc",
-      "webui/on_device_translation_internals/on_device_translation_internals_ui.h",
       "webui/profile_helper.cc",
       "webui/profile_helper.h",
       "webui/settings/on_device_ai_settings_handler.cc",
@@ -3107,7 +3103,6 @@ static_library("ui") {
       "//chrome/updater:browser_sources",
       "//components/capture_mode",
       "//components/country_codes",
-      "//components/on_device_translation",
       "//services/audio/public/mojom",
       "//services/video_capture/public/mojom",
     ]

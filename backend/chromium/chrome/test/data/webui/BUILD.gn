@@ -210,7 +210,6 @@ source_set("browser_tests") {
     sources += [
       "app_home/app_home_browsertest.cc",
       "app_settings/app_settings_browsertest.cc",
-      "on_device_translation_internals/on_device_translation_internals_browsertest.cc",
       "updater/updater_browsertest.cc",
       "whats_new/whats_new_browsertest.cc",
     ]
@@ -710,7 +709,6 @@ generate_grd("build_grd") {
     deps += [
       "app_home:build_grdp",
       "app_settings:build_grdp",
-      "on_device_translation_internals:build_grdp",
       "updater:build_grdp",
       "whats_new:build_grdp",
     ]
@@ -718,7 +716,6 @@ generate_grd("build_grd") {
       "$target_gen_dir/updater/resources.grdp",
       "$target_gen_dir/app_settings/resources.grdp",
       "$target_gen_dir/app_home/resources.grdp",
-      "$target_gen_dir/on_device_translation_internals/resources.grdp",
       "$target_gen_dir/whats_new/resources.grdp",
     ]
   }

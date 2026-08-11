@@ -173,7 +173,6 @@
 #include "third_party/blink/public/mojom/mediastream/media_devices.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "third_party/blink/public/mojom/notifications/notification_service.mojom.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom.h"
 #include "third_party/blink/public/mojom/origin_trials/origin_trial_state_host.mojom.h"
 #include "third_party/blink/public/mojom/payments/payment_app.mojom.h"
 #include "third_party/blink/public/mojom/payments/secure_payment_confirmation_service.mojom.h"
@@ -1139,15 +1138,6 @@ void PopulateBinderMapWithContext(
       }));
 #endif
 
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](RenderFrameHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        GetContentClient()->browser()->BindTranslationManager(
-            host->GetProcess(), host->GetBrowserContext(),
-            &RenderFrameHostImpl::From(host)->document_associated_data(),
-            host->GetLastCommittedOrigin(), std::move(receiver));
-      }));
-
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](RenderFrameHost* host,
@@ -1398,15 +1388,6 @@ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
                           base::Unretained(GetContentClient()->browser()),
                           host->GetProcessHost()->GetBrowserContext(),
                           base::Unretained(host), /*rfh=*/nullptr));
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](DedicatedWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        auto* process_host = host->GetProcessHost();
-        GetContentClient()->browser()->BindTranslationManager(
-            process_host, process_host->GetBrowserContext(), host,
-            host->GetStorageKey().origin(), std::move(receiver));
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](DedicatedWorkerHost* host,
@@ -1518,15 +1499,6 @@ void PopulateSharedWorkerBinders(SharedWorkerHost* host, mojo::BinderMap* map) {
         &BindWebNNContextProviderForWorker<SharedWorkerHost>,
         base::Unretained(host)));
   }
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](SharedWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        auto* process_host = host->GetProcessHost();
-        GetContentClient()->browser()->BindTranslationManager(
-            process_host, process_host->GetBrowserContext(), host,
-            host->GetStorageKey().origin(), std::move(receiver));
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](SharedWorkerHost* host,
@@ -1688,17 +1660,6 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
         &BindWebNNContextProviderForWorker<ServiceWorkerHost>,
         base::Unretained(host)));
   }
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](ServiceWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        if (auto* process_host = static_cast<RenderProcessHostImpl*>(
-                RenderProcessHost::FromID(host->worker_process_id()))) {
-          GetContentClient()->browser()->BindTranslationManager(
-              process_host, process_host->GetBrowserContext(), host,
-              host->GetBucketStorageKey().origin(), std::move(receiver));
-        }
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](ServiceWorkerHost* host,

@@ -70,10 +70,6 @@ namespace local_network_access {
 class IPAddressSpaceOverridesPrefsObserver;
 }  // namespace local_network_access
 
-namespace on_device_translation {
-class OnDeviceTranslationInstaller;
-}
-
 // This class owns the core controllers for features that are globally
 // scoped on desktop and Android. It can be subclassed by tests to perform
 // dependency injection.
@@ -261,9 +257,6 @@ class GlobalFeatures {
 #endif  // BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 
 #if !BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<on_device_translation::OnDeviceTranslationInstaller>
-      on_device_translation_installer_;
-
   std::unique_ptr<ProfileLaunchObserver> profile_launch_observer_;
 #endif  // !BUILDFLAG(IS_ANDROID)
 };

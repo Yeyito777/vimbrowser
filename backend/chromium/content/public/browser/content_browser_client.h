@@ -92,7 +92,6 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_error.mojom-forward.h"
 #include "third_party/blink/public/mojom/manifest/manifest.mojom-forward.h"
 #include "third_party/blink/public/mojom/navigation/navigation_params.mojom-forward.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom-forward.h"
 #include "third_party/blink/public/mojom/origin_trials/origin_trials_settings.mojom-forward.h"
 #include "third_party/blink/public/mojom/payments/secure_payment_confirmation_service.mojom-forward.h"
 #include "third_party/blink/public/mojom/worker/shared_worker_info.mojom.h"
@@ -3272,16 +3271,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       base::SupportsUserData* context_user_data,
       RenderFrameHost* rfh,
       mojo::PendingReceiver<blink::mojom::AIManager> receiver);
-
-  // Binds the TranslationManager for the given `process_host`,
-  // `browser_context`, `context_user_data` and `origin` to `receiver`. The
-  // created TranslationManager will be owned by the `context_user_data`.
-  virtual void BindTranslationManager(
-      RenderProcessHost* process_host,
-      BrowserContext* browser_context,
-      base::SupportsUserData* context_user_data,
-      const url::Origin& origin,
-      mojo::PendingReceiver<blink::mojom::TranslationManager> receiver);
 
   // Binds to a singleton new instance of
   // `language_detection::ContentLanguageDetectionDriver` which receives the
