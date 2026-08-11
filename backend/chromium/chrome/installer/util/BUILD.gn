@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//base/win/embedded_i18n/generate_embedded_i18n.gni")
 import("//build/config/chrome_build.gni")
 
 import("//testing/test.gni")
@@ -215,33 +214,35 @@ group("with_rc_strings") {
   }
 }
 
-generate_embedded_i18n("generate_strings") {
-  visibility = [
-    ":strings",
-    ":with_no_strings",
-  ]
-  extractor_datafile =
-      "//chrome/installer/util/prebuild/create_installer_string_rc.py"
+if (is_win) {
+  generate_embedded_i18n("generate_strings") {
+    visibility = [
+      ":strings",
+      ":with_no_strings",
+    ]
+    extractor_datafile =
+        "//chrome/installer/util/prebuild/create_installer_string_rc.py"
 
-  grdfile_folder = "//chrome/app/"
-  grdfile_name = "${branding_path_product}_strings"
-  xtb_relative_path = "resources"
-  grd_files_info = [ [
-        grdfile_folder,
-        grdfile_name,
-        xtb_relative_path,
-        default_embedded_i18_locales,
-      ] ]
+    grdfile_folder = "//chrome/app/"
+    grdfile_name = "${branding_path_product}_strings"
+    xtb_relative_path = "resources"
+    grd_files_info = [ [
+          grdfile_folder,
+          grdfile_name,
+          xtb_relative_path,
+          default_embedded_i18_locales,
+        ] ]
 
-  output_file_name_base = "installer_util_strings"
+    output_file_name_base = "installer_util_strings"
 
-  branding = branding_path_product
-}
+    branding = branding_path_product
+  }
 
-# Compile the generated .rc file.
-source_set("strings") {
-  sources = get_target_outputs(":generate_strings")
-  public_deps = [ ":generate_strings" ]
+  # Compile the generated .rc file.
+  source_set("strings") {
+    sources = get_target_outputs(":generate_strings")
+    public_deps = [ ":generate_strings" ]
+  }
 }
 
 source_set("constants") {

@@ -13,8 +13,6 @@
 #include "content/public/browser/global_routing_id.h"
 #include "printing/printed_document.h"
 
-#include "base/win/windows_h_disallowed.h"
-
 namespace printing {
 
 PrintQueriesQueue::PrintQueriesQueue() = default;

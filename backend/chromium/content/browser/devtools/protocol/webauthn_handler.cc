@@ -24,11 +24,6 @@
 #include "device/fido/virtual_fido_device.h"
 #include "device/fido/virtual_u2f_device.h"
 
-// This should be after all other #includes.
-#if defined(_WINDOWS_)  // Detect whether windows.h was included.
-#include "base/win/windows_h_disallowed.h"
-#endif  // defined(_WINDOWS_)
-
 namespace content::protocol {
 
 namespace {

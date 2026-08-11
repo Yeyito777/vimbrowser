@@ -25,10 +25,6 @@ cargo_crate("lib") {
     "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/unix.rs",
     "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/wasm.rs",
     "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/wasm_atomic.rs",
-    "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/windows/bindings.rs",
-    "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/windows/keyed_event.rs",
-    "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/windows/mod.rs",
-    "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/thread_parker/windows/waitaddress.rs",
     "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/util.rs",
     "//third_party/rust/chromium_crates_io/vendor/parking_lot_core-v0_9/src/word_lock.rs",
   ]

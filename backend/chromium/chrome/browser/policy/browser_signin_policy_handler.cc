@@ -11,7 +11,6 @@
 #include "base/values.h"
 #include "build/build_config.h"
 #include "chrome/common/pref_names.h"
-#include "chrome/credential_provider/common/gcp_strings.h"
 #include "components/policy/core/common/policy_map.h"
 #include "components/policy/policy_constants.h"
 #include "components/prefs/pref_value_map.h"

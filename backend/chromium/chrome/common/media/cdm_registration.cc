@@ -16,7 +16,6 @@
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/version.h"
-#include "base/win/windows_version.h"
 #include "build/build_config.h"
 #include "components/cdm/common/buildflags.h"
 #include "content/public/common/cdm_info.h"
@@ -48,6 +47,7 @@
 
 #if BUILDFLAG(ENABLE_PLAYREADY)
 #include "base/file_version_info_win.h"
+#include "base/win/windows_version.h"
 #include "components/cdm/common/playready_cdm_common.h"
 #include "media/base/win/mf_feature_checks.h"
 #endif  // BUILDFLAG(ENABLE_PLAYREADY)

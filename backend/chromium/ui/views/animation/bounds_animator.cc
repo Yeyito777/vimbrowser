@@ -16,8 +16,6 @@
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
 
-#include "base/win/windows_h_disallowed.h"
-
 namespace views {
 
 BoundsAnimator::BoundsAnimator(View* parent, bool use_transforms)

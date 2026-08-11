@@ -19,7 +19,6 @@
 #include "cef/libcef/common/cef_switches.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/chrome_process_singleton.h"
-#include "chrome/chrome_elf/chrome_elf_main.h"
 #include "chrome/common/chrome_result_codes.h"
 #include "chrome/common/profiler/main_thread_stack_sampling_profiler.h"
 #include "components/crash/core/app/crash_switches.h"
