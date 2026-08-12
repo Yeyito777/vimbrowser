@@ -12,7 +12,6 @@
 #include "base/time/time.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "components/messages/android/message_enums.h"
 #include "components/permissions/features.h"
 #include "components/permissions/permission_util.h"
 #include "components/permissions/resolvers/permission_prompt_options.h"
@@ -90,17 +89,12 @@ class PermissionHatsTriggerHelper {
   struct SurveyParametersForHats {
     explicit SurveyParametersForHats(
         double trigger_probability,
-        std::optional<std::string> supplied_trigger_id = std::nullopt,
-        std::optional<std::u16string> custom_survey_invitation = std::nullopt,
-        std::optional<messages::MessageIdentifier> message_identifier =
-            std::nullopt);
+        std::optional<std::string> supplied_trigger_id = std::nullopt);
     SurveyParametersForHats(const SurveyParametersForHats& other);
     ~SurveyParametersForHats();
 
     double trigger_probability;
     std::optional<std::string> supplied_trigger_id;
-    std::optional<std::u16string> custom_survey_invitation;
-    std::optional<messages::MessageIdentifier> message_identifier;
   };
 
   struct SurveyProductSpecificData {

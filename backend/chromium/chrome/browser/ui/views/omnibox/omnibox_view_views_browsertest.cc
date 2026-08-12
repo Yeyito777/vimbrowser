@@ -1454,15 +1454,14 @@ class OmniboxViewViewsOnFocusZpsTest : public OmniboxViewViewsTest {
 };
 
 IN_PROC_BROWSER_TEST_F(OmniboxViewViewsOnFocusZpsTest, ShowHatsSurvey) {
-  EXPECT_CALL(*mock_hats_service(), LaunchSurvey(_, _, _, _, _, _, _))
+  EXPECT_CALL(*mock_hats_service(), LaunchSurvey(_, _, _, _, _, _))
       .Times(1)
       .WillOnce(
           [](const std::string& trigger, base::OnceClosure success_callback,
              base::OnceClosure failure_callback,
              const SurveyBitsData& product_specific_bits_data,
              const SurveyStringData& product_specific_string_data,
-             const std::optional<std::string>& supplied_trigger_id,
-             const HatsService::SurveyOptions& survey_options) -> void {
+             const std::optional<std::string>& supplied_trigger_id) -> void {
             EXPECT_TRUE(
                 trigger == kHatsSurveyTriggerOnFocusZpsSuggestionsHappiness ||
                 trigger == kHatsSurveyTriggerOnFocusZpsSuggestionsUtility);

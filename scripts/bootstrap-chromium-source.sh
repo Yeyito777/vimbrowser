@@ -124,6 +124,10 @@ solutions = [
     "custom_deps": {},
     "custom_vars": {
       "checkout_pgo_profiles": False,
+      # ResultDB test-location metadata scans every platform ownership tree and
+      # is unrelated to building vimbrowser. Unsupported platform roots are
+      # physically absent from this fork, so never run that developer-only hook.
+      "generate_location_tags": False,
       "source_tarball": False,
       "siso_version": "latest",
     },
@@ -162,6 +166,7 @@ EOF
 infra/3pp/tools/rollup_libs/${platform} version:3@4.22.4
 EOF
   gclient runhooks
+  "${repo_dir}/scripts/prune-synced-chromium-deps.py"
 else
   echo "[+] Skipping gclient sync (set SYNC_DEPS=1 to refresh dependencies)."
 fi

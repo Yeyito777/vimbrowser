@@ -125,8 +125,8 @@ class HatsServiceDesktop : public HatsService {
                     base::OnceClosure failure_callback,
                     const SurveyBitsData& product_specific_bits_data,
                     const SurveyStringData& product_specific_string_data,
-                    const std::optional<std::string>& supplied_trigger_id,
-                    const SurveyOptions& survey_options) override;
+                    const std::optional<std::string>& supplied_trigger_id)
+      override;
 
   using HatsService::LaunchSurveyForWebContents;
   void LaunchSurveyForWebContents(
@@ -136,8 +136,7 @@ class HatsServiceDesktop : public HatsService {
       const SurveyStringData& product_specific_string_data,
       base::OnceClosure success_callback,
       base::OnceClosure failure_callback,
-      const std::optional<std::string>& supplied_trigger_id,
-      const SurveyOptions& survey_options) override;
+      const std::optional<std::string>& supplied_trigger_id) override;
 
   using HatsService::LaunchDelayedSurvey;
   bool LaunchDelayedSurvey(
@@ -156,8 +155,7 @@ class HatsServiceDesktop : public HatsService {
       NavigationBehavior navigation_behavior,
       base::OnceClosure success_callback,
       base::OnceClosure failure_callback,
-      const std::optional<std::string>& supplied_trigger_id,
-      const SurveyOptions& survey_options) override;
+      const std::optional<std::string>& supplied_trigger_id) override;
 
   void SetSurveyMetadataForTesting(const HatsService::SurveyMetadata& metadata);
   void GetSurveyMetadataForTesting(HatsService::SurveyMetadata* metadata) const;

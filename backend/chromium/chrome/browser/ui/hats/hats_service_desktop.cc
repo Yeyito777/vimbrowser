@@ -164,7 +164,7 @@ void HatsServiceDesktop::DelayedSurveyTask::Launch() {
     hats_service_->LaunchSurveyForWebContents(
         trigger_, web_contents(), product_specific_bits_data_,
         product_specific_string_data_, std::move(success_callback_),
-        std::move(failure_callback_), supplied_trigger_id_, SurveyOptions());
+        std::move(failure_callback_), supplied_trigger_id_);
   }
 
   hats_service_->RemoveTask(*this);
@@ -209,12 +209,7 @@ void HatsServiceDesktop::LaunchSurvey(
     base::OnceClosure failure_callback,
     const SurveyBitsData& product_specific_bits_data,
     const SurveyStringData& product_specific_string_data,
-    const std::optional<std::string>& supplied_trigger_id,
-    const SurveyOptions& survey_options) {
-  CHECK(!survey_options.custom_invitation.has_value() &&
-        !survey_options.message_identifier.has_value())
-      << "Custom invitation strings and message types are not supported on "
-         "desktop.";
+    const std::optional<std::string>& supplied_trigger_id) {
   if (!ShouldShowSurvey(trigger)) {
     if (!failure_callback.is_null()) {
       std::move(failure_callback).Run();
@@ -235,12 +230,7 @@ void HatsServiceDesktop::LaunchSurveyForWebContents(
     const SurveyStringData& product_specific_string_data,
     base::OnceClosure success_callback,
     base::OnceClosure failure_callback,
-    const std::optional<std::string>& supplied_trigger_id,
-    const SurveyOptions& survey_options) {
-  CHECK(!survey_options.custom_invitation.has_value() &&
-        !survey_options.message_identifier.has_value())
-      << "Custom invitation strings and message types are not supported on "
-         "desktop.";
+    const std::optional<std::string>& supplied_trigger_id) {
   if (ShouldShowSurvey(trigger) && web_contents &&
       web_contents->GetVisibility() == content::Visibility::VISIBLE) {
     LaunchSurveyForBrowser(chrome::FindBrowserWithTab(web_contents), trigger,
@@ -259,14 +249,13 @@ bool HatsServiceDesktop::LaunchDelayedSurvey(
   void (HatsServiceDesktop::*launch_survey)(
       const std::string&, base::OnceClosure, base::OnceClosure,
       const SurveyBitsData&, const SurveyStringData&,
-      const std::optional<std::string>&, const SurveyOptions&) =
-      &HatsServiceDesktop::LaunchSurvey;
+      const std::optional<std::string>&) = &HatsServiceDesktop::LaunchSurvey;
   return base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE,
       base::BindOnce(launch_survey, weak_ptr_factory_.GetWeakPtr(), trigger,
                      base::DoNothing(), base::DoNothing(),
                      product_specific_bits_data, product_specific_string_data,
-                     std::nullopt, SurveyOptions()),
+                     std::nullopt),
       base::Milliseconds(timeout_ms));
 }
 
@@ -279,12 +268,7 @@ bool HatsServiceDesktop::LaunchDelayedSurveyForWebContents(
     NavigationBehavior navigation_behavior,
     base::OnceClosure success_callback,
     base::OnceClosure failure_callback,
-    const std::optional<std::string>& supplied_trigger_id,
-    const SurveyOptions& survey_options) {
-  CHECK(!survey_options.custom_invitation.has_value() &&
-        !survey_options.message_identifier.has_value())
-      << "Custom invitation strings and message types are not supported on "
-         "desktop.";
+    const std::optional<std::string>& supplied_trigger_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (survey_configs_by_triggers_.find(trigger) ==
       survey_configs_by_triggers_.end()) {

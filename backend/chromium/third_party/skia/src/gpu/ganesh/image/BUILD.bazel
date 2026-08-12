@@ -19,8 +19,6 @@ IMAGE_FILES = [
     "SkImage_GaneshYUVA.h",
     "SkImage_LazyTexture.cpp",
     "SkImage_LazyTexture.h",
-    "SkImage_RasterPinnable.cpp",
-    "SkImage_RasterPinnable.h",
     "SkSpecialImage_Ganesh.cpp",
     "SkSpecialImage_Ganesh.h",
 ]

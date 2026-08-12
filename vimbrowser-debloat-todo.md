@@ -30,6 +30,15 @@ committing and pushing the stage.
   - Baseline sandbox `make`, sandbox `make install`, CTest, and local benchmark
     passed; representative GN/runtime files have distinct inodes, and the
     stable runtime checksum remained unchanged after every operation.
+- [x] Add an isolated Google Cloud build worker for broad Chromium checkpoints.
+  - `scripts/gcloud-build-worker.sh` snapshots the exact local index/worktree,
+    transfers it without changing `main`, starts the worker only for builds,
+    verifies and fetches a tree-addressed runtime archive, and stops the VM.
+  - `scripts/remote-build-worker.sh` bootstraps the retained dependencies, builds
+    Chromium/CEF and the shell in worker-only directories, runs CTest, and emits
+    checksummed artifacts under `~/Workspace/vimbrowser-debloat-artifacts`.
+  - The local stable runtime is checksum-guarded before and after every remote
+    operation and is never installed over by this path.
 - [x] Finish the stashed notification/Message Center presentation cleanup.
   - Recovery source was the immutable stash commit
     `e9ce063757d4f169d690e62a0e8c706bec13bad9`.
@@ -258,8 +267,17 @@ These are reference measurements, not final acceptance values.
 - [ ] **P02:** Remove remaining Android browser/product Java, JNI, resources,
       tests, build rules, manifests, and packaging after disconnecting every
       retained GN reference.
-  - [ ] Delete the 520 production-disconnected Android-bearing roots and 35
+  - [x] Delete the production-disconnected Android-bearing roots and 35
         Chromium-owned generic Java/JNI roots from the P01 checkpoint.
+    - 511 of the 520 Android-bearing roots and all 35 generic Java/JNI roots are
+      physically gone. Nine roots under `build/config`, `build/toolchain`,
+      `build/modules`, and `third_party/android_{build_tools,sdk,toolchain}` are
+      parsed unconditionally during retained Linux GN generation, so they were
+      restored and explicitly deferred to P04 rather than replaced with hacks.
+    - This recovery checkpoint deletes 22,609 files and 2,398,271 lines overall.
+      It passed worker GN generation, the Chromium/CEF build, a clean shell
+      build, CTest, checksummed artifact fetch, isolated X11 browser/IPC smoke
+      tests, and the full local benchmark without changing the stable runtime.
   - [ ] Remove their GN/GNI/resource/test/manifest/packaging branches instead of
         leaving unsupported `is_android` paths.
   - [ ] Disconnect WebAPK, desktop remote-Android DevTools, Blink Android-font

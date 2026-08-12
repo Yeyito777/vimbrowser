@@ -27,11 +27,9 @@ perfetto_sql_source_set("misc_sql") {
 perfetto_amalgamated_sql_header("gen_amalgamated_sql_metrics") {
   deps = [
     ":misc_sql",
-    "android",
     "chrome:chrome_sql",
     "common",
     "experimental",
-    "webview",
   ]
   generated_header = "amalgamated_sql_metrics.h"
   namespace = "sql_metrics"

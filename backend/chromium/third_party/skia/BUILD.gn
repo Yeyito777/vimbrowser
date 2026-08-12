@@ -949,16 +949,6 @@ optional("gpu") {
   libs = []
   frameworks = []
 
-  if (is_android) {
-    public += skia_gpu_android_private_hdrs
-    sources += skia_gpu_android_private
-
-    # this lib is required to link against AHardwareBuffer
-    if (defined(ndk_api) && ndk_api >= 26) {
-      libs += [ "android" ]
-    }
-  }
-
   if (skia_use_gl) {
     public_defines += [ "SK_GL" ]
     if (is_android) {

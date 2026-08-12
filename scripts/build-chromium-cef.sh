@@ -136,6 +136,11 @@ fi
 
 echo "[+] Building ${target} in backend/chromium/out/${build_dir}"
 autoninja_args=(-C "out/${build_dir}" --fast_nop)
+if [[ "${VIMBROWSER_BUILD_QUIET:-0}" == "1" ]]; then
+  # Remote clean builds can contain tens of thousands of status updates. Keep
+  # the transport alive without flooding its bounded output channel.
+  autoninja_args+=(--quiet --heartbeat_period=5m)
+fi
 if [[ -n "${JOBS:-}" ]]; then
   if [[ ! "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
     echo "error: JOBS must be a positive integer, got '${JOBS}'" >&2

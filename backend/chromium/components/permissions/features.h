@@ -127,10 +127,6 @@ extern const base::FeatureParam<std::string> kPermissionsPromptSurveyTriggerId;
 
 COMPONENT_EXPORT(PERMISSIONS_COMMON)
 extern const base::FeatureParam<std::string>
-    kPermissionsPromptSurveyCustomInvitationTriggerId;
-
-COMPONENT_EXPORT(PERMISSIONS_COMMON)
-extern const base::FeatureParam<std::string>
     kPermissionsPromptSurveyDisplayTime;
 
 COMPONENT_EXPORT(PERMISSIONS_COMMON)

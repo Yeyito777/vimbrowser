@@ -9,7 +9,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
-#include "media/audio/android/muteable_audio_output_stream.h"
 #include "media/audio/audio_io.h"
 #include "media/base/audio_parameters.h"
 #include "media/base/fake_audio_worker.h"
@@ -21,7 +20,7 @@ class AudioManagerBase;
 // A fake implementation of AudioOutputStream.  Used for testing and when a real
 // audio output device is unavailable or refusing output (e.g. remote desktop).
 // Callbacks are driven on the AudioManager's message loop.
-class MEDIA_EXPORT FakeAudioOutputStream : public MuteableAudioOutputStream {
+class MEDIA_EXPORT FakeAudioOutputStream : public AudioOutputStream {
  public:
   static AudioOutputStream* MakeFakeStream(AudioManagerBase* manager,
                                            const AudioParameters& params);
@@ -37,7 +36,6 @@ class MEDIA_EXPORT FakeAudioOutputStream : public MuteableAudioOutputStream {
   void GetVolume(double* volume) override;
   void Close() override;
   void Flush() override;
-  void SetMute(bool muted) override;
 
  private:
   FakeAudioOutputStream(AudioManagerBase* manager,
