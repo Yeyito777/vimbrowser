@@ -55,10 +55,6 @@
 #include "gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include <vulkan/vulkan_android.h>
-#endif
-
 #endif  // BUILDFLAG(ENABLE_VULKAN)
 
 #if BUILDFLAG(IS_OZONE)
@@ -85,10 +81,6 @@
 #include "gpu/vulkan/vulkan_device_queue.h"
 #include "gpu/vulkan/vulkan_implementation.h"
 #endif  // BUILDFLAG(IS_FUCHSIA)
-
-#if BUILDFLAG(IS_ANDROID)
-#include "gpu/command_buffer/service/shared_image/ahardwarebuffer_image_backing_factory.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(USE_DAWN)
 #include "gpu/command_buffer/service/shared_image/dawn_image_backing_factory.h"
@@ -122,10 +114,6 @@ const char* GmbTypeToString(gfx::GpuMemoryBufferType type) {
     case gfx::DXGI_SHARED_HANDLE:
       return "platform";
 #endif
-#if BUILDFLAG(IS_ANDROID)
-    case gfx::ANDROID_HARDWARE_BUFFER:
-      return "platform";
-#endif
   }
   NOTREACHED();
 }
@@ -133,8 +121,6 @@ const char* GmbTypeToString(gfx::GpuMemoryBufferType type) {
 gfx::GpuMemoryBufferType GetNativeBufferType() {
 #if BUILDFLAG(IS_APPLE)
   return gfx::GpuMemoryBufferType::IO_SURFACE_BUFFER;
-#elif BUILDFLAG(IS_ANDROID)
-  return gfx::GpuMemoryBufferType::ANDROID_HARDWARE_BUFFER;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
   return gfx::GpuMemoryBufferType::NATIVE_PIXMAP;
 #elif BUILDFLAG(IS_WIN)
@@ -282,24 +268,7 @@ SharedImageFactory::SharedImageFactory(
     factories_.push_back(std::move(egl_backing_factory));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  bool is_ahb_supported = true;
-  if (gr_context_type_ == GrContextType::kVulkan) {
-    const auto& enabled_extensions = context_state_->vk_context_provider()
-                                         ->GetDeviceQueue()
-                                         ->enabled_extensions();
-    is_ahb_supported = gfx::HasExtension(
-        enabled_extensions,
-        VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME);
-  }
-  if (is_ahb_supported) {
-    auto ahb_factory = std::make_unique<AHardwareBufferImageBackingFactory>(
-        feature_info.get(), gpu_preferences_,
-        context_state_->vk_context_provider());
-    ahb_factory_ = ahb_factory.get();
-    factories_.push_back(std::move(ahb_factory));
-  }
-#elif BUILDFLAG(IS_OZONE)
+#if BUILDFLAG(IS_OZONE)
   // For all Ozone platforms - Desktop Linux, ChromeOS, Fuchsia, CastOS.
   if (ui::OzonePlatform::GetInstance()
           ->GetPlatformRuntimeProperties()
@@ -426,26 +395,6 @@ bool SharedImageFactory::IsNativeBufferSupported(
     case gfx::BufferUsage::SCANOUT_CAMERA_READ_WRITE:
     case gfx::BufferUsage::CAMERA_AND_CPU_READ_WRITE:
     case gfx::BufferUsage::VEA_READ_CAMERA_AND_CPU_READ_WRITE:
-      return false;
-  }
-  NOTREACHED();
-#elif BUILDFLAG(IS_ANDROID)
-  switch (usage) {
-    case gfx::BufferUsage::GPU_READ:
-    case gfx::BufferUsage::SCANOUT:
-      return format == viz::SinglePlaneFormat::kRGBA_8888 ||
-             format == viz::SinglePlaneFormat::kRGBX_8888 ||
-             format == viz::SinglePlaneFormat::kBGR_565;
-    case gfx::BufferUsage::SCANOUT_CPU_READ_WRITE:
-    case gfx::BufferUsage::GPU_READ_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_VDA_WRITE:
-    case gfx::BufferUsage::PROTECTED_SCANOUT:
-    case gfx::BufferUsage::PROTECTED_SCANOUT_VDA_WRITE:
-    case gfx::BufferUsage::SCANOUT_CAMERA_READ_WRITE:
-    case gfx::BufferUsage::CAMERA_AND_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_VEA_CPU_READ:
-    case gfx::BufferUsage::VEA_READ_CAMERA_AND_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_FRONT_RENDERING:
       return false;
   }
   NOTREACHED();
@@ -626,12 +575,6 @@ bool SharedImageFactory::CreateSharedImage(
   bool use_compound = false;
   std::unique_ptr<SharedImageBacking> backing;
   SharedImageBackingFactory* factory = nullptr;
-#if BUILDFLAG(IS_ANDROID)
-  if (ahb_factory_ &&
-      ahb_factory_->IsSupportedForMappableBuffer(usage, format, gmb_type)) {
-    factory = ahb_factory_;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   if (!factory) {
     factory = GetFactoryByUsage(usage, format, size, {}, gmb_type);
   }
@@ -742,7 +685,6 @@ bool SharedImageFactory::CopyToGpuMemoryBuffer(const Mailbox& mailbox) {
   return shared_image->CopyToGpuMemoryBuffer();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 gfx::GpuMemoryBufferHandle
 SharedImageFactory::CreateNativeGpuMemoryBufferHandle(
     const gfx::Size& size,
@@ -759,7 +701,6 @@ SharedImageFactory::CreateNativeGpuMemoryBufferHandle(
       shared_image_manager_->io_runner(), size, format, usage);
 #endif
 }
-#endif
 
 bool SharedImageFactory::CopyNativeBufferToSharedMemoryAsync(
     gfx::GpuMemoryBufferHandle buffer_handle,
@@ -767,10 +708,6 @@ bool SharedImageFactory::CopyNativeBufferToSharedMemoryAsync(
 #if BUILDFLAG(IS_WIN)
   return D3DImageBackingFactory::CopyNativeBufferToSharedMemoryAsync(
       std::move(buffer_handle), std::move(shared_memory));
-#elif BUILDFLAG(IS_ANDROID)
-  return AHardwareBufferImageBackingFactory::
-      CopyNativeBufferToSharedMemoryAsync(std::move(buffer_handle),
-                                          std::move(shared_memory));
 #else
   return false;
 #endif
@@ -1019,15 +956,6 @@ void SharedImageFactory::LogGetFactoryFailed(gpu::SharedImageUsageSet usage,
     new_debug_label = parts->first;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/423037052): Handle offscreen canvas case for WebView where
-  // we fail to find a shared image factory.
-  // Suppress crashes due to this client for now.
-  if (new_debug_label.find("CanvasResourceRasterGmb") != std::string::npos) {
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
-
 #if BUILDFLAG(IS_LINUX)
   // VizBufferQueue with Vulkan enabled over command-line for Linux does not
   // work. Suppress dumps for these cases.
@@ -1182,14 +1110,6 @@ std::unique_ptr<RasterImageRepresentation>
 SharedImageRepresentationFactory::ProduceRaster(const Mailbox& mailbox) {
   return manager_->ProduceRaster(mailbox, memory_type_tracker_.get());
 }
-
-#if BUILDFLAG(IS_ANDROID)
-std::unique_ptr<LegacyOverlayImageRepresentation>
-SharedImageRepresentationFactory::ProduceLegacyOverlay(
-    const gpu::Mailbox& mailbox) {
-  return manager_->ProduceLegacyOverlay(mailbox, memory_type_tracker_.get());
-}
-#endif
 
 #if BUILDFLAG(ENABLE_VULKAN) && BUILDFLAG(IS_OZONE)
 std::unique_ptr<VulkanImageRepresentation>

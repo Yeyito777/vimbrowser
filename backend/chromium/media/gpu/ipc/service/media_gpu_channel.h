@@ -7,7 +7,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/unguessable_token.h"
-#include "media/base/android_overlay_mojo_factory.h"
 
 namespace gpu {
 class GpuChannel;
@@ -17,15 +16,13 @@ namespace media {
 
 class MediaGpuChannel {
  public:
-  MediaGpuChannel(gpu::GpuChannel* channel,
-                  const AndroidOverlayMojoFactoryCB& overlay_factory_cb);
+  explicit MediaGpuChannel(gpu::GpuChannel* channel);
   MediaGpuChannel(const MediaGpuChannel&) = delete;
   MediaGpuChannel& operator=(const MediaGpuChannel&) = delete;
   ~MediaGpuChannel();
 
  private:
   const raw_ptr<gpu::GpuChannel, DanglingUntriaged> channel_;
-  AndroidOverlayMojoFactoryCB overlay_factory_cb_;
 };
 
 }  // namespace media

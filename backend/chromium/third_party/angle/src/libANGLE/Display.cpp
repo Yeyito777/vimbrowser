@@ -23,7 +23,6 @@
 #include <platform/PlatformMethods.h>
 
 #include "anglebase/no_destructor.h"
-#include "common/android_util.h"
 #include "common/debug.h"
 #include "common/mathutil.h"
 #include "common/platform_helpers.h"
@@ -2079,31 +2078,17 @@ void Display::setBlobCacheFuncs(EGLSetBlobFuncANDROID set, EGLGetBlobFuncANDROID
 }
 
 // static
-EGLClientBuffer Display::GetNativeClientBuffer(const AHardwareBuffer *buffer)
+EGLClientBuffer Display::GetNativeClientBuffer(const AHardwareBuffer *)
 {
-    return angle::android::AHardwareBufferToClientBuffer(buffer);
+    return nullptr;
 }
 
 // static
-Error Display::CreateNativeClientBuffer(const egl::AttributeMap &attribMap,
+Error Display::CreateNativeClientBuffer(const egl::AttributeMap &,
                                         EGLClientBuffer *eglClientBuffer)
 {
-    int androidHardwareBufferFormat = gl::GetAndroidHardwareBufferFormatFromChannelSizes(attribMap);
-    int width                       = attribMap.getAsInt(EGL_WIDTH, 0);
-    int height                      = attribMap.getAsInt(EGL_HEIGHT, 0);
-    int usage                       = attribMap.getAsInt(EGL_NATIVE_BUFFER_USAGE_ANDROID, 0);
-
-    // https://developer.android.com/ndk/reference/group/a-hardware-buffer#ahardwarebuffer_lock
-    // for AHardwareBuffer_lock()
-    // The passed AHardwareBuffer must have one layer, otherwise the call will fail.
-    constexpr int kLayerCount = 1;
-
-    *eglClientBuffer = angle::android::CreateEGLClientBufferFromAHardwareBuffer(
-        width, height, kLayerCount, androidHardwareBufferFormat, usage);
-
-    return (*eglClientBuffer == nullptr)
-               ? egl::Error(EGL_BAD_PARAMETER, "native client buffer allocation failed.")
-               : NoError();
+    *eglClientBuffer = nullptr;
+    return egl::Error(EGL_BAD_PARAMETER, "Android native buffers are not supported.");
 }
 
 Error Display::waitClient(const gl::Context *context)

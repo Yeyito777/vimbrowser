@@ -17,10 +17,7 @@
 
 namespace media {
 
-MediaGpuChannel::MediaGpuChannel(
-    gpu::GpuChannel* channel,
-    const AndroidOverlayMojoFactoryCB& overlay_factory_cb)
-    : channel_(channel), overlay_factory_cb_(overlay_factory_cb) {}
+MediaGpuChannel::MediaGpuChannel(gpu::GpuChannel* channel) : channel_(channel) {}
 
 MediaGpuChannel::~MediaGpuChannel() = default;
 

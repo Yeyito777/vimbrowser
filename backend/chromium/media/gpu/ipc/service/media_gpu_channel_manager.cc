@@ -29,8 +29,7 @@ void MediaGpuChannelManager::AddChannel(
     const base::UnguessableToken& channel_token) {
   gpu::GpuChannel* gpu_channel = channel_manager_->LookupChannel(client_id);
   DCHECK(gpu_channel);
-  auto media_gpu_channel =
-      std::make_unique<MediaGpuChannel>(gpu_channel, overlay_factory_cb_);
+  auto media_gpu_channel = std::make_unique<MediaGpuChannel>(gpu_channel);
   media_gpu_channels_[client_id] = std::move(media_gpu_channel);
   channel_to_token_[client_id] = channel_token;
   token_to_channel_[channel_token] = client_id;
@@ -57,15 +56,6 @@ gpu::GpuChannel* MediaGpuChannelManager::LookupChannel(
   if (it == token_to_channel_.end())
     return nullptr;
   return channel_manager_->LookupChannel(it->second);
-}
-
-void MediaGpuChannelManager::SetOverlayFactory(
-    AndroidOverlayMojoFactoryCB overlay_factory_cb) {
-  overlay_factory_cb_ = std::move(overlay_factory_cb);
-}
-
-AndroidOverlayMojoFactoryCB MediaGpuChannelManager::GetOverlayFactory() {
-  return overlay_factory_cb_;
 }
 
 scoped_refptr<gpu::SharedContextState>

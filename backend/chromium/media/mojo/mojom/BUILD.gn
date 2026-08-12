@@ -50,14 +50,7 @@ mojom("mojom") {
     sources += [ "media_drm_storage.mojom" ]
   }
 
-  if (is_android) {
-    sources += [
-      "android_overlay.mojom",
-      "mediadrm_support.mojom",
-    ]
-  } else {
-    sources += [ "speech_recognition_service.mojom" ]
-  }
+  sources += [ "speech_recognition_service.mojom" ]
 
   # TODO(crbug.com/1293520): Revisit this after the cast renderer has been
   # deprecated and removed.

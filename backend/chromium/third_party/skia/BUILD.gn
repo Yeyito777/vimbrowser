@@ -293,59 +293,6 @@ template("optional") {
   }
 }
 
-optional("android_utils") {
-  enabled = skia_enable_android_utils
-
-  public = [
-    "client_utils/android/BRDAllocator.h",
-    "client_utils/android/BitmapRegionDecoder.h",
-    "client_utils/android/FrontBufferedStream.h",
-  ]
-  public_defines = [ "SK_ENABLE_ANDROID_UTILS" ]
-  sources = [
-    "client_utils/android/BitmapRegionDecoder.cpp",
-    "client_utils/android/FrontBufferedStream.cpp",
-  ]
-}
-
-optional("fontmgr_android_parser") {
-  enabled = skia_use_expat
-
-  deps = [ "//third_party/expat" ]
-  sources = skia_ports_fontmgr_android_parser_sources
-}
-
-optional("fontmgr_android") {
-  enabled = skia_enable_fontmgr_android
-
-  deps = [
-    ":fontmgr_android_parser",
-    ":typeface_proxy",
-  ]
-  public_defines = [ "SK_FONTMGR_ANDROID_AVAILABLE" ]
-  public = skia_ports_fontmgr_android_public
-  sources = skia_ports_fontmgr_android_sources
-  sources_for_tests = [ "tests/FontMgrAndroidParserTest.cpp" ]
-}
-
-# if building Skia for API >= 30 and not using custom fonts, enable
-# skia_enable_fontmgr_android_ndk and disable skia_enable_fontmgr_android
-optional("fontmgr_android_ndk") {
-  enabled = skia_enable_fontmgr_android_ndk
-
-  deps = [
-    ":fontmgr_android_parser",
-    ":typeface_proxy",
-  ]
-  libs = [ "android" ]
-  if (defined(ndk_api) && ndk_api >= 31) {
-    libs += [ "icu" ]
-  }
-  public_defines = [ "SK_FONTMGR_ANDROID_NDK_AVAILABLE" ]
-  public = skia_ports_fontmgr_android_ndk_public
-  sources = skia_ports_fontmgr_android_ndk_sources
-}
-
 optional("fontmgr_custom") {
   enabled =
       skia_enable_fontmgr_custom_directory ||
@@ -1795,8 +1742,6 @@ skia_source_set("core") {
   # These deps don't belong to :core, but they are currently needed to support (de)serialization.
   public_deps = [
     ":fontmgr_FontConfigInterface",
-    ":fontmgr_android",
-    ":fontmgr_android_ndk",
     ":fontmgr_custom_directory",
     ":fontmgr_custom_embedded",
     ":fontmgr_custom_empty",
@@ -1827,7 +1772,6 @@ skia_component("skia") {
   ]
 
   deps = [
-    ":android_utils",
     ":avif",
     ":crabbyavif",
     ":hsw",
@@ -2708,7 +2652,6 @@ if (skia_enable_tools) {
         ":bmp_decode_rust_tests",
         ":flags",
         ":fontmgr_FontConfigInterface_tests",
-        ":fontmgr_android_tests",
         ":fontmgr_fontconfig_tests",
         ":fontmgr_mac_ct_tests",
         ":fontscanner_tests",

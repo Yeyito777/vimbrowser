@@ -18,7 +18,6 @@
 #include <ostream>
 
 #include "angle_gl.h"
-#include "common/android_util.h"
 #include "common/hash_containers.h"
 #include "libANGLE/Caps.h"
 #include "libANGLE/Config.h"
@@ -344,20 +343,12 @@ const FormatSet &GetAllSizedInternalFormats();
 typedef angle::HashMap<GLenum, angle::HashMap<GLenum, InternalFormat>> InternalFormatInfoMap;
 const InternalFormatInfoMap &GetInternalFormatMap();
 
-int GetAndroidHardwareBufferFormatFromChannelSizes(const egl::AttributeMap &attribMap);
-
 GLenum GetConfigColorBufferFormat(const egl::Config *config);
 GLenum GetConfigDepthStencilBufferFormat(const egl::Config *config);
 
-ANGLE_INLINE int GetNativeVisualID(const InternalFormat &internalFormat)
+ANGLE_INLINE int GetNativeVisualID(const InternalFormat &)
 {
-    int nativeVisualId = 0;
-#if defined(ANGLE_PLATFORM_ANDROID)
-    nativeVisualId =
-        angle::android::GLInternalFormatToNativePixelFormat(internalFormat.internalFormat);
-#endif
-
-    return nativeVisualId;
+    return 0;
 }
 
 // From the ESSL 3.00.4 spec:

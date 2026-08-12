@@ -289,8 +289,15 @@ These are reference measurements, not final acceptance values.
     - [x] Remove Blink's Android-font lookup mojom and Android host binding.
     - [x] Remove the 73-file `media/base/android` implementation and all shared
       media roll-up/visibility references to it.
-    - [ ] Remove the remaining Android-only entries in shared Skia, ANGLE, GL,
+    - [x] Remove the remaining Android-only entries in shared Skia, ANGLE, GL,
       media, and generated source lists.
+      - Removed Android Vulkan/AHardwareBuffer support from ANGLE; Android font
+        managers from Skia; Android GPU backing, surface, and image-reader
+        machinery; Android overlays/Mojo media/MIDI; and Android GL startup.
+      - Retained `gl_fence_android_native_fence_sync` because Linux uses the EGL
+        extension despite its Android-standardized name.
+      - The exact worker tree, validation, and 16,814-line net reduction are
+        recorded in `docs/debloat-android-p02-shared-lists.md`.
   - [ ] Remove Android-only Perfetto/Catapult schemas, importers, and trace
         resources from their cross-platform aggregates.
   - [ ] Retain `*_non_android*` implementations; defer cross-platform web

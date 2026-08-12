@@ -182,9 +182,6 @@ component("config") {
   allow_circular_includes_from =
       [ "//gpu/ipc/common:gpu_preferences_interface" ]
 
-  if (is_android) {
-    sources += [ "gpu_info_collector_android.cc" ]
-  }
   if (is_win) {
     sources += [ "gpu_info_collector_win.cc" ]
     deps += [ "//third_party/microsoft_dxheaders:dxguids" ]

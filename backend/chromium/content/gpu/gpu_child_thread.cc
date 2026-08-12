@@ -45,11 +45,6 @@
 #include "services/viz/privileged/mojom/gl/gpu_service.mojom.h"
 #include "third_party/skia/include/core/SkGraphics.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "media/base/android/media_drm_bridge_client.h"
-#include "media/mojo/clients/mojo_android_overlay.h"
-#endif
-
 #if BUILDFLAG(IS_CHROMEOS)
 #include "components/services/font/public/cpp/font_loader.h"  // nogncheck
 #include "components/services/font/public/mojom/font_service.mojom.h"  // nogncheck
@@ -179,15 +174,6 @@ void GpuChildThread::OnInitializationFailed() {
 }
 
 void GpuChildThread::OnGpuServiceConnection(viz::GpuServiceImpl* gpu_service) {
-  media::AndroidOverlayMojoFactoryCB overlay_factory_cb;
-#if BUILDFLAG(IS_ANDROID)
-  overlay_factory_cb =
-      base::BindRepeating(&GpuChildThread::CreateAndroidOverlay,
-                          base::SingleThreadTaskRunner::GetCurrentDefault());
-  gpu_service->media_gpu_channel_manager()->SetOverlayFactory(
-      overlay_factory_cb);
-#endif
-
   if (!IsInBrowserProcess()) {
     gpu_service->SetPriorityChangedCallback(
         base::BindRepeating([](base::Process::Priority priority) {
@@ -201,8 +187,7 @@ void GpuChildThread::OnGpuServiceConnection(viz::GpuServiceImpl* gpu_service) {
       gpu_service->gpu_preferences(),
       gpu_service->gpu_channel_manager()->gpu_driver_bug_workarounds(),
       gpu_service->gpu_feature_info(), gpu_service->gpu_info(),
-      gpu_service->media_gpu_channel_manager()->AsWeakPtr(),
-      std::move(overlay_factory_cb));
+      gpu_service->media_gpu_channel_manager()->AsWeakPtr());
   for (auto& receiver : pending_service_receivers_)
     BindServiceInterface(std::move(receiver));
   pending_service_receivers_.clear();
@@ -256,31 +241,5 @@ base::RepeatingClosure GpuChildThread::MakeQuitSafelyClosure() {
   return base::BindRepeating(&GpuChildThread::QuitSafelyHelper,
                              base::SingleThreadTaskRunner::GetCurrentDefault());
 }
-
-#if BUILDFLAG(IS_ANDROID)
-// static
-std::unique_ptr<media::AndroidOverlay> GpuChildThread::CreateAndroidOverlay(
-    scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
-    const base::UnguessableToken& routing_token,
-    media::AndroidOverlayConfig config) {
-  mojo::PendingRemote<media::mojom::AndroidOverlayProvider> overlay_provider;
-  if (main_task_runner->RunsTasksInCurrentSequence()) {
-    ChildThread::Get()->BindHostReceiver(
-        overlay_provider.InitWithNewPipeAndPassReceiver());
-  } else {
-    main_task_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](mojo::PendingReceiver<media::mojom::AndroidOverlayProvider>
-                   receiver) {
-              ChildThread::Get()->BindHostReceiver(std::move(receiver));
-            },
-            overlay_provider.InitWithNewPipeAndPassReceiver()));
-  }
-
-  return std::make_unique<media::MojoAndroidOverlay>(
-      std::move(overlay_provider), std::move(config), routing_token);
-}
-#endif
 
 }  // namespace content

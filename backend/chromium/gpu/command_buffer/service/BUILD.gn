@@ -564,64 +564,6 @@ target(link_target_type, "gles2_sources") {
     }
   }
 
-  if (is_android) {
-    if (!is_debug) {
-      # On Android optimize more since this component can be a bottleneck.
-      configs -= [ "//build/config/compiler:default_optimization" ]
-      configs += [ "//build/config/compiler:optimize_max" ]
-    }
-    sources += [
-      "ahardwarebuffer_utils.cc",
-      "ahardwarebuffer_utils.h",
-      "image_reader_gl_owner.cc",
-      "image_reader_gl_owner.h",
-      "ref_counted_lock.cc",
-      "ref_counted_lock.h",
-      "shared_image/ahardwarebuffer_image_backing_factory.cc",
-      "shared_image/ahardwarebuffer_image_backing_factory.h",
-      "shared_image/android_image_backing.cc",
-      "shared_image/android_image_backing.h",
-      "shared_image/android_video_image_backing.cc",
-      "shared_image/android_video_image_backing.h",
-      "shared_image/gl_texture_android_image_representation.cc",
-      "shared_image/gl_texture_android_image_representation.h",
-      "shared_image/gl_texture_passthrough_android_image_representation.cc",
-      "shared_image/gl_texture_passthrough_android_image_representation.h",
-      "shared_image/skia_vk_android_image_representation.cc",
-      "shared_image/skia_vk_android_image_representation.h",
-      "shared_image/video_image_reader_image_backing.cc",
-      "shared_image/video_image_reader_image_backing.h",
-      "stream_texture_shared_image_interface.h",
-      "texture_owner.cc",
-      "texture_owner.h",
-    ]
-
-    # For AImageReader.
-    libs = [ "mediandk" ]
-
-    if (use_dawn) {
-      sources += [
-        "shared_image/dawn_ahardwarebuffer_image_representation.cc",
-        "shared_image/dawn_ahardwarebuffer_image_representation.h",
-      ]
-    }
-
-    deps += [
-      "//base",
-      "//third_party/jni_zero",
-    ]
-
-    # TODO(cblume): http://crbug.com/911313
-    # Abstract out the platform specific defines. Right now we need the android
-    # platform specific define here to be able to include android specific
-    # functions.
-    defines += [ "VK_USE_PLATFORM_ANDROID_KHR" ]
-    deps += [ "//third_party/libsync" ]
-    if (enable_vulkan) {
-      deps += [ "//gpu/vulkan" ]
-    }
-  }
-
   if (is_win) {
     sources += [
       "dxgi_shared_handle_manager.cc",
@@ -659,46 +601,4 @@ target(link_target_type, "gles2_sources") {
 
 proto_library("disk_cache_proto") {
   sources = [ "disk_cache_proto.proto" ]
-}
-
-if (is_android) {
-  static_library("android_texture_owner_test_support") {
-    testonly = true
-    sources = [
-      "mock_texture_owner.cc",
-      "mock_texture_owner.h",
-      "ref_counted_lock_for_test.cc",
-      "ref_counted_lock_for_test.h",
-    ]
-    deps = [
-      ":gles2",
-      "//base/test:test_support",
-      "//gpu:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/gl",
-      "//ui/gl/init",
-    ]
-  }
-}
-
-if (is_android) {
-  source_set("android_texture_owner_unittests") {
-    testonly = true
-    sources = [ "image_reader_gl_owner_unittest.cc" ]
-
-    # For AImageReader_getFormat()
-    libs = [ "mediandk" ]
-
-    deps = [
-      ":android_texture_owner_test_support",
-      ":gles2",
-      "//base/test:test_support",
-      "//gpu:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/gl",
-      "//ui/gl/init",
-    ]
-  }
 }

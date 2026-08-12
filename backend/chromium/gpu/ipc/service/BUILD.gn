@@ -130,10 +130,6 @@ component("service") {
       sources += [ "image_transport_surface_ios.mm" ]
     }
   }
-  if (is_android) {
-    sources += [ "image_transport_surface_android.cc" ]
-    libs += [ "android" ]
-  }
   if (is_linux || is_chromeos) {
     sources += [ "image_transport_surface_linux.cc" ]
   }

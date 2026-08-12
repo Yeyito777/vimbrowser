@@ -27,10 +27,6 @@
 #include "media/midi/midi_manager_win.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "media/midi/midi_manager_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
-
 namespace midi {
 
 namespace {
@@ -363,10 +359,8 @@ class PlatformMidiManagerTest : public ::testing::Test {
   // Do not change the condition for disabling this test.
   bool IsSupported() {
 #if !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_WIN) && \
-    !(defined(USE_ALSA) && defined(USE_UDEV)) && !BUILDFLAG(IS_ANDROID)
+    !(defined(USE_ALSA) && defined(USE_UDEV))
     return false;
-#elif BUILDFLAG(IS_ANDROID)
-    return HasSystemFeatureMidiForTesting();
 #else
     return true;
 #endif
@@ -383,12 +377,7 @@ class PlatformMidiManagerTest : public ::testing::Test {
   std::unique_ptr<MidiService> service_;
 };
 
-#if BUILDFLAG(IS_ANDROID)
-// The test sometimes fails on Android. https://crbug.com/844027
-#define MAYBE_CreatePlatformMidiManager DISABLED_CreatePlatformMidiManager
-#else
 #define MAYBE_CreatePlatformMidiManager CreatePlatformMidiManager
-#endif
 TEST_F(PlatformMidiManagerTest, MAYBE_CreatePlatformMidiManager) {
   StartSession();
   ASSERT_TRUE(future()->Wait());

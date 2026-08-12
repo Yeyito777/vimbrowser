@@ -491,17 +491,7 @@ source_set("base") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "android_overlay_config.cc",
-      "android_overlay_config.h",
-      "android_overlay_mojo_factory.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [ "demuxer_memory_limit_android.cc" ]
-  } else if (is_castos) {
+  if (is_castos) {
     sources += [ "demuxer_memory_limit_cast.cc" ]
   } else {
     sources += [ "demuxer_memory_limit_default.cc" ]

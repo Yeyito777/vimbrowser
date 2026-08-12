@@ -6398,41 +6398,8 @@ void FrameCaptureShared::determineMemoryProtectionSupport(gl::Context *context)
         return;
     }
 
-    // These known devices must use shadow memory
-    HashMap<std::string, std::vector<std::string>> denyList = {
-        {"Google", {"Pixel 6", "Pixel 6 Pro", "Pixel 6a", "Pixel 7", "Pixel 7 Pro"}},
-    };
-
-    angle::SystemInfo info;
-    angle::GetSystemInfo(&info);
-    bool isDeviceDenyListed = false;
-
-    if (rx::GetAndroidSDKVersion() < 34)
-    {
-        // Before Android 14, there was a bug in Mali based Pixel preventing mprotect
-        // on Vulkan surfaces. (https://b.corp.google.com/issues/269535398)
-        // Check the denylist in this case.
-        if (denyList.find(info.machineManufacturer) != denyList.end())
-        {
-            const std::vector<std::string> &models = denyList[info.machineManufacturer];
-            isDeviceDenyListed =
-                std::find(models.begin(), models.end(), info.machineModelName) != models.end();
-        }
-    }
-
-    if (isDeviceDenyListed)
-    {
-        WARN() << "Direct memory protection not possible on deny listed device '"
-               << info.machineModelName
-               << "', enabling shadow memory for coherent buffer tracking.";
-        mCoherentBufferTracker.enableShadowMemory();
-    }
-    else
-    {
-        // Device is not on deny listed. Run a test if we actually can protect directly. Do this
-        // only on assertion enabled builds.
-        ASSERT(mCoherentBufferTracker.canProtectDirectly(context));
-    }
+    // Run a test if we actually can protect directly. Do this only on assertion enabled builds.
+    ASSERT(mCoherentBufferTracker.canProtectDirectly(context));
 }
 
 void FrameCaptureShared::trackBufferMapping(const gl::Context *context,

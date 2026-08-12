@@ -80,8 +80,6 @@ vulkan_backend_sources = [
   "VkImageImageSiblingVk.h",
   "VulkanSecondaryCommandBuffer.cpp",
   "VulkanSecondaryCommandBuffer.h",
-  "android/vk_android_utils.cpp",
-  "android/vk_android_utils.h",
   "spv_utils.cpp",
   "spv_utils.h",
   "vk_barrier_data.cpp",
@@ -166,19 +164,6 @@ vulkan_backend_dma_buf_sources = [
 
 if (is_linux || is_chromeos) {
   vulkan_backend_sources += vulkan_backend_dma_buf_sources
-}
-
-if (is_android) {
-  vulkan_backend_sources += [
-    "android/AHBFunctions.cpp",
-    "android/AHBFunctions.h",
-    "android/DisplayVkAndroid.cpp",
-    "android/DisplayVkAndroid.h",
-    "android/HardwareBufferImageSiblingVkAndroid.cpp",
-    "android/HardwareBufferImageSiblingVkAndroid.h",
-    "android/WindowSurfaceVkAndroid.cpp",
-    "android/WindowSurfaceVkAndroid.h",
-  ]
 }
 
 if (is_win) {

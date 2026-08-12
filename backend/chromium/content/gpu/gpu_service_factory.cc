@@ -30,8 +30,7 @@ GpuServiceFactory::GpuServiceFactory(
     const gpu::GpuDriverBugWorkarounds& gpu_workarounds,
     const gpu::GpuFeatureInfo& gpu_feature_info,
     const gpu::GPUInfo& gpu_info,
-    base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager,
-    media::AndroidOverlayMojoFactoryCB android_overlay_factory_cb) {
+    base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager) {
 #if BUILDFLAG(ENABLE_MOJO_MEDIA_IN_GPU_PROCESS)
   gpu_preferences_ = gpu_preferences;
   gpu_workarounds_ = gpu_workarounds;
@@ -39,7 +38,6 @@ GpuServiceFactory::GpuServiceFactory(
   gpu_info_ = gpu_info;
   task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
   media_gpu_channel_manager_ = std::move(media_gpu_channel_manager);
-  android_overlay_factory_cb_ = std::move(android_overlay_factory_cb);
 #endif
 }
 
@@ -87,7 +85,7 @@ void GpuServiceFactory::RunMediaService(
 
   media::GpuMojoMediaClientTraits traits(
       gpu_preferences_, gpu_workarounds_, gpu_feature_info_, gpu_info_,
-      /*gpu_task_runner=*/task_runner_, android_overlay_factory_cb_,
+      /*gpu_task_runner=*/task_runner_,
       media_gpu_channel_manager_);
   auto gpu_client = media::GpuMojoMediaClient::Create(traits);
 

@@ -14,7 +14,6 @@
 
 #include "libANGLE/renderer/driver_utils.h"
 
-#include "common/android_util.h"
 #include "common/platform.h"
 #include "common/system_utils.h"
 #include "gpu_info_util/SystemInfo.h"
@@ -289,17 +288,6 @@ bool operator>=(const angle::VersionInfo &a, const angle::VersionTriple &b)
     return angle::VersionTriple(a.major, a.minor, a.subMinor) >= b;
 }
 
-int GetAndroidSDKVersion()
-{
-    std::string androidSdkLevel;
-    if (!angle::android::GetSystemProperty(angle::android::kSDKSystemPropertyName,
-                                           &androidSdkLevel))
-    {
-        return 0;
-    }
-
-    return std::atoi(androidSdkLevel.c_str());
-}
 #if !defined(ANGLE_PLATFORM_MACOS)
 OSVersion GetMacOSVersion()
 {

@@ -680,10 +680,6 @@ angle_static_library("angle_gpu_info_util") {
     }
   }
 
-  if (is_android) {
-    sources += libangle_gpu_info_util_android_sources
-  }
-
   if (is_fuchsia) {
     sources += libangle_gpu_info_util_fuchsia_sources
     deps += [ "$angle_root/src/common/vulkan:angle_vulkan_entry_points" ]

@@ -150,10 +150,6 @@ if (enable_vulkan) {
       }
     }
 
-    if (is_android) {
-      sources += [ "vulkan_image_android.cc" ]
-    }
-
     if (is_fuchsia) {
       sources += [ "vulkan_util_fuchsia.cc" ]
     }
@@ -210,11 +206,6 @@ if (enable_vulkan) {
 
     if (is_win) {
       sources += [ "tests/native_window_win.cc" ]
-    }
-
-    if (is_android) {
-      sources += [ "tests/native_window_android.cc" ]
-      deps += [ "//ui/gl" ]
     }
 
     # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

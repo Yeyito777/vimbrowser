@@ -68,13 +68,6 @@ source_set("clients") {
     "mojo_video_encoder_metrics_provider.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "mojo_android_overlay.cc",
-      "mojo_android_overlay.h",
-    ]
-  }
-
   public_deps = [
     "//base",
     "//media",
@@ -92,12 +85,6 @@ source_set("clients") {
     "//services/service_manager/public/cpp",
   ]
 
-  if (is_android) {
-    deps += [
-      "//gpu/ipc/common",
-      "//ui/gl",
-    ]
-  }
   if (is_win) {
     sources += [
       "win/media_foundation_renderer_client.cc",
@@ -160,16 +147,6 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_android) {
-    sources += [ "mojo_android_overlay_unittest.cc" ]
-
-    deps += [
-      "//media/mojo/mojom:test_interfaces",
-      "//ui/gfx:test_support",
-      "//ui/gl",
-    ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

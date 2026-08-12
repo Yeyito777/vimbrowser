@@ -25,9 +25,6 @@ component("init") {
   ]
 
   deps = []
-  if (is_android) {
-    deps += [ "//gpu/vulkan/android" ]
-  }
   if (use_ozone) {
     deps += [
       "//ui/base:features",

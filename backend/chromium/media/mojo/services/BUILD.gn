@@ -109,9 +109,7 @@ component("services") {
     "//services/service_manager/public/mojom",
   ]
 
-  if (is_android) {
-    sources += [ "gpu_mojo_media_client_android.cc" ]
-  } else if (is_apple) {
+  if (is_apple) {
     sources += [ "gpu_mojo_media_client_mac.cc" ]
   } else if (is_win) {
     sources += [ "gpu_mojo_media_client_win.cc" ]
@@ -134,17 +132,6 @@ component("services") {
     sources += [
       "mojo_video_encode_accelerator_provider_factory.cc",
       "mojo_video_encode_accelerator_provider_factory.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android_mojo_media_client.cc",
-      "android_mojo_media_client.h",
-      "android_mojo_util.cc",
-      "android_mojo_util.h",
-      "mediadrm_support_service.cc",
-      "mediadrm_support_service.h",
     ]
   }
 

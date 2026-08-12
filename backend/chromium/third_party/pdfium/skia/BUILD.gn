@@ -344,13 +344,6 @@ component("skia") {
     sources += skia_ports_typeface_proxy_sources
   }
 
-  if (is_android) {
-    # Unlike Chromium, standalone PDFium on Linux and Chrome OS does not
-    # require these files, since PDFium does not perform Android emulation.
-    # Note that this requires expat.
-    sources += skia_ports_fontmgr_android_sources
-  }
-
   if (is_win) {
     sources += [ "//third_party/skia/src/ports/SkLog_win.cpp" ]
   } else if (is_android) {

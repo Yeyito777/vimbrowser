@@ -22,8 +22,6 @@
 #    include <webgpu/webgpu.h>
 #endif
 
-#include "common/android_util.h"
-
 #if defined(ANGLE_PLATFORM_ANDROID) && __ANDROID_API__ >= 29
 #    define ANGLE_AHARDWARE_BUFFER_SUPPORT
 // NDK header file for access to Android Hardware Buffers
@@ -1084,7 +1082,7 @@ void main()
 
         EGLImageKHR image = eglCreateImageKHR(
             window->getDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID,
-            angle::android::AHardwareBufferToClientBuffer(aHardwareBuffer), attribs);
+            reinterpret_cast<EGLClientBuffer>(aHardwareBuffer), attribs);
         ASSERT_EGL_SUCCESS();
 
         *outSourceAHB   = aHardwareBuffer;
@@ -1106,8 +1104,7 @@ void main()
 
         // allocate AHB memory
 #if defined(ANGLE_AHARDWARE_BUFFER_SUPPORT)
-        AHardwareBuffer *pAHardwareBuffer = angle::android::ANativeWindowBufferToAHardwareBuffer(
-            angle::android::ClientBufferToANativeWindowBuffer(eglClientBuffer));
+        AHardwareBuffer *pAHardwareBuffer = reinterpret_cast<AHardwareBuffer *>(eglClientBuffer);
         if (!data.empty())
         {
             bool success = writeAHBData(pAHardwareBuffer, width, height, depth, false, data);
@@ -2598,9 +2595,9 @@ void ImageTest::ImageStorageGenerateMipmap_helper(const EGLint *attribs,
     EGLWindow *window = getEGLWindow();
     if (srcAhb != nullptr)
     {
-        *imageOut =
-            eglCreateImageKHR(window->getDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID,
-                              angle::android::AHardwareBufferToClientBuffer(srcAhb), attribs);
+        *imageOut = eglCreateImageKHR(window->getDisplay(), EGL_NO_CONTEXT,
+                                      EGL_NATIVE_BUFFER_ANDROID,
+                                      reinterpret_cast<EGLClientBuffer>(srcAhb), attribs);
     }
     else
     {
@@ -3287,11 +3284,10 @@ TEST_P(ImageTest, SourceAHBCorrupt)
     EXPECT_EQ(0, AHardwareBuffer_allocate(&aHardwareBufferDescription, &aHardwareBuffer));
 
     std::memset(
-        reinterpret_cast<void *>(angle::android::AHardwareBufferToClientBuffer(aHardwareBuffer)), 0,
-        sizeof(int));
+        reinterpret_cast<void *>(aHardwareBuffer), 0, sizeof(int));
     EGLImageKHR ahbImage = eglCreateImageKHR(
         window->getDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID,
-        angle::android::AHardwareBufferToClientBuffer(aHardwareBuffer), kDefaultAttribs);
+        reinterpret_cast<EGLClientBuffer>(aHardwareBuffer), kDefaultAttribs);
 
     ASSERT_EGL_ERROR(EGL_BAD_PARAMETER);
     EXPECT_EQ(ahbImage, EGL_NO_IMAGE_KHR);
@@ -8186,7 +8182,7 @@ TEST_P(ImageTest, AHBUpdatedExternalTexture)
     // Create the EGL image again
     image =
         eglCreateImageKHR(window->getDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID,
-                          angle::android::AHardwareBufferToClientBuffer(source), kDefaultAttribs);
+                          reinterpret_cast<EGLClientBuffer>(source), kDefaultAttribs);
     ASSERT_EGL_SUCCESS();
 
     // Create the target texture again

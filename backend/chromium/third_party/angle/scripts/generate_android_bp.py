@@ -24,10 +24,6 @@ ROOT_TARGETS = [
 
 END2END_TEST_TARGET = "//src/tests:angle_end2end_tests__library"
 
-# Used only in generated Android.bp file for DMA-BUF-enabled builds on Android.
-# See b/353262025 for details.
-DMA_BUF_TARGET = "//src/libANGLE/renderer/vulkan:angle_android_vulkan_dma_buf"
-
 BLUEPRINT_COMMENT_PROPERTY = '__android_bp_comment'
 
 CURRENT_SDK_VERSION = 'current'
@@ -873,47 +869,12 @@ def get_angle_in_vendor_flag_config():
     return blueprint_results
 
 
-def get_angle_android_dma_buf_flag_config(build_info):
-    """
-    Generates a list of Android.bp definitions for angle_android_dma_buf flag.
-    """
-
-    blueprint_results = []
-
-    blueprint_results.append(('soong_config_module_type', {
-        'name': 'angle_dma_buf_config_cc_defaults',
-        'module_type': 'cc_defaults',
-        'config_namespace': 'angle',
-        'bool_variables': ['angle_android_dma_buf'],
-        'properties': ['defaults']
-    }))
-
-    blueprint_results.append(('soong_config_bool_variable', {
-        'name': 'angle_android_dma_buf',
-    }))
-
-    blueprint_results.append(('angle_dma_buf_config_cc_defaults', {
-        BLUEPRINT_COMMENT_PROPERTY:
-            ('Note: this is a no-op for most builds, only applies to products that explicitly '
-             'enable the angle_android_dma_buf config flag. See b/353262025 for details of the '
-             'products that use it.'),
-        'name': 'angle_dma_buf_cc_defaults',
-        'soong_config_variables': {
-            'angle_android_dma_buf': {
-                'defaults': [gn_target_to_blueprint_target(DMA_BUF_TARGET, {})],
-            }
-        },
-    }))
-
-    return blueprint_results
-
-
 # returns list of (blueprint module type, dict with contents)
 def get_blueprint_targets_from_build_info(build_info: BuildInfo) -> List[Tuple[str, dict]]:
     non_action_foreach_targets_to_write = collections.OrderedDict()
     action_foreach_targets_to_write = collections.OrderedDict()
     for abi in ABI_TARGETS:
-        for root_target in ROOT_TARGETS + [END2END_TEST_TARGET, DMA_BUF_TARGET]:
+        for root_target in ROOT_TARGETS + [END2END_TEST_TARGET]:
             action_foreach_targets, non_action_foreach_targets = get_gn_target_dependencies(
                 abi, root_target, build_info)
             action_foreach_targets_to_write.update(action_foreach_targets)
@@ -1014,8 +975,6 @@ def main():
     blueprint_targets = []
 
     blueprint_targets.extend(get_angle_in_vendor_flag_config())
-    blueprint_targets.extend(get_angle_android_dma_buf_flag_config(build_info))
-
     blueprint_targets.append((
         'cc_defaults',
         {
