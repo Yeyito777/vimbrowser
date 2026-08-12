@@ -48,14 +48,9 @@ class TraceProcessorContext;
 class StackProfileSequenceState;
 class ProfilePacketSequenceState;
 class V8SequenceState;
-struct AndroidKernelWakelockState;
-struct AndroidCpuPerUidState;
-
 using CustomStateClasses = std::tuple<StackProfileSequenceState,
                                       ProfilePacketSequenceState,
-                                      V8SequenceState,
-                                      AndroidKernelWakelockState,
-                                      AndroidCpuPerUidState>;
+                                      V8SequenceState>;
 
 // This is the public API exposed to packet tokenizers and parsers to access
 // state attached to a packet sequence. This state evolves as packets are

@@ -25,7 +25,7 @@
 #include "perfetto/base/logging.h"
 #include "perfetto/base/task_runner.h"
 #include "perfetto/base/time.h"
-#include "perfetto/ext/base/android_utils.h"
+#include "perfetto/ext/base/system_info.h"
 #include "perfetto/ext/base/crash_keys.h"
 #include "perfetto/ext/base/sys_types.h"
 #include "perfetto/ext/base/unix_socket.h"

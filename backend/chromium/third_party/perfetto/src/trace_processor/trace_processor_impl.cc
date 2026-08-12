@@ -49,10 +49,6 @@
 #include "perfetto/trace_processor/trace_blob_view.h"
 #include "perfetto/trace_processor/trace_processor.h"
 #include "src/trace_processor/forwarding_trace_parser.h"
-#include "src/trace_processor/importers/android_bugreport/android_dumpstate_event_parser.h"
-#include "src/trace_processor/importers/android_bugreport/android_dumpstate_reader.h"
-#include "src/trace_processor/importers/android_bugreport/android_log_event_parser.h"
-#include "src/trace_processor/importers/android_bugreport/android_log_reader.h"
 #include "src/trace_processor/importers/archive/gzip_trace_parser.h"
 #include "src/trace_processor/importers/archive/tar_trace_reader.h"
 #include "src/trace_processor/importers/archive/zip_trace_reader.h"
@@ -136,13 +132,12 @@
 #include "src/trace_processor/sqlite/sql_stats_table.h"
 #include "src/trace_processor/sqlite/stats_table.h"
 #include "src/trace_processor/storage/trace_storage.h"
-#include "src/trace_processor/tables/android_tables_py.h"   // IWYU pragma: keep
 #include "src/trace_processor/tables/jit_tables_py.h"       // IWYU pragma: keep
+#include "src/trace_processor/tables/log_tables_py.h"       // IWYU pragma: keep
 #include "src/trace_processor/tables/memory_tables_py.h"    // IWYU pragma: keep
 #include "src/trace_processor/tables/metadata_tables_py.h"  // IWYU pragma: keep
 #include "src/trace_processor/tables/trace_proto_tables_py.h"  // IWYU pragma: keep
 #include "src/trace_processor/tables/v8_tables_py.h"        // IWYU pragma: keep
-#include "src/trace_processor/tables/winscope_tables_py.h"  // IWYU pragma: keep
 #include "src/trace_processor/tp_metatrace.h"
 #include "src/trace_processor/trace_processor_storage_impl.h"
 #include "src/trace_processor/trace_reader_registry.h"
@@ -172,11 +167,6 @@
 #include "src/trace_processor/importers/etm/etm_v4_stream_demultiplexer.h"
 #include "src/trace_processor/perfetto_sql/intrinsics/operators/etm_decode_trace_vtable.h"
 #include "src/trace_processor/perfetto_sql/intrinsics/operators/etm_iterate_range_vtable.h"
-#endif
-
-#if PERFETTO_BUILDFLAG(PERFETTO_ENABLE_WINSCOPE)
-#include "src/trace_processor/perfetto_sql/intrinsics/table_functions/winscope_proto_to_args_with_defaults.h"
-#include "src/trace_processor/perfetto_sql/intrinsics/table_functions/winscope_surfaceflinger_hierarchy_paths.h"
 #endif
 
 #if PERFETTO_BUILDFLAG(PERFETTO_LLVM_SYMBOLIZER)
@@ -406,10 +396,6 @@ void InsertIntoModulesTable(tables::ModulesTable* table,
   table->Insert({string_pool->InternString("etm")});
 #endif  // PERFETTO_BUILDFLAG(PERFETTO_ENABLE_ETM_IMPORTER)
 
-#if PERFETTO_BUILDFLAG(PERFETTO_ENABLE_WINSCOPE)
-  table->Insert({string_pool->InternString("winscope")});
-#endif  // PERFETTO_BUILDFLAG(PERFETTO_ENABLE_WINSCOPE)
-
 #if PERFETTO_BUILDFLAG(PERFETTO_LLVM_SYMBOLIZER)
   table->Insert({string_pool->InternString("llvm_symbolizer")});
 #endif  // PERFETTO_BUILDFLAG(PERFETTO_LLVM_SYMBOLIZER)
@@ -435,7 +421,7 @@ uint64_t GetBoundsMutationCount(const TraceStorage& storage) {
          storage.slice_table().mutations() +
          storage.heap_profile_allocation_table().mutations() +
          storage.thread_state_table().mutations() +
-         storage.android_log_table().mutations() +
+         storage.log_table().mutations() +
          storage.heap_graph_object_table().mutations() +
          storage.perf_sample_table().mutations() +
          storage.instruments_sample_table().mutations() +
@@ -473,7 +459,7 @@ std::pair<int64_t, int64_t> GetTraceTimestampBoundsNs(
     start_ns = std::min(it.ts(), start_ns);
     end_ns = std::max(it.ts() + it.dur(), end_ns);
   }
-  for (auto it = storage.android_log_table().IterateRows(); it; ++it) {
+  for (auto it = storage.log_table().IterateRows(); it; ++it) {
     start_ns = std::min(it.ts(), start_ns);
     end_ns = std::max(it.ts(), end_ns);
   }
@@ -508,10 +494,6 @@ std::pair<int64_t, int64_t> GetTraceTimestampBoundsNs(
 TraceProcessorImpl::TraceProcessorImpl(const Config& cfg)
     : TraceProcessorStorageImpl(cfg), config_(cfg) {
   context()->register_additional_proto_modules = &RegisterAdditionalModules;
-  context()->reader_registry->RegisterTraceReader<AndroidDumpstateReader>(
-      kAndroidDumpstateTraceType);
-  context()->reader_registry->RegisterTraceReader<AndroidLogReader>(
-      kAndroidLogcatTraceType);
   context()->reader_registry->RegisterTraceReader<FuchsiaTraceTokenizer>(
       kFuchsiaTraceType);
   context()->reader_registry->RegisterTraceReader<SystraceTraceParser>(
@@ -1048,11 +1030,7 @@ std::vector<PerfettoSqlEngine::StaticTable> TraceProcessorImpl::GetStaticTables(
   std::vector<PerfettoSqlEngine::StaticTable> tables;
   AddStaticTable(tables, storage->mutable_aggregate_profile_table());
   AddStaticTable(tables, storage->mutable_aggregate_sample_table());
-  AddStaticTable(tables, storage->mutable_android_cpu_per_uid_track_table());
-  AddStaticTable(tables, storage->mutable_android_dumpstate_table());
-  AddStaticTable(tables,
-                 storage->mutable_android_game_intervenion_list_table());
-  AddStaticTable(tables, storage->mutable_android_log_table());
+  AddStaticTable(tables, storage->mutable_log_table());
   AddStaticTable(tables, storage->mutable_build_flags_table());
   AddStaticTable(tables, storage->mutable_modules_table());
   AddStaticTable(tables, storage->mutable_clock_snapshot_table());
@@ -1074,19 +1052,11 @@ std::vector<PerfettoSqlEngine::StaticTable> TraceProcessorImpl::GetStaticTables(
   AddStaticTable(tables, storage->mutable_memory_snapshot_table());
   AddStaticTable(tables, storage->mutable_mmap_record_table());
   AddStaticTable(tables, storage->mutable_package_list_table());
-  AddStaticTable(tables, storage->mutable_user_list_table());
   AddStaticTable(tables, storage->mutable_perf_session_table());
   AddStaticTable(tables, storage->mutable_process_memory_snapshot_table());
   AddStaticTable(tables, storage->mutable_profiler_smaps_table());
-  AddStaticTable(tables, storage->mutable_protolog_table());
-  AddStaticTable(tables, storage->mutable_winscope_trace_rect_table());
-  AddStaticTable(tables, storage->mutable_winscope_rect_table());
-  AddStaticTable(tables, storage->mutable_winscope_fill_region_table());
-  AddStaticTable(tables, storage->mutable_winscope_transform_table());
   AddStaticTable(tables, storage->mutable_spe_record_table());
   AddStaticTable(tables, storage->mutable_spurious_sched_wakeup_table());
-  AddStaticTable(tables,
-                 storage->mutable_surfaceflinger_transaction_flag_table());
   AddStaticTable(tables, storage->mutable_trace_file_table());
   AddStaticTable(tables, storage->mutable_trace_import_logs_table());
   AddStaticTable(tables, storage->mutable_v8_isolate_table());
@@ -1106,9 +1076,6 @@ std::vector<PerfettoSqlEngine::StaticTable> TraceProcessorImpl::GetStaticTables(
   AddStaticTable(tables, storage->mutable_symbol_table());
   AddStaticTable(tables, storage->mutable_jit_code_table());
   AddStaticTable(tables, storage->mutable_jit_frame_table());
-  AddStaticTable(tables, storage->mutable_android_key_events_table());
-  AddStaticTable(tables, storage->mutable_android_motion_events_table());
-  AddStaticTable(tables, storage->mutable_android_input_event_dispatch_table());
   AddStaticTable(tables, storage->mutable_inputmethod_clients_table());
   AddStaticTable(tables, storage->mutable_inputmethod_manager_service_table());
   AddStaticTable(tables, storage->mutable_inputmethod_service_table());
@@ -1147,7 +1114,6 @@ std::vector<PerfettoSqlEngine::StaticTable> TraceProcessorImpl::GetStaticTables(
   AddStaticTable(tables, storage->mutable_thread_state_table());
   AddStaticTable(tables, storage->mutable_track_table());
   AddStaticTable(tables, storage->mutable_counter_table());
-  AddStaticTable(tables, storage->mutable_android_network_packets_table());
   AddStaticTable(tables, storage->mutable_metadata_table());
   AddStaticTable(tables, storage->mutable_slice_table());
   AddStaticTable(tables, storage->mutable_track_event_callstacks_table());
@@ -1183,13 +1149,6 @@ TraceProcessorImpl::CreateStaticTableFunctions(TraceProcessorContext* context,
   fns.emplace_back(std::make_unique<ExperimentalFlatSlice>(context));
   fns.emplace_back(
       std::make_unique<DfsWeightBounded>(storage->mutable_string_pool()));
-
-#if PERFETTO_BUILDFLAG(PERFETTO_ENABLE_WINSCOPE)
-  fns.emplace_back(std::make_unique<WinscopeProtoToArgsWithDefaults>(
-      storage->mutable_string_pool(), engine, context));
-  fns.emplace_back(std::make_unique<WinscopeSurfaceFlingerHierarchyPaths>(
-      storage->mutable_string_pool(), engine));
-#endif
 
   if (config.enable_dev_features) {
     fns.emplace_back(std::make_unique<DataframeQueryPlanDecoder>(

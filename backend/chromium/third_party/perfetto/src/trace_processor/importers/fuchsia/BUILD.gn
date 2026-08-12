@@ -75,7 +75,6 @@ perfetto_unittest_source_set("unittests") {
     "../../../../protos/perfetto/common:zero",
     "../../../../protos/perfetto/config:zero",
     "../../../../protos/perfetto/trace:zero",
-    "../../../../protos/perfetto/trace/android:zero",
     "../../../../protos/perfetto/trace/chrome:zero",
     "../../../../protos/perfetto/trace/ftrace:zero",
     "../../../../protos/perfetto/trace/interned_data:zero",

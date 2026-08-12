@@ -46,7 +46,7 @@
 #include "perfetto/base/compiler.h"
 #include "perfetto/base/logging.h"
 #include "perfetto/base/proc_utils.h"         // IWYU pragma: keep
-#include "perfetto/ext/base/android_utils.h"  // IWYU pragma: keep
+#include "perfetto/ext/base/system_info.h"  // IWYU pragma: keep
 #include "perfetto/ext/base/ctrl_c_handler.h"
 #include "perfetto/ext/base/file_utils.h"
 #include "perfetto/ext/base/getopt.h"  // IWYU pragma: keep
@@ -72,8 +72,6 @@
 #include "perfetto/tracing/core/trace_config.h"
 #include "perfetto/tracing/default_socket.h"
 #include "protos/perfetto/common/data_source_descriptor.gen.h"
-#include "src/android_stats/perfetto_atoms.h"
-#include "src/android_stats/statsd_logging_helper.h"
 #include "src/perfetto_cmd/bugreport_path.h"
 #include "src/perfetto_cmd/config.h"
 #include "src/perfetto_cmd/packet_writer.h"
@@ -187,11 +185,7 @@ Light configuration flags: (only when NOT using -c/--config)
   FTRACE_GROUP/FTRACE_NAME : Record ftrace event (e.g. sched/sched_switch)
   ATRACE_CAT               : Record ATRACE_CAT (e.g. wm) (Android only)
 
-Statsd-specific and other Android-only flags:
-  --alert-id           : ID of the alert that triggered this trace.
-  --config-id          : ID of the triggering config.
-  --config-uid         : UID of app which registered the config.
-  --subscription-id    : ID of the subscription that triggered this trace.
+Android-only flags:
   --upload             : Upload trace.
   --dropbox        TAG : DEPRECATED: Use --upload instead
                          TAG should always be set to 'perfetto'.
@@ -218,15 +212,11 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
   umask(0000);  // make sure that file creation is not affected by umask.
 #endif
   enum LongOption {
-    OPT_ALERT_ID = 1000,
-    OPT_BUGREPORT,
+    OPT_BUGREPORT = 1000,
     OPT_BUGREPORT_ALL,
     OPT_CLONE,
     OPT_CLONE_BY_NAME,
     OPT_CLONE_SKIP_FILTER,
-    OPT_CONFIG_ID,
-    OPT_CONFIG_UID,
-    OPT_SUBSCRIPTION_ID,
     OPT_RESET_GUARDRAILS,
     OPT_PBTXT_CONFIG,
     OPT_DROPBOX,
@@ -258,10 +248,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
       {"txt", no_argument, nullptr, OPT_PBTXT_CONFIG},
       {"upload", no_argument, nullptr, OPT_UPLOAD},
       {"dropbox", required_argument, nullptr, OPT_DROPBOX},
-      {"alert-id", required_argument, nullptr, OPT_ALERT_ID},
-      {"config-id", required_argument, nullptr, OPT_CONFIG_ID},
-      {"config-uid", required_argument, nullptr, OPT_CONFIG_UID},
-      {"subscription-id", required_argument, nullptr, OPT_SUBSCRIPTION_ID},
       {"reset-guardrails", no_argument, nullptr, OPT_RESET_GUARDRAILS},
       {"detach", required_argument, nullptr, OPT_DETACH},
       {"attach", required_argument, nullptr, OPT_ATTACH},
@@ -285,7 +271,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
   std::string trace_config_raw;
   bool parse_as_pbtxt = false;
   bool no_clobber = false;
-  TraceConfig::StatsdMetadata statsd_metadata;
 
   ConfigOptions config_options;
   bool has_config_options = false;
@@ -446,26 +431,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
           "Guardrails no longer exist in perfetto_cmd; this option only exists "
           "for backwards compatibility.");
       return 0;
-    }
-
-    if (option == OPT_ALERT_ID) {
-      statsd_metadata.set_triggering_alert_id(atoll(optarg));
-      continue;
-    }
-
-    if (option == OPT_CONFIG_ID) {
-      statsd_metadata.set_triggering_config_id(atoll(optarg));
-      continue;
-    }
-
-    if (option == OPT_CONFIG_UID) {
-      statsd_metadata.set_triggering_config_uid(atoi(optarg));
-      continue;
-    }
-
-    if (option == OPT_SUBSCRIPTION_ID) {
-      statsd_metadata.set_triggering_subscription_id(atoll(optarg));
-      continue;
     }
 
     if (option == OPT_DETACH) {
@@ -670,7 +635,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
   }
 
   if (parsed) {
-    *trace_config_->mutable_statsd_metadata() = std::move(statsd_metadata);
     trace_config_raw.clear();
   } else if (will_trace_or_trigger && !is_clone()) {
     PERFETTO_ELOG("The trace config is invalid, bailing out.");
@@ -686,10 +650,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
   if (trace_config_->trace_uuid_lsb() == 0 &&
       trace_config_->trace_uuid_msb() == 0) {
     base::Uuid uuid = base::Uuidv4();
-    if (trace_config_->statsd_metadata().triggering_subscription_id()) {
-      uuid.set_lsb(
-          trace_config_->statsd_metadata().triggering_subscription_id());
-    }
     uuid_ = uuid.ToString();
     trace_config_->set_trace_uuid_msb(uuid.msb());
     trace_config_->set_trace_uuid_lsb(uuid.lsb());
@@ -765,23 +725,6 @@ std::optional<int> PerfettoCmd::ParseCmdlineAndMaybeDaemonize(int argc,
   report_to_android_framework_ =
       has_android_reporter_package &&
       !trace_config_->android_report_config().skip_report() && !has_triggers;
-
-  // Respect the wishes of the config with respect to statsd logging or fall
-  // back on the presence of the --upload flag if not set.
-  switch (trace_config_->statsd_logging()) {
-    case TraceConfig::STATSD_LOGGING_ENABLED:
-      statsd_logging_ = true;
-      break;
-    case TraceConfig::STATSD_LOGGING_DISABLED:
-      statsd_logging_ = false;
-      break;
-    case TraceConfig::STATSD_LOGGING_UNSPECIFIED:
-      statsd_logging_ = upload_flag_;
-      break;
-  }
-  trace_config_->set_statsd_logging(statsd_logging_
-                                        ? TraceConfig::STATSD_LOGGING_ENABLED
-                                        : TraceConfig::STATSD_LOGGING_DISABLED);
 
   for (const auto& note : notes) {
     auto n = trace_config_->add_notes();
@@ -1022,19 +965,6 @@ int PerfettoCmd::ConnectToServiceAndRun() {
     std::this_thread::sleep_for(std::chrono::milliseconds(dist(minstd)));
   }
 
-  if (is_clone()) {
-    if (!snapshot_trigger_info_.has_value()) {
-      LogUploadEvent(PerfettoStatsdAtom::kCmdCloneTraceBegin);
-    } else {
-      LogUploadEvent(PerfettoStatsdAtom::kCmdCloneTriggerTraceBegin,
-                     snapshot_trigger_info_->trigger_name);
-    }
-  } else if (trace_config_->trigger_config().trigger_timeout_ms() == 0) {
-    LogUploadEvent(PerfettoStatsdAtom::kTraceBegin);
-  } else {
-    LogUploadEvent(PerfettoStatsdAtom::kBackgroundTraceBegin);
-  }
-
 #if PERFETTO_BUILDFLAG(PERFETTO_OS_ANDROID)
   if (!background_ && !is_detach() && !upload_flag_ &&
       triggers_to_activate_.empty() && !isatty(STDIN_FILENO) &&
@@ -1057,7 +987,6 @@ int PerfettoCmd::ConnectToServiceAndRun() {
 
 void PerfettoCmd::OnConnect() {
   connected_ = true;
-  LogUploadEvent(PerfettoStatsdAtom::kOnConnect);
 
   uint32_t events_mask = 0;
   if (GetTriggerMode(*trace_config_) ==
@@ -1193,7 +1122,6 @@ void PerfettoCmd::OnDisconnect() {
 
 void PerfettoCmd::OnTimeout() {
   PERFETTO_ELOG("Timed out while waiting for trace from the service, aborting");
-  LogUploadEvent(PerfettoStatsdAtom::kOnTimeout);
   task_runner_.Quit();
 }
 
@@ -1252,11 +1180,6 @@ void PerfettoCmd::ReadbackTraceDataAndQuit(const std::string& error) {
     return;
   }
 
-  // Make sure to only log this atom if |error| is empty; traced
-  // would have logged a terminal error atom corresponding to |error|
-  // and we don't want to log anything after that.
-  LogUploadEvent(PerfettoStatsdAtom::kOnTracingDisabled);
-
   if (trace_config_->write_into_file() || cloned_session_was_write_into_file_) {
     // At this point the passed file already contains all the packets.
     return FinalizeTraceAndExit();
@@ -1271,7 +1194,6 @@ void PerfettoCmd::ReadbackTraceDataAndQuit(const std::string& error) {
 }
 
 void PerfettoCmd::FinalizeTraceAndExit() {
-  LogUploadEvent(PerfettoStatsdAtom::kFinalizeTraceAndExit);
   packet_writer_.reset();
 
   if (save_to_incidentd_) {
@@ -1451,14 +1373,6 @@ void PerfettoCmd::OnSessionCloned(const OnSessionClonedArgs& args) {
   // Kick off the readback and file finalization (as if we started tracing and
   // reached the duration_ms timeout).
   uuid_ = args.uuid.ToString();
-
-  // Log the new UUID with the clone tag.
-  if (!snapshot_trigger_info_.has_value()) {
-    LogUploadEvent(PerfettoStatsdAtom::kCmdOnSessionClone);
-  } else {
-    LogUploadEvent(PerfettoStatsdAtom::kCmdOnTriggerSessionClone,
-                   snapshot_trigger_info_->trigger_name);
-  }
 
   cloned_session_was_write_into_file_ = args.was_write_into_file;
   ReadbackTraceDataAndQuit(full_error);
@@ -1785,22 +1699,6 @@ void PerfettoCmd::CloneAllBugreportTraces(
       }
     });
   }
-}
-
-void PerfettoCmd::LogUploadEvent(PerfettoStatsdAtom atom) {
-  if (!statsd_logging_)
-    return;
-  base::Uuid uuid(uuid_);
-  android_stats::MaybeLogUploadEvent(atom, uuid.lsb(), uuid.msb());
-}
-
-void PerfettoCmd::LogUploadEvent(PerfettoStatsdAtom atom,
-                                 const std::string& trigger_name) {
-  if (!statsd_logging_)
-    return;
-  base::Uuid uuid(uuid_);
-  android_stats::MaybeLogUploadEvent(atom, uuid.lsb(), uuid.msb(),
-                                     trigger_name);
 }
 
 int PERFETTO_EXPORT_ENTRYPOINT PerfettoCmdMain(int argc, char** argv) {

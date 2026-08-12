@@ -34,16 +34,10 @@ using perfetto::protos::pbzero::TracePacket;
 GraphicsEventModule::GraphicsEventModule(
     ProtoImporterModuleContext* module_context,
     TraceProcessorContext* context)
-    : ProtoImporterModule(module_context),
-      parser_(context),
-      frame_parser_(context),
-      frame_timeline_parser_(context) {
-  RegisterForField(TracePacket::kFrameTimelineEventFieldNumber);
+    : ProtoImporterModule(module_context), parser_(context) {
   RegisterForField(TracePacket::kGpuCounterEventFieldNumber);
   RegisterForField(TracePacket::kGpuRenderStageEventFieldNumber);
   RegisterForField(TracePacket::kGpuLogFieldNumber);
-  RegisterForField(TracePacket::kGpuMemTotalEventFieldNumber);
-  RegisterForField(TracePacket::kGraphicsFrameEventFieldNumber);
   RegisterForField(TracePacket::kVulkanMemoryEventFieldNumber);
   RegisterForField(TracePacket::kVulkanApiEventFieldNumber);
 }
@@ -60,13 +54,10 @@ ModuleResult GraphicsEventModule::TokenizePacket(
     case TracePacket::kGpuCounterEventFieldNumber:
       parser_.TokenizeGpuCounterEvent(decoder.gpu_counter_event());
       break;
-    case TracePacket::kFrameTimelineEventFieldNumber:
     case TracePacket::kGpuRenderStageEventFieldNumber:
     case TracePacket::kGpuLogFieldNumber:
-    case TracePacket::kGraphicsFrameEventFieldNumber:
     case TracePacket::kVulkanMemoryEventFieldNumber:
     case TracePacket::kVulkanApiEventFieldNumber:
-    case TracePacket::kGpuMemTotalEventFieldNumber:
     default:
       break;
   }
@@ -79,10 +70,6 @@ void GraphicsEventModule::ParseTracePacketData(
     const TracePacketData& data,
     uint32_t field_id) {
   switch (field_id) {
-    case TracePacket::kFrameTimelineEventFieldNumber:
-      frame_timeline_parser_.ParseFrameTimelineEvent(
-          ts, decoder.frame_timeline_event());
-      return;
     case TracePacket::kGpuCounterEventFieldNumber:
       parser_.ParseGpuCounterEvent(ts, decoder.gpu_counter_event());
       return;
@@ -93,18 +80,12 @@ void GraphicsEventModule::ParseTracePacketData(
     case TracePacket::kGpuLogFieldNumber:
       parser_.ParseGpuLog(ts, decoder.gpu_log());
       return;
-    case TracePacket::kGraphicsFrameEventFieldNumber:
-      frame_parser_.ParseGraphicsFrameEvent(ts, decoder.graphics_frame_event());
-      return;
     case TracePacket::kVulkanMemoryEventFieldNumber:
       parser_.ParseVulkanMemoryEvent(data.sequence_state.get(),
                                      decoder.vulkan_memory_event());
       return;
     case TracePacket::kVulkanApiEventFieldNumber:
       parser_.ParseVulkanApiEvent(ts, decoder.vulkan_api_event());
-      return;
-    case TracePacket::kGpuMemTotalEventFieldNumber:
-      parser_.ParseGpuMemTotalEvent(ts, decoder.gpu_mem_total_event());
       return;
   }
 }

@@ -47,7 +47,6 @@
 #include "src/trace_processor/types/variadic.h"
 
 #include "protos/perfetto/common/gpu_counter_descriptor.pbzero.h"
-#include "protos/perfetto/trace/android/gpu_mem_event.pbzero.h"
 #include "protos/perfetto/trace/gpu/gpu_counter_event.pbzero.h"
 #include "protos/perfetto/trace/gpu/gpu_log.pbzero.h"
 #include "protos/perfetto/trace/gpu/gpu_render_stage_event.pbzero.h"
@@ -840,26 +839,6 @@ void GpuEventParser::ParseVulkanApiEvent(int64_t ts, ConstBytes blob) {
         inserter->AddArg(submission_id_id_,
                          Variadic::Integer(event.submission_id()));
       });
-}
-
-void GpuEventParser::ParseGpuMemTotalEvent(int64_t ts, ConstBytes blob) {
-  protos::pbzero::GpuMemTotalEvent::Decoder gpu_mem_total(blob);
-
-  TrackId track = kInvalidTrackId;
-  const uint32_t pid = gpu_mem_total.pid();
-  if (pid == 0) {
-    // Pid 0 is used to indicate the global total
-    track =
-        context_->track_tracker->InternTrack(tracks::kGlobalGpuMemoryBlueprint);
-  } else {
-    // Process emitting the packet can be different from the pid in the event.
-    UniqueTid utid = context_->process_tracker->UpdateThread(pid, pid);
-    UniquePid upid = context_->storage->thread_table()[utid].upid().value_or(0);
-    track = context_->track_tracker->InternTrack(
-        tracks::kProcessGpuMemoryBlueprint, tracks::Dimensions(upid));
-  }
-  context_->event_tracker->PushCounter(
-      ts, static_cast<double>(gpu_mem_total.size()), track);
 }
 
 }  // namespace perfetto::trace_processor

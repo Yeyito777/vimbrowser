@@ -20,7 +20,6 @@ ftrace_proto_names = [
   "ftrace_stats.proto",
   "test_bundle_wrapper.proto",
   "generic.proto",
-  "android_fs.proto",
   "bcl_exynos.proto",
   "binder.proto",
   "block.proto",

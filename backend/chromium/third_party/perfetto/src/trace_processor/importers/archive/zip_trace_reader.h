@@ -31,7 +31,6 @@ namespace perfetto::trace_processor {
 
 class ForwardingTraceParser;
 class TraceProcessorContext;
-class AndroidBugreportReader;
 
 // Forwards files contained in a ZIP to the appropriate ChunkedTraceReader. It
 // is guaranteed that proto traces will be parsed first.
@@ -52,7 +51,6 @@ class ZipTraceReader : public ChunkedTraceReader {
   };
   TraceProcessorContext* const context_;
   util::ZipReader zip_reader_;
-  std::unique_ptr<AndroidBugreportReader> android_bugreport_reader_;
   std::vector<std::unique_ptr<ChunkedTraceReader>> parsers_;
 };
 

@@ -29,7 +29,6 @@
 #include "perfetto/trace_processor/trace_blob.h"
 #include "perfetto/trace_processor/trace_blob_view.h"
 #include "src/trace_processor/forwarding_trace_parser.h"
-#include "src/trace_processor/importers/android_bugreport/android_bugreport_reader.h"
 #include "src/trace_processor/importers/archive/archive_entry.h"
 #include "src/trace_processor/importers/common/trace_file_tracker.h"
 #include "src/trace_processor/types/trace_processor_context.h"
@@ -52,18 +51,6 @@ base::Status ZipTraceReader::OnPushDataToSorter() {
   }
 
   std::vector<util::ZipFile> files = zip_reader_.TakeFiles();
-
-  // Android bug reports are ZIP files and its files do not get handled
-  // separately.
-  if (AndroidBugreportReader::IsAndroidBugReport(files)) {
-    // TODO(lalitm): this is a bit of a hack to workaround the fact that we
-    // don't have access to the zip file id here.
-    auto bugreport_file = context_->trace_file_tracker->AddFile("");
-    auto* context = context_->ForkContextForTrace(bugreport_file, 0);
-    android_bugreport_reader_ =
-        std::make_unique<AndroidBugreportReader>(context);
-    return android_bugreport_reader_->Parse(std::move(files));
-  }
 
   // TODO(carlscab): There is a lot of unnecessary copying going on here.
   // ZipTraceReader can directly parse the ZIP file and given that we know the

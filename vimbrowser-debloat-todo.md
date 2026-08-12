@@ -298,8 +298,14 @@ These are reference measurements, not final acceptance values.
         extension despite its Android-standardized name.
       - The exact worker tree, validation, and 16,814-line net reduction are
         recorded in `docs/debloat-android-p02-shared-lists.md`.
-  - [ ] Remove Android-only Perfetto/Catapult schemas, importers, and trace
+  - [x] Remove Android-only Perfetto/Catapult schemas, importers, and trace
         resources from their cross-platform aggregates.
+      - Removed Android/StatsD/power schemas, Android and Winscope importers,
+        probes, tables, trace-redaction, StatsD telemetry, Soong metadata, and
+        Catapult Android trace resources while preserving generic tracing.
+      - The exact worker tree, graph/input checks, validation, and 118,152-line
+        net reduction are recorded in
+        `docs/debloat-android-p02-perfetto-catapult.md`.
   - [ ] Retain `*_non_android*` implementations; defer cross-platform web
         payment code to stage A and Rust target/toolchain source pruning to P04.
 - [ ] **P03:** Remove residual iOS, Windows, ChromeOS, Fuchsia, Cast, and Wayland

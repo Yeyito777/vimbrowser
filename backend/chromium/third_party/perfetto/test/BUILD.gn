@@ -28,7 +28,6 @@ if (!build_with_chromium && enable_perfetto_integration_tests) {
       "../include/perfetto/protozero",
       "../protos/perfetto/config:cpp",
       "../protos/perfetto/config:zero",
-      "../protos/perfetto/config/power:zero",
       "../protos/perfetto/config/priority_boost:cpp",
       "../protos/perfetto/config/sys_stats:cpp",
       "../protos/perfetto/trace:cpp",
@@ -57,7 +56,6 @@ if (!build_with_chromium && enable_perfetto_integration_tests) {
     ]
 
     sources = [
-      "android_integrationtest.cc",
       "cmdline_integrationtest.cc",
       "ftrace_integrationtest.cc",
       "priority_boost_integrationtest.cc",

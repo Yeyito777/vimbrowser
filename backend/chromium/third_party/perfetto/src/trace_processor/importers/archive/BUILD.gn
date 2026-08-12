@@ -37,7 +37,6 @@ source_set("archive") {
     "../../util:trace_blob_view_reader",
     "../../util:trace_type",
     "../../util:zip_reader",
-    "../android_bugreport",
     "../common",
     "../proto:minimal",
   ]

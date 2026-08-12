@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 #include "perfetto/base/logging.h"
-#include "perfetto/ext/base/android_utils.h"
+#include "perfetto/ext/base/system_info.h"
 #include "perfetto/ext/base/file_utils.h"
 
 namespace perfetto {

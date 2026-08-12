@@ -216,7 +216,7 @@ class TraceStorage {
     return InternString(base::StringView(str.data(), str.size()));
   }
 
-  // Example usage: SetStats(stats::android_log_num_failed, 42);
+  // Example usage: SetStats(stats::ftrace_parse_errors, 42);
   // TODO(lalitm): make these correctly work across machines and across
   // traces.
   void SetStats(size_t key, int64_t value) {
@@ -225,7 +225,7 @@ class TraceStorage {
     stats_[key].value = value;
   }
 
-  // Example usage: IncrementStats(stats::android_log_num_failed, -1);
+  // Example usage: IncrementStats(stats::ftrace_parse_errors, -1);
   // TODO(lalitm): make these correctly work across machines and across
   // traces.
   void IncrementStats(size_t key, int64_t increment = 1) {
@@ -413,51 +413,11 @@ class TraceStorage {
   const SqlStats& sql_stats() const { return sql_stats_; }
   SqlStats* mutable_sql_stats() { return &sql_stats_; }
 
-  const tables::AndroidCpuPerUidTrackTable& android_cpu_per_uid_track_table()
-      const {
-    return table<tables::AndroidCpuPerUidTrackTable>();
+  const tables::LogTable& log_table() const {
+    return table<tables::LogTable>();
   }
-  tables::AndroidCpuPerUidTrackTable*
-  mutable_android_cpu_per_uid_track_table() {
-    return mutable_table<tables::AndroidCpuPerUidTrackTable>();
-  }
-
-  const tables::AndroidLogTable& android_log_table() const {
-    return table<tables::AndroidLogTable>();
-  }
-  tables::AndroidLogTable* mutable_android_log_table() {
-    return mutable_table<tables::AndroidLogTable>();
-  }
-
-  const tables::AndroidDumpstateTable& android_dumpstate_table() const {
-    return table<tables::AndroidDumpstateTable>();
-  }
-
-  tables::AndroidDumpstateTable* mutable_android_dumpstate_table() {
-    return mutable_table<tables::AndroidDumpstateTable>();
-  }
-
-  const tables::AndroidKeyEventsTable& android_key_events_table() const {
-    return table<tables::AndroidKeyEventsTable>();
-  }
-  tables::AndroidKeyEventsTable* mutable_android_key_events_table() {
-    return mutable_table<tables::AndroidKeyEventsTable>();
-  }
-
-  const tables::AndroidMotionEventsTable& android_motion_events_table() const {
-    return table<tables::AndroidMotionEventsTable>();
-  }
-  tables::AndroidMotionEventsTable* mutable_android_motion_events_table() {
-    return mutable_table<tables::AndroidMotionEventsTable>();
-  }
-
-  const tables::AndroidInputEventDispatchTable&
-  android_input_event_dispatch_table() const {
-    return table<tables::AndroidInputEventDispatchTable>();
-  }
-  tables::AndroidInputEventDispatchTable*
-  mutable_android_input_event_dispatch_table() {
-    return mutable_table<tables::AndroidInputEventDispatchTable>();
+  tables::LogTable* mutable_log_table() {
+    return mutable_table<tables::LogTable>();
   }
 
   const StatsMap& stats() const { return stats_; }
@@ -577,22 +537,6 @@ class TraceStorage {
   }
   tables::PackageListTable* mutable_package_list_table() {
     return mutable_table<tables::PackageListTable>();
-  }
-
-  const tables::AndroidUserListTable& user_list_table() const {
-    return table<tables::AndroidUserListTable>();
-  }
-  tables::AndroidUserListTable* mutable_user_list_table() {
-    return mutable_table<tables::AndroidUserListTable>();
-  }
-
-  const tables::AndroidGameInterventionListTable&
-  android_game_intervention_list_table() const {
-    return table<tables::AndroidGameInterventionListTable>();
-  }
-  tables::AndroidGameInterventionListTable*
-  mutable_android_game_intervenion_list_table() {
-    return mutable_table<tables::AndroidGameInterventionListTable>();
   }
 
   const tables::ProfilerSmapsTable& profiler_smaps_table() const {
@@ -731,14 +675,6 @@ class TraceStorage {
     return mutable_table<tables::MemorySnapshotEdgeTable>();
   }
 
-  const tables::AndroidNetworkPacketsTable& android_network_packets_table()
-      const {
-    return table<tables::AndroidNetworkPacketsTable>();
-  }
-  tables::AndroidNetworkPacketsTable* mutable_android_network_packets_table() {
-    return mutable_table<tables::AndroidNetworkPacketsTable>();
-  }
-
   const tables::V8IsolateTable& v8_isolate_table() const {
     return table<tables::V8IsolateTable>();
   }
@@ -858,191 +794,6 @@ class TraceStorage {
   }
   tables::SpeRecordTable* mutable_spe_record_table() {
     return mutable_table<tables::SpeRecordTable>();
-  }
-
-  const tables::InputMethodClientsTable& inputmethod_clients_table() const {
-    return table<tables::InputMethodClientsTable>();
-  }
-  tables::InputMethodClientsTable* mutable_inputmethod_clients_table() {
-    return mutable_table<tables::InputMethodClientsTable>();
-  }
-
-  const tables::InputMethodManagerServiceTable&
-  inputmethod_manager_service_table() const {
-    return table<tables::InputMethodManagerServiceTable>();
-  }
-  tables::InputMethodManagerServiceTable*
-  mutable_inputmethod_manager_service_table() {
-    return mutable_table<tables::InputMethodManagerServiceTable>();
-  }
-
-  const tables::InputMethodServiceTable& inputmethod_service_table() const {
-    return table<tables::InputMethodServiceTable>();
-  }
-  tables::InputMethodServiceTable* mutable_inputmethod_service_table() {
-    return mutable_table<tables::InputMethodServiceTable>();
-  }
-
-  const tables::SurfaceFlingerLayersSnapshotTable&
-  surfaceflinger_layers_snapshot_table() const {
-    return table<tables::SurfaceFlingerLayersSnapshotTable>();
-  }
-  tables::SurfaceFlingerLayersSnapshotTable*
-  mutable_surfaceflinger_layers_snapshot_table() {
-    return mutable_table<tables::SurfaceFlingerLayersSnapshotTable>();
-  }
-
-  const tables::SurfaceFlingerDisplayTable& surfaceflinger_display_table()
-      const {
-    return table<tables::SurfaceFlingerDisplayTable>();
-  }
-  tables::SurfaceFlingerDisplayTable* mutable_surfaceflinger_display_table() {
-    return mutable_table<tables::SurfaceFlingerDisplayTable>();
-  }
-
-  const tables::SurfaceFlingerLayerTable& surfaceflinger_layer_table() const {
-    return table<tables::SurfaceFlingerLayerTable>();
-  }
-  tables::SurfaceFlingerLayerTable* mutable_surfaceflinger_layer_table() {
-    return mutable_table<tables::SurfaceFlingerLayerTable>();
-  }
-
-  const tables::SurfaceFlingerTransactionsTable&
-  surfaceflinger_transactions_table() const {
-    return table<tables::SurfaceFlingerTransactionsTable>();
-  }
-  tables::SurfaceFlingerTransactionsTable*
-  mutable_surfaceflinger_transactions_table() {
-    return mutable_table<tables::SurfaceFlingerTransactionsTable>();
-  }
-
-  const tables::SurfaceFlingerTransactionTable&
-  surfaceflinger_transaction_table() const {
-    return table<tables::SurfaceFlingerTransactionTable>();
-  }
-  tables::SurfaceFlingerTransactionTable*
-  mutable_surfaceflinger_transaction_table() {
-    return mutable_table<tables::SurfaceFlingerTransactionTable>();
-  }
-
-  const tables::SurfaceFlingerTransactionFlagTable&
-  surfaceflinger_transaction_flag_table() const {
-    return table<tables::SurfaceFlingerTransactionFlagTable>();
-  }
-  tables::SurfaceFlingerTransactionFlagTable*
-  mutable_surfaceflinger_transaction_flag_table() {
-    return mutable_table<tables::SurfaceFlingerTransactionFlagTable>();
-  }
-
-  const tables::ViewCaptureTable& viewcapture_table() const {
-    return table<tables::ViewCaptureTable>();
-  }
-  tables::ViewCaptureTable* mutable_viewcapture_table() {
-    return mutable_table<tables::ViewCaptureTable>();
-  }
-
-  const tables::ViewCaptureViewTable& viewcapture_view_table() const {
-    return table<tables::ViewCaptureViewTable>();
-  }
-  tables::ViewCaptureViewTable* mutable_viewcapture_view_table() {
-    return mutable_table<tables::ViewCaptureViewTable>();
-  }
-
-  const tables::ViewCaptureInternedDataTable& viewcapture_interned_data_table()
-      const {
-    return table<tables::ViewCaptureInternedDataTable>();
-  }
-  tables::ViewCaptureInternedDataTable*
-  mutable_viewcapture_interned_data_table() {
-    return mutable_table<tables::ViewCaptureInternedDataTable>();
-  }
-
-  const tables::WindowManagerTable& windowmanager_table() const {
-    return table<tables::WindowManagerTable>();
-  }
-  tables::WindowManagerTable* mutable_windowmanager_table() {
-    return mutable_table<tables::WindowManagerTable>();
-  }
-
-  const tables::WindowManagerWindowContainerTable&
-  windowmanager_windowcontainer_table() const {
-    return table<tables::WindowManagerWindowContainerTable>();
-  }
-  tables::WindowManagerWindowContainerTable*
-  mutable_windowmanager_windowcontainer_table() {
-    return mutable_table<tables::WindowManagerWindowContainerTable>();
-  }
-
-  const tables::WindowManagerShellTransitionsTable&
-  window_manager_shell_transitions_table() const {
-    return table<tables::WindowManagerShellTransitionsTable>();
-  }
-  tables::WindowManagerShellTransitionsTable*
-  mutable_window_manager_shell_transitions_table() {
-    return mutable_table<tables::WindowManagerShellTransitionsTable>();
-  }
-
-  const tables::WindowManagerShellTransitionHandlersTable&
-  window_manager_shell_transition_handlers_table() const {
-    return table<tables::WindowManagerShellTransitionHandlersTable>();
-  }
-  tables::WindowManagerShellTransitionHandlersTable*
-  mutable_window_manager_shell_transition_handlers_table() {
-    return mutable_table<tables::WindowManagerShellTransitionHandlersTable>();
-  }
-
-  const tables::WindowManagerShellTransitionParticipantsTable&
-  window_manager_shell_transition_participants_table() const {
-    return table<tables::WindowManagerShellTransitionParticipantsTable>();
-  }
-  tables::WindowManagerShellTransitionParticipantsTable*
-  mutable_window_manager_shell_transition_participants_table() {
-    return mutable_table<
-        tables::WindowManagerShellTransitionParticipantsTable>();
-  }
-
-  const tables::WindowManagerShellTransitionProtosTable&
-  window_manager_shell_transition_protos_table() const {
-    return table<tables::WindowManagerShellTransitionProtosTable>();
-  }
-  tables::WindowManagerShellTransitionProtosTable*
-  mutable_window_manager_shell_transition_protos_table() {
-    return mutable_table<tables::WindowManagerShellTransitionProtosTable>();
-  }
-
-  const tables::ProtoLogTable& protolog_table() const {
-    return table<tables::ProtoLogTable>();
-  }
-  tables::ProtoLogTable* mutable_protolog_table() {
-    return mutable_table<tables::ProtoLogTable>();
-  }
-
-  const tables::WinscopeTraceRectTable& winscope_trace_rect_table() const {
-    return table<tables::WinscopeTraceRectTable>();
-  }
-  tables::WinscopeTraceRectTable* mutable_winscope_trace_rect_table() {
-    return mutable_table<tables::WinscopeTraceRectTable>();
-  }
-
-  const tables::WinscopeRectTable& winscope_rect_table() const {
-    return table<tables::WinscopeRectTable>();
-  }
-  tables::WinscopeRectTable* mutable_winscope_rect_table() {
-    return mutable_table<tables::WinscopeRectTable>();
-  }
-
-  const tables::WinscopeFillRegionTable& winscope_fill_region_table() const {
-    return table<tables::WinscopeFillRegionTable>();
-  }
-  tables::WinscopeFillRegionTable* mutable_winscope_fill_region_table() {
-    return mutable_table<tables::WinscopeFillRegionTable>();
-  }
-
-  const tables::WinscopeTransformTable& winscope_transform_table() const {
-    return table<tables::WinscopeTransformTable>();
-  }
-  tables::WinscopeTransformTable* mutable_winscope_transform_table() {
-    return mutable_table<tables::WinscopeTransformTable>();
   }
 
   const tables::ExperimentalProtoPathTable& experimental_proto_path_table()

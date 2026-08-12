@@ -33,7 +33,6 @@ perfetto_component("base") {
     "../../include/perfetto/ext/base",
   ]
   sources = [
-    "android_utils.cc",
     "base64.cc",
     "crash_keys.cc",
     "ctrl_c_handler.cc",
@@ -56,6 +55,7 @@ perfetto_component("base") {
     "string_splitter.cc",
     "string_utils.cc",
     "string_view.cc",
+    "system_info.cc",
     "string_view_splitter.cc",
     "temp_file.cc",
     "thread_checker.cc",

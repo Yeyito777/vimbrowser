@@ -110,8 +110,6 @@ if (enable_perfetto_android_java_sdk) {
       [ "src/android_sdk/perfetto_sdk_for_jni:unittests" ]
 }
 
-_trace_processor_unittests_targets += [ "src/trace_redaction:unittests" ]
-
 # This list MUST be defined in the end of the file, to concat all the updated sub-lists.
 _unittests_subset_binaries = [
   {

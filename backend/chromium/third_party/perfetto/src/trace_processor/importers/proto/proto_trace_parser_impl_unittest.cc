@@ -76,7 +76,6 @@
 #include "protos/perfetto/common/perf_events.pbzero.h"
 #include "protos/perfetto/common/sys_stats_counters.pbzero.h"
 #include "protos/perfetto/config/trace_config.pbzero.h"
-#include "protos/perfetto/trace/android/packages_list.pbzero.h"
 #include "protos/perfetto/trace/chrome/chrome_benchmark_metadata.pbzero.h"
 #include "protos/perfetto/trace/chrome/chrome_trace_event.pbzero.h"
 #include "protos/perfetto/trace/clock_snapshot.pbzero.h"
@@ -2317,10 +2316,10 @@ TEST_F(ProtoTraceParserTest, TrackEventWithLogMessage) {
   EXPECT_EQ(rr_0->ts(), 1010000);
   EXPECT_EQ(rr_0->track_id(), track);
 
-  EXPECT_GT(context_.storage->android_log_table().row_count(), 0u);
-  EXPECT_EQ(context_.storage->android_log_table()[0].ts(), 1010000);
-  EXPECT_EQ(context_.storage->android_log_table()[0].msg(), body_1);
-  EXPECT_EQ(context_.storage->android_log_table()[0].tag(), source_location_id);
+  EXPECT_GT(context_.storage->log_table().row_count(), 0u);
+  EXPECT_EQ(context_.storage->log_table()[0].ts(), 1010000);
+  EXPECT_EQ(context_.storage->log_table()[0].msg(), body_1);
+  EXPECT_EQ(context_.storage->log_table()[0].tag(), source_location_id);
 }
 
 TEST_F(ProtoTraceParserTest, TrackEventParseLegacyEventIntoRawTable) {
@@ -2701,105 +2700,6 @@ TEST_F(ProtoTraceParserTest, LoadChromeMetadata) {
   EXPECT_STREQ(storage_->GetString(metadata[3].name()).c_str(), "cr-json_name");
   EXPECT_STREQ(storage_->GetString(*metadata[3].str_value()).c_str(),
                "{key: value}");
-}
-
-TEST_F(ProtoTraceParserTest, AndroidPackagesList) {
-  auto* packet = trace_->add_packet();
-  auto* pkg_list = packet->set_packages_list();
-
-  pkg_list->set_read_error(false);
-  pkg_list->set_parse_error(true);
-  {
-    auto* pkg = pkg_list->add_packages();
-    pkg->set_name("com.test.app");
-    pkg->set_uid(1000);
-    pkg->set_debuggable(false);
-    pkg->set_profileable_from_shell(true);
-    pkg->set_version_code(42);
-  }
-  {
-    auto* pkg = pkg_list->add_packages();
-    pkg->set_name("com.test.app2");
-    pkg->set_uid(1001);
-    pkg->set_debuggable(false);
-    pkg->set_profileable_from_shell(false);
-    pkg->set_version_code(43);
-  }
-
-  Tokenize();
-  context_.sorter->ExtractEventsForced();
-
-  // Packet-level errors reflected in stats storage.
-  const auto& stats = context_.storage->stats();
-  EXPECT_FALSE(stats[stats::packages_list_has_read_errors].value);
-  EXPECT_TRUE(stats[stats::packages_list_has_parse_errors].value);
-
-  // Expect two metadata rows, each with an int_value of a separate arg set id.
-  // The relevant arg sets have the info about the packages. To simplify test
-  // structure, make an assumption that metadata storage is filled in in the
-  // FIFO order of seen packages.
-  const auto& package_list = context_.storage->package_list_table();
-  ASSERT_EQ(package_list.row_count(), 2u);
-
-  EXPECT_STREQ(storage_->GetString(package_list[0].package_name()).c_str(),
-               "com.test.app");
-  EXPECT_EQ(package_list[0].uid(), 1000u);
-  EXPECT_EQ(package_list[0].debuggable(), false);
-  EXPECT_EQ(package_list[0].profileable_from_shell(), true);
-  EXPECT_EQ(package_list[0].version_code(), 42);
-
-  EXPECT_STREQ(storage_->GetString(package_list[1].package_name()).c_str(),
-               "com.test.app2");
-  EXPECT_EQ(package_list[1].uid(), 1001u);
-  EXPECT_EQ(package_list[1].debuggable(), false);
-  EXPECT_EQ(package_list[1].profileable_from_shell(), false);
-  EXPECT_EQ(package_list[1].version_code(), 43);
-}
-
-TEST_F(ProtoTraceParserTest, AndroidPackagesListDuplicate) {
-  auto* packet = trace_->add_packet();
-  auto* pkg_list = packet->set_packages_list();
-
-  pkg_list->set_read_error(false);
-  pkg_list->set_parse_error(true);
-  {
-    auto* pkg = pkg_list->add_packages();
-    pkg->set_name("com.test.app");
-    pkg->set_uid(1000);
-    pkg->set_debuggable(false);
-    pkg->set_profileable_from_shell(true);
-    pkg->set_version_code(42);
-  }
-  {
-    auto* pkg = pkg_list->add_packages();
-    pkg->set_name("com.test.app");
-    pkg->set_uid(1000);
-    pkg->set_debuggable(false);
-    pkg->set_profileable_from_shell(true);
-    pkg->set_version_code(42);
-  }
-
-  Tokenize();
-  context_.sorter->ExtractEventsForced();
-
-  // Packet-level errors reflected in stats storage.
-  const auto& stats = context_.storage->stats();
-  EXPECT_FALSE(stats[stats::packages_list_has_read_errors].value);
-  EXPECT_TRUE(stats[stats::packages_list_has_parse_errors].value);
-
-  // Expect two metadata rows, each with an int_value of a separate arg set id.
-  // The relevant arg sets have the info about the packages. To simplify test
-  // structure, make an assumption that metadata storage is filled in in the
-  // FIFO order of seen packages.
-  const auto& package_list = context_.storage->package_list_table();
-  ASSERT_EQ(package_list.row_count(), 1u);
-
-  EXPECT_STREQ(storage_->GetString(package_list[0].package_name()).c_str(),
-               "com.test.app");
-  EXPECT_EQ(package_list[0].uid(), 1000u);
-  EXPECT_EQ(package_list[0].debuggable(), false);
-  EXPECT_EQ(package_list[0].profileable_from_shell(), true);
-  EXPECT_EQ(package_list[0].version_code(), 42);
 }
 
 TEST_F(ProtoTraceParserTest, ParseCPUProfileSamplesIntoTable) {

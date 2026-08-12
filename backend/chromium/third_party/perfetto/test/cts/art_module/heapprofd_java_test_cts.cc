@@ -20,7 +20,7 @@
 #include <sys/wait.h>
 
 #include "perfetto/base/logging.h"
-#include "perfetto/ext/base/android_utils.h"
+#include "perfetto/ext/base/system_info.h"
 #include "perfetto/ext/base/string_utils.h"
 #include "perfetto/tracing/core/data_source_config.h"
 

@@ -18,24 +18,6 @@ syntax = "proto2";
 
 package perfetto.protos;
 
-import "protos/perfetto/config/android/android_game_intervention_list_config.proto";
-import "protos/perfetto/config/android/android_input_event_config.proto";
-import "protos/perfetto/config/android/android_log_config.proto";
-import "protos/perfetto/config/android/android_polled_state_config.proto";
-import "protos/perfetto/config/android/android_system_property_config.proto";
-import "protos/perfetto/config/android/android_sdk_sysprop_guard_config.proto";
-import "protos/perfetto/config/android/app_wakelock_config.proto";
-import "protos/perfetto/config/android/cpu_per_uid_config.proto";
-import "protos/perfetto/config/android/inputmethod_config.proto";
-import "protos/perfetto/config/android/kernel_wakelocks_config.proto";
-import "protos/perfetto/config/android/network_trace_config.proto";
-import "protos/perfetto/config/android/packages_list_config.proto";
-import "protos/perfetto/config/android/pixel_modem_config.proto";
-import "protos/perfetto/config/android/protolog_config.proto";
-import "protos/perfetto/config/android/surfaceflinger_layers_config.proto";
-import "protos/perfetto/config/android/surfaceflinger_transactions_config.proto";
-import "protos/perfetto/config/android/user_list_config.proto";
-import "protos/perfetto/config/android/windowmanager_config.proto";
 import "protos/perfetto/config/chrome/chrome_config.proto";
 import "protos/perfetto/config/chrome/v8_config.proto";
 import "protos/perfetto/config/etw/etw_config.proto";
@@ -47,9 +29,7 @@ import "protos/perfetto/config/gpu/vulkan_memory_config.proto";
 import "protos/perfetto/config/gpu/gpu_renderstages_config.proto";
 import "protos/perfetto/config/inode_file/inode_file_config.proto";
 import "protos/perfetto/config/interceptor_config.proto";
-import "protos/perfetto/config/power/android_power_config.proto";
 import "protos/perfetto/config/protovm/protovm_config.proto";
-import "protos/perfetto/config/statsd/statsd_tracing_config.proto";
 import "protos/perfetto/config/priority_boost/priority_boost_config.proto";
 import "protos/perfetto/config/process_stats/process_stats_config.proto";
 import "protos/perfetto/config/profiling/heapprofd_config.proto";
@@ -192,31 +172,14 @@ message DataSourceConfig {
   // Data source name: android.java_hprof
   // Introduced in Android 11.
   optional JavaHprofConfig java_hprof_config = 110 [lazy = true];
-  // Data source name: android.power
-  optional AndroidPowerConfig android_power_config = 106 [lazy = true];
-  // Data source name: android.log
-  optional AndroidLogConfig android_log_config = 107 [lazy = true];
   // Data source name: gpu.counters
   optional GpuCounterConfig gpu_counter_config = 108 [lazy = true];
-  // Data source name: android.game_interventions
-  optional AndroidGameInterventionListConfig
-      android_game_intervention_list_config = 116 [lazy = true];
-  // Data source name: android.packages_list
-  optional PackagesListConfig packages_list_config = 109 [lazy = true];
   // Data source name: linux.perf
   optional PerfEventConfig perf_event_config = 111 [lazy = true];
   // Data source name: vulkan.memory_tracker
   optional VulkanMemoryConfig vulkan_memory_config = 112 [lazy = true];
   // Data source name: track_event
   optional TrackEventConfig track_event_config = 113 [lazy = true];
-  // Data source name: android.polled_state
-  optional AndroidPolledStateConfig android_polled_state_config = 114
-      [lazy = true];
-  // Data source name: android.system_property
-  optional AndroidSystemPropertyConfig android_system_property_config = 118
-      [lazy = true];
-  // Data source name: android.statsd
-  optional StatsdTracingConfig statsd_tracing_config = 117 [lazy = true];
   // Data source name: linux.system_info
   optional SystemInfoConfig system_info_config = 119;
   // Data source name: linux.frozen_ftrace
@@ -241,46 +204,12 @@ message DataSourceConfig {
   // traced_probes) may not support interception.
   optional InterceptorConfig interceptor_config = 115;
 
-  // Data source name: android.network_packets.
-  // Introduced in Android 14 (U).
-  optional NetworkPacketTraceConfig network_packet_trace_config = 120
-      [lazy = true];
-
-  // Data source name: android.surfaceflinger.layers
-  optional SurfaceFlingerLayersConfig surfaceflinger_layers_config = 121
-      [lazy = true];
-
-  // Data source name: android.surfaceflinger.transactions
-  optional SurfaceFlingerTransactionsConfig surfaceflinger_transactions_config =
-      123 [lazy = true];
-
-  // Data source name: android.sdk_sysprop_guard
-  // Introduced in Android 14 (U) QPR1.
-  optional AndroidSdkSyspropGuardConfig android_sdk_sysprop_guard_config = 124
-      [lazy = true];
-
   // Data source name: windows.etw
   optional EtwConfig etw_config = 125 [lazy = true];
-
-  // Data source name: android.protolog
-  optional ProtoLogConfig protolog_config = 126 [lazy = true];
-
-  // Data source name: android.input.inputevent
-  optional AndroidInputEventConfig android_input_event_config = 128
-      [lazy = true];
-
-  // Data source name: android.pixel.modem
-  optional PixelModemConfig pixel_modem_config = 129 [lazy = true];
-
-  // Data source name: android.windowmanager
-  optional WindowManagerConfig windowmanager_config = 130 [lazy = true];
 
   // Data source name: org.chromium.system_metrics
   optional ChromiumSystemMetricsConfig chromium_system_metrics = 131
       [lazy = true];
-
-  // Data source name: android.kernel_wakelocks
-  optional KernelWakelocksConfig kernel_wakelocks_config = 132 [lazy = true];
 
   // Data source name: gpu.renderstages
   optional GpuRenderStagesConfig gpu_renderstages_config = 133 [lazy = true];
@@ -289,20 +218,14 @@ message DataSourceConfig {
   optional ChromiumHistogramSamplesConfig chromium_histogram_samples = 134
       [lazy = true];
 
-  // Data source name: android.app_wakelocks
-  optional AppWakelocksConfig app_wakelocks_config = 135 [lazy = true];
-
-  // Data source name: android.cpu_per_uid
-  optional CpuPerUidConfig cpu_per_uid_config = 137 [lazy = true];
-
-  // Data source name: android.user_list
-  optional AndroidUserListConfig user_list_config = 138 [lazy = true];
-
-  // Data source name: android.inputmethod
-  optional InputMethodConfig inputmethod_config = 139 [lazy = true];
-
   // Data source name: qnx.kernel
   optional QnxConfig qnx_config = 150 [lazy = true];
+
+  // Vimbrowser does not ship Android platform data sources. Keep their field
+  // numbers retired so unknown fields remain forward-compatible and cannot be
+  // accidentally reused by the reduced schema.
+  reserved 106, 107, 109, 114, 116, 117, 118, 120, 121, 123, 124, 126, 128,
+      129, 130, 132, 135, 137, 138, 139;
 
   // This is a fallback mechanism to send a free-form text config to the
   // producer. In theory this should never be needed. All the code that

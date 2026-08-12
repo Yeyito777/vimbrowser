@@ -224,20 +224,8 @@ message TraceConfig {
 
   repeated ProducerConfig producers = 6;
 
-  // Contains statsd-specific metadata about an alert associated with the trace.
-  message StatsdMetadata {
-    // The identifier of the alert which triggered this trace.
-    optional int64 triggering_alert_id = 1;
-    // The uid which registered the triggering configuration with statsd.
-    optional int32 triggering_config_uid = 2;
-    // The identifier of the config which triggered the alert.
-    optional int64 triggering_config_id = 3;
-    // The identifier of the subscription which triggered this trace.
-    optional int64 triggering_subscription_id = 4;
-  }
-
-  // Statsd-specific metadata.
-  optional StatsdMetadata statsd_metadata = 7;
+  // Retired with Android StatsD integration.
+  reserved 7;
 
   // When true && |output_path| is empty, the EnableTracing() request must
   // provide a file descriptor. The service will then periodically read packets
@@ -530,17 +518,8 @@ message TraceConfig {
   }
   optional IncidentReportConfig incident_report_config = 25;
 
-  enum StatsdLogging {
-    STATSD_LOGGING_UNSPECIFIED = 0;
-    STATSD_LOGGING_ENABLED = 1;
-    STATSD_LOGGING_DISABLED = 2;
-  }
-
-  // Android-only. Not for general use. If specified, sets the logging to statsd
-  // of guardrails and checkpoints in the tracing service. perfetto_cmd sets
-  // this to enabled (if not explicitly set in the config) when specifying
-  // --upload.
-  optional StatsdLogging statsd_logging = 31;
+  // Retired with Android StatsD integration.
+  reserved 31;
 
   // DEPRECATED. Was trace_uuid, use trace_uuid_msb and trace_uuid_lsb instead.
   reserved 26;
