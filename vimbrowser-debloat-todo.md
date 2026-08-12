@@ -306,8 +306,11 @@ These are reference measurements, not final acceptance values.
       - The exact worker tree, graph/input checks, validation, and 118,152-line
         net reduction are recorded in
         `docs/debloat-android-p02-perfetto-catapult.md`.
-  - [ ] Retain `*_non_android*` implementations; defer cross-platform web
+  - [x] Retain `*_non_android*` implementations; defer cross-platform web
         payment code to stage A and Rust target/toolchain source pruning to P04.
+      - All ten matching desktop files remain; eight are proven production
+        `libcef.so` inputs. The retention rationale and exact inventory are in
+        `docs/debloat-android-p02-retained-non-android.md`.
 - [ ] **P03:** Remove residual iOS, Windows, ChromeOS, Fuchsia, Cast, and Wayland
       branches/files that survived because they are embedded in shared
       directories.
