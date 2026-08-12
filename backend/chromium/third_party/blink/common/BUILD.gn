@@ -366,9 +366,6 @@ test("blink_common_unittests") {
     "//third_party/blink/public/common",
     "//ui/gfx:test_support",
   ]
-  if (is_android) {
-    deps += [ "//media/base/android:media_java" ]
-  }
   if (is_ios) {
     bundle_deps = [ ":blink_common_unittests_pak_bundle_data" ]
   }

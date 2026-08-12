@@ -540,7 +540,6 @@ if (is_android) {
       "//base/test:test_support",
       "//gpu/command_buffer/service:android_texture_owner_unittests",
       "//media:test_support",
-      "//media/base/android:media_java",
       "//media/test:run_all_unittests",
       "//mojo/core/embedder",
       "//testing/gtest",

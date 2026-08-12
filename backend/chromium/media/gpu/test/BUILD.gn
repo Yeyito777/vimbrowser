@@ -90,7 +90,6 @@ if (enable_av1_decoder &&
       deps += [
         # The test needs the java dependencies to add the java classes for their
         # native counterparts to the test apk.
-        "//media/base/android:media_java",
       ]
     }
   }

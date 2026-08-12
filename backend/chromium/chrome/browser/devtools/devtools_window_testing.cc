@@ -11,7 +11,6 @@
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/browser_features.h"
-#include "chrome/browser/devtools/chrome_devtools_manager_delegate.h"
 #include "chrome/browser/devtools/devtools_window.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/render_frame_host.h"
@@ -51,11 +50,6 @@ DevToolsWindowTesting::~DevToolsWindowTesting() {
   if (!close_callback_.is_null())
     std::move(close_callback_).Run();
 
-#if !BUILDFLAG(IS_ANDROID)
-  // Needed for Chrome_DevToolsADBThread to shut down gracefully in tests.
-  ChromeDevToolsManagerDelegate::GetInstance()
-      ->ResetAndroidDeviceManagerForTesting();
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 // static

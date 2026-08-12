@@ -2146,13 +2146,6 @@ test("blink_platform_unittests") {
     ]
   }
 
-  if (is_android) {
-    deps += [
-      # Required because of an indirect dependency on //media/base/android via
-      # platform/media:unit_tests.
-      "//media/base/android:media_java",
-    ]
-  }
   if (is_ios) {
     bundle_deps = [
       ":blink_platform_unittests_bundle_data",

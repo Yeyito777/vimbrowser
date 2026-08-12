@@ -16,8 +16,6 @@
 #include "cef/libcef/features/features.h"
 #include "chrome/browser/browser_features.h"
 #include "chrome/browser/devtools/chrome_devtools_session.h"
-#include "chrome/browser/devtools/device/android_device_manager.h"
-#include "chrome/browser/devtools/device/tcp_device_provider.h"
 #include "chrome/browser/devtools/devtools_availability_checker.h"
 #include "chrome/browser/devtools/devtools_browser_context_manager.h"
 #include "chrome/browser/devtools/devtools_connection_dialog.h"
@@ -424,51 +422,6 @@ bool ChromeDevToolsManagerDelegate::HasBundledFrontendResources() {
   return true;
 }
 
-void ChromeDevToolsManagerDelegate::DevicesAvailable(
-    const DevToolsDeviceDiscovery::CompleteDevices& devices) {
-  DevToolsAgentHost::List remote_targets;
-  for (const auto& complete : devices) {
-    for (const auto& browser : complete.second->browsers()) {
-      for (const auto& page : browser->pages())
-        remote_targets.push_back(page->CreateTarget());
-    }
-  }
-  remote_agent_hosts_.swap(remote_targets);
-}
-
-void ChromeDevToolsManagerDelegate::UpdateDeviceDiscovery() {
-  RemoteLocations remote_locations;
-  for (const auto& it : sessions_) {
-    TargetHandler* target_handler = it.second->target_handler();
-    if (!target_handler)
-      continue;
-    RemoteLocations& locations = target_handler->remote_locations();
-    remote_locations.insert(locations.begin(), locations.end());
-  }
-
-  if (remote_locations == remote_locations_) {
-    return;
-  }
-
-  if (remote_locations.empty()) {
-    device_discovery_.reset();
-    remote_agent_hosts_.clear();
-  } else {
-    if (!device_manager_)
-      device_manager_ = AndroidDeviceManager::Create();
-
-    AndroidDeviceManager::DeviceProviders providers;
-    providers.push_back(new TCPDeviceProvider(remote_locations));
-    device_manager_->SetDeviceProviders(providers);
-
-    device_discovery_ = std::make_unique<DevToolsDeviceDiscovery>(
-        device_manager_.get(),
-        base::BindRepeating(&ChromeDevToolsManagerDelegate::DevicesAvailable,
-                            base::Unretained(this)));
-  }
-  remote_locations_.swap(remote_locations);
-}
-
 void ChromeDevToolsManagerDelegate::AcceptDebugging(AcceptCallback callback) {
   auto wrapped_callback = base::BindOnce(
       [](AcceptCallback inner_callback,
@@ -509,14 +462,6 @@ void ChromeDevToolsManagerDelegate::OnAccept() {
 
 void ChromeDevToolsManagerDelegate::OnDismiss() {
   infobar_ = nullptr;
-}
-
-void ChromeDevToolsManagerDelegate::ResetAndroidDeviceManagerForTesting() {
-  device_manager_.reset();
-
-  // We also need |device_discovery_| to go away because there may be a pending
-  // task using a raw pointer to the DeviceManager we just deleted.
-  device_discovery_.reset();
 }
 
 // static

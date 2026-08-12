@@ -4,6 +4,7 @@
 
 #include "chrome/browser/devtools/process_sharing_infobar_delegate.h"
 
+#include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/about_flags.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/devtools/devtools_window.h"

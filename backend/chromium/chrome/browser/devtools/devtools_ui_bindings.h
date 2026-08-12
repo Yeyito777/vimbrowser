@@ -60,7 +60,6 @@ class Profile;
 
 // Base implementation of DevTools bindings around front-end.
 class DevToolsUIBindings : public DevToolsEmbedderMessageDispatcher::Delegate,
-                           public DevToolsAndroidBridge::DeviceCountListener,
                            public content::DevToolsAgentHostClient,
 #if !BUILDFLAG(IS_ANDROID)
                            public ThemeServiceObserver,
@@ -323,16 +322,11 @@ class DevToolsUIBindings : public DevToolsEmbedderMessageDispatcher::Delegate,
       DispatchCallback callback,
       const DevToolsDispatchHttpRequestParams& params) override;
 
-  void EnableRemoteDeviceCounter(bool enable);
-
   void SendMessageAck(int request_id,
                       const base::Value* arg1);
   void InnerAttach();
 
-  // DevToolsAndroidBridge::DeviceCountListener override:
-  void DeviceCountChanged(int count) override;
-
-  // Forwards discovered devices to frontend.
+  // Forwards the (always empty) unsupported remote-device target list.
   virtual void DevicesUpdated(const std::string& source,
                               const base::Value& targets);
 

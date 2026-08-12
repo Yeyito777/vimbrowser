@@ -249,7 +249,6 @@ test("cast_unittests") {
     deps += [
       # The test needs the java dependencies to add the java classes for their
       # native counterparts to the test apk.
-      "//media/base/android:media_java",
       "//testing/android/native_test:native_test_native_code",
     ]
   }

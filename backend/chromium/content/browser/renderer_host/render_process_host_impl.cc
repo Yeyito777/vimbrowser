@@ -222,7 +222,6 @@
 #include "base/android/child_process_binding_types.h"
 #include "content/browser/font_unique_name_lookup/font_unique_name_lookup_service.h"
 #include "media/audio/android/audio_manager_android.h"
-#include "third_party/blink/public/mojom/android_font_lookup/android_font_lookup.mojom.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)

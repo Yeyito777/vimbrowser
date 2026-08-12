@@ -297,32 +297,6 @@ static_library("devtools") {
       "chrome_devtools_manager_delegate.h",
       "chrome_devtools_session.cc",
       "chrome_devtools_session.h",
-      "device/adb/adb_client_socket.cc",
-      "device/adb/adb_client_socket.h",
-      "device/adb/adb_device_provider.cc",
-      "device/adb/adb_device_provider.h",
-      "device/android_device_info_query.cc",
-      "device/android_device_manager.cc",
-      "device/android_device_manager.h",
-      "device/android_web_socket.cc",
-      "device/devtools_android_bridge.cc",
-      "device/devtools_android_bridge.h",
-      "device/devtools_device_discovery.cc",
-      "device/devtools_device_discovery.h",
-      "device/port_forwarding_controller.cc",
-      "device/port_forwarding_controller.h",
-      "device/tcp_device_provider.cc",
-      "device/tcp_device_provider.h",
-      "device/usb/android_rsa.cc",
-      "device/usb/android_rsa.h",
-      "device/usb/android_usb_device.cc",
-      "device/usb/android_usb_device.h",
-      "device/usb/android_usb_socket.cc",
-      "device/usb/android_usb_socket.h",
-      "device/usb/usb_device_manager_helper.cc",
-      "device/usb/usb_device_manager_helper.h",
-      "device/usb/usb_device_provider.cc",
-      "device/usb/usb_device_provider.h",
       "devtools_auto_opener.cc",
       "devtools_auto_opener.h",
       "devtools_browser_context_manager.cc",
@@ -348,12 +322,6 @@ static_library("devtools") {
       "serialize_host_descriptions.cc",
       "serialize_host_descriptions.h",
     ]
-    if (enable_service_discovery) {
-      sources += [
-        "device/cast_device_provider.cc",
-        "device/cast_device_provider.h",
-      ]
-    }
   }
 
   if (!is_android || enable_desktop_android_extensions) {

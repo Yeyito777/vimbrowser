@@ -38,9 +38,6 @@ source_set("cdm") {
   # should be using //media and not directly DEP this roll-up target.
   visibility = [
     "//media",
-
-    # TODO(crbug.com/41237623): These files should not be in //media/base.
-    "//media/base/android",
     "//media/filters",
   ]
 

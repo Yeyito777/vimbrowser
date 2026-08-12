@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s inherit_errexit
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 project=${VIMBROWSER_GCLOUD_PROJECT:-unified-adviser-462618-s0}
@@ -51,6 +52,23 @@ remote() {
       return "${rc}"
     fi
     echo "[+] Worker SSH is not ready; retrying (${attempt}/18)." >&2
+    sleep 5
+  done
+}
+
+copy_with_retry() {
+  local source=$1 destination=$2 attempt rc
+  for attempt in $(seq 1 18); do
+    if gcloud compute scp "${source}" "${destination}" \
+        --project="${project}" --zone="${zone}" --tunnel-through-iap --quiet; then
+      return 0
+    else
+      rc=$?
+    fi
+    if [[ "${rc}" != 255 || "${attempt}" == 18 ]]; then
+      return "${rc}"
+    fi
+    echo "[+] Worker SCP is not ready; retrying (${attempt}/18)." >&2
     sleep 5
   done
 }
@@ -127,9 +145,7 @@ sync_snapshot() {
   remote_bundle="/tmp/vimbrowser-${tree}.bundle"
 
   echo "[+] Transferring source tree ${tree}"
-  gcloud compute scp "${bundle}" \
-    "${instance}:${remote_bundle}" \
-    --project="${project}" --zone="${zone}" --tunnel-through-iap --quiet
+  copy_with_retry "${bundle}" "${instance}:${remote_bundle}"
   rm -f "${bundle}"
 
   remote "set -euo pipefail
@@ -159,8 +175,7 @@ fetch_artifact() {
 
   echo "[+] Fetching runtime for tree ${tree}"
   for file in Release.tar.zst Release.tar.zst.sha256 Release.sha256 metadata.txt; do
-    gcloud compute scp "${instance}:${remote_dir}/${file}" "${local_dir}/${file}" \
-      --project="${project}" --zone="${zone}" --tunnel-through-iap --quiet
+    copy_with_retry "${instance}:${remote_dir}/${file}" "${local_dir}/${file}"
   done
   (
     cd "${local_dir}"

@@ -328,7 +328,6 @@
 #include "chrome/browser/badging/badge_manager_factory.h"
 #include "chrome/browser/contextual_tasks/contextual_tasks_context_service_factory.h"
 #include "chrome/browser/device_api/managed_configuration_api_factory.h"
-#include "chrome/browser/devtools/device/devtools_android_bridge.h"
 #include "chrome/browser/download/offline_item_model_manager_factory.h"
 #include "chrome/browser/feedback/feedback_uploader_factory_chrome.h"
 #include "chrome/browser/hid/hid_chooser_context_factory.h"
@@ -858,7 +857,6 @@ void ChromeBrowserMainExtraPartsProfiles::
       PersonalCollaborationDataServiceFactory::GetInstance();
 #if !BUILDFLAG(IS_ANDROID)
   DependencyParserModelLoaderFactory::GetInstance();
-  DevToolsAndroidBridge::Factory::GetInstance();
 #endif
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
   DiceMigrationServiceFactory::GetInstance();

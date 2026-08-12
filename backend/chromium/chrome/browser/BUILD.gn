@@ -8152,7 +8152,6 @@ static_library("browser_generated_files") {
   ]
   if (is_android) {
     public_deps += [
-      "//chrome/browser/android/webapk/proto",
       "//chrome/browser/auxiliary_search/proto",
       "//chrome/browser/ui/webui/feed_internals:mojo_bindings",
     ]

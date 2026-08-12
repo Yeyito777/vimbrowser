@@ -167,7 +167,6 @@ source_set("test_support") {
     ":media",
     "//media/audio:test_support",
     "//media/base:test_support",
-    "//media/base/android:test_support",
     "//media/filters:test_support",
     "//media/formats:test_support",
     "//media/mojo/services:test_support",
@@ -229,8 +228,6 @@ test("media_unittests") {
       # The test needs the java dependencies to add the java classes for their
       # native counterparts to the test apk.
       "//gpu/command_buffer/service:android_texture_owner_unittests",
-      "//media/base/android:media_java",
-      "//media/base/android:unit_tests",
       "//media/gpu:android_video_decode_accelerator_unittests",
       "//ui/android:ui_java",
     ]

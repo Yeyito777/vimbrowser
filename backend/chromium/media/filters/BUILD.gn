@@ -208,7 +208,6 @@ source_set("filters") {
       "android/media_codec_audio_decoder.cc",
       "android/media_codec_audio_decoder.h",
     ]
-    deps += [ "//media/base/android" ]
   }
 
   if (is_apple) {

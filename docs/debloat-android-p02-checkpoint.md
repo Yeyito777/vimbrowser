@@ -34,7 +34,7 @@ longer load them for retained Linux and macOS configurations.
 
 The complete checkpoint changes 22,656 files: 22,609 deletions, 38
 modifications, eight additions, and one symlink-to-file conversion.  Its text
-delta is 1,449 insertions and 2,398,271 deletions.  The additional 46 deleted
+delta is 1,450 insertions and 2,398,271 deletions.  The additional 46 deleted
 files outside the 546 inventoried roots are Android-only shared-list entries
 that were disconnected while repairing the retained graph.
 

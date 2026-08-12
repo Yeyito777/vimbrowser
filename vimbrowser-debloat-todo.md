@@ -280,8 +280,17 @@ These are reference measurements, not final acceptance values.
       tests, and the full local benchmark without changing the stable runtime.
   - [ ] Remove their GN/GNI/resource/test/manifest/packaging branches instead of
         leaving unsupported `is_android` paths.
-  - [ ] Disconnect WebAPK, desktop remote-Android DevTools, Blink Android-font
-        mojom, and Android-only entries in shared Skia/ANGLE/GL/media lists.
+  - [ ] Disconnect the remaining active Android product dependencies.
+    - [x] Remove the 788-file `chrome/browser/android` product tree and its
+      unconditional WebAPK proto dependency from desktop sync.
+    - [x] Remove desktop remote-Android/ADB/USB DevTools discovery, forwarding,
+      UI, registration, and its 37-file device implementation while retaining
+      local page DevTools and the remote-debugging protocol.
+    - [x] Remove Blink's Android-font lookup mojom and Android host binding.
+    - [x] Remove the 73-file `media/base/android` implementation and all shared
+      media roll-up/visibility references to it.
+    - [ ] Remove the remaining Android-only entries in shared Skia, ANGLE, GL,
+      media, and generated source lists.
   - [ ] Remove Android-only Perfetto/Catapult schemas, importers, and trace
         resources from their cross-platform aggregates.
   - [ ] Retain `*_non_android*` implementations; defer cross-platform web

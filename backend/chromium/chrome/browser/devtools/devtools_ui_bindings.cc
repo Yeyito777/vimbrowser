@@ -2498,14 +2498,6 @@ void DevToolsUIBindings::RecordFunctionCall(const FunctionCallEvent& event) {
           .SetSessionId(session_id_for_logging_.GetLowForSerialization()));
 }
 
-void DevToolsUIBindings::DeviceCountChanged(int count) {
-  CallClientMethod("DevToolsAPI", "deviceCountUpdated", base::Value(count));
-}
-
-void DevToolsUIBindings::DevicesUpdated(const std::string& source,
-                                        const base::Value& targets) {
-  CallClientMethod("DevToolsAPI", "devicesUpdated", targets.Clone());
-}
 
 void DevToolsUIBindings::FileSavedAs(const std::string& url,
                                      const std::string& file_system_path) {
@@ -3023,4 +3015,8 @@ DevToolsUIBindings::GetDevToolsUIBindings() {
   static base::NoDestructor<DevToolsUIBindings::DevToolsUIBindingsList>
       bindings;
   return *bindings;
+}
+void DevToolsUIBindings::DevicesUpdated(const std::string& source,
+                                        const base::Value& targets) {
+  CallClientMethod("DevToolsAPI", "devicesUpdated", targets.Clone());
 }
