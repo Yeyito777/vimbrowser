@@ -16,44 +16,42 @@ mojom("mojo_bindings") {
   webui_module_path = "/"
 }
 
-if (!is_android) {
-  source_set("unit_tests") {
-    testonly = true
-    sources = [ "privacy_sandbox_internals_handler_unittest.cc" ]
+source_set("unit_tests") {
+  testonly = true
+  sources = [ "privacy_sandbox_internals_handler_unittest.cc" ]
 
-    deps = [
-      ":mojo_bindings",
-      "//base/test:test_support",
-      "//chrome/browser/prefs",
-      "//chrome/browser/privacy_sandbox/notice:test_support",
-      "//chrome/test:test_support",
-      "//components/prefs",
-      "//components/sync_preferences:test_support",
-      "//content/test:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-    ]
+  deps = [
+    ":mojo_bindings",
+    "//base/test:test_support",
+    "//chrome/browser/prefs",
+    "//chrome/browser/privacy_sandbox/notice:test_support",
+    "//chrome/test:test_support",
+    "//components/prefs",
+    "//components/sync_preferences:test_support",
+    "//content/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
 
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-  }
+  # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
+  # enable the diagnostic by removing this line.
+  configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+}
 
-  source_set("browser_tests") {
-    testonly = true
+source_set("browser_tests") {
+  testonly = true
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    sources = []
+  sources = []
 
-    deps = [
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/test:test_support_ui",
-      "//content/test:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/views",
-    ]
-  }
+  deps = [
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/test:test_support_ui",
+    "//content/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/views",
+  ]
 }

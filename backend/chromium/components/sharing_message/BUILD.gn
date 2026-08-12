@@ -5,25 +5,12 @@
 import("//build/buildflag_header.gni")
 import("//components/sharing_message/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 buildflag_header("buildflags") {
   header = "buildflags.h"
   flags = [
     "ENABLE_DISCOVERY=$enable_discovery",
     "ENABLE_CLICK_TO_CALL=$enable_click_to_call",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("sharing_send_message_result_generated_enum") {
-    sources = [ "sharing_send_message_result.h" ]
-  }
-  java_cpp_enum("sharing_dialog_type_generated_enum") {
-    sources = [ "sharing_metrics.h" ]
-  }
 }
 
 source_set("sharing_message") {

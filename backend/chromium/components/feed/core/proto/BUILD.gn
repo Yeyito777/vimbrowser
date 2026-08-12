@@ -4,10 +4,6 @@
 
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 proto_library("proto_v2") {
   proto_in_dir = "../../../../"
   sources = [
@@ -80,14 +76,4 @@ proto_library("proto_v2") {
 
 proto_library("proto_ios_shared_v2") {
   sources = [ "v2/wire/chrome_feed_response_metadata.proto" ]
-}
-
-if (is_android) {
-  proto_java_library("proto_java_v2") {
-    proto_path = "../../../../"
-    sources = [
-      "v2/ui.proto",
-      "v2/wire/reliability_logging_enums.proto",
-    ]
-  }
 }

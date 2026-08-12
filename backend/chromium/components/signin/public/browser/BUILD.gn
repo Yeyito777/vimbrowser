@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("browser") {
   sources = [
     "web_signin_tracker.cc",
@@ -19,12 +15,6 @@ source_set("browser") {
     "//components/signin/public/identity_manager",
     "//google_apis",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("java_enums") {
-    sources = [ "web_signin_tracker.h" ]
-  }
 }
 
 source_set("unit_tests") {

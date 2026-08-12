@@ -51,7 +51,6 @@ static_library("safe_browsing") {
     "//components/enterprise/buildflags",
     "//components/enterprise/common:strings",
     "//components/enterprise/obfuscation/core:enterprise_obfuscation",
-    "//components/gcm_driver:gcm_buildflags",
     "//components/keyed_service/content",
     "//components/language/core/browser",
     "//components/no_state_prefetch/browser",
@@ -92,18 +91,6 @@ static_library("safe_browsing") {
 
   if (enable_extensions) {
     deps += [ "//chrome/browser/ui/web_applications" ]
-  }
-
-  # Note: is_android is not equivalent to safe_browsing_mode == 2.
-  # Sources and dependencies added to this block must not depend on anything
-  # requiring safe_browsing_mode != 0.
-  if (is_android) {
-    deps += [
-      "//chrome/browser/password_manager/android:utils",
-      "//chrome/browser/ui/android/tab_model",
-      "//components/safe_browsing/android:safe_browsing_api_handler",
-      "//components/safe_browsing/android:safe_browsing_api_handler_util",
-    ]
   }
 
   if (is_chromeos) {
@@ -241,17 +228,12 @@ static_library("safe_browsing") {
       "user_interaction_observer.cc",
       "user_interaction_observer.h",
     ]
-    if (is_android) {
-      sources += [
-        "android/client_side_detection_intelligent_scan_delegate_android.cc",
-        "android/client_side_detection_intelligent_scan_delegate_android.h",
-      ]
-    } else {
-      sources += [
-        "client_side_detection_intelligent_scan_delegate_desktop.cc",
-        "client_side_detection_intelligent_scan_delegate_desktop.h",
-      ]
-    }
+
+    sources += [
+      "client_side_detection_intelligent_scan_delegate_desktop.cc",
+      "client_side_detection_intelligent_scan_delegate_desktop.h",
+    ]
+
     deps += [
       ":advanced_protection",
       ":metrics_collector",
@@ -515,12 +497,11 @@ static_library("safe_browsing") {
           "//chromeos/components/mgs",
         ]
       }
-      if (!is_android) {
-        deps += [
-          "//chrome/browser/ui:browser_list",
-          "//chrome/browser/user_education",
-        ]
-      }
+
+      deps += [
+        "//chrome/browser/ui:browser_list",
+        "//chrome/browser/user_education",
+      ]
     } else if (safe_browsing_mode == 2) {
       sources += [
         "android/download_protection_metrics_data.cc",
@@ -592,17 +573,10 @@ static_library("advanced_protection") {
     "application_advanced_protection_status_detector.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "advanced_protection_status_manager_android.cc",
-      "advanced_protection_status_manager_android.h",
-    ]
-  } else {
-    sources += [
-      "advanced_protection_status_manager_desktop.cc",
-      "advanced_protection_status_manager_desktop.h",
-    ]
-  }
+  sources += [
+    "advanced_protection_status_manager_desktop.cc",
+    "advanced_protection_status_manager_desktop.h",
+  ]
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
@@ -618,10 +592,6 @@ static_library("advanced_protection") {
     "//components/signin/public/identity_manager",
     "//content/public/browser",
   ]
-
-  if (is_android) {
-    deps += [ "android:jni_headers" ]
-  }
 }
 
 source_set("metrics_collector") {
@@ -685,9 +655,6 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_android) {
-    deps += [ "android:test_support" ]
-  }
   if (is_win || is_mac || is_linux || is_chromeos) {
     sources += [
       "safe_browsing_pref_change_handler_unittest.cc",
@@ -713,12 +680,10 @@ source_set("test_support") {
       "test_safe_browsing_service.h",
     ]
 
-    if (!is_android) {
-      sources += [
-        "test_safe_browsing_navigation_observer_manager.cc",
-        "test_safe_browsing_navigation_observer_manager.h",
-      ]
-    }
+    sources += [
+      "test_safe_browsing_navigation_observer_manager.cc",
+      "test_safe_browsing_navigation_observer_manager.h",
+    ]
 
     deps += [
       ":safe_browsing",
@@ -749,12 +714,5 @@ source_set("test_support") {
       "cloud_content_scanning/test_binary_upload_service.h",
     ]
     deps += [ "//components/enterprise/connectors/core:cloud_content_scanning" ]
-  }
-
-  if (is_android) {
-    deps += [
-      "android:test_support",
-      "android:test_support_java",
-    ]
   }
 }

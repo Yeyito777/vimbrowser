@@ -95,14 +95,6 @@ target(link_target_type, "gpu_sources") {
     ]
   }
 
-  if (is_android) {
-    deps += [
-      "//components/tracing:graphics_provider",
-      "//media",
-      "//sandbox/linux:sandbox_services",
-    ]
-  }
-
   if (mojo_media_host == "gpu") {
     deps += [ "//media/mojo/services" ]
   }

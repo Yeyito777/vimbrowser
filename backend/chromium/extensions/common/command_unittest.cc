@@ -15,7 +15,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -241,7 +240,7 @@ TEST(CommandTest, ExtensionCommandParsingFallback) {
                               ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN);
   // TODO(https://crbug.com/356905053): Should this be ChromeOS keybindings?
 
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_DESKTOP_ANDROID)
+#elif BUILDFLAG(IS_LINUX)
   ui::Accelerator accelerator(ui::VKEY_L,
                               ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN);
 #else

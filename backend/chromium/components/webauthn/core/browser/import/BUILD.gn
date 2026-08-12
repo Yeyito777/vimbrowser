@@ -25,18 +25,16 @@ source_set("unit_tests") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [
-      "imported_passkey_checker_unittest.cc",
-      "passkey_importer_unittest.cc",
-    ]
-    deps += [
-      ":import",
-      "//base/test:test_support",
-      "//components/sync/protocol",
-      "//components/webauthn/core/browser:passkey_model",
-      "//components/webauthn/core/browser:test_support",
-      "//testing/gtest",
-    ]
-  }
+  sources += [
+    "imported_passkey_checker_unittest.cc",
+    "passkey_importer_unittest.cc",
+  ]
+  deps += [
+    ":import",
+    "//base/test:test_support",
+    "//components/sync/protocol",
+    "//components/webauthn/core/browser:passkey_model",
+    "//components/webauthn/core/browser:test_support",
+    "//testing/gtest",
+  ]
 }

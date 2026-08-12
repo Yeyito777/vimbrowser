@@ -8,7 +8,6 @@
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "base/strings/string_split.h"
-#include "build/android_buildflags.h"
 #include "components/policy/core/browser/configuration_policy_handler.h"
 #include "components/policy/core/browser/configuration_policy_handler_parameters.h"
 #include "components/policy/core/browser/policy_error_map.h"
@@ -99,31 +98,6 @@ void ConfigurationPolicyHandlerList::PrepareForDisplaying(
     handler->PrepareForDisplaying(policies);
 }
 
-bool ConfigurationPolicyHandlerList::IsBlockedDesktopAndroidPolicy(
-    const std::string& policy_name) const {
-// TODO(b/478012386): We shouldn't use IS_DESKTOP_ANDROID long-term. The feature
-// flag needs to be removed as soon as we feel comfortable about all exist
-// Android
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-   if (!base::FeatureList::IsEnabled(features::kDesktopAndroidPolicy)) {
-    return false;
-  }
-
-  auto blocklist_str =
-      features::kDesktopAndroidPolicyBlocklist.Get();
-  for (const auto& blocked_policy :
-       base::SplitStringPiece(blocklist_str, ",", base::TRIM_WHITESPACE,
-                              base::SPLIT_WANT_NONEMPTY)) {
-    if (blocked_policy == policy_name) {
-      return true;
-    }
-  }
-  return false;
-#else
-  return false;
-#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
-}
-
 bool ConfigurationPolicyHandlerList::IsPolicySupported(
     const base::flat_set<std::string>& future_policies_allowed,
     PoliciesSet* future_policies_blocked,
@@ -141,10 +115,6 @@ bool ConfigurationPolicyHandlerList::IsPolicySupported(
       DVLOG_POLICY(1, POLICY_PROCESSING) << "Unknown policy: " << entry.first;
     }
     return true;
-  }
-
-  if (IsBlockedDesktopAndroidPolicy(entry.first)) {
-    return false;
   }
 
   if (IsBlockedFuturePolicy(future_policies_allowed, *policy_details, entry)) {
@@ -174,12 +144,6 @@ bool ConfigurationPolicyHandlerList::IsBlockedFuturePolicy(
     const base::flat_set<std::string>& future_policies_allowed,
     const PolicyDetails& policy_details,
     PolicyMap::const_reference entry) const {
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-  if (base::FeatureList::IsEnabled(features::kFuturePoliciesOnDesktopAndroid) &&
-      policy_details.is_future) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
 
   return !are_future_policies_allowed_by_default_ && policy_details.is_future &&
          !future_policies_allowed.contains(entry.first);

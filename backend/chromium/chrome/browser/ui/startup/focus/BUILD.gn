@@ -4,9 +4,6 @@
 
 import("//build/config/chrome_build.gni")
 
-# Focus functionality is only for desktop platforms
-assert(!is_android)
-
 # Focus flag implementation for startup
 source_set("focus") {
   sources = [

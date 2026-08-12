@@ -77,7 +77,7 @@ static_library("enterprise") {
     ]
   }
 
-  if (!is_ios && !is_android) {
+  if (!is_ios) {
     sources += [
       "browser/promotion/promotion_eligibility_checker.cc",
       "browser/promotion/promotion_eligibility_checker.h",
@@ -132,15 +132,8 @@ static_library("enterprise") {
     public_deps += [ "//components/enterprise/client_certificates/core" ]
   }
 
-  if (!is_ios && !is_android) {
+  if (!is_ios) {
     deps += [ "//components/signin/public/identity_manager" ]
-  }
-
-  if (is_android) {
-    deps += [
-      "//components/enterprise/device_attestation/android",
-      "//components/enterprise/device_attestation/android:jni_headers",
-    ]
   }
 }
 
@@ -192,7 +185,7 @@ source_set("unit_tests") {
     "common/proto/connectors_unittest.cc",
   ]
 
-  if (!is_ios && !is_android) {
+  if (!is_ios) {
     sources += [ "browser/promotion/promotion_eligibility_checker_unittest.cc" ]
   }
 
@@ -230,7 +223,7 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [ "browser/reporting/real_time_uploader_unittest.cc" ]
     deps += [
       "//base",
@@ -244,14 +237,5 @@ source_set("unit_tests") {
 
   if (enterprise_client_certificates) {
     deps += [ "//components/enterprise/client_certificates:unit_tests" ]
-  }
-
-  if (is_android) {
-    sources += [ "device_attestation/android/device_attestation_service_android_unittest.cc" ]
-    deps += [
-      "//components/enterprise/device_attestation:test_support",
-      "//components/enterprise/device_attestation/android",
-      "//components/enterprise/device_attestation/android:jni_headers",
-    ]
   }
 }

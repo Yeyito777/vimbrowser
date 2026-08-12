@@ -4,7 +4,7 @@
 
 import("//build/config/ui.gni")
 
-if (!is_android && !is_ios) {
+if (!is_ios) {
   static_library("live_caption") {
     sources = [
       "caption_bubble_context.h",
@@ -95,7 +95,6 @@ if (!is_android && !is_ios) {
       "//ui/base",
     ]
 
-
     if (is_chromeos) {
       sources += [
         "caption_bubble_context_remote_unittest.cc",
@@ -131,9 +130,7 @@ source_set("constants") {
     "//media",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/soda:constants" ]
-  }
+  deps += [ "//components/soda:constants" ]
 }
 
 source_set("utils") {
@@ -153,7 +150,5 @@ source_set("utils") {
     "//ui/native_theme",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/soda:utils" ]
-  }
+  deps += [ "//components/soda:utils" ]
 }

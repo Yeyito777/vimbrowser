@@ -8,7 +8,6 @@
 #include <memory>
 #include <variant>
 
-#include "base/android/device_info.h"
 #include "base/containers/extend.h"
 #include "base/containers/span.h"
 #include "base/containers/to_vector.h"
@@ -1278,22 +1277,11 @@ bool PaymentsDataManager::IsPaymentMethodsMandatoryReauthEnabled() {
 }
 
 bool PaymentsDataManager::ShouldShowPaymentMethodsMandatoryReauthPromo() {
-#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID) || \
-    BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
   // There is no need to show the promo if the feature is already enabled.
   if (prefs::IsPaymentMethodsMandatoryReauthEnabled(pref_service_)) {
-#if BUILDFLAG(IS_ANDROID)
-    // The mandatory reauth feature is always enabled on automotive, there
-    // is/was no opt-in. As such, there is no need to log anything here on
-    // automotive.
-    if (!base::android::device_info::is_automotive()) {
-      LogMandatoryReauthOfferOptInDecision(
-          MandatoryReauthOfferOptInDecision::kAlreadyOptedIn);
-    }
-#else
     LogMandatoryReauthOfferOptInDecision(
         MandatoryReauthOfferOptInDecision::kAlreadyOptedIn);
-#endif  // BUILDFLAG(IS_ANDROID)
     return false;
   }
 
@@ -2106,19 +2094,11 @@ bool PaymentsDataManager::HasPendingPaymentQueries() const {
 }
 
 bool PaymentsDataManager::AreBankAccountsSupported() const {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
   return false;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool PaymentsDataManager::AreEwalletAccountsSupported() const {
-#if BUILDFLAG(IS_ANDROID)
-  return base::FeatureList::IsEnabled(features::kAutofillSyncEwalletAccounts);
-#else
   return false;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool PaymentsDataManager::AreBnplIssuersSupported() const {

@@ -37,10 +37,6 @@ blink_core_sources_scroll = [
   "snap_event.h",
 ]
 
-if (is_android) {
-  blink_core_sources_scroll += [ "scrollbar_theme_android.cc" ]
-}
-
 if (is_mac) {
   blink_core_sources_scroll += [
     "mac_scrollbar_animator_impl.h",

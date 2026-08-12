@@ -5,8 +5,6 @@
 import("//build/buildflag_header.gni")
 import("//components/soda/buildflags.gni")
 
-assert(!is_android)
-
 buildflag_header("buildflags") {
   header = "buildflags.h"
   flags = [ "ENABLE_SODA_INTEGRATION_TESTS=$enable_soda_integration_tests" ]

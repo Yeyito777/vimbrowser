@@ -244,7 +244,7 @@ group("blink_platform_public_deps") {
   ]
   public_configs = [ "//third_party/blink/renderer:features" ]
 
-  if (is_android || is_win) {
+  if (is_win) {
     public_deps +=
         [ "//third_party/blink/public/common:font_unique_name_table_proto" ]
   }
@@ -264,7 +264,7 @@ declare_args() {
 # TODO(lizeb): Android is not as much size-constrained on high-end ARM64
 # devices, enable this later there as well. But since this is an experiment,
 # gather data on other platforms first.
-_is_size_constrained_platform = is_android || is_fuchsia
+_is_size_constrained_platform = is_fuchsia
 has_zstd_compression = !_is_size_constrained_platform
 
 buildflag_header("bindings_buildflags") {
@@ -1876,18 +1876,10 @@ component("platform") {
     deps += [ "//third_party/dawn/src/dawn:proc" ]
   }
 
-  if (is_android) {
-    deps += [ "//third_party/cpu_features:ndk_compat" ]
-    sources += [
-      "theme/web_theme_engine_android.cc",
-      "theme/web_theme_engine_android.h",
-    ]
-  } else {
-    sources += [
-      "theme/web_theme_engine_default.cc",
-      "theme/web_theme_engine_default.h",
-    ]
-  }
+  sources += [
+    "theme/web_theme_engine_default.cc",
+    "theme/web_theme_engine_default.h",
+  ]
 
   if (is_mac) {
     sources -= [
@@ -1924,17 +1916,6 @@ component("platform") {
     if (is_component_build) {
       ldflags = [ "/IGNORE:4217" ]
     }
-  }
-
-  if (is_android) {
-    sources += [
-      "fonts/android/font_cache_android.cc",
-      "fonts/android/font_unique_name_lookup_android.cc",
-      "fonts/android/font_unique_name_lookup_android.h",
-      "widget/input/synchronous_compositor_proxy.cc",
-      "widget/input/synchronous_compositor_proxy.h",
-    ]
-    deps += [ "//third_party/blink/renderer/platform/widget/compositing/android_webview" ]
   }
 
   if (is_fuchsia) {
@@ -2419,9 +2400,7 @@ source_set("blink_platform_unittests_sources") {
     sources += [ "peerconnection/h265_parameter_sets_tracker_unittest.cc" ]
   }
 
-  if (is_android) {
-    sources += [ "fonts/android/font_cache_android_test.cc" ]
-  } else if (is_win) {
+  if (is_win) {
     sources += [ "text/locale_win_test.cc" ]
   } else if (is_mac) {
     sources += [

@@ -35,9 +35,6 @@
 #include "skia/ext/skia_commit_hash.h"
 #include "ui/gfx/font_render_params.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "services/webnn/host/execution_provider_initializer.h"
@@ -151,9 +148,6 @@ GpuHostImpl::GpuHostImpl(Delegate* delegate,
     task_runner = ui::WindowResizeHelperMac::Get()->task_runner();
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  viz_main_->SetHostProcessId(base::GetCurrentProcId());
-#endif
 
   mojom::GpuServiceCreationParamsPtr gpu_service_params =
       mojom::GpuServiceCreationParams::New();
@@ -204,9 +198,6 @@ GpuHostImpl::~GpuHostImpl() {
 }
 
 void GpuHostImpl::NotifyWorkloadIncrease() {
-#if BUILDFLAG(IS_ANDROID)
-  viz_main_->NotifyWorkloadIncrease();
-#endif
 }
 
 // static
@@ -517,10 +508,6 @@ std::string GpuHostImpl::GetShaderPrefixKey() {
                          "-" + active_gpu.driver_vendor + "-" +
                          base::SysInfo::ProcessCPUArchitecture();
 
-#if BUILDFLAG(IS_ANDROID)
-    std::string build_fp = base::android::android_info::android_build_fp();
-    shader_prefix_key_ += "-" + build_fp;
-#endif
   }
 
   return shader_prefix_key_;

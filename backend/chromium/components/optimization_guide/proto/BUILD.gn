@@ -5,10 +5,6 @@
 import("//components/proto_extras/proto_extras.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 proto_library("optimization_guide_proto") {
   proto_in_dir = "//"
   sources = [
@@ -105,21 +101,6 @@ proto_extras("optimization_guide_proto_extras") {
     "model_execution.proto",
   ]
   deps = [ ":optimization_guide_proto" ]
-}
-
-if (is_android) {
-  proto_java_library("optimization_guide_proto_java") {
-    proto_path = "//"
-    sources = [
-      "common_types.proto",
-      "features/common_quality_data.proto",
-      "hints.proto",
-      "loading_predictor_metadata.proto",
-      "model_execution.proto",
-      "models.proto",
-      "push_notification.proto",
-    ]
-  }
 }
 
 proto_library("optimization_guide_proto_descriptors") {

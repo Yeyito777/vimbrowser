@@ -2181,12 +2181,7 @@ cargo_crate("panic_abort") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (is_android) {
-    deps += [
-      ":alloc",
-      ":libc",
-    ]
-  }
+
   aliased_deps = {
     core = ":rustc_std_workspace_core"
   }
@@ -2206,12 +2201,6 @@ cargo_crate("panic_abort") {
     cpp_namespace = "rs_panic_abort"
     deps = []
     deps += [ ":rustc_std_workspace_core_bindings" ]
-    if (is_android) {
-      deps += [
-        ":alloc_bindings",
-        ":libc_bindings",
-      ]
-    }
   }
 }
 cargo_crate("proc_macro") {

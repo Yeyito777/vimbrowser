@@ -40,15 +40,15 @@ declare_args() {
       is_win || is_mac || is_linux || is_chromeos
 
   # Enables support for background apps.
-  enable_background_contents = !is_android
-  enable_background_mode = !is_android && !is_chromeos
+  enable_background_contents = true
+  enable_background_mode = !is_chromeos
 
   # Skips unmigrated actor files in the build on Android. This is temporary, and
   # will eventually be removed once migration is done. Adding this flag likely
   # means the code needs to be adapted for Android. Once adapted, the final code
   # should use BUILDFLAG(IS_ANDROID) for Android specific implementation.
   # TODO(debug.com/470475787): Remove this after migration.
-  skip_android_unmigrated_actor_files = is_android
+  skip_android_unmigrated_actor_files = false
 
   # Hangout services is an extension that adds extra features to Hangouts.
   # It is enableable separately to facilitate testing.
@@ -60,7 +60,7 @@ declare_args() {
 
   # Enables use of the session service, which is enabled by default.
   # Android stores them separately on the Java side.
-  enable_session_service = !is_android
+  enable_session_service = true
 
   # Enables the webui certificate viewer dialog.
   enable_webui_certificate_viewer = toolkit_views
@@ -73,11 +73,11 @@ declare_args() {
 enable_chrome_notifications = false
 
 if (!enable_cef) {
-# Logging must be disabled by default in all official builds (including special
-# DCHECK-enabled builds). Logging is enabled by default for debug builds, and
-# may be selectively enabled by default for release builds.
-assert(!chrome_enable_logging_by_default || !is_official_build,
-       "Logging must be disabled by default in Official builds")
+  # Logging must be disabled by default in all official builds (including special
+  # DCHECK-enabled builds). Logging is enabled by default for debug builds, and
+  # may be selectively enabled by default for release builds.
+  assert(!chrome_enable_logging_by_default || !is_official_build,
+         "Logging must be disabled by default in Official builds")
 }
 
 # Use brlapi from brltty for braille display support.

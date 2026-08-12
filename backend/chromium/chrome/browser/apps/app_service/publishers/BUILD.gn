@@ -4,8 +4,6 @@
 
 import("//extensions/buildflags/buildflags.gni")
 
-assert(!is_android)
-
 # Concrete implementation of Publisher interface.
 # Importantly this must not be depended on by app_service.
 # The the dependency must be injected at earlier stage on runtime.

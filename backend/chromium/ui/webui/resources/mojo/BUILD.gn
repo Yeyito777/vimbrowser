@@ -64,7 +64,7 @@ if (is_ios) {
   mojo_ts_files += [ "ui/base/mojom/ui_base_types.mojom-webui.ts" ]
 }
 
-if (!is_android && !is_ios) {
+if (!is_ios) {
   mojo_ts_files += [
     "components/omnibox/browser/searchbox.mojom-webui.ts",
     "components/omnibox/composebox/composebox_query.mojom-webui.ts",
@@ -99,7 +99,7 @@ if (is_chromeos) {
   ]
 }
 
-if (is_mac || is_win || is_linux || is_chromeos || is_android) {
+if (is_mac || is_win || is_linux || is_chromeos) {
   mojo_ts_files += [ "mojo/public/mojom/base/version.mojom-webui.ts" ]
 }
 

@@ -5,7 +5,7 @@
 // Contains constants for WebUI UI/Host/SubPage constants. Anything else go in
 // chrome/common/url_constants.h.
 
-#ifndef CHROME_COMMON_WEBUI_URL_CONSTANTS_H_
+#if !defined(CHROME_COMMON_WEBUI_URL_CONSTANTS_H_)
 #define CHROME_COMMON_WEBUI_URL_CONSTANTS_H_
 
 #include <stddef.h>
@@ -15,7 +15,6 @@
 #include "base/containers/flat_set.h"
 #include "base/containers/span.h"
 #include "base/strings/cstring_view.h"
-#include "build/android_buildflags.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
 #include "cef/libcef/features/features.h"
@@ -426,8 +425,7 @@ inline constexpr char kCookiesSubPagePath[] = "/cookies";
 bool IsSystemWebUIHost(std::string_view host);
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
-    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_DESKTOP_ANDROID)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 inline constexpr char kChromeUIDiscardsHost[] = "discards";
 inline constexpr char kChromeUIDiscardsURL[] = "chrome://discards/";
 #endif

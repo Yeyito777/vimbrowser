@@ -22,9 +22,6 @@
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 
 namespace cc {
 
@@ -33,27 +30,14 @@ namespace {
 const int kMaxPendingSubmitFrames = 1;
 
 bool IsEligibleToThrottleMainFrameRate() {
-#if BUILDFLAG(IS_ANDROID)
-  // Still requires balancing tradeoffs for desktop Android, not enabled yet.
-  return !base::android::device_info::is_desktop();
-#else
   return true;
-#endif
 }
 
 bool ShouldThrottleMainFrameRate(const SchedulerSettings& settings) {
   if (!features::IsEligibleForThrottleMainFrameTo60Hz()) {
     return false;
   }
-#if BUILDFLAG(IS_ANDROID)
-  bool is_webview = settings.using_synchronous_renderer_compositor;
-  return is_webview
-             ? base::FeatureList::IsEnabled(
-                   features::kThrottleMainFrameTo60HzWebView)
-             : base::FeatureList::IsEnabled(features::kThrottleMainFrameTo60Hz);
-#else
   return base::FeatureList::IsEnabled(features::kThrottleMainFrameTo60Hz);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace

@@ -14,13 +14,6 @@ static_library("crash_upload_list") {
     "crash_upload_list.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "crash_upload_list_android.cc",
-      "crash_upload_list_android.h",
-    ]
-  }
-
   if (is_chromeos) {
     sources += [
       "crash_upload_list_chromeos.cc",
@@ -34,10 +27,6 @@ static_library("crash_upload_list") {
     "//components/crash/core/browser",
     "//components/upload_list",
   ]
-
-  if (is_android) {
-    deps += [ "//chrome/android:chrome_jni_headers" ]
-  }
 
   public_deps = [
     "//base",

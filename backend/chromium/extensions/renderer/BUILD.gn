@@ -248,7 +248,6 @@ source_set("renderer") {
   ]
 
   deps = [
-    "//build:android_buildflags",
     "//build:chromeos_buildflags",
     "//chrome:resources",
     "//components/crx_file",

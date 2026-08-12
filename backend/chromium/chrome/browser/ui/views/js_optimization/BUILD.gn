@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(!is_android, "JS optimization actions are for desktop platforms only")
-
 source_set("js_optimization") {
   sources = [
     "js_optimizations_infobar_delegate.h",

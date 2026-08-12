@@ -180,9 +180,8 @@ if (rtc_include_tests && !build_with_chromium) {
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-    if (is_android) {
-      deps += [ "../../modules/video_coding:android_codec_factory_helper" ]
-    } else if (is_ios || is_mac) {
+
+    if (is_ios || is_mac) {
       deps += [ "../../modules/video_coding:objc_codec_factory_helper" ]
     }
     if (rtc_enable_protobuf) {

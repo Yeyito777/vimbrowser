@@ -8,8 +8,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 import("//testing/test.gni")
 
 assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
-assert(!is_android,
-       "Android shouldn't use anything in //chrome/web_applications")
 
 source_set("web_applications") {
   sources = [
@@ -527,16 +525,14 @@ source_set("web_applications") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "policy/web_app_settings_policy_handler.cc",
-      "policy/web_app_settings_policy_handler.h",
-      "policy/web_app_user_install_policy_handler.cc",
-      "policy/web_app_user_install_policy_handler.h",
-      "web_app_utils.cc",
-      "web_app_utils.h",
-    ]
-  }
+  sources += [
+    "policy/web_app_settings_policy_handler.cc",
+    "policy/web_app_settings_policy_handler.h",
+    "policy/web_app_user_install_policy_handler.cc",
+    "policy/web_app_user_install_policy_handler.h",
+    "web_app_utils.cc",
+    "web_app_utils.h",
+  ]
 
   if (!is_chromeos) {
     sources += [
@@ -773,20 +769,18 @@ source_set("features") {
   public_deps = [ "//base" ]
 }
 
-if (!is_android) {
-  source_set("web_applications_metrics") {
-    sources = [
-      "sampling_metrics_provider.cc",
-      "sampling_metrics_provider.h",
-    ]
-    deps = [
-      ":web_applications",
-      "//chrome/browser/apps/app_service",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/web_applications",
-    ]
-    public_deps = [ "//base" ]
-  }
+source_set("web_applications_metrics") {
+  sources = [
+    "sampling_metrics_provider.cc",
+    "sampling_metrics_provider.h",
+  ]
+  deps = [
+    ":web_applications",
+    "//chrome/browser/apps/app_service",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/web_applications",
+  ]
+  public_deps = [ "//base" ]
 }
 
 # This test_support library doesn't use extensions. It must not depend on
@@ -1092,7 +1086,7 @@ source_set("web_applications_unit_tests") {
     ]
   }
 
-  if (!is_android && !is_chromeos) {
+  if (!is_chromeos) {
     sources += [ "policy/web_app_settings_policy_handler_unittest.cc" ]
   }
 

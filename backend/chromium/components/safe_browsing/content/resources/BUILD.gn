@@ -21,9 +21,7 @@ action("make_file_types_protobuf") {
 
   # Pick an architecture to generate for. These string match those
   # in the python script.
-  if (is_android) {
-    target_arch = "android"
-  } else if (is_chromeos) {
+  if (is_chromeos) {
     target_arch = "chromeos"
   } else if (is_win) {
     target_arch = "win"

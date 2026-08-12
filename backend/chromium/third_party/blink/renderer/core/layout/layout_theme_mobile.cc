@@ -52,16 +52,9 @@ scoped_refptr<LayoutTheme> LayoutThemeMobile::Create() {
 LayoutThemeMobile::~LayoutThemeMobile() = default;
 
 String LayoutThemeMobile::ExtraDefaultStyleSheet() {
-  String stylesheet = StrCat(
+  return StrCat(
       {LayoutThemeDefault::ExtraDefaultStyleSheet(),
-       UncompressResourceAsASCIIString(IDR_UASTYLE_THEME_CHROMIUM_LINUX_CSS),
-       UncompressResourceAsASCIIString(
-           IDR_UASTYLE_THEME_CHROMIUM_ANDROID_CSS)});
-  return stylesheet;
-}
-
-String LayoutThemeMobile::ExtraFullscreenStyleSheet() {
-  return UncompressResourceAsASCIIString(IDR_UASTYLE_FULLSCREEN_ANDROID_CSS);
+       UncompressResourceAsASCIIString(IDR_UASTYLE_THEME_CHROMIUM_LINUX_CSS)});
 }
 
 void LayoutThemeMobile::AdjustInnerSpinButtonStyle(

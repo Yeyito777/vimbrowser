@@ -31,31 +31,6 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#include "chrome/browser/download/android/download_controller.h"
-#include "chrome/browser/download/android/download_manager_bridge.h"
-#include "chrome/browser/download/android/download_manager_service.h"
-#include "chrome/browser/download/android/download_utils.h"
-#include "chrome/browser/download/android/open_download_dialog_bridge_delegate.h"
-#include "chrome/browser/download/download_prefs.h"
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#include "components/pdf/common/constants.h"
-#include "content/public/browser/download_item_utils.h"
-#include "content/public/browser/download_manager_delegate.h"
-#include "content/public/common/content_features.h"
-#include "ui/base/device_form_factor.h"
-
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-#include "chrome/browser/download/download_core_service.h"
-#include "chrome/browser/download/download_core_service_factory.h"
-#endif
-
-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
-#include "chrome/browser/download/download_ui_safe_browsing_util.h"
-#include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
-#endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using OfflineItemFilter = offline_items_collection::OfflineItemFilter;
 using OfflineItemState = offline_items_collection::OfflineItemState;
@@ -75,11 +50,6 @@ const int kThumbnailSizeInDP = 64;
 const base::TimeDelta kCheckExternallyRemovedDownloadsDelay =
     base::Milliseconds(100);
 
-#if BUILDFLAG(IS_ANDROID)
-// Invalid system download Id.
-const int kInvalidSystemDownloadId = -1;
-
-#endif
 
 bool ShouldShowDownloadItem(const DownloadItem* item) {
   return !item->IsTemporary() && !item->IsTransient() &&
@@ -89,14 +59,7 @@ bool ShouldShowDownloadItem(const DownloadItem* item) {
 std::unique_ptr<OfflineItemShareInfo> CreateShareInfo(
     const DownloadItem* item) {
   auto share_info = std::make_unique<OfflineItemShareInfo>();
-#if BUILDFLAG(IS_ANDROID)
-  if (item) {
-    share_info->uri =
-        DownloadUtils::GetUriStringForPath(item->GetTargetFilePath());
-  }
-#else
   NOTIMPLEMENTED();
-#endif
   return share_info;
 }
 
@@ -169,9 +132,6 @@ DownloadOfflineContentProvider::DownloadOfflineContentProvider(
       state_(State::UNINITIALIZED),
       profile_(nullptr) {
   aggregator_->RegisterProvider(name_space_, this);
-#if BUILDFLAG(IS_ANDROID)
-  all_download_observer_ = std::make_unique<AllDownloadObserver>(this);
-#endif
 }
 
 DownloadOfflineContentProvider::~DownloadOfflineContentProvider() {
@@ -307,12 +267,6 @@ void DownloadOfflineContentProvider::ValidateDangerousDownload(
   DownloadItem* item = GetDownload(id.id);
   if (item && !item->IsDone() && item->IsDangerous()) {
     item->ValidateDangerousDownload();
-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && BUILDFLAG(IS_ANDROID)
-    SendSafeBrowsingDownloadReport(
-        safe_browsing::ClientSafeBrowsingReportRequest::
-            DANGEROUS_DOWNLOAD_WARNING_ANDROID,
-        /*did_proceed=*/true, item);
-#endif
   }
 }
 
@@ -489,20 +443,6 @@ void DownloadOfflineContentProvider::OnDownloadUpdated(DownloadItem* item) {
     return;
   }
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  // On desktop Android, the extensions chrome.download.setUiOptions() function
-  // can disable UI updates.
-  // TODO(crbug.com/459823225): Expand the IsDangerous() check to other
-  // situations where UI should be forced on.
-  const bool always_show_ui = item->IsDangerous();
-  if (!should_notify && !always_show_ui && profile_) {
-    DownloadCoreService* service =
-        DownloadCoreServiceFactory::GetForBrowserContext(profile_);
-    if (service && !service->IsDownloadUiEnabled()) {
-      return;
-    }
-  }
-#endif
 
   UpdateDelta update_delta;
   auto offline_item = OfflineItemUtils::CreateOfflineItem(name_space_, item);
@@ -534,9 +474,6 @@ void DownloadOfflineContentProvider::OnDownloadRemoved(DownloadItem* item) {
   if (!ShouldShowDownloadItem(item))
     return;
 
-#if BUILDFLAG(IS_ANDROID)
-  DownloadManagerBridge::RemoveCompletedDownload(item);
-#endif
 
   ContentId contentId(name_space_, item->GetGuid());
   NotifyItemRemoved(contentId);
@@ -547,52 +484,11 @@ void DownloadOfflineContentProvider::OnProfileCreated(Profile* profile) {
 }
 
 void DownloadOfflineContentProvider::AddCompletedDownload(DownloadItem* item) {
-#if BUILDFLAG(IS_ANDROID)
-  base::OnceCallback<void(int64_t)> cb =
-      base::BindOnce(&DownloadOfflineContentProvider::AddCompletedDownloadDone,
-                     weak_ptr_factory_.GetWeakPtr(), item->GetGuid());
-  if (base::android::android_info::sdk_int() <
-      base::android::android_info::SDK_VERSION_Q) {
-    DownloadManagerBridge::AddCompletedDownload(item, std::move(cb));
-  } else {
-    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(std::move(cb), kInvalidSystemDownloadId));
-  }
-#endif
 }
 
 void DownloadOfflineContentProvider::AddCompletedDownloadDone(
     const std::string& download_guid,
     int64_t system_download_id) {
-#if BUILDFLAG(IS_ANDROID)
-  DownloadItem* item = GetDownload(download_guid);
-  if (!item)
-    return;
-  if (DownloadUtils::IsOmaDownloadDescription(item->GetMimeType())) {
-    DownloadManagerService::GetInstance()->HandleOMADownload(
-        item, system_download_id);
-    return;
-  }
-
-  if (profile_ && profile_->GetDownloadManagerDelegate() &&
-      profile_->GetDownloadManagerDelegate()->ShouldOpenPdfInline() &&
-      item->GetMimeType() == pdf::kPDFMimeType) {
-    return;
-  }
-
-  if (DownloadUtils::ShouldAutoOpenDownload(item)) {
-    item->OpenDownload();
-  } else if (item->IsFromExternalApp()) {
-    if (item->GetMimeType() == pdf::kPDFMimeType) {
-      if (profile_ &&
-          DownloadPrefs::FromBrowserContext(profile_)->IsAutoOpenPdfEnabled()) {
-        item->OpenDownload();
-      } else {
-        open_download_dialog_delegate_.CreateDialog(item);
-      }
-    }
-  }
-#endif
 }
 
 DownloadItem* DownloadOfflineContentProvider::GetDownload(
@@ -618,9 +514,6 @@ void DownloadOfflineContentProvider::CheckForExternallyRemovedDownloads() {
 
   checked_for_externally_removed_downloads_ = true;
 
-#if BUILDFLAG(IS_ANDROID)
-  manager_->CheckForExternallyRemovedDownloads();
-#endif
 }
 
 void DownloadOfflineContentProvider::EnsureDownloadCoreServiceStarted() {

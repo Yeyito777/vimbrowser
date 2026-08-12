@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMPONENTS_MEDIA_ROUTER_BROWSER_TEST_MOCK_MEDIA_ROUTER_H_
+#if !defined(COMPONENTS_MEDIA_ROUTER_BROWSER_TEST_MOCK_MEDIA_ROUTER_H_)
 #define COMPONENTS_MEDIA_ROUTER_BROWSER_TEST_MOCK_MEDIA_ROUTER_H_
 
 #include <stdint.h>
@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/observer_list.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "components/media_router/browser/logger_impl.h"
 #include "components/media_router/browser/media_router_base.h"
@@ -26,7 +25,7 @@
 #include "testing/gmock/include/gmock/gmock.h"
 #include "url/origin.h"
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 #include "components/media_router/browser/issue_manager.h"
 #endif
 
@@ -108,7 +107,7 @@ class MockMediaRouter : public MediaRouterBase {
                std::unique_ptr<media::FlingingController>(
                    const MediaRoute::Id& route_id));
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
   MOCK_METHOD1(GetMirroringMediaControllerHost,
                MirroringMediaControllerHost*(const MediaRoute::Id& route_id));
   IssueManager* GetIssueManager() override { return &issue_manager_; }
@@ -152,7 +151,7 @@ class MockMediaRouter : public MediaRouterBase {
   base::ObserverList<MediaRoutesObserver> routes_observers_;
 
  private:
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
   IssueManager issue_manager_;
 #endif
 };

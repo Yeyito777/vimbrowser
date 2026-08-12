@@ -105,7 +105,6 @@
     "matches": [
       "chrome://settings/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
   "bookmarkManagerPrivate": {
@@ -116,7 +115,6 @@
       "chrome://bookmarks-side-panel.top-chrome/*",
       "chrome://read-later.top-chrome/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "bookmarks": [{

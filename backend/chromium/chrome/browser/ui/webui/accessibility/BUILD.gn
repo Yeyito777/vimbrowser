@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("accessibility") {
   sources = [ "accessibility_ui.h" ]
@@ -28,11 +28,9 @@ source_set("impl") {
     "//components/pref_registry",
   ]
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/browser_window",
-      "//ui/views",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/browser_window",
+    "//ui/views",
+  ]
 }

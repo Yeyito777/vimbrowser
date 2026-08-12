@@ -45,31 +45,29 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
+source_set("browser_tests") {
+  testonly = true
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    sources = [ "bitmap_fetcher_browsertest.cc" ]
+  sources = [ "bitmap_fetcher_browsertest.cc" ]
 
-    deps = [
-      ":bitmap_fetcher",
-      "//base",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/test:test_support_ui",
-      "//content/public/browser",
-      "//content/test:test_support",
-      "//net",
-      "//net:test_support",
-      "//net/traffic_annotation:test_support",
-      "//skia",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/gfx:gfx_skia",
-      "//ui/gfx/codec",
-      "//ui/gfx/geometry",
-    ]
-  }
+  deps = [
+    ":bitmap_fetcher",
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/test:test_support_ui",
+    "//content/public/browser",
+    "//content/test:test_support",
+    "//net",
+    "//net:test_support",
+    "//net/traffic_annotation:test_support",
+    "//skia",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/gfx:gfx_skia",
+    "//ui/gfx/codec",
+    "//ui/gfx/geometry",
+  ]
 }

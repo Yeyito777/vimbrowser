@@ -7,7 +7,6 @@
 
 #include "base/feature_list.h"
 #include "base/metrics/field_trial_params.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "extensions/buildflags/buildflags.h"
 

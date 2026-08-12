@@ -139,10 +139,7 @@ config("core_include_dirs") {
 
 buildflag_header("buildflags") {
   header = "buildflags.h"
-  flags = [
-    "TARGET_OS_IS_ANDROID=$target_os_is_android",
-    "USE_EXTERNAL_POPUP_MENU=$use_external_popup_menu",
-  ]
+  flags = [ "USE_EXTERNAL_POPUP_MENU=$use_external_popup_menu" ]
 }
 
 import("//build/config/pch.gni")

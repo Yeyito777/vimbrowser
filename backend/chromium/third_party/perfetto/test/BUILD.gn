@@ -36,7 +36,7 @@ if (!build_with_chromium && enable_perfetto_integration_tests) {
       "../protos/perfetto/trace/perfetto:cpp",
       "../protos/perfetto/trace/power:cpp",
       "../protos/perfetto/trace/sys_stats:cpp",
-      "../src/base:base",
+      "../src/base",
       "../src/base:test_support",
       "../src/perfetto_cmd:bugreport_path",
       "../src/protozero/filtering:bytecode_generator",
@@ -73,7 +73,7 @@ if (!build_with_chromium && enable_perfetto_integration_tests) {
 
     if (enable_perfetto_trace_processor &&
         enable_perfetto_trace_processor_sqlite &&
-        !perfetto_build_with_android && !is_android) {
+        !perfetto_build_with_android) {
       sources += [ "trace_processor_shell_integrationtest.cc" ]
       data_deps += [ "../src/trace_processor:trace_processor_shell" ]
       deps += [ "../protos/perfetto/trace_processor:cpp" ]
@@ -144,12 +144,7 @@ if (enable_perfetto_benchmarks || is_fuzzer ||
       "test_helper.cc",
       "test_helper.h",
     ]
-    if (is_android) {
-      sources += [
-        "android_test_utils.cc",
-        "android_test_utils.h",
-      ]
-    }
+
     if (!build_with_chromium && enable_perfetto_traced_probes) {
       deps += [
         "../include/perfetto/ext/traced",
@@ -204,7 +199,7 @@ if (enable_perfetto_benchmarks) {
   }
 }  # if (enable_perfetto_benchmarks)
 
-if (perfetto_build_with_android || (is_android && perfetto_build_standalone)) {
+if (perfetto_build_with_android) {
   # This is used only in-tree builds. It's built in standalone builds just to
   # get build coverage.
   static_library("perfetto_gtest_logcat_printer") {

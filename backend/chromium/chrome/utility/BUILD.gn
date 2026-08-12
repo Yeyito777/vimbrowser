@@ -87,67 +87,65 @@ static_library("utility") {
     ]
   }
 
-  if (!is_android) {
+  sources += [
+    "importer/bookmarks_file_importer.cc",
+    "importer/bookmarks_file_importer.h",
+    "importer/external_process_importer_bridge.cc",
+    "importer/external_process_importer_bridge.h",
+    "importer/importer.cc",
+    "importer/importer.h",
+    "importer/importer_creator.cc",
+    "importer/importer_creator.h",
+    "importer/profile_import_impl.cc",
+    "importer/profile_import_impl.h",
+  ]
+  if (!is_chromeos) {
     sources += [
-      "importer/bookmarks_file_importer.cc",
-      "importer/bookmarks_file_importer.h",
-      "importer/external_process_importer_bridge.cc",
-      "importer/external_process_importer_bridge.h",
-      "importer/importer.cc",
-      "importer/importer.h",
-      "importer/importer_creator.cc",
-      "importer/importer_creator.h",
-      "importer/profile_import_impl.cc",
-      "importer/profile_import_impl.h",
-    ]
-    if (!is_chromeos) {
-      sources += [
-        "importer/firefox_importer.cc",
-        "importer/firefox_importer.h",
-      ]
-    }
-    if (is_mac) {
-      sources += [
-        "importer/safari_importer.h",
-        "importer/safari_importer.mm",
-      ]
-    }
-    if (!is_mac && !is_chromeos) {
-      # NSS decryptor is not needed on ChromeOS. Additionally, it depends on
-      # system NSS that is unavailable on MacOS/Fuchsia.
-      sources += [
-        "importer/nss_decryptor.cc",
-        "importer/nss_decryptor.h",
-      ]
-
-      deps += [ "//crypto:buildflags" ]
-    }
-    if (is_win) {
-      sources += [
-        "importer/edge_database_reader_win.cc",
-        "importer/edge_database_reader_win.h",
-        "importer/edge_importer_win.cc",
-        "importer/edge_importer_win.h",
-        "importer/ie_importer_win.cc",
-        "importer/ie_importer_win.h",
-        "importer/nss_decryptor_win.cc",
-        "importer/nss_decryptor_win.h",
-      ]
-
-      deps += [ "//services/proxy_resolver_win" ]
-    }
-    deps += [
-      "//chrome/common:mojo_bindings",
-      "//chrome/common/importer:interfaces",
-      "//components/autofill/core/common",
-      "//components/private_ai/oak_session_service",
-      "//components/user_data_importer/common",
-      "//components/user_data_importer/content",
-      "//components/user_data_importer/utility:bookmarks",
-      "//services/proxy_resolver:lib",
-      "//services/screen_ai",
+      "importer/firefox_importer.cc",
+      "importer/firefox_importer.h",
     ]
   }
+  if (is_mac) {
+    sources += [
+      "importer/safari_importer.h",
+      "importer/safari_importer.mm",
+    ]
+  }
+  if (!is_mac && !is_chromeos) {
+    # NSS decryptor is not needed on ChromeOS. Additionally, it depends on
+    # system NSS that is unavailable on MacOS/Fuchsia.
+    sources += [
+      "importer/nss_decryptor.cc",
+      "importer/nss_decryptor.h",
+    ]
+
+    deps += [ "//crypto:buildflags" ]
+  }
+  if (is_win) {
+    sources += [
+      "importer/edge_database_reader_win.cc",
+      "importer/edge_database_reader_win.h",
+      "importer/edge_importer_win.cc",
+      "importer/edge_importer_win.h",
+      "importer/ie_importer_win.cc",
+      "importer/ie_importer_win.h",
+      "importer/nss_decryptor_win.cc",
+      "importer/nss_decryptor_win.h",
+    ]
+
+    deps += [ "//services/proxy_resolver_win" ]
+  }
+  deps += [
+    "//chrome/common:mojo_bindings",
+    "//chrome/common/importer:interfaces",
+    "//components/autofill/core/common",
+    "//components/private_ai/oak_session_service",
+    "//components/user_data_importer/common",
+    "//components/user_data_importer/content",
+    "//components/user_data_importer/utility:bookmarks",
+    "//services/proxy_resolver:lib",
+    "//services/screen_ai",
+  ]
 
   if (enable_extensions) {
     deps += [
@@ -230,47 +228,44 @@ static_library("utility") {
     ]
   }
 
-  if (is_android || enable_extensions) {
+  if (enable_extensions) {
     deps += [ "//chrome/services/media_gallery_util:lib" ]
   }
 
   if (enable_browser_speech_service) {
     deps += [ "//chrome/services/speech:lib" ]
   }
-
 }
 
-if (!is_android) {
-  source_set("unit_tests") {
-    testonly = true
+source_set("unit_tests") {
+  testonly = true
 
-    sources = [ "importer/bookmarks_file_importer_unittest.cc" ]
-    if (!is_chromeos) {
-      sources += [ "importer/firefox_importer_unittest.cc" ]
-    }
-    if (is_mac) {
-      sources += [ "importer/safari_importer_unittest.mm" ]
-    }
-    if (is_win) {
-      sources += [ "importer/edge_database_reader_unittest_win.cc" ]
-    }
-
-    deps = [
-      ":utility",
-      "//base",
-      "//chrome/common:constants",
-      "//chrome/common/importer",
-      "//chrome/common/importer:test_support",
-      "//components/favicon_base",
-      "//components/user_data_importer/common",
-      "//components/user_data_importer/utility:safari_data_importer",
-      "//content/test:test_support",
-      "//sql",
-      "//sql:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//third_party/zlib/google:compression_utils",
-      "//url",
-    ]
+  sources = [ "importer/bookmarks_file_importer_unittest.cc" ]
+  if (!is_chromeos) {
+    sources += [ "importer/firefox_importer_unittest.cc" ]
   }
+  if (is_mac) {
+    sources += [ "importer/safari_importer_unittest.mm" ]
+  }
+  if (is_win) {
+    sources += [ "importer/edge_database_reader_unittest_win.cc" ]
+  }
+
+  deps = [
+    ":utility",
+    "//base",
+    "//chrome/common:constants",
+    "//chrome/common/importer",
+    "//chrome/common/importer:test_support",
+    "//components/favicon_base",
+    "//components/user_data_importer/common",
+    "//components/user_data_importer/utility:safari_data_importer",
+    "//content/test:test_support",
+    "//sql",
+    "//sql:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//third_party/zlib/google:compression_utils",
+    "//url",
+  ]
 }

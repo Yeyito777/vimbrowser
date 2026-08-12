@@ -14,10 +14,6 @@ import("//tools/grit/grit_rule.gni")
 
 assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 # This target is for dependency tracking for the command ID header.
 source_set("command_ids") {
   sources = [ "chrome_command_ids.h" ]
@@ -85,25 +81,6 @@ grit_strings("generated_resources") {
   defines = chrome_grit_defines + [ "is_cfm=${is_cfm}" ]
   output_dir = "$root_gen_dir/chrome"
   outputs = [ "grit/generated_resources.h" ]
-
-  if (is_android) {
-    create_android_resources = true
-  }
-}
-
-if (is_android) {
-  java_strings_grd_prebuilt("branded_resources_grd") {
-    generating_target = ":branded_strings"
-  }
-  java_strings_grd_prebuilt("generated_resources_grd") {
-    generating_target = ":generated_resources"
-  }
-  java_group("java_strings_grd") {
-    public_deps = [
-      ":branded_resources_grd",
-      ":generated_resources_grd",
-    ]
-  }
 }
 
 grit_strings("branded_strings") {
@@ -111,10 +88,6 @@ grit_strings("branded_strings") {
   defines = chrome_grit_defines
   output_dir = "$root_gen_dir/chrome"
   outputs = [ "grit/branded_strings.h" ]
-
-  if (is_android) {
-    create_android_resources = true
-  }
 }
 
 static_library("test_support") {
@@ -159,13 +132,6 @@ static_library("test_support") {
 
   if (is_mac || is_win || is_linux || is_chromeos) {
     deps += [ "//components/webapps/isolated_web_apps:scheme" ]
-  }
-
-  if (is_android) {
-    deps += [
-      "//chrome/browser/flags:flags_android",
-      "//components/crash/android:crash_android",
-    ]
   }
 
   if (is_mac) {

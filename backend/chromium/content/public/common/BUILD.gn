@@ -13,10 +13,6 @@ import("//third_party/webrtc/webrtc.gni")
 import("//tools/ipc_fuzzer/ipc_fuzzer.gni")
 import("//ui/webui/webui_features.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 buildflag_header("buildflags") {
   header = "buildflags.h"
   flags = [
@@ -242,13 +238,6 @@ source_set("common_sources") {
     sources += [ "font_cache_dispatcher_win.h" ]
   }
 
-  if (is_android) {
-    sources += [
-      "resource_request_body_android.cc",
-      "resource_request_body_android.h",
-    ]
-  }
-
   configs += [
     "//build/config:precompiled_headers",
     "//content:content_implementation",
@@ -283,7 +272,6 @@ source_set("common_sources") {
   ]
   deps = [
     ":content_descriptor_keys",
-    "//build:android_buildflags",
     "//build:branding_buildflags",
     "//build/config/chromebox_for_meetings:buildflags",
 
@@ -309,10 +297,6 @@ source_set("common_sources") {
 
   if (use_aura) {
     deps += [ "//ui/aura" ]
-  }
-
-  if (is_android) {
-    deps += [ "//content/public/android:content_main_dex_jni" ]
   }
 
   if (is_win) {
@@ -448,19 +432,4 @@ mojom("interfaces") {
 
 mojom("renderer_type") {
   sources = [ "media_playback_renderer_type.mojom" ]
-}
-
-if (is_android) {
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":common_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "//content/public/common/content_features.cc" ]
-    class_name = "org.chromium.content_public.common.ContentFeatures"
-  }
-
-  android_library("common_java") {
-    # Right now, this only includes the Java features. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [ ":java_features_srcjar" ]
-  }
 }

@@ -7,10 +7,6 @@
 # be found in the AUTHORS file in the root of the source tree.
 
 import("../../webrtc.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
 
 rtc_library("video_rtp_headers") {
   visibility = [ "*" ]
@@ -77,12 +73,6 @@ rtc_library("video_frame") {
     "../units:timestamp",
     "//third_party/libyuv",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("video_frame_enums") {
-    sources = [ "video_frame_buffer.h" ]
-  }
 }
 
 rtc_library("video_frame_i010") {

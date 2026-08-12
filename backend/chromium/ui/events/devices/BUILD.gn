@@ -4,12 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 if (is_ios) {
   import("//build/config/apple/mobile_config.gni")  # For `target_platform`
 }
@@ -46,13 +40,6 @@ component("devices") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "input_device_observer_android.cc",
-      "input_device_observer_android.h",
-    ]
-  }
-
   if (is_win) {
     sources += [
       "input_device_observer_win.cc",
@@ -83,16 +70,6 @@ component("devices") {
     "//ui/gfx/geometry",
     "//ui/gfx/geometry:geometry_skia",
   ]
-
-  if (is_android) {
-    deps += [ ":ui_events_devices_jni_headers" ]
-  }
-}
-
-if (is_android) {
-  generate_jni("ui_events_devices_jni_headers") {
-    sources = [ "../../android/java/src/org/chromium/ui/events/devices/InputDeviceObserver.java" ]
-  }
 }
 
 source_set("unittests") {

@@ -57,16 +57,6 @@ component("prefs") {
 
   deps = []
   public_deps = [ "//base" ]
-
-  if (is_android) {
-    sources += [
-      "android/pref_change_registrar_android.cc",
-      "android/pref_change_registrar_android.h",
-      "android/pref_service_android.cc",
-      "android/pref_service_android.h",
-    ]
-    deps += [ "android:jni_headers" ]
-  }
 }
 
 static_library("test_support") {

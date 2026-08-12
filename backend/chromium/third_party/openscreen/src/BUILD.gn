@@ -71,7 +71,7 @@ group("gn_all") {
 
   # The cast_receiver depends on the standalone implementation which is only
   # implemented for certain operating systems.
-  if (is_linux || is_mac || is_chromeos || is_android) {
+  if (is_linux || is_mac || is_chromeos) {
     deps += [ "cast/standalone_receiver:cast_receiver" ]
   }
 }

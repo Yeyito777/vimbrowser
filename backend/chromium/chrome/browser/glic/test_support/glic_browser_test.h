@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_GLIC_TEST_SUPPORT_GLIC_BROWSER_TEST_H_
+#if !defined(CHROME_BROWSER_GLIC_TEST_SUPPORT_GLIC_BROWSER_TEST_H_)
 #define CHROME_BROWSER_GLIC_TEST_SUPPORT_GLIC_BROWSER_TEST_H_
 
 #include <map>
@@ -15,7 +15,6 @@
 #include "base/path_service.h"
 #include "base/test/run_until.h"
 #include "base/test/scoped_feature_list.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "chrome/browser/glic/host/glic.mojom-shared.h"
 #include "chrome/browser/glic/public/glic_enabling.h"
@@ -33,10 +32,6 @@
 #include "components/tabs/public/tab_interface.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
-
 #if defined(TOOLKIT_VIEWS)
 #include "ui/views/buildflags.h"
 
@@ -46,15 +41,6 @@
 #endif
 
 namespace glic {
-
-#if BUILDFLAG(IS_ANDROID)
-#define SKIP_TEST_FOR_NON_DESKTOP_ANDROID()            \
-  if (!base::android::device_info::is_desktop()) {     \
-    GTEST_SKIP() << "Skipping on non-desktop Android"; \
-  }
-#else
-#define SKIP_TEST_FOR_NON_DESKTOP_ANDROID()
-#endif
 
 #if BUILDFLAG(IS_ANDROID)
 #define SKIP_NEEDS_ANDROID_IMPL(message) \
@@ -89,11 +75,6 @@ class GlicBrowserTestMixin : public T {
   // PlatformBrowserTest:
   void SetUpCommandLine(base::CommandLine* command_line) override {
     T::SetUpCommandLine(command_line);
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-    // This is needed to force is_desktop() to return true for desktop Android
-    // builds.
-    command_line->AppendSwitch(switches::kForceDesktopAndroid);
-#endif
   }
 
   void SetUpOnMainThread() override {

@@ -4,9 +4,7 @@
 
 import("//build/config/chrome_build.gni")
 import("//build/config/compiler/compiler.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
+
 if (is_fuchsia) {
   import("//build/config/fuchsia/config.gni")
 }
@@ -15,8 +13,8 @@ declare_args() {
   # This enables build with TFLite library.
   # TODO(b/269198471): Make sure the internal archive files for opt guide get
   #   updated when win arm64 gets added as a supported platform for TFLite.
-  build_with_tflite_lib = is_android || is_win || is_linux || is_mac ||
-                          is_chromeos || is_fuchsia || is_ios
+  build_with_tflite_lib =
+      is_win || is_linux || is_mac || is_chromeos || is_fuchsia || is_ios
 }
 
 if (is_ios) {
@@ -42,7 +40,7 @@ declare_args() {
   # relevant files not being present.
   # Mac: //chrome/installer/mac/signing/parts.py
   # Windows: //chrome/installer/mini_installer/chrome.release and internal archive files
-  if (is_fuchsia || is_android) {
+  if (is_fuchsia) {
     # Fuchsia and Android should work but is not included in the set we release for, so we do
     # not needlessly increase the binary size.
     build_with_internal_optimization_guide = false

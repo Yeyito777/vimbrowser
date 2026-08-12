@@ -68,9 +68,6 @@ source_set("ipc_common_sources") {
       "dxguid.lib",
     ]
   }
-  if (is_android) {
-    visibility += [ "//media/gpu" ]
-  }
 
   configs += [
     "//gpu:gpu_implementation",
@@ -194,7 +191,6 @@ mojom("gpu_channel_mojom") {
 }
 
 mojom("shared_image_pool_client_interface") {
-  generate_java = true
   visibility = [
     "//gpu/*",
     "//services/*",
@@ -207,7 +203,6 @@ mojom("shared_image_pool_client_interface") {
 }
 
 mojom("surface_handle") {
-  generate_java = true
   sources = [ "surface_handle.mojom" ]
   cpp_typemaps = [
     {
@@ -225,7 +220,6 @@ mojom("surface_handle") {
 }
 
 mojom("interfaces") {
-  generate_java = true
   sources = [
     "capabilities.mojom",
     "constants.mojom",
@@ -638,7 +632,6 @@ mojom("interfaces") {
 }
 
 mojom("gpu_preferences_interface") {
-  generate_java = true
   sources = [ "gpu_preferences.mojom" ]
 
   public_deps = [
@@ -676,7 +669,6 @@ mojom("gpu_preferences_interface") {
 
 if (enable_vulkan) {
   mojom("vulkan_interface") {
-    generate_java = true
     webui_module_path = "/"
     generate_legacy_js_bindings = true
 
@@ -765,9 +757,6 @@ source_set("mojom_traits") {
     public_deps += [ "//gpu/vulkan" ]
   }
 
-  if (is_android) {
-    sources += [ "vulkan_ycbcr_info_mojom_traits.h" ]
-  }
   configs += [ "//gpu:gpu_implementation" ]
 }
 

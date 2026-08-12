@@ -102,32 +102,7 @@ component("input") {
   if (use_aura) {
     sources += [ "native_web_keyboard_event_aura.cc" ]
   }
-  if (is_android) {
-    sources += [
-      "android/android_input_callback.cc",
-      "android/android_input_callback.h",
-      "android/input_feature_map.cc",
-      "android/input_receiver_data.cc",
-      "android/input_receiver_data.h",
-      "android/input_token_forwarder.cc",
-      "android/input_token_forwarder.h",
-      "android/scoped_input_receiver.cc",
-      "android/scoped_input_receiver.h",
-      "android/scoped_input_receiver_callbacks.cc",
-      "android/scoped_input_receiver_callbacks.h",
-      "android/scoped_input_transfer_token.cc",
-      "android/scoped_input_transfer_token.h",
-      "android_input_helper.cc",
-      "android_input_helper.h",
-      "native_web_keyboard_event_android.cc",
-      "web_input_event_builders_android.cc",
-      "web_input_event_builders_android.h",
-    ]
-    deps += [
-      "//components/input/android:jni_headers",
-      "//ui/events:motionevent_jni_headers",
-    ]
-  }
+
   if (is_ios) {
     sources += [
       "native_web_keyboard_event_ios.mm",
@@ -198,10 +173,7 @@ source_set("unit_tests") {
     "//ui/events:velocity_tracker",
     "//ui/events/blink",
   ]
-  if (is_android) {
-    sources += [ "web_input_event_builders_android_unittest.cc" ]
-    deps += [ "//ui/events:motionevent_jni_headers" ]
-  }
+
   if (is_mac) {
     sources += [
       "native_web_keyboard_event_mac_unittest.mm",

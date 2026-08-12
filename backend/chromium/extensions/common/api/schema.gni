@@ -104,20 +104,6 @@ if (enable_extensions) {
   }
 }
 
-# In the experimental desktop-android configuration, we still need to compile
-# the C++ types for certain APIs, since they are used from outside the
-# extensions layer. These should be removed as we add support for the full
-# API by moving these entries to the `extensions_api_schema_files_` above.
-if (enable_desktop_android_extensions) {
-  extensions_types_only_schema_files_ += [
-    "clipboard.webidl",
-    "scripts_internal.webidl",
-    "usb.webidl",
-    "virtual_keyboard_private.json",
-    "virtual_keyboard.webidl",
-  ]
-}
-
 extensions_api_schema_files =
     get_path_info(extensions_api_schema_files_, "abspath")
 

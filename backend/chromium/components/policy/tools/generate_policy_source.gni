@@ -15,8 +15,6 @@ import("//components/policy/resources/policy_templates.gni")
 #   generate_cc (optional, default true)
 #       Generate C++ source/header files.
 #
-#   generate_app_restrictions (optional, default true)
-#       Generate app_restrictions.xml (only on Android).
 template("generate_policy_source") {
   assert(defined(invoker.chunking))
   chunking = invoker.chunking
@@ -25,12 +23,6 @@ template("generate_policy_source") {
     generate_cc = invoker.generate_cc
   } else {
     generate_cc = true
-  }
-
-  if (defined(invoker.generate_app_restrictions)) {
-    generate_app_restrictions = invoker.generate_app_restrictions
-  } else {
-    generate_app_restrictions = true
   }
 
   action(target_name) {
@@ -97,15 +89,6 @@ template("generate_policy_source") {
         "--risk-tag-header=" +
             rebase_path(risk_tag_header_path, root_build_dir),
       ]
-    }
-
-    if (generate_app_restrictions && target_os == "android") {
-      # Generate app_restrictions.xml.
-      app_restrictions_path = "$target_gen_dir/app_restrictions.xml"
-
-      outputs += [ app_restrictions_path ]
-      args += [ "--app-restrictions-definition=" +
-                rebase_path(app_restrictions_path, root_build_dir) ]
     }
   }
 }

@@ -3,5 +3,5 @@
 # found in the LICENSE file.
 
 declare_args() {
-  build_contextual_search = is_android
+  build_contextual_search = false
 }

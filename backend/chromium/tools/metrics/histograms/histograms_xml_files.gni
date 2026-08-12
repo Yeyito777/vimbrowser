@@ -9,8 +9,6 @@ histograms_xml_files = [
   "//tools/metrics/histograms/metadata/actor/histograms.xml",
   "//tools/metrics/histograms/metadata/ai/enums.xml",
   "//tools/metrics/histograms/metadata/ai/histograms.xml",
-  "//tools/metrics/histograms/metadata/android/enums.xml",
-  "//tools/metrics/histograms/metadata/android/histograms.xml",
   "//tools/metrics/histograms/metadata/apps/enums.xml",
   "//tools/metrics/histograms/metadata/apps/histograms.xml",
   "//tools/metrics/histograms/metadata/arc/enums.xml",

@@ -334,8 +334,7 @@ declare_args() {
 
   # Enable snapshot compression (enabled by default for desktop) devices.
   v8_enable_snapshot_compression =
-      target_os == "android" || target_os == "chromeos" ||
-      target_os == "fuchsia"
+      target_os == "chromeos" || target_os == "fuchsia"
 
   # Enable control-flow integrity features, such as pointer authentication for
   # ARM64. Enable it by default for simulator builds and when native code
@@ -937,9 +936,6 @@ config("libbase_config") {
     defines = [ "USING_V8_BASE_SHARED" ]
   }
   libs = []
-  if (is_android && current_toolchain != host_toolchain) {
-    libs += [ "log" ]
-  }
 }
 
 config("zoslib_config") {
@@ -1095,10 +1091,7 @@ if (v8_shortcut_strings_in_minor_ms) {
 # mksnapshot. We additionally set V8_HAVE_TARGET_OS to determine that a
 # target OS has in fact been set; otherwise we internally assume that target
 # OS == host OS (see v8config.h).
-if (target_os == "android") {
-  enabled_external_v8_defines += [ "V8_HAVE_TARGET_OS" ]
-  enabled_external_v8_defines += [ "V8_TARGET_OS_ANDROID" ]
-} else if (target_os == "fuchsia") {
+if (target_os == "fuchsia") {
   enabled_external_v8_defines += [ "V8_HAVE_TARGET_OS" ]
   enabled_external_v8_defines += [ "V8_TARGET_OS_FUCHSIA" ]
 } else if (target_os == "ios") {
@@ -1741,9 +1734,6 @@ config("toolchain") {
       ldflags += [ "/STACK:2097152" ]
     }
   }
-  if (is_android && v8_android_log_stdout) {
-    defines += [ "V8_ANDROID_LOG_STDOUT" ]
-  }
 
   # TODO(infra): Support v8_enable_prof on Windows.
   # TODO(infra): Add support for compiling with simulators.
@@ -1891,7 +1881,7 @@ config("always_turbofanimize") {
 
   # TODO(crbug.com/621335) Rework this so that we don't have the confusion
   # between "optimize_speed" and "optimize_max".
-  if (((is_posix && !is_android) || is_fuchsia || is_win) && !using_sanitizer) {
+  if ((is_posix || is_fuchsia || is_win) && !using_sanitizer) {
     configs += [ "//build/config/compiler:optimize_speed" ]
   } else {
     configs += [ "//build/config/compiler:optimize_max" ]
@@ -7249,29 +7239,6 @@ v8_component("v8_libbase") {
     ]
 
     libs = [ "dl" ]
-  } else if (is_android) {
-    if (current_toolchain == host_toolchain) {
-      libs = [
-        "dl",
-        "rt",
-      ]
-      if (host_os == "mac") {
-        sources += [
-          "src/base/debug/stack_trace_posix.cc",
-          "src/base/platform/platform-darwin.cc",
-        ]
-      } else {
-        sources += [
-          "src/base/debug/stack_trace_posix.cc",
-          "src/base/platform/platform-linux.cc",
-        ]
-      }
-    } else {
-      sources += [
-        "src/base/debug/stack_trace_android.cc",
-        "src/base/platform/platform-linux.cc",
-      ]
-    }
   } else if (is_fuchsia) {
     sources += [
       "src/base/debug/stack_trace_fuchsia.cc",

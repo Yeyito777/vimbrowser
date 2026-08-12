@@ -4,7 +4,7 @@
 
 import("//rlz/buildflags/buildflags.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("search_engines") {
   public = [
@@ -51,18 +51,6 @@ source_set("search_engines") {
 
   if (is_chromeos) {
     deps += [ "//chrome/browser/ash/profiles" ]
-  }
-
-  if (is_android) {
-    public += [ "ui_thread_search_terms_data_android.h" ]
-    sources += [
-      "template_url_service_factory_android.cc",
-      "ui_thread_search_terms_data_android.cc",
-    ]
-    deps += [
-      "//chrome/browser/android/locale:locale_manager",
-      "//chrome/browser/search_engines/android:jni_headers",
-    ]
   }
 
   if (enable_rlz) {

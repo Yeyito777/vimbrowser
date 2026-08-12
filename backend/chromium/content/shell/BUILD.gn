@@ -17,9 +17,8 @@ import("//third_party/inspector_protocol/inspector_protocol.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-} else if (is_mac) {
+
+if (is_mac) {
   import("//build/apple/tweak_info_plist.gni")
   import("//build/config/mac/rules.gni")
   import("//content/public/app/mac_helpers.gni")
@@ -58,15 +57,12 @@ config("content_shell_lib_warnings") {
 }
 
 # Web test support not built on android, but is everywhere else.
-support_web_tests = !is_android
+support_web_tests = true
 
 source_set("android_shell_descriptors") {
   testonly = true
   sources = []
   public_deps = [ "//content/public/common:content_descriptors" ]
-  if (is_android) {
-    sources += [ "android/shell_descriptors.h" ]
-  }
 }
 
 # This component provides a ContentMainDelegate for Content Shell and derived
@@ -237,15 +233,6 @@ static_library("content_shell_lib") {
   ]
 
   sources += get_target_outputs(":protocol_sources")
-
-  if (is_android) {
-    sources += [
-      "android/shell_manager.cc",
-      "android/shell_manager.h",
-      "browser/shell_platform_delegate_android.cc",
-      "browser/shell_web_contents_view_delegate_android.cc",
-    ]
-  }
 
   if (is_mac) {
     sources += [
@@ -432,15 +419,6 @@ static_library("content_shell_lib") {
     ]
   }
 
-  if (is_android) {
-    deps += [
-      "//components/embedder_support/android:view",
-      "//content/shell/android:content_shell_jni_headers",
-      "//mojo/public/java/system:test_support",
-      "//ui/android",
-    ]
-  }
-
   if (shell_use_toolkit_views) {
     # All content_shell code should use this define instead of TOOLKIT_VIEWS,
     # since any transitive dependency on //ui/views from another component will
@@ -585,7 +563,7 @@ repack("pak") {
     sources += [ "$root_gen_dir/content/webxr_internals_resources.pak" ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     deps += [ "//content/browser/tracing:resources" ]
     sources += [
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
@@ -609,7 +587,7 @@ repack("pak") {
     sources +=
         [ "$root_gen_dir/ui/views/resources/views_resources_100_percent.pak" ]
   }
-  if (!is_android && !is_fuchsia && !is_ios) {
+  if (!is_fuchsia && !is_ios) {
     sources +=
         [ "$root_gen_dir/content/browser/devtools/devtools_resources.pak" ]
     deps += [ "//content/browser/devtools:devtools_resources" ]
@@ -617,12 +595,7 @@ repack("pak") {
   output = "$root_out_dir/content_shell.pak"
 }
 
-if (is_android) {
-  group("content_shell") {
-    testonly = true
-    deps = [ "//content/shell/android:content_shell_apk" ]
-  }
-} else if (is_mac) {
+if (is_mac) {
   tweak_info_plist("content_shell_plist") {
     testonly = true
     info_plist = "app/app-Info.plist"
@@ -1116,16 +1089,6 @@ group("content_shell_crash_test") {
     data_deps += [
       "//third_party/breakpad:dump_syms",
       "//third_party/breakpad:minidump_stackwalk",
-    ]
-  }
-  if (is_android) {
-    data_deps += [
-      "//build/android:devil_chromium_py",
-      "//build/android:test_runner_py",
-      "//third_party/breakpad:microdump_stackwalk",
-      "//third_party/breakpad:minidump_dump",
-      "//third_party/breakpad:symupload",
-      "//tools/android/forwarder2",
     ]
   }
 }

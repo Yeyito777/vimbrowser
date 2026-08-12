@@ -32,9 +32,7 @@ import("//v8/gni/v8.gni")
 
 assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-} else if (is_linux || is_chromeos) {
+if (is_linux || is_chromeos) {
   import("//build/linux/extract_symbols.gni")
   import("//build/linux/strip_binary.gni")
 } else if (is_mac) {
@@ -111,11 +109,7 @@ if (is_win) {
 group("assert_no_deps") {
   deps = []
 
-  if (is_android) {
-    deps += [ "//chrome/android:chrome_public_apk" ]
-  } else {
-    deps += [ ":chrome" ]
-  }
+  deps += [ ":chrome" ]
 
   if (is_win) {
     deps += [ ":chrome_dll" ]
@@ -127,7 +121,7 @@ group("assert_no_deps") {
   assert_no_deps = [ "//chrome/installer/util:strings" ]
 }
 
-if (!is_android && !is_mac) {
+if (!is_mac) {
   group("chrome") {
     public_deps = [ ":chrome_initial" ]
     data_deps = [ ":chrome_initial" ]
@@ -1517,7 +1511,7 @@ group("extra_resources") {
   ]
 }
 
-if (is_chrome_branded && !is_android) {
+if (is_chrome_branded) {
   if (!is_mac) {
     _preinstalled_apps_target_type = "copy"
   } else {
@@ -1546,43 +1540,41 @@ if (is_chrome_branded && !is_android) {
   }
 }
 
-if (!is_android) {
-  chrome_paks("packed_resources") {
-    if (is_mac) {
-      output_dir = "$root_gen_dir/repack"
-      copy_data_to_bundle = true
-    } else {
-      output_dir = root_out_dir
-      mark_as_data = true
-    }
-
-    if (enable_resource_allowlist_generation) {
-      repack_allowlist = _chrome_resource_allowlist
-      deps = [ ":resource_allowlist" ]
-    }
-
-    if (is_chrome_branded && !is_mac) {
-      public_deps = [ ":preinstalled_apps" ]
-    }
-
-    # This needs to be in-sync with //chrome/app/packed_resources_integrity.h.
-    files_to_hash = [
-      "resources.pak",
-      "chrome_100_percent.pak",
-    ]
-    if (enable_hidpi) {
-      files_to_hash += [ "chrome_200_percent.pak" ]
-    }
+chrome_paks("packed_resources") {
+  if (is_mac) {
+    output_dir = "$root_gen_dir/repack"
+    copy_data_to_bundle = true
+  } else {
+    output_dir = root_out_dir
+    mark_as_data = true
   }
 
-  # This is extracted to deserialize build dependency around
-  # :packed_resources_integrity_hash and improve build parallelism.
-  source_set("packed_resources_integrity_header") {
-    sources = [ "app/packed_resources_integrity.h" ]
-
-    # chrome/app/packed_resources_integrity.cc file is generated in dependency.
-    deps = [ ":packed_resources_integrity" ]
+  if (enable_resource_allowlist_generation) {
+    repack_allowlist = _chrome_resource_allowlist
+    deps = [ ":resource_allowlist" ]
   }
+
+  if (is_chrome_branded && !is_mac) {
+    public_deps = [ ":preinstalled_apps" ]
+  }
+
+  # This needs to be in-sync with //chrome/app/packed_resources_integrity.h.
+  files_to_hash = [
+    "resources.pak",
+    "chrome_100_percent.pak",
+  ]
+  if (enable_hidpi) {
+    files_to_hash += [ "chrome_200_percent.pak" ]
+  }
+}
+
+# This is extracted to deserialize build dependency around
+# :packed_resources_integrity_hash and improve build parallelism.
+source_set("packed_resources_integrity_header") {
+  sources = [ "app/packed_resources_integrity.h" ]
+
+  # chrome/app/packed_resources_integrity.cc file is generated in dependency.
+  deps = [ ":packed_resources_integrity" ]
 }
 
 repack("browser_tests_pak") {
@@ -1598,77 +1590,6 @@ group("strings") {
     "//chrome/app:generated_resources",
     "//chrome/app/resources:locale_settings",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("offline_pages_enum_javagen") {
-    sources = [ "browser/offline_pages/offline_page_utils.h" ]
-  }
-
-  java_cpp_enum("download_enum_javagen") {
-    sources = [
-      "browser/download/android/download_open_source.h",
-      "browser/download/download_dialog_types.h",
-      "browser/download/download_prompt_status.h",
-    ]
-  }
-
-  source_set("chrome_android_core") {
-    sources = [
-      "app/android/chrome_jni_onload.cc",
-      "app/android/chrome_jni_onload.h",
-      "app/android/chrome_main_delegate_android.cc",
-      "app/android/chrome_main_delegate_android.h",
-      "app/chrome_main_delegate.cc",
-      "app/chrome_main_delegate.h",
-      "app/startup_timestamps.h",
-    ]
-
-    libs = [
-      "android",
-      "jnigraphics",
-    ]
-
-    public_deps = [
-      "//chrome/browser",
-      "//chrome/utility",
-    ]
-
-    deps = [
-      ":dependencies",
-      "//chrome/browser/flags:flags_android",
-      "//chrome/browser/ui",
-      "//chrome/child",
-      "//chrome/common",
-      "//chrome/common:version_header",
-      "//chrome/common/profiler",
-      "//chrome/gpu",
-      "//chrome/renderer",
-      "//components/crash/android:crash_android",
-      "//components/minidump_uploader",
-      "//components/safe_browsing:buildflags",
-      "//components/safe_browsing/android:safe_browsing_api_handler",
-      "//components/safe_browsing/android:safe_browsing_mobile",
-      "//components/stylus_handwriting/android",
-      "//components/variations:variations_associated_data",
-      "//content/public/app",
-    ]
-
-    # Explicit dependency required for JNI registration to be able to
-    # find the native side functions.
-    if (is_component_build) {
-      deps += [
-        "//components/viz/service",
-        "//device/gamepad",
-        "//ui/events/devices",
-      ]
-    }
-
-    if (is_chromeos) {
-      public_deps += [ "//ui/lottie" ]
-      deps += [ "//chrome/browser/ash/schedqos" ]
-    }
-  }
 }
 
 # Android also supports this, but uses

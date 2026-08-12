@@ -16,9 +16,6 @@ template("generate_orderfile_test") {
   script_test(target_name) {
     script = "//tools/cygprofile/generate_orderfile.py"
 
-    # Stream logcat from device (doesn't seem to fully work yet).
-    enable_android_wrapper = true
-
     args = [
       # Assume that we are running this script from the output directory.
       "--out-dir",

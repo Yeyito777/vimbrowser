@@ -240,7 +240,6 @@
   </message>
 
   <!-- Site Settings desktop-only -->
-  <if expr="not is_android">
   <message name="IDS_SITE_SETTINGS_TYPE_FONT_ACCESS" desc="The label used for the local font access site settings controls.">
     Fonts
   </message>
@@ -330,5 +329,4 @@
   <message name="IDS_SITE_SETTINGS_TYPE_OFFER_WRITING_HELP" desc="Name of the settings page that manages writing help UI preferences.">
     Offer writing help
   </message>
-  </if>
 </grit-part>

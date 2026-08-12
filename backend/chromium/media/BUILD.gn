@@ -215,22 +215,8 @@ test("media_unittests") {
 
   data_deps = [ "//testing/buildbot/filters:media_unittests_filters" ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data_deps += [ "//clank/build/bot/filters:media_unittests_filters" ]
-  }
-
   if (media_use_ffmpeg) {
     deps += [ "//media/ffmpeg:unit_tests" ]
-  }
-
-  if (is_android) {
-    deps += [
-      # The test needs the java dependencies to add the java classes for their
-      # native counterparts to the test apk.
-      "//gpu/command_buffer/service:android_texture_owner_unittests",
-      "//media/gpu:android_video_decode_accelerator_unittests",
-      "//ui/android:ui_java",
-    ]
   }
 
   if (is_fuchsia) {
@@ -296,14 +282,14 @@ test("media_perftests") {
   ]
 
   if (enable_av1_decoder &&
-      ((is_chromeos && use_linux_video_acceleration) || is_win || is_android)) {
+      ((is_chromeos && use_linux_video_acceleration) || is_win)) {
     data_deps += [ "//media/gpu/test/:video_encode_accelerator_tests" ]
   }
 }
 
 # TODO(watk): Refactor tests that could be made to run on Android. See
 # http://crbug.com/570762
-if (media_use_ffmpeg && !is_android) {
+if (media_use_ffmpeg) {
   test("ffmpeg_regression_tests") {
     configs += [ "//media:media_config" ]
 

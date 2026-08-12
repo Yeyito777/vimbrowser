@@ -13,9 +13,7 @@ source_set("browser_binding") {
     ":interface",
     ":passkey_browser_binder",
   ]
-  if (is_android) {
-    deps = [ ":android" ]
-  }
+
   if (is_desktop) {
     deps = [ ":desktop" ]
   }
@@ -66,43 +64,6 @@ source_set("passkey_browser_binder_unittests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-}
-
-if (is_android) {
-  source_set("android") {
-    visibility = [ ":*" ]
-    sources = [
-      "browser_bound_key_android.cc",
-      "browser_bound_key_android.h",
-      "browser_bound_key_store_android.cc",
-      "browser_bound_key_store_android.h",
-    ]
-    public_deps = [
-      "//components/keyed_service/content",
-      "//components/payments/content:utils",
-    ]
-    deps = [
-      ":interface",
-      "//base",
-      "//components/payments/content/android/spc:browser_binding_jni",
-      "//device/fido",
-      "//third_party/jni_zero",
-    ]
-  }
-
-  source_set("android_unittests") {
-    testonly = true
-    sources = [ "browser_bound_key_store_android_unittest.cc" ]
-    deps = [
-      ":android",
-      ":interface",
-      "//base",
-      "//base/test:test_support",
-      "//components/payments/content/android/spc:browser_binding_jni",
-      "//testing/gmock",
-      "//testing/gtest",
-    ]
-  }
 }
 
 if (is_desktop) {

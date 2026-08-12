@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom_component("mojom") {
-  generate_java = true
   output_prefix = "service_manager_mojom"
   macro_prefix = "SERVICE_MANAGER_MOJOM"
 
@@ -92,7 +91,6 @@ mojom_component("mojom") {
 }
 
 mojom_component("constants") {
-  generate_java = true
   output_prefix = "service_manager_mojom_constants"
   macro_prefix = "SERVICE_MANAGER_MOJOM_CONSTANTS"
   sources = [ "constants.mojom" ]

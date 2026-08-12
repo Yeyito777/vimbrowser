@@ -17,12 +17,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "third_party/blink/public/common/messaging/string_message_codec.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_string.h"
-#include "base/android/scoped_java_ref.h"
-#include "content/browser/android/app_web_message_port.h"
-#include "content/public/browser/android/message_payload.h"
-#endif
 
 using blink::MessagePortChannel;
 
@@ -56,14 +50,6 @@ void PostMessageToFrameInternal(
                         std::move(message));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-std::u16string ToString16(JNIEnv* env,
-                          const base::android::JavaRef<jstring>& s) {
-  if (s.is_null())
-    return std::u16string();
-  return base::android::ConvertJavaStringToUTF16(env, s);
-}
-#endif
 
 }  // namespace
 
@@ -77,34 +63,6 @@ void MessagePortProvider::PostMessageToFrame(
                              std::vector<blink::MessagePortDescriptor>());
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void MessagePortProvider::PostMessageToFrame(
-    Page& page,
-    JNIEnv* env,
-    const base::android::JavaRef<jstring>& source_origin,
-    const base::android::JavaRef<jstring>& target_origin,
-    const base::android::JavaRef<jobject>& payload,
-    const base::android::JavaRef<jobjectArray>& ports) {
-  std::optional<url::Origin> source;
-  std::u16string serialized_source = ToString16(env, source_origin);
-  if (!serialized_source.empty()) {
-    source = url::Origin::Create(GURL(serialized_source));
-  }
-
-  std::optional<url::Origin> target;
-  std::u16string serialized_target = ToString16(env, target_origin);
-  if (!serialized_target.empty()) {
-    target = url::Origin::Create(GURL(serialized_target));
-  }
-
-  PostMessageToFrameInternal(
-      page, source.has_value() ? &(*source) : nullptr,
-      target.has_value() ? &(*target) : nullptr,
-      android::ConvertToWebMessagePayloadFromJava(
-          base::android::ScopedJavaLocalRef<jobject>(payload)),
-      android::AppWebMessagePort::Release(env, ports));
-}
-#endif
 
 #if BUILDFLAG(IS_FUCHSIA) ||           \
     BUILDFLAG(ENABLE_CAST_RECEIVER) && \

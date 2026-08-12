@@ -13,10 +13,6 @@ mojom("variations_mojom") {
   sources = [ "variations.mojom" ]
 }
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 large_variation_key_size_enabled = is_castos || is_cast_android
 
 buildflag_header("buildflags") {
@@ -108,7 +104,7 @@ component("variations") {
   # Needed for exporting functions (because the target type is a component).
   defines = [ "IS_VARIATIONS_IMPL" ]
 
-  if (is_android || is_ios) {
+  if (is_ios) {
     sources += [
       "variations_request_scheduler_mobile.cc",
       "variations_request_scheduler_mobile.h",
@@ -133,8 +129,8 @@ component("variations") {
     ":buildflags",
     ":variations_mojom",
     "proto",
-    "//cef/libcef/features:buildflags",
     "//base:build_time",
+    "//cef/libcef/features:buildflags",
     "//components/crash/core/common:crash_key",
     "//components/prefs",
     "//components/version_info",
@@ -143,63 +139,12 @@ component("variations") {
     "//third_party/zlib/google:compression_utils",
   ]
 
-  if (!is_android) {
-    # ZSTD is not supported on Android due to binary size increase. See
-    # crbug.com/40196713.
-    deps += [
-      "//third_party/zstd:compress",
-      "//third_party/zstd:decompress",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android/variations_seed_bridge.cc",
-      "android/variations_seed_bridge.h",
-      "variations_crash_keys_android.cc",
-      "variations_crash_keys_android.h",
-    ]
-    deps += [
-      "//components/crash/android:anr_build_id_provider",
-      "//components/crash/android:anr_collector_jni_headers",
-      "//components/variations/android:variations_seed_jni",
-    ]
-  }
-}
-
-if (is_android) {
-  static_library("variations_associated_data") {
-    sources = [ "android/variations_associated_data_android.cc" ]
-    deps = [
-      ":variations",
-      "//components/variations/android:variations_data_jni",
-      "//components/variations/net",
-    ]
-  }
-
-  java_cpp_strings("java_switches_srcjar") {
-    # External code should depend on ":variations_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "variations_switches.cc" ]
-    class_name = "org.chromium.components.variations.VariationsSwitches"
-  }
-
-  android_library("variations_java") {
-    srcjar_deps = [
-      ":java_switches_srcjar",
-      ":variations_enum_srcjar",
-    ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
-
-  java_cpp_enum("variations_enum_srcjar") {
-    # External code should depend on ":variations_java" instead.
-    visibility = [ ":*" ]
-    sources = [
-      "metrics.h",
-      "synthetic_trials.h",
-    ]
-  }
+  # ZSTD is not supported on Android due to binary size increase. See
+  # crbug.com/40196713.
+  deps += [
+    "//third_party/zstd:compress",
+    "//third_party/zstd:decompress",
+  ]
 }
 
 static_library("test_support") {
@@ -264,7 +209,7 @@ source_set("unit_tests") {
     "variations_test_utils_unittest.cc",
   ]
 
-  if (is_android || is_ios) {
+  if (is_ios) {
     sources += [ "variations_request_scheduler_mobile_unittest.cc" ]
   }
 

@@ -58,25 +58,17 @@ bool PictureInPictureController::IsInDocumentPictureInPicture(
 // static
 LocalDOMWindow* PictureInPictureController::GetDocumentPictureInPictureWindow(
     const Document& document) {
-#if !BUILDFLAG(TARGET_OS_IS_ANDROID)
   PictureInPictureController* controller =
       Supplement<Document>::From<PictureInPictureController>(document);
   return controller ? controller->GetDocumentPictureInPictureWindow() : nullptr;
-#else
-  return nullptr;
-#endif  // !BUILDFLAG(TARGET_OS_IS_ANDROID)
 }
 
 // static
 LocalDOMWindow* PictureInPictureController::GetDocumentPictureInPictureOwner(
     const Document& document) {
-#if !BUILDFLAG(TARGET_OS_IS_ANDROID)
   PictureInPictureController* controller =
       Supplement<Document>::From<PictureInPictureController>(document);
   return controller ? controller->GetDocumentPictureInPictureOwner() : nullptr;
-#else
-  return nullptr;
-#endif  // !BUILDFLAG(TARGET_OS_IS_ANDROID)
 }
 
 void PictureInPictureController::Trace(Visitor* visitor) const {

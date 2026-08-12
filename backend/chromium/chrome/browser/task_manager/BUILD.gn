@@ -6,10 +6,6 @@ import("//chrome/common/features.gni")
 import("//components/guest_view/buildflags/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 # The public interface for task_manager does not allow circular dependencies.
 source_set("task_manager") {
   sources = [
@@ -97,22 +93,21 @@ source_set("task_manager") {
       "//chromeos/ash/experiences/arc/session:connection_holder",
     ]
   }
-  if (!is_android) {
-    sources += [
-      "providers/web_contents/background_contents_tag.h",
-      "providers/web_contents/background_contents_task.h",
-      "providers/web_contents/extension_tag.h",
-      "providers/web_contents/extension_task.h",
-      "providers/web_contents/guest_tag.h",
-      "providers/web_contents/guest_task.h",
-      "providers/web_contents/guest_task_mparch.h",
-    ]
-    public_deps += [
-      "//extensions/browser",
-      "//extensions/buildflags",
-      "//extensions/common:mojom",
-    ]
-  }
+
+  sources += [
+    "providers/web_contents/background_contents_tag.h",
+    "providers/web_contents/background_contents_task.h",
+    "providers/web_contents/extension_tag.h",
+    "providers/web_contents/extension_task.h",
+    "providers/web_contents/guest_tag.h",
+    "providers/web_contents/guest_task.h",
+    "providers/web_contents/guest_task_mparch.h",
+  ]
+  public_deps += [
+    "//extensions/browser",
+    "//extensions/buildflags",
+    "//extensions/common:mojom",
+  ]
 }
 
 # The implementation must be linked into the same binary as the public
@@ -210,9 +205,7 @@ source_set("impl") {
   } else {
     sources += [ "sampling/shared_sampler_stub.cc" ]
   }
-  if (is_android) {
-    deps += [ "//chrome/browser/android:tabs_public" ]
-  }
+
   if (is_chromeos) {
     sources += [
       "providers/arc/arc_process_task.cc",
@@ -234,13 +227,13 @@ source_set("impl") {
       "//chromeos/ash/experiences/arc/session",
     ]
   }
-  if (!is_android) {
-    deps += [ "//chrome/browser/background" ]
-    sources += [
-      "providers/web_contents/background_contents_tag.cc",
-      "providers/web_contents/background_contents_task.cc",
-    ]
-  }
+
+  deps += [ "//chrome/browser/background" ]
+  sources += [
+    "providers/web_contents/background_contents_tag.cc",
+    "providers/web_contents/background_contents_task.cc",
+  ]
+
   if (enable_guest_view) {
     deps += [ "//components/guest_view/browser" ]
     sources += [
@@ -267,11 +260,4 @@ source_set("impl") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  java_cpp_enum("java_enum_srcjar") {
-    visibility = [ "//chrome/browser/task_manager/internal/android:*" ]
-    sources = [ "task_manager_observer.h" ]
-  }
 }

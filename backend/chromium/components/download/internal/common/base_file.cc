@@ -30,10 +30,6 @@
 #include "crypto/hash.h"
 #include "crypto/secure_hash.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#include "components/download/internal/common/android/download_collection_bridge.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #define CONDITIONAL_TRACE(trace)                  \
   do {                                            \
@@ -76,12 +72,6 @@ class FileErrorData : public base::trace_event::ConvertableToTraceFormat {
 };
 
 void InitializeFile(base::File* file, const base::FilePath& file_path) {
-#if BUILDFLAG(IS_ANDROID)
-  if (file_path.IsContentUri()) {
-    *file = DownloadCollectionBridge::OpenIntermediateUri(file_path);
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Use exclusive write to prevent another process from writing the file.
   file->Initialize(
@@ -96,12 +86,6 @@ void InitializeFile(base::File* file, const base::FilePath& file_path) {
 }
 
 void DeleteFileWrapper(const base::FilePath& file_path) {
-#if BUILDFLAG(IS_ANDROID)
-  if (file_path.IsContentUri()) {
-    DownloadCollectionBridge::DeleteIntermediateUri(file_path);
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   base::DeleteFile(file_path);
 }
 
@@ -261,13 +245,6 @@ DownloadInterruptReason BaseFile::Rename(const base::FilePath& new_path) {
                            full_path_.AsUTF8Unsafe(), "new_filename",
                            new_path.AsUTF8Unsafe()));
   bool need_to_move_file = true;
-#if BUILDFLAG(IS_ANDROID)
-  if (new_path.IsContentUri()) {
-    rename_result = DownloadCollectionBridge::MoveFileToIntermediateUri(
-        full_path_, new_path);
-    need_to_move_file = false;
-  }
-#endif
   if (need_to_move_file) {
     base::CreateDirectory(new_path.DirName());
 
@@ -524,18 +501,6 @@ DownloadInterruptReason BaseFile::LogInterruptReason(
   return reason;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-DownloadInterruptReason BaseFile::PublishDownload() {
-  Close();
-  base::FilePath new_path =
-      DownloadCollectionBridge::PublishDownload(full_path_);
-  if (!new_path.empty()) {
-    full_path_ = new_path;
-    return DOWNLOAD_INTERRUPT_REASON_NONE;
-  }
-  return DOWNLOAD_INTERRUPT_REASON_FILE_FAILED;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 

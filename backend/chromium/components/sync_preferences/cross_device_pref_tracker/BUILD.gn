@@ -7,13 +7,6 @@ import("//third_party/jni_zero/jni_zero.gni")
 source_set("timestamped_pref_value") {
   sources = [ "timestamped_pref_value.h" ]
   deps = [ "//base" ]
-  if (is_android) {
-    sources += [
-      "android/timestamped_pref_value_bridge_android.cc",
-      "android/timestamped_pref_value_bridge_android.h",
-    ]
-    deps += [ "android:jni_headers" ]
-  }
 }
 
 source_set("cross_device_pref_tracker") {
@@ -38,13 +31,6 @@ source_set("cross_device_pref_tracker") {
     "//components/sync_device_info",
     "//components/sync_preferences:features",
   ]
-
-  if (is_android) {
-    deps += [
-      "android:jni_headers",
-      "//third_party/jni_zero",
-    ]
-  }
 }
 
 source_set("unit_tests") {
@@ -58,9 +44,4 @@ source_set("unit_tests") {
     "//components/sync_device_info:test_support",
     "//testing/gtest",
   ]
-  if (is_android) {
-    deps += [
-      "//components/sync_preferences/cross_device_pref_tracker/android:java",
-    ]
-  }
 }

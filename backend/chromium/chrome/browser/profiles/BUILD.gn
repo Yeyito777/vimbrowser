@@ -23,27 +23,12 @@ source_set("profiles") {
     "sql_init_error_message_ids.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "profile_android.cc",
-      "profile_key_android.cc",
-      "profile_key_android.h",
-    ]
-  }
-
   # Cannot depend on //chrome/browser:browser.
   deps = [
     "//chrome/app:branded_strings",
     "//chrome/app:generated_resources",
     "//sql",
   ]
-  if (is_android) {
-    deps += [
-      "//chrome/browser/profiles/android:jni_headers",
-      "//chrome/common:constants",
-      "//content/public/browser",
-    ]
-  }
 
   if (enable_bound_session_credentials) {
     deps += [ "//components/unexportable_keys/mojom:mojo_service" ]
@@ -104,9 +89,6 @@ source_set("profile") {
       "//chromeos/ash/components/browser_context_helper",
       "//chromeos/constants",
     ]
-  }
-  if (is_android) {
-    deps += [ "//chrome/browser/profiles/android:jni_headers" ]
   }
 }
 
@@ -242,16 +224,10 @@ source_set("profile_util_impl") {
     "//url",
   ]
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/browser_window",
-    ]
-  }
-
-  if (is_android) {
-    deps += [ "//components/supervised_user/core/browser/android" ]
-  }
+  deps += [
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/browser_window",
+  ]
 
   if (is_chromeos) {
     deps += [
@@ -405,47 +381,38 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/search/background",
   ]
 
-  if (is_android) {
-    deps += [
-      "//chrome/browser/auxiliary_search",
-      "//chrome/browser/commerce/merchant_viewer:merchant_viewer_data_manager",
-      "//chrome/browser/tab",
-      "//components/commerce/core:merchant_signal_db_proto",
-    ]
-  } else {
-    deps += [
-      "//chrome/browser/accessibility/tree_fixing:service",
-      "//chrome/browser/accessibility_annotator/content_annotator",
-      "//chrome/browser/apps/app_service",
-      "//chrome/browser/autofill",
-      "//chrome/browser/badging",
-      "//chrome/browser/device_api",
-      "//chrome/browser/devtools",
-      "//chrome/browser/feedback",
-      "//chrome/browser/hid",
-      "//chrome/browser/media/router/discovery/access_code:access_code_sink_service",
-      "//chrome/browser/private_ai",
-      "//chrome/browser/record_replay",
-      "//chrome/browser/screen_ai:screen_ai_service_router_factory",
-      "//chrome/browser/search",
-      "//chrome/browser/search_engine_choice",
-      "//chrome/browser/themes",
-      "//chrome/browser/ui/desktop_to_mobile_promos:service",
-      "//chrome/browser/ui/global_error",
-      "//chrome/browser/ui/global_media_controls",
-      "//chrome/browser/ui/lens",
-      "//chrome/browser/ui/media_router",
-      "//chrome/browser/ui/performance_controls",
-      "//chrome/browser/ui/read_anything",
-      "//chrome/browser/ui/tabs/organization",
-      "//chrome/browser/ui/tabs/saved_tab_groups",
-      "//chrome/browser/ui/views/side_panel",
-      "//chrome/browser/ui/waap",
-      "//chrome/browser/ui/webui/signin",
-      "//chrome/browser/ui/webui/signin:login_ui_service",
-      "//chrome/browser/user_education",
-    ]
-  }
+  deps += [
+    "//chrome/browser/accessibility/tree_fixing:service",
+    "//chrome/browser/accessibility_annotator/content_annotator",
+    "//chrome/browser/apps/app_service",
+    "//chrome/browser/autofill",
+    "//chrome/browser/badging",
+    "//chrome/browser/device_api",
+    "//chrome/browser/devtools",
+    "//chrome/browser/feedback",
+    "//chrome/browser/hid",
+    "//chrome/browser/media/router/discovery/access_code:access_code_sink_service",
+    "//chrome/browser/private_ai",
+    "//chrome/browser/record_replay",
+    "//chrome/browser/screen_ai:screen_ai_service_router_factory",
+    "//chrome/browser/search",
+    "//chrome/browser/search_engine_choice",
+    "//chrome/browser/themes",
+    "//chrome/browser/ui/desktop_to_mobile_promos:service",
+    "//chrome/browser/ui/global_error",
+    "//chrome/browser/ui/global_media_controls",
+    "//chrome/browser/ui/lens",
+    "//chrome/browser/ui/media_router",
+    "//chrome/browser/ui/performance_controls",
+    "//chrome/browser/ui/read_anything",
+    "//chrome/browser/ui/tabs/organization",
+    "//chrome/browser/ui/tabs/saved_tab_groups",
+    "//chrome/browser/ui/views/side_panel",
+    "//chrome/browser/ui/waap",
+    "//chrome/browser/ui/webui/signin",
+    "//chrome/browser/ui/webui/signin:login_ui_service",
+    "//chrome/browser/user_education",
+  ]
 
   if (is_chromeos) {
     deps += [
@@ -471,7 +438,7 @@ source_set("profiles_extra_parts_impl") {
     ]
   }
 
-  if (!is_chromeos && !is_android) {
+  if (!is_chromeos) {
     deps += [ ":profile_util" ]
   }
 
@@ -510,7 +477,6 @@ source_set("profiles_extra_parts_impl") {
     deps += [ "//chrome/browser/enterprise/data_controls" ]
   }
 
-
   if (enable_dice_support) {
     deps += [
       "//chrome/browser/profiles/batch_upload",
@@ -522,12 +488,10 @@ source_set("profiles_extra_parts_impl") {
     deps += [ "//chrome/browser/captive_portal" ]
   }
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/password_manager:startup_import",
-      "//chrome/browser/ui/tabs:glic",
-    ]
-  }
+  deps += [
+    "//chrome/browser/password_manager:startup_import",
+    "//chrome/browser/ui/tabs:glic",
+  ]
 }
 
 source_set("profile_downloader") {

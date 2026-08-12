@@ -29,11 +29,7 @@
 #include "content/public/browser/navigation_throttle.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/supervised_user/child_accounts/child_account_service_android.h"
-#include "components/signin/public/identity_manager/identity_manager.h"
-#include "ui/android/view_android.h"
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 #include "chrome/browser/supervised_user/supervised_user_verification_controller_client.h"
 #include "chrome/browser/supervised_user/supervised_user_verification_page.h"
 #endif
@@ -78,10 +74,6 @@ SupervisedUserGoogleAuthNavigationThrottle::
         content::NavigationThrottleRegistry& registry)
     : content::NavigationThrottle(registry),
       child_account_service_(ChildAccountServiceFactory::GetForProfile(profile))
-#if BUILDFLAG(IS_ANDROID)
-      ,
-      has_shown_reauth_(false)
-#endif
 {
 }
 
@@ -220,44 +212,6 @@ SupervisedUserGoogleAuthNavigationThrottle::ShouldProceed() {
   // A credentials re-mint is already underway when we reach here (Mirror
   // account reconciliation). Nothing to do here except block the navigation
   // while re-minting is underway.
-  return content::NavigationThrottle::DEFER;
-#elif BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/375383826): Improve / verify coverage of the code below.
-  if (!has_shown_reauth_) {
-    has_shown_reauth_ = true;
-
-    content::WebContents* web_contents = navigation_handle()->GetWebContents();
-    if (!web_contents->GetNativeView()->GetWindowAndroid()) {
-      return content::NavigationThrottle::CANCEL_AND_IGNORE;
-    }
-
-    Profile* profile =
-        Profile::FromBrowserContext(web_contents->GetBrowserContext());
-    signin::IdentityManager* identity_manager =
-        IdentityManagerFactory::GetForProfile(profile);
-    // This class doesn't care about browser sync consent.
-    CoreAccountInfo account_info =
-        identity_manager->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin);
-    if (account_info.IsEmpty()) {
-      // No primary account (can happen when it was removed from the device).
-      return content::NavigationThrottle::DEFER;
-    }
-
-    if (skip_jni_call_for_testing_) {
-      // Returns callback without JNI call for testing. Resets
-      // has_shown_reauth_.
-      base::BindRepeating(
-          &SupervisedUserGoogleAuthNavigationThrottle::OnReauthenticationFailed,
-          weak_ptr_factory_.GetWeakPtr())
-          .Run();
-    } else {
-      ReauthenticateChildAccount(
-          web_contents, account_info,
-          base::BindRepeating(&SupervisedUserGoogleAuthNavigationThrottle::
-                                  OnReauthenticationFailed,
-                              weak_ptr_factory_.GetWeakPtr()));
-    }
-  }
   return content::NavigationThrottle::DEFER;
 #else
 #error Unsupported platform

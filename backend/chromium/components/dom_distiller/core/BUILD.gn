@@ -20,10 +20,6 @@ component("dom_distiller_features") {
     ":prefs",
     "//base",
   ]
-
-  if (is_android) {
-    deps += [ "//components/dom_distiller/core/android:jni_headers" ]
-  }
 }
 
 action("dom_distiller_viewer_js") {
@@ -106,17 +102,6 @@ static_library("core") {
     "//url",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-
-  if (is_android) {
-    sources += [
-      "distilled_page_prefs_android.cc",
-      "distilled_page_prefs_android.h",
-      "dom_distiller_service_android.cc",
-      "dom_distiller_service_android.h",
-      "url_utils_android.cc",
-    ]
-    deps += [ "//components/dom_distiller/core/android:jni_headers" ]
-  }
 }
 
 static_library("test_support") {
@@ -186,12 +171,4 @@ source_set("unit_tests") {
     "//ui/base",
     "//url",
   ]
-}
-
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  java_cpp_enum("distiller_type_java") {
-    sources = [ "experiments.h" ]
-  }
 }

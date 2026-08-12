@@ -131,14 +131,6 @@ source_set("test_support") {
 test("blink_heap_unittests") {
   deps = [ ":blink_heap_unittests_sources" ]
 
-  if (is_android) {
-    deps += [
-      "//content/shell/android:content_shell_assets",
-      "//net/android:net_java",
-      "//ui/android:ui_full_java",
-    ]
-  }
-
   if (is_fuchsia) {
     additional_manifest_fragments = [
       "//build/config/fuchsia/test/test_fonts.shard.test-cml",
@@ -196,14 +188,6 @@ test("blink_heap_perftests") {
   configs += [ "//build/config/compiler:thinlto_optimize_max" ]
 
   deps = [ ":blink_heap_perftests_sources" ]
-
-  if (is_android) {
-    deps += [
-      "//content/shell/android:content_shell_assets",
-      "//net/android:net_java",
-      "//ui/android:ui_full_java",
-    ]
-  }
 
   if (is_fuchsia) {
     # Oilpan reuses V8's v8::PageAllocator which generally requires JIT

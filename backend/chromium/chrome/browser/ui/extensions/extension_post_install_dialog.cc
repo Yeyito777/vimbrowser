@@ -30,7 +30,7 @@
 #include "ui/base/models/dialog_model.h"
 #include "ui/base/window_open_disposition.h"
 
-#if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)
+#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/views/extensions/extension_post_install_dialog_view_utils.h"
 #endif
 
@@ -70,12 +70,6 @@ void ConfigurePostInstallDialogModel(
         l10n_util::GetStringUTF16(IDS_EXTENSION_INSTALLED_MANAGE_INFO)));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  dialog_model_builder.AddOkButton(
-      base::DoNothing(),
-      ui::DialogModel::Button::Params().SetLabel(
-          l10n_util::GetStringUTF16(IDS_EXTENSION_INSTALLED_OK_BUTTON)));
-#endif
 }
 
 void OpenExtensionsShortcutsPage(
@@ -141,7 +135,7 @@ void ShowExtensionPostInstallDialog(
   ConfigurePostInstallDialogModel(dialog_model_builder, weak_delegate->model(),
                                   manage_shortcuts_callback);
 
-#if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)
+#if !BUILDFLAG(IS_CHROMEOS)
   // Add a sync or sign in promo in the footer if it should be shown.
   extensions::ExtensionRegistry* registry =
       extensions::ExtensionRegistry::Get(profile);

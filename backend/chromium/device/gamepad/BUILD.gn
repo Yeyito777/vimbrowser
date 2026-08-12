@@ -4,12 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 component("gamepad") {
   output_name = "device_gamepad"
 
@@ -118,17 +112,7 @@ component("gamepad") {
     }
   }
 
-  if (is_android) {
-    sources += [
-      "gamepad_platform_data_fetcher_android.cc",
-      "gamepad_platform_data_fetcher_android.h",
-      "haptic_gamepad_android.cc",
-      "haptic_gamepad_android.h",
-    ]
-    deps += [ ":jni_headers" ]
-  }
-
-  if (!is_android && !is_fuchsia && !is_ios) {
+  if (!is_fuchsia && !is_ios) {
     sources += [
       "nintendo_controller.cc",
       "nintendo_controller.h",
@@ -213,35 +197,5 @@ static_library("test_helpers") {
     # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
     # enable the diagnostic by removing this line.
     configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-  }
-}
-
-if (is_android) {
-  generate_jni("jni_headers") {
-    sources =
-        [ "android/java/src/org/chromium/device/gamepad/GamepadList.java" ]
-  }
-
-  android_library("java") {
-    sources = [
-      "android/java/src/org/chromium/device/gamepad/GamepadDevice.java",
-      "android/java/src/org/chromium/device/gamepad/GamepadList.java",
-      "android/java/src/org/chromium/device/gamepad/GamepadMappings.java",
-    ]
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-
-    srcjar_deps = [
-      ":java_enums_srcjar",
-      ":jni_headers",
-    ]
-  }
-
-  java_cpp_enum("java_enums_srcjar") {
-    sources = [ "gamepad_standard_mappings.h" ]
   }
 }

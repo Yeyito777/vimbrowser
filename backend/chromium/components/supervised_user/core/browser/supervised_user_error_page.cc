@@ -75,33 +75,6 @@ int GetInterstitialMessageID(FilteringBehaviorReason reason) {
   return IDS_CHILD_BLOCK_INTERSTITIAL_MESSAGE_V2;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-std::string BuildErrorPageHtmlWithoutApprovals(const GURL& url,
-                                               const std::string& app_locale) {
-  base::DictValue load_time_data;
-  load_time_data.Set("blockPageTitle",
-                     l10n_util::GetStringUTF8(IDS_BLOCK_INTERSTITIAL_TITLE));
-  load_time_data.Set("blockPageHeader",
-                     l10n_util::GetStringUTF8(IDS_BLOCK_INTERSTITIAL_TITLE));
-  load_time_data.Set("blockPageMessage",
-                     l10n_util::FormatString(
-                         l10n_util::GetStringUTF16(IDS_NO_APPROVALS_MESSAGE),
-                         {base::UTF8ToUTF16(url.GetHost())}, nullptr));
-  load_time_data.Set("learnMore", l10n_util::GetStringUTF8(
-                                      IDS_NO_APPROVALS_LEARN_MORE_BUTTON));
-  load_time_data.Set("backButton",
-                     l10n_util::GetStringUTF8(IDS_NO_APPROVALS_BACK_BUTTON));
-
-  webui::SetLoadTimeDataDefaults(app_locale, &load_time_data);
-
-  std::string html =
-      ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
-          IDR_SUPERVISED_USER_BLOCK_INTERSTITIAL_NO_APPROVALS_HTML);
-  webui::AppendWebUiCssTextDefaults(&html);
-  std::string error_html = webui::GetI18nTemplateHtml(html, load_time_data);
-  return error_html;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::string BuildErrorPageHtmlWithApprovals(
     bool allow_access_requests,

@@ -16,11 +16,7 @@ source_set("serial") {
     "web_serial_chooser.h",
   ]
 
-  if (!is_android) {
-    sources += [ "web_serial_chooser_desktop.h" ]
-  } else {
-    sources += [ "android/web_serial_chooser_android.h" ]
-  }
+  sources += [ "web_serial_chooser_desktop.h" ]
 
   public_deps = [
     "//base",
@@ -79,15 +75,7 @@ source_set("impl") {
     ]
   }
 
-  if (!is_android) {
-    sources += [ "web_serial_chooser_desktop.cc" ]
-  } else {
-    sources += [
-      "android/serial_bridge.cc",
-      "android/web_serial_chooser_android.cc",
-    ]
-    deps += [ "//chrome/browser/serial/android:jni_headers" ]
-  }
+  sources += [ "web_serial_chooser_desktop.cc" ]
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
@@ -145,27 +133,25 @@ if (is_linux || is_mac || is_win) {
   }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "chrome_serial_browsertest.cc" ]
-    deps = [
-      ":serial",
-      "//base",
-      "//base/test:test_support",
-      "//build:chromeos_buildflags",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/test:test_support",
-      "//chrome/test:test_support_ui",
-      "//content/public/common",
-      "//content/test:test_support",
-      "//mojo/public/cpp/bindings",
-      "//net:test_support",
-      "//services/device/public/cpp:test_support",
-      "//services/device/public/mojom",
-      "//url",
-    ]
-  }
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [ "chrome_serial_browsertest.cc" ]
+  deps = [
+    ":serial",
+    "//base",
+    "//base/test:test_support",
+    "//build:chromeos_buildflags",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/test:test_support",
+    "//chrome/test:test_support_ui",
+    "//content/public/common",
+    "//content/test:test_support",
+    "//mojo/public/cpp/bindings",
+    "//net:test_support",
+    "//services/device/public/cpp:test_support",
+    "//services/device/public/mojom",
+    "//url",
+  ]
 }

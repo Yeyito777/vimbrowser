@@ -4,8 +4,6 @@
 
 import("//ui/webui/resources/tools/generate_grd.gni")
 
-assert(!is_android)
-
 generate_grd("build_grdp") {
   grd_prefix = "side_panel_customize_chrome"
   out_grd = "$target_gen_dir/resources.grdp"

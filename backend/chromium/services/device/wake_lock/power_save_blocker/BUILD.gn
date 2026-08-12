@@ -5,11 +5,6 @@
 import("//build/config/features.gni")
 import("//build/config/ui.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("power_save_blocker") {
   visibility = [
     # Exo Wayland idle inhibit protocol needs to directly use the Ash
@@ -40,11 +35,7 @@ source_set("power_save_blocker") {
     deps += [ "//dbus" ]
   }
 
-  if (is_android) {
-    sources += [ "power_save_blocker_android.cc" ]
-    deps += [ ":jni_headers" ]
-    public_deps += [ "//ui/android" ]
-  } else if (is_chromeos) {
+  if (is_chromeos) {
     sources += [ "power_save_blocker_ash.cc" ]
     deps += [
       "//chromeos/dbus/power",
@@ -69,26 +60,5 @@ source_set("power_save_blocker") {
   } else {
     # Fuchsia and non-DBus Linux.
     sources += [ "power_save_blocker_stub.cc" ]
-  }
-}
-
-if (is_android) {
-  java_sources_needing_jni = [ "android/java/src/org/chromium/device/power_save_blocker/PowerSaveBlocker.java" ]
-
-  generate_jni("jni_headers") {
-    visibility = [ ":power_save_blocker" ]
-    sources = java_sources_needing_jni
-  }
-
-  android_library("java") {
-    # Conceptually, this should be visible only to //services/device:java.
-    # However, various generated targets also need to see this target as a
-    # result of //services/device:java depending on it.
-    visibility = [
-      "//services:*",
-      "//services/device:*",
-    ]
-    sources = java_sources_needing_jni
-    deps = [ "//third_party/jni_zero:jni_zero_java" ]
   }
 }

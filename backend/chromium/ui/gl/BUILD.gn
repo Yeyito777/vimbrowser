@@ -352,7 +352,7 @@ component("gl") {
     defines += [ "GL_SILENCE_DEPRECATION" ]
   }
 
-  if (is_android || is_chromeos || is_linux) {
+  if (is_chromeos || is_linux) {
     # Windows doesn't support base::FileDescriptor.
     # libsync isn't supported or needed on MacOSX.
     # Fuchsia is excluded due to a libsync dependency and because it's

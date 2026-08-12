@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <grit-part>
 
-  <message name="IDS_LOGIN_DIALOG_TITLE" desc="In sentence case: String to be displayed in the title bar of the login prompt dialog" formatter_data="android_java">
+  <message name="IDS_LOGIN_DIALOG_TITLE" desc="In sentence case: String to be displayed in the title bar of the login prompt dialog">
     Sign in
   </message>
   <if expr="use_titlecase">
-    <message name="IDS_LOGIN_DIALOG_OK_BUTTON_LABEL" desc="In Title Case: The label of the 'Log In' button on the login prompt dialog" formatter_data="android_java">
+    <message name="IDS_LOGIN_DIALOG_OK_BUTTON_LABEL" desc="In Title Case: The label of the 'Log In' button on the login prompt dialog">
       Sign In
     </message>
   </if>
   <if expr="not use_titlecase">
-    <message name="IDS_LOGIN_DIALOG_OK_BUTTON_LABEL" desc="In sentence case: The label of the 'Log in' button on the login prompt dialog" formatter_data="android_java">
+    <message name="IDS_LOGIN_DIALOG_OK_BUTTON_LABEL" desc="In sentence case: The label of the 'Log in' button on the login prompt dialog">
       Sign in
     </message>
   </if>
@@ -23,10 +23,10 @@
   <message name="IDS_LOGIN_DIALOG_NOT_PRIVATE" desc="A phrase displayed on login dialogs if the connection to the current website is not private.">
     Your connection to this site is not private
   </message>
-  <message name="IDS_LOGIN_DIALOG_USERNAME_FIELD" desc="The label of the username field in the login prompt dialog" formatter_data="android_java">
+  <message name="IDS_LOGIN_DIALOG_USERNAME_FIELD" desc="The label of the username field in the login prompt dialog">
     Username
   </message>
-  <message name="IDS_LOGIN_DIALOG_PASSWORD_FIELD" desc="The label of the password field in the login prompt dialog" formatter_data="android_java">
+  <message name="IDS_LOGIN_DIALOG_PASSWORD_FIELD" desc="The label of the password field in the login prompt dialog">
     Password
   </message>
 

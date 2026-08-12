@@ -13,10 +13,6 @@ component("snapshot") {
     "snapshot.h",
   ]
 
-  if (is_android) {
-    sources += [ "snapshot_android.cc" ]
-  }
-
   if (is_mac) {
     sources += [
       "snapshot_mac.h",
@@ -45,11 +41,7 @@ component("snapshot") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_android) {
-    deps += [ "//ui/android" ]
-  }
-
-  if (use_aura || is_android) {
+  if (use_aura) {
     sources += [
       "snapshot_async.cc",
       "snapshot_async.h",

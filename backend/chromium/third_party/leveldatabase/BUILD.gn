@@ -261,7 +261,7 @@ test("leveldb_unittests") {
   ]
 }
 
-if (!is_ios && !is_android) {
+if (!is_ios) {
   test("leveldb_db_bench") {
     sources = [
       "src/benchmarks/db_bench.cc",

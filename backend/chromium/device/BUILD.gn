@@ -6,12 +6,6 @@ import("//build/config/features.gni")
 import("//device/vr/buildflags/buildflags.gni")
 import("//testing/test.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 if (is_mac) {
   import("//build/config/mac/mac_sdk.gni")
 }
@@ -88,17 +82,6 @@ test("device_unittests") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "bluetooth/bluetooth_adapter_android_unittest.cc",
-      "bluetooth/bluetooth_socket_android_unittest.cc",
-      "bluetooth/test/bluetooth_scanner_callback.cc",
-      "bluetooth/test/bluetooth_scanner_callback.h",
-      "bluetooth/test/bluetooth_test_android.cc",
-      "bluetooth/test/bluetooth_test_android.h",
-    ]
-  }
-
   if (is_win) {
     sources += [
       "bluetooth/bluetooth_adapter_win_unittest.cc",
@@ -156,10 +139,6 @@ test("device_unittests") {
     "//ui/resources:ui_test_pak_data",
   ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data_deps += [ "//clank/build/bot/filters:device_unittests_filters" ]
-  }
-
   if (!is_ios) {
     deps += [
       "//device/fido",
@@ -168,7 +147,7 @@ test("device_unittests") {
   }
 
   # Most of the FIDO implementation is not compiled in for Android.
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [
       "fido/attestation_statement_formats_unittest.cc",
       "fido/auth_token_requester_unittest.cc",
@@ -244,7 +223,7 @@ test("device_unittests") {
   # FIDO HID:
   # Android doesn't compile.
   # Linux, requires udev.
-  if (!is_linux_without_udev && !is_android && !is_ios) {
+  if (!is_linux_without_udev && !is_ios) {
     sources += [
       "fido/hid/fido_hid_device_unittest.cc",
       "fido/hid/fido_hid_discovery_unittest.cc",
@@ -263,13 +242,6 @@ test("device_unittests") {
     deps += [
       "//device/udev_linux",
       "//device/udev_linux:test_support",
-    ]
-  }
-
-  if (is_android) {
-    deps += [
-      ":bluetooth_test_java",
-      ":bluetooth_test_jni_headers",
     ]
   }
 
@@ -468,7 +440,7 @@ test("device_unittests") {
 
   # Some gamepad tests require the HID service. Only build these tests on
   # platforms where the HID service is enabled.
-  if (!is_android && !is_fuchsia && !is_ios) {
+  if (!is_fuchsia && !is_ios) {
     sources += [ "gamepad/nintendo_data_fetcher_unittest.cc" ]
 
     deps += [
@@ -485,62 +457,4 @@ test("device_unittests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  bluetooth_java_sources_needing_jni = [
-    "bluetooth/test/android/java/src/org/chromium/device/bluetooth/ChromeBluetoothLeScannerTestUtil.java",
-    "bluetooth/test/android/java/src/org/chromium/device/bluetooth/ChromeBluetoothScanFilter.java",
-    "bluetooth/test/android/java/src/org/chromium/device/bluetooth/Fakes.java",
-  ]
-
-  generate_jni("bluetooth_test_jni_headers") {
-    testonly = true
-    sources = bluetooth_java_sources_needing_jni
-  }
-
-  android_library("bluetooth_test_java") {
-    testonly = true
-
-    sources = bluetooth_java_sources_needing_jni
-    deps = [
-      "//base:base_java",
-      "//components/location/android:location_java",
-      "//device/bluetooth:java",
-      "//third_party/android_sdk:android_test_mock_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-
-    srcjar_deps = [
-      ":bluetooth_test_javagen",
-      ":bluetooth_test_jni_headers",
-    ]
-  }
-
-  robolectric_binary("device_junit_tests") {
-    sources = [
-      "gamepad/android/junit/src/org/chromium/device/gamepad/GamepadDeviceTest.java",
-      "gamepad/android/junit/src/org/chromium/device/gamepad/GamepadMappingsTest.java",
-      "vr/public/junit/src/org/chromium/device/vr/XrFeatureStatusTest.java",
-    ]
-    deps = [
-      "$google_play_services_package:google_play_services_base_java",
-      "$google_play_services_package:google_play_services_basement_java",
-      "$google_play_services_package:google_play_services_location_java",
-      "//base:base_java",
-      "//base:base_java_test_support",
-      "//base:base_junit_test_support",
-      "//device/gamepad:java",
-      "//device/vr/public:java",
-      "//mojo/public/java:bindings_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/hamcrest:hamcrest_java",
-    ]
-    srcjar_deps = [ "//device/gamepad:java_enums_srcjar" ]
-  }
-
-  java_cpp_enum("bluetooth_test_javagen") {
-    sources = [ "bluetooth/test/bluetooth_test.h" ]
-  }
 }

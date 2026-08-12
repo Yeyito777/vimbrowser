@@ -10,10 +10,6 @@ import("//build/config/ui.gni")
 import("//media/media_options.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("base") {
   # Do not expand the visibility here without double-checking with OWNERS, this
   # is a roll-up target which is part of the //media component. Most other DEPs
@@ -35,11 +31,6 @@ source_set("base") {
   if (is_win) {
     visibility += [ "//media/base/win:color_space_util_win" ]
     visibility += [ "//media/base/win:media_foundation_util" ]
-  }
-
-  if (is_android) {
-    visibility +=
-        [ "//gpu/command_buffer/service:android_texture_owner_unittests" ]
   }
 
   sources = [
@@ -497,9 +488,7 @@ source_set("base") {
     sources += [ "demuxer_memory_limit_default.cc" ]
   }
 
-  if (!is_android) {
-    sources += [ "speech_recognition_client.h" ]
-  }
+  sources += [ "speech_recognition_client.h" ]
 
   if (enable_media_drm_storage) {
     sources += [
@@ -513,18 +502,6 @@ source_set("base") {
 source_set("video_facing") {
   sources = [ "video_facing.h" ]
   deps = [ "//base" ]
-}
-
-if (is_android) {
-  java_cpp_enum("java_enums") {
-    sources = [
-      "audio_parameters.h",
-      "channel_layout.h",
-      "container_names.h",
-      "encryption_scheme.h",
-      "video_codecs.h",
-    ]
-  }
 }
 
 # Note: Only specific internal targets that roll up into the //media component

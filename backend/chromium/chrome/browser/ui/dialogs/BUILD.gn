@@ -32,9 +32,7 @@ source_set("impl") {
     "//url",
   ]
 
-  if (!is_android) {
-    deps += [ "//chrome/browser/ui/interaction" ]
-  }
+  deps += [ "//chrome/browser/ui/interaction" ]
 
   if (is_win) {
     deps += [ "//chrome/installer/util:with_no_strings" ]
@@ -72,9 +70,5 @@ source_set("browser_dialogs") {
 
   if (toolkit_views) {
     deps += [ "//components/constrained_window" ]
-  }
-
-  if (is_android) {
-    deps += [ "//ui/android" ]
   }
 }

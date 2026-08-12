@@ -14,7 +14,7 @@
 #include "build/blink_buildflags.h"
 #include "build/buildflag.h"
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "base/message_loop/message_pump_epoll.h"
 #endif
 
@@ -29,9 +29,6 @@
 
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/input_hint_checker.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/task/sequence_manager/thread_controller_power_monitor.h"
@@ -62,11 +59,7 @@ BASE_FEATURE(kFastFilePathIsParent, FEATURE_ENABLED_BY_DEFAULT);
 
 // Use non default low memory device threshold.
 // Value should be given via |LowMemoryDeviceThresholdMB|.
-#if BUILDFLAG(IS_ANDROID)
-// LINT.IfChange
-#define LOW_MEMORY_DEVICE_THRESHOLD_MB 1024
-// LINT.ThenChange(//base/android/java/src/org/chromium/base/SysUtils.java)
-#elif BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
 // For M99, 45% of devices have 2GB of RAM, and 55% have more.
 #define LOW_MEMORY_DEVICE_THRESHOLD_MB 1024
 #else
@@ -111,7 +104,7 @@ BASE_FEATURE_PARAM(int,
                    "StackScanMaxFramePointerToStackEndGapThresholdMB",
                    100);
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
 // Force to enable LowEndDeviceMode partially on Android 3Gb devices.
 // (see PartialLowEndModeOnMidRangeDevices below)
 BASE_FEATURE(kPartialLowEndModeOn3GbDevices, FEATURE_DISABLED_BY_DEFAULT);
@@ -126,57 +119,12 @@ BASE_FEATURE(kPartialLowEndModeOn3GbDevices, FEATURE_DISABLED_BY_DEFAULT);
 // devices, where we didn't ship yet. However, we first need a larger
 // population to collect data.
 BASE_FEATURE(kPartialLowEndModeOnMidRangeDevices,
-#if BUILDFLAG(IS_ANDROID)
-             FEATURE_ENABLED_BY_DEFAULT);
-#elif BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
              FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-// Enable not perceptible binding without cpu priority boosting.
-BASE_FEATURE(kBackgroundNotPerceptibleBinding, FEATURE_ENABLED_BY_DEFAULT);
-
-// If enabled, post registering PowerMonitor broadcast receiver to a background
-// thread,
-BASE_FEATURE(kPostPowerMonitorBroadcastReceiverInitToBackground,
-             FEATURE_ENABLED_BY_DEFAULT);
-// If enabled, getMyMemoryState IPC will be posted to background.
-BASE_FEATURE(kPostGetMyMemoryStateToBackground, FEATURE_ENABLED_BY_DEFAULT);
-
-// Use a single connection and rebindService() to manage the binding to a child
-// process service.
-BASE_FEATURE(kRebindingChildServiceConnectionController,
-             FEATURE_DISABLED_BY_DEFAULT);
-
-// Use a batch API to rebind service connections.
-BASE_FEATURE(kRebindServiceBatchApi, FEATURE_DISABLED_BY_DEFAULT);
-
-// Use shared service connection to rebind a service binding to update the LRU
-// in the ProcessList of OomAdjuster.
-BASE_FEATURE(kUseSharedRebindServiceConnection, FEATURE_ENABLED_BY_DEFAULT);
-
-// Use madvise MADV_WILLNEED to prefetch the native library. This replaces the
-// default mechanism of pre-reading the memory from a forked process.
-BASE_FEATURE(kLibraryPrefetcherMadvise, FEATURE_DISABLED_BY_DEFAULT);
-
-// If > 0, split the madvise range into chunks of this many bytes, rounded up to
-// a page size. The default of 1 therefore rounds to a whole page.
-BASE_FEATURE_PARAM(size_t,
-                   kLibraryPrefetcherMadviseLength,
-                   &kLibraryPrefetcherMadvise,
-                   "length",
-                   1);
-
-// Whether to fall back to the fork-and-read method if madvise is not supported.
-// Does not trigger fork-and-read if madvise failed during the actual prefetch.
-BASE_FEATURE_PARAM(bool,
-                   kLibraryPrefetcherMadviseFallback,
-                   &kLibraryPrefetcherMadvise,
-                   "fallback",
-                   true);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // When enabled, GetTerminationStatus() returns
 // TERMINATION_STATUS_EVICTED_FOR_MEMORY for processes terminated due to commit
@@ -209,7 +157,7 @@ void Init() {
   debug::StackTrace::InitializeFeatures();
   FilePath::InitializeFeatures();
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   MessagePumpEpoll::InitializeFeatures();
 #endif
 
@@ -227,9 +175,6 @@ void Init() {
 
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  android::InputHintChecker::InitializeFeatures();
-#endif
 
 #if BUILDFLAG(IS_WIN)
   sequence_manager::internal::ThreadControllerPowerMonitor::

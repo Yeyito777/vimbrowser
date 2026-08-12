@@ -14,13 +14,11 @@
   "accessibilityFeatures.modify": {
     "channel": "stable",
     "extension_types": ["extension", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "accessibilityFeatures.read": [{
     "channel": "stable",
     "extension_types": ["extension", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }, {
     "channel": "stable",
@@ -64,7 +62,6 @@
     "channel": "trunk",
     "extension_types": ["extension", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "background": {
@@ -81,7 +78,6 @@
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "browsingData": {
@@ -169,7 +165,6 @@
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "commands.accessibility": {
@@ -358,7 +353,6 @@
   "enterprise.reportingPrivate": {
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist" : [
       "031E5E4A54C39E4F46E11CE643584E9187915908",  // https://crbug.com/882461 SecureConnect
@@ -391,14 +385,12 @@
     "extension_types": ["extension"],
     "channel": "stable",
     "command_line_switch": "extension-actor-api",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "experimentalAiData": {
     "extension_types": ["extension"],
     "channel": "stable",
     "command_line_switch": "extension-ai-data-collection",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "favicon": {
@@ -748,13 +740,11 @@
     "channel": "trunk",
     "extension_types": ["extension", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "pdfViewerPrivate": {
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "CBCC42ABED43A4B58FE3810E62AFFA010EB0349F"  // PDF Viewer
@@ -826,7 +816,6 @@
   "imageWriterPrivate": {
     "channel": "stable",
     "extension_types": ["extension", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       // TODO(ntang): Remove these 2 hashes when the app is no longer active.
@@ -855,13 +844,11 @@
       "extension", "legacy_packaged_app", "platform_app"
     ],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "safeBrowsingPrivate": {
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "B281B98DDD6A379EF50D59BB1135419536C1C353",  // Report site to Safe Browsing Extension, crbug.com/932161
@@ -886,7 +873,6 @@
     "channel": "trunk",
     "extension_types": ["extension", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   {
@@ -895,7 +881,6 @@
     // implicit allowlisting from this entry.
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "63ED55E43214C211F82122ED56407FF1A807F2A3",  // Media Router Dev
@@ -923,7 +908,6 @@
     "channel": "stable",
     "extension_types": ["extension"],
     "min_manifest_version": 3,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "smartCardProviderPrivate": {
@@ -966,7 +950,6 @@
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
     "location": "component",
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "tabGroups": {
@@ -1040,7 +1023,7 @@
     "channel": "stable",
     "extension_types": ["extension"],
     "min_manifest_version": 3,
-    "platforms": ["desktop_android", "linux", "mac", "win"]
+    "platforms": ["linux", "mac", "win"]
   },
   "webNavigation": {
     "channel": "stable",
@@ -1061,7 +1044,6 @@
   "webrtcDesktopCapturePrivate": {
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       // Hangouts test extension

@@ -10,10 +10,6 @@ import("//pdf/features.gni")
 import("//rlz/buildflags/buildflags.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (enable_desktop_android_extensions) {
-  import("//build/config/android/rules.gni")
-}
-
 assert(enable_extensions_core)
 
 # If enable_extensions is true then enable_guest_view must also be true.
@@ -583,7 +579,6 @@ source_set("browser_sources") {
   deps = [
     "//base",
     "//base:i18n",
-    "//build:android_buildflags",
     "//build:chromeos_buildflags",
     "//components/back_forward_cache",
     "//components/content_settings/core/browser",
@@ -1074,7 +1069,6 @@ source_set("unit_tests") {
     ":test_support",
     "//base",
     "//base/test:test_support",
-    "//build:android_buildflags",
     "//build:chromeos_buildflags",
     "//components/content_settings/core/test:test_support",
     "//components/crx_file",
@@ -1209,12 +1203,6 @@ source_set("unit_tests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (enable_desktop_android_extensions) {
-  java_cpp_enum("extension_action_enums") {
-    sources = [ "extension_action.h" ]
-  }
 }
 
 # TODO(https://crbug.com/356905053): Gradually include more of these sources

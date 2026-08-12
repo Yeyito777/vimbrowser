@@ -16,9 +16,6 @@
 #include "partition_alloc/buildflags.h"
 #include "third_party/abseil-cpp/absl/strings/ascii.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/meminfo_dump_provider.h"
-#endif
 
 namespace base::trace_event {
 namespace {
@@ -31,10 +28,6 @@ namespace {
 constexpr auto kDumpProviderAllowlist =
     base::MakeFixedFlatSet<std::string_view>({
 // clang-format off
-#if BUILDFLAG(IS_ANDROID)
-        base::android::MeminfoDumpProvider::kDumpProviderName,
-        "android::ResourceManagerImpl",
-#endif
         "AutocompleteController",
         "AXPlatformNode",
         "AXPlatformNodeWin",
@@ -109,9 +102,6 @@ constexpr auto kAllocatorDumpNameAllowlist =
 // clang-format off
         // Some of the blink values vary based on compile time flags. The
         // compile time flags are not in base, so all are listed here.
-#if BUILDFLAG(IS_ANDROID)
-        base::android::MeminfoDumpProvider::kDumpName,
-#endif
         "accessibility/ax_platform_win_dormant_node",
         "accessibility/ax_platform_win_ghost_node",
         "accessibility/ax_platform_win_live_node",

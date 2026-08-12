@@ -280,7 +280,7 @@ if (is_clang_or_gcc) {
 
   config("memory_tagging") {
     if (current_cpu == "arm64" && is_clang &&
-        (is_linux || is_chromeos || is_android || is_fuchsia)) {
+        (is_linux || is_chromeos || is_fuchsia)) {
       # base/ has access to the MTE intrinsics because it needs to use them,
       # but they're not backwards compatible. Use base::CPU::has_mte()
       # beforehand to confirm or use indirect functions (ifuncs) to select
@@ -500,10 +500,6 @@ if (is_clang_or_gcc) {
       ]
     } else if (is_fuchsia) {
       sources += [ "page_allocator_internals_fuchsia.h" ]
-    }
-    if (is_android) {
-      # The Android NDK supports PR_MTE_* macros as of NDK r23.
-      defines += [ "HAS_PR_MTE_MACROS" ]
     }
 
     # Stack scanning support. First implemented for StarScan and later
@@ -745,19 +741,6 @@ if (is_clang_or_gcc) {
       ]
     }
 
-    if (is_android) {
-      # Only android build requires native_library, and native_library depends
-      # on file_path. So file_path is added if is_android = true.
-      sources += [
-        "partition_alloc_base/debug/stack_trace_android.cc",
-        "partition_alloc_base/files/file_path.cc",
-        "partition_alloc_base/files/file_path.h",
-        "partition_alloc_base/native_library.cc",
-        "partition_alloc_base/native_library.h",
-        "partition_alloc_base/native_library_posix.cc",
-      ]
-    }
-
     if (is_apple) {
       # Apple-specific utilities
       sources += [
@@ -871,18 +854,7 @@ if (is_clang_or_gcc) {
       shim_headers +=
           [ "shim/allocator_shim_default_dispatch_to_partition_alloc.h" ]
     }
-    if (is_android) {
-      shim_headers += [
-        "shim/allocator_shim_override_cpp_symbols.h",
-        "shim/allocator_shim_alloc_token_symbols.h",
-        "shim/allocator_shim_override_linker_wrapped_symbols.h",
-      ]
-      shim_sources -= [ "shim/allocator_shim.cc" ]
-      shim_sources += [ "shim/allocator_shim_android.cc" ]
-      if (use_allocator_shim) {
-        all_dependent_configs += [ ":wrap_malloc_symbols" ]
-      }
-    }
+
     if (is_apple) {
       shim_headers += [
         "shim/allocator_shim_override_apple_default_zone.h",
@@ -942,11 +914,6 @@ if (is_clang_or_gcc) {
     }
 
     if (!use_partition_alloc_as_malloc) {
-      if (is_android) {
-        shim_sources += [
-          "shim/allocator_shim_default_dispatch_to_linker_wrapped_symbols.cc",
-        ]
-      }
       if (is_apple) {
         shim_sources +=
             [ "shim/allocator_shim_default_dispatch_to_apple_zoned_malloc.cc" ]
@@ -979,7 +946,7 @@ if (is_clang_or_gcc) {
 # TODO(crbug.com/40158212): Consider supporting building tests outside of
 # chromium and having a dedicated 'partition_alloc_unittests' target.
 if (build_with_chromium) {
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     source_set("debug_proc_maps") {
       testonly = true
 
@@ -1002,15 +969,8 @@ if (build_with_chromium) {
     sources = [ "partition_alloc_base/test/gtest_util.h" ]
     deps = []
 
-    if (is_linux || is_chromeos || is_android) {
+    if (is_linux || is_chromeos) {
       deps += [ ":debug_proc_maps" ]
-    }
-
-    if (is_android) {
-      sources += [
-        "partition_alloc_base/files/file_path_pa_unittest.cc",
-        "partition_alloc_base/native_library_pa_unittest.cc",
-      ]
     }
 
     if (use_partition_alloc) {
@@ -1038,9 +998,7 @@ if (build_with_chromium) {
         "thread_cache_unittest.cc",
       ]
 
-      if (!is_android) {
-        deps += [ ":death_unittests" ]
-      }
+      deps += [ ":death_unittests" ]
     }
 
     if (is_fuchsia) {
@@ -1065,7 +1023,7 @@ if (build_with_chromium) {
       }
     }
 
-    if ((is_android || is_linux) && target_cpu == "arm64") {
+    if (is_linux && target_cpu == "arm64") {
       cflags = [
         "-Xclang",
         "-target-feature",
@@ -1130,7 +1088,7 @@ if (build_with_chromium) {
     sources = [ "partition_alloc_base/test/gtest_util.h" ]
     deps = []
 
-    if (is_linux || is_chromeos || is_android) {
+    if (is_linux || is_chromeos) {
       deps += [ ":debug_proc_maps" ]
     }
 
@@ -1145,7 +1103,7 @@ if (build_with_chromium) {
       ]
     }
 
-    if ((is_android || is_linux) && target_cpu == "arm64") {
+    if (is_linux && target_cpu == "arm64") {
       cflags = [
         "-Xclang",
         "-target-feature",
@@ -1207,11 +1165,7 @@ source_set("test_support") {
       "partition_alloc_base/threading/platform_thread_linux_for_testing.cc",
     ]
   }
-  if (is_android) {
-    sources += [
-      "partition_alloc_base/threading/platform_thread_android_for_testing.cc",
-    ]
-  }
+
   public_deps = [
     ":arm_bti_testfunctions",
     ":buildflags",
@@ -1242,7 +1196,7 @@ source_set("test_support") {
 source_set("arm_bti_testfunctions") {
   testonly = true
   sources = []
-  if (target_cpu == "arm64" && (is_linux || is_android)) {
+  if (target_cpu == "arm64" && is_linux) {
     sources = [
       "arm_bti_test_functions.S",
       "arm_bti_test_functions.h",

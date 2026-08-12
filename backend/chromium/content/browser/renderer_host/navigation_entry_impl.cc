@@ -42,9 +42,6 @@
 #include "third_party/blink/public/mojom/runtime_feature_state/runtime_feature.mojom.h"
 #include "ui/gfx/text_elider.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#endif
 
 using base::UTF16ToUTF8;
 
@@ -536,22 +533,6 @@ const GURL& NavigationEntryImpl::GetBaseURLForDataURL() const {
   return base_url_for_data_url_;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void NavigationEntryImpl::SetDataURLAsString(
-    scoped_refptr<base::RefCountedString> data_url) {
-  if (data_url) {
-    // A quick check that it's actually a data URL.
-    DCHECK(base::StartsWith(base::as_string_view(*data_url), url::kDataScheme,
-                            base::CompareCase::SENSITIVE));
-  }
-  data_url_as_string_ = std::move(data_url);
-}
-
-const scoped_refptr<const base::RefCountedString>&
-NavigationEntryImpl::GetDataURLAsString() const {
-  return data_url_as_string_;
-}
-#endif
 
 void NavigationEntryImpl::SetReferrer(const Referrer& referrer) {
   frame_tree_->frame_entry->set_referrer(referrer);
@@ -694,15 +675,6 @@ const std::u16string& NavigationEntryImpl::GetTitleForDisplay() const {
     base::i18n::WrapStringWithLTRFormatting(&title);
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (GetURL().SchemeIs(url::kContentScheme)) {
-    std::u16string file_display_name;
-    if (base::MaybeGetFileDisplayName(base::FilePath(GetURL().spec()),
-                                      &file_display_name)) {
-      title = file_display_name;
-    }
-  }
-#endif
 
   gfx::ElideString(title, blink::mojom::kMaxTitleChars, &cached_display_title_);
   return cached_display_title_;
@@ -906,9 +878,6 @@ NavigationEntryImpl::CloneAndReplaceInternal(
   // ResetForCommit: post_data_
   copy->extra_headers_ = extra_headers_;
   copy->base_url_for_data_url_ = base_url_for_data_url_;
-#if BUILDFLAG(IS_ANDROID)
-  copy->data_url_as_string_ = data_url_as_string_;
-#endif
   // ResetForCommit: is_renderer_initiated_
   copy->cached_display_title_ = cached_display_title_;
   // ResetForCommit: should_replace_entry_
@@ -1037,9 +1006,6 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
           blink::mojom::WasActivatedOption::kUnknown,
           base::UnguessableToken::Create(),
           std::vector<blink::mojom::PrefetchedSignedExchangeInfoPtr>(),
-#if BUILDFLAG(IS_ANDROID)
-          std::string(),
-#endif
           false /* is_browser_initiated */, false /*has_ua_visual_transition*/,
           ukm::kInvalidSourceId /* document_ukm_source_id */, frame_policy,
           std::vector<std::string>() /* force_enabled_origin_trials */,
@@ -1075,24 +1041,9 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
           /*navigation_metrics_token=*/base::UnguessableToken::Create(),
           /*commit_target_frame_token=*/std::nullopt,
   /*is_initial_webui=*/
-#if !BUILDFLAG(IS_ANDROID)
           GetContentClient()->browser()->IsInitialWebUIURL(frame_entry.url()),
-#else
-          false,
-#endif
           /*permissions_policy_override=*/std::nullopt,
           /*internal_scroll_to_text_fragment=*/std::nullopt);
-#if BUILDFLAG(IS_ANDROID)
-  // `data_url_as_string` is saved in NavigationEntry but should only be used by
-  // main frames, because loadData* navigations can only happen on the main
-  // frame.
-  bool is_for_main_frame = (root_node()->frame_entry == &frame_entry);
-  scoped_refptr<const base::RefCountedString> string = GetDataURLAsString();
-  if (is_for_main_frame &&
-      NavigationControllerImpl::ValidateDataURLAsString(string)) {
-    commit_params->data_url_as_string = string->as_string();
-  }
-#endif
 
   return commit_params;
 }

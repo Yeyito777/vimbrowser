@@ -298,29 +298,6 @@ source_set("common") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/cpu_time_metrics.cc",
-      "android/cpu_time_metrics.h",
-      "android/cpu_time_metrics_internal.cc",
-      "android/cpu_time_metrics_internal.h",
-      "android/gin_java_bridge_errors.cc",
-      "android/gin_java_bridge_errors.h",
-      "android/gin_java_bridge_value.cc",
-      "android/gin_java_bridge_value.h",
-      "android/surface_wrapper.cc",
-      "android/surface_wrapper.h",
-      "android/sync_compositor_statics.cc",
-      "android/sync_compositor_statics.h",
-      "cursors/webcursor_android.cc",
-      "font_list_android.cc",
-    ]
-
-    if (use_seccomp_bpf) {
-      deps += [ "//sandbox/policy" ]
-    }
-  }
-
   if (is_ios) {
     # TOOD: Create ios file instead of stealing android
     sources += [ "cursors/webcursor_android.cc" ]
@@ -345,16 +322,6 @@ source_set("common") {
       "font_cache_dispatcher_win.cc",
       "font_list_win.cc",
     ]
-  }
-
-  if (is_android) {
-    deps += [
-      "//content/public/android:common_aidl",
-      "//content/public/android:content_main_dex_jni",
-      "//content/public/android:jar_jni",
-    ]
-
-    libs += [ "android" ]
   }
 
   if (!is_chromeos) {
@@ -393,7 +360,7 @@ source_set("common") {
     ]
   }
 
-  if (is_mac || is_win || is_android || is_fuchsia || is_ios) {
+  if (is_mac || is_win || is_fuchsia || is_ios) {
     sources -= [ "font_list_fontconfig.cc" ]
   }
 
@@ -463,10 +430,6 @@ mojom("mojo_bindings") {
     sources += [ "thread_type_switcher.mojom" ]
   }
 
-  if (is_android) {
-    sources += [ "gin_java_bridge.mojom" ]
-  }
-
   if (is_win) {
     sources += [ "sandbox_support.mojom" ]
   }
@@ -475,7 +438,7 @@ mojom("mojo_bindings") {
   if (use_clang_profiling_inside_sandbox) {
     enabled_features += [ "clang_profiling_inside_sandbox" ]
   }
-  if (is_posix && !is_android) {
+  if (is_posix) {
     enabled_features += [ "is_non_android_posix" ]
   }
 
@@ -606,10 +569,6 @@ mojom("mojo_bindings") {
     "//url/mojom:url_mojom_origin",
   ]
 
-  if (is_android) {
-    public_deps += [ "//components/origin_matcher:mojom" ]
-  }
-
   if (is_mac) {
     sources += [
       "render_widget_host_ns_view.mojom",
@@ -647,19 +606,4 @@ mojom("mojo_bindings") {
   export_class_attribute = "CONTENT_EXPORT"
   export_define = "CONTENT_IMPLEMENTATION=1"
   export_header = "content/common/content_export.h"
-}
-
-if (is_android) {
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":common_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "//content/common/features.cc" ]
-    class_name = "org.chromium.content.common.ContentInternalFeatures"
-  }
-
-  android_library("common_java") {
-    # Right now, this only includes the Java features. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [ ":java_features_srcjar" ]
-  }
 }

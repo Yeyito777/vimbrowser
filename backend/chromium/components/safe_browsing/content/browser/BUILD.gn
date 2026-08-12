@@ -258,10 +258,6 @@ source_set("credit_card_form_event") {
   ]
 
   deps = [ "//base" ]
-
-  if (is_android) {
-    deps += [ "//components/safe_browsing/core/browser:referring_app_info" ]
-  }
 }
 
 if (safe_browsing_mode != 0) {
@@ -343,12 +339,5 @@ if (safe_browsing_mode != 0) {
       "//content/public/browser",
       "//mojo/public/mojom/base:protobuf_support",
     ]
-
-    if (is_android) {
-      deps += [
-        "//components/safe_browsing/core/browser:referring_app_info",
-        "//ui/android",
-      ]
-    }
   }
 }

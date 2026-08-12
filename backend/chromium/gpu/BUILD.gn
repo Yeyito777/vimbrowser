@@ -12,11 +12,6 @@ import("//third_party/angle/gni/angle.gni")
 import("//third_party/protobuf/proto_library.gni")
 import("//ui/gl/features.gni")
 
-if (is_android) {
-  # Pull in enable_chrome_android_internal.
-  import("//build/config/android/config.gni")
-}
-
 config("gpu_implementation") {
   defines = [ "GPU_IMPLEMENTATION" ]
   configs = [ "//build/config/compiler:wexit_time_destructors" ]
@@ -139,7 +134,7 @@ static_library("test_support") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (!is_android && !is_fuchsia && !is_chromeos && !is_ios) {
+if (!is_fuchsia && !is_chromeos && !is_ios) {
   proto_library("gl_lpm_fuzzer_proto") {
     sources = [ "command_buffer/tests/lpm/gl_lpm_fuzzer.proto" ]
 
@@ -375,10 +370,6 @@ test("gl_tests") {
 
   data_deps = [ "//testing/buildbot/filters:gl_tests_filters" ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data_deps += [ "//clank/build/bot/filters:gl_tests_filters" ]
-  }
-
   if (is_chromeos) {
     deps += [ "//ui/gfx/linux:gbm" ]
   }
@@ -559,12 +550,7 @@ test("gpu_unittests") {
         [ "command_buffer/client/internal/mappable_buffer_dxgi_unittest.cc" ]
   }
 
-  if (is_android) {
-    sources +=
-        [ "command_buffer/client/internal/mappable_buffer_ahb_unittest.cc" ]
-  }
-
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     sources += [ "command_buffer/service/gpu_fence_manager_unittest.cc" ]
   }
 
@@ -650,10 +636,6 @@ test("gpu_unittests") {
   ]
 
   deps += [ "//third_party/angle:translator" ]
-
-  if (is_android) {
-    deps += [ "//ui/android:ui_java" ]
-  }
 
   if (use_dawn) {
     deps += [

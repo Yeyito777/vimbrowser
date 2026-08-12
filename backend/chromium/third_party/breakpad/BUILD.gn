@@ -57,7 +57,7 @@ if (is_win) {
 # - building it into both places temporarily
 # - updating a bunch of scripts in internal repositories.
 # - remove it from the default toolchain's outdir.
-if (is_ios || is_android || is_chromeos) {
+if (is_ios || is_chromeos) {
   _tests_launcher_toolchain = host_system_allocator_toolchain
   _tests_launcher_toolchain_has_exe_suffix = host_os == "win"
   _include_google_converter = true
@@ -138,9 +138,7 @@ config("tools_config") {
     "breakpad/src",
     "breakpad/src/third_party",
   ]
-  if (is_android) {
-    defines = [ "__ANDROID__" ]
-  }
+
   if (is_clang) {
     cflags = [ "-Wno-tautological-constant-out-of-range-compare" ]
   }
@@ -153,16 +151,11 @@ config("internal_config") {
     # This is needed for GTMLogger to work correctly.
     defines += [ "DEBUG" ]
   }
-  if (is_android) {
-    defines += [ "__ANDROID__" ]
-  }
 }
 
 config("client_config") {
   include_dirs = [ "breakpad/src" ]
-  if (is_android) {
-    include_dirs += [ "breakpad/src/common/android/include" ]
-  }
+
   if (is_chromeos_ash) {
     defines = [ "__CHROMEOS__" ]
   }
@@ -558,23 +551,6 @@ if (is_mac) {
 
       deps = [ ":common" ]
     }
-
-    # Include dependencies for Android
-    if (target_os == "android") {
-      copy_exe("generate_test_dump") {
-        testonly = true
-        has_exe_suffix = _tests_launcher_toolchain_has_exe_suffix
-        target = ":$target_name($_tests_launcher_toolchain)"
-      }
-      copy_exe("minidump-2-core") {
-        has_exe_suffix = _tests_launcher_toolchain_has_exe_suffix
-        target = ":$target_name($_tests_launcher_toolchain)"
-      }
-      copy_exe("core-2-minidump") {
-        has_exe_suffix = _tests_launcher_toolchain_has_exe_suffix
-        target = ":$target_name($_tests_launcher_toolchain)"
-      }
-    }
   } else if (current_toolchain == default_toolchain) {
     # The default toolchain builds the system-allocator binaries, which are
     # placed in the output dir of the default toolchain.
@@ -652,7 +628,7 @@ if (is_ios) {
   }
 }
 
-if (is_linux || is_chromeos || is_android) {
+if (is_linux || is_chromeos) {
   if (current_toolchain == host_system_allocator_toolchain ||
       current_toolchain == default_system_allocator_toolchain) {
     executable("symupload") {
@@ -944,12 +920,6 @@ if (is_linux || is_chromeos || is_android) {
       cflags = [ "-Wno-unused-value" ]
     }
 
-    if (is_android) {
-      use_raw_android_executable = true
-      libs = [ "log" ]
-      extra_dist_files = [ "$root_out_dir/linux_dumper_unittest_helper" ]
-    }
-
     # Add the breakpad unittest config at the end to override all configs.
     configs += [ ":breakpad_unittest_config" ]
   }
@@ -980,10 +950,6 @@ if (is_linux || is_chromeos || is_android) {
       ]
 
       deps = [ ":client" ]
-
-      if (is_android) {
-        libs = [ "log" ]
-      }
     }
 
     executable("minidump-2-core") {

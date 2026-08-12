@@ -75,7 +75,7 @@ if (enable_perfetto_traceconv) {
 if (enable_perfetto_heapprofd) {
   all_targets += [ "src/profiling/memory:heapprofd" ]
 
-  if (is_linux && !is_android) {
+  if (is_linux) {
     all_targets += [ "src/profiling/memory:heapprofd_glibc_preload" ]
   }
   if (perfetto_build_with_android) {
@@ -133,18 +133,6 @@ if (enable_perfetto_integration_tests) {
   }
 }
 
-if (enable_perfetto_android_java_sdk) {
-  all_targets += [
-    "src/java_sdk/main:perfetto_java_sdk_app",
-    "src/java_sdk/test:perfetto_java_sdk_test_app",
-    "src/java_sdk/test:perfetto_java_sdk_instrumentation_test",
-    "src/android_sdk/jni:libperfetto_jni",
-    "src/android_sdk/jni:libperfetto_framework_jni",
-    "src/android_sdk/java/main:perfetto_trace_lib",
-    "src/android_sdk/java/test:perfetto_trace_instrumentation_test",
-  ]
-}
-
 if (enable_perfetto_trace_processor_json) {
   test("trace_processor_minimal_smoke_tests") {
     testonly = true
@@ -194,7 +182,7 @@ if (perfetto_build_standalone) {
     # Checks that the "fake" backend implementations build.
     "src/tracing:client_api_no_backends_compile_test",
   ]
-  if (is_linux || is_android || is_mac) {
+  if (is_linux || is_mac) {
     all_targets += [ "src/tracebox" ]
   }
 
@@ -205,13 +193,6 @@ if (perfetto_build_standalone) {
 if (enable_perfetto_merged_protos_check) {
   # For syntax-checking the protos.
   all_targets += [ "protos/perfetto/trace:merged_trace_lite" ]
-}
-
-# The CTS code is built (but not ran) also in standalone builds. This is to
-# catch refactoring breakages earlier without having to wait for treehugger.
-if (is_android && (perfetto_build_standalone || perfetto_build_with_android)) {
-  all_targets += [ "test/cts:perfetto_cts_deps" ]
-  all_targets += [ "test/vts:perfetto_vts_deps" ]
 }
 
 # In Android builds, we build the code of traced and traced_probes in one shared
@@ -301,7 +282,7 @@ if (build_with_chromium) {
         "src/tracing/ipc/producer",
         "src/tracing/ipc/service",
       ]
-      public_deps += [ "include/perfetto/ext/tracing/ipc:ipc" ]
+      public_deps += [ "include/perfetto/ext/tracing/ipc" ]
     }
     if (perfetto_libperfetto_includes_json) {
       deps += [

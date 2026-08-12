@@ -47,9 +47,6 @@ class PLATFORM_EXPORT ScrollbarThemeSettings {
 
   static void SetFluentScrollbarsEnabled(bool);
   static bool FluentScrollbarsEnabled();
-
-  static void SetDesktopAndroidScrollbarsEnabled(bool);
-  static bool DesktopAndroidScrollbarsEnabled();
 };
 
 }  // namespace blink

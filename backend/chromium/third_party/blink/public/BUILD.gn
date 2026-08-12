@@ -14,11 +14,6 @@ import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//v8/gni/v8.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 blink_public_output_dir = "$root_gen_dir/third_party/blink/public"
 
 group("blink") {
@@ -80,27 +75,6 @@ buildflag_header("buildflags") {
     "ENABLE_UNHANDLED_TAP=$enable_unhandled_tap",
     "VERBOSE_PERSISTENT=$cppgc_enable_object_names",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("blink_headers_java_enums_srcjar") {
-    sources = [
-      "./common/context_menu_data/context_menu_data.h",
-      "./common/input/web_input_event.h",
-      "./mojom/context_menu/context_menu.mojom",
-      "./mojom/input/input_handler.mojom",
-      "./platform/web_text_input_mode.h",
-      "./platform/web_text_input_type.h",
-    ]
-  }
-
-  android_library("blink_headers_java") {
-    deps = [
-      "//services/network/public/mojom:mojom_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-    ]
-    srcjar_deps = [ ":blink_headers_java_enums_srcjar" ]
-  }
 }
 
 source_set("test_headers") {

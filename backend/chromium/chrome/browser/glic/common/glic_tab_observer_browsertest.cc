@@ -4,7 +4,6 @@
 
 #include "chrome/browser/glic/common/glic_tab_observer.h"
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/adapters.h"
 #include "base/functional/bind.h"
@@ -158,13 +157,6 @@ class GlicTabEventCollector {
 class GlicTabObserverBrowserTest : public PlatformBrowserTest {
  public:
   ~GlicTabObserverBrowserTest() override = default;
-
-  void SetUpDefaultCommandLine(base::CommandLine* command_line) override {
-    PlatformBrowserTest::SetUpDefaultCommandLine(command_line);
-#if BUILDFLAG(IS_ANDROID)
-    command_line->AppendSwitch(switches::kForceDesktopAndroid);
-#endif
-  }
 
  protected:
   void SetUpOnMainThread() override {

@@ -6,10 +6,6 @@
 # in the file PATENTS.  All contributing project authors may
 # be found in the AUTHORS file in the root of the source tree.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
 import("../webrtc.gni")
 
 rtc_library("system_wrappers") {
@@ -87,9 +83,5 @@ if (rtc_include_tests && !build_with_chromium) {
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-
-    if (is_android) {
-      shard_timeout = 900
-    }
   }
 }

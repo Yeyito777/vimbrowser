@@ -16,10 +16,6 @@ mojom("mojom") {
 
   enabled_features = []
 
-  if (is_android && media_use_ffmpeg) {
-    enabled_features += [ "is_android_and_media_use_ffmpeg" ]
-  }
-
   cpp_typemaps = [
     {
       types = [

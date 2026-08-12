@@ -176,10 +176,6 @@ source_set("test_support") {
     "//url",
   ]
 
-  if (is_android) {
-    sources += [ "policy_test_utils_android.cc" ]
-  }
-
   if (is_chromeos) {
     deps += [
       "//ash",
@@ -204,37 +200,35 @@ source_set("test_support") {
     deps += [ "//extensions/common" ]
   }
 
-  if (!is_android) {
-    sources += [
-      "policy_test_utils_desktop.cc",
-      "safe_search_policy_test.cc",
-      "safe_search_policy_test.h",
-      "url_blocking_policy_test_utils.cc",
-      "url_blocking_policy_test_utils.h",
-    ]
+  sources += [
+    "policy_test_utils_desktop.cc",
+    "safe_search_policy_test.cc",
+    "safe_search_policy_test.h",
+    "url_blocking_policy_test_utils.cc",
+    "url_blocking_policy_test_utils.h",
+  ]
 
-    deps += [
-      "//chrome/browser/preloading:test_support",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/location_bar",
-      "//chrome/common:constants",
-      "//chrome/common/net",
-      "//components/omnibox/browser",
-      "//components/policy/core/browser",
-      "//components/policy/core/common:test_support",
-      "//components/security_interstitials/core",
-      "//components/variations:test_support",
-      "//content/public/browser",
-      "//content/public/common",
-      "//content/test:test_support",
-      "//mojo/public/cpp/bindings",
-      "//net",
-      "//net:test_support",
-      "//services/network/public/mojom",
-      "//ui/snapshot",
-    ]
-  }
+  deps += [
+    "//chrome/browser/preloading:test_support",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/location_bar",
+    "//chrome/common:constants",
+    "//chrome/common/net",
+    "//components/omnibox/browser",
+    "//components/policy/core/browser",
+    "//components/policy/core/common:test_support",
+    "//components/security_interstitials/core",
+    "//components/variations:test_support",
+    "//content/public/browser",
+    "//content/public/common",
+    "//content/test:test_support",
+    "//mojo/public/cpp/bindings",
+    "//net",
+    "//net:test_support",
+    "//services/network/public/mojom",
+    "//ui/snapshot",
+  ]
 }
 
 # Browser tests for specific policies.
@@ -310,58 +304,56 @@ source_set("policy_specific_browser_tests") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "test/autofill_ai_policy_browsertest.cc",
-      "test/autofill_policy_browsertest.cc",
-      "test/automatic_fullscreen_policy_browsertest.cc",
-      "test/bookmark_bar_enabled_browsertest.cc",
-      "test/clear_window_name_for_new_browsing_context_group_browsertest.cc",
-      "test/component_updater_policy_browsertest.cc",
-      "test/data_url_policy_browsertest.cc",
-      "test/developer_tools_policy_browsertest.cc",
-      "test/download_directory_browsertest.cc",
-      "test/happy_eyeballs_v3_enabled_policy_browsertest.cc",
-      "test/ipv6_reachability_override_policy_browsertest.cc",
-      "test/legacy_cookie_scope_browsertest.cc",
-      "test/local_fonts_policy_browsertest.cc",
-      "test/media_stream_policy_browsertest.cc",
-      "test/partitioned_blob_url_browsertest.cc",
-      "test/quic_allowed_browsertest.cc",
-      "test/shared_dictionary_policy_browsertest.cc",
-      "test/signed_exchange_browsertest.cc",
-      "test/static_storage_quota_policy_browsertest.cc",
-      "test/task_manager_end_process_enabled_browsertest.cc",
-      "test/web_rtc_event_log_collection_allowed_policy_browsertest.cc",
-      "test/web_rtc_local_ips_allowed_urls_policy_browsertest.cc",
-      "test/web_rtc_text_log_collection_allowed_policy_browsertest.cc",
-      "test/window_management_policy_browsertest.cc",
-    ]
+  sources += [
+    "test/autofill_ai_policy_browsertest.cc",
+    "test/autofill_policy_browsertest.cc",
+    "test/automatic_fullscreen_policy_browsertest.cc",
+    "test/bookmark_bar_enabled_browsertest.cc",
+    "test/clear_window_name_for_new_browsing_context_group_browsertest.cc",
+    "test/component_updater_policy_browsertest.cc",
+    "test/data_url_policy_browsertest.cc",
+    "test/developer_tools_policy_browsertest.cc",
+    "test/download_directory_browsertest.cc",
+    "test/happy_eyeballs_v3_enabled_policy_browsertest.cc",
+    "test/ipv6_reachability_override_policy_browsertest.cc",
+    "test/legacy_cookie_scope_browsertest.cc",
+    "test/local_fonts_policy_browsertest.cc",
+    "test/media_stream_policy_browsertest.cc",
+    "test/partitioned_blob_url_browsertest.cc",
+    "test/quic_allowed_browsertest.cc",
+    "test/shared_dictionary_policy_browsertest.cc",
+    "test/signed_exchange_browsertest.cc",
+    "test/static_storage_quota_policy_browsertest.cc",
+    "test/task_manager_end_process_enabled_browsertest.cc",
+    "test/web_rtc_event_log_collection_allowed_policy_browsertest.cc",
+    "test/web_rtc_local_ips_allowed_urls_policy_browsertest.cc",
+    "test/web_rtc_text_log_collection_allowed_policy_browsertest.cc",
+    "test/window_management_policy_browsertest.cc",
+  ]
 
-    deps += [
-      "//chrome/browser/autofill",
-      "//chrome/browser/devtools",
-      "//chrome/browser/devtools:test_support",
-      "//chrome/browser/profiles",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/task_manager",
-      "//chrome/browser/ui/browser_window",
-      "//components/autofill/content/browser:test_support",
-      "//components/autofill/core/browser",
-      "//components/bookmarks/common",
-      "//components/enterprise",
-      "//components/enterprise:test_support",
-      "//components/policy:chrome_settings_proto_generated_compile",
-      "//components/policy/core/browser",
-      "//components/policy/core/common:common_constants",
-      "//components/policy/proto",
-      "//components/policy/test_support",
-      "//components/search",
-      "//components/webrtc",
-    ]
-  }
+  deps += [
+    "//chrome/browser/autofill",
+    "//chrome/browser/devtools",
+    "//chrome/browser/devtools:test_support",
+    "//chrome/browser/profiles",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/task_manager",
+    "//chrome/browser/ui/browser_window",
+    "//components/autofill/content/browser:test_support",
+    "//components/autofill/core/browser",
+    "//components/bookmarks/common",
+    "//components/enterprise",
+    "//components/enterprise:test_support",
+    "//components/policy:chrome_settings_proto_generated_compile",
+    "//components/policy/core/browser",
+    "//components/policy/core/common:common_constants",
+    "//components/policy/proto",
+    "//components/policy/test_support",
+    "//components/search",
+    "//components/webrtc",
+  ]
 
-  if (!is_android && !is_chromeos) {
+  if (!is_chromeos) {
     sources += [
       "policy_startup_browsertest.cc",
       "test/network_time_policy_browsertest.cc",
@@ -372,11 +364,6 @@ source_set("policy_specific_browser_tests") {
     sources += [ "test/variation_restrict_parameter_policy_browsertest.cc" ]
     deps += [ "//components/variations/service" ]
   }
-
-  if (is_android) {
-    deps += [ "//chrome/browser/safe_browsing/android:test_support" ]
-  }
-
 }
 
 source_set("browser_tests") {
@@ -455,13 +442,6 @@ source_set("browser_tests") {
     }
   }
 
-  if (is_android) {
-    sources += [
-      "cloud/chrome_browser_cloud_management_browsertest_delegate_android.cc",
-      "cloud/chrome_browser_cloud_management_browsertest_delegate_android.h",
-    ]
-  }
-
   if (is_chromeos) {
     sources += [
       "test/arc_policy_browsertest.cc",
@@ -536,16 +516,14 @@ source_set("browser_tests") {
     sources += [ "test/network_service_sandbox_enabled_browsertest.cc" ]
   }
 
-  if (!is_android) {
-    sources += [ "cloud/component_cloud_policy_browsertest.cc" ]
+  sources += [ "cloud/component_cloud_policy_browsertest.cc" ]
 
-    deps += [
-      "//chrome/browser/ui",
-      "//chrome/test:test_support",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui",
+    "//chrome/test:test_support",
+  ]
 
-  if (!is_android && !is_chromeos) {
+  if (!is_chromeos) {
     sources += [
       "cloud/chrome_browser_cloud_management_browsertest_delegate_desktop.cc",
       "cloud/chrome_browser_cloud_management_browsertest_delegate_desktop.h",
@@ -586,7 +564,7 @@ source_set("browser_tests") {
     deps += [ "//components/signin/public/identity_manager" ]
   }
 
-  if (is_linux || is_android) {
+  if (is_linux) {
     sources += [ "test/out_of_process_system_dns_resolution_browsertest.cc" ]
   }
 }

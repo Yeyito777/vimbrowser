@@ -144,14 +144,6 @@ platforms.
 Note: Googlers can see additional internal information
 [here](https://g3doc.corp.google.com/company/teams/chrome/platform_support.md?cl=head).
 
-### Android
-
-Chrome on Android is supported on x86, x64, ARM, and ARM64. The current minimum
-OS version supported is listed [here](https://support.google.com/chrome/a/answer/7100626).
-
-The `is_desktop_android` GN arg configures a build of Chrome for Android that
-is customized for a desktop form factor.
-
 ### ChromeOS
 
 Chrome follows the [ChromeOS auto-update

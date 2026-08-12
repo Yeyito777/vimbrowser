@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Support Tool UI (chrome://support-tool) strings (included from generated_resources.grd). -->
 <grit-part>
-    <if expr="not is_android">
         <message name="IDS_SUPPORT_TOOL_ISSUE_DETAILS_PAGE_TITLE" desc="The title of first page (out of four pages) of Support Tool. This page contains details about the issue that the user wants to collect diagnose data. The title describes that the user needs to describe the issue on those fields.">
             Step 1 of 4: Describe the issue
         </message>
@@ -238,5 +237,4 @@
         <message name="IDS_SUPPORT_TOOL_BLUETOOTH_HID_DEVICE" desc="The label for a category of personally identifiable information containing one or more Bluetooth device names for a user. Bluetooth devices may have names assigned by the user, e.g.: 'Edman Paes dos Anjos's Keyboard'">
             Bluetooth Device Names
         </message>
-    </if>
 </grit-part>

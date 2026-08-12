@@ -4,11 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("generic_sensor") {
   visibility = [ "//services/device:*" ]
 
@@ -61,16 +56,6 @@ source_set("generic_sensor") {
   ]
 
   public_deps = [ "//services/device/public/cpp/generic_sensor" ]
-
-  if (is_android) {
-    sources += [
-      "platform_sensor_android.cc",
-      "platform_sensor_android.h",
-      "platform_sensor_provider_android.cc",
-      "platform_sensor_provider_android.h",
-    ]
-    deps += [ ":jni_headers" ]
-  }
 
   if (is_mac) {
     sources += [
@@ -133,36 +118,6 @@ source_set("generic_sensor") {
     libs = [
       "portabledeviceguids.lib",
       "sensorsapi.lib",
-    ]
-  }
-}
-
-if (is_android) {
-  device_sensors_jni_sources = [
-    "android/java/src/org/chromium/device/sensors/PlatformSensor.java",
-    "android/java/src/org/chromium/device/sensors/PlatformSensorProvider.java",
-  ]
-
-  generate_jni("jni_headers") {
-    visibility = [ ":*" ]
-
-    sources = device_sensors_jni_sources
-  }
-
-  android_library("java") {
-    visibility = [
-      "//services:*",
-      "//services/device:*",
-    ]
-
-    srcjar_deps = [ ":jni_headers" ]
-    sources = device_sensors_jni_sources
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//services/device/public/mojom:generic_sensor_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
     ]
   }
 }

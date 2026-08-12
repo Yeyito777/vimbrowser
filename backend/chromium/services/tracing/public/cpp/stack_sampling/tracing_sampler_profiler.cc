@@ -8,7 +8,6 @@
 #include <set>
 #include <string_view>
 
-#include "base/android/library_loader/anchor_functions.h"
 #include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
 #include "base/functional/bind.h"
@@ -46,9 +45,7 @@
 #define INITIALIZE_THREAD_DELEGATE_POSIX 0
 #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "base/profiler/core_unwinders.h"
-#endif
 
 #if ANDROID_ARM64_UNWINDING_SUPPORTED || ANDROID_CFI_UNWINDING_SUPPORTED
 #include <dlfcn.h>
@@ -730,21 +727,6 @@ void TracingSamplerProfiler::StartTracing(
   // platforms. While Android explicitly needs a factory to provide "core"
   // unwinders, other platforms explicitly check that no such factory is
   // provided.
-#if BUILDFLAG(IS_ANDROID)
-  base::StackSamplingProfiler::UnwindersFactory core_unwinders_factory;
-  if (core_unwinders_factory_function_) {
-    core_unwinders_factory = core_unwinders_factory_function_.Run();
-  }
-  if (core_unwinders_factory) {
-    if (unwinder_type_ == UnwinderType::kUnknown) {
-      unwinder_type_ = UnwinderType::kCustomAndroid;
-    }
-    profile_builder->SetUnwinderType(unwinder_type_);
-    profiler_ = std::make_unique<base::StackSamplingProfiler>(
-        sampled_thread_token_, params, std::move(profile_builder),
-        std::move(core_unwinders_factory));
-  }
-#else   // BUILDFLAG(IS_ANDROID)
   if (unwinder_type_ == UnwinderType::kUnknown) {
     unwinder_type_ = UnwinderType::kDefault;
   }
@@ -752,7 +734,6 @@ void TracingSamplerProfiler::StartTracing(
   profiler_ = std::make_unique<base::StackSamplingProfiler>(
       sampled_thread_token_, params, std::move(profile_builder),
       base::CreateCoreUnwindersFactory());
-#endif  // BUILDFLAG(IS_ANDROID)
   if (profiler_ != nullptr) {
     if (aux_unwinder_factory_) {
       profiler_->AddAuxUnwinder(aux_unwinder_factory_.Run());

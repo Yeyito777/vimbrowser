@@ -6,7 +6,7 @@ import("//chrome/common/features.gni")
 import("//components/supervised_user/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("sync") {
   sources = [
@@ -153,9 +153,8 @@ source_set("sync") {
     "//components/sync_user_events",
     "//components/user_manager",
     "//components/variations/service",
-    "//components/webauthn/core/browser:passkey_model",
-
     "//components/webapps/browser",
+    "//components/webauthn/core/browser:passkey_model",
   ]
 
   allow_circular_includes_from = []
@@ -171,39 +170,20 @@ source_set("sync") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "glue/synced_tab_delegate_android.cc",
-      "glue/synced_tab_delegate_android.h",
-      "glue/synced_window_delegate_android.cc",
-      "glue/synced_window_delegate_android.h",
-      "glue/synced_window_delegates_getter_android.cc",
-      "glue/synced_window_delegates_getter_android.h",
-      "glue/web_contents_state_synced_tab_delegate.cc",
-      "glue/web_contents_state_synced_tab_delegate.h",
-    ]
-    deps += [
-      "//chrome/android:chrome_jni_headers",
-      "//chrome/browser/android:tabs_public",
-      "//chrome/browser/sync/android:jni_headers",
-      "//chrome/browser/tab",
-      "//chrome/browser/ui/android/tab_model",
-    ]
-  } else {
-    sources += [
-      "sessions/browser_list_router_helper.cc",
-      "sessions/browser_list_router_helper.h",
-    ]
-    public_deps += [
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/tabs:tab_strip_model_observer",
-    ]
-    deps += [
-      "//chrome/browser/accessibility/tree_fixing:prefs",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/browser/ui/tabs/saved_tab_groups",
-    ]
-  }
+  sources += [
+    "sessions/browser_list_router_helper.cc",
+    "sessions/browser_list_router_helper.h",
+  ]
+  public_deps += [
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/tabs:tab_strip_model_observer",
+  ]
+  deps += [
+    "//chrome/browser/accessibility/tree_fixing:prefs",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/browser/ui/tabs/saved_tab_groups",
+  ]
+
   if (enable_extensions_core) {
     sources += [
       "glue/extension_data_type_controller.cc",

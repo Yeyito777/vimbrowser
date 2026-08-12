@@ -30,7 +30,7 @@
 #include "extensions/buildflags/buildflags.h"
 #include "ui/base/buildflags.h"
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 #include "components/prefs/pref_registry_simple.h"
 #endif
 
@@ -43,7 +43,7 @@
 
 namespace media_router {
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kMediaRouter, base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE(kCastAllowAllIPsFeature,
              "CastAllowAllIPs",
@@ -65,8 +65,7 @@ BASE_FEATURE(kFallbackToAudioTabMirroring,
              base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace {
 const PrefService::Preference* GetMediaRouterPref(
@@ -82,13 +81,12 @@ base::flat_map<content::BrowserContext*, bool>& GetStoredPrefValues() {
   return *stored_pref_values;
 }
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 // TODO(mfoltz): Add full implementation for validating playout delay value.
 bool IsValidMirroringPlayoutDelayMs(int delay_ms) {
   return delay_ms <= 1000 && delay_ms >= 1;
 }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#endif  // !BUILDFLAG(IS_ANDROID)
 }  // namespace
 
 void ClearMediaRouterStoredPrefsForTesting() {
@@ -96,12 +94,11 @@ void ClearMediaRouterStoredPrefsForTesting() {
 }
 
 bool MediaRouterEnabled(content::BrowserContext* context) {
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
   if (!base::FeatureList::IsEnabled(kMediaRouter)) {
     return false;
   }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#endif  // !BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_CHROMEOS)
   // TODO(crbug.com/1380828): Make the Media Router feature configurable via a
   // policy for non-user profiles, i.e. sign-in and lock screen profiles.
@@ -131,7 +128,7 @@ bool MediaRouterEnabled(content::BrowserContext* context) {
   return true;
 }
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(prefs::kMediaRouterCastAllowAllIPs, false,
                                 PrefRegistry::PUBLIC);
@@ -203,7 +200,6 @@ std::optional<base::TimeDelta> GetCastMirroringPlayoutDelay() {
 bool IsCastMessageLoggingEnabled() {
   return base::FeatureList::IsEnabled(kCastMessageLogging);
 }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace media_router

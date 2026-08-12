@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
 group("telemetry") {
   data = [
     "bin/",
@@ -53,19 +52,13 @@ group("telemetry") {
     "update_docs",
     "validate_binary_dependencies",
   ]
-  data_deps = [
-    "../third_party/typ",
-  ]
+  data_deps = [ "../third_party/typ" ]
 }
 
-if (!is_android && !is_fuchsia) {
+if (!is_fuchsia) {
   executable("bitmaptools") {
-    sources = [
-      "telemetry/internal/image_processing/bitmaptools.cc",
-    ]
+    sources = [ "telemetry/internal/image_processing/bitmaptools.cc" ]
 
-    deps = [
-      "//build/win:default_exe_manifest",
-    ]
+    deps = [ "//build/win:default_exe_manifest" ]
   }
 }

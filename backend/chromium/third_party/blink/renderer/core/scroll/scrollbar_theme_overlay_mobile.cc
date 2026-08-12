@@ -65,7 +65,7 @@ void ScrollbarThemeOverlayMobile::PaintThumb(GraphicsContext& context,
 }
 
 bool ScrollbarThemeOverlayMobile::AllowsHitTest() const {
-  return DesktopAndroidScrollbarsEnabled();
+  return false;
 }
 
 SkColor4f ScrollbarThemeOverlayMobile::ThumbColor(

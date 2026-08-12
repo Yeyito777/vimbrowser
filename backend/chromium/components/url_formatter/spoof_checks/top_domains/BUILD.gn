@@ -4,7 +4,7 @@
 
 import("//build/compiled_action.gni")
 
-if (!is_ios && !is_android) {
+if (!is_ios) {
   executable("make_top_domain_skeletons") {
     sources = [ "make_top_domain_skeletons.cc" ]
 

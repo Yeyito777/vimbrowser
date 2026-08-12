@@ -88,16 +88,6 @@
 #include <dwmapi.h>
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/meminfo_dump_provider.h"
-#include "base/posix/eintr_wrapper.h"
-#include "base/trace_event/memory_dump_manager.h"
-#include "components/tracing/common/graphics_memory_dump_provider_android.h"
-#include "sandbox/linux/services/thread_helpers.h" // nogncheck
-#include "sandbox/policy/features.h"
-#include "sandbox/policy/linux/landlock_gpu_policy_android.h"
-#include "sandbox/policy/sandbox_type.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"
@@ -133,8 +123,6 @@ namespace {
 bool StartSandboxLinux(gpu::GpuWatchdogThread*,
                        const gpu::GPUInfo*,
                        const gpu::GpuPreferences&);
-#elif BUILDFLAG(IS_ANDROID)
-bool StartSandboxAndroid(gpu::GpuWatchdogThread*);
 #elif BUILDFLAG(IS_WIN)
 bool StartSandboxWindows(const sandbox::SandboxInterfaceInfo*);
 #endif
@@ -197,12 +185,6 @@ class ContentSandboxHelper : public gpu::GpuSandboxHelper {
     return StartSandboxWindows(sandbox_info_);
 #elif BUILDFLAG(IS_MAC)
     return sandbox::Seatbelt::IsSandboxed();
-#elif BUILDFLAG(IS_ANDROID)
-    if (base::FeatureList::IsEnabled(
-            sandbox::policy::features::kAndroidGpuSandbox)) {
-      return StartSandboxAndroid(watchdog_thread);
-    }
-    return false;
 #else
     return false;
 #endif
@@ -398,10 +380,6 @@ int GpuMain(MainFunctionParams parameters) {
     base::HangWatcher::GetInstance()->Start();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread("GpuMain");
-  base::PlatformThreadPriorityMonitor::Get().Start();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Startup tracing creates a tracing thread, which is incompatible on
   // platforms that require single-threaded sandbox initialization. In these
@@ -450,13 +428,6 @@ int GpuMain(MainFunctionParams parameters) {
   metal::RegisterGracefulExitOnDeviceRemoval();
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
-      tracing::GraphicsMemoryDumpProvider::GetInstance(), "AndroidGraphics",
-      nullptr);
-
-  base::android::MeminfoDumpProvider::Initialize();
-#endif
 
   base::allocator::PartitionAllocSupport::Get()->ReconfigureAfterTaskRunnerInit(
       switches::kGpuProcess);
@@ -563,28 +534,6 @@ bool StartSandboxLinux(gpu::GpuWatchdogThread* watchdog_thread,
 }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-bool StartSandboxAndroid(gpu::GpuWatchdogThread* watchdog_thread) {
-  if (watchdog_thread) {
-    // Stop the watchdog thread temporarily.
-    base::ScopedFD proc_fd(
-        HANDLE_EINTR(open("/proc", O_DIRECTORY | O_RDONLY | O_CLOEXEC)));
-
-    sandbox::ThreadHelpers::StopThreadAndWatchProcFS(proc_fd.get(),
-                                                     watchdog_thread);
-  }
-
-  bool res = sandbox::landlock::ApplyLandlock(
-      sandbox::policy::SandboxTypeFromCommandLine(
-          *base::CommandLine::ForCurrentProcess()));
-
-  if (watchdog_thread) {
-    watchdog_thread->Start();
-  }
-
-  return res;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN)
 bool StartSandboxWindows(const sandbox::SandboxInterfaceInfo* sandbox_info) {

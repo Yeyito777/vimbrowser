@@ -37,13 +37,6 @@ source_set("bluetooth_internals") {
       "//chromeos/ash/services/bluetooth_config/public/mojom",
     ]
   }
-
-  if (is_android) {
-    deps += [
-      "//components/permissions",
-      "//ui/android",
-    ]
-  }
 }
 
 mojom("mojo_bindings") {

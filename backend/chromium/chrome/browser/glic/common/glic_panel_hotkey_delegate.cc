@@ -19,11 +19,7 @@
 #include "ui/base/accelerators/accelerator_manager.h"
 #include "ui/base/accelerators/command.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/glic/widget/glic_view.h"
-#else
-#include "ui/android/window_android.h"
-#endif
 
 namespace glic {
 
@@ -40,7 +36,6 @@ static constexpr std::array kSupportedHotkeys = {
 #endif
 };
 
-#if !BUILDFLAG(IS_ANDROID)
 // Implementation of ScopedHotkeyRegistration specifically for the Glic panel.
 // It registers and unregisters accelerators directly with the GlicView.
 class GlicPanelScopedHotkeyRegistration
@@ -65,7 +60,6 @@ class GlicPanelScopedHotkeyRegistration
   ui::Accelerator accelerator_;
   base::WeakPtr<views::View> glic_view_;
 };
-#endif
 
 }  // namespace
 
@@ -126,7 +120,6 @@ bool GlicPanelHotkeyDelegate::AcceleratorPressed(
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // Not supported on Android. Local hotkeys are handled in Java.
 std::unique_ptr<LocalHotkeyManager::ScopedHotkeyRegistration>
 GlicPanelHotkeyDelegate::CreateScopedHotkeyRegistration(
@@ -136,7 +129,6 @@ GlicPanelHotkeyDelegate::CreateScopedHotkeyRegistration(
   return std::make_unique<GlicPanelScopedHotkeyRegistration>(accelerator,
                                                              panel_->GetView());
 }
-#endif
 
 std::unique_ptr<LocalHotkeyManager> MakeGlicWindowHotkeyManager(
     base::WeakPtr<LocalHotkeyManager::Panel> panel) {

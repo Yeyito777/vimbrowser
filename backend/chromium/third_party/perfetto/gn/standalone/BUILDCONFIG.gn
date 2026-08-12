@@ -52,9 +52,6 @@ is_nacl = false
 
 if (target_cpu == "") {
   target_cpu = host_cpu
-  if (is_android) {
-    target_cpu = "arm"
-  }
 }
 if (current_cpu == "") {
   current_cpu = target_cpu

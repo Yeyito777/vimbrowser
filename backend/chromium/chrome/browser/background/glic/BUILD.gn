@@ -5,12 +5,10 @@
 source_set("glic") {
   sources = [ "glic_launcher_configuration.h" ]
 
-  if (!is_android) {
-    sources += [
-      "glic_background_mode_manager.h",
-      "glic_controller.h",
-    ]
-  }
+  sources += [
+    "glic_background_mode_manager.h",
+    "glic_controller.h",
+  ]
 
   public_deps = [
     "//base",
@@ -29,14 +27,14 @@ source_set("glic") {
 
 source_set("impl") {
   sources = [ "glic_launcher_configuration.cc" ]
-  if (!is_android) {
-    sources += [
-      "glic_background_mode_manager.cc",
-      "glic_controller.cc",
-      "glic_status_icon.cc",
-      "glic_status_icon.h",
-    ]
-  }
+
+  sources += [
+    "glic_background_mode_manager.cc",
+    "glic_controller.cc",
+    "glic_status_icon.cc",
+    "glic_status_icon.h",
+  ]
+
   if (is_win) {
     sources += [
       "glic_status_icon_win.cc",
@@ -71,12 +69,11 @@ source_set("impl") {
     "//ui/gfx",
   ]
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/ui:browser_list",
-      "//components/keep_alive_registry",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui:browser_list",
+    "//components/keep_alive_registry",
+  ]
+
   if (is_chromeos) {
     deps += [ "//ash" ]
   }
@@ -89,73 +86,70 @@ source_set("impl") {
 source_set("unit_tests") {
   testonly = true
   sources = []
-  if (!is_android) {
-    sources += [
-      "glic_launcher_configuration_unittest.cc",
-      "glic_status_icon_unittest.cc",
-    ]
-  }
+
+  sources += [
+    "glic_launcher_configuration_unittest.cc",
+    "glic_status_icon_unittest.cc",
+  ]
+
   deps = []
-  if (!is_android) {
-    deps += [
-      ":glic",
-      ":impl",
-      "//base/test:test_support",
-      "//chrome/browser:global_features",
-      "//chrome/browser/glic",
-      "//chrome/browser/glic/test_support",
-      "//chrome/browser/profiles",
-      "//chrome/browser/status_icons",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui:ui_features",
-      "//chrome/browser/ui/webui/whats_new",
-      "//chrome/common:chrome_features",
-      "//chrome/test:test_support",
-      "//testing/gtest",
-    ]
-  }
+
+  deps += [
+    ":glic",
+    ":impl",
+    "//base/test:test_support",
+    "//chrome/browser:global_features",
+    "//chrome/browser/glic",
+    "//chrome/browser/glic/test_support",
+    "//chrome/browser/profiles",
+    "//chrome/browser/status_icons",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui:ui_features",
+    "//chrome/browser/ui/webui/whats_new",
+    "//chrome/common:chrome_features",
+    "//chrome/test:test_support",
+    "//testing/gtest",
+  ]
 }
 
-if (!is_android) {
-  source_set("interactive_ui_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "glic_background_mode_manager_interactive_uitest.cc",
-      "glic_controller_interactive_uitest.cc",
-      "glic_status_icon_interactive_uitest.cc",
-    ]
-    deps = [
-      ":glic",
-      ":impl",
-      "//base/test:test_support",
-      "//chrome/browser",
-      "//chrome/browser:browser_process",
-      "//chrome/browser:global_features",
-      "//chrome/browser/background",
-      "//chrome/browser/glic",
-      "//chrome/browser/glic:impl",
-      "//chrome/browser/glic/fre",
-      "//chrome/browser/glic/test_support",
-      "//chrome/browser/status_icons",
-      "//chrome/browser/ui/views/frame/",
-      "//chrome/browser/ui/views/glic",
-      "//chrome/common:chrome_features",
-      "//chrome/test:test_support_ui",
-      "//components/keep_alive_registry",
-      "//components/prefs",
-      "//content/test:test_support",
-      "//testing/gtest",
-      "//ui/base/accelerators/global_accelerator_listener",
-    ]
-    data_deps = [ "//chrome/test/data/webui/glic:generate_test_files" ]
+source_set("interactive_ui_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "glic_background_mode_manager_interactive_uitest.cc",
+    "glic_controller_interactive_uitest.cc",
+    "glic_status_icon_interactive_uitest.cc",
+  ]
+  deps = [
+    ":glic",
+    ":impl",
+    "//base/test:test_support",
+    "//chrome/browser",
+    "//chrome/browser:browser_process",
+    "//chrome/browser:global_features",
+    "//chrome/browser/background",
+    "//chrome/browser/glic",
+    "//chrome/browser/glic:impl",
+    "//chrome/browser/glic/fre",
+    "//chrome/browser/glic/test_support",
+    "//chrome/browser/status_icons",
+    "//chrome/browser/ui/views/frame/",
+    "//chrome/browser/ui/views/glic",
+    "//chrome/common:chrome_features",
+    "//chrome/test:test_support_ui",
+    "//components/keep_alive_registry",
+    "//components/prefs",
+    "//content/test:test_support",
+    "//testing/gtest",
+    "//ui/base/accelerators/global_accelerator_listener",
+  ]
+  data_deps = [ "//chrome/test/data/webui/glic:generate_test_files" ]
 
-    if (is_chromeos) {
-      deps += [ "//ash" ]
-    }
+  if (is_chromeos) {
+    deps += [ "//ash" ]
+  }
 
-    if (is_win) {
-      deps += [ "//chrome/browser/startup" ]
-    }
+  if (is_win) {
+    deps += [ "//chrome/browser/startup" ]
   }
 }

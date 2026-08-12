@@ -48,10 +48,6 @@
 #include "third_party/metrics_proto/system_profile.pb.h"
 #include "third_party/metrics_proto/user_action_event.pb.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#include "base/android/apk_info.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
@@ -90,7 +86,7 @@ void LogMetadata::AddSampleCount(base::HistogramBase::Count32 sample_count) {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
 // The foreground/background ID. When a MetricsLog instance is created, its
 // `fg_bg_id` system profile field will be set to this value.
 static int g_fg_bg_id_counter = 1;
@@ -324,7 +320,7 @@ int64_t MetricsLog::GetCurrentTime() {
   return ToMonotonicSeconds(base::TimeTicks::Now());
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
 // static
 void MetricsLog::IncrementFgBgId() {
   g_fg_bg_id_counter++;
@@ -418,7 +414,7 @@ void MetricsLog::RecordCoreSystemProfile(
 
   system_profile->set_session_hash(GetSessionHash());
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
   system_profile->set_fg_bg_id(g_fg_bg_id_counter);
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
@@ -453,14 +449,7 @@ void MetricsLog::RecordCoreSystemProfile(
   os->set_kernel_version(base::SysInfo::OperatingSystemVersion());
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  os->set_build_fingerprint(base::android::android_info::android_build_fp());
-  if (!package_name.empty() && package_name != "com.android.chrome") {
-    system_profile->set_app_package_name(package_name);
-  }
-  system_profile->set_installer_package(internal::ToInstallerPackage(
-      base::android::apk_info::installer_package_name()));
-#elif BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
   os->set_build_number(base::SysInfo::GetIOSBuildNumber());
 #endif
 

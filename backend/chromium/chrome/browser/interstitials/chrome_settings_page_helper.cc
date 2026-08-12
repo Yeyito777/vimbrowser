@@ -4,22 +4,14 @@
 
 #include "chrome/browser/interstitials/chrome_settings_page_helper.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#endif
 
 #include "build/build_config.h"
 #include "components/safe_browsing/buildflags.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/safe_browsing/android/safe_browsing_settings_navigation_android.h"
-#include "components/safe_browsing/core/common/safe_browsing_settings_metrics.h"
-#else
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/chrome_pages.h"
 #include "components/safe_browsing/core/common/safebrowsing_referral_methods.h"
-#endif
 
 namespace security_interstitials {
 
@@ -31,11 +23,6 @@ ChromeSettingsPageHelper::CreateChromeSettingsPageHelper() {
 
 void ChromeSettingsPageHelper::OpenEnhancedProtectionSettings(
     content::WebContents* web_contents) const {
-#if BUILDFLAG(IS_ANDROID)
-  safe_browsing::ShowSafeBrowsingSettings(
-      web_contents->GetTopLevelNativeWindow(),
-      safe_browsing::SettingsAccessPoint::kSecurityInterstitial);
-#else
   // In rare circumstances, this happens outside of a Browser, better ignore
   // than crash.
   // TODO(crbug.com/40772284): Remove and find a better way, e.g. not showing
@@ -45,7 +32,6 @@ void ChromeSettingsPageHelper::OpenEnhancedProtectionSettings(
   }
   chrome::ShowSafeBrowsingEnhancedProtection(
       chrome::FindBrowserWithTab(web_contents));
-#endif
 }
 
 void ChromeSettingsPageHelper::OpenEnhancedProtectionSettingsWithIph(
@@ -64,12 +50,5 @@ void ChromeSettingsPageHelper::OpenEnhancedProtectionSettingsWithIph(
 #endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void ChromeSettingsPageHelper::OpenAdvancedProtectionSettings(
-    content::WebContents& web_contents) {
-  safe_browsing::ShowAdvancedProtectionSettings(
-      web_contents.GetTopLevelNativeWindow());
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace security_interstitials

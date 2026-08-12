@@ -66,11 +66,7 @@ std::vector<IndicatorSpec> GetIndicatorSpecs() {
       {kBluetoothConnectedIndicator, kWebVrBluetoothConnectedIndicator,
        vector_icons::kBluetoothConnectedIcon,
        IDS_VR_SHELL_SITE_IS_USING_BLUETOOTH,
-#if BUILDFLAG(IS_ANDROID)
-       IDS_VR_SHELL_BG_IS_USING_BLUETOOTH,
-#else
        0,
-#endif
        IDS_VR_SHELL_SITE_CAN_USE_BLUETOOTH,
        &CapturingStateModel::bluetooth_connected},
 
@@ -82,7 +78,6 @@ std::vector<IndicatorSpec> GetIndicatorSpecs() {
        IDS_VR_SHELL_SITE_CAN_SHARE_SCREEN,
        &CapturingStateModel::screen_capture_enabled},
 
-#if !BUILDFLAG(IS_ANDROID)
       {kUsbConnectedIndicator, kWebXrUsbConnectedIndicator,
        vector_icons::kUsbIcon,
        IDS_VR_SHELL_SITE_IS_USING_USB,
@@ -96,7 +91,6 @@ std::vector<IndicatorSpec> GetIndicatorSpecs() {
        0,
        IDS_VR_SHELL_SITE_CAN_USE_MIDI,
        &CapturingStateModel::midi_connected},
-#endif
   };
 
   return specs;

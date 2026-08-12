@@ -100,16 +100,6 @@ if (is_ios) {
   ]
 }
 
-if (is_android) {
-  _util_sources += [
-    "android/AndroidPixmap.cpp",
-    "android/AndroidWindow.cpp",
-    "android/AndroidWindow.h",
-    "android/third_party/android_native_app_glue.c",
-    "android/third_party/android_native_app_glue.h",
-  ]
-}
-
 # Backtrace utils
 if (is_linux) {
   _util_sources += [ "linux/linux_backtrace.cpp" ]
@@ -125,10 +115,6 @@ if (is_ios) {
 
 if (is_mac) {
   _util_sources += [ "osx/osx_backtrace.cpp" ]
-}
-
-if (is_android) {
-  _util_sources += [ "android/android_backtrace.cpp" ]
 }
 
 config("angle_util_loader_config") {
@@ -341,13 +327,6 @@ foreach(is_shared_library,
       if (is_ios) {
         frameworks += [ "UIKit.framework" ]
       }
-    }
-
-    if (is_android) {
-      libs += [
-        "android",
-        "log",
-      ]
     }
 
     configs += [ "$angle_root:debug_annotations_config" ]

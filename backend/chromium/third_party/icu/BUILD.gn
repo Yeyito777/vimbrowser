@@ -7,10 +7,6 @@ import("//build/config/host_byteorder.gni")
 import("config.gni")
 import("sources.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 if (is_mac && !icu_is_in_fuchsia) {
   import("//build/config/sanitizers/sanitizers.gni")
 }
@@ -109,7 +105,7 @@ config("icu_code") {
         "_SILENCE_CXX17_C_HEADER_DEPRECATION_WARNING",
       ]
     }
-  } else if (is_linux || is_chromeos || is_android || icu_is_in_fuchsia) {
+  } else if (is_linux || is_chromeos || icu_is_in_fuchsia) {
     cflags += [ "-Wno-unused-function" ]
   }
   if (is_clang) {
@@ -131,7 +127,7 @@ config("icu_code") {
       "-Wno-ambiguous-reversed-operator",
     ]
   }
-  if (is_clang || is_linux || is_chromeos || is_android || icu_is_in_fuchsia) {
+  if (is_clang || is_linux || is_chromeos || icu_is_in_fuchsia) {
     cflags += [
       # ICU uses its own deprecated functions.
       "-Wno-deprecated-declarations",
@@ -177,7 +173,7 @@ config("icu_code") {
 # Config used to set default visibility to hidden.
 config("visibility_hidden") {
   cflags = []
-  if (is_mac || is_linux || is_chromeos || is_android || is_fuchsia) {
+  if (is_mac || is_linux || is_chromeos || is_fuchsia) {
     cflags += [ "-fvisibility=hidden" ]
   }
 }
@@ -425,19 +421,7 @@ generate_icuuc("icuuc_private_hidden_visibility") {
   }
 }
 
-if (is_android && enable_java_templates) {
-  android_assets("icu_assets") {
-    if (icu_use_data_file) {
-      sources = [ "$root_out_dir/icudtl.dat" ]
-      deps = [ ":icudata" ]
-      disable_compression = true
-    }
-  }
-}
-
-if (is_android) {
-  data_dir = "android"
-} else if (is_ios && !use_blink) {
+if (is_ios && !use_blink) {
   data_dir = "ios"
 } else if (is_chromeos) {
   data_dir = "chromeos"

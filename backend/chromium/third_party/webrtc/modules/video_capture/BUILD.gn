@@ -150,22 +150,9 @@ if (!build_with_chromium || is_linux || is_chromeos) {
     if (is_fuchsia) {
       sources += [ "video_capture_factory_null.cc" ]
     }
-
-    if (build_with_mozilla && is_android) {
-      include_dirs = [
-        "/config/external/nspr",
-        "/nsprpub/lib/ds",
-        "/nsprpub/pr/include",
-      ]
-
-      sources += [
-        "android/device_info_android.cc",
-        "android/video_capture_android.cc",
-      ]
-    }
   }
 
-  if (!is_android && rtc_include_tests) {
+  if (rtc_include_tests) {
     rtc_test("video_capture_tests") {
       sources = [ "test/video_capture_unittest.cc" ]
       ldflags = []

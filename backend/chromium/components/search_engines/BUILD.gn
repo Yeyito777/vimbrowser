@@ -4,10 +4,6 @@
 
 import("//build/config/chrome_build.gni")
 import("//tools/json_to_struct/json_to_struct.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
 
 static_library("search_engines") {
   sources = [
@@ -119,17 +115,6 @@ static_library("search_engines") {
 
   if (!is_fuchsia) {
     deps += [ "//components/variations/service" ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android/template_url_android.cc",
-      "android/template_url_android.h",
-      "android/template_url_service_android.cc",
-      "android/template_url_service_android.h",
-    ]
-
-    deps += [ "//components/search_engines/android:jni_headers" ]
   }
 
   deps += [
@@ -283,24 +268,9 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_android) {
-    sources += [ "android/template_url_service_android_unittest.cc" ]
-    deps += [ "//components/search_engines/android:jni_headers" ]
-  }
-
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  java_cpp_enum("search_engine_enums_java") {
-    sources = [
-      "choice_made_location.h",
-      "search_engine_type.h",
-      "template_url_starter_pack_data.h",
-    ]
-  }
 }
 
 component("search_engines_switches") {

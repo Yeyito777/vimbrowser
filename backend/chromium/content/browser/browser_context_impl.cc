@@ -23,8 +23,6 @@
 #include "content/browser/in_memory_federated_permission_context.h"
 #include "content/browser/permissions/permission_controller_impl.h"
 #include "content/browser/preloading/prefetch/prefetch_service.h"
-#include "content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_cache.h"
-#include "content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_manager.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"
 #include "content/browser/speech/tts_controller_impl.h"
 #include "content/browser/storage_partition_impl.h"
@@ -41,9 +39,6 @@
 #include "media/mojo/services/webrtc_video_perf_history.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/renderer_host/navigation_transitions/navigation_transition_config.h"
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
 #include "storage/browser/file_system/external_mount_points.h"
@@ -364,18 +359,6 @@ void BrowserContextImpl::SetPrefetchServiceForTesting(
   prefetch_service_ = std::move(prefetch_service);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-NavigationEntryScreenshotManager*
-BrowserContextImpl::GetNavigationEntryScreenshotManager() {
-  if (!nav_entry_screenshot_manager_ &&
-      BackForwardTransitionAnimationManager::
-          ShouldAnimateBackForwardTransitions()) {
-    nav_entry_screenshot_manager_ =
-        std::make_unique<NavigationEntryScreenshotManager>();
-  }
-  return nav_entry_screenshot_manager_.get();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void BrowserContextImpl::WriteIntoTrace(
     perfetto::TracedProto<TraceProto> proto) const {

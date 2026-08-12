@@ -4,24 +4,10 @@
 
 #include "third_party/blink/renderer/modules/media_controls/media_controls_resource_loader.h"
 
-#include "build/build_config.h"
 #include "third_party/blink/renderer/core/style/computed_style.h"
 #include "third_party/blink/renderer/modules/media_controls/resources/grit/media_controls_resources.h"
 #include "third_party/blink/renderer/platform/data_resource_helper.h"
-#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
 #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
-
-namespace {
-
-bool ShouldLoadAndroidCSS() {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
-  return blink::RuntimeEnabledFeatures::MobileLayoutThemeEnabled();
-#endif
-}
-
-}  // namespace
 
 namespace blink {
 
@@ -32,10 +18,6 @@ MediaControlsResourceLoader::~MediaControlsResourceLoader() = default;
 
 String MediaControlsResourceLoader::GetMediaControlsCSS() const {
   return UncompressResourceAsString(IDR_UASTYLE_MEDIA_CONTROLS_CSS);
-}
-
-String MediaControlsResourceLoader::GetMediaControlsAndroidCSS() const {
-  return UncompressResourceAsString(IDR_UASTYLE_MEDIA_CONTROLS_ANDROID_CSS);
 }
 
 // static
@@ -76,10 +58,6 @@ String MediaControlsResourceLoader::GetMediaInterstitialsStyleSheet() {
 }
 
 String MediaControlsResourceLoader::GetUAStyleSheet() {
-  if (ShouldLoadAndroidCSS()) {
-    return StrCat({GetMediaControlsCSS(), GetMediaControlsAndroidCSS(),
-                   GetMediaInterstitialsStyleSheet()});
-  }
   return StrCat({GetMediaControlsCSS(), GetMediaInterstitialsStyleSheet()});
 }
 

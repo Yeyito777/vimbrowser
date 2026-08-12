@@ -37,13 +37,8 @@ void PopulateHttpsOnlyModeStringsForBlockingPage(
     primary_paragraph_id =
         IDS_HTTPS_ONLY_MODE_WITH_SITE_ENGAGEMENT_PRIMARY_PARAGRAPH;
   } else if (reason == InterstitialReason::kAdvancedProtection) {
-#if BUILDFLAG(IS_ANDROID)
-    primary_paragraph_id =
-        IDS_HTTPS_ONLY_MODE_WITH_ADVANCED_PROTECTION_PRIMARY_PARAGRAPH_ANDROID;
-#else
     primary_paragraph_id =
         IDS_HTTPS_ONLY_MODE_WITH_ADVANCED_PROTECTION_PRIMARY_PARAGRAPH;
-#endif
   } else if (reason == InterstitialReason::kTypicallySecureUserHeuristic) {
     primary_paragraph_id =
         IDS_HTTPS_ONLY_MODE_FOR_TYPICALLY_SECURE_BROWSING_PRIMARY_PARAGRAPH;

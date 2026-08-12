@@ -8,10 +8,6 @@ import("//build/config/ui.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
 
 if (enable_printing_tests) {
   import("//build/config/ios/bundle_data_from_filelist.gni")
@@ -231,18 +227,6 @@ component("printing") {
     "//ui/gfx/geometry",
     "//url",
   ]
-
-  if (is_android) {
-    sources += [
-      "printing_context_android.cc",
-      "printing_context_android.h",
-    ]
-
-    deps += [
-      ":printing_jni_headers",
-      "//ui/android",
-    ]
-  }
 
   if (!enable_basic_print_dialog) {
     sources += [
@@ -488,32 +472,5 @@ if (use_cups) {
                            "value")
       }
     }
-  }
-}
-
-if (is_android) {
-  generate_jni("printing_jni_headers") {
-    sources = [ "android/java/src/org/chromium/printing/PrintingContext.java" ]
-  }
-
-  android_library("printing_java") {
-    deps = [
-      "//base:base_java",
-      "//base:unowned_user_data_java",
-      "//build/android:build_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//ui/android:ui_java",
-    ]
-    srcjar_deps = [ ":printing_jni_headers" ]
-    sources = [
-      "android/java/src/org/chromium/printing/PrintDocumentAdapterWrapper.java",
-      "android/java/src/org/chromium/printing/PrintManagerDelegate.java",
-      "android/java/src/org/chromium/printing/PrintManagerDelegateImpl.java",
-      "android/java/src/org/chromium/printing/Printable.java",
-      "android/java/src/org/chromium/printing/PrintingContext.java",
-      "android/java/src/org/chromium/printing/PrintingController.java",
-      "android/java/src/org/chromium/printing/PrintingControllerImpl.java",
-    ]
   }
 }

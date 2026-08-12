@@ -31,10 +31,6 @@ source_set("run_all_unittests") {
     "//services/strings:services_test_strings",
     "//ui/resources:ui_test_pak_data",
   ]
-
-  if (is_android) {
-    deps += [ "//mojo/public/java/system:native_support" ]
-  }
 }
 
 bundle_data("tests_bundle_data") {

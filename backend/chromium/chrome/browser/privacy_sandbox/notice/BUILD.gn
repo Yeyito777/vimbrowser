@@ -9,7 +9,6 @@ mojom("notice_mojom") {
   sources = [ "notice.mojom" ]
   webui_module_path = "/"
   generate_legacy_js_bindings = true
-  generate_java = true
 }
 
 source_set("notice_definitions") {
@@ -88,51 +87,47 @@ source_set("notice") {
     ":interfaces",
   ]
 
-  if (!is_android) {
-    deps += [ ":desktop_view_manager" ]
-  }
+  deps += [ ":desktop_view_manager" ]
 }
 
 # (Desktop Only)
-if (!is_android) {
-  source_set("desktop_entrypoint_handlers_helper") {
-    sources = [ "desktop_entrypoint_handlers_helper.cc" ]
-    public = [ "desktop_entrypoint_handlers_helper.h" ]
-    deps = [
-      "//chrome/browser/search",
-      "//chrome/common",
-      "//extensions/browser",
-    ]
-  }
+source_set("desktop_entrypoint_handlers_helper") {
+  sources = [ "desktop_entrypoint_handlers_helper.cc" ]
+  public = [ "desktop_entrypoint_handlers_helper.h" ]
+  deps = [
+    "//chrome/browser/search",
+    "//chrome/common",
+    "//extensions/browser",
+  ]
+}
 
-  source_set("desktop_view_manager") {
-    sources = [ "desktop_view_manager.cc" ]
-    public = [
-      "desktop_view_manager.h",
-      "desktop_view_manager_test_peer.h",
-    ]
-    deps = [
-      ":core",
-      ":desktop_entrypoint_handlers_helper",
-      ":interfaces",
-      ":notice_mojom",
-      "//base",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/search_engine_choice",
-      "//chrome/browser/sync",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/profiles",
-      "//chrome/browser/ui/signin",
-      "//chrome/common",
-      "//components/privacy_sandbox:features",
-      "//components/regional_capabilities",
-      "//components/search_engines:search_engines_switches",
-      "//components/tabs:public",
-      "//components/web_modal",
-      "//content/public/browser",
-    ]
-  }
+source_set("desktop_view_manager") {
+  sources = [ "desktop_view_manager.cc" ]
+  public = [
+    "desktop_view_manager.h",
+    "desktop_view_manager_test_peer.h",
+  ]
+  deps = [
+    ":core",
+    ":desktop_entrypoint_handlers_helper",
+    ":interfaces",
+    ":notice_mojom",
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/search_engine_choice",
+    "//chrome/browser/sync",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/profiles",
+    "//chrome/browser/ui/signin",
+    "//chrome/common",
+    "//components/privacy_sandbox:features",
+    "//components/regional_capabilities",
+    "//components/search_engines:search_engines_switches",
+    "//components/tabs:public",
+    "//components/web_modal",
+    "//content/public/browser",
+  ]
 }
 
 test("fuzz_tests") {
@@ -170,15 +165,13 @@ source_set("test_support") {
   ]
 
   # (Desktop Only)
-  if (!is_android) {
-    sources += [
-      "mocks/mock_desktop_view_manager.cc",
-      "mocks/mock_desktop_view_manager.h",
-      "mocks/mock_desktop_view_manager_observer.cc",
-      "mocks/mock_desktop_view_manager_observer.h",
-    ]
-    deps += [ ":desktop_view_manager" ]
-  }
+  sources += [
+    "mocks/mock_desktop_view_manager.cc",
+    "mocks/mock_desktop_view_manager.h",
+    "mocks/mock_desktop_view_manager_observer.cc",
+    "mocks/mock_desktop_view_manager_observer.h",
+  ]
+  deps += [ ":desktop_view_manager" ]
 }
 
 source_set("unit_tests") {
@@ -208,10 +201,8 @@ source_set("unit_tests") {
   ]
 
   # (Desktop Only)
-  if (!is_android) {
-    sources += [ "desktop_view_manager_unittest.cc" ]
-    deps += [ ":desktop_view_manager" ]
-  }
+  sources += [ "desktop_view_manager_unittest.cc" ]
+  deps += [ ":desktop_view_manager" ]
 }
 
 source_set("browser_tests") {
@@ -232,17 +223,11 @@ source_set("browser_tests") {
     "//testing/gtest",
   ]
 
-  if (is_android) {
-    deps += [ "//chrome/test:test_support_ui_android" ]
-  }
-
-  if (!is_android) {
-    deps += [
-      ":desktop_view_manager",
-      "//chrome/browser/sync",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/signin",
-      "//chrome/test:test_support_ui",
-    ]
-  }
+  deps += [
+    ":desktop_view_manager",
+    "//chrome/browser/sync",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/signin",
+    "//chrome/test:test_support_ui",
+  ]
 }

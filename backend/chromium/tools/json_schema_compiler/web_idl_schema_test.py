@@ -1025,7 +1025,7 @@ class WebIdlSchemaTest(unittest.TestCase):
         'test/web_idl/all_platforms_on_namespace.idl')
     self.assertEqual(1, len(platforms_schema))
     self.assertEqual('allPlatformsAPI', platforms_schema[0]['namespace'])
-    expected = ['chromeos', 'desktop_android', 'linux', 'mac', 'win']
+    expected = ['chromeos', 'linux', 'mac', 'win']
     self.assertEqual(expected, platforms_schema[0]['platforms'])
 
   # Tests that an API interface and a function definition with chromeos listed

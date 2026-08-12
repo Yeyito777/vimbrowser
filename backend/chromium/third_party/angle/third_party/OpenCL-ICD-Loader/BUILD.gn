@@ -47,11 +47,7 @@ source_set("opencl_icd_loader") {
     ]
     include_dirs = [ "." ]
 
-    if (is_android) {
-      cflags = [ "-Wno-#pragma-messages" ]
-    } else {
-      defines += [ "HAVE_SECURE_GETENV" ]
-    }
+    defines += [ "HAVE_SECURE_GETENV" ]
   }
 
   configs -= [ "//build/config/compiler:chromium_code" ]

@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 static_library("regional_capabilities") {
   sources = [
     "enums.h",
@@ -43,10 +38,6 @@ static_library("regional_capabilities") {
     "//third_party/search_engines_data:prepopulated_engines",
     "//third_party/search_engines_data:regional_settings",
   ]
-
-  if (is_android) {
-    deps += [ "//components/regional_capabilities/android:jni_headers" ]
-  }
 }
 
 source_set("country_access_reason") {

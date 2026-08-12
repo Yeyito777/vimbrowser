@@ -167,11 +167,6 @@ component("capture_lib") {
     "//ui/gfx",
   ]
 
-  if (is_android) {
-    public_deps += [ "video/android" ]
-    deps += [ "video/android:capture_jni_headers" ]
-  }
-
   if (is_apple) {
     sources += [
       "video/apple/gpu_memory_buffer_tracker_apple.cc",
@@ -521,13 +516,6 @@ test("capture_unittests") {
       "video/linux/v4l2_gpu_memory_buffer_tracker_unittest.cc",
     ]
     data += [ "//media/test/data/one_frame_1280x720.mjpeg" ]
-  }
-
-  if (is_android) {
-    deps += [
-      "//media/capture/video/android",
-      "//media/capture/video/android:capture_java",
-    ]
   }
 
   if (is_fuchsia) {

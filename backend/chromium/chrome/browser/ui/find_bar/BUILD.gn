@@ -4,7 +4,7 @@
 
 import("//build/config/chromeos/args.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("find_bar") {
   sources = [
@@ -20,14 +20,12 @@ source_set("find_bar") {
     "//components/keyed_service/core",
   ]
 
-  if (!is_android) {
-    sources += [ "find_bar_controller.h" ]
+  sources += [ "find_bar_controller.h" ]
 
-    public_deps += [
-      "//chrome/browser/ui/views/page_action",
-      "//content/public/browser",
-    ]
-  }
+  public_deps += [
+    "//chrome/browser/ui/views/page_action",
+    "//content/public/browser",
+  ]
 }
 
 source_set("impl") {
@@ -37,14 +35,12 @@ source_set("impl") {
   ]
   deps = [ ":find_bar" ]
 
-  if (!is_android) {
-    sources += [
-      "find_bar_controller.cc",
-      "find_bar_platform_helper.cc",
-      "find_bar_platform_helper.h",
-    ]
-    deps += [ "//ui/gfx/range" ]
-  }
+  sources += [
+    "find_bar_controller.cc",
+    "find_bar_platform_helper.cc",
+    "find_bar_platform_helper.h",
+  ]
+  deps += [ "//ui/gfx/range" ]
 
   if (is_mac) {
     sources += [ "find_bar_platform_helper_mac.mm" ]
@@ -64,30 +60,28 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
+source_set("browser_tests") {
+  testonly = true
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    sources = [
-      "find_bar_controller_browsertest.cc",
-      "find_bar_host_browsertest.cc",
-    ]
+  sources = [
+    "find_bar_controller_browsertest.cc",
+    "find_bar_host_browsertest.cc",
+  ]
 
-    deps = [
-      ":find_bar",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/test:test_support",
-    ]
+  deps = [
+    ":find_bar",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/test:test_support",
+  ]
 
-    if (is_mac) {
-      sources += [ "find_bar_platform_helper_mac_browsertest.mm" ]
-    }
+  if (is_mac) {
+    sources += [ "find_bar_platform_helper_mac_browsertest.mm" ]
   }
 }
 
-if (!is_android && !is_chromeos_device) {
+if (!is_chromeos_device) {
   source_set("interactive_ui_tests") {
     testonly = true
 

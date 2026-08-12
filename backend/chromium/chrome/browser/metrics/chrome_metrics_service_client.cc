@@ -570,7 +570,7 @@ void ChromeMetricsServiceClient::RegisterPrefs(PrefRegistrySimple* registry) {
       registry);
 #endif  // !BUILDFLAG(IS_CHROMEOS)
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
-        // \ BUILDFLAG(IS_MAC)
+        // BUILDFLAG(IS_MAC)
 }
 
 #if BUILDFLAG(IS_CHROMEOS)

@@ -30,18 +30,16 @@ source_set("speech") {
     "//third_party/flac",
   ]
 
-  if (!is_android) {
-    sources += [
-      "endpointer/endpointer.cc",
-      "endpointer/endpointer.h",
-      "endpointer/energy_endpointer.cc",
-      "endpointer/energy_endpointer.h",
-      "endpointer/energy_endpointer_params.cc",
-      "endpointer/energy_endpointer_params.h",
-    ]
-  }
+  sources += [
+    "endpointer/endpointer.cc",
+    "endpointer/endpointer.h",
+    "endpointer/energy_endpointer.cc",
+    "endpointer/energy_endpointer.h",
+    "endpointer/energy_endpointer_params.cc",
+    "endpointer/energy_endpointer_params.h",
+  ]
 
-  if (use_blink && !is_android) {
+  if (use_blink) {
     sources += [
       "speech_recognizer_fsm.cc",
       "speech_recognizer_fsm.h",
@@ -61,9 +59,7 @@ source_set("unit_tests") {
     "chunked_byte_buffer_unittest.cc",
   ]
 
-  if (!is_android) {
-    sources += [ "endpointer/endpointer_unittest.cc" ]
-  }
+  sources += [ "endpointer/endpointer_unittest.cc" ]
 
   deps = [
     ":speech",

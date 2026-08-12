@@ -52,14 +52,6 @@
 #include <asm/ptrace-abi.h>
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-
-#if !defined(F_DUPFD_CLOEXEC)
-#define F_DUPFD_CLOEXEC (F_LINUX_SPECIFIC_BASE + 6)
-#endif
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if defined(__arm__) && !defined(MAP_STACK)
 #define MAP_STACK 0x20000  // Daisy build environment has old headers.
@@ -95,11 +87,7 @@ inline bool IsArchitectureI386() {
 }
 
 inline bool IsAndroid() {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
   return false;
-#endif
 }
 
 inline bool IsArchitectureMips() {
@@ -178,50 +166,6 @@ ResultExpr RestrictPrctl() {
   const Arg<int> option(0), arg(1);
   return Switch(option)
       .Cases({PR_GET_NAME, PR_SET_NAME, PR_GET_DUMPABLE, PR_SET_DUMPABLE
-#if BUILDFLAG(IS_ANDROID)
-              , PR_SET_PTRACER, PR_SET_TIMERSLACK
-              , PR_GET_NO_NEW_PRIVS
-#if defined(ARCH_CPU_ARM64)
-                ,
-                PR_PAC_RESET_KEYS
-                // PR_GET_TAGGED_ADDR_CTRL is used by debuggerd to report
-                // whether memory tagging is active.
-                ,
-                PR_GET_TAGGED_ADDR_CTRL
-                // PR_PAC_GET_ENABLED_KEYS is used by debuggerd to report
-                // whether pointer authentication is enabled and which keys (A
-                // or B) are active.
-                ,
-                PR_PAC_GET_ENABLED_KEYS
-#endif
-
-// Enable PR_SET_TIMERSLACK_PID, an Android custom prctl which is used in:
-// https://android.googlesource.com/platform/system/core/+/lollipop-release/libcutils/sched_policy.c.
-// Depending on the Android kernel version, this prctl may have different
-// values. Since we don't know the correct value for the running kernel, we must
-// allow them all.
-//
-// The effect is:
-// On 3.14 kernels, this allows PR_SET_TIMERSLACK_PID and 43 and 127 (invalid
-// prctls which will return EINVAL)
-// On 3.18 kernels, this allows PR_SET_TIMERSLACK_PID, PR_SET_THP_DISABLE, and
-// 127 (invalid).
-// On 4.1 kernels and up, this allows PR_SET_TIMERSLACK_PID, PR_SET_THP_DISABLE,
-// and PR_MPX_ENABLE_MANAGEMENT.
-
-// https://android.googlesource.com/kernel/common/+/android-3.14/include/uapi/linux/prctl.h
-#define PR_SET_TIMERSLACK_PID_1 41
-
-// https://android.googlesource.com/kernel/common/+/android-3.18/include/uapi/linux/prctl.h
-#define PR_SET_TIMERSLACK_PID_2 43
-
-// https://android.googlesource.com/kernel/common/+/android-4.1/include/uapi/linux/prctl.h and up
-#define PR_SET_TIMERSLACK_PID_3 127
-
-              , PR_SET_TIMERSLACK_PID_1
-              , PR_SET_TIMERSLACK_PID_2
-              , PR_SET_TIMERSLACK_PID_3
-#endif  // BUILDFLAG(IS_ANDROID)
               },
              Allow())
       .Cases({PR_SET_VMA},
@@ -237,11 +181,7 @@ ResultExpr RestrictIoctl() {
 }
 
 ResultExpr RestrictMmapFlags() {
-#if BUILDFLAG(IS_ANDROID) && defined(__x86_64__)
-  const uint64_t kArchSpecificAllowedMask = MAP_32BIT;
-#else
   const uint64_t kArchSpecificAllowedMask = 0;
-#endif
   // The flags MAP_HUGETLB and MAP_POPULATE are specifically not permitted.
   // MAP_DROPPABLE originally added for getrandom() vDSO implementation:
   // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/lib/vdso/getrandom.c#n86
@@ -296,11 +236,7 @@ ResultExpr RestrictFcntlCommands() {
 
   const uint64_t kAllowedMask = O_ACCMODE | O_APPEND | O_NONBLOCK | O_SYNC |
                                 kOLargeFileFlag | O_CLOEXEC | O_NOATIME;
-#if BUILDFLAG(IS_ANDROID)
-  const uint64_t kOsSpecificSeals = F_SEAL_WRITE | F_SEAL_FUTURE_WRITE;
-#else
   const uint64_t kOsSpecificSeals = 0;
-#endif
   const uint64_t kAllowedSeals = F_SEAL_SEAL | F_SEAL_GROW | F_SEAL_SHRINK |
                                  kOsSpecificSeals;
   // clang-format off
@@ -366,18 +302,6 @@ ResultExpr RestrictFutex() {
       .Cases({FUTEX_WAIT, FUTEX_WAKE, FUTEX_REQUEUE, FUTEX_CMP_REQUEUE,
               FUTEX_WAKE_OP, FUTEX_WAIT_BITSET, FUTEX_WAKE_BITSET},
              Allow())
-#if BUILDFLAG(ENABLE_MUTEX_PRIORITY_INHERITANCE) && BUILDFLAG(IS_ANDROID)
-      // Priority-inheritance futex operations are enabled only on Android
-      // kernels 6.1+. Bionic uses the PI variants of the futex operations
-      // (FUTEX_LOCK_PI2, FUTEX_UNLOCK_PI) to implement priority inheriting
-      // mutexes.
-      .Cases({FUTEX_LOCK_PI, FUTEX_UNLOCK_PI, FUTEX_TRYLOCK_PI,
-              FUTEX_WAIT_REQUEUE_PI, FUTEX_CMP_REQUEUE_PI, FUTEX_LOCK_PI2},
-             base::android::BackgroundThreadPoolFieldTrial::
-                     ShouldUsePriorityInheritanceLocks()
-                 ? Allow()
-                 : error)
-#endif  // BUILDFLAG(ENABLE_MUTEX_PRIORITY_INHERITANCE)  &&
         // BUILDFLAG(IS_ANDROID)
       .Default(error);
 }
@@ -446,10 +370,6 @@ ResultExpr RestrictClockID() {
               CLOCK_THREAD_CPUTIME_ID},
              Allow())
       .Default(CrashSIGSYS()))
-#if BUILDFLAG(IS_ANDROID)
-    // Allow per-pid and per-tid clocks.
-    .ElseIf((clockid & CPUCLOCK_CLOCK_MASK) != CLOCKFD, Allow())
-#endif
     .Else(CrashSIGSYS());
 }
 

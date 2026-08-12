@@ -60,7 +60,6 @@
   "app.window.shape": {
     "channel": "stable",
     "extension_types": ["platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "app.window.ime": {
@@ -76,7 +75,6 @@
   "appview": {
     "channel": "stable",
     "extension_types": ["platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "audio": [
@@ -97,13 +95,11 @@
     {
       "channel": "dev",
       "extension_types": ["platform_app"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     },
     {
       "channel": "stable",
       "extension_types": ["platform_app"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"],
       "allowlist": [
         "8C3741E3AF0B93B6E8E0DDD499BB0B74839EA578",
@@ -216,7 +212,6 @@
     "channel": "beta",
     "extension_types": ["extension", "legacy_packaged_app"],
     "max_manifest_version": 2,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "devtools": {
@@ -265,7 +260,6 @@
   "feedbackPrivate": {
     "channel": "stable",
     "extension_types": ["extension", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "7910EAFDAF64B947E1CB31B333A9BD14CA556B6C",  // Feedback UI.
@@ -287,12 +281,10 @@
     "channel": "stable",
     "extension_types": ["platform_app"],
     "default_parent": true,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },{
     "channel": "stable",
     "extension_types": ["extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
@@ -329,13 +321,11 @@
     {
       "channel": "stable",
       "extension_types": ["platform_app"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     },
     {
       "channel": "stable",
       "extension_types": ["extension"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"],
       "allowlist": [
         "D7CD4B3956B1F6E970E4AFCBCD4094B1EF4D07B9",  // http://crbug.com/710541
@@ -445,7 +435,6 @@
   }, {
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "mac", "win", "linux"],
     "allowlist": [
       "0DE0F05680A4A056BCEC864ED8DDA84296F82B40",  // http://crbug.com/434651
@@ -484,7 +473,6 @@
   "networkingPrivate": {
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "mac", "win", "linux"],
     "allowlist": [
       // DO NOT ADD ANY MORE ENTRIES HERE.
@@ -575,7 +563,6 @@
   "socket": {
     "channel": "stable",
     "extension_types": ["platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "storage": [
@@ -665,13 +652,11 @@
     {
       "channel": "stable",
       "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     },
     {
       "channel": "stable",
       "extension_types": ["hosted_app"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"],
       "allowlist": ["B44D08FD98F1523ED5837D78D0A606EA9D6206E5"]  // Web Store
     }
@@ -709,7 +694,6 @@
   "usb": {
     "channel": "stable",
     "extension_types": ["platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "usbDevices": [
@@ -777,7 +761,6 @@
   "webview": {
     "channel": "stable",
     "extension_types": ["platform_app"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "webRequest": [

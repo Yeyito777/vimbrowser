@@ -19,7 +19,6 @@
     "contexts": ["privileged_extension"],
     "extension_types": ["platform_app"],
     "noparent": true,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }, {
     "channel": "stable",
@@ -27,7 +26,6 @@
     "contexts": ["privileged_extension"],
     "extension_types": ["extension"],
     "noparent": true,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
@@ -40,7 +38,6 @@
     "contexts": ["privileged_extension"],
     "extension_types": ["platform_app"],
     "noparent": true,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }, {
     "channel": "stable",
@@ -48,7 +45,6 @@
     "extension_types": ["extension"],
     "noparent": true,
     "component_extensions_auto_granted": false,
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"],
     "allowlist": [
       "B9EF10DDFEA11EF77873CC5009809E5037FC4C7A",  // Google input tools
@@ -61,7 +57,6 @@
     "internal": true,
     "channel": "stable",
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "app.currentWindowInternal.setShape": {
@@ -82,7 +77,6 @@
     "internal": true,
     "channel": "stable",
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "audio": {
@@ -93,19 +87,16 @@
     "internal": true,
     "dependencies": ["manifest:automation"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "automation": {
     "dependencies": ["manifest:automation"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "bluetooth": [{
     "dependencies": ["manifest:bluetooth"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }, {
     "channel": "stable",
@@ -114,7 +105,6 @@
       "chrome://bluetooth-pairing/*",
       "chrome://os-settings/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
   "bluetoothLowEnergy": {
@@ -136,7 +126,6 @@
   "bluetoothSocket": {
     "dependencies": ["manifest:bluetooth"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "cecPrivate": {
@@ -217,7 +206,6 @@
         "chrome://cast-feedback/*",
         "chrome://os-feedback/*"
       ],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     }
   ],
@@ -255,7 +243,6 @@
       "internal": true,
       "channel": "stable",
       "contexts": ["privileged_extension"],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     }, {
       "internal": true,
@@ -287,7 +274,6 @@
         "chrome-untrusted://boca-app/*",
         "chrome-untrusted://lens/*"
       ],
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     }, {
       // This feature is used by the Controlled Frame API and is specifically
@@ -301,7 +287,6 @@
       // This feature is only enabled if the embedder's delegated check returns
       // true.
       "requires_delegated_availability_check": true,
-      // "desktop_android" is not supported.
       "platforms": ["chromeos", "linux", "mac", "win"]
     }
   ],
@@ -362,7 +347,6 @@
   "management.installReplacementWebApp": {
     "dependencies": ["manifest:replacement_web_app"],
     "extension_types": ["extension", "platform_app"],
-    // "desktop_android" is not supported. http://crbug.com/371332103
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "management.uninstallSelf": {
@@ -497,7 +481,6 @@
   "mimeHandlerPrivate": {
     "dependencies": ["manifest:mime_types_handler"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "mojoPrivate": {
@@ -715,7 +698,6 @@
   "sockets.tcp": [{
     "dependencies": ["manifest:sockets"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },{
     "channel": "stable",
@@ -723,13 +705,11 @@
     "matches": [
       "chrome-untrusted://terminal/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
   "sockets.tcpServer": [{
     "dependencies": ["manifest:sockets"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },{
     "channel": "stable",
@@ -737,13 +717,11 @@
     "matches": [
       "chrome-untrusted://terminal/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
   "sockets.udp": [{
     "dependencies": ["manifest:sockets"],
     "contexts": ["privileged_extension"],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },{
     "channel": "stable",
@@ -751,7 +729,6 @@
     "matches": [
       "chrome-untrusted://terminal/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
   "storage": {

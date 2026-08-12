@@ -18,11 +18,6 @@
 #include "components/signin/public/base/signin_switches.h"
 #include "components/signin/public/identity_manager/tribool.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "components/signin/public/android/jni_headers/AccountCapabilities_jni.h"
-#endif
 
 AccountCapabilities::AccountCapabilities() = default;
 AccountCapabilities::~AccountCapabilities() = default;
@@ -102,13 +97,11 @@ signin::Tribool AccountCapabilities::can_have_email_address_displayed() const {
 }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 signin::Tribool
 AccountCapabilities::can_make_chrome_search_engine_choice_screen_choice()
     const {
   return GetCapabilityByName(kCanMakeChromeSearchEngineChoiceScreenChoice);
 }
-#endif
 
 #if !BUILDFLAG(IS_IOS)
 signin::Tribool AccountCapabilities::can_run_chrome_privacy_sandbox_trials()
@@ -256,42 +249,6 @@ bool AccountCapabilities::operator==(const AccountCapabilities& other) const {
   return true;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-AccountCapabilities AccountCapabilities::ConvertFromJavaAccountCapabilities(
-    JNIEnv* env,
-    const base::android::JavaRef<jobject>& account_capabilities) {
-  AccountCapabilities capabilities;
-  for (std::string_view name : GetSupportedAccountCapabilityNames()) {
-    signin::Tribool capability_state = static_cast<signin::Tribool>(
-        signin::Java_AccountCapabilities_getCapabilityByName(
-            env, account_capabilities,
-            base::android::ConvertUTF8ToJavaString(env, name)));
-    if (capability_state != signin::Tribool::kUnknown) {
-      capabilities.capabilities_map_[std::string(name)] =
-          capability_state == signin::Tribool::kTrue;
-    }
-  }
-  return capabilities;
-}
-
-base::android::ScopedJavaLocalRef<jobject>
-AccountCapabilities::ConvertToJavaAccountCapabilities(JNIEnv* env) const {
-  const size_t num_caps = capabilities_map_.size();
-  std::vector<std::string> capability_names;
-  capability_names.reserve(num_caps);
-  auto capability_values = base::HeapArray<bool>::WithSize(num_caps);
-  size_t value_iterator = 0u;
-  for (const auto& [name, value] : capabilities_map_) {
-    capability_names.push_back(name);
-    capability_values[value_iterator] = value;
-    value_iterator++;
-  }
-  return signin::Java_AccountCapabilities_Constructor(
-      env, base::android::ToJavaArrayOfStrings(env, capability_names),
-      base::android::ToJavaBooleanArray(env, capability_values));
-}
-#endif
 
 AccountCapabilities::AccountCapabilities(
     base::flat_map<std::string, bool> capabilities)
@@ -302,8 +259,4 @@ const base::flat_map<std::string, bool>&
 AccountCapabilities::ConvertToAccountCapabilitiesIOS() {
   return capabilities_map_;
 }
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(AccountCapabilities)
 #endif

@@ -6,7 +6,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 import("//third_party/protobuf/proto_library.gni")
 
 mojom_component("base") {
-  generate_java = true
   sources = [
     "absl_status.mojom",
     "application_state.mojom",
@@ -602,25 +601,6 @@ mojom_component("base") {
     },
   ]
 
-  if (is_android) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "mojo_base.mojom.ApplicationState"
-            cpp = "::base::android::ApplicationState"
-          },
-        ]
-        traits_headers =
-            [ "//mojo/public/cpp/base/application_state_mojom_traits.h" ]
-        traits_public_deps = [
-          "//base",
-          "//mojo/public/cpp/base:typemap_traits",
-        ]
-      },
-    ]
-  }
-
   if (is_win) {
     cpp_typemaps += [
       {
@@ -754,7 +734,6 @@ mojom_component("base") {
 
 mojom_component("protobuf_support") {
   sources = [ "proto_wrapper.mojom" ]
-  generate_java = true
   webui_module_path = "chrome://resources/mojo/mojo/public/mojom/base"
   generate_legacy_js_bindings = true
   output_prefix = "mojo_base_mojom_protobuf_support"

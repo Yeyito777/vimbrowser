@@ -41,10 +41,6 @@ template("angle_trace") {
       deps += invoker.deps
     }
 
-    if (is_android) {
-      libs = [ "log" ]
-    }
-
     # Disable optimization in the trace perf tests to avoid optimizing huge files.
     if (!is_debug && !is_ubsan) {
       suppressed_configs += [

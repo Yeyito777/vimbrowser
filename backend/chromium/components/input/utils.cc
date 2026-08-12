@@ -10,12 +10,6 @@
 #include "build/build_config.h"
 #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#include "base/android/jni_android.h"
-#include "components/input/android/jni_headers/InputUtils_jni.h"
-#include "components/input/features.h"
-#endif
 
 namespace input {
 
@@ -23,44 +17,12 @@ using blink::WebInputEvent;
 using blink::mojom::InputEventResultState;
 using perfetto::protos::pbzero::ChromeLatencyInfo2;
 
-#if BUILDFLAG(IS_ANDROID)
-static bool JNI_InputUtils_IsTransferInputToVizSupported(JNIEnv* env) {
-  return InputUtils::IsTransferInputToVizSupported();
-}
-#endif
 
 // static
 bool InputUtils::IsTransferInputToVizSupported() {
-#if BUILDFLAG(IS_ANDROID)
-  if (base::android::android_info::sdk_int() <
-      base::android::android_info::SdkVersion::SDK_VERSION_V) {
-    // InputOnViz does not work on < Android V, since the touch transfer APIs
-    // were introduced in Android V.
-    return false;
-  }
-
-  if (base::android::android_info::sdk_int() ==
-      base::android::android_info::SdkVersion::SDK_VERSION_V) {
-    // Allow enabling on userdebug builds to have test coverage on older Android
-    // 15 bots.
-    return base::android::android_info::is_debug_android() &&
-           base::FeatureList::IsEnabled(input::features::kInputOnViz);
-  }
-
-  // Android 16+.
-  return base::FeatureList::IsEnabled(input::features::kInputOnViz);
-#else
   return false;
-#endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-
-void InputUtils::RunGarbageCollection() {
-  Java_InputUtils_runGarbageCollection(base::android::AttachCurrentThread());
-}
-
-#endif
 
 ChromeLatencyInfo2::InputType InputEventTypeToProto(
     blink::WebInputEvent::Type event_type) {
@@ -176,7 +138,3 @@ ChromeLatencyInfo2::InputResultState InputEventResultStateToProto(
 }
 
 }  // namespace input
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(InputUtils)
-#endif

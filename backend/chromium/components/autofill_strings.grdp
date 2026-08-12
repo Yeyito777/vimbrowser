@@ -76,28 +76,28 @@
       Remove address from Chromium?
     </message>
   </if>
-  <message name="IDS_AUTOFILL_REMOVE_HOME_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their Home address from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_HOME_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their Home address from Autofill.">
     Remove home address from Chrome autofill?
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_HOME_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Text in a dialog to confirm that the user wants to delete their Home address from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_HOME_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Text in a dialog to confirm that the user wants to delete their Home address from Autofill.">
     Your home address can help you get things done across Google services, like more relevant Search results and directions in Google Maps. You can edit or delete your address <ph name="BEGIN_LINK">&lt;link&gt;</ph>in your Google Account <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph><ph name="END_LINK">&lt;/link&gt;</ph>.
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_WORK_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their Work address from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_WORK_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their Work address from Autofill.">
     Remove work address from Chrome autofill?
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_WORK_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Title in a dialog to confirm that the user wants to delete their Work address from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_WORK_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Title in a dialog to confirm that the user wants to delete their Work address from Autofill.">
     Your work address can help you get things done across Google services, like more relevant Search results and directions in Google Maps. You can edit or delete your address <ph name="BEGIN_LINK">&lt;link&gt;</ph>in your Google Account <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph><ph name="END_LINK">&lt;/link&gt;</ph>.
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_ACCOUNT_NAME_AND_EMAIL_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their account name and email from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_ACCOUNT_NAME_AND_EMAIL_PROFILE_SUGGESTION_CONFIRMATION_TITLE" desc="Title in a dialog to confirm that the user wants to delete their account name and email from Autofill.">
     Remove this info from Chrome autofill?
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_ACCOUNT_NAME_AND_EMAIL_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Title in a dialog to confirm that the user wants to delete their account name and email address from Autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_ACCOUNT_NAME_AND_EMAIL_PROFILE_SUGGESTION_CONFIRMATION_BODY" desc="Title in a dialog to confirm that the user wants to delete their account name and email address from Autofill.">
     You can edit your name in your <ph name="BEGIN_LINK">&lt;link&gt;</ph>Google Account<ph name="END_LINK">&lt;/link&gt;</ph> <ph name="ACCOUNT">$1<ex>example@gmail.com</ex></ph>
   </message>
-  <message name="IDS_AUTOFILL_REMOVE_SUGGESTION_BUTTON" desc="Text in a remove button for Autofill suggestion." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_REMOVE_SUGGESTION_BUTTON" desc="Text in a remove button for Autofill suggestion.">
     Remove
   </message>
-  <message name="IDS_AUTOFILL_DELETE_SUGGESTION_BUTTON" desc="Text in a delete button for Autofill suggestion." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DELETE_SUGGESTION_BUTTON" desc="Text in a delete button for Autofill suggestion.">
     Delete
   </message>
   <message name="IDS_AUTOFILL_DELETE_AUTOCOMPLETE_SUGGESTION_TOOLTIP" desc="Tooltip shown when hovering over a small button with a trash-can logo next to an Autocomplete entry in the Autofill popup.">
@@ -157,10 +157,10 @@
   <message name="IDS_AUTOFILL_CC_GENERIC" desc="Generic credit card name.">
     Card
   </message>
-  <message name="IDS_AUTOFILL_IBAN_GENERIC" desc="Generic IBAN name." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_IBAN_GENERIC" desc="Generic IBAN name.">
     Iban
   </message>
-  <message name="IDS_AUTOFILL_LOYALTY_CARD_GENERIC" desc="Generic loyalty card name." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_LOYALTY_CARD_GENERIC" desc="Generic loyalty card name.">
     Loyalty card
   </message>
   <message name="IDS_AUTOFILL_LOYALTY_CARDS_SUBMENU_TITLE" desc="The loyalty cards submenu suggestion text.">
@@ -169,7 +169,7 @@
   <message name="IDS_AUTOFILL_LOYALTY_CARDS_ALL_YOUR_CARDS_SUBMENU_TITLE" desc="The loyalty cards submenu containing all loyalty cards suggestion text.">
     All your loyalty cards
   </message>
-  <message name="IDS_AUTOFILL_ADDRESS_SUMMARY_SEPARATOR" desc="The separator character used in the summary of an address." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ADDRESS_SUMMARY_SEPARATOR" desc="The separator character used in the summary of an address.">
     , '''
   </message>
   <message name="IDS_AUTOFILL_DEVELOPER_TOOLS" desc="Displayed as the main text in the top level devtools suggestion.">
@@ -313,7 +313,7 @@
     Manage loyalty cards in Google Wallet
   </message>
 
-  <message name="IDS_AUTOFILL_SCAN_CREDIT_CARD" desc="An item in the autofill popup that triggers a new credit card to be scanned using the camera on the device." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SCAN_CREDIT_CARD" desc="An item in the autofill popup that triggers a new credit card to be scanned using the camera on the device.">
     Scan new card
   </message>
 
@@ -340,13 +340,11 @@
     Autofill next time. Card is encrypted when saved.
   </message>
 
-  <if expr="not is_android">
     <message name="IDS_AUTOFILL_POPUP_ACCESSIBLE_NODE_DATA" desc="The accessibility text to speak when we display an autofill popup.">
       Autofill
     </message>
-  </if>
 
-  <message name="IDS_AUTOFILL_IPH_EXTERNAL_ACCOUNT_PROFILE_SUGGESTION" desc="IPH bubble for a suggestion item with an account profile that was created somewhere outside Chrome (e.g. Google Pay)." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_IPH_EXTERNAL_ACCOUNT_PROFILE_SUGGESTION" desc="IPH bubble for a suggestion item with an account profile that was created somewhere outside Chrome (e.g. Google Pay).">
     You can now use addresses from your Google Account
   </message>
   <message name="IDS_AUTOFILL_IPH_HOME_AND_WORK_ACCOUNT_PROFILE_SUGGESTION" desc="IPH bubble for a suggestion item suggesting that home and work account profiles are available to use.">
@@ -400,28 +398,28 @@
   <message name="IDS_AUTOFILL_ADDRESSES_TABLE_ARIA_LABEL" is_accessibility_with_no_ui="true" desc="Aria label for the list of addresses that chrome has saved for use in filling forms.">
     Saved addresses table
   </message>
-  <message name="IDS_AUTOFILL_ENABLE_PROFILES_TOGGLE_SUBLABEL" desc="Sublabel for a toggle that allows users to control whether addresses should be saved and forms should be autofilled with them." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ENABLE_PROFILES_TOGGLE_SUBLABEL" desc="Sublabel for a toggle that allows users to control whether addresses should be saved and forms should be autofilled with them.">
     Includes information like phone numbers, email addresses, and shipping addresses
   </message>
-  <message name="IDS_AUTOFILL_LOCAL_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's local address profile" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_LOCAL_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's local address profile">
     Local address
   </message>
-  <message name="IDS_AUTOFILL_HOME_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's home address profile" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_HOME_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's home address profile">
     Home address
   </message>
-  <message name="IDS_AUTOFILL_WORK_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's work address profile" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_WORK_PROFILE_ICON_ACCESSIBILITY_LABEL" desc="Accessibility label for icon used to identify user's work address profile">
     Work address
   </message>
-  <message name="IDS_AUTOFILL_ENABLE_CREDIT_CARDS_TOGGLE_SUBLABEL" desc="Sublabel for a toggle that allows users to control whether credit cards should be saved and forms should be autofilled with it." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ENABLE_CREDIT_CARDS_TOGGLE_SUBLABEL" desc="Sublabel for a toggle that allows users to control whether credit cards should be saved and forms should be autofilled with it.">
     Fills in payment forms with your saved payment methods
   </message>
-  <message name="IDS_AUTOFILL_DELETE_ACCOUNT_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before the address deletion." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DELETE_ACCOUNT_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before the address deletion.">
     This address will be deleted from your Google Account, <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph>
   </message>
-  <message name="IDS_AUTOFILL_DELETE_SYNC_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before the address deletion (with syncing enabled)." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DELETE_SYNC_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before the address deletion (with syncing enabled).">
     This address will be deleted from this and your other signed-in devices
   </message>
-  <message name="IDS_AUTOFILL_DELETE_LOCAL_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before a local (syncing is disabled) address deletion." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DELETE_LOCAL_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning for the user before a local (syncing is disabled) address deletion.">
     This address will be deleted from this device
   </message>
   <message name="IDS_AUTOFILL_SAVE_IN_ACCOUNT_MESSAGE_ADDRESS_RECORD_TYPE_NOTICE" desc="The notice/warning message for the user that this address is going to be stored in their account.">
@@ -430,10 +428,10 @@
   <message name="IDS_AUTOFILL_SAVE_IN_ACCOUNT_MESSAGE_ADDRESS_MIGRATION_RECORD_TYPE_NOTICE" desc="The notice/warning message for the user that this address is going to be migrated in their account.">
     You will be able to use it across Google products
   </message>
-  <message name="IDS_AUTOFILL_ADDRESS_ALREADY_SAVED_IN_ACCOUNT_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their address is stored in their account." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ADDRESS_ALREADY_SAVED_IN_ACCOUNT_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their address is stored in their account.">
     You can use saved addresses across Google products. This address is saved in your Google Account, <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph>.
   </message>
-  <message name="IDS_AUTOFILL_ADDRESS_WILL_BE_SAVED_IN_ACCOUNT_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their address will be saved in their account." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ADDRESS_WILL_BE_SAVED_IN_ACCOUNT_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their address will be saved in their account.">
     You can use saved addresses across Google products. This address will be saved in your Google Account, <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph>.
   </message>
   <message name="IDS_AUTOFILL_ADDRESS_HOME_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their home address won't be modified and a new address will be added to their Google Account.">
@@ -442,7 +440,7 @@
   <message name="IDS_AUTOFILL_ADDRESS_WORK_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their work address won't be modified and a new address will be added to their Google Account.">
     You can use saved addresses across Google products. This won’t change your existing work address. It’ll be saved in your Google Account, <ph name="ACCOUNT">$1<ex>alexpark@gmail.com</ex></ph>.
   </message>
-  <message name="IDS_AUTOFILL_ADDRESS_HOME_AND_WORK_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their Home/Work address is used to fill forms faster in Chrome." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ADDRESS_HOME_AND_WORK_RECORD_TYPE_NOTICE" desc="The footer message used to notify user that their Home/Work address is used to fill forms faster in Chrome.">
     Info from your Google Account <ph name="ACCOUNT">$1<ex>elisa.beckett@gmail.com</ex></ph> can help you fill forms faster in Chrome
   </message>
   <message name="IDS_AUTOFILL_EDIT_ADDRESS_REQUIRED_FIELD_FORM_ERROR" desc="The form error message shown to the user in case of a single required field missing.">
@@ -466,66 +464,37 @@
   <message name="IDS_AUTOFILL_SYNC_TOGGLE_LABEL" desc="The Sync Autofill toggle label on the Autofill Settings page.">
     Use and save Addresses from your Google Account
   </message>
-  <message name="IDS_AUTOFILL_ADDRESSES_SETTINGS_TITLE" desc="Title for the Autofill settings page that allows user to manage their list of saved addresses and Autofill preferences for addresses. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ADDRESSES_SETTINGS_TITLE" desc="Title for the Autofill settings page that allows user to manage their list of saved addresses and Autofill preferences for addresses. Sentence-Cased.">
     Addresses and more
   </message>
   <message name="IDS_AUTOFILL_ADDRESSES_SETTINGS_SUBLABEL" desc="Description shown below the link to the Autofill settings page for managing addresses and more." translateable="false">
     Phone numbers, email addresses, shipping addresses, and plus addresses
   </message>
   <!-- TODO(crbug.com/447113309): will no longer be used for title, update desc -->
-  <message name="IDS_AUTOFILL_PAYMENT_METHODS" desc="Title for the list of saved payment methods that can be used to fill in forms. Also used as the title for the Autofill settings page that allows user to manage their list of saved payment methods and Autofill preferences for payment methods. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENT_METHODS" desc="Title for the list of saved payment methods that can be used to fill in forms. Also used as the title for the Autofill settings page that allows user to manage their list of saved payment methods and Autofill preferences for payment methods. Sentence-Cased.">
     Payment methods
   </message>
   <message name="IDS_AUTOFILL_PAYMENT_METHODS_TABLE_ARIA_LABEL" is_accessibility_with_no_ui="true" desc="Aria label for the list of saved payment methods that can be used to fill in forms.">
     Saved payment methods table
   </message>
-  <message name="IDS_AUTOFILL_ENABLE_PROFILES_TOGGLE_LABEL" desc="Label for a toggle that allows users to control whether addresses should be saved and forms should be autofilled with them. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ENABLE_PROFILES_TOGGLE_LABEL" desc="Label for a toggle that allows users to control whether addresses should be saved and forms should be autofilled with them. Sentence-Cased.">
     Save and fill addresses
   </message>
-  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_EXPLANATION_TITLE" desc="Title of the card explaining why the settings page was disabled. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_EXPLANATION_TITLE" desc="Title of the card explaining why the settings page was disabled. Sentence-Cased.">
   Google isn’t your autofill provider
   </message>
-  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_EXPLANATION" desc="Explanation why the settings page was disabled. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_EXPLANATION" desc="Explanation why the settings page was disabled. Sentence-Cased.">
     To enable these settings and use payment info from your Google Account, visit autofill services settings.
   </message>
-  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_BUTTON_LABEL" desc="Button that opens the autofill services settings page. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DISABLE_SETTINGS_BUTTON_LABEL" desc="Button that opens the autofill services settings page. Sentence-Cased.">
     Autofill services settings
   </message>
-  <message name="IDS_AUTOFILL_ENABLE_CREDIT_CARDS_TOGGLE_LABEL" desc="Label for a toggle that allows users to control whether credit cards should be saved and forms should be autofilled with it. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_ENABLE_CREDIT_CARDS_TOGGLE_LABEL" desc="Label for a toggle that allows users to control whether credit cards should be saved and forms should be autofilled with it. Sentence-Cased.">
     Save and fill payment methods
   </message>
-  <message name="IDS_AUTOFILL_DELETE_ADDRESS_CONFIRMATION_DIALOG_TITLE" desc="Title of the remove address confimation dialog" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_DELETE_ADDRESS_CONFIRMATION_DIALOG_TITLE" desc="Title of the remove address confimation dialog">
     Delete address
   </message>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_EDIT_ADDRESS_LABEL" desc="Title for the entry in the address editor with an external link icon which redirects to the edit page." formatter_data="android_java">
-      Edit
-    </message>
-    <message name="IDS_AUTOFILL_EDIT_ADDRESS_LABEL_CONTENT_DESCRIPTION" desc="Accessibility label for the entry in the address editor with an external link icon which redirects to the edit page." formatter_data="android_java">
-      Edit, opens a new window
-    </message>
-    <message name="IDS_AUTOFILL_EDIT_ADDRESS_REQUIRED_FIELD_ERROR" desc="Validation error message for missing required address field." formatter_data="android_java">
-      Enter <ph name="FIELD">$1<ex>ZIP code</ex></ph>
-    </message>
-    <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT" desc="Title of the option to use the default Chrome autofill experience." formatter_data="android_java">
-      Autofill with Google
-    </message>
-    <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN" desc="Title of the option to use third-party autofill in Chrome." formatter_data="android_java">
-      Autofill using another service
-    </message>
-    <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT_DESCRIPTION" desc="Description shown on the option to use the default Chrome autofill experience." formatter_data="android_java">
-      Use info saved in your Google Account to autofill passwords, passkeys, addresses, payment methods, and other info
-    </message>
-    <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN_DESCRIPTION" desc="Description shown on the option enabling the use of third-party autofill in Chrome." formatter_data="android_java">
-      To use another autofill service in Chrome, choose your autofill provider in Android settings
-    </message>
-    <message name="IDS_PAYMENT_METHODS_SETTINGS_LOYALTY_CARDS_TITLE" desc="Title for the payment methods settings page row that links the user to the Google Wallet app." formatter_data="android_java">
-      Loyalty cards
-    </message>
-    <message name="IDS_PAYMENT_METHODS_SETTINGS_LOYALTY_CARDS_DESCRIPTION" desc="Description shown below the loyalty cards link to the Google Wallet app." formatter_data="android_java">
-      Manage your loyalty cards in Google Wallet
-    </message>
-  </if>
 
   <!-- Autofill/Wallet integration preferences -->
   <message name="IDS_SYNC_DATATYPE_PAYMENTS_AND_INFO" desc="Label for the checkbox that controls the Autofill/Wallet integration feature used for Autofill. 'Google Wallet' should not be translated as it is the product name. Sentence-Cased.">
@@ -533,32 +502,6 @@
   </message>
 
   <!-- Manual filling (keyboard accessory) strings -->
-  <if expr="is_android">
-    <message name="IDS_MANUAL_FILLING_CREDIT_CARD_SHEET_ALL_ADDRESSES_LINK" desc="The text of the link in the address sheet that opens the address management section.">
-      Manage payment methods
-    </message>
-    <message name="IDS_MANUAL_FILLING_CREDIT_CARD_SHEET_ALL_LOYALTY_CARDS_LINK" desc="The text of the link in the payments sheet that opens the Google Wallet loyalty card section.">
-      Manage loyalty cards
-    </message>
-    <message name="IDS_MANUAL_FILLING_CREDIT_CARD_SHEET_EMPTY_MESSAGE" desc="Message indicating that no payment methods (e.g., credit cards) are available for filling.">
-      No saved payment methods
-    </message>
-    <message name="IDS_AUTOFILL_ADDRESS_SHEET_EMPTY_MESSAGE" desc="Message indicating that no addresses are available for filling.">
-      No saved addresses
-    </message>
-    <message name="IDS_AUTOFILL_ADDRESS_SHEET_ALL_ADDRESSES_LINK" desc="The text of the link in the address sheet that opens the address management section.">
-      Manage addresses
-    </message>
-    <message name="IDS_AUTOFILL_ONE_TIME_PASSWORD_VOICE_OVER_A11Y_LABEL" desc="Voice over label for the one time password field.">
-      Verification Code: <ph name="OTP">$1<ex>123456</ex></ph>
-    </message>
-    <message name="IDS_AUTOFILL_A11Y_ANNOUNCE_FILLED_ONE_TIME_PASSWORD" desc="Accessibility announcement for when a one time password is autofilled.">
-      Autofilled code
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARDS_ALL_YOUR_CARDS_SUGGESTION" desc="The keyboard accessory suggestion to open the loyalty cards bottom sheet containing all the user loyalty cards.">
-      Your loyalty cards
-    </message>
-  </if>
 
   <!-- Explicit save/update address prompt strings -->
   <!-- Common on all platforms (platform-specific defined later): -->
@@ -589,10 +532,10 @@
   <message name="IDS_AUTOFILL_ADDRESS_MIGRATION_TO_ACCOUNT_PROMPT_CANCEL_BUTTON_LABEL" desc="Label of the No thanks button in the prompt that offers the user the prompt to migrate the profile to the account.">
     No Thanks
   </message>
-  <message name="IDS_AUTOFILL_UPDATE_ADDRESS_PROMPT_NEW_VALUES_SECTION_LABEL" meaning="In the address update prompt" desc="Label shown next to the section that displays the new address values in the prompt that offers the user to update an existing address." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_UPDATE_ADDRESS_PROMPT_NEW_VALUES_SECTION_LABEL" meaning="In the address update prompt" desc="Label shown next to the section that displays the new address values in the prompt that offers the user to update an existing address.">
     New
   </message>
-  <message name="IDS_AUTOFILL_UPDATE_ADDRESS_PROMPT_OLD_VALUES_SECTION_LABEL" meaning="In the address update prompt" desc="Label shown next to the section that displays the old address values in the prompt that offers the user to update an existing address." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_UPDATE_ADDRESS_PROMPT_OLD_VALUES_SECTION_LABEL" meaning="In the address update prompt" desc="Label shown next to the section that displays the old address values in the prompt that offers the user to update an existing address.">
     Old
   </message>
   <message name="IDS_AUTOFILL_MIGRATE_ADDRESS_PROMPT_CANCEL_BUTTON_LABEL" desc="Label of the Cancel button in the prompt that offers the user to migrate an existing address profile in their Google account." meaning="Don't migrate this address">
@@ -620,26 +563,6 @@
     Email: <ph name="EMAIL">$1<ex>alexpark@gmai.com</ex></ph>.
   </message>
   <!-- Used on Android: -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_ADDRESS_PROMPT_TITLE" desc="Title shown at the top of prompt that offers the user to save a new address.">
-      Save address?
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_ADDRESS_MIGRATION_PROMPT_TITLE" desc="Title shown at the top of prompt that offers the user to migrate a new address in their Google Account.">
-      Save in account?
-    </message>
-    <message name="IDS_AUTOFILL_UPDATE_ADDRESS_PROMPT_TITLE" desc="Title shown at the top of prompt that offers the user to update an existing address.">
-      Update address?
-    </message>
-    <message name="IDS_ANDROID_AUTOFILL_SAVE_ADDRESS_PROMPT_CANCEL_BUTTON_LABEL" desc="Label of the negative button in the modal dialog that offers the user to save a new address.">
-      Cancel
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_ADDRESS_PROMPT_EDIT_BUTTON_TOOLTIP" desc="Tooltip of the Edit button in the prompt that offers the user to save a new address." formatter_data="android_java">
-      Edit address
-    </message>
-    <message name="IDS_AUTOFILL_EDIT_ADDRESS_DIALOG_TITLE" desc="Title shown at the top of dialog that edits an address before saving it" formatter_data="android_java">
-      Edit address
-    </message>
-  </if>
   <!-- Used on iOS: -->
   <if expr="is_ios">
     <message name="IDS_IOS_AUTOFILL_SAVE_ADDRESS_MESSAGE_TITLE" desc="Title shown in the message that offers the user to proceed with saving a new address." meaning="In Title Case for iOS">
@@ -693,15 +616,15 @@
   </if>
   <!-- Autofill Settings Pages -->
   <!-- Common on all platforms -->
-  <message name="IDS_AUTOFILL_CONTACT_INFO_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved addresses and Autofill preferences for addresses. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CONTACT_INFO_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved addresses and Autofill preferences for addresses. Sentence-Cased.">
     Contact info
   </message>
-  <message name="IDS_AUTOFILL_PAYMENTS_TITLE" desc="Title for the Autofill settings page that allows user to manage their list of saved payment methods and Autofill preferences for payment methods. Sentence-Cased." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENTS_TITLE" desc="Title for the Autofill settings page that allows user to manage their list of saved payment methods and Autofill preferences for payment methods. Sentence-Cased.">
     Payments
   </message>
 
   <!-- Used on Desktop: -->
-  <if expr="not is_android and not is_ios">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_SAVE_ADDRESS_PROMPT_TITLE" desc="Title shown at the top of prompt that offers the user to save a new address.">
       Save address?
     </message>
@@ -807,22 +730,22 @@
     <message name="IDS_PASSWORD_MANAGER_UI_PASSWORD_RECOVERY_SHOWN_A11Y_ANNOUNCEMENT" is_accessibility_with_no_ui="true" desc="Text announced after a proactive password recovery popup is shown">
       Recovery password shown
     </message>
-    <message name="IDS_AUTOFILL_IDENTITY_DOCS_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved identity documents. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_IDENTITY_DOCS_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved identity documents. Sentence-Cased.">
       Identity docs
     </message>
-    <message name="IDS_AUTOFILL_IDENTITY_DOCS_OPT_IN_TOGGLE_LABEL" desc="Label for a toggle allowing users to opt into Enhanced Autofill for identity docs. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_IDENTITY_DOCS_OPT_IN_TOGGLE_LABEL" desc="Label for a toggle allowing users to opt into Enhanced Autofill for identity docs. Sentence-Cased.">
       Save and fill identity docs
     </message>
-    <message name="IDS_AUTOFILL_IDENTITY_DOCS_OPT_IN_TOGGLE_SUB_LABEL" desc="Sub-label for a toggle allowing users to opt into Enhanced Autofill for identity docs. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_IDENTITY_DOCS_OPT_IN_TOGGLE_SUB_LABEL" desc="Sub-label for a toggle allowing users to opt into Enhanced Autofill for identity docs. Sentence-Cased.">
       Includes information such as passports and driver's licenses
     </message>
-    <message name="IDS_AUTOFILL_TRAVEL_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved travel info. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_TRAVEL_TITLE" desc="Title for the Your saved info settings sub page that allows user to manage their list of saved travel info. Sentence-Cased.">
       Travel
     </message>
-    <message name="IDS_AUTOFILL_TRAVEL_OPT_IN_TOGGLE_LABEL" desc="Label for a toggle allowing users to opt into Enhanced Autofill for travel-related data types. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_TRAVEL_OPT_IN_TOGGLE_LABEL" desc="Label for a toggle allowing users to opt into Enhanced Autofill for travel-related data types. Sentence-Cased.">
       Save and fill travel info
     </message>
-    <message name="IDS_AUTOFILL_TRAVEL_OPT_IN_TOGGLE_SUB_LABEL" desc="Sub-label for a toggle allowing users to opt into Enhanced Autofill for travel-related data types. Sentence-Cased." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_TRAVEL_OPT_IN_TOGGLE_SUB_LABEL" desc="Sub-label for a toggle allowing users to opt into Enhanced Autofill for travel-related data types. Sentence-Cased.">
       Includes information such as flight bookings and vehicle info
     </message>
   </if>
@@ -840,11 +763,6 @@
   </message>
 
   <!-- Used on Android: -->
-  <if expr="is_android">
-  <message name="IDS_AUTOFILL_ADDRESS_EDIT_DIALOG_REQUIRED_FIELD_CONTENT_DESCRIPTION" desc="Content description for text edit field that is marked as 'required'. It is built from the label and a string that explicitly states that the field is required." formatter_data="android_java">
-    <ph name="FIELD_LABEL">%1$s<ex>City</ex></ph>, required
-  </message>
-  </if>
 
   <!-- Entities -->
   <message name="IDS_AUTOFILL_AI_DRIVERS_LICENSE_ENTITY_NAME" desc="The label for something that a user can save when submitting a form. For context, a user has been able to save credit cards within Chrome for many users. Now a user can also save a “Passport”.">
@@ -1138,7 +1056,6 @@
     Google Wallet
   </message>
   <!-- Prompt strings used on Desktop -->
-  <if expr="not is_android">
     <message name="IDS_AUTOFILL_AI_SAVE_DRIVERS_LICENSE_ENTITY_DIALOG_TITLE" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user is renting a car and just filled in info about their driver’s license. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome.">
       Save driver's license?
     </message>
@@ -1230,7 +1147,6 @@
     <message name="IDS_AUTOFILL_AI_LOCAL_SAVE_NOTIFICATION_DISMISS_BUTTON_LABEL" desc="A button on an informational dialog. Clicking this button dismisses the dialog. The user accepts that the data is saved locally for now.">
       Got it
     </message>
-  </if>
 
 
   <message name="IDS_AUTOFILL_AI_WALLET_UPDATE_OR_MIGRATE_FAILURE_NOTIFICATION" desc="A message that appears when an attempt to update or migrate data to Google Wallet fails.">
@@ -1242,95 +1158,8 @@
   </message>
 
   <!-- Prompt strings used on Android -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_AI_SAVE_DRIVERS_LICENSE_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user is renting a car and just filled in info about their driver’s license. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome.">
-      Save driver's license
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_NATIONAL_ID_CARD_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user is applying for a parking permit with their municipal government and fills out a form that requires their identity information. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome. Important: Avoid translations that refer to a single, specific government document. Instead try to find a general term that is inclusive of all identity cards that meet the definition below, including documents issued by foreign governments. DEFINITION OF “NATIONAL IDENTITY CARD”: The definition we use for this feature is: “An identity document that meets the following criteria: 1) Issued by the government 2) Primary purpose is proving a natural person's identity (as opposed to e.g. their residence) 3) Common form of identification that most people keep with them 4) Not a passport or driver’s license.” EXAMPLES: This definition would include https://www.service-public.fr/particuliers/vosdroits/N358?lang=en. It would not include a United States Social Security Number or https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html. ">
-      Save identity card
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_PASSPORT_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user is booking a flight and filled in their passport info in a form. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome.">
-      Save passport
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_VEHICLE_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user has filled in details related to their car. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome.">
-      Save vehicle
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_KNOWN_TRAVELER_NUMBER_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user has filled in details related to their Known Traveler Number. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome. This is designed for Known Traveler Numbers issued by the United States only. For more info, see https://www.tsa.gov/travel/frequently-asked-questions/what-known-traveler-number-ktn.">
-      Save Known Traveler Number
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_REDRESS_NUMBER_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to save information they just filled in on a form. For example, the user is booking a flight and is prompted to add their redress number. This field is designed for redress numbers issued by the United States only. When they click Submit, we offer to save the data in Chrome. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data saved at this moment. This is a similar moment to saving a password or credit card with Chrome.  This is similar to adding a Credit card to Chrome. Now a user can also save a “Redress number”. This is designed for redress numbers issued by the United States only. For more info, see https://www.dhs.gov/dhs-trip.">
-      Save redress number
-    </message>
-
-    <message name="IDS_AUTOFILL_AI_UPDATE_DRIVERS_LICENSE_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their driver’s license. Now, the user is filling out a new form either with additional details associated with the driver’s license or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the driver’s license that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome.">
-      Update driver's license
-    </message>
-    <message name="IDS_AUTOFILL_AI_UPDATE_NATIONAL_ID_CARD_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their national identity card. Now, the user is filling out a new form either with additional details associated with the national identity card or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the national identity card that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome.  Important: Avoid translations that refer to a single, specific government document. Instead try to find a general term that is inclusive of all identity cards that meet the definition below, including documents issued by foreign governments. DEFINITION OF “NATIONAL IDENTITY CARD”: The definition we use for this feature is: “An identity document that meets the following criteria: 1) Issued by the government 2) Primary purpose is proving a natural person's identity (as opposed to e.g. their residence) 3) Common form of identification that most people keep with them 4) Not a passport or driver’s license.” EXAMPLES: This definition would include https://www.service-public.fr/particuliers/vosdroits/N358?lang=en. It would not include a United States Social Security Number or https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html">
-      Update identity card
-    </message>
-    <message name="IDS_AUTOFILL_AI_UPDATE_PASSPORT_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their passport. Now, the user is filling out a new form either with additional details associated with the passport or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the passport that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome.">
-      Update passport
-    </message>
-    <message name="IDS_AUTOFILL_AI_UPDATE_VEHICLE_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their car. Now, the user is filling out a new form either with additional details associated with the car or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the vehicle that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome.">
-      Update vehicle
-    </message>
-    <message name="IDS_AUTOFILL_AI_UPDATE_KNOWN_TRAVELER_NUMBER_ENTITY_DIALOG_TITLE_ANDROID"  desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their Known Traveler Number. Now, the user is filling out a new form either with additional details associated with the Known Traveler Number or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the vehicle that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome. This is designed for Known Traveler Numbers issued by the United States only. For more info, see https://www.tsa.gov/travel/frequently-asked-questions/what-known-traveler-number-ktn.">
-      Update Known Traveler Number
-    </message>
-    <message name="IDS_AUTOFILL_AI_UPDATE_REDRESS_NUMBER_ENTITY_DIALOG_TITLE_ANDROID" desc="The title of a dialog that prompts the user to update information associated with something they have previously saved. For example, the user previously saved information related to their known redress number. Now, the user is filling out a new form either with additional details associated with the redress number or with different values than what was previously saved. The interface shows new or modified values at the top with blue dots to indicate they’re new. Existing information associated with the redress number that isn’t changing appears at the bottom without blue dots. Depending on the form and what Chrome recognizes, there might be just one or several pieces of data updated at this moment. This is a similar moment to updating a password or credit card with Chrome. Now a user can also save a “Redress number”. This is designed for redress numbers issued by the United States only. For more info, see https://www.dhs.gov/dhs-trip.">
-      Update redress number
-    </message>
-
-    <message name="IDS_AUTOFILL_AI_SAVE_ENTITY_MESSAGE_SUBTITLE" desc="A description that appears beneath the Save title message. This sentence notifies the user that their data will be stored locally. We prompt the user to save their information with Chrome with the promise that Chrome can then help the user fill out forms more quickly using their saved info.">
-      Saves to your device
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_ENTITY_TO_WALLET_MESSAGE_SUBTITLE" desc="A description that appears beneath the Save title message prompting the user to save their data to Google Wallet. This sentence essentially defines Autofill in Chrome. We prompt the user to save their information with Google Wallet with the promise that Chrome can then help the user fill out forms across devices more quickly using their saved info.">
-      In <ph name="IDS_AUTOFILL_GOOGLE_WALLET_TITLE">$1<ex>Google Wallet</ex></ph> for <ph name="ACCOUNT">$2<ex>alexpark@gmail.com</ex></ph>
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_LOCAL_ENTITY_SOURCE_NOTICE" desc="A description that appears beneath the entity details notifying the user that their data is going to be stored locally on device.">
-      Your info is saved to your device
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_IN_WALLET_SOURCE_NOTICE" desc="A description that appears beneath the entity details notifying the user that their data is going to be stored in Google Wallet.">
-      Save your info and get things done faster, like filling forms across Google products. You can <ph name="BEGIN_LINK">&lt;link&gt;</ph>manage your info<ph name="END_LINK">&lt;/link&gt;</ph> in <ph name="IDS_AUTOFILL_GOOGLE_WALLET_TITLE">$1<ex>Google Wallet</ex></ph> for <ph name="ACCOUNT">$2<ex>alexpark@gmail.com</ex></ph>
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_NEW_ATTRIBUTE_ACCESSIBILITY_NAME" desc="Used in entity update dialogs, as the accessible names for rows with new attributes" formatter_data="android_java">
-      <ph name="ATTRIBUTE_NAME">$1<ex>Passport number</ex></ph>, new
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_UPDATED_ATTRIBUTE_ACCESSIBILITY_NAME" desc="Used in entity update dialogs, as the accessible names for rows with updated attributes" formatter_data="android_java">
-      <ph name="ATTRIBUTE_NAME">$1<ex>Passport number</ex></ph>, was <ph name="OLD_ATTRIBUTE_ATTRIBUTE">$2<ex>old value</ex></ph>
-    </message>
-    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_NEW_ATTRIBUTE_WITH_BADGE" desc="Used in entity update dialogs, as the special badge to indicate newly added attributes that were not saved before." formatter_data="android_java">
-      <ph name="ATTRIBUTE_VALUE">$1<ex>John Doe</ex></ph>  <ph name="BEGIN_NEW">&lt;new&gt;</ph>New<ph name="END_NEW">&lt;/new&gt;</ph>
-    </message>
-  </if>
 
   <!-- Entity editor strings used on Android -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_DELETE_LOCAL_ENTITY_DIALOG_TEXT" desc="The text that appears beneath a 'Delete object' title. We want the 'Autofill' keyword to be as prominent as possible because that word captures the value of saved information. 'On this device': helps the user understand that information is saved locally, not in the Cloud." formatter_data="android_java">
-      Autofill won't have this info on this device to help fill out forms
-    </message>
-    <message name="IDS_AUTOFILL_AI_LOCAL_ENTITY_EDITOR_SOURCE_NOTICE" desc="The footer message in the editor dialog informing the user that their data will be stored locally on their device. 'To your device': helps the user understand that information is saved locally, not in the Cloud." formatter_data="android_java">
-      Your info is saved only to your device. You'll have the chance to save it to Wallet the next time you fill a relevant form.
-    </message>
-    <message name="IDS_AUTOFILL_AI_WALLET_ENTITY_EDITOR_SOURCE_NOTICE" desc="The footer message in the editor dialog informing the user that their data will be stored in the Google Wallet." formatter_data="android_java">
-      Your info gets saved to Google Wallet for <ph name="ACCOUNT">$1<ex>elisa.beckett@gmail.com</ex></ph>. You can use it across Google services to fill forms faster.
-    </message>
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_DATE_FIELD_MONTH_LABEL" desc="The default value in the date field month picker in the editor dialog." formatter_data="android_java">
-      Month
-    </message>
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_DATE_FIELD_DAY_LABEL" desc="The default value in the date field day picker in the editor dialog." formatter_data="android_java">
-      Day
-    </message>
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_DATE_FIELD_YEAR_LABEL" desc="The default value in the date field year picker in the editor dialog." formatter_data="android_java">
-      Year
-    </message>
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_INVALID_DATE_ERROR_MESSAGE" desc="An error message that appears beneath a date picker in the case that the user doesn't add a full date. For example, the user sees this error if they set the month but not the day or year, or choose an invalid date like February 30." formatter_data="android_java">
-      Check the date
-    </message>
-    <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_REQUIRED_FIELD_ERROR_MESSAGE" desc="An error message that appears beneath the required field in the entity editor if it was left blank by the user and the user tapped the 'Done' button." formatter_data="android_java">
-      Enter <ph name="FIELD">$1<ex>Passport number</ex></ph>
-    </message>
-  </if>
 
   <!-- FFR Dialog -->
   <!-- TODO: crbug.com/440488776 - Remove FFR strings once default availability is launched. -->
@@ -1346,47 +1175,47 @@
   <message name="IDS_AUTOFILL_AI_FFR_CONSIDER_LEARN_MORE" desc="Link for the enhanced autofill settings page to learn more about this feature.">
     learn more about enhanced autofill in settings
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_AUTHENTICATION_TOGGLE_TITLE" desc="The title of the toggle shown in the settings page that allows managing the authentication requirement before seeings enhanced autofill settings sensitive fields, such as passport number and national id card number." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_AUTHENTICATION_TOGGLE_TITLE" desc="The title of the toggle shown in the settings page that allows managing the authentication requirement before seeings enhanced autofill settings sensitive fields, such as passport number and national id card number.">
     Verify it’s you to autofill sensitive info
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_AUTHENTICATION_TOGGLE_SUBTITLE" desc="The subtitle of the toggle shown in the settings page that allows managing the authentication requirement before seeings enhanced autofill settings sensitive fields, such as passport number and natinal id card number." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_AUTHENTICATION_TOGGLE_SUBTITLE" desc="The subtitle of the toggle shown in the settings page that allows managing the authentication requirement before seeings enhanced autofill settings sensitive fields, such as passport number and natinal id card number.">
     For added protection, always use your fingerprint, face, or other screen lock when you use sensitive info like travel and identity docs
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_PAGE_TITLE" desc="The title of the page in Settings that allows managing the enhanced autofill settings." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_PAGE_TITLE" desc="The title of the page in Settings that allows managing the enhanced autofill settings.">
     Enhanced autofill
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON" desc="A title that contain a section highlighting what happens when ‘enhanced autofill’ is enabled." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON" desc="A title that contain a section highlighting what happens when ‘enhanced autofill’ is enabled.">
     When on
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_THINGS_TO_CONSIDER" desc="A title that contain a section highlighting things to consider when using ‘enhanced autofill’ to improve the feature." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_THINGS_TO_CONSIDER" desc="A title that contain a section highlighting things to consider when using ‘enhanced autofill’ to improve the feature.">
     Things to consider
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_SERVICE_PROVIDER" desc="A title that contains a section that allows users to choose between Autofilling with Google or with another service profider" formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_SERVICE_PROVIDER" desc="A title that contains a section that allows users to choose between Autofilling with Google or with another service profider">
     Autofill service provider
   </message>
-  <message name="IDS_SETTINGS_AUTOFILL_AI_TO_CONSIDER_DATA_USAGE" desc="Bullet 1 of 2 that appears beneath the 'Things to consider' title. The point of this bullet is to convey to the user the types of data that get shared with Google to support this feature. There are 2 data types: 1) 'the page’s URL' and 2) 'content', by which we mean the words, visuals, and layout of the pages the user visits. This notion that Google is considering 'page content' is new. We want to lead with 'To offer suggestions' even though it might be a bit grammatically awkward, because we want to express the need / value before explaining the data that gets shared." formatter_data="android_java">
+  <message name="IDS_SETTINGS_AUTOFILL_AI_TO_CONSIDER_DATA_USAGE" desc="Bullet 1 of 2 that appears beneath the 'Things to consider' title. The point of this bullet is to convey to the user the types of data that get shared with Google to support this feature. There are 2 data types: 1) 'the page’s URL' and 2) 'content', by which we mean the words, visuals, and layout of the pages the user visits. This notion that Google is considering 'page content' is new. We want to lead with 'To offer suggestions' even though it might be a bit grammatically awkward, because we want to express the need / value before explaining the data that gets shared.">
     To offer suggestions and improve this feature, the page’s URL and content are shared with Google
   </message>
   <if expr="_google_chrome">
-    <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill." formatter_data="android_java">
+    <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill.">
       Chrome understands forms better and can autofill them faster for you
     </message>
     <message name="IDS_SETTINGS_AUTOFILL_AI_TOGGLE_SUB_LABEL" desc="The description of the setting. By 'understand forms better', we mean that when a user submits a form on a website, and if they're using enhanced autofill, this feature can offer to save the user's submitted info. When Chrome saves that info, we save the submitted values and consider the page context.">
       Chrome understands forms better and can autofill them faster for you
     </message>
-    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so." formatter_data="android_java">
+    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so.">
       Chrome can autofill difficult fields that standard autofill might miss
     </message>
 
   </if>
   <if expr="not _google_chrome">
-    <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill." formatter_data="android_java">
+    <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill.">
       Chromium understands forms better and can autofill them faster for you
     </message>
     <message name="IDS_SETTINGS_AUTOFILL_AI_TOGGLE_SUB_LABEL" desc="The description of the setting. By 'understand forms better', we mean that when a user submits a form on a website, and if they're using enhanced autofill, this feature can offer to save the user's submitted info. When Chromium saves that info, we save the submitted values and consider the page context.">
       Chromium understands forms better and can autofill them faster for you
     </message>
-    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so." formatter_data="android_java">
+    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so.">
       Chromium can autofill difficult fields that standard autofill might miss
     </message>
   </if>

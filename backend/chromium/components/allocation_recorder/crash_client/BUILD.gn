@@ -14,10 +14,6 @@ source_set("crash_client") {
     "//components/crash/core/common:crash_key",
     "//third_party/crashpad/crashpad/client:common",
   ]
-
-  if (is_android) {
-    deps += [ "//components/crash/core/app" ]
-  }
 }
 
 source_set("unit_tests") {

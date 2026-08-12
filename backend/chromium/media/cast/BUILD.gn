@@ -245,14 +245,6 @@ test("cast_unittests") {
     "//third_party/openscreen/src/cast/streaming:sender",
   ]
 
-  if (is_android) {
-    deps += [
-      # The test needs the java dependencies to add the java classes for their
-      # native counterparts to the test apk.
-      "//testing/android/native_test:native_test_native_code",
-    ]
-  }
-
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]

@@ -19,9 +19,6 @@
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/sys_utils.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace base {
 namespace {
@@ -82,7 +79,7 @@ bool SysInfo::IsLowEndDevice() {
   return IsLowEndDeviceImpl();
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -173,7 +170,7 @@ bool SysInfo::Is6GbDevice() {
 // base/android/java/src/org/chromium/base/SysUtils.java,
 // and to make the selected components in java to see this feature.
 bool SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled() {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
   return base::SysInfo::IsLowEndDevice() ||
          IsPartialLowEndModeOnMidRangeDevicesEnabled() ||
          IsPartialLowEndModeOn3GbDevicesEnabled();
@@ -184,7 +181,7 @@ bool SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled() {
 
 bool SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled(
     const FeatureParam<bool>& param_for_exclusion) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
   return base::SysInfo::IsLowEndDevice() ||
          ((IsPartialLowEndModeOnMidRangeDevicesEnabled() ||
            IsPartialLowEndModeOn3GbDevicesEnabled()) &&
@@ -206,15 +203,6 @@ bool DetectLowEndDevice() {
   }
 
   ByteSize ram_size = SysInfo::AmountOfTotalPhysicalMemory();
-#if BUILDFLAG(IS_ANDROID)
-  if (FeatureList::GetInstance() == nullptr) {
-    ByteSize threshold = MiBU(checked_cast<unsigned>(
-        base::android::GetCachedLowMemoryDeviceThresholdMb()));
-    if (threshold > ByteSize(0)) {
-      return ram_size > ByteSize(0) && ram_size <= threshold;
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   return ram_size > ByteSize(0) &&
          ram_size <= MiBU(checked_cast<unsigned>(
                          features::kLowMemoryDeviceThresholdMB.Get()));
@@ -227,18 +215,15 @@ bool SysInfo::IsLowEndDeviceImpl() {
   return instance.value();
 }
 
-#if !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_WIN) && \
-    !BUILDFLAG(IS_CHROMEOS)
+#if !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_WIN) &&  !BUILDFLAG(IS_CHROMEOS)
 std::string SysInfo::HardwareModelName() {
   return std::string();
 }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 std::string SysInfo::SocManufacturer() {
   return std::string();
 }
-#endif
 
 void SysInfo::GetHardwareInfo(base::OnceCallback<void(HardwareInfo)> callback) {
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)

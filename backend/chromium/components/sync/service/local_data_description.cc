@@ -17,15 +17,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-
-// Must come after all includes for JniType conversions.
-#include "components/sync/android/jni_headers/LocalDataDescription_jni.h"
-
-using base::android::ToJavaArrayOfStrings;
-#endif
 
 namespace syncer {
 
@@ -96,31 +87,5 @@ void PrintTo(const LocalDataDescription& desc, std::ostream* os) {
   *os << "], domain_count:" << desc.domain_count;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject> ConvertToJavaLocalDataDescription(
-    JNIEnv* env,
-    const LocalDataDescription& local_data_description) {
-  return Java_LocalDataDescription_Constructor(
-      env, local_data_description.item_count,
-      base::android::ToJavaArrayOfStrings(env, local_data_description.domains),
-      local_data_description.domain_count);
-}
-
-static std::u16string JNI_LocalDataDescription_GetDomainsDisplayText(
-    JNIEnv* env,
-    int item_count,
-    const std::vector<std::string>& domains,
-    int domain_count) {
-  LocalDataDescription description;
-  description.item_count = item_count;
-  description.domains = std::move(domains);
-  description.domain_count = domain_count;
-  return GetDomainsDisplayText(std::move(description));
-}
-#endif
 
 }  // namespace syncer
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(LocalDataDescription)
-#endif

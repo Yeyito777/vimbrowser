@@ -31,25 +31,10 @@ static_library("test_support") {
     "//net:test_support",
   ]
 
-  if (is_android) {
-    sources += [
-      "android/payment_request_test_bridge.cc",
-      "android/payment_request_test_bridge.h",
-      "payment_request_test_controller_android.cc",
-    ]
+  sources += [ "payment_request_test_controller_desktop.cc" ]
 
-    deps += [
-      "//chrome/test:payment_test_support_jni_headers",
-      "//chrome/test:test_support_ui_android",
-    ]
-  }
-
-  if (!is_android) {
-    sources += [ "payment_request_test_controller_desktop.cc" ]
-
-    deps += [
-      "//chrome/test:test_support_ui",
-      "//components/webauthn/content/browser",
-    ]
-  }
+  deps += [
+    "//chrome/test:test_support_ui",
+    "//components/webauthn/content/browser",
+  ]
 }

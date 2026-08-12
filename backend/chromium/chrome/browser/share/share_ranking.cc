@@ -23,17 +23,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/callback_android.h"
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "base/android/locale_utils.h"
-
-// Must come after other includes, because FromJniType() uses Profile.
-#include "chrome/browser/share/jni_headers/ShareRankingBridge_jni.h"
-
-using base::android::JavaRef;
-#endif
 
 namespace sharing {
 
@@ -225,14 +214,6 @@ ShareRanking::Ranking AppendUpToLength(
   return result;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void RunJniRankCallback(base::android::ScopedJavaGlobalRef<jobject> callback,
-                        JNIEnv* env,
-                        std::optional<ShareRanking::Ranking> ranking) {
-  auto result = base::android::ToJavaArrayOfStrings(env, ranking.value());
-  base::android::RunObjectCallbackAndroid(callback, result);
-}
-#endif
 
 #if DCHECK_IS_ON()
 bool EveryElementInList(const std::vector<std::string>& ranking,
@@ -546,62 +527,9 @@ void ShareRanking::OnRankGetOldRankingDone(
 
 ShareRanking::Ranking ShareRanking::GetDefaultInitialRankingForType(
     const std::string& type) {
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, just use the app's default locale string - we don't have a pref
-  // locale to consult regardless, and l10n_util::GetApplicationLocale can do
-  // blocking disk IO (!) while it checks whether we have a string pack for the
-  // various eligible locales. We don't care about strings here, so just go with
-  // what the system is set to, and don't block on the UI thread.
-  std::string locale = base::android::GetDefaultLocaleString();
-#else
   std::string locale = l10n_util::GetApplicationLocale("", false);
-#endif
   return initial_ranking_for_test_.value_or(
       DefaultRankingForLocaleAndType(locale, type));
 }
 
 }  // namespace sharing
-
-#if BUILDFLAG(IS_ANDROID)
-
-static void JNI_ShareRankingBridge_Rank(
-    JNIEnv* env,
-    Profile* profile,
-    const std::string& type,
-    const std::vector<std::string>& available,
-    int32_t jfold,
-    int32_t jlength,
-    bool jpersist,
-    const JavaRef<jobject>& jcallback) {
-  base::android::ScopedJavaGlobalRef<jobject> callback(jcallback);
-
-  if (profile->IsOffTheRecord()) {
-    // For incognito/guest profiles, we use the source ranking from the parent
-    // normal profile but never write anything back to that profile, meaning the
-    // user will get their existing ranking but no change to it will be made
-    // based on incognito activity.
-    CHECK(!jpersist);
-    profile = profile->GetOriginalProfile();
-  }
-
-  auto* history = sharing::ShareHistory::Get(profile);
-  auto* ranking = sharing::ShareRanking::Get(profile);
-
-  CHECK(history);
-  CHECK(ranking);
-
-  size_t fold = base::checked_cast<size_t>(jfold);
-  size_t length = base::checked_cast<size_t>(jlength);
-
-  ranking->Rank(
-      history, type, available, fold, length, jpersist,
-      base::BindOnce(&sharing::RunJniRankCallback, std::move(callback),
-                     // TODO(ellyjones): Is it safe to unretained env here?
-                     base::Unretained(env)));
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ShareRankingBridge)
-#endif

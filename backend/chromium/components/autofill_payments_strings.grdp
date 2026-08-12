@@ -11,10 +11,10 @@
     <message name="IDS_AUTOFILL_SAVE_IBAN_BUBBLE_SAVE_NO_THANKS" desc="The text label for `No thanks` button used in autofill prompt IBAN (International Bank Account Number) local save bubble on desktop.">
       No thanks
     </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_NO_THANKS" desc="Text for the cancel button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will not be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_NO_THANKS" desc="Text for the cancel button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will not be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
       No thanks
     </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_ACCEPT" desc="Text for the accept button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_ACCEPT" desc="Text for the accept button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
       Turn on
     </message>
   </if>
@@ -28,15 +28,15 @@
     <message name="IDS_AUTOFILL_SAVE_IBAN_BUBBLE_SAVE_NO_THANKS" desc="The text label for `No Thanks` button used in autofill prompt IBAN (International Bank Account Number) local save bubble on desktop.">
       No Thanks
     </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_NO_THANKS" desc="Text for the cancel button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will not be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_NO_THANKS" desc="Text for the cancel button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will not be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
       No Thanks
     </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_ACCEPT" desc="Text for the accept button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_ACCEPT" desc="Text for the accept button in the mandatory reauth opt-in prompt. If the user clicks this button, mandatory reauth will be enabled. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
       Turn On
     </message>
   </if>
 
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <if expr="not use_titlecase">
       <message name="IDS_AUTOFILL_NO_THANKS_MOBILE_LOCAL_SAVE" desc="The label for cancel button used in autofill credit card local save infobar on mobile.">
         No thanks
@@ -55,7 +55,7 @@
     </if>
   </if>
 
-  <message name="IDS_AUTOFILL_GOOGLE_PAY_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay logo." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_GOOGLE_PAY_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay logo.">
     Google Pay logo
   </message>
   <message name="IDS_AUTOFILL_GOOGLE_WALLET_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Wallet logo.">
@@ -65,17 +65,15 @@
     Chrome logo
   </message>
 
-  <if expr="not is_android">
     <message name="IDS_AUTOFILL_FIELD_LABEL_PHONE" desc="The label of the Phone entry in a settings-like UI to enter a phone number.">
       Phone
     </message>
     <message name="IDS_AUTOFILL_FIELD_LABEL_BILLING_ADDRESS" desc="Title of the field representing the billing address of a credit card.">
       Billing Address
     </message>
-  </if>
 
   <!-- Autofill save credit card bubble or infobar prompt -->
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <then>
       <message name="IDS_AUTOFILL_SAVE_CARD_INFOBAR_ACCEPT" desc="Text to show for the Autofill save credit card infobar accept button.">
         Save
@@ -89,11 +87,6 @@
         Save
       </message>
     </else>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_CONFIRM" desc="Text to show for the Autofill upload save credit card prompt accept button when more information (e.g., CVC) was needed in order to save the card and was entered." formatter_data="android_java">
-      Confirm
-    </message>
   </if>
   <if expr="is_ios">
     <then>
@@ -136,7 +129,7 @@
   <message name="IDS_AUTOFILL_SAVE_CVC_PROMPT_EXPLANATION_LOCAL" desc="Explanation text for the Autofill save CVC prompt that offers to save CVC for existing local cards. This prompt is shown if a CVC is detected for an existing local card on form submission.">
     This card's CVC will be encrypted and saved to your device for faster checkout
   </message>
-  <message name="IDS_AUTOFILL_FIX_FLOW_PROMPT_SAVE_CARD_LABEL" desc="Text to show on the button to save the card to Google when the fix flow dialog is shown after the Autofill save card prompt." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_FIX_FLOW_PROMPT_SAVE_CARD_LABEL" desc="Text to show on the button to save the card to Google when the fix flow dialog is shown after the Autofill save card prompt.">
     Save card
   </message>
   <if expr="is_linux">
@@ -150,11 +143,6 @@
         Do you want to save this card in your Google Account and on this device?
       </message>
     </else>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_TITLE_TO_CLOUD_V3" desc="Title text for the Autofill save card prompt when the card is to be saved by uploading it to Google Payments, according to January 2018 UI guidelines. The prompt can be either a bubble or an infobar.">
-      Save card?
-    </message>
   </if>
   <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_TITLE_TO_CLOUD_V4" desc="Title text for the Autofill save card prompt when the card is to be saved by uploading it to Google Payments, according to November 2018 UI guidelines. The prompt can be either a bubble or an infobar.">
     Save card to Google Account?
@@ -171,17 +159,6 @@
   <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_CARD_DESCRIPTION_WITH_NICKNAME" desc="Accessibility description for the credit card chip containing the network icon and card labels on the Autofill save card prompt when the card is to be saved (either locally or by uploading it to Google Payments) when the card has a nickname set by the user.">
     <ph name="CARD_NICKNAME">$1<ex>Groceries</ex></ph>, <ph name="CARD_NETWORK_NAME">$2<ex>Visa</ex></ph>, <ph name="CARD_LAST_FOUR_DIGITS">$3<ex>4444</ex></ph>, expires <ph name="CARD_EXPIRATION">$4<ex>01/2025</ex></ph>
   </message>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="The description of the Autofill save card prompt bottom sheet. 'Swipe down to close.' will automatically by appended." formatter_data="android_java">
-      Save card
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_BOTTOM_SHEET_FULL_HEIGHT" desc="The announcement when the Autofill save card prompt bottom sheet is opened." formatter_data="android_java">
-      Save card opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_BOTTOM_SHEET_CLOSED" desc="The announcement when the Autofill save card prompt bottom sheet is closed." formatter_data="android_java">
-      Save card closed.
-    </message>
-  </if>
   <message name="IDS_AUTOFILL_CARD_SAVED" desc="Title text for the Autofill save card manager bubble when the card has been saved either locally or to Google Payments. Also label for icon animation.">
     Card saved
   </message>
@@ -194,11 +171,6 @@
   <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_UPLOAD_EXPLANATION" desc="Explanation of the effect of the Autofill save card prompt when the card is to be saved by uploading it to Google Payments and also saved locally. The prompt can be either a bubble or an infobar.">
     Pay quickly on sites and apps across devices using cards you have saved with Google.
   </message>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_UPLOAD_EXPLANATION_V3" desc="Explanation of the effect of the Autofill save card prompt when the card is to be saved by uploading it to Google Payments, according to April 2018 UI guidelines, and minorly updated again in September 2023. The prompt will be shown either in a bubble below the omnibox, or in a bottom sheet, or in an infobar.">
-      To pay faster next time, save your card and billing address in your Google Account
-    </message>
-  </if>
   <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_UPLOAD_TO_WALLET_EXPLANATION" desc="Explanation of the effect of the Autofill save card prompt when the card is to be saved by uploading it to Google Wallet. The prompt will be shown either in a bubble below the omnibox, or in a bottom sheet, or in an infobar.">
     To pay faster next time, save your card and billing address in Google Wallet
   </message>
@@ -214,7 +186,7 @@
   <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_UPLOAD_TO_WALLET_EXPLANATION_SECURITY" desc="Explanation of the benefit of credit card upload save on Desktop, using security-focused messaging. Became the new default for Desktop in Dec. 2024 and new default for Android and IOS (bottomsheet only) in H1 2025. The final line specifically references Google Wallet instead of Google Account.">
     Pay faster when your card is saved. Card details are encrypted in Google Wallet.
   </message>
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <message name="IDS_AUTOFILL_SAVE_CVC_MESSAGE_SAVE_ACCEPT" desc="Positive button label for the Autofill save CVC prompt that offers to save CVC for existing server cards. This prompt is shown if a CVC is detected for an existing server card on form submission. The prompt is shown on Android and IOS devices.">
       Save
     </message>
@@ -242,7 +214,7 @@
       </message>
     </else>
   </if>
-  <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_CARDHOLDER_NAME_TOOLTIP" desc="The tooltip text for the cardholder name textfield. Note that the translation should not have period" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SAVE_CARD_PROMPT_CARDHOLDER_NAME_TOOLTIP" desc="The tooltip text for the cardholder name textfield. Note that the translation should not have period">
     This name is from your Google Account
   </message>
   <message name="IDS_AUTOFILL_SAVE_CARD_CARDHOLDER_NAME_FIX_FLOW_HEADER" desc="Header for the cardholder name fix flow.">
@@ -251,7 +223,7 @@
   <message name="IDS_AUTOFILL_SAVE_CARD_UPDATE_EXPIRATION_DATE_TITLE" desc="Title for the dialog requesting the user to fill in the expiration date of the credit card during the save card to google flow.">
     Enter expiration date
   </message>
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <message name="IDS_AUTOFILL_SAVE_CARD_UPDATE_EXPIRATION_DATE_TOOLTIP" desc="The tooltip text for the credit card expiration date textfield. Note that the translation should not have period.">
       Expiration date
     </message>
@@ -273,7 +245,7 @@
   </message>
 
   <!-- Autofill Save and Fill dialog related strings -->
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_SAVE_AND_FILL_DIALOG_TITLE" desc="Title for the Save and Fill dialog. It is shown when a user accepts the` Save and Fill` suggestion shown in the Autofill dropdown for users who don't have any cards saved in Autofill. This always users to save and fill a credit card with a single click">
       Save card for faster checkout
     </message>
@@ -333,7 +305,7 @@
       Name on card is invalid
     </message>
   </if>
-  <message name="IDS_AUTOFILL_PENDING_DIALOG_LOADING_ACCESSIBILITY_DESCRIPTION" desc="The accessibility string read to indicate that the dialog or bottomsheet is in a pending state. It is announced when the user taps on the spinner and TalkBack is enabled." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PENDING_DIALOG_LOADING_ACCESSIBILITY_DESCRIPTION" desc="The accessibility string read to indicate that the dialog or bottomsheet is in a pending state. It is announced when the user taps on the spinner and TalkBack is enabled.">
     Loading
   </message>
 
@@ -385,7 +357,7 @@
   </message>
 
   <!-- Autofill credit card unmask prompt -->
-  <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_CVC" desc="Error message that encourages the user to try to re-enter their credit card CVC after a previous failed attempt." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_CVC" desc="Error message that encourages the user to try to re-enter their credit card CVC after a previous failed attempt.">
     Check your CVC and try again
   </message>
   <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_SECURITY_CODE" desc="Text providing context to the user during virtual card security code authentication when they have entered an incorrect security code, such as CVC. It lets the user know that they need to look at the security code on their card again to make sure the one they entered into the form is correct, and that they need to try again.">
@@ -418,10 +390,10 @@
   <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_INSTRUCTIONS_VIRTUAL_CARD" desc="Text providing instructions on how to unmask virtual card.">
     Enter the <ph name="NUMBER_OF_DIGITS">$1<ex>3</ex></ph>-digit security code on the <ph name="SIDE_OF_CARD">$2<ex>back of your card</ex></ph> so your bank can verify it's you
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_TITLE" desc="Title for the credit card unmasking progress dialog, also used as the title of challenge option selection dialog when only one challenge option available." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_TITLE" desc="Title for the credit card unmasking progress dialog, also used as the title of challenge option selection dialog when only one challenge option available.">
     Verify it's you
   </message>
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE_DEFAULT" desc="Title for the credit card unmasking dialog. This dialog is triggered when users attempt autofilling credit cards saved in their payments profile, and prompts them for the CVC to unmask the card.">
       Enter your CVC
     </message>
@@ -475,29 +447,6 @@
       </message>
     </if>
   </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_EXPIRATION_DATE" desc="Error message that encourages the user to try to re-enter their credit card expiration date after a previous failed attempt." formatter_data="android_java">
-      Check your expiration date and try again
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_CVC_AND_EXPIRATION" desc="Error message that encourages the user to try to re-enter their credit card expiration date and CVC after a previous failed attempt." formatter_data="android_java">
-      Check your expiration date and CVC and try again
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_EXPIRATION_MONTH" desc="Error message that encourages the user to try to re-enter their credit card expiration month after a previous failed attempt." formatter_data="android_java">
-      Check your expiration month and try again
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ERROR_TRY_AGAIN_EXPIRATION_YEAR" desc="Error message that encourages the user to try to re-enter their credit card expiration year after a previous failed attempt." formatter_data="android_java">
-      Check your expiration year and try again
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_ANNOUNCEMENT" desc="Announcement for the CVC image. It describes where to find the CVC on a credit card.">
-      Your CVC is on the back of your card. It’s the last 3 digits at the top right of the signature box.
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_ANNOUNCEMENT_AMEX" desc="Announcement for the CVC image. It describes where to find the CVC on an American Express credit card.">
-      Your CVC is on the front of your card. It’s the 4-digit code at the top right above your card number.
-    </message>
-    <message name="IDS_AUTOFILL_CARD_UNMASK_PROMPT_ENABLE_FIDO_AUTH_CHECKBOX" desc="Text for checkbox in card unmasking dialog that allows the use of fingerprint to unmask cards starting next time. If checked, then a fingerprint prompt will immediately follow." formatter_data="android_java">
-      Use screen lock to confirm cards from now on
-    </message>
-  </if>
   <message name="IDS_AUTOFILL_CARD_UNMASK_CONFIRM_BUTTON" desc="Text for button that confirms the credit card CVC entry dialog.">
     Confirm
   </message>
@@ -510,19 +459,19 @@
   <message name="IDS_AUTOFILL_CARD_UNMASK_EXPIRATION_YEAR" desc="Accessible name for card expiry year field.">
     Year
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_IN_PROGRESS" desc="Message displayed while credit card is being verified." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_IN_PROGRESS" desc="Message displayed while credit card is being verified.">
     Confirming card...
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_SUCCESS" desc="Message displayed after successful verification of credit card CVC." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_VERIFICATION_SUCCESS" desc="Message displayed after successful verification of credit card CVC.">
     Your card is confirmed
   </message>
   <message name="IDS_AUTOFILL_CARD_UNMASK_INVALID_EXPIRATION_DATE" desc="Error message to show when a user has input an invalid or old expiration date.">
     The card is expired
   </message>
-  <message name="IDS_AUTOFILL_EXPIRATION_DATE_SEPARATOR" desc="Separator for a credit card expiration date, e.g. the slash in 05/16." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_EXPIRATION_DATE_SEPARATOR" desc="Separator for a credit card expiration date, e.g. the slash in 05/16.">
     /
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_NEW_CARD_LINK" desc="Text for link that prompts user to update their credit card after it may have been re-issued." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_NEW_CARD_LINK" desc="Text for link that prompts user to update their credit card after it may have been re-issued.">
     Update card
   </message>
   <message name="IDS_AUTOFILL_DIALOG_PLACEHOLDER_CVC" desc="The placeholder/label text for credit card verification code in the requestAutocomplete dialog. The text field where this is presented can be very narrow, so please prefer to translate this to the most common abbreviated form. [CHAR_LIMIT=4]" meaning="Placeholder label for a very narrow CVC field that should preferably be translated to an abbreviated form.">
@@ -531,7 +480,7 @@
   <message name="IDS_AUTOFILL_DIALOG_ACCESSIBLE_NAME_SECURITY_CODE" desc = "The accessible name used for credit card security codes.">
     Security code
  </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_PROGRESS_BAR_MESSAGE" desc="Message displayed after tapping a card for unmasking(virtual card or enrolled in card info retrieval), and before any other verification steps." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_PROGRESS_BAR_MESSAGE" desc="Message displayed after tapping a card for unmasking(virtual card or enrolled in card info retrieval), and before any other verification steps.">
     Connecting to your card provider...
   </message>
   <message name="IDS_AUTOFILL_MASKED_SERVER_CARD_RISK_BASED_UNMASK_PROGRESS_BAR_MESSAGE" desc="Loading message displayed after selecting/tapping a credit card entry in Autofill, before possibly showing the user any other verification steps.">
@@ -640,7 +589,7 @@
 
   <!-- WebAuthn fingerprint opt-in dialog -->
   <!-- Desktop only -->
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <if expr="is_macosx">
       <message name="IDS_AUTOFILL_WEBAUTHN_OPT_IN_DIALOG_TITLE" desc="Headline asking the user if they want to use their device's platform authenticator to confirm their cards in the future instead of CVC.">
         Use device unlock instead of CVC?
@@ -669,7 +618,7 @@
         Use Windows Hello
       </message>
     </if>
-    <if expr="not is_win and not is_macosx">
+    <if expr="not is_win and (not is_macosx)">
       <message name="IDS_AUTOFILL_WEBAUTHN_OPT_IN_DIALOG_TITLE" desc="Headline asking the user if they want to use their device's platform authenticator to confirm their cards in the future instead of CVC.">
         Use WebAuthn instead of CVC?
       </message>
@@ -696,7 +645,7 @@
 
   <!-- Webauthn verify pending dialog -->
   <!-- Desktop only -->
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_WEBAUTHN_VERIFY_PENDING_DIALOG_TITLE" desc="Headline of the dialog shown when user has opted in to use platform biometric authenticator and has selected one card to fill the form. This shows the verification of the selected card is in progress.">
         Verifying your identity...
     </message>
@@ -705,10 +654,10 @@
     </message>
   </if>
 
-  <message name="IDS_AUTOFILL_WALLET_MANAGEMENT_LINK_TEXT" desc="Text for link that allows users to see and edit their Wallet information." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_WALLET_MANAGEMENT_LINK_TEXT" desc="Text for link that allows users to see and edit their Wallet information.">
     Edit
   </message>
-  <message name="IDS_AUTOFILL_FROM_GOOGLE_ACCOUNT_LONG" desc="Text that indicates an address or credit card came from Google Pay. 'Google Pay' should not be translated as it is the product name." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_FROM_GOOGLE_ACCOUNT_LONG" desc="Text that indicates an address or credit card came from Google Pay. 'Google Pay' should not be translated as it is the product name.">
     From Google Pay
   </message>
 
@@ -750,36 +699,12 @@
     To autofill this IBAN next time, save it in Google Wallet
   </message>
   <!-- Autofill save IBAN bottom sheet prompt -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_IBAN_PROMPT_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="The description of the Autofill save IBAN bottom sheet. 'Swipe down to close.' will automatically be appended." formatter_data="android_java">
-      Save IBAN
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_IBAN_PROMPT_BOTTOM_SHEET_FULL_HEIGHT" desc="The announcement when the Autofill save IBAN bottom sheet is opened." formatter_data="android_java">
-      Save IBAN opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_IBAN_PROMPT_BOTTOM_SHEET_CLOSED" desc="The announcement when the Autofill save IBAN bottom sheet is closed." formatter_data="android_java">
-      Save IBAN closed.
-    </message>
-    <if expr="not use_titlecase">
-      <message name="IDS_AUTOFILL_SAVE_IBAN_MOBILE_NO_THANKS" desc="The label for cancel button used in Autofill save IBAN bottom sheet on Clank.">
-        No thanks
-      </message>
-    </if>
-    <if expr="use_titlecase">
-      <message name="IDS_AUTOFILL_SAVE_IBAN_MOBILE_NO_THANKS" desc="In Title Case: The label for cancel button used in Autofill save IBAN bottom sheet on Clank.">
-        No Thanks
-      </message>
-    </if>
-    <message name="IDS_AUTOFILL_SAVE_IBAN_MOBILE_ACCEPT" desc="Text to show for the accept button in the Autofill save IBAN bottom sheet on Clank.">
-      Save
-    </message>
-  </if>
 
   <!-- Mandatory Reauth related strings - start -->
-  <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_TITLE" desc="Title text for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_TITLE" desc="Title text for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
     Verify it's you to autofill payment methods?
   </message>
-  <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_EXPLANATION" desc="Explanation text for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_EXPLANATION" desc="Explanation text for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
     For added protection, always use your fingerprint, face, or other screen lock when you pay using autofill
   </message>
   <message name="IDS_AUTOFILL_MANDATORY_REAUTH_ICON_TOOLTIP" desc="The tooltip message for the omnibox icon for the mandatory reauth opt-in bubble on Desktop. This bubble prompts users if they would like to enroll in mandatory reauth. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information.">
@@ -795,20 +720,9 @@
     settings
   </message>
 
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_CONTENT_DESCRIPTION" desc="Content description for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. It is read as accessibility string when the bottom sheet containing the prompt is focused. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
-      Alert about new payment setting
-    </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_OPENED_FULL" desc="The accessibility string for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. It is read as accessibility string when the bottom sheet containing the prompt is fully opened. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
-      Alert about new payment setting is opened
-    </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_OPT_IN_CLOSED" desc="The accessibility string for the mandatory reauth opt-in prompt that is displayed to the user after filling in payment method information. It is read as accessibility string when the bottom sheet containing the prompt is closed. Mandatory reauth requires the user to unlock their device or pass a biometric auth when autofilling payment method information." formatter_data="android_java">
-      Alert about new payment setting is closed
-    </message>
-  </if>
 
   <!-- card info retrieval enrolled card related strings - start -->
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_FILLED_CARD_INFORMATION_BUBBLE_TITLE" desc="The title shown in the Autofill filled card information bubble on Desktop. This bubble shows the complete information for the regular card selected to fill the form.">
       Card details
     </message>
@@ -829,11 +743,11 @@
 
   <!-- virtual cards related strings - start -->
   <if expr="not is_ios">
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENTRY_PREFIX" desc="Notifies users that the type of card they are enrolling in is a virtual card." formatter_data="android_java">
+    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENTRY_PREFIX" desc="Notifies users that the type of card they are enrolling in is a virtual card.">
       Virtual card
     </message>
   </if>
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_FALLBACK_ICON_TOOLTIP" desc="The tooltip message for the omnibox icon for the virtual card enroll bubble on Desktop. This bubble prompts users if they would like to enroll in a virtual card.">
       Add virtual card
     </message>
@@ -874,10 +788,10 @@
   <message name="IDS_AUTOFILL_VIRTUAL_CARD_SUGGESTION_IPH_BUBBLE_LABEL" desc="Text shown in the IPH bubble for the virtual card option in the suggestion dropdown bubble.">
       Use your virtual card for added security
   </message>
-  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_ACCEPT_BUTTON_LABEL" desc="Accept enrolling card as a virtual card." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_ACCEPT_BUTTON_LABEL" desc="Accept enrolling card as a virtual card.">
       Yes
   </message>
-  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_DIALOG_TITLE_LABEL" desc="Title encouraging users to enroll their card to VCN." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_DIALOG_TITLE_LABEL" desc="Title encouraging users to enroll their card to VCN.">
       Make it more secure with a virtual card next time?
   </message>
   <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_DIALOG_CONTENT_LABEL" desc="Text explaining the benefit of enrolling a credit card as a virtual card. Also contains a link to learn more about virtual cards from IDS_AUTOFILL_VIRTUAL_CARD_ENROLLMENT_LEARN_MORE_LINK_LABEL.">
@@ -901,41 +815,15 @@
   <message name="IDS_AUTOFILL_IBAN_SUGGESTION_OPTION_VALUE" desc="The text shown in the IBAN option in the IBAN suggestion list. It is shown as the value of the suggestion." translateable="false">
     IBAN
   </message>
-  <message name="IDS_AUTOFILL_VIRTUAL_CARD_NUMBER_SWITCH_LABEL" desc="The text shown as the label for virtual card enrollment switch in the server card edit page." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_VIRTUAL_CARD_NUMBER_SWITCH_LABEL" desc="The text shown as the label for virtual card enrollment switch in the server card edit page.">
     Virtual card
   </message>
-  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLL_LOADING_THROBBER_ACCESSIBLE_NAME" desc="Accessible name announced by the screenreader for virtual card prompt in loading state showing a throbber." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLL_LOADING_THROBBER_ACCESSIBLE_NAME" desc="Accessible name announced by the screenreader for virtual card prompt in loading state showing a throbber.">
     Turning on virtual card
   </message>
   <if expr="is_ios">
     <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLED_ACCESSIBILITY_ANNOUNCEMENT" desc="Accessible text announced by the screenreader when the virtual card enrollment bottom shows the confirmation checkmark.">
       Virtual card turned on
-    </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_CONTAINER_ACCESSIBILITY_DESCRIPTION" desc="The accessibility description for a UI element that contains the credit card icon, the card name and last four digits (in placeholder), and the text 'Virtual card'. This UI element is in the dialog that lets users enroll their credit card into the virtual card number feature." formatter_data="android_java">
-      <ph name="IDS_AUTOFILL_VIRTUAL_CARD_NAME_AND_LAST_FOUR_DIGITS">%1$s<ex>Visa **** 1234</ex></ph>, virtual card
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLL_CONTENT_DESCRIPTION" desc="The description of the virtual card enrollment dialog for the accessbility screen reader." formatter_data="android_java">
-      Virtual card enrollment
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLL_FULL_HEIGHT_CONTENT_DESCRIPTION" desc="The description of the full height virtual card enrollment dialog for the accessbility screen reader." formatter_data="android_java">
-      Virtual card enrollment opened at full height
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLL_CLOSED_DESCRIPTION" desc="The description of the virtual card enrollment dialog closing for the accessbility screen reader." formatter_data="android_java">
-      Virtual card enrollment closed
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_NUMBER_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after a virtual card number id autofilled.">
-      Virtual card number not filled in?
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_NUMBER_SNACKBAR_ACTION_TEXT" desc="Text to be displayed as the snackbar action shown after a virtual card number id autofilled.">
-      View card
-    </message>
-    <message name="IDS_AUTOFILL_VIRTUAL_CARD_ENROLLED_TEXT" desc="Text to be displayed in the Settings page as label for cards that are enrolled into virtual card number." formatter_data="android_java">
-      Virtual card turned on
-    </message>
-    <message name="IDS_AUTOFILL_CARD_INFO_RETRIEVAL_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after a runtime retrieval card is autofilled.">
-      Card number not filled in?
     </message>
   </if>
   <if expr="is_ios">
@@ -1042,7 +930,7 @@
     <message name="IDS_AUTOFILL_BNPL_SELECT_PROVIDER_TITLE_DESCRIPTION" desc="Accessibility description for the title of the BNPL select provider screen containing the combined GPay logo image.">
     <ph name="SELECT_PROVIDER_TITLE">$1<ex>Choose a pay later provider</ex></ph>. <ph name="LOGO_DESCRIPTION">$2<ex>Google Pay logo</ex></ph>
   </message>
-  <message name="IDS_AUTOFILL_CARD_BNPL_LINKED_ISSUER_PILL_LABEL" desc="Label for the linked issuer pill view, which may be displayed on the BNPL select provider screen that prompts the user to choose a pay later provider. If this label is present, it indicates that the user has previously associated this BNPL provider with their Google account." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_BNPL_LINKED_ISSUER_PILL_LABEL" desc="Label for the linked issuer pill view, which may be displayed on the BNPL select provider screen that prompts the user to choose a pay later provider. If this label is present, it indicates that the user has previously associated this BNPL provider with their Google account.">
     Linked
   </message>
   <message name="IDS_AUTOFILL_CARD_INFO_RETRIEVAL_SUGGESTION_IPH_BUBBLE_FALLBACK_LABEL" desc="Text shown in the `In-Product Help(IPH)` bubble for card info retrieval suggestions on Chrome Android when the issuer_id is not present in the card. It is specifically for card info retrieval enrolled card. Card info will be copied after the user clicks the suggestion.">
@@ -1055,10 +943,10 @@
       Cards not accepted by this merchant are disabled such as virtual cards.
   </message>
   <!-- virtual cards related strings - end -->
-  <message name="IDS_AUTOFILL_CARD_AUTH_SELECTION_DIALOG_TITLE_MULTIPLE_OPTIONS" desc="Title for the credit card unmasking dialog for multiple challenge options. Used in VCN authentication, and once a challenge option is selected a new dialog is rendered where the user authenticates with the selected challenge option." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_AUTH_SELECTION_DIALOG_TITLE_MULTIPLE_OPTIONS" desc="Title for the credit card unmasking dialog for multiple challenge options. Used in VCN authentication, and once a challenge option is selected a new dialog is rendered where the user authenticates with the selected challenge option.">
       Choose how you'll verify it's you
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_ISSUER_CONFIRMATION_TEXT" desc="The issuer confirmation text shown in the Autofill card unmask authentication selection dialog on Desktop and Clank. This is the header text of the dialog, and it is the text stating that the issuer wants additional authentication. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_ISSUER_CONFIRMATION_TEXT" desc="The issuer confirmation text shown in the Autofill card unmask authentication selection dialog on Desktop and Clank. This is the header text of the dialog, and it is the text stating that the issuer wants additional authentication. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card.">
       Your card provider wants to make sure it's you
   </message>
   <message name="IDS_AUTOFILL_AUTHENTICATION_MODE_SECURITY_CODE" desc="The label for the 3 digit security code authentication option shown in the Autofill card unmask authentication selection dialog on Desktop. Only shown when there are multiple unmask options presented to the user. If selected, the user will be prompted to enter their security code.">
@@ -1076,13 +964,13 @@
   <message name="IDS_AUTOFILL_AUTHENTICATION_MODE_THREE_DOMAIN_SECURE" desc="The label for the text message authentication mode option shown in the Autofill card unmask authentication selection dialog on Desktop. Only shown when there are multiple unmask options presented to the user. If selected, Chrome will open a pop-up so that the user can verify on their bank's website.">
     Via Strong Customer Authentication (SCA)
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_CURRENT_INFO_NOT_SEEN_TEXT" desc="The current info not seen text shown in the Autofill card unmask authentication selection dialog on Desktop and Android. It is the footer text on the dialog, and it instructs the user on what to do if they can not see their most up to date authentication information. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_CURRENT_INFO_NOT_SEEN_TEXT" desc="The current info not seen text shown in the Autofill card unmask authentication selection dialog on Desktop and Android. It is the footer text on the dialog, and it instructs the user on what to do if they can not see their most up to date authentication information. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card.">
     Not seeing your current info? Contact your provider to update it.
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_OK_BUTTON_LABEL_CONTINUE" desc="The continue button label shown in the Autofill card unmask authentication selection dialog on Desktop. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card. This label is used when the challenge option just requires the user to continue the flow." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_OK_BUTTON_LABEL_CONTINUE" desc="The continue button label shown in the Autofill card unmask authentication selection dialog on Desktop. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card. This label is used when the challenge option just requires the user to continue the flow.">
     Continue
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_OK_BUTTON_LABEL_SEND" desc="The ok button label shown in the Autofill card unmask authentication selection dialog on Desktop and Android. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card. This is the label used when the challenge option requires a step where something needs to be sent to the user, for example an SMS that contains an OTP." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_OK_BUTTON_LABEL_SEND" desc="The ok button label shown in the Autofill card unmask authentication selection dialog on Desktop and Android. This dialog lets the user choose the method of authentication when unmasking a server card, including a virtual card. This is the label used when the challenge option requires a step where something needs to be sent to the user, for example an SMS that contains an OTP.">
     Send
   </message>
   <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_CVC_CHALLENGE_INFO" desc="Text that is shown for the security code challenge option in the Card Unmask Authentication Selection Dialog. This text lets the user know where the location of the security code is on their card. If the user selects this challenge option and then accepts the dialog, the user will be prompted to enter this security code. An example of a security code is the CVC on the back of the user's credit card.">
@@ -1091,7 +979,7 @@
   <message name="IDS_AUTOFILL_CARD_UNMASK_AUTHENTICATION_SELECTION_DIALOG_THREE_DOMAIN_SECURE_CHALLENGE_INFO" desc="Text that is shown for the 3DS challenge option in the Card Unmask Authentication Selection Dialog. If the user selects this challenge option and then accepts the dialog, Chrome will open a pop-up so that the user can verify on their bank's website.">
     Opens a pop-up to verify on your bank's website
     </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_TITLE" desc="The title for the dialog that lets the user type in the OTP they received on Desktop and Android. This message is shown right next to the logo for the dialog, and it lets the users know the action that is required in this dialog, which is to enter their verification code (OTP)." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_TITLE" desc="The title for the dialog that lets the user type in the OTP they received on Desktop and Android. This message is shown right next to the logo for the dialog, and it lets the users know the action that is required in this dialog, which is to enter their verification code (OTP).">
     Enter code
   </message>
   <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_FOOTER_MESSAGE" desc="The footer message for the dialog that lets the user type in the OTP they received on Desktop. This message instructs the user on what to do if they can't find their OTP code, for example if the OTP code was sent by email but it never came. It contains a link that comes from IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_NEW_CODE_MESSAGE which allows them to get a new code sent if clicked.">
@@ -1103,7 +991,7 @@
   <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_TEXTFIELD_PLACEHOLDER_MESSAGE" desc="The textfield placeholder text for the dialog that lets the user type in the OTP they received on Desktop. This message is shown when the textfield is empty, and it lets the user know the number of digits required for their OTP.">
     Enter <ph name="NUMBER_OF_DIGITS">$1<ex>6</ex></ph>-digit verification code
   </message>
-  <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_PENDING_MESSAGE" desc="The textfield placeholder text for the dialog that lets the user type in the OTP they received on Desktop and Android. This message is shown after the user submits an OTP, and the dialog goes into pending state. It informs the user that we are currently verifying that the OTP they typed in is correct." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_PENDING_MESSAGE" desc="The textfield placeholder text for the dialog that lets the user type in the OTP they received on Desktop and Android. This message is shown after the user submits an OTP, and the dialog goes into pending state. It informs the user that we are currently verifying that the OTP they typed in is correct.">
     Verifying code...
   </message>
   <message name="IDS_AUTOFILL_CARD_UNMASK_OTP_INPUT_DIALOG_VERIFICATION_CODE_EXPIRED_LABEL" desc="This text is shown when the user waits too long to submit an OTP, and the OTP expires. The text directs the user to request a new code so that they can verify it.">
@@ -1129,7 +1017,7 @@
   </message>
 
   <!-- Buy now pay later related strings -->
-  <message name="IDS_AUTOFILL_BNPL_PAY_LATER_OPTIONS_TEXT" desc="Main text for the Buy Now Pay Later option in the autofill credit card popup. If the option is selected, a pop up will be shown to allow users choose a Buy Now Pay Later issuer." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_PAY_LATER_OPTIONS_TEXT" desc="Main text for the Buy Now Pay Later option in the autofill credit card popup. If the option is selected, a pop up will be shown to allow users choose a Buy Now Pay Later issuer.">
     Pay later options
   </message>
   <message name="IDS_AUTOFILL_BNPL_CREDIT_CARD_SUGGESTION_LABEL" desc="One line label shows the minimum qualifying amount for the Buy Now Pay Later option in the autofill credit card popup. If the option is selected, a pop up will be shown to allow users choose a Buy Now Pay Later issuer.">
@@ -1141,37 +1029,37 @@
   <message name="IDS_AUTOFILL_BNPL_CREDIT_CARD_SUGGESTION_LABEL_THREE_ISSUERS" desc="Text that shows the three issuers present that can be used in a payments autofill BNPL flow. Shown in the second line of the BNPL suggestion in the payments autofill dropdown.">
     <ph name="ISSUER_1_NAME">$1<ex>Affirm</ex></ph>, <ph name="ISSUER_2_NAME">$2<ex>Zip</ex></ph>, or <ph name="ISSUER_3_NAME">$3<ex>Klarna</ex></ph>
   </message>
-  <message name="IDS_AUTOFILL_BNPL_SUGGESTION_LABEL_FOR_UNAVAILABLE_PURCHASE" desc="One line label shows the Buy Now Pay Later option is unavailable for the purchase in the autofill credit card popup." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_SUGGESTION_LABEL_FOR_UNAVAILABLE_PURCHASE" desc="One line label shows the Buy Now Pay Later option is unavailable for the purchase in the autofill credit card popup.">
     Unavailable for this purchase
   </message>
-  <message name="IDS_AUTOFILL_BNPL_SETTINGS_LABEL" desc="Label for the Buy Now Pay Later preference in the payments settings page. When enabled, users can checkout with external BNPL issuers using a pay-over-time payment option." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_SETTINGS_LABEL" desc="Label for the Buy Now Pay Later preference in the payments settings page. When enabled, users can checkout with external BNPL issuers using a pay-over-time payment option.">
     Pay later
   </message>
   <message name="IDS_AUTOFILL_BNPL_SETTINGS_SUBLABEL" desc="Sublabel for the Buy Now Pay Later preference in the payments settings page, including a hyperlink to learn more about pay later options. When enabled, users can checkout with external BNPL issuers using a Buy Now Pay Later option.">
     Show <ph name="PAY_LATER_OPTIONS_HELP_LINK_BEGIN">&lt;a href="$1" aria-description="$2"&gt;</ph>pay later<ph name="PAY_LATER_OPTIONS_HELP_LINK_END">&lt;/a&gt;</ph> options at checkout
   </message>
-  <message name="IDS_AUTOFILL_BNPL_AFFIRM" desc="Name of Buy Now Pay Later provider Affirm." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_AFFIRM" desc="Name of Buy Now Pay Later provider Affirm.">
     Affirm
   </message>
-  <message name="IDS_AUTOFILL_BNPL_ZIP" desc="Name of Buy Now Pay Later provider Zip." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_ZIP" desc="Name of Buy Now Pay Later provider Zip.">
     Zip
   </message>
   <message name="IDS_AUTOFILL_BNPL_AFTER_PAY" desc="Name of Buy Now Pay Later provider AfterPay.">
     AfterPay
   </message>
-  <message name="IDS_AUTOFILL_BNPL_KLARNA" desc="Name of Buy Now Pay Later provider Klarna." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_KLARNA" desc="Name of Buy Now Pay Later provider Klarna.">
     Klarna
   </message>
-  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_AFFIRM_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Affirm logo." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_AFFIRM_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Affirm logo.">
     Google Pay, Affirm logo
   </message>
-  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_ZIP_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Zip logo." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_ZIP_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Zip logo.">
     Google Pay, Zip logo
   </message>
   <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_AFTERPAY_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and AfterPay logo.">
     Google Pay, AfterPay logo
   </message>
-  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_KLARNA_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Klarna logo." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_GOOGLE_PAY_AND_KLARNA_LOGO_ACCESSIBLE_NAME" desc="The accessible name for the Google Pay and Klarna logo.">
     Google Pay, Klarna logo
   </message>
   <message name="IDS_AUTOFILL_BNPL_FILLED_CARD_INFORMATION_BUBBLE_TITLE" desc="Title for the Autofill filled card information bubble for the Buy Now Pay Later flow.">
@@ -1183,7 +1071,7 @@
   <message name="IDS_AUTOFILL_BNPL_FILLED_CARD_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after a Buy Now Pay Later virtual card number autofilled.">
     <ph name="BNPL_ISSUER_NAME">$1<ex>PayLater</ex></ph> one-time virtual card number filled.
   </message>
-  <message name="IDS_AUTOFILL_BNPL_TOS_OK_BUTTON_LABEL" desc="The OK button label of the Buy-Now-Pay-Later Terms of Service dialog. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_TOS_OK_BUTTON_LABEL" desc="The OK button label of the Buy-Now-Pay-Later Terms of Service dialog. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website.">
     Continue
   </message>
   <message name="IDS_AUTOFILL_BNPL_TOS_CANCEL_BUTTON_LABEL" desc="The cancel button label of the Buy-Now-Pay-Later Terms of Service dialog. If the user cancels this dialog, the flow will end and the dialog will close.">
@@ -1192,51 +1080,24 @@
   <message name="IDS_AUTOFILL_BNPL_TOS_TITLE_DESCRIPTION" desc="Accessibility description for the title of the Buy-Now-Pay-Later Terms of Service dialog containing the combined GPay and BNPL Issuer logo image.">
     <ph name="TOS_TITLE">$1<ex>Link account and pay with Affirm?</ex></ph> <ph name="LOGO_DESCRIPTION">$2<ex>Google Pay, Affirm logo</ex></ph>
   </message>
-  <if expr="is_android">
-    <then>
-      <message name="IDS_AUTOFILL_BNPL_TOS_BOTTOM_SHEET_CANCEL_BUTTON_LABEL" desc="The cancel button label of the Buy-Now-Pay-Later Terms of Service bottom sheet. If the user cancels, the flow will end and the bottom sheet will close." formatter_data="android_java">
-        No thanks
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_UNLINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new unlinked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog." formatter_data="android_java">
-        Link account and pay with <ph name="BNPL_ISSUER_NAME">%1$s</ph>?
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_LINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new linked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog." formatter_data="android_java">
-        Continue to pay with <ph name="BNPL_ISSUER_NAME">%1$s</ph>?
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog." formatter_data="android_java">
-        After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">%1$s</ph>. This account will be automatically linked to Google Pay.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT_WALLET_BRANDING" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog with Google Wallet branding." formatter_data="android_java">
-        After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">%1$s</ph>. This account will be automatically linked in Google Wallet.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_APPROVE_TEXT" desc="The text informing the user that that BNPL issuer will check and approve their eligibility in the Buy-Now-Pay-Later Terms of Service dialog." formatter_data="android_java">
-        <ph name="BNPL_ISSUER_NAME">%1$s</ph> will check your eligibility (this won't affect your credit score). If approved, <ph name="BNPL_ISSUER_NAME">%1$s</ph> will provide payment plans for you to choose from and complete your purchase.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT" desc="The text informing the user the benefits of linking their BNPL account in the Buy-Now-Pay-Later Terms of Service dialog." formatter_data="android_java">
-        Keeping your account linked helps you pay faster with <ph name="BNPL_ISSUER_NAME">%1$s</ph>, but you can unlink it by going to <ph name="BEGIN_LINK">&lt;link&gt;</ph><ph name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT_WALLET_LINK_TEXT">%2$s<ex>wallet.google.com</ex></ph><ph name="END_LINK">&lt;/link&gt;</ph>
-      </message>
-    </then>
-    <else>
-      <message name="IDS_AUTOFILL_BNPL_TOS_UNLINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new unlinked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog.">
-        Link account and pay with <ph name="BNPL_ISSUER_NAME">$1</ph>?
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_LINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new linked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog.">
-        Continue to pay with <ph name="BNPL_ISSUER_NAME">$1</ph>?
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog.">
-        After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">$1</ph>. This account will be automatically linked to Google Pay.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT_WALLET_BRANDING" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog with Google Wallet branding.">
-        After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">$1</ph>. This account will be automatically linked in Google Wallet.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_APPROVE_TEXT" desc="The text informing the user that that BNPL issuer will check and approve their eligibility in the Buy-Now-Pay-Later Terms of Service dialog.">
-        <ph name="BNPL_ISSUER_NAME">$1</ph> will check your eligibility (this won't affect your credit score). If approved, <ph name="BNPL_ISSUER_NAME">$1</ph> will provide payment plans for you to choose from and complete your purchase.
-      </message>
-      <message name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT" desc="The text informing the user the benefits of linking their BNPL account in the Buy-Now-Pay-Later Terms of Service bottom sheet.">
-        Keeping your account linked helps you pay faster with <ph name="BNPL_ISSUER_NAME">$1</ph>, but you can unlink it by going to <ph name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT_WALLET_LINK_TEXT">$2<ex>wallet.google.com</ex></ph>
-      </message>
-    </else>
-  </if>
+  <message name="IDS_AUTOFILL_BNPL_TOS_UNLINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new unlinked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog.">
+    Link account and pay with <ph name="BNPL_ISSUER_NAME">$1</ph>?
+  </message>
+  <message name="IDS_AUTOFILL_BNPL_TOS_LINKED_TITLE" desc="The title of the Buy-Now-Pay-Later Terms of Service dialog. This dialog is shown to users after they have selected a new linked BNPL issuer to use. If the user accepts this dialog, a new window will be shown to the user to complete the transaction on the BNPL issuer's website. If the user cancels this dialog, they will return back to the BNPL issuer selection dialog.">
+    Continue to pay with <ph name="BNPL_ISSUER_NAME">$1</ph>?
+  </message>
+  <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog.">
+    After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">$1</ph>. This account will be automatically linked to Google Pay.
+  </message>
+  <message name="IDS_AUTOFILL_BNPL_TOS_REVIEW_TEXT_WALLET_BRANDING" desc="The text informing the user that they will be asked to review their order in the Buy-Now-Pay-Later Terms of Service dialog with Google Wallet branding.">
+    After you review your order, you must sign into or create an account with <ph name="BNPL_ISSUER_NAME">$1</ph>. This account will be automatically linked in Google Wallet.
+  </message>
+  <message name="IDS_AUTOFILL_BNPL_TOS_APPROVE_TEXT" desc="The text informing the user that that BNPL issuer will check and approve their eligibility in the Buy-Now-Pay-Later Terms of Service dialog.">
+    <ph name="BNPL_ISSUER_NAME">$1</ph> will check your eligibility (this won't affect your credit score). If approved, <ph name="BNPL_ISSUER_NAME">$1</ph> will provide payment plans for you to choose from and complete your purchase.
+  </message>
+  <message name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT" desc="The text informing the user the benefits of linking their BNPL account in the Buy-Now-Pay-Later Terms of Service bottom sheet.">
+    Keeping your account linked helps you pay faster with <ph name="BNPL_ISSUER_NAME">$1</ph>, but you can unlink it by going to <ph name="IDS_AUTOFILL_BNPL_TOS_LINK_TEXT_WALLET_LINK_TEXT">$2<ex>wallet.google.com</ex></ph>
+  </message>
   <message name="IDS_AUTOFILL_BNPL_FETCH_VCN_PROGRESS_DIALOG_TITLE" desc="The title of the progress dialog to be displayed after the user reviewed their payment plan for the Buy-Now-Pay-Later transaction, and Chrome is attempting to retrieve the virtual card from the Payments server. If the retrieval was successful, a confirmation message will display in the progress dialog and then the virtual card will be filled.">
     Getting ready for checkout
   </message>
@@ -1246,23 +1107,18 @@
   <message name="IDS_AUTOFILL_BNPL_FETCH_VCN_PROGRESS_DIALOG_CONFIRMATION_MESSAGE" desc="The description text of the progress dialog to be displayed after Chrome successfully retrieved the virtual card from the Payments server, and Chrome is going to fill the virtual card.">
     Done!
   </message>
-  <message name="IDS_AUTOFILL_BNPL_ERROR_DIALOG_TITLE" desc="The title text of an error dialog informing the user that something went wrong in the Buy Now Pay Later flow." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_ERROR_DIALOG_TITLE" desc="The title text of an error dialog informing the user that something went wrong in the Buy Now Pay Later flow.">
     Something went wrong
   </message>
-  <message name="IDS_AUTOFILL_BNPL_TEMPORARY_ERROR_DESCRIPTION" desc="The description text of an error dialog informing the user that a temporary error occurred in the Buy Now Pay Later flow." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_TEMPORARY_ERROR_DESCRIPTION" desc="The description text of an error dialog informing the user that a temporary error occurred in the Buy Now Pay Later flow.">
     Pay later is unavailable at this time. Try again or choose another payment method.
   </message>
   <message name="IDS_AUTOFILL_BNPL_PERMANENT_ERROR_DESCRIPTION" desc="The description text of an error dialog informing the user that a permanent error occurred in the Buy Now Pay Later flow.">
     Contact the provider for more information
   </message>
-  <message name="IDS_AUTOFILL_BNPL_ERROR_OK_BUTTON" desc="The label of the button which would close the error screen of the touch to fill bottomsheet and reset the Buy Now Pay Later flow." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_BNPL_ERROR_OK_BUTTON" desc="The label of the button which would close the error screen of the touch to fill bottomsheet and reset the Buy Now Pay Later flow.">
     OK
   </message>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_BNPL_SETTINGS_TOGGLE_SUBLABEL" desc="Sublabel for the Buy Now Pay Later toggle in the payments settings page. When enabled, users can checkout with external BNPL issuers using a Buy Now Pay Later option." formatter_data="android_java">
-      Show pay later options at checkout
-    </message>
-  </if>
   <message name="IDS_AUTOFILL_BNPL_UNSUPPORTED_CURRENCY_ERROR_DIALOG_TITLE" desc="The title text of an error dialog informing the user that Pay Later is not available for the selected currency.">
     Pay later not available in this currency
   </message>
@@ -1280,10 +1136,9 @@
   <message name="IDS_AUTOFILL_CREDIT_CARD_BENEFIT_IPH_BUBBLE_LABEL_SCREENREADER" is_accessibility_with_no_ui="true" desc="Screenreader text for the IPH bubble for educating the user on the existence of card benefits.">
     Now you can see card benefits before you pay
   </message>
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_LABEL" desc="Label for the card benefits preferences in both the payments settings page and card benefits settings page. These preferences help users access the card benefits settings." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_LABEL" desc="Label for the card benefits preferences in both the payments settings page and card benefits settings page. These preferences help users access the card benefits settings.">
       Card benefits
   </message>
-  <if expr="not is_android">
     <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_TOGGLE_SUBLABEL_WITH_LEARN_LINK" desc="Sublabel for the payments settings page card benefits toggle, including a hyperlinked text to learn about card benefits.">
       Show which rewards and benefits are available for your cards at checkout. <ph name="CARD_BENEFIT_HELP_LINK_BEGIN">&lt;a href="$1" aria-description="$2"&gt;</ph>Learn about card benefits<ph name="CARD_BENEFIT_HELP_LINK_END">&lt;/a&gt;</ph>
     </message>
@@ -1296,27 +1151,6 @@
     <message name="IDS_AUTOFILL_SETTINGS_PAGE_BENEFITS_TERMS_ARIA_LABEL" desc="Screenreader text for the benefits terms link on a credit card entry in the Autofill settings page.">
       See terms here for <ph name="CREDIT_CARD_NAME">$1</ph>
     </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_CARD_BENEFITS_SETTINGS_PAGE_TITLE" desc="Title for the card benefits settings page." formatter_data="android_java">
-      Card benefits
-    </message>
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_PREFERENCE_SUMMARY" desc="Summary text for the card benefits preference on the payments settings page, helping users access the card benefits settings." formatter_data="android_java">
-      Choose whether you see your card benefits at checkout (bank terms apply)
-    </message>
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_TOGGLE_SUMMARY" desc="Summary for the toggle switch in the card benefits settings page, which allows user enable/disable the card benefit from showing in the payments autofill card selection bottomsheet." formatter_data="android_java">
-      Show which rewards and benefits are available for your cards at checkout
-    </message>
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_TOGGLE_SUMMARY_WITH_ISSUER_TERMS_APPLY_TEXT" desc="Summary for the toggle switch in the card benefits settings page, which allows user enable/disable the card benefit from showing in the payments autofill card selection bottomsheet." formatter_data="android_java">
-      Show available card benefits and rewards at checkout. Issuer terms apply.
-    </message>
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_LEARN_ABOUT_LINK_TEXT" desc="A label with a link to a help page in the card benefits settings page, which allows users to view help page for card benefits in a new tab." formatter_data="android_java">
-      <ph name="BEGIN_LINK">&lt;link&gt;</ph>Learn more<ph name="END_LINK">&lt;/link&gt;</ph> about card benefits
-    </message>
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_CARD_BENEFITS_ISSUER_TERM_TEXT" desc="Summary for the issuer terms on the card benefits preference on the card benefits setting page." formatter_data="android_java">
-      See terms here
-    </message>
-  </if>
 
   <!-- Credit card and promo code offers and rewards-related strings -->
   <message name="IDS_AUTOFILL_OFFERS_CASHBACK" desc="Displays that a cashback offer will be rewarded if credit card is used on current page. Part of Autofill suggestions popup.">
@@ -1331,7 +1165,7 @@
   <message name="IDS_AUTOFILL_PROMO_CODE_SUGGESTIONS_FOOTER_TEXT" desc="Label for the footer text of the autofill suggestions popup when a user clicks on a promo code field. It redirects the user to the offer webview page for more details on the promo code offers suggested. An example of details the user can see is the terms and conditions of the promo code offers that are shown in the autofill suggestions popup.">
     See promo code details
   </message>
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_OFFERS_REMINDER_ICON_TOOLTIP_TEXT" desc="The tooltip text for the offer icon in the location bar.">
       Offer available
     </message>
@@ -1339,14 +1173,6 @@
   <if expr="not is_ios">
     <message name="IDS_AUTOFILL_OFFERS_REMINDER_DESCRIPTION_TEXT" desc="Secondary explanatory text for the Desktop bubble and Android message shown on the merchant website when an offer is available to use.">
       Pay with <ph name="CARD_DETAIL">$1<ex>Visa - 1234</ex></ph> at checkout
-    </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_OFFERS_MESSAGE_TITLE" desc="Title of the message shown on the merchant website when a GPay-activated card linked offer is available to use.">
-      Google Pay offer available
-    </message>
-    <message name="IDS_AUTOFILL_OFFERS_MESSAGE_PRIMARY_BUTTON_TEXT" desc="Text for the primary button of the message shown on the merchant website when a GPay-activated card linked offer is available to use.">
-      Details
     </message>
   </if>
   <if expr="toolkit_views">
@@ -1371,227 +1197,45 @@
   </if>
 
   <!-- Autofill Payments OTP verification dialog -->
-  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_CANT_FIND_CODE_MESSAGE" desc="Hint shown to the user in the event they are unable to find the OTP code."  formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_CANT_FIND_CODE_MESSAGE" desc="Hint shown to the user in the event they are unable to find the OTP code.">
     Didn\u2019t receive your code? <ph name="BEGIN_LINK">&lt;link&gt;</ph>Get new code<ph name="END_LINK">&lt;/link&gt;</ph>
   </message>
-  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_OTP_INPUT_HINT" desc="Hint shown in the OTP input field indicating the number of digits expected for the OTP." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_OTP_INPUT_HINT" desc="Hint shown in the OTP input field indicating the number of digits expected for the OTP.">
     Enter <ph name="OTP_LENGTH">%1$s<ex>6</ex></ph>-digit verification code
   </message>
-  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_POSITIVE_BUTTON_LABEL" desc="Positive button label for the OTP verification dialog." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_POSITIVE_BUTTON_LABEL" desc="Positive button label for the OTP verification dialog.">
     Confirm
   </message>
-  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_NEGATIVE_BUTTON_LABEL" desc="Negative button label for the OTP verification dialog." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_PAYMENTS_OTP_VERIFICATION_DIALOG_NEGATIVE_BUTTON_LABEL" desc="Negative button label for the OTP verification dialog.">
     Cancel
   </message>
 
   <!-- Autofill payment method delete dialog -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_CREDIT_CARD_DELETE_CONFIRMATION_TITLE" desc="Title for the confirmation dialog displayed when the user clicks on the delete button while editing card information." formatter_data="android_java">
-      Delete card
-    </message>
-    <message name="IDS_AUTOFILL_IBAN_DELETE_CONFIRMATION_TITLE" desc="Title for the confirmation dialog displayed when the user clicks on the delete button while editing the IBAN information." formatter_data="android_java">
-      Delete IBAN
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_DELETE_CONFIRMATION_DESCRIPTION" desc="Description for the confirmation dialog displayed when the user clicks on the delete button while editing payment method information." formatter_data="android_java">
-      This payment method will be deleted from this device
-    </message>
-  </if>
 
   <!-- Autofill credit card preferences -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_EDIT_CREDIT_CARD" desc="Button that allows the user to edit a card that can be automatically filled into web page forms. This can be either credit, debit, or prepaid card. [CHAR_LIMIT=32]" formatter_data="android_java">
-      Edit card
-    </message>
-    <message name="IDS_AUTOFILL_CREATE_CREDIT_CARD" desc="Button that allows the user to add a new card that will be automatically filled into web page forms. This can be either credit, debit, or prepaid card. [CHAR_LIMIT=32]" formatter_data="android_java">
-      Add card
-    </message>
-    <message name="IDS_AUTOFILL_SCAN_CREDIT_CARD_BUTTON" desc="Button that allows the user to scan a card using the camera on the device that will be filled into a card editor to be saved." formatter_data="android_java">
-      Scan card
-    </message>
-    <message name="IDS_AUTOFILL_CREATE_FIRST_CREDIT_CARD_TITLE" desc="Title for a call to action settings preference to add a new autofill credit card when the user does not have any cards added." formatter_data="android_java">
-      Check out faster with autofill
-    </message>
-    <message name="IDS_AUTOFILL_CREATE_FIRST_CREDIT_CARD_SUMMARY" desc="Summary for a call to action settings preference to add a new autofill credit card when the user does not have any cards added." formatter_data="android_java">
-      Save a payment method in your Google Account to autofill it for purchases made in Chrome
-    </message>
-    <message name="IDS_AUTOFILL_CREATE_FIRST_CREDIT_CARD_BUTTON_TEXT" desc="Button text for a call to action settings preference to add a new autofill credit card when the user does not have any cards added." formatter_data="android_java">
-      Add payment method
-    </message>
-  </if>
 
   <!-- Autofill IBAN preferences -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_ADD_LOCAL_IBAN" desc="Button in the Payment methods page that allows the user to add a new IBAN that will be saved locally. It is also the title for the local IBAN editor when a user is adding a new IBAN." formatter_data="android_java">
-      Add IBAN
-    </message>
-    <message name="IDS_AUTOFILL_EDIT_LOCAL_IBAN" desc="Title for the local IBAN editor when a user is editing an existing IBAN." formatter_data="android_java">
-      Edit IBAN
-    </message>
-  </if>
 
   <!-- Touch to fill bottom sheet -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_MANAGE_PAYMENT_METHODS" desc="An option in the autofill bottom sheet that triggers navigation to the payment settings." formatter_data="android_java">
-      Manage payment methods
-    </message>
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_ALL_YOUR_LOYALTY_CARDS" desc="An option in the autofill bottom sheet that shows all loyalty cards of a user." formatter_data="android_java">
-      All your loyalty cards
-    </message>
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_EXPAND_ALL_LOYALTY_CARDS_DESCRIPTION" desc="Accessibility string for the icon that allows entering the screen with all loyalty cards of a user." formatter_data="android_java">
-      Change to all loyalty cards under this menu item.
-    </message>
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_ALL_LOYALTY_CARDS_SCREEN_TITLE" desc="The title of the screen in the loyalty card filling bottom sheet that displays all loyalty cards of a user." formatter_data="android_java">
-      Your loyalty cards
-    </message>
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_BACK_BUTTON_DESCRIPTION" desc="Accessibility string for the icon that allows closing the current screen and going back to the intial screen on a bottomsheet." formatter_data="android_java">
-      Back
-    </message>
-    <message name="IDS_AUTOFILL_BOTTOM_SHEET_MANAGE_LOYALTY_CARDS" desc="An option in the autofill bottom sheet that triggers navigation to the loyalty cards management UI in Google Wallet." formatter_data="android_java">
-      Manage loyalty cards
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_TITLE" desc="The title of the touch to fill bottom sheet for payments that appears under the GPay icon." formatter_data="android_java">
-      Autofill payment info
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_BOTTOM_SHEET_TITLE" desc="The title of the touch to fill bottom sheet for loyalty cards that appears under the Google Wallet icon." formatter_data="android_java">
-      Autofill loyalty card
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_FIRST_TIME_USAGE_BOTTOM_SHEET_TITLE" desc="The title of the touch to fill bottom sheet for loyalty cards that appears under the Google Wallet icon. This title is shown to promote loyalty card filling to users." formatter_data="android_java">
-      Now you can autofill loyalty cards from Google Wallet
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_FIRST_TIME_USAGE_BOTTOM_SHEET_SUBTITLE" desc="The subtitle of the touch to fill bottom sheet for loyalty cards that appears under the title. This subtitle is shown to promote loyalty card filling to users." formatter_data="android_java">
-      Manage loyalty cards or turn these suggestions off in Google Wallet
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_CONTINUE_BUTTON" desc="The label of the button, which would fill in the web form with card credentials." formatter_data="android_java">
-      Continue
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_AUTOFILL_BUTTON" desc="The label of the button, which would fill in the web form with a loyalty card number." formatter_data="android_java">
-      Autofill
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_WALLET_SETTINGS_BUTTON" desc="The label of the button, which redirects the user to the Google Wallet loyalty card settings in Chrome." formatter_data="android_java">
-      Wallet settings
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet where a user can pick a payment method to fill into a form." formatter_data="android_java">
-      Payment methods available to be filled on touch. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the user's payment methods is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Payment methods available to be filled on touch opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the user's payment methods is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Payment methods available to be filled on touch opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing a list of the user's payment methods is closed." formatter_data="android_java">
-      List of payment methods is closed.
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet where a user can pick a loyalty card to fill into a form." formatter_data="android_java">
-      Loyalty cards available to be filled on touch. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_BOTTOM_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the user's loyalty cards is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Loyalty cards available to be filled on touch opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_BOTTOM_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the user's loyalty cards is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Loyalty cards available to be filled on touch opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_LOYALTY_CARD_BOTTOM_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing a list of the user's loyalty cards is closed." formatter_data="android_java">
-      List of loyalty cards is closed.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_PROGRESS_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet which shows a progress spinner for a Buy-Now-Pay-Later flow." formatter_data="android_java">
-      Buy-Now-Pay-Later progress screen. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_PROGRESS_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later progress spinner is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Buy-Now-Pay-Later progress screen opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_PROGRESS_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later progress spinner is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Buy-Now-Pay-Later progress screen opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_PROGRESS_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later progress spinner is closed." formatter_data="android_java">
-      Buy-Now-Pay-Later progress screen is closed.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet where a user can pick a BNPL issuer for pay over time." formatter_data="android_java">
-      Buy-Now-Pay-Later issuers available for pay over time. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the BNPL issuers is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Buy-Now-Pay-Later issuers available for pay over time opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing a list of the BNPL issuers is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Buy-Now-Pay-Later issuers available for pay over time opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing a list of BNPL issuers is closed." formatter_data="android_java">
-      List of Buy-Now-Pay-Later issuers is closed.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_TOS_BOTTOM_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet where a user can read and accept terms for linking a new BNPL issuer." formatter_data="android_java">
-      Buy-Now-Pay-Later terms of service screen. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_TOS_BOTTOM_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing terms for linking a new issuer is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Buy-Now-Pay-Later terms of service screen opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_TOS_BOTTOM_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing terms for linking a new issuer is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Buy-Now-Pay-Later terms of service screen opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_TOS_BOTTOM_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing terms for linking a new issuer is closed." formatter_data="android_java">
-      Buy-Now-Pay-Later terms of service screen is closed.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ERROR_SHEET_CONTENT_DESCRIPTION" desc="Accessibility string read when the bottom sheet is opened. It describes the bottom sheet which shows an error for a Buy-Now-Pay-Later flow." formatter_data="android_java">
-      Buy-Now-Pay-Later error screen. Keyboard hidden.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ERROR_SHEET_HALF_HEIGHT" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later error is opened at half height. The sheet will occupy the bottom half the screen." formatter_data="android_java">
-      Buy-Now-Pay-Later error screen opened at half height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ERROR_SHEET_FULL_HEIGHT" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later error is opened at full height. The sheet will occupy the entire screen." formatter_data="android_java">
-      Buy-Now-Pay-Later error screen opened at full height.
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ERROR_SHEET_CLOSED" desc="Accessibility string read when the bottom sheet showing a Buy-Now-Pay-Later error is closed." formatter_data="android_java">
-      Buy-Now-Pay-Later error screen is closed.
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_A11Y_ITEM_COLLECTION_INFO" desc="A template message for a fillable item content description, provides its position in the list info (e.g. 'Item label, 2 of 4')." formatter_data="android_java">
-      <ph name="ITEM_LABEL">%1$s<ex>Card info</ex></ph>, <ph name="ITEM_POSITION">%2$s<ex>2</ex></ph> of <ph name="ITEMS_TOTAL">%3$s<ex>8</ex></ph>.
-    </message>
-    <message name="IDS_AUTOFILL_PAYMENT_METHOD_BOTTOM_SHEET_BENEFITS_TERMS_LABEL" desc="The label for the card benefits terms appears on the bottom sheet when at least one of the cards has benefits." formatter_data="android_java">
-      Terms apply for card benefits
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_AFFIRM_BOTTOM_SHEET" desc="Text for the payment option button in the BNPL select provider bottomsheet, explaining that users can pay monthly or in installments. It is specifically for Affirm options.">
-        Monthly or 4 installments
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_ZIP_BOTTOM_SHEET" desc="Text for the payment option button in the BNPL select provider bottomsheet, explaining that users can pay monthly or in installments. It is specifically for Zip options.">
-        Pay in easy installments
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_KLARNA_BOTTOM_SHEET" desc="Text for the payment option button in the BNPL select provider bottomsheet, explaining that users can pay monthly or in installments. It is specifically for Klarna options.">
-        Pay in low monthly installments
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_TERMS_LABEL" desc="Combined label for the BNPL issuer terms and instructions on how to hide the pay later options. Appears in the BNPL select provider and progress bottom sheets" formatter_data="android_java">
-      Payment plans are subject to eligibility.&#10;To hide pay later options, go to <ph name="BEGIN_LINK">&lt;link&gt;</ph>payment settings<ph name="END_LINK">&lt;/link&gt;</ph>
-    </message>
-    <message name="IDS_AUTOFILL_BNPL_ISSUER_BOTTOM_SHEET_AI_TERMS_LABEL" desc="Combined label for the BNPL issuer terms, the AI data sharing notice, and instructions on how to hide the pay later options. Appears in the BNPL select provider bottom sheet." formatter_data="android_java">
-      Payment plans are subject to eligibility. <ph name="BEGIN_BOLD">&lt;bold&gt;</ph>Content from the checkout page is shared with Google to offer these options.<ph name="END_BOLD">&lt;/bold&gt;</ph> To hide pay later options, go to <ph name="BEGIN_LINK">&lt;link&gt;</ph>payment settings<ph name="END_LINK">&lt;/link&gt;</ph>
-    </message>
-  </if>
 
   <!-- Mandatory Reauth related strings -->
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_PAYMENT_METHOD_MANDATORY_REAUTH_LABEL" desc="Label for a settings page toggle that allows users to control whether or not to add mandatory reauth for payment methods filling." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_PAYMENT_METHOD_MANDATORY_REAUTH_LABEL" desc="Label for a settings page toggle that allows users to control whether or not to add mandatory reauth for payment methods filling.">
     Verify it's you to autofill payment methods
   </message>
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_PAYMENT_METHOD_MANDATORY_REAUTH_SUBLABEL" desc="Sublabel for a settings page toggle that allows users to control whether or not to add mandatory reauth for payment methods filling." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_PAYMENT_METHOD_MANDATORY_REAUTH_SUBLABEL" desc="Sublabel for a settings page toggle that allows users to control whether or not to add mandatory reauth for payment methods filling.">
     For added protection, always use your fingerprint, face, or other screen lock when you pay using autofill
   </message>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after opting in mandatory reauth.">
-      Payment verification settings saved
-    </message>
-    <message name="IDS_AUTOFILL_MANDATORY_REAUTH_SNACKBAR_ACTION_TEXT" desc="Text to be displayed as the snackbar action shown after opting in mandatory reauth.">
-      Settings
-    </message>
-  </if>
 
   <!-- CVC Storage related strings -->
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_LABEL" desc="Label for the payments settings page toggle that enables the user to store and use CVC for payments autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_LABEL" desc="Label for the payments settings page toggle that enables the user to store and use CVC for payments autofill.">
     Save security codes
   </message>
   <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_ARIA_LABEL_FOR_NO_CVC_SAVED" desc="Label for the payments settings page toggle that enables the user to store and use CVC for payments autofill.">
     Save security codes, no security codes currently saved
   </message>
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_SUBLABEL" desc="Sublabel for the payments settings page toggle that enables the user to store and use CVC for payments autofill." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_SUBLABEL" desc="Sublabel for the payments settings page toggle that enables the user to store and use CVC for payments autofill.">
     Check out faster when your CVCs are saved
   </message>
-  <if expr="not is_android">
     <!-- This sublabel has hyperlink encoding present in it. This is to trigger the modal popup which would bulk delete all the CVCs. -->
     <message name="IDS_AUTOFILL_SETTINGS_PAGE_ENABLE_CVC_STORAGE_WITH_DELETE_LINK_SUBLABEL" desc="Sublabel for the payments settings page that would bulk delete all the CVCs when clicked on it. that enables the user to store and use CVC for payments autofill. There is also a hyperlinked text which bulk deletes all the CVC data. This sublabel is used when we have CVC data present on the local DB.">
       Check out faster when your CVCs are saved. <ph name="LINK_BEGIN">&lt;a href="#"&gt;</ph>Delete saved security codes<ph name="LINK_END">&lt;/a&gt;</ph>
@@ -1608,9 +1252,8 @@
     <message name="IDS_AUTOFILL_SETTINGS_PAGE_CVC_TAG_FOR_CREDIT_CARD_LIST_ENTRY" desc="Tag present on each entry in the credit card list on the payments settings page if that entry has a cvc saved to it.">
       CVC saved
     </message>
-  </if>
-  <if expr="is_ios or is_android">
-    <message name="IDS_AUTOFILL_SETTINGS_PAGE_BULK_REMOVE_CVC_LABEL" desc="Label for the payments settings page button that allows the user to bulk delete all the CVCs stored locally and on Google servers." formatter_data="android_java">
+  <if expr="is_ios">
+    <message name="IDS_AUTOFILL_SETTINGS_PAGE_BULK_REMOVE_CVC_LABEL" desc="Label for the payments settings page button that allows the user to bulk delete all the CVCs stored locally and on Google servers.">
       Delete saved security codes
     </message>
   </if>
@@ -1619,14 +1262,9 @@
       Your payment methods will still be saved
     </message>
   </if>
-  <if expr="not is_ios and not is_android">
+  <if expr="not is_ios">
     <message name="IDS_AUTOFILL_CVC_SUGGESTION_MAIN_TEXT" desc="The main text shown in the credit card suggestion list when the CVC field is focused. It will be the main text which is on the first line of suggestion. If the user hovers over the suggestion, the credit card will be previewed. If the user clicks on the suggestion, credit card will be filled.">
       CVC
-    </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_CVC_SUGGESTION_MAIN_TEXT" desc="The main text shown in the credit card suggestion list when the CVC field is focused. It will be the main text which is on the first line of suggestion. If the user clicks on the suggestion, credit card will be filled.">
-      CVC for <ph name="CARD_NAME">$1<ex>Visa</ex></ph>
     </message>
   </if>
   <if expr="is_ios">
@@ -1634,25 +1272,14 @@
       Security code
     </message>
   </if>
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_CVC_SAVED_LABEL" desc="Label for a credit card on the payment settings page when the user has stored the cvc." formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_CVC_SAVED_LABEL" desc="Label for a credit card on the payment settings page when the user has stored the cvc.">
     CVC saved
   </message>
-  <message name="IDS_AUTOFILL_SETTINGS_PAGE_SUMMARY_SEPARATED_BY_PIPE" desc="Summary text separator with pipe symbol. i.e. arg1 | arg2" formatter_data="android_java">
+  <message name="IDS_AUTOFILL_SETTINGS_PAGE_SUMMARY_SEPARATED_BY_PIPE" desc="Summary text separator with pipe symbol. i.e. arg1 | arg2">
     <ph name="EXPIRATION_DATE">%1$s<ex>12/24</ex></ph> | <ph name="SECURITY_CODE">%2$s<ex>123</ex></ph>
   </message>
 
   <!-- IBAN snackbar confirmation -->
-  <if expr="is_android">
-    <message name="IDS_AUTOFILL_SAVE_SERVER_IBAN_SUCCESS_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after a server IBAN is saved.">
-      IBAN saved to your Google Account
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_SERVER_IBAN_TO_WALLET_SUCCESS_SNACKBAR_MESSAGE_TEXT" desc="Text to be displayed in the snackbar shown after a server IBAN is saved in Google Wallet.">
-      IBAN saved in Google Wallet
-    </message>
-    <message name="IDS_AUTOFILL_SAVE_SERVER_IBAN_SUCCESS_SNACKBAR_BUTTON_TEXT" desc="Text shown on the ok button of the confirmation prompt after an IBAN is saved.">
-      Got it
-    </message>
-  </if>
 
   <!-- Card upload and virtual card enrollment confirmation related strings-->
   <message name="IDS_AUTOFILL_SAVE_CARD_CONFIRMATION_SUCCESS_TITLE_TEXT" desc="Title text for confirmation shown after save card is successfully uploaded and saved to the server.">

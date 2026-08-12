@@ -20,9 +20,6 @@
 #include "third_party/perfetto/protos/perfetto/trace/track_event/process_descriptor.gen.h"
 #include "third_party/perfetto/protos/perfetto/trace/track_event/thread_descriptor.gen.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/apk_info.h"
-#endif
 
 namespace tracing {
 
@@ -99,18 +96,6 @@ void TrackNameRecorder::SetProcessTrackDescriptor(
   static const std::optional<uint64_t> crash_trace_id = GetTraceCrashId();
 
   std::string host_package_name;
-#if BUILDFLAG(IS_ANDROID)
-  // Host app package name is only recorded if the corresponding TraceLog
-  // setting is set to true.
-  if (record_host_app_package_name_) {
-    // Host app package name is used to group information from different
-    // processes that "belong" to the same WebView app.
-    if (process_type == pbzero_enums::PROCESS_RENDERER ||
-        process_type == pbzero_enums::PROCESS_BROWSER) {
-      host_package_name = base::android::apk_info::host_package_name();
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   auto process_track = perfetto::ProcessTrack::Current();
   base::TrackEvent::SetTrackDescriptor(

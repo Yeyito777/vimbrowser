@@ -49,13 +49,9 @@
 #include "content/public/browser/site_instance.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#else
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #include "chrome/browser/picture_in_picture/scoped_disallow_picture_in_picture.h"
 #include "chrome/browser/picture_in_picture/scoped_tuck_picture_in_picture.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using blink::mojom::FileChooserFileInfo;
 using blink::mojom::FileChooserFileInfoPtr;
@@ -84,15 +80,6 @@ bool IsValidProfile(Profile* profile) {
   return g_browser_process->profile_manager()->IsValidProfile(profile);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-std::u16string GetDisplayName(const base::FilePath& content_uri) {
-  std::u16string display_name;
-  if (!base::MaybeGetFileDisplayName(content_uri, &display_name)) {
-    display_name = content_uri.BaseName().AsUTF16Unsafe();
-  }
-  return display_name;
-}
-#endif
 
 }  // namespace
 
@@ -193,11 +180,6 @@ void FileSelectHelper::OnListFile(
     return;
 
   std::vector<std::u16string> base_subdirs;
-#if BUILDFLAG(IS_ANDROID)
-  for (const auto& subdir : data.info.subdirs()) {
-    base_subdirs.push_back(base::UTF8ToUTF16(subdir));
-  }
-#endif
   directory_enumeration_->results_.push_back(blink::mojom::NativeFileInfo::New(
       data.path, data.info.GetName().AsUTF16Unsafe(), std::move(base_subdirs)));
 }
@@ -601,7 +583,6 @@ void FileSelectHelper::RunFileChooser(
   listener_ = std::move(listener);
   content::WebContentsObserver::Observe(web_contents_);
 
-#if !BUILDFLAG(IS_ANDROID)
   if (PictureInPictureWindowManager::GetInstance()
           ->ShouldFileDialogBlockPictureInPicture(web_contents_)) {
     scoped_disallow_picture_in_picture_ =
@@ -611,7 +592,6 @@ void FileSelectHelper::RunFileChooser(
     scoped_tuck_picture_in_picture_ =
         std::make_unique<ScopedTuckPictureInPicture>();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   base::ThreadPool::PostTask(
       FROM_HERE, {base::MayBlock()},
@@ -684,10 +664,6 @@ void FileSelectHelper::RunFileChooserOnUIThread(
   gfx::NativeWindow owning_window =
       platform_util::GetTopLevel(web_contents_->GetNativeView());
 
-#if BUILDFLAG(IS_ANDROID)
-  select_file_dialog_->SetAcceptTypes(params->accept_types);
-  select_file_dialog_->SetUseMediaCapture(params->use_media_capture);
-#endif
 
   // Never consider the current scope as hung. The hang watching deadline (if
   // any) is not valid since the user can take unbounded time to choose the
@@ -731,10 +707,8 @@ void FileSelectHelper::RunFileChooserEnd() {
     select_file_dialog_.reset();
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   scoped_disallow_picture_in_picture_.reset();
   scoped_tuck_picture_in_picture_.reset();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   Release();
 }
@@ -754,14 +728,6 @@ void FileSelectHelper::EnumerateDirectoryImpl(
   // to the caller, until the last callback is received from the enumeration
   // code. At that point, we must call EnumerateDirectoryEnd().
   AddRef();
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri()) {
-    base::ThreadPool::PostTaskAndReplyWithResult(
-        FROM_HERE, {base::MayBlock()}, base::BindOnce(&GetDisplayName, path),
-        base::BindOnce(&FileSelectHelper::StartNewEnumeration, this, path));
-    return;
-  }
-#endif
   StartNewEnumeration(path, path.BaseName().AsUTF16Unsafe());
 }
 

@@ -46,10 +46,6 @@ component("features") {
     "//device/vr/buildflags",
   ]
 
-  if (is_android) {
-    deps = [ "//device/vr/public:jni_headers" ]
-  }
-
   defines = [ "IS_VR_FEATURES_IMPL" ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }

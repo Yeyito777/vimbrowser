@@ -7,7 +7,7 @@ source_set("multistep_filter") {
   public_deps = []
   deps = []
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     public_deps += [
       "//chrome/browser/multistep_filter/core",
       "//chrome/browser/ui/tabs",
@@ -36,7 +36,7 @@ source_set("unit_tests") {
   sources = []
   deps = []
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [ "chrome_filter_navigation_observer_unittest.cc" ]
     deps += [
       ":multistep_filter",

@@ -45,27 +45,6 @@ static_library("home_modules") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "auxiliary_search_promo.cc",
-      "auxiliary_search_promo.h",
-      "default_browser_promo.cc",
-      "default_browser_promo.h",
-      "history_sync_promo.cc",
-      "history_sync_promo.h",
-      "home_modules_card_registry_android.cc",
-      "home_modules_card_registry_android.h",
-      "quick_delete_promo.cc",
-      "quick_delete_promo.h",
-      "tab_group_promo.cc",
-      "tab_group_promo.h",
-      "tab_group_sync_promo.cc",
-      "tab_group_sync_promo.h",
-      "tips_notifications_promo.cc",
-      "tips_notifications_promo.h",
-    ]
-  }
-
   deps = [
     ":constants",
     "//base",
@@ -116,19 +95,6 @@ source_set("unit_tests") {
       "home_modules_card_registry_ios_unittest.cc",
       "lens_ephemeral_module_unittest.cc",
       "save_passwords_ephemeral_module_unittest.cc",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "auxiliary_search_promo_unittest.cc",
-      "default_browser_promo_unittest.cc",
-      "history_sync_promo_unittest.cc",
-      "home_modules_card_registry_android_unittest.cc",
-      "quick_delete_promo_unittest.cc",
-      "tab_group_promo_unittest.cc",
-      "tab_group_sync_promo_unittest.cc",
-      "tips_notifications_promo_unittest.cc",
     ]
   }
 

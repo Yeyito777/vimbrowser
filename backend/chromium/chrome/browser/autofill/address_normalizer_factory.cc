@@ -14,10 +14,6 @@
 #include "third_party/libaddressinput/chromium/chrome_metadata_source.h"
 #include "third_party/libaddressinput/chromium/chrome_storage_impl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#include "chrome/browser/autofill/android/jni_headers/AddressNormalizerFactory_jni.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace autofill {
 
@@ -42,15 +38,5 @@ AddressNormalizerFactory::AddressNormalizerFactory()
 
 AddressNormalizerFactory::~AddressNormalizerFactory() = default;
 
-#if BUILDFLAG(IS_ANDROID)
-static base::android::ScopedJavaLocalRef<jobject>
-JNI_AddressNormalizerFactory_GetInstance(JNIEnv* env) {
-  return AddressNormalizerFactory::GetInstance()->GetJavaObject();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace autofill
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(AddressNormalizerFactory)
-#endif

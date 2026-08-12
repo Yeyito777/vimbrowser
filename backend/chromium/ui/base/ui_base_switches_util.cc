@@ -9,20 +9,11 @@
 #include "ui/base/ui_base_features.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 namespace switches {
 
 bool IsElasticOverscrollEnabledOnRoot() {
-#if BUILDFLAG(IS_ANDROID)
-  return IsElasticOverscrollSupported() &&
-         !base::CommandLine::ForCurrentProcess()->HasSwitch(
-             switches::kDisableOverscrollEdgeEffect);
-#else
   return IsElasticOverscrollSupported();
-#endif
 }
 
 bool IsElasticOverscrollSupported() {
@@ -30,10 +21,6 @@ bool IsElasticOverscrollSupported() {
 // but the system default is true.
 #if BUILDFLAG(IS_APPLE)
   return true;
-#elif BUILDFLAG(IS_ANDROID)
-  return base::android::android_info::sdk_int() >=
-             base::android::android_info::SDK_VERSION_S &&
-         base::FeatureList::IsEnabled(features::kElasticOverscroll);
 #else
   return base::FeatureList::IsEnabled(features::kElasticOverscroll);
 #endif

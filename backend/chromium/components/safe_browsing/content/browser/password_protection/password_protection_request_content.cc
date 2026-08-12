@@ -30,9 +30,6 @@
 #include "mojo/public/cpp/base/proto_wrapper.h"
 #endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/android/view_android.h"
-#endif
 
 namespace safe_browsing {
 
@@ -340,35 +337,15 @@ void PasswordProtectionRequestContent::OnGetDomFeatureTimeout() {
 bool PasswordProtectionRequestContent::ShouldCollectVisualFeatures() {
   // TODO(crbug.com/40926113): Unify this with the code to populate
   // content_area_width and content_area_height on desktop.
-#if BUILDFLAG(IS_ANDROID)
-  if (password_protection_service()->IsExtendedReporting() &&
-      !password_protection_service()->IsIncognito()) {
-    content::RenderWidgetHostView* view =
-        web_contents_ ? web_contents_->GetRenderWidgetHostView() : nullptr;
-    if (view && view->GetNativeView()) {
-      gfx::SizeF content_area_size = view->GetNativeView()->viewport_size();
-      request_proto_->set_content_area_height(content_area_size.height());
-      request_proto_->set_content_area_width(content_area_size.width());
-    }
-  }
-#endif
 
   visual_utils::CanExtractVisualFeaturesResult
       can_extract_visual_features_result =
-#if BUILDFLAG(IS_ANDROID)
-          visual_utils::CanExtractVisualFeatures(
-              password_protection_service()->IsExtendedReporting(),
-              password_protection_service()->IsIncognito(),
-              gfx::Size(request_proto_->content_area_width(),
-                        request_proto_->content_area_height()));
-#else
           visual_utils::CanExtractVisualFeatures(
               password_protection_service()->IsExtendedReporting(),
               password_protection_service()->IsIncognito(),
               gfx::Size(request_proto_->content_area_width(),
                         request_proto_->content_area_height()),
               zoom::ZoomController::GetZoomLevelForWebContents(web_contents_));
-#endif
 
   base::UmaHistogramEnumeration("PasswordProtection.VisualFeaturesClearReason",
                                 can_extract_visual_features_result);
@@ -442,17 +419,5 @@ void PasswordProtectionRequestContent::OnVisualFeatureCollectionDone(
 }
 #endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 
-#if BUILDFLAG(IS_ANDROID)
-void PasswordProtectionRequestContent::SetReferringAppInfo() {
-  PasswordProtectionService* service =
-      static_cast<PasswordProtectionService*>(password_protection_service());
-  ReferringAppInfo referring_app_info =
-      service->GetReferringAppInfo(web_contents_);
-  UMA_HISTOGRAM_ENUMERATION("PasswordProtection.RequestReferringAppSource",
-                            referring_app_info.referring_app_source(),
-                            ReferringAppInfo::ReferringAppSource_MAX + 1);
-  *request_proto_->mutable_referring_app_info() = std::move(referring_app_info);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace safe_browsing

@@ -116,9 +116,7 @@ config("opus_test_config") {
   if (is_win) {
     defines = [ "inline=__inline" ]
   }
-  if (is_android) {
-    libs = [ "log" ]
-  }
+
   if (is_clang) {
     cflags = [ "-Wno-absolute-value" ]
   }
@@ -522,7 +520,7 @@ if (build_with_chromium) {
   # Compilation fails on windows due to wstring/string mistmatch.
   # This is not worth looking at it since the benchmark is tailored for android.
   # It is ok to run it on linux though, for experimentation purpose.
-  if (is_android || is_linux || is_chromeos) {
+  if (is_linux || is_chromeos) {
     test("opus_tests") {
       sources = [ "tests/opus_benchmark.cc" ]
 

@@ -42,11 +42,6 @@
   <message name="IDS_VERSION_UI_OS" desc="label for the OS on the about:version page">
     OS
   </message>
-  <if expr="is_android">
-    <message name="IDS_VERSION_UI_GMS" desc="label for the Google Play services info on the about:version page">
-      Google Play services
-    </message>
-  </if>
   <message name="IDS_VERSION_UI_USER_AGENT" desc="label for the user agent on the about:version page">
     User Agent
   </message>

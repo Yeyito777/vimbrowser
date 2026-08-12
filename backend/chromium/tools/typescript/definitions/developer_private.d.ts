@@ -495,7 +495,6 @@ declare global {
           extensionId: string): Promise<void>;
       export function uploadExtensionToAccount(extensionId: string):
           Promise<boolean>;
-      export function showSiteSettings(extensionId: string): Promise<void>;
 
       export const onItemStateChanged: ChromeEvent<(data: EventData) => void>;
       export const onProfileStateChanged:

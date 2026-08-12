@@ -5,12 +5,6 @@
 import("//components/enterprise/buildflags/buildflags.gni")
 import("//components/safe_browsing/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("internal") {
   visibility = [
     ":for_tests",
@@ -102,50 +96,12 @@ source_set("internal") {
         [ "//components/enterprise/obfuscation/core:enterprise_obfuscation" ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/download_collection_bridge.cc",
-      "android/download_collection_bridge.h",
-      "in_memory_download_file.cc",
-      "in_memory_download_file.h",
-    ]
-
-    deps += [ ":jni_headers" ]
-  }
-
   if (is_win) {
     sources += [ "base_file_win.cc" ]
   }
 
   if (is_posix || is_fuchsia) {
     sources += [ "base_file_posix.cc" ]
-  }
-}
-
-if (is_android) {
-  android_library("internal_java") {
-    srcjar_deps = [ ":jni_headers" ]
-    sources = [
-      "android/java/src/org/chromium/components/download/DownloadCollectionBridge.java",
-      "android/java/src/org/chromium/components/download/DownloadDelegate.java",
-      "android/java/src/org/chromium/components/download/InMemoryDownloadFile.java",
-    ]
-
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//third_party/android_provider:android_provider_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("jni_headers") {
-    visibility = [ ":*" ]
-    sources = [
-      "android/java/src/org/chromium/components/download/DownloadCollectionBridge.java",
-      "android/java/src/org/chromium/components/download/InMemoryDownloadFile.java",
-    ]
   }
 }
 

@@ -9686,21 +9686,6 @@
             ]
         }
     ],
-    "EnableExtensionsForCorpDesktopAndroid": [
-        {
-            "platforms": [
-                "android"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled_20260219",
-                    "enable_features": [
-                        "EnableExtensionsForCorpDesktopAndroid"
-                    ]
-                }
-            ]
-        }
-    ],
     "EnableFatalCrashEventsObserver": [
         {
             "platforms": [
@@ -11169,21 +11154,6 @@
                     "enable_features": [
                         "GmsCoreLocationRequestParamOverride",
                         "UseFusedLocationProvider"
-                    ]
-                }
-            ]
-        }
-    ],
-    "FuturePoliciesOnDesktopAndroid": [
-        {
-            "platforms": [
-                "android"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled",
-                    "enable_features": [
-                        "FuturePoliciesOnDesktopAndroid"
                     ]
                 }
             ]

@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(!is_android)
-
 source_set("password_change") {
   sources = [
     "successful_password_change_bubble_controller.cc",
@@ -29,15 +27,13 @@ source_set("unit_tests") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [ "successful_password_change_bubble_controller_unittest.cc" ]
-    deps += [
-      ":password_change",
-      "//base/test:test_support",
-      "//chrome/browser/ui:test_support",
-      "//chrome/browser/ui/passwords:test_support_ui",
-      "//testing/gmock",
-      "//testing/gtest",
-    ]
-  }
+  sources += [ "successful_password_change_bubble_controller_unittest.cc" ]
+  deps += [
+    ":password_change",
+    "//base/test:test_support",
+    "//chrome/browser/ui:test_support",
+    "//chrome/browser/ui/passwords:test_support_ui",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
 }

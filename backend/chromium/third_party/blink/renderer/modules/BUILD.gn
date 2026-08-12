@@ -11,10 +11,6 @@ import("//third_party/blink/renderer/bindings/bindings.gni")
 import("//third_party/blink/renderer/build/scripts/scripts.gni")
 import("//third_party/blink/renderer/modules/modules.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 if (is_ios) {
   import("//build/config/ios/bundle_data_from_filelist.gni")
 }
@@ -171,15 +167,12 @@ component("modules") {
   # generating the snapshot for android, blink is compiled with
   # current_os="linux" and target_os="android". Using target_os is necessary as
   # we need to compile in the same way as would happen when current_os="android".
-  if (target_os_is_android) {
-    sub_modules += [ "//third_party/blink/renderer/modules/remote_objects" ]
-  } else {
-    sub_modules += [
-      "//third_party/blink/renderer/modules/direct_sockets",
-      "//third_party/blink/renderer/modules/smart_card",
-    ]
-  }
-  if (!is_ios && !target_os_is_android) {
+  sub_modules += [
+    "//third_party/blink/renderer/modules/direct_sockets",
+    "//third_party/blink/renderer/modules/smart_card",
+  ]
+
+  if (!is_ios) {
     sub_modules += [ "//third_party/blink/renderer/modules/awc" ]
   }
 
@@ -195,7 +188,6 @@ component("modules") {
 
   deps = [
     ":make_modules_generated",
-    "//build:android_buildflags",
     "//cc",
     "//components/webrtc:thread_wrapper",
     "//gin",
@@ -661,15 +653,13 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      # Inline text box tests do not apply to Android, which only loads
-      # AXInlineTextBox tests for the focused node.
-      "accessibility/ax_inline_text_box_test.cc",
-    ]
-  }
+  sources += [
+    # Inline text box tests do not apply to Android, which only loads
+    # AXInlineTextBox tests for the focused node.
+    "accessibility/ax_inline_text_box_test.cc",
+  ]
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [
       # CaptureController is not Web-exposed on Android and iOS,
       # so most of the logic is compile-guarded away on Android and iOS,
@@ -758,13 +748,11 @@ source_set("unit_tests") {
   # generating the snapshot for android, blink is compiled with
   # current_os="linux" and target_os="android". Using target_os is necessary as
   # we need to compile in the same way as would happen when current_os="android".
-  if (!target_os_is_android) {
-    deps += [
-      "//third_party/blink/renderer/modules/direct_sockets:unit_tests",
-      "//third_party/blink/renderer/modules/serial:unit_tests",
-      "//third_party/blink/renderer/modules/smart_card:unit_tests",
-    ]
-  }
+  deps += [
+    "//third_party/blink/renderer/modules/direct_sockets:unit_tests",
+    "//third_party/blink/renderer/modules/serial:unit_tests",
+    "//third_party/blink/renderer/modules/smart_card:unit_tests",
+  ]
 
   data_deps = [
     ":accessibility_unittests_data",

@@ -159,11 +159,6 @@ config("default") {
     libs += [ malloc ]
   }
 
-  if (is_android) {
-    cflags += [ "--sysroot=$ndk/toolchains/llvm/prebuilt/$ndk_host/sysroot" ]
-    ldflags += [ "-static-libstdc++" ]
-  }
-
   if (show_includes) {
     assert(is_clang, "show_includes requires clang to build.")
     if (is_win) {
@@ -321,11 +316,6 @@ config("default") {
     if (sanitize == "ASAN") {
       # ASAN implicitly runs all UBSAN checks also.
       sanitizers = "undefined,address,float-divide-by-zero"
-
-      if (is_android) {
-        # TODO(skbug.com/40044427): work out UBSAN link errors
-        sanitizers = "address"
-      }
     } else if (sanitize == "HWASAN") {
       sanitizers = "hwaddress"
     } else if (sanitize == "TSAN") {
@@ -487,11 +477,6 @@ config("warnings") {
       # We're pretty sure it's actually 8-byte alignment.
       cflags += [ "-Wno-over-aligned" ]
     }
-    if (current_cpu == "x86" && is_android) {
-      # Clang seems to think new/malloc will only be 4-byte aligned on 32-bit x86 Android builds.
-      # We're pretty sure it's actually 8-byte alignment.  See OverAlignedTest.cpp for more info.
-      cflags += [ "-Wno-over-aligned" ]
-    }
 
     # Shouldn't be necessary for local builds. With distributed Windows builds, files may lose
     # their case during copy, causing case-sensitivity mismatch on remote machines.
@@ -646,12 +631,7 @@ config("extra_flags") {
 config("debug_symbols") {
   # It's annoying to wait for full debug symbols to push over
   # to Android devices.  -gline-tables-only is a lot slimmer.
-  if (is_android) {
-    cflags = [
-      "-gline-tables-only",
-      "-funwind-tables",  # Helps make in-process backtraces fuller.
-    ]
-  } else if (is_win) {
+  if (is_win) {
     cflags = [ "/Z7" ]
     if (is_clang) {
       cflags += [ "-gcodeview-ghash" ]
@@ -697,14 +677,13 @@ config("optimize") {
   } else {
     if (skia_enable_optimize_size) {
       cflags = [ "-Oz" ]
-      if (!is_android) {
-        cflags += [
-          # Clang 15 turns PIE (Position-indendendent Executable) on by default.
-          "-fno-PIE",
-          "-fno-pie",
-        ]
-        ldflags += [ "-no-pie" ]
-      }
+
+      cflags += [
+        # Clang 15 turns PIE (Position-indendendent Executable) on by default.
+        "-fno-PIE",
+        "-fno-pie",
+      ]
+      ldflags += [ "-no-pie" ]
     } else {
       cflags = [ "-O3" ]
     }
@@ -748,12 +727,7 @@ config("no_strict_aliasing") {
 }
 
 config("executable") {
-  if (is_android) {
-    ldflags = [
-      "-pie",
-      "-rdynamic",
-    ]
-  } else if (is_mac) {
+  if (is_mac) {
     ldflags = [ "-Wl,-rpath,@loader_path/." ]
   } else if (is_linux) {
     ldflags = [

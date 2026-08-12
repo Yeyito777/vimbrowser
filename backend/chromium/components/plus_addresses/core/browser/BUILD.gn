@@ -6,10 +6,6 @@ import("//build/buildflag_header.gni")
 import("//components/plus_addresses/core/browser/buildflags.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("types") {
   sources = [
     "plus_address_types.cc",
@@ -21,12 +17,6 @@ source_set("types") {
     "//components/affiliations/core/browser:affiliations",
     "//components/autofill/core/browser",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("plus_address_java_enums") {
-    sources = [ "plus_address_types.h" ]
-  }
 }
 
 source_set("hats_utils") {

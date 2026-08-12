@@ -60,12 +60,12 @@ source_set("impl") {
     "//services/metrics/public/cpp:ukm_builders",
     "//url",
   ]
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/contextual_tasks:ui",
-      "//chrome/browser/ui/browser_window",
-    ]
-  }
+
+  deps += [
+    "//chrome/browser/contextual_tasks:ui",
+    "//chrome/browser/ui/browser_window",
+  ]
+
   if (enable_pdf) {
     deps += [ "//components/pdf/browser" ]
   }

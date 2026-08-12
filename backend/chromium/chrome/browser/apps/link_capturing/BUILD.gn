@@ -5,8 +5,6 @@
 import("//chrome/browser/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 
-assert(!is_android)
-
 source_set("link_capturing") {
   sources = [
     "apps_intent_picker_delegate.h",

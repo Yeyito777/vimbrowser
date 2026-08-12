@@ -12,7 +12,6 @@
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
-#include "build/android_buildflags.h"
 #include "components/favicon/content/large_icon_service_getter.h"
 #include "components/favicon/core/large_icon_service.h"
 #include "components/favicon_base/favicon_types.h"
@@ -120,19 +119,6 @@ void ProcessFaviconInBackground(
       FROM_HERE, base::BindOnce(std::move(success_callback), decoded));
 }
 
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-// Generates a homescreen icon for `page_url` and posts a task to invoke
-// `callback` on `ui_thread_task_runner.`
-void GenerateHomeScreenIconInBackground(
-    const GURL& page_url,
-    scoped_refptr<base::SequencedTaskRunner> ui_thread_task_runner,
-    base::OnceCallback<void(const GURL& url, const SkBitmap&)> callback) {
-  SkBitmap bitmap =
-      WebappsIconUtils::GenerateHomeScreenIconInBackground(page_url);
-  ui_thread_task_runner->PostTask(
-      FROM_HERE, base::BindOnce(std::move(callback), page_url, bitmap));
-}
-#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
 
 }  // namespace
 
@@ -261,23 +247,8 @@ void InstallableIconFetcher::OnIconFetched(const GURL& icon_url,
 }
 
 void InstallableIconFetcher::MaybeEndWithError(InstallableStatusCode code) {
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-  // Desktop android will generate an icon if none is available.
-  base::ThreadPool::PostTask(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
-       base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
-      base::BindOnce(
-          &GenerateHomeScreenIconInBackground,
-          web_contents_->GetLastCommittedURL(),
-          base::SingleThreadTaskRunner::GetCurrentDefault(),
-          base::BindOnce(&InstallableIconFetcher::OnHomeScreenIconGenerated,
-                         weak_ptr_factory_.GetWeakPtr())));
-  return;
-#else
   // Other platforms report an error if no icon is available.
   EndWithError(code);
-#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
 }
 
 void InstallableIconFetcher::EndWithError(InstallableStatusCode code) {
@@ -285,15 +256,5 @@ void InstallableIconFetcher::EndWithError(InstallableStatusCode code) {
   std::move(finish_callback_).Run(code);
 }
 
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-void InstallableIconFetcher::OnHomeScreenIconGenerated(const GURL& page_url,
-                                                       const SkBitmap& bitmap) {
-  if (bitmap.drawsNothing()) {
-    EndWithError(InstallableStatusCode::NO_ACCEPTABLE_ICON);
-    return;
-  }
-  OnIconFetched(page_url, IconPurpose::ANY, bitmap);
-}
-#endif
 
 }  // namespace webapps

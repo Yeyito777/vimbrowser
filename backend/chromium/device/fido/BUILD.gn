@@ -88,144 +88,142 @@ component("fido") {
     ]
 
     # Android implementation of FIDO is delegated to GMSCore.
-    if (!is_android) {
-      sources += [
-        "appid_exclude_probe_task.cc",
-        "appid_exclude_probe_task.h",
-        "attestation_statement_formats.cc",
-        "attestation_statement_formats.h",
-        "auth_token_requester.cc",
-        "auth_token_requester.h",
-        "authenticator_get_assertion_response.cc",
-        "authenticator_get_assertion_response.h",
-        "authenticator_get_info_response.cc",
-        "authenticator_get_info_response.h",
-        "authenticator_make_credential_response.cc",
-        "authenticator_make_credential_response.h",
-        "authenticator_supported_options.cc",
-        "authenticator_supported_options.h",
-        "bio/enroller.cc",
-        "bio/enroller.h",
-        "bio/enrollment.cc",
-        "bio/enrollment.h",
-        "bio/enrollment_handler.cc",
-        "bio/enrollment_handler.h",
-        "ble_adapter_manager.cc",
-        "ble_adapter_manager.h",
-        "cable/fido_ble_uuids.cc",
-        "cable/fido_ble_uuids.h",
-        "cable/fido_tunnel_device.cc",
-        "cable/fido_tunnel_device.h",
-        "cable/v2_discovery.cc",
-        "cable/v2_discovery.h",
-        "credential_management.cc",
-        "credential_management.h",
-        "credential_management_handler.cc",
-        "credential_management_handler.h",
-        "ctap2_device_operation.h",
-        "ctap_authenticator_selection_request.cc",
-        "ctap_authenticator_selection_request.h",
-        "ctap_get_assertion_request.cc",
-        "ctap_get_assertion_request.h",
-        "ctap_make_credential_request.cc",
-        "ctap_make_credential_request.h",
-        "ctap_request_common.cc",
-        "ctap_request_common.h",
-        "device_operation.h",
-        "device_response_converter.cc",
-        "device_response_converter.h",
-        "enclave/attestation.cc",
-        "enclave/attestation.h",
-        "enclave/attestation_report.h",
-        "enclave/constants.cc",
-        "enclave/constants.h",
-        "enclave/enclave_authenticator.cc",
-        "enclave/enclave_authenticator.h",
-        "enclave/enclave_discovery.cc",
-        "enclave/enclave_discovery.h",
-        "enclave/enclave_protocol_utils.cc",
-        "enclave/enclave_protocol_utils.h",
-        "enclave/enclave_websocket_client.cc",
-        "enclave/enclave_websocket_client.h",
-        "enclave/metrics.cc",
-        "enclave/metrics.h",
-        "enclave/transact.cc",
-        "enclave/transact.h",
-        "enclave/types.cc",
-        "enclave/types.h",
-        "fido_authenticator.cc",
-        "fido_authenticator.h",
-        "fido_device.cc",
-        "fido_device.h",
-        "fido_device_authenticator.cc",
-        "fido_device_authenticator.h",
-        "fido_device_discovery.cc",
-        "fido_device_discovery.h",
-        "fido_discovery_base.cc",
-        "fido_discovery_base.h",
-        "fido_discovery_factory.cc",
-        "fido_discovery_factory.h",
-        "fido_request_handler_base.cc",
-        "fido_request_handler_base.h",
-        "fido_task.cc",
-        "fido_task.h",
-        "filter.cc",
-        "filter.h",
-        "get_assertion_request_handler.cc",
-        "get_assertion_request_handler.h",
-        "get_assertion_task.cc",
-        "get_assertion_task.h",
-        "hid/fido_hid_device.cc",
-        "hid/fido_hid_device.h",
-        "hid/fido_hid_discovery.cc",
-        "hid/fido_hid_discovery.h",
-        "hid/fido_hid_message.cc",
-        "hid/fido_hid_message.h",
-        "hid/fido_hid_packet.cc",
-        "hid/fido_hid_packet.h",
-        "large_blob.cc",
-        "large_blob.h",
-        "mac/icloud_keychain.h",
-        "mac/icloud_keychain_sys.h",
-        "make_credential_request_handler.cc",
-        "make_credential_request_handler.h",
-        "make_credential_task.cc",
-        "make_credential_task.h",
-        "pin.cc",
-        "pin.h",
-        "pin_internal.cc",
-        "pin_internal.h",
-        "platform_credential_store.h",
-        "reset_request_handler.cc",
-        "reset_request_handler.h",
-        "set_pin_request_handler.cc",
-        "set_pin_request_handler.h",
-        "u2f_command_constructor.cc",
-        "u2f_command_constructor.h",
-        "u2f_register_operation.cc",
-        "u2f_register_operation.h",
-        "u2f_sign_operation.cc",
-        "u2f_sign_operation.h",
-        "virtual_ctap2_device.cc",
-        "virtual_ctap2_device.h",
-        "virtual_fido_device.cc",
-        "virtual_fido_device.h",
-        "virtual_fido_device_authenticator.cc",
-        "virtual_fido_device_authenticator.h",
-        "virtual_u2f_device.cc",
-        "virtual_u2f_device.h",
-      ]
+    sources += [
+      "appid_exclude_probe_task.cc",
+      "appid_exclude_probe_task.h",
+      "attestation_statement_formats.cc",
+      "attestation_statement_formats.h",
+      "auth_token_requester.cc",
+      "auth_token_requester.h",
+      "authenticator_get_assertion_response.cc",
+      "authenticator_get_assertion_response.h",
+      "authenticator_get_info_response.cc",
+      "authenticator_get_info_response.h",
+      "authenticator_make_credential_response.cc",
+      "authenticator_make_credential_response.h",
+      "authenticator_supported_options.cc",
+      "authenticator_supported_options.h",
+      "bio/enroller.cc",
+      "bio/enroller.h",
+      "bio/enrollment.cc",
+      "bio/enrollment.h",
+      "bio/enrollment_handler.cc",
+      "bio/enrollment_handler.h",
+      "ble_adapter_manager.cc",
+      "ble_adapter_manager.h",
+      "cable/fido_ble_uuids.cc",
+      "cable/fido_ble_uuids.h",
+      "cable/fido_tunnel_device.cc",
+      "cable/fido_tunnel_device.h",
+      "cable/v2_discovery.cc",
+      "cable/v2_discovery.h",
+      "credential_management.cc",
+      "credential_management.h",
+      "credential_management_handler.cc",
+      "credential_management_handler.h",
+      "ctap2_device_operation.h",
+      "ctap_authenticator_selection_request.cc",
+      "ctap_authenticator_selection_request.h",
+      "ctap_get_assertion_request.cc",
+      "ctap_get_assertion_request.h",
+      "ctap_make_credential_request.cc",
+      "ctap_make_credential_request.h",
+      "ctap_request_common.cc",
+      "ctap_request_common.h",
+      "device_operation.h",
+      "device_response_converter.cc",
+      "device_response_converter.h",
+      "enclave/attestation.cc",
+      "enclave/attestation.h",
+      "enclave/attestation_report.h",
+      "enclave/constants.cc",
+      "enclave/constants.h",
+      "enclave/enclave_authenticator.cc",
+      "enclave/enclave_authenticator.h",
+      "enclave/enclave_discovery.cc",
+      "enclave/enclave_discovery.h",
+      "enclave/enclave_protocol_utils.cc",
+      "enclave/enclave_protocol_utils.h",
+      "enclave/enclave_websocket_client.cc",
+      "enclave/enclave_websocket_client.h",
+      "enclave/metrics.cc",
+      "enclave/metrics.h",
+      "enclave/transact.cc",
+      "enclave/transact.h",
+      "enclave/types.cc",
+      "enclave/types.h",
+      "fido_authenticator.cc",
+      "fido_authenticator.h",
+      "fido_device.cc",
+      "fido_device.h",
+      "fido_device_authenticator.cc",
+      "fido_device_authenticator.h",
+      "fido_device_discovery.cc",
+      "fido_device_discovery.h",
+      "fido_discovery_base.cc",
+      "fido_discovery_base.h",
+      "fido_discovery_factory.cc",
+      "fido_discovery_factory.h",
+      "fido_request_handler_base.cc",
+      "fido_request_handler_base.h",
+      "fido_task.cc",
+      "fido_task.h",
+      "filter.cc",
+      "filter.h",
+      "get_assertion_request_handler.cc",
+      "get_assertion_request_handler.h",
+      "get_assertion_task.cc",
+      "get_assertion_task.h",
+      "hid/fido_hid_device.cc",
+      "hid/fido_hid_device.h",
+      "hid/fido_hid_discovery.cc",
+      "hid/fido_hid_discovery.h",
+      "hid/fido_hid_message.cc",
+      "hid/fido_hid_message.h",
+      "hid/fido_hid_packet.cc",
+      "hid/fido_hid_packet.h",
+      "large_blob.cc",
+      "large_blob.h",
+      "mac/icloud_keychain.h",
+      "mac/icloud_keychain_sys.h",
+      "make_credential_request_handler.cc",
+      "make_credential_request_handler.h",
+      "make_credential_task.cc",
+      "make_credential_task.h",
+      "pin.cc",
+      "pin.h",
+      "pin_internal.cc",
+      "pin_internal.h",
+      "platform_credential_store.h",
+      "reset_request_handler.cc",
+      "reset_request_handler.h",
+      "set_pin_request_handler.cc",
+      "set_pin_request_handler.h",
+      "u2f_command_constructor.cc",
+      "u2f_command_constructor.h",
+      "u2f_register_operation.cc",
+      "u2f_register_operation.h",
+      "u2f_sign_operation.cc",
+      "u2f_sign_operation.h",
+      "virtual_ctap2_device.cc",
+      "virtual_ctap2_device.h",
+      "virtual_fido_device.cc",
+      "virtual_fido_device.h",
+      "virtual_fido_device_authenticator.cc",
+      "virtual_fido_device_authenticator.h",
+      "virtual_u2f_device.cc",
+      "virtual_u2f_device.h",
+    ]
 
-      deps += [
-        "//components/sync/protocol",
-        "//device/fido/enclave/proto",
-        "//services/device/public/cpp/hid",
-        "//services/device/public/cpp/usb",
-        "//services/device/public/mojom",
-        "//services/device/public/mojom:usb",
-        "//services/network/public/mojom",
-      ]
-    }
+    deps += [
+      "//components/sync/protocol",
+      "//device/fido/enclave/proto",
+      "//services/device/public/cpp/hid",
+      "//services/device/public/cpp/usb",
+      "//services/device/public/mojom",
+      "//services/device/public/mojom:usb",
+      "//services/network/public/mojom",
+    ]
 
     if (is_mac) {
       sources += [
@@ -380,28 +378,26 @@ if (use_blink) {
   }
 
   # Android implementation of FIDO is delegated to GMSCore.
-  if (!is_android) {
-    fuzzer_test("fido_hid_message_fuzzer") {
-      sources = [ "hid/fido_hid_message_fuzzer.cc" ]
-      deps = [
-        ":fido",
-        "//base",
-      ]
-      libfuzzer_options = [ "max_len=2048" ]
-    }
+  fuzzer_test("fido_hid_message_fuzzer") {
+    sources = [ "hid/fido_hid_message_fuzzer.cc" ]
+    deps = [
+      ":fido",
+      "//base",
+    ]
+    libfuzzer_options = [ "max_len=2048" ]
+  }
 
-    fuzzer_test("ctap_response_fuzzer") {
-      sources = [ "ctap_response_fuzzer.cc" ]
-      deps = [
-        ":fido",
-        "//base",
-        "//base:i18n",
-        "//components/cbor",
-        "//components/device_event_log",
-      ]
-      seed_corpus = "response_data_fuzzer_corpus/"
-      libfuzzer_options = [ "max_len=65537" ]
-    }
+  fuzzer_test("ctap_response_fuzzer") {
+    sources = [ "ctap_response_fuzzer.cc" ]
+    deps = [
+      ":fido",
+      "//base",
+      "//base:i18n",
+      "//components/cbor",
+      "//components/device_event_log",
+    ]
+    seed_corpus = "response_data_fuzzer_corpus/"
+    libfuzzer_options = [ "max_len=65537" ]
   }
 
   fuzzer_test("v2_handshake_fuzzer") {
@@ -433,7 +429,7 @@ if (use_blink) {
     ]
 
     # Android doesn't compile. Linux requires udev.
-    if (!is_linux_without_udev && !is_android) {
+    if (!is_linux_without_udev) {
       sources += [
         "fake_fido_discovery.cc",
         "fake_fido_discovery.h",
@@ -443,16 +439,14 @@ if (use_blink) {
       deps += [ "//services/device/public/cpp/hid" ]
     }
 
-    if (!is_android) {
-      sources += [
-        "multiple_virtual_fido_device_factory.cc",
-        "multiple_virtual_fido_device_factory.h",
-        "virtual_fido_device_discovery.cc",
-        "virtual_fido_device_discovery.h",
-        "virtual_fido_device_factory.cc",
-        "virtual_fido_device_factory.h",
-      ]
-    }
+    sources += [
+      "multiple_virtual_fido_device_factory.cc",
+      "multiple_virtual_fido_device_factory.h",
+      "virtual_fido_device_discovery.cc",
+      "virtual_fido_device_discovery.h",
+      "virtual_fido_device_factory.cc",
+      "virtual_fido_device_factory.h",
+    ]
 
     if (is_mac) {
       sources += [

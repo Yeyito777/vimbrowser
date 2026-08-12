@@ -344,7 +344,7 @@ target(link_target_type, "ffmpeg_internal") {
       "-L",
       rebase_path(target_gen_dir, root_build_dir),
     ]
-    if (!is_android && !is_fuchsia) {
+    if (!is_fuchsia) {
       # OS=android requires that both -lz and -lm occur after
       # -lc++_shared on the link command line. Android link rules
       # already include -lm, and we get -lz as a transitive dependency
@@ -436,9 +436,6 @@ target(link_target_type, "ffmpeg_internal") {
 
 if (is_component_ffmpeg) {
   shared_library("ffmpeg") {
-    if (is_android) {
-      configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-    }
     public_configs = [ ":ffmpeg_dependent_config" ]
     deps = [ ":ffmpeg_internal" ]
 

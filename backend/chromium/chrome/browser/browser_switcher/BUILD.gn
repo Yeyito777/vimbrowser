@@ -120,36 +120,34 @@ source_set("unit_tests") {
   }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = []
-    deps = []
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = []
+  deps = []
 
-    if (is_mac || is_win || is_linux) {
-      sources += [
-        "browser_switcher_browsertest.cc",
-        "browser_switcher_service_browsertest.cc",
-      ]
-      deps += [
-        ":browser_switcher",
-        "//base/test:test_config",
-        "//chrome/browser/ui",
-        "//chrome/test:test_support_ui",
-        "//components/policy:generated",
-        "//components/policy:policy_code_generate",
-        "//components/policy/core/browser",
-        "//components/policy/core/common",
-        "//components/policy/core/common:test_support",
-        "//content/test:test_support",
-        "//extensions:test_support",
-        "//extensions/browser",
-        "//extensions/common",
-        "//net",
-        "//testing/gtest",
-      ]
-    }
+  if (is_mac || is_win || is_linux) {
+    sources += [
+      "browser_switcher_browsertest.cc",
+      "browser_switcher_service_browsertest.cc",
+    ]
+    deps += [
+      ":browser_switcher",
+      "//base/test:test_config",
+      "//chrome/browser/ui",
+      "//chrome/test:test_support_ui",
+      "//components/policy:generated",
+      "//components/policy:policy_code_generate",
+      "//components/policy/core/browser",
+      "//components/policy/core/common",
+      "//components/policy/core/common:test_support",
+      "//content/test:test_support",
+      "//extensions:test_support",
+      "//extensions/browser",
+      "//extensions/common",
+      "//net",
+      "//testing/gtest",
+    ]
   }
 }
 

@@ -25,11 +25,7 @@ source_set("tracing") {
     ]
   }
 
-  if (!is_android) {
-    public_deps += [ "//chrome/browser/ui:browser_list" ]
-  } else {
-    public_deps += [ "//chrome/browser/ui/android/tab_model" ]
-  }
+  public_deps += [ "//chrome/browser/ui:browser_list" ]
 }
 
 source_set("impl") {
@@ -100,24 +96,22 @@ source_set("unit_tests") {
   }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "chrome_tracing_delegate_browsertest.cc" ]
-    deps = [
-      ":tracing",
-      "//base/test:proto_test_support",
-      "//base/test:test_support",
-      "//chrome/app:command_ids",
-      "//chrome/browser:browser_process",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/common:constants",
-      "//chrome/test:test_support_ui",
-      "//components/metrics:metrics_pref_names",
-      "//components/prefs",
-      "//content/test:test_support",
-    ]
-  }
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [ "chrome_tracing_delegate_browsertest.cc" ]
+  deps = [
+    ":tracing",
+    "//base/test:proto_test_support",
+    "//base/test:test_support",
+    "//chrome/app:command_ids",
+    "//chrome/browser:browser_process",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/common:constants",
+    "//chrome/test:test_support_ui",
+    "//components/metrics:metrics_pref_names",
+    "//components/prefs",
+    "//content/test:test_support",
+  ]
 }

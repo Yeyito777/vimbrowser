@@ -381,16 +381,8 @@ void BrowserProcessImpl::Init() {
   // TODO(devlin): Move this block out of BrowserProcessImpl to somewhere like
   // //chrome/browser/initialize_extensions_browser_client, analogous to
   // `EnsureExtensionsClientInitialized()` above?
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  extensions_browser_client_ = startup_data()->TakeExtensionsBrowserClient();
-#elif BUILDFLAG(ENABLE_EXTENSIONS)
   extensions_browser_client_ =
       std::make_unique<extensions::ChromeExtensionsBrowserClient>();
-#else
-  // Neither ENABLE_EXTENSIONS nor ENABLE_DESKTOP_ANDROID_EXTENSIONS are
-  // enabled. Unknown configuration.
-#error "Unknown configuration."
-#endif
 
   extensions_browser_client_->Init();
 

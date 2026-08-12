@@ -11,13 +11,6 @@ source_set("persisted_state_db") {
     "session_proto_db_factory.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "persisted_state_db.cc",
-      "persisted_state_db.h",
-    ]
-  }
-
   deps = [
     "//base",
     "//chrome/browser/profiles:profile",
@@ -32,15 +25,9 @@ source_set("persisted_state_db") {
     "//content/public/browser",
     "//third_party/leveldatabase",
   ]
-  if (is_android) {
-    deps += [
-      "//chrome/browser/tab:jni_headers",
-      "//components/commerce/core:merchant_signal_db_proto",
-    ]
-  } else {
-    deps += [
-      "//components/commerce/core:coupon_db_content_proto",
-      "//components/commerce/core:discounts_db_content_proto",
-    ]
-  }
+
+  deps += [
+    "//components/commerce/core:coupon_db_content_proto",
+    "//components/commerce/core:discounts_db_content_proto",
+  ]
 }

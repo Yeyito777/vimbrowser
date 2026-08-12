@@ -56,10 +56,6 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/child_process_binding_types.h"
-#include "base/android/meminfo_dump_provider.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "media/mojo/mojom/media_foundation_service.mojom.h"
@@ -767,15 +763,6 @@ const Metric kAllocatorDumpNamesForMetrics[] = {
      &Memory_Experimental::SetWebCache_OtherResources},
     {"webnn", "WebNN", MetricSize::kLarge, kEffectiveSize,
      EmitTo::kSizeInUkmAndUma, &Memory_Experimental::SetWebNN},
-#if BUILDFLAG(IS_ANDROID)
-    {base::android::MeminfoDumpProvider::kDumpName, "AndroidOtherPss",
-     MetricSize::kLarge, base::android::MeminfoDumpProvider::kPssMetricName,
-     EmitTo::kSizeInUmaOnly, nullptr},
-    {base::android::MeminfoDumpProvider::kDumpName, "AndroidOtherPrivateDirty",
-     MetricSize::kLarge,
-     base::android::MeminfoDumpProvider::kPrivateDirtyMetricName,
-     EmitTo::kSizeInUmaOnly, nullptr},
-#endif
 };
 
 #if PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
@@ -1078,7 +1065,7 @@ void EmitProcessUmaAndUkm(const GlobalMemoryDump::ProcessDump& pmd,
 
   builder->SetPrivateMemoryFootprint(pmd.os_dump().private_footprint_kb / kKiB);
   builder->SetSharedMemoryFootprint(pmd.os_dump().shared_footprint_kb / kKiB);
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   builder->SetPrivateSwapFootprint(pmd.os_dump().private_footprint_swap_kb /
                                    kKiB);
 #endif
@@ -1098,7 +1085,7 @@ void EmitProcessUmaAndUkm(const GlobalMemoryDump::ProcessDump& pmd,
       base::StrCat(
           {kMemoryHistogramPrefix, process_name, ".SharedMemoryFootprint"}),
       pmd.os_dump().shared_footprint_kb / kKiB);
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   MEMORY_METRICS_HISTOGRAM_MB(
       base::StrCat(
           {kMemoryHistogramPrefix, process_name, ".PrivateSwapFootprint"}),
@@ -1258,32 +1245,6 @@ void EmitUtilityMemoryMetrics(HistogramProcessType ptype,
   builder.Record(ukm_recorder);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// Return the base::android::ChildBindingState if the process with `pid` is a
-// renderer. If the `pid` is not in the list of live renderers it is assumed to
-// be unbound. If the `process_type` is not for a renderer return nullopt.
-std::optional<base::android::ChildBindingState>
-GetAndroidRendererProcessBindingState(
-    memory_instrumentation::mojom::ProcessType process_type,
-    base::ProcessId pid) {
-  if (process_type != memory_instrumentation::mojom::ProcessType::RENDERER) {
-    return std::nullopt;
-  }
-  for (auto iter = content::RenderProcessHost::AllHostsIterator();
-       !iter.IsAtEnd(); iter.Advance()) {
-    if (!iter.GetCurrentValue()->GetProcess().IsValid())
-      continue;
-
-    if (iter.GetCurrentValue()->GetProcess().Pid() == pid) {
-      return iter.GetCurrentValue()->GetEffectiveChildBindingState();
-    }
-  }
-  // This can occur if the process no longer exists. Specifically, it is
-  // possible a memory dump was requested, but the process was killed before
-  // reaching this point so we cannot check its status. Treat as UNBOUND.
-  return base::android::ChildBindingState::UNBOUND;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -1298,25 +1259,6 @@ void ProcessMemoryMetricsEmitter::FetchAndEmitProcessMemoryMetrics() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
 // https://crbug.com/330751658 (hopefully temporary).
-#if BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86_64)
-  // Do not skip when command-line is used to specifically test it.
-  if (base::GetPageSize() == 16 * 1024) {
-    const base::CommandLine* command_line =
-        base::CommandLine::ForCurrentProcess();
-    int test_delay_in_minutes = 0;
-    if (command_line->HasSwitch(switches::kTestMemoryLogDelayInMinutes)) {
-      base::StringToInt(command_line->GetSwitchValueASCII(
-                            switches::kTestMemoryLogDelayInMinutes),
-                        &test_delay_in_minutes);
-    }
-    // Allow a negative value to test the crashing scenario.
-    if (test_delay_in_minutes >= 0) {
-      LOG(WARNING) << "Ignoring dump request to avoid emulator crash. "
-                   << "https://crbug.com/330751658";
-      return;
-    }
-  }
-#endif
 
   auto* instrumentation =
       memory_instrumentation::MemoryInstrumentation::GetInstance();
@@ -1416,14 +1358,6 @@ void ProcessMemoryMetricsEmitter::ReceivedMemoryDump(
   }
 
   uint32_t private_footprint_total_kb = 0;
-#if BUILDFLAG(IS_ANDROID)
-  uint32_t private_swap_footprint_total_kb = 0;
-  uint32_t renderer_private_swap_footprint_total_kb = 0;
-  uint32_t private_footprint_excluding_waived_total_kb = 0;
-  uint32_t renderer_private_footprint_excluding_waived_total_kb = 0;
-  uint32_t private_footprint_visible_or_higher_total_kb = 0;
-  uint32_t renderer_private_footprint_visible_or_higher_total_kb = 0;
-#endif  // BUILDFLAG(IS_ANDROID)
   uint32_t renderer_private_footprint_total_kb = 0;
   uint32_t renderer_malloc_total_kb = 0;
   uint32_t renderer_blink_gc_total_kb = 0;
@@ -1442,26 +1376,6 @@ void ProcessMemoryMetricsEmitter::ReceivedMemoryDump(
   for (const auto& pmd : dump->process_dumps()) {
     uint32_t process_pmf_kb = pmd.os_dump().private_footprint_kb;
     private_footprint_total_kb += process_pmf_kb;
-#if BUILDFLAG(IS_ANDROID)
-    uint32_t process_swap_kb = pmd.os_dump().private_footprint_swap_kb;
-    private_swap_footprint_total_kb += process_swap_kb;
-    bool is_waived_renderer = false;
-    bool is_less_than_visible_renderer = false;
-    auto renderer_binding_state_android =
-        GetAndroidRendererProcessBindingState(pmd.process_type(), pmd.pid());
-    if (renderer_binding_state_android) {
-      // Also exclude base::android::ChildBindingState::UNBOUND which can occur
-      // as the state change can be racy.
-      is_waived_renderer = *renderer_binding_state_android <=
-                           base::android::ChildBindingState::WAIVED;
-      is_less_than_visible_renderer = *renderer_binding_state_android <
-                                      base::android::ChildBindingState::VISIBLE;
-    }
-    private_footprint_excluding_waived_total_kb +=
-        is_waived_renderer ? 0 : process_pmf_kb;
-    private_footprint_visible_or_higher_total_kb +=
-        is_less_than_visible_renderer ? 0 : process_pmf_kb;
-#endif  // BUILDFLAG(IS_ANDROID)
     shared_footprint_total_kb += pmd.os_dump().shared_footprint_kb;
     resident_set_total_kb += pmd.os_dump().resident_set_kb;
 
@@ -1480,13 +1394,6 @@ void ProcessMemoryMetricsEmitter::ReceivedMemoryDump(
       }
       case memory_instrumentation::mojom::ProcessType::RENDERER: {
         renderer_private_footprint_total_kb += process_pmf_kb;
-#if BUILDFLAG(IS_ANDROID)
-        renderer_private_swap_footprint_total_kb += process_swap_kb;
-        renderer_private_footprint_excluding_waived_total_kb +=
-            is_waived_renderer ? 0 : process_pmf_kb;
-        renderer_private_footprint_visible_or_higher_total_kb +=
-            is_less_than_visible_renderer ? 0 : process_pmf_kb;
-#endif  // BUILDFLAG(IS_ANDROID)
         hibernated_canvas_total_memory +=
             pmd.GetMetric("canvas/hibernated", kSize).value_or(0);
         hibernated_canvas_total_original_memory +=
@@ -1634,13 +1541,6 @@ void ProcessMemoryMetricsEmitter::ReceivedMemoryDump(
         "UMA.Pseudo.Memory.Total.PrivateMemoryFootprint",
         metrics::GetPseudoMetricsSample(
             static_cast<double>(private_footprint_total_kb) / kKiB));
-#if BUILDFLAG(IS_ANDROID)
-    UMA_HISTOGRAM_MEMORY_LARGE_MB("Memory.Total.PrivateSwapFootprint",
-                                  private_swap_footprint_total_kb / kKiB);
-    UMA_HISTOGRAM_MEMORY_LARGE_MB(
-        "Memory.Total.RendererPrivateSwapFootprint",
-        renderer_private_swap_footprint_total_kb / kKiB);
-#endif  // BUILDFLAG(IS_ANDROID)
     UMA_HISTOGRAM_MEMORY_LARGE_MB("Memory.Total.RendererPrivateMemoryFootprint",
                                   renderer_private_footprint_total_kb / kKiB);
     UMA_HISTOGRAM_MEMORY_LARGE_MB("Memory.Total.RendererMalloc",
@@ -1656,20 +1556,6 @@ void ProcessMemoryMetricsEmitter::ReceivedMemoryDump(
                                    tiles_total_memory / kMiB);
     UMA_HISTOGRAM_MEMORY_MEDIUM_MB("Memory.Total.GpuMappedMemory",
                                    gpu_mapped_memory_total / kMiB);
-#if BUILDFLAG(IS_ANDROID)
-    UMA_HISTOGRAM_MEMORY_LARGE_MB(
-        "Memory.Total.PrivateMemoryFootprintExcludingWaivedRenderers",
-        private_footprint_excluding_waived_total_kb / kKiB);
-    UMA_HISTOGRAM_MEMORY_LARGE_MB(
-        "Memory.Total.RendererPrivateMemoryFootprintExcludingWaived",
-        renderer_private_footprint_excluding_waived_total_kb / kKiB);
-    UMA_HISTOGRAM_MEMORY_LARGE_MB(
-        "Memory.Total.PrivateMemoryFootprintVisibleOrHigherPriorityRenderers",
-        private_footprint_visible_or_higher_total_kb / kKiB);
-    UMA_HISTOGRAM_MEMORY_LARGE_MB(
-        "Memory.Total.RendererPrivateMemoryFootprintVisibleOrHigherPriority",
-        renderer_private_footprint_visible_or_higher_total_kb / kKiB);
-#endif
 
     UMA_HISTOGRAM_MEMORY_MEDIUM_MB("Memory.Total.HibernatedCanvas.Size",
                                    hibernated_canvas_total_memory / kMiB);

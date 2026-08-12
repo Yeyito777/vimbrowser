@@ -43,8 +43,7 @@ if (enable_perfetto_heapprofd) {
 # builds.
 # TODO(lalitm): looks like they don't work on standalone Android either because
 # run_android_test doesn't push the test data.
-if (enable_perfetto_trace_processor && perfetto_build_standalone &&
-    !is_android) {
+if (enable_perfetto_trace_processor && perfetto_build_standalone) {
   perfetto_integrationtests_targets +=
       [ "src/trace_processor:integrationtests" ]
   perfetto_integrationtests_targets += [ "src/traceconv:integrationtests" ]

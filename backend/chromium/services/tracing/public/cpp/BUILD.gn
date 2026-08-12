@@ -98,20 +98,6 @@ target(tracing_lib_type, "cpp") {
       "tracing_features.h",
     ]
 
-    if (is_android) {
-      sources += [
-        "perfetto/java_heap_profiler/hprof_buffer_android.cc",
-        "perfetto/java_heap_profiler/hprof_buffer_android.h",
-        "perfetto/java_heap_profiler/hprof_data_type_android.h",
-        "perfetto/java_heap_profiler/hprof_instances_android.cc",
-        "perfetto/java_heap_profiler/hprof_instances_android.h",
-        "perfetto/java_heap_profiler/hprof_parser_android.cc",
-        "perfetto/java_heap_profiler/hprof_parser_android.h",
-        "perfetto/java_heap_profiler/java_heap_profiler_android.cc",
-        "perfetto/java_heap_profiler/java_heap_profiler_android.h",
-      ]
-    }
-
     if (is_win && enable_loader_lock_sampling) {
       sources += [
         "stack_sampling/loader_lock_sampler_win.cc",
@@ -163,7 +149,7 @@ target(tracing_lib_type, "cpp") {
           "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
         ]
         public_deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.tracing.perfetto:fuchsia.tracing.perfetto_cpp" ]
-      } else if (!is_android) {
+      } else {
         sources += [
           "system_tracing_service.cc",
           "system_tracing_service.h",

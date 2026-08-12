@@ -1,10 +1,6 @@
 # Copyright 2014 The Chromium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 # Includes default args like 'enable_js_protobuf'.
 import("proto_library.gni")
 import("proto_sources.gni")
@@ -60,11 +56,7 @@ config("using_proto") {
 # the protobuf lite_runtime and full_runtime.
 # TODO(448809154): Investigate whether symbol conflicts with the system's protobuf
 # version appear on our android fuzzing devices.
-if (is_android && !use_fuzzing_engine_with_lpm) {
-  _protobuf_lite_target_type = "static_library"
-} else {
-  _protobuf_lite_target_type = "component"
-}
+_protobuf_lite_target_type = "component"
 
 target(_protobuf_lite_target_type, "protobuf_lite") {
   sources = protobuf_lite_sources
@@ -74,13 +66,6 @@ target(_protobuf_lite_target_type, "protobuf_lite") {
   configs += [ "//build/config/compiler:no_chromium_code" ]
 
   configs += [ ":protobuf_config_internal" ]
-
-  # Build protobuf_lite with full optimizations so Clang can optimize the
-  # initializer out. See 0029-make-initializers-optimizable.patch.
-  if (!is_debug && is_android) {
-    configs -= [ "//build/config/compiler:default_optimization" ]
-    configs += [ "//build/config/compiler:optimize_max" ]
-  }
 
   # Remove coverage and Sanitizers other than ASan for a performance boost when
   # fuzzing. ASan can't be removed here because of a bug preventing unsanitized
@@ -381,14 +366,6 @@ group("py_proto") {
     ":copy_google_protobuf",
     ":copy_google_protobuf_internal",
   ]
-}
-
-# Note: This exists for Cronet in AOSP where we can't import prebuilts. We import
-# the raw sources and compile them using a specialized pipeline. See crbug.com/419480317.
-if (is_android && is_cronet_for_aosp_build) {
-  android_library("proto_runtime_lite_java") {
-    sources = javaproto_sources
-  }
 }
 
 # Runtime dependency if the target needs the python scripts.

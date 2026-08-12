@@ -5,9 +5,6 @@
 import("//build/config/ui.gni")
 import("//device/vr/buildflags/buildflags.gni")
 import("//third_party/blink/public/public_features.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
 
 if (is_component_build) {
   link_target_type = "source_set"
@@ -26,10 +23,6 @@ target(link_target_type, "child") {
     "//content/renderer/*",
     "//content/utility/*",
   ]
-  if (is_android) {
-    # See comment in content/app/BUILD.gn above content_app_deps.
-    visibility += [ "//content/app:*" ]
-  }
 
   sources = [
     "assert_matching_enums.cc",

@@ -30,7 +30,6 @@ component("shared_typemap_traits") {
 }
 
 mojom("mojom") {
-  generate_java = true
   sources = [
     "bitmap.mojom",
     "hdr_metadata.mojom",

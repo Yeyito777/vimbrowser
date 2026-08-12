@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import("perfetto.gni")
-import("perfetto_android_sdk.gni")
 import("perfetto_python.gni")
 import("pkg_config.gni")
 import("proto_library.gni")
@@ -137,9 +136,6 @@ group("default_deps") {
       "//gn/standalone/libc++:deps",
       "//gn/standalone/sanitizers:deps",
     ]
-    if (is_android) {
-      public_deps += [ "//gn/standalone:check_build_deps_android" ]
-    }
   }
 }
 
@@ -156,11 +152,6 @@ config("default_config") {
     "..",
     "../src/profiling/memory/include",
   ]
-
-  if (build_with_chromium && is_android) {
-    # Included for __android_log_print
-    libs = [ "log" ]
-  }
 }
 
 # This config is propagated to embedders via libperfetto. It's also included in
@@ -363,7 +354,7 @@ if (enable_perfetto_benchmarks) {
 
 # Libbacktrace, used for printing stack traces from crash handler, only in
 # standalone debug builds.
-if (perfetto_build_standalone && (is_linux || is_android)) {
+if (perfetto_build_standalone && is_linux) {
   group("libbacktrace") {
     public_deps = [ "//buildtools:libbacktrace" ]
   }
@@ -377,7 +368,7 @@ if (enable_perfetto_trace_processor_sqlite) {
       if (build_with_chromium) {
         public_deps = [ "//third_party/sqlite:sqlite_dev" ]
       } else {
-        public_deps = [ "//third_party/sqlite:sqlite" ]
+        public_deps = [ "//third_party/sqlite" ]
       }
       public_configs = [ ":sqlite_third_party_include_path" ]
     }
@@ -397,7 +388,7 @@ if (enable_perfetto_trace_processor_mac_instruments) {
     if (perfetto_root_path == "//") {
       public_deps = [ "//buildtools:expat" ]
     } else {
-      public_deps = [ "//third_party/expat:expat" ]
+      public_deps = [ "//third_party/expat" ]
     }
   }
 }
@@ -485,10 +476,6 @@ perfetto_py_library("tp_vendor_py") {
 perfetto_py_library("tp_resolvers_py") {
 }
 perfetto_py_library("protobuf_py") {
-}
-
-# Android Java SDK libraries wich need to be provided by other build systems.
-perfetto_android_library("android_test_common") {
 }
 
 if (enable_perfetto_etm_importer) {

@@ -34,9 +34,6 @@
 #include "third_party/icu/source/common/unicode/udata.h"
 #include "third_party/icu/source/common/unicode/utrace.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/apk_assets.h"
-#endif
 
 #if BUILDFLAG(IS_IOS)
 #include "base/ios/ios_util.h"
@@ -50,12 +47,11 @@
 #include "base/fuchsia/intl_profile_watcher.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_FUCHSIA)
 #include "third_party/icu/source/common/unicode/unistr.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA) || \
-    BUILDFLAG(IS_CHROMEOS) || (BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS))
+#if BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS)
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 #endif
 
@@ -71,7 +67,7 @@ bool g_check_called_once = true;
 bool g_called_once = false;
 #endif  // DCHECK_IS_ON()
 
-#if (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+#if ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE
 
 // To debug http://crbug.com/445616.
 int g_debug_icu_last_error;
@@ -113,9 +109,6 @@ const char kIcuTimeZoneDataDir[] = "/config/tzdata/icu/44/le";
 // LINT.ThenChange(//sandbox/policy.fuchsia/sandbox_policy_fuchsia.cc:icu_time_zone_data_path)
 #endif  // BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_ANDROID)
-const char kAndroidAssetsIcuDataFileName[] = "assets/icudtl.dat";
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // File handle intentionally never closed. Not using File here because its
 // Windows implementation guards against two instances owning the same
@@ -134,14 +127,6 @@ void LazyInitIcuDataFile() {
   if (g_icudtl_pf != kInvalidPlatformFile) {
     return;
   }
-#if BUILDFLAG(IS_ANDROID)
-  int fd =
-      android::OpenApkAsset(kAndroidAssetsIcuDataFileName, &g_icudtl_region);
-  g_icudtl_pf = fd;
-  if (fd != -1) {
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   // For unit tests, data file is located on disk, so try there as a fallback.
 #if !BUILDFLAG(IS_APPLE)
   FilePath data_path;
@@ -327,8 +312,7 @@ void InitializeIcuTimeZone() {
       FuchsiaIntlProfileWatcher::GetPrimaryTimeZoneIdForIcuInitialization();
   icu::TimeZone::adoptDefault(
       icu::TimeZone::createTimeZone(icu::UnicodeString::fromUTF8(zone_id)));
-#elif BUILDFLAG(IS_CHROMEOS) || \
-    (BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS)) || BUILDFLAG(IS_ANDROID)
+#elif BUILDFLAG(IS_CHROMEOS) ||  (BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS))
   // To respond to the time zone change properly, the default time zone
   // cache in ICU has to be populated on starting up.
   // See TimeZoneMonitorLinux::NotifyClientsFromImpl().

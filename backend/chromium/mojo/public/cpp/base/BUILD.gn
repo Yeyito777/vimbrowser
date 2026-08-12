@@ -80,13 +80,6 @@ component("typemap_traits") {
     "thread_type_mojom_traits.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "application_state_mojom_traits.cc",
-      "application_state_mojom_traits.h",
-    ]
-  }
-
   if (is_win) {
     sources += [
       "logfont_win_mojom_traits.cc",

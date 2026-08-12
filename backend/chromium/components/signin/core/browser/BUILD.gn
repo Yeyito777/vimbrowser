@@ -4,10 +4,6 @@
 
 import("//components/signin/features.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 # This target contains code that is used by clients of //components/signin.
 static_library("browser") {
   sources = [
@@ -174,16 +170,4 @@ source_set("test_support") {
     ":browser",
     "//components/signin/public/base",
   ]
-}
-
-if (is_android) {
-  android_library("signin_enums_java") {
-    srcjar_deps = [ ":signin_enums_javagen" ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
-
-  java_cpp_enum("signin_enums_javagen") {
-    sources = [ "signin_header_helper.h" ]
-    visibility = [ ":*" ]  # Depend on through :signin_enums_java
-  }
 }

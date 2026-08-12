@@ -155,11 +155,7 @@ if (current_cpu == "x86" || (current_cpu == "x64" && !is_msan)) {
       "source/libvpx/vpx_ports/x86_abi_support.asm",
     ]
     defines = [ "CHROMIUM" ]
-    if (is_android) {
-      # On Android, define __ANDROID__ to use alternative standard library
-      # functions.
-      defines += [ "__ANDROID__" ]
-    }
+
     include_dirs = libvpx_include_dirs
   }
 }
@@ -575,9 +571,7 @@ static_library("libvpx") {
       ]
     }
   }
-  if (is_android) {
-    deps += [ "//third_party/cpu_features:ndk_compat" ]
-  }
+
   if (current_cpu == "arm" && arm_assembly_sources != []) {
     deps += [ ":libvpx_assembly_arm" ]
   }
@@ -659,17 +653,11 @@ test("test_libvpx") {
     "//testing/gtest",
   ]
 
-  if (is_android) {
-    use_raw_android_executable = true
-    defines = [ "LIBVPX_TEST_DATA_PATH=/data/local/tmp/chromium_tests_root/third_party/libvpx/testdata" ]
-    data = [ "testdata/" ]
-  } else {
-    defines = [ string_join("",
-                            [
-                              "LIBVPX_TEST_DATA_PATH=",
-                              rebase_path("testdata", root_build_dir),
-                            ]) ]
-  }
+  defines = [ string_join("",
+                          [
+                            "LIBVPX_TEST_DATA_PATH=",
+                            rebase_path("testdata", root_build_dir),
+                          ]) ]
 
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]

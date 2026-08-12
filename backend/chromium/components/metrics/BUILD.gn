@@ -7,11 +7,6 @@ import("//build/config/features.gni")
 import("//testing/test.gni")
 import("//tools/grit/grit_rule.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 if (is_chromeos) {
   import("//third_party/protobuf/proto_library.gni")
 }
@@ -36,52 +31,6 @@ source_set("library_support") {
     "//base",
     "//third_party/metrics_proto",
   ]
-}
-
-if (!is_cronet_build && is_android) {
-  generate_jni("jni_headers") {
-    sources = [
-      "android/java/src/org/chromium/components/metrics/LowEntropySource.java",
-    ]
-  }
-
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":foo_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "//components/metrics/metrics_features.cc" ]
-    class_name = "org.chromium.components.metrics.MetricsFeatures"
-  }
-
-  java_cpp_strings("java_switches_srcjar") {
-    # External code should depend on ":metrics_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "//components/metrics/metrics_switches.cc" ]
-    class_name = "org.chromium.components.metrics.MetricsSwitches"
-  }
-
-  java_cpp_enum("java_enum_srcjar") {
-    # External code should depend on ":metrics_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "stability_metrics_helper.h" ]
-  }
-
-  android_library("metrics_java") {
-    # Right now, this only includes the Java switches. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [
-      ":java_enum_srcjar",
-      ":java_features_srcjar",
-      ":java_switches_srcjar",
-    ]
-    sources = [
-      "android/java/src/org/chromium/components/metrics/LowEntropySource.java",
-    ]
-    deps = [
-      "//base:base_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
 }
 
 # Used by the Chrome installer, which doesn't need the whole metrics library.
@@ -112,8 +61,6 @@ if (!is_cronet_build || is_ios) {
   # a component that can be linked to by multiple other components.
   component("metrics_component") {
     sources = [
-      "android_metrics_helper.cc",
-      "android_metrics_helper.h",
       "histogram_child_process.h",
       "histogram_controller.cc",
       "histogram_controller.h",
@@ -303,21 +250,7 @@ if (!is_cronet_build || is_ios) {
       "//url",
     ]
 
-    if (is_android) {
-      sources += [
-        "android_metrics_provider.cc",
-        "android_metrics_provider.h",
-        "gms_metrics_provider.cc",
-        "gms_metrics_provider.h",
-      ]
-      public += [
-        "android_metrics_provider.h",
-        "gms_metrics_provider.h",
-      ]
-      deps += [ ":jni_headers" ]
-    } else {
-      deps += [ "//components/keep_alive_registry" ]
-    }
+    deps += [ "//components/keep_alive_registry" ]
 
     if (is_ios) {
       sources += [ "clean_exit_beacon_ios.mm" ]
@@ -425,9 +358,6 @@ if (!is_cronet_build) {
         "//extensions/buildflags",
         "//gpu/config",
       ]
-      if (is_android) {
-        deps += [ "//components/crash/content/browser" ]
-      }
     }
   }
 
@@ -590,7 +520,6 @@ if (!is_cronet_build) {
   source_set("unit_tests") {
     testonly = true
     sources = [
-      "android_metrics_helper_unittest.cc",
       "call_stacks/call_stack_profile_builder_unittest.cc",
       "call_stacks/call_stack_profile_metadata_unittest.cc",
       "call_stacks/call_stack_profile_metrics_provider_unittest.cc",
@@ -693,13 +622,6 @@ if (!is_cronet_build) {
         ":system_stack_sampled_metrics_status_proto",
         "//chromeos/ash/components/dbus:test_support",
         "//chromeos/ash/components/network:test_support",
-      ]
-    }
-
-    if (is_android) {
-      sources += [
-        "android_metrics_provider_unittest.cc",
-        "gms_metrics_provider_unittest.cc",
       ]
     }
 

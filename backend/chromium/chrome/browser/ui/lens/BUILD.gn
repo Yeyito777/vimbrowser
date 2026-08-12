@@ -4,9 +4,6 @@
 
 import("//pdf/features.gni")
 
-# Contained Lens dependencies are currently for desktop platforms only
-assert(!is_android, "Lens Overlay is for desktop platforms only")
-
 source_set("lens") {
   # The public interface is intentionally minimal. There should be a small
   # number of entry points and publicly used headers.

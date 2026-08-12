@@ -60,7 +60,7 @@ config("public_dav1d_config") {
     defines = [ "CONFIG_LOG=1" ]
   }
 
-  if (!is_android && !is_apple && !is_win) {
+  if (!is_apple && !is_win) {
     defines += [
       "HAVE_PTHREAD_GETAFFINITY_NP=1",
       "HAVE_PTHREAD_SETAFFINITY_NP=1",
@@ -99,7 +99,7 @@ if (is_win) {
   if (is_apple) {
     dav1d_copts += [ "-D_DARWIN_C_SOURCE" ]
   }
-  if (is_linux || is_chromeos || is_android || current_os == "aix") {
+  if (is_linux || is_chromeos || current_os == "aix") {
     if (!is_clang) {
       dav1d_copts += [ "-D_GNU_SOURCE" ]
     }

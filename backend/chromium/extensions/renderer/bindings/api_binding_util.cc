@@ -9,7 +9,6 @@
 #include "base/notreached.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "extensions/renderer/bindings/get_per_context_data.h"
@@ -148,8 +147,6 @@ std::string_view GetPlatformString() {
   return "mac";
 #elif BUILDFLAG(IS_WIN)
   return "win";
-#elif BUILDFLAG(IS_DESKTOP_ANDROID)
-  return "desktop_android";
 #else
   NOTREACHED();
 #endif

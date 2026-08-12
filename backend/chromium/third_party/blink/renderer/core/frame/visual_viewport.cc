@@ -757,17 +757,8 @@ bool VisualViewport::VisualViewportSuppliesScrollbars() const {
     return false;
   }
 
-  // Even if the mobile viewport is enabled, on "desktop Android" (e.g.
-  // large screen optimizations), we prefer the LayoutViewport to handle
-  // scrollbars for a desktop-like experience.
-  if (ScrollbarTheme::DesktopAndroidScrollbarsEnabled()) {
-    return false;
-  }
-
-  // If none of the above conditions are met, we are in the standard mobile
-  // behavior (ViewportEnabled is true, and DesktopAndroidScrollbarsEnabled is
-  // false). In this case, the VisualViewport is distinct from the
-  // LayoutViewport and handles the "screen" scrollbars.
+  // The VisualViewport is distinct from the LayoutViewport and handles the
+  // screen scrollbars when the mobile-style viewport is enabled.
   return true;
 }
 

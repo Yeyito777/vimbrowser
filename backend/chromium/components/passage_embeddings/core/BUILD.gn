@@ -51,9 +51,6 @@ static_library("core") {
     "//services/passage_embeddings/public/mojom",
   ]
 
-  if (is_android) {
-    deps += [ "//components/download/public/background_service:public" ]
-  }
   public_deps = [ ":passage_embeddings_types" ]
 }
 

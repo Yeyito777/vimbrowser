@@ -4,8 +4,6 @@
 
 import("//chrome/common/features.gni")
 
-assert(!is_android)
-
 source_set("ui") {
   sources = [
     "actor_task_list_bubble.cc",

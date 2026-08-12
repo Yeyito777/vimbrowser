@@ -2992,16 +2992,10 @@ class BannedTypeCheckTest(unittest.TestCase):
                 'some/java/problematic/accessibilityTypeAnnouncement.java', [
                     'accessibilityEvent.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);'
                 ]),
-            MockFile('content/java/problematic/desktopandroid.java',
-                     ['if (DeviceInfo.isDesktop()) {}']),
-            MockFile('content/java/problematic/desktopandroid1.java',
-                     ['if (PackageManager.FEATURE_PC) {}']),
-            MockFile('content/java/problematic/desktopandroid2.java',
-                     ['if (BuildConfig.IS_DESKTOP_ANDROID) {}']),
         ]
 
         errors = PRESUBMIT.CheckNoBannedPatterns(input_api, MockOutputApi())
-        self.assertEqual(14, len(errors))
+        self.assertEqual(11, len(errors))
         self.assertIn('some/java/problematic/diskread.java', errors[0].message)
         self.assertIn('some/java/problematic/diskwrite.java',
                       errors[1].message)
@@ -3026,12 +3020,6 @@ class BannedTypeCheckTest(unittest.TestCase):
         self.assertIn(
             'some/java/problematic/accessibilityTypeAnnouncement.java',
             errors[10].message)
-        self.assertIn('content/java/problematic/desktopandroid.java',
-                      errors[11].message)
-        self.assertIn('content/java/problematic/desktopandroid1.java',
-                      errors[12].message)
-        self.assertIn('content/java/problematic/desktopandroid2.java',
-                      errors[13].message)
 
     def testBannedCppFunctions(self):
         input_api = MockInputApi()
@@ -3071,11 +3059,6 @@ class BannedTypeCheckTest(unittest.TestCase):
                     'std::ranges::views::take(first, count);'
                 ]),
             MockFile('views_usage.cc', ['std::views::all(vec)']),
-            MockFile('content/desktop_android.cc', [
-                '// some first line',
-                '#if BUILDFLAG(IS_DESKTOP_ANDROID)',
-                '// some third line',
-            ]),
             # New test cases for nlohmann::json::parse
             MockFile('some/cpp/problematic/json_parse.cc',
                      ['nlohmann::json::parse(json_string);']),
@@ -3093,7 +3076,7 @@ class BannedTypeCheckTest(unittest.TestCase):
 
         # Each entry in results corresponds to a BanRule with a violation, in
         # the order they were encountered.
-        self.assertEqual(11, len(results))
+        self.assertEqual(10, len(results))
         self.assertIn('some/cpp/problematic/file.cc', results[0].message)
         self.assertIn('third_party/blink/problematic/file.cc',
                       results[1].message)
@@ -3111,10 +3094,9 @@ class BannedTypeCheckTest(unittest.TestCase):
         self.assertIn('banned_ranges_usage.cc', results[5].message)
         self.assertIn('banned_ranges_usage.cc', results[6].message)
         self.assertIn('views_usage.cc', results[7].message)
-        self.assertIn('content/desktop_android.cc', results[8].message)
-        self.assertIn('some/cpp/problematic/json_parse.cc', results[9].message)
+        self.assertIn('some/cpp/problematic/json_parse.cc', results[8].message)
         self.assertIn('some/cpp/problematic/json_parse_no_namespace.cc',
-                      results[10].message)
+                      results[9].message)
         self.assertTrue(
             all('third_party/json/ok/json_parse.cc' not in r.message
                 for r in results))
@@ -3122,12 +3104,6 @@ class BannedTypeCheckTest(unittest.TestCase):
             all('v8/ok/v8_parse.cc' not in r.message for r in results))
         self.assertTrue(
             all('v8/ok/v8_json_parse.cc' not in r.message for r in results))
-
-        # Check ResultLocation data. Line nums start at 1.
-        self.assertEqual(results[8].locations[0].file_path,
-                         'content/desktop_android.cc')
-        self.assertEqual(results[8].locations[0].start_line, 2)
-        self.assertEqual(results[8].locations[0].end_line, 2)
 
     def testBannedMemoryPressureListener(self):
         input_api = MockInputApi()

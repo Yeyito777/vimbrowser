@@ -8,16 +8,11 @@ import("//printing/buildflags/buildflags.gni")
 import("//third_party/blink/public/public_features.gni")
 import("//third_party/blink/renderer/config.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
-
 # These two targets include all mojom interfaces which are used for test
 # automation in content_shell, as a separate ChromeDriver-based code path uses
 # CDP to achieve the same results.
 
 mojom("core_test_automation") {
-  generate_java = false
   testonly = true
   sources = [
     "cookie_manager/cookie_manager_automation.test-mojom",
@@ -34,7 +29,6 @@ mojom("core_test_automation") {
 }
 
 mojom("modules_test_automation") {
-  generate_java = false
   testonly = true
   sources = [
     "compute_pressure/web_pressure_manager_automation.test-mojom",

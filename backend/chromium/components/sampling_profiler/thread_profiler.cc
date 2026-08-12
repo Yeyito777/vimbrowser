@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/android/library_loader/anchor_functions.h"
 #include "base/check.h"
 #include "base/command_line.h"
 #include "base/functional/bind.h"

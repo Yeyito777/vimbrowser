@@ -6,9 +6,6 @@
 
 #include "base/timer/timer.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/pre_freeze_background_memory_trimmer.h"
-#endif
 
 namespace base {
 
@@ -17,12 +14,7 @@ void PostDelayedMemoryReductionTask(
     const Location& from_here,
     OnceClosure task,
     base::TimeDelta delay) {
-#if BUILDFLAG(IS_ANDROID)
-  android::PreFreezeBackgroundMemoryTrimmer::PostDelayedBackgroundTask(
-      std::move(task_runner), from_here, std::move(task), delay);
-#else
   task_runner->PostDelayedTask(from_here, std::move(task), delay);
-#endif
 }
 
 void PostDelayedMemoryReductionTask(
@@ -30,15 +22,10 @@ void PostDelayedMemoryReductionTask(
     const Location& from_here,
     OnceCallback<void(MemoryReductionTaskContext)> task,
     base::TimeDelta delay) {
-#if BUILDFLAG(IS_ANDROID)
-  android::PreFreezeBackgroundMemoryTrimmer::PostDelayedBackgroundTask(
-      std::move(task_runner), from_here, std::move(task), delay);
-#else
   task_runner->PostDelayedTask(
       from_here,
       BindOnce(std::move(task), MemoryReductionTaskContext::kDelayExpired),
       delay);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -75,63 +62,6 @@ class OneShotDelayedBackgroundTimer::TimerImpl final
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#if BUILDFLAG(IS_ANDROID)
-class OneShotDelayedBackgroundTimer::TaskImpl final
-    : public OneShotDelayedBackgroundTimer::OneShotDelayedBackgroundTimerImpl {
- public:
-  ~TaskImpl() override = default;
-  void Start(const Location& from_here,
-             TimeDelta delay,
-             OnceCallback<void(MemoryReductionTaskContext)> task) override {
-    this->StartInternal(
-        from_here, delay,
-        BindOnce(
-            [](TaskImpl* timer,
-               OnceCallback<void(MemoryReductionTaskContext)> task,
-               MemoryReductionTaskContext in_pre_freeze) {
-              std::move(task).Run(in_pre_freeze);
-              timer->task_ = nullptr;
-            },
-            // |base::Unretained(this)| is safe here because destroying this
-            // will cancel the task. We do not need to worry about race
-            // conditions here because destruction should always happen on the
-            // same thread that the task is started on.
-            base::Unretained(this), std::move(task)));
-  }
-  void StartInternal(const Location& from_here,
-                     TimeDelta delay,
-                     OnceCallback<void(MemoryReductionTaskContext)> task) {
-    if (IsRunning()) {
-      Stop();
-    }
-    DCHECK(GetTaskRunner()->RunsTasksInCurrentSequence());
-    base::AutoLock locker(android::PreFreezeBackgroundMemoryTrimmer::lock());
-    task_ = android::PreFreezeBackgroundMemoryTrimmer::Instance()
-                .PostDelayedBackgroundTaskModernHelper(
-                    GetTaskRunner(), from_here, std::move(task), delay);
-  }
-  void Stop() override {
-    if (IsRunning()) {
-      task_.ExtractAsDangling()->CancelTask();
-    }
-  }
-  bool IsRunning() const override { return task_ != nullptr; }
-  void SetTaskRunner(scoped_refptr<SequencedTaskRunner> task_runner) override {
-    task_runner_ = task_runner;
-  }
-
- private:
-  scoped_refptr<SequencedTaskRunner> GetTaskRunner() {
-    // This matches the semantics of |OneShotTimer::GetTaskRunner()|.
-    return task_runner_ ? task_runner_
-                        : SequencedTaskRunner::GetCurrentDefault();
-  }
-
-  raw_ptr<android::PreFreezeBackgroundMemoryTrimmer::BackgroundTask> task_ =
-      nullptr;
-  scoped_refptr<SequencedTaskRunner> task_runner_ = nullptr;
-};
-#endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
@@ -140,15 +70,7 @@ class OneShotDelayedBackgroundTimer::TaskImpl final
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 OneShotDelayedBackgroundTimer::OneShotDelayedBackgroundTimer() {
-#if BUILDFLAG(IS_ANDROID)
-  if (android::PreFreezeBackgroundMemoryTrimmer::ShouldUseModernTrim()) {
-    impl_ = std::make_unique<TaskImpl>();
-  } else {
-    impl_ = std::make_unique<TimerImpl>();
-  }
-#else
   impl_ = std::make_unique<TimerImpl>();
-#endif
 }
 
 OneShotDelayedBackgroundTimer::~OneShotDelayedBackgroundTimer() {
@@ -172,10 +94,6 @@ void OneShotDelayedBackgroundTimer::Start(
     const Location& from_here,
     TimeDelta delay,
     OnceCallback<void(MemoryReductionTaskContext)> task) {
-#if BUILDFLAG(IS_ANDROID)
-  android::PreFreezeBackgroundMemoryTrimmer::
-      RegisterPrivateMemoryFootprintMetric();
-#endif
   impl_->Start(from_here, delay, std::move(task));
 }
 

@@ -64,9 +64,6 @@
 #include "components/startup_metric_utils/renderer/startup_metric_utils.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/library_loader/library_loader_hooks.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_MAC)
 #include <Carbon/Carbon.h>
@@ -304,11 +301,6 @@ int RendererMain(MainFunctionParams parameters) {
       base::HangWatcher::GetInstance()->Start();
     }
 
-#if BUILDFLAG(IS_ANDROID)
-    base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(
-        "RendererMain");
-    base::PlatformThreadPriorityMonitor::Get().Start();
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(MOJO_RANDOM_DELAYS_ENABLED)
     mojo::BeginRandomMojoDelays();

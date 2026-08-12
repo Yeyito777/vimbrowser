@@ -35,12 +35,10 @@ source_set("configs") {
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (!is_android) {
-    public_deps = [
-      "//chrome/browser/ui/tabs/tab_group_home",
-      "//chrome/browser/ui/webui/commerce",
-    ]
-  }
+  public_deps = [
+    "//chrome/browser/ui/tabs/tab_group_home",
+    "//chrome/browser/ui/webui/commerce",
+  ]
 
   deps = [
     ":webui",
@@ -69,31 +67,29 @@ source_set("configs") {
     deps += [ "//chrome/browser/ui/webui/signin:inline_login" ]
   }
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/actor/ui",
-      "//chrome/browser/actor/ui:actor_overlay_web_view",
-      "//chrome/browser/contextual_tasks:ui",
-      "//chrome/browser/glic/selection",
-      "//chrome/browser/ui/webui/access_code_cast",
-      "//chrome/browser/ui/webui/app_service_internals",
-      "//chrome/browser/ui/webui/autofill_ml_internals",
-      "//chrome/browser/ui/webui/color_pipeline_internals",
-      "//chrome/browser/ui/webui/content_annotator_internals",
-      "//chrome/browser/ui/webui/infobar_internals",
-      "//chrome/browser/ui/webui/new_tab_footer",
-      "//chrome/browser/ui/webui/privacy_sandbox:mojo_bindings",
-      "//chrome/browser/ui/webui/private_ai_internals",
-      "//chrome/browser/ui/webui/webui_toolbar",
-      "//chrome/browser/ui/webui_browser",
-    ]
+  deps += [
+    "//chrome/browser/actor/ui",
+    "//chrome/browser/actor/ui:actor_overlay_web_view",
+    "//chrome/browser/contextual_tasks:ui",
+    "//chrome/browser/glic/selection",
+    "//chrome/browser/ui/webui/access_code_cast",
+    "//chrome/browser/ui/webui/app_service_internals",
+    "//chrome/browser/ui/webui/autofill_ml_internals",
+    "//chrome/browser/ui/webui/color_pipeline_internals",
+    "//chrome/browser/ui/webui/content_annotator_internals",
+    "//chrome/browser/ui/webui/infobar_internals",
+    "//chrome/browser/ui/webui/new_tab_footer",
+    "//chrome/browser/ui/webui/privacy_sandbox:mojo_bindings",
+    "//chrome/browser/ui/webui/private_ai_internals",
+    "//chrome/browser/ui/webui/webui_toolbar",
+    "//chrome/browser/ui/webui_browser",
+  ]
 
-    if (!is_chromeos) {
-      deps += [
-        "//chrome/browser/ui/webui/app_home",
-        "//chrome/browser/ui/webui/default_browser:default_browser_modal",
-      ]
-    }
+  if (!is_chromeos) {
+    deps += [
+      "//chrome/browser/ui/webui/app_home",
+      "//chrome/browser/ui/webui/default_browser:default_browser_modal",
+    ]
   }
 
   if (safe_browsing_mode != 0) {
@@ -168,9 +164,8 @@ source_set("webui") {
   if (enable_extensions_core) {
     deps += [ "//chrome/browser/extensions" ]
   }
-  if (!is_android) {
-    deps += [ "//ui/web_dialogs" ]
-  }
+
+  deps += [ "//ui/web_dialogs" ]
 }
 
 source_set("webui_util") {

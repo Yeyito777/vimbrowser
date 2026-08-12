@@ -47,9 +47,6 @@ source_set("unit_tests") {
     "search_unittest.cc",
     "start_suggest_service_unittest.cc",
   ]
-  if (is_android) {
-    sources += [ "search_android_unittest.cc" ]
-  }
 
   deps = [
     ":search",

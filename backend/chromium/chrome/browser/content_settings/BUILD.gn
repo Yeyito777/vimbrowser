@@ -7,7 +7,7 @@ import("//content/public/common/features.gni")
 import("//extensions/buildflags/buildflags.gni")
 import("//pdf/features.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("content_settings") {
   sources = [
@@ -38,27 +38,19 @@ source_set("content_settings") {
 
   allow_circular_includes_from = []
 
-  if (is_android) {
-    sources += [
-      "javascript_optimizer_provider_android.h",
-      "request_desktop_site_web_contents_observer_android.h",
-    ]
-    public_deps += [ "//chrome/browser/preferences:android" ]
-  } else {
-    sources += [
-      "generated_cookie_prefs.h",
-      "generated_javascript_optimizer_pref.h",
-      "generated_permission_prompting_behavior_pref.h",
-    ]
+  sources += [
+    "generated_cookie_prefs.h",
+    "generated_javascript_optimizer_pref.h",
+    "generated_permission_prompting_behavior_pref.h",
+  ]
 
-    deps += [ "//components/content_settings/browser/ui" ]
+  deps += [ "//components/content_settings/browser/ui" ]
 
-    if (enable_extensions) {
-      public_deps += [ "//chrome/browser/extensions" ]
+  if (enable_extensions) {
+    public_deps += [ "//chrome/browser/extensions" ]
 
-      # _perf* uses extensions and extensions uses pref.
-      allow_circular_includes_from = [ "//chrome/browser/extensions" ]
-    }
+    # _perf* uses extensions and extensions uses pref.
+    allow_circular_includes_from = [ "//chrome/browser/extensions" ]
   }
 }
 
@@ -100,25 +92,13 @@ source_set("impl") {
     "//ui/webui",
   ]
 
-  if (is_android) {
-    sources += [
-      "javascript_optimizer_provider_android.cc",
-      "request_desktop_site_web_contents_observer_android.cc",
-    ]
+  sources += [
+    "generated_cookie_prefs.cc",
+    "generated_javascript_optimizer_pref.cc",
+    "generated_permission_prompting_behavior_pref.cc",
+  ]
 
-    deps += [
-      "//chrome/browser/notifications",
-      "//chrome/browser/notifications:notifications_java_enum_srcjar",
-    ]
-  } else {
-    sources += [
-      "generated_cookie_prefs.cc",
-      "generated_javascript_optimizer_pref.cc",
-      "generated_permission_prompting_behavior_pref.cc",
-    ]
-
-    deps += [ "//chrome/browser/ui/tabs" ]
-  }
+  deps += [ "//chrome/browser/ui/tabs" ]
 
   if (enable_guest_view) {
     deps += [ "//components/guest_view/browser" ]
@@ -174,13 +154,6 @@ source_set("content_settings_factory_impl") {
   if (enable_extensions) {
     deps += [ "//extensions/browser" ]
   }
-
-  if (is_android) {
-    deps += [
-      "//chrome/browser/flags:flags_android",
-      "//chrome/browser/notifications:notifications_java_enum_srcjar",
-    ]
-  }
 }
 
 # Fixes circular deps with different components. For example -
@@ -200,70 +173,66 @@ source_set("content_settings_util_impl") {
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/ui/location_bar",
-      "//chrome/browser/ui/tabs:tab_strip",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui/location_bar",
+    "//chrome/browser/ui/tabs:tab_strip",
+  ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "mixed_content_settings_tab_helper_browsertest.cc",
-      "sound_content_setting_observer_browsertest.cc",
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "mixed_content_settings_tab_helper_browsertest.cc",
+    "sound_content_setting_observer_browsertest.cc",
+  ]
+
+  deps = [
+    ":content_settings",
+    ":content_settings_factory",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/content_settings",
+    "//chrome/test:test_support_ui",
+    "//components/content_settings/browser",
+    "//components/content_settings/core/browser",
+    "//components/network_session_configurator/common",
+    "//content/public/browser",
+    "//content/public/common",
+    "//content/test:test_support",
+    "//net:test_support",
+    "//testing/gtest",
+    "//third_party/blink/public/common",
+    "//third_party/blink/public/common:headers",
+    "//url",
+  ]
+
+  if (enable_extensions && enable_plugins) {
+    sources += [ "content_settings_browsertest.cc" ]
+
+    deps += [
+      "//build:chromeos_buildflags",
+      "//chrome/browser",
+      "//chrome/browser/ui/tabs:tab_strip",
+      "//chrome/common:chrome_features",
+      "//chrome/common:constants",
+      "//chrome/test:test_support",
+      "//components/browsing_data/content",
+      "//components/content_settings/core/browser:cookie_settings",
+      "//components/content_settings/core/common",
+      "//components/prefs",
+      "//content/public/common:buildflags",
+      "//pdf:buildflags",
+      "//services/network/public/cpp",
+      "//testing/gmock",
+      "//third_party/widevine/cdm:buildflags",
     ]
 
-    deps = [
-      ":content_settings",
-      ":content_settings_factory",
-      "//base",
-      "//base/test:test_support",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/content_settings",
-      "//chrome/test:test_support_ui",
-      "//components/content_settings/browser",
-      "//components/content_settings/core/browser",
-      "//components/network_session_configurator/common",
-      "//content/public/browser",
-      "//content/public/common",
-      "//content/test:test_support",
-      "//net:test_support",
-      "//testing/gtest",
-      "//third_party/blink/public/common",
-      "//third_party/blink/public/common:headers",
-      "//url",
-    ]
-
-    if (enable_extensions && enable_plugins) {
-      sources += [ "content_settings_browsertest.cc" ]
-
-      deps += [
-        "//build:chromeos_buildflags",
-        "//chrome/browser",
-        "//chrome/browser/ui/tabs:tab_strip",
-        "//chrome/common:chrome_features",
-        "//chrome/common:constants",
-        "//chrome/test:test_support",
-        "//components/browsing_data/content",
-        "//components/content_settings/core/browser:cookie_settings",
-        "//components/content_settings/core/common",
-        "//components/prefs",
-        "//content/public/common:buildflags",
-        "//pdf:buildflags",
-        "//services/network/public/cpp",
-        "//testing/gmock",
-        "//third_party/widevine/cdm:buildflags",
-      ]
-
-      if (enable_pdf) {
-        deps += [ "//components/pdf/browser" ]
-      }
+    if (enable_pdf) {
+      deps += [ "//components/pdf/browser" ]
     }
   }
 }
@@ -334,20 +303,15 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (is_android) {
-    sources += [ "javascript_optimizer_provider_android_unittest.cc" ]
-    deps += [ "//chrome/browser/android:tabs_public" ]
-  } else {
-    sources += [
-      "generated_cookie_prefs_unittest.cc",
-      "generated_javascript_optimizer_pref_unittest.cc",
-    ]
+  sources += [
+    "generated_cookie_prefs_unittest.cc",
+    "generated_javascript_optimizer_pref_unittest.cc",
+  ]
 
-    deps += [
-      "//chrome/browser/extensions",
-      "//chrome/browser/ui/tabs",
-      "//chrome/common/extensions",
-      "//chrome/common/extensions/api",
-    ]
-  }
+  deps += [
+    "//chrome/browser/extensions",
+    "//chrome/browser/ui/tabs",
+    "//chrome/common/extensions",
+    "//chrome/common/extensions/api",
+  ]
 }

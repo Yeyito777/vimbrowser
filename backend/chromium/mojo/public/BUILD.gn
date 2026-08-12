@@ -11,13 +11,6 @@ group("public") {
     "interfaces/bindings/tests:test_interfaces",
     "rust:all",
   ]
-
-  if (is_android) {
-    deps += [
-      "java:bindings_java",
-      "java:system_java",
-    ]
-  }
 }
 
 group("sdk") {

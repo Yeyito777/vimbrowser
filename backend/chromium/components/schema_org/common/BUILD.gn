@@ -5,14 +5,12 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("mojom") {
-  generate_java = true
   sources = [ "metadata.mojom" ]
 
   public_deps = [ "//url/mojom:url_mojom_gurl" ]
 }
 
 mojom("improved_mojom") {
-  generate_java = true
   sources = [ "improved_metadata.mojom" ]
 
   public_deps = [

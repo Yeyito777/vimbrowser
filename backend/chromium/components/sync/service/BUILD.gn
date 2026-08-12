@@ -129,17 +129,5 @@ static_library("service") {
     "//ui/base",
   ]
 
-  if (is_android) {
-    sources += [
-      "../android/sync_feature_map.cc",
-      "../android/sync_service_android_bridge.cc",
-      "../android/sync_service_android_bridge.h",
-    ]
-    deps += [
-      "../android:jni_headers",
-      "//components/password_manager/core/browser:split_stores_and_local_upm",
-    ]
-  }
-
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }

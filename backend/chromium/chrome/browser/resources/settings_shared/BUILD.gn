@@ -4,8 +4,6 @@
 
 import("//ui/webui/resources/tools/build_webui.gni")
 
-assert(!is_android)
-
 build_webui("build") {
   grd_prefix = "settings_shared"
   grd_resource_path_prefix = "shared/settings"

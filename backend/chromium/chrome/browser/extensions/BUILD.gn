@@ -628,60 +628,36 @@ source_set("extensions") {
   if (is_mac || is_win || is_linux || is_chromeos) {
     deps += [ "//components/webapps/isolated_web_apps:scheme" ]
   }
-  if (is_android) {
-    sources += [
-      "api/chrome_extensions_api_client_android.cc",
-      "api/identity/identity_unimplemented_functions_android.cc",
-      "api/identity/identity_unimplemented_functions_android.h",
-      "api/management/chrome_management_api_delegate_android.cc",
-      "api/messaging/native_message_android_host.cc",
-      "api/messaging/native_message_android_host.h",
-      "api/tabs/tabs_event_router_platform_delegate_android.cc",
-      "api/tabs/tabs_event_router_platform_delegate_android.h",
-      "chrome_extension_host_delegate_android.cc",
-      "extension_disabled_ui_android.cc",
-      "extension_error_ui_android.cc",
-      "extension_error_ui_android.h",
-      "external_install_error_android.cc",
-      "external_install_error_android.h",
-      "system_display/display_info_provider_android.cc",
-      "system_display/display_info_provider_android.h",
-    ]
-    deps += [
-      "//chrome/android:chrome_jni_headers",
-      "//chrome/browser/ui/android/tab_model",
-    ]
-  } else {
-    sources += [
-      "api/chrome_extensions_api_client_non_android.cc",
-      "api/tabs/tabs_event_router_platform_delegate_non_android.cc",
-      "api/tabs/tabs_event_router_platform_delegate_non_android.h",
-      "chrome_extension_host_delegate_non_android.cc",
-    ]
-    public_deps += [
-      "//chrome/browser/ui/tabs:utils",
-      "//components/app_icon_loader",
-    ]
-    deps += [
-      "//chrome/browser/ui/user_education",
-      "//chrome/browser/ui/web_applications:launch_utils",
-    ]
-  }
+
+  sources += [
+    "api/chrome_extensions_api_client_non_android.cc",
+    "api/tabs/tabs_event_router_platform_delegate_non_android.cc",
+    "api/tabs/tabs_event_router_platform_delegate_non_android.h",
+    "chrome_extension_host_delegate_non_android.cc",
+  ]
+  public_deps += [
+    "//chrome/browser/ui/tabs:utils",
+    "//components/app_icon_loader",
+  ]
+  deps += [
+    "//chrome/browser/ui/user_education",
+    "//chrome/browser/ui/web_applications:launch_utils",
+  ]
 
   if (!is_chromeos) {
     sources += [ "chrome_kiosk_delegate_non_chromeos.cc" ]
-    if (!is_android) {
-      sources += [
-        "api/messaging/launch_context.cc",
-        "api/messaging/launch_context.h",
-        "api/messaging/native_message_process_host.cc",
-        "api/messaging/native_message_process_host.h",
-        "api/messaging/native_messaging_launch_from_native.cc",
-        "api/messaging/native_messaging_launch_from_native.h",
-        "api/messaging/native_process_launcher.cc",
-        "api/messaging/native_process_launcher.h",
-      ]
-    }
+
+    sources += [
+      "api/messaging/launch_context.cc",
+      "api/messaging/launch_context.h",
+      "api/messaging/native_message_process_host.cc",
+      "api/messaging/native_message_process_host.h",
+      "api/messaging/native_messaging_launch_from_native.cc",
+      "api/messaging/native_messaging_launch_from_native.h",
+      "api/messaging/native_process_launcher.cc",
+      "api/messaging/native_process_launcher.h",
+    ]
+
     if (is_posix) {
       sources += [ "api/messaging/launch_context_posix.cc" ]
     }
@@ -1536,7 +1512,7 @@ source_set("extensions") {
       ]
     }
 
-    if (!is_android && !is_chromeos) {
+    if (!is_chromeos) {
       deps += [ "//chrome/browser/ui/toasts" ]
     }
   }  # if (enable_extensions)
@@ -1702,23 +1678,6 @@ source_set("chrome_extensions_browser_client") {
     "//extensions/browser/updater",
   ]
 
-  if (enable_desktop_android_extensions) {
-    sources += [ "chrome_extensions_browser_client_android.cc" ]
-
-    deps += [
-      "//chrome/browser:browser_process",
-      "//chrome/browser/extensions",
-      "//chrome/browser/extensions/api/runtime",
-      "//chrome/browser/profiles",
-      "//chrome/common",
-      "//components/signin/core/browser",
-      "//components/update_client",
-      "//components/version_info",
-      "//extensions/browser",
-      "//extensions/browser/kiosk",
-    ]
-  }
-
   if (enable_extensions) {
     sources += [ "chrome_extensions_browser_client_non_android.cc" ]
 
@@ -1753,11 +1712,5 @@ source_set("chrome_extensions_browser_client") {
       "//chrome/browser/safe_browsing",
       "//components/safe_browsing/core/common:features",
     ]
-  }
-}
-
-if (is_android) {
-  java_cpp_enum("extension_context_menu_model_enums") {
-    sources = [ "extension_context_menu_model.h" ]
   }
 }

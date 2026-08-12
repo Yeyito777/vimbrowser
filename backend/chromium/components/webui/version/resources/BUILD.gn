@@ -12,7 +12,7 @@ build_webui("build") {
     "about_version.html",
   ]
 
-  if (is_android || is_ios) {
+  if (is_ios) {
     static_files += [ "about_version_mobile.css" ]
   }
 

@@ -210,13 +210,6 @@ std::vector<Suggestion> CreateLoyaltyCardSuggestionsForMerge(
     return {};
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // No submenu on Android. Loyalty card suggestions are listed right after
-  // email suggestions.
-  std::vector<Suggestion> loyalty_card_suggestions =
-      CreateSuggestionsFromLoyaltyCards(affiliated_cards, valuables_manager);
-  return loyalty_card_suggestions;
-#else
   Suggestion submenu_suggestion = Suggestion(
       l10n_util::GetStringUTF16(IDS_AUTOFILL_LOYALTY_CARDS_SUBMENU_TITLE),
       SuggestionType::kAllLoyaltyCardsEntry);
@@ -230,7 +223,6 @@ std::vector<Suggestion> CreateLoyaltyCardSuggestionsForMerge(
   submenu_suggestion.children.emplace_back(
       CreateManageLoyaltyCardsSuggestion());
   return {submenu_suggestion};
-#endif
 }
 
 void MergeLoyaltyCardsAndAddressSuggestions(
@@ -240,10 +232,6 @@ void MergeLoyaltyCardsAndAddressSuggestions(
   if (loyalty_card_suggestions.empty()) {
     return;
   }
-#if BUILDFLAG(IS_ANDROID)
-  base::Extend(email_suggestions, std::move(loyalty_card_suggestions));
-  return;
-#else
   // There is at least one email, separator and manage addresses suggestion.
   CHECK_GE(email_suggestions.size(), 3u);
 
@@ -262,7 +250,6 @@ void MergeLoyaltyCardsAndAddressSuggestions(
   // Insert a new separator right after the loyalty cards we just added.
   email_suggestions.insert(inserted_cards_it + loyalty_card_suggestions.size(),
                            Suggestion(SuggestionType::kSeparator));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 LoyaltyCardSuggestionGenerator::LoyaltyCardSuggestionGenerator(
@@ -394,21 +381,7 @@ void LoyaltyCardSuggestionGenerator::GenerateSuggestions(
   }
 
   // If no submenu is needed.
-#if BUILDFLAG(IS_ANDROID)
-  if (affiliated_cards.empty() && autofill_non_affiliated_cards_enabled) {
-    Suggestion all_loyalty_cards_entry(
-        l10n_util::GetStringUTF16(
-            IDS_AUTOFILL_LOYALTY_CARDS_ALL_YOUR_CARDS_SUGGESTION),
-        SuggestionType::kAllLoyaltyCardsEntry);
-    callback(
-        {FillingProduct::kLoyaltyCard, {std::move(all_loyalty_cards_entry)}});
-    return;
-  }
-
-  const bool generate_flat_suggestions = true;
-#else
   const bool generate_flat_suggestions = non_affiliated_cards.empty();
-#endif
 
   if (generate_flat_suggestions) {
     std::vector<Suggestion> suggestions = CreateSuggestionsFromLoyaltyCards(

@@ -11,13 +11,7 @@ declare_args() {
   # Use static linking on Chrome OS as a workaround for the symbol lookup
   # error(crbug/1241330) due to a gRPC version mismatch between what Chrome
   # uses and what CrOS provides.
-  grpc_use_static_linking =
-      is_android || is_win || is_chromeos || is_mac || is_ios
-}
-
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
+  grpc_use_static_linking = is_win || is_chromeos || is_mac || is_ios
 }
 
 # WARNING: This config is public and applies to many targets that are first
@@ -49,19 +43,11 @@ config("grpc_config") {
     "GRPC_NO_RLS",
   ]
 
-  if (!is_android) {
-    # This prevents android specific object files from getting
-    # included in shared library built for other platforms
-    defines += [ "GRPC_NO_BINDER" ]
-  }
+  # This prevents android specific object files from getting
+  # included in shared library built for other platforms
+  defines += [ "GRPC_NO_BINDER" ]
 
-  if (is_android) {
-    libs = [ "log" ]  # For __android_log_write
-  }
-
-  if (is_android) {
-    include_dirs += [ "source/third_party/cares/config_android" ]
-  } else if (is_fuchsia) {
+  if (is_fuchsia) {
     include_dirs += [ "third_party/cares/config_fuchsia" ]
   } else {
     include_dirs += [ "source/third_party/cares/config_linux" ]
@@ -3387,10 +3373,7 @@ config("cares_config") {
 source_set("cares") {
   sources = [ "source/third_party/cares/ares_build.h" ]
 
-  if (is_android) {
-    sources += [ "source/third_party/cares/config_android/ares_config.h" ]
-    configs += [ ":cares_config" ]
-  } else if (is_fuchsia) {
+  if (is_fuchsia) {
     sources += [ "third_party/cares/config_fuchsia/ares_config.h" ]
   } else {
     sources += [ "source/third_party/cares/config_linux/ares_config.h" ]

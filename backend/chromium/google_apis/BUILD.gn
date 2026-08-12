@@ -194,10 +194,6 @@ component("google_apis") {
     frameworks = [ "Foundation.framework" ]
   }
 
-  if (is_android) {
-    deps += [ "gaia/android:jni_headers" ]
-  }
-
   defines = [ "IS_GOOGLE_APIS_IMPL" ]
 }
 
@@ -293,10 +289,6 @@ test("google_apis_unittests") {
     deps += [ ":google_apis_unittest_bundle_data" ]
   } else {
     data = [ "test/" ]
-  }
-
-  if (is_android) {
-    deps += [ "//net/android:net_java" ]
   }
 
   if (is_fuchsia) {

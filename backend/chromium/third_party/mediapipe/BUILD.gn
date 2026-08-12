@@ -68,10 +68,6 @@ config("mediapipe_flags") {
     "MEDIAPIPE_PROTO_LITE=1",
     "MEDIAPIPE_DISABLE_GPU=1",
   ]
-
-  if (is_android) {
-    defines += [ "MEDIAPIPE_NO_JNI=1" ]
-  }
 }
 
 proto_library("any_lite_proto_impl") {
@@ -562,10 +558,6 @@ tflite_static_library("mediapipe_core") {
       "-ObjC++",
       "-fobjc-arc",
     ]
-  } else if (is_android) {
-    # This is by design - our Windows no-op implementation works for Android
-    # too, and in general we don't need this functionality.
-    sources += [ "src/mediapipe/util/resource_util_windows.cc" ]
   } else {
     sources += [ "src/mediapipe/util/resource_util_default.cc" ]
   }
@@ -583,10 +575,6 @@ tflite_static_library("mediapipe_core") {
     "//third_party/zlib",
     "//third_party/zlib:minizip",
   ]
-
-  if (is_android) {
-    deps += [ "//third_party/cpu_features:ndk_compat" ]
-  }
 
   configs_to_remove = [ "//build/config/compiler:chromium_code" ]
   configs_to_add = [

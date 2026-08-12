@@ -90,7 +90,6 @@
 #include "chrome/browser/favicon/favicon_service_factory.h"
 #include "chrome/browser/favicon/history_ui_favicon_request_handler_factory.h"
 #include "chrome/browser/feature_engagement/tracker_factory.h"
-#include "chrome/browser/feed/feed_service_factory.h"
 #include "chrome/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "chrome/browser/finds/finds_service_factory.h"
 #include "chrome/browser/first_party_sets/first_party_sets_policy_service_factory.h"
@@ -627,22 +626,6 @@ void ChromeBrowserMainExtraPartsProfiles::
   chromeos_extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
 #endif
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
-#elif BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  chrome_extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
-  // EnsureBrowserContextKeyedServiceFactoriesBuilt() is invoked before the
-  // ExtensionsBrowserClient is ready on Android. This is due to Android
-  // specific initialization steps in
-  // ChromeMainDelegate::PostEarlyInitialization(). ExtensionsBrowserClient is
-  // expected to be ready when browser context keyed factory service is being
-  // created. Otherwise, it can cause problems.
-  //
-  // To avoid this issue, browser context keyed factory services are created
-  // during a later initialization phase of chrome browser process when
-  // EnsureBrowserContextKeyedServiceFactoriesBuilt() is invoked again,
-  // guaranteeing that the ExtensionsBrowserClient is available.
-  if (extensions::ExtensionsBrowserClient::Get()) {
-    extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
-  }
 #endif
 
   // ---------------------------------------------------------------------------

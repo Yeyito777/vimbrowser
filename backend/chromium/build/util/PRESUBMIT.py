@@ -19,14 +19,6 @@ def _GetFilesToSkip(input_api):
   if version_script_change is None:
     files_to_skip.append('version_test\\.py$')
 
-  android_chrome_version_script_change = next(
-      (f for f in affected_files if re.search(
-          '\\/android_chrome_version\\.py$|'
-          '\\/android_chrome_version_test\\.py$', f.LocalPath())), None)
-
-  if android_chrome_version_script_change is None:
-    files_to_skip.append('android_chrome_version_test\\.py$')
-
   return files_to_skip
 
 

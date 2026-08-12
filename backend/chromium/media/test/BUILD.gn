@@ -19,10 +19,6 @@ source_set("run_all_unittests") {
     "//media:test_support",
     "//mojo/core/embedder",
   ]
-
-  if (is_android) {
-    deps += [ "//ui/gl" ]
-  }
 }
 
 source_set("pipeline_integration_test_base") {

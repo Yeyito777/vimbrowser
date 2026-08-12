@@ -113,15 +113,6 @@ static_library("security_interstitial_page") {
     sources += [ "captive_portal_helper_win.cc" ]
   }
 
-  if (is_android) {
-    sources += [
-      "captive_portal_helper_android.cc",
-      "captive_portal_helper_android.h",
-    ]
-    deps +=
-        [ "//components/security_interstitials/content/android:jni_headers" ]
-  }
-
   if (enable_guest_view) {
     deps += [ "//components/guest_view/browser" ]
   }

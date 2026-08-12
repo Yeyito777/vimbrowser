@@ -20,14 +20,6 @@ component("device_features") {
   public_deps = [ "//base" ]
 
   defines = [ "DEVICE_FEATURES_IMPLEMENTATION" ]
-  if (is_android) {
-    sources += [ "device_feature_map.cc" ]
-    deps += [
-      "//device/base",
-      "//device/fido",
-      "//services/device/public/java:device_feature_list_jni",
-    ]
-  }
 }
 
 source_set("test_support") {
@@ -84,29 +76,22 @@ source_set("test_support") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "test/scoped_nfc_overrider.cc",
-      "test/scoped_nfc_overrider.h",
-    ]
-  } else {
-    sources += [
-      "test/fake_hid_manager.cc",
-      "test/fake_hid_manager.h",
-      "test/hid_test_util.cc",
-      "test/hid_test_util.h",
-      "test/mock_hid_connection.cc",
-      "test/mock_hid_connection.h",
-      "test/mock_hid_service.cc",
-      "test/mock_hid_service.h",
-      "test/test_report_descriptors.cc",
-      "test/test_report_descriptors.h",
-    ]
+  sources += [
+    "test/fake_hid_manager.cc",
+    "test/fake_hid_manager.h",
+    "test/hid_test_util.cc",
+    "test/hid_test_util.h",
+    "test/mock_hid_connection.cc",
+    "test/mock_hid_connection.h",
+    "test/mock_hid_service.cc",
+    "test/mock_hid_service.h",
+    "test/test_report_descriptors.cc",
+    "test/test_report_descriptors.h",
+  ]
 
-    public_deps += [ "//services/device/public/cpp/hid" ]
+  public_deps += [ "//services/device/public/cpp/hid" ]
 
-    deps += [ "//services/device/hid" ]
-  }
+  deps += [ "//services/device/hid" ]
 
   if (enable_compute_pressure) {
     sources += [

@@ -32,13 +32,6 @@ static_assert(sizeof(base::stat_wrapper_t::st_size) >= 8);
 #include "base/threading/scoped_blocking_call.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#include "base/android/virtual_document_path.h"
-#include "base/files/file_android.h"
-#include "base/files/file_util.h"
-#include "base/os_compat_android.h"
-#endif
 
 #if BUILDFLAG(IS_AIX)
 #include "base/notimplemented.h"
@@ -53,20 +46,10 @@ static_assert(File::FROM_BEGIN == SEEK_SET && File::FROM_CURRENT == SEEK_CUR &&
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-#define OffsetType off64_t
-// In case __USE_FILE_OFFSET64 is not used, the `File` methods in this file need
-// to call lseek64(), pread64() and pwrite64() instead of lseek(), pread() and
-// pwrite();
-#define LSeekFunc lseek64
-#define PReadFunc pread64
-#define PWriteFunc pwrite64
-#else
 #define OffsetType off_t
 #define LSeekFunc lseek
 #define PReadFunc pread
 #define PWriteFunc pwrite
-#endif
 
 static_assert(sizeof(int64_t) == sizeof(OffsetType));
 
@@ -168,16 +151,6 @@ File::Error CallFcntlFlock(PlatformFile file,
 }
 #endif  // BUILDFLAG(IS_AIX)
 
-#if BUILDFLAG(IS_ANDROID)
-bool GetContentUriInfo(const base::FilePath& path, File::Info* info) {
-  FileEnumerator::FileInfo file_info;
-  bool result = internal::ContentUriGetFileInfo(path, &file_info);
-  if (result) {
-    info->FromStat(file_info.stat());
-  }
-  return result;
-}
-#endif
 
 }  // namespace
 
@@ -200,13 +173,6 @@ void File::Info::FromStat(const stat_wrapper_t& stat_info) {
   int64_t last_accessed_nsec = stat_info.st_atim.tv_nsec;
   time_t creation_time_sec = stat_info.st_ctim.tv_sec;
   int64_t creation_time_nsec = stat_info.st_ctim.tv_nsec;
-#elif BUILDFLAG(IS_ANDROID)
-  time_t last_modified_sec = stat_info.st_mtime;
-  int64_t last_modified_nsec = stat_info.st_mtime_nsec;
-  time_t last_accessed_sec = stat_info.st_atime;
-  int64_t last_accessed_nsec = stat_info.st_atime_nsec;
-  time_t creation_time_sec = stat_info.st_ctime;
-  int64_t creation_time_nsec = stat_info.st_ctime_nsec;
 #elif BUILDFLAG(IS_APPLE)
   time_t last_modified_sec = stat_info.st_mtimespec.tv_sec;
   int64_t last_modified_nsec = stat_info.st_mtimespec.tv_nsec;
@@ -262,11 +228,6 @@ void File::Close() {
 
   SCOPED_FILE_TRACE("Close");
   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
-#if BUILDFLAG(IS_ANDROID)
-  if (java_parcel_file_descriptor_) {
-    internal::ContentUriClose(java_parcel_file_descriptor_);
-  }
-#endif
   file_.reset();
 }
 
@@ -475,25 +436,6 @@ bool File::GetInfo(Info* info) const {
   if (success) {
     info->FromStat(file_info);
   }
-#if BUILDFLAG(IS_ANDROID)
-  if (path_.IsContentUri()) {
-    // Content-URIs may represent files on the local disk, or may be virtual
-    // files backed by a ContentProvider which may or may not use FUSE to back
-    // the FDs.
-    //
-    // For Document URIs, always use ContentUriGetFileInfo() since it will
-    // succeed by using the Java API DocumentFile, which can provide
-    // last-modified where FUSE cannot. FUSE always returns the current-time
-    // which is problematic because Blobs are registered with an
-    // expected-last-modified, and will fail if it changes by the time a client
-    // accesses it.
-    //
-    // For other Content-URIS, if fstat() succeeded with a non-zero size, then
-    // use the result, otherwise try via the Java APIs.
-    return (success && info->size > 0 && !internal::IsDocumentUri(path_)) ||
-           GetContentUriInfo(path_, info);
-  }
-#endif
   return success;
 }
 
@@ -614,24 +556,6 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
   mode |= S_IRGRP | S_IROTH;
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri() || path.IsVirtualDocumentPath()) {
-    auto result = files_internal::OpenAndroidFile(path, flags);
-    if (!result.has_value()) {
-      error_details_ = result.error();
-      return;
-    }
-
-    // Save path for any call to GetInfo().
-    path_ = result->content_uri;
-    file_.reset(result->fd);
-    java_parcel_file_descriptor_ = result->java_parcel_file_descriptor;
-    created_ = result->created;
-    async_ = (flags & FLAG_ASYNC);
-    error_details_ = FILE_OK;
-    return;
-  }
-#endif
 
   int descriptor = HANDLE_EINTR(open(path.value().c_str(), open_flags, mode));
 
@@ -668,8 +592,7 @@ bool File::Flush() {
   DCHECK(IsValid());
   SCOPED_FILE_TRACE("Flush");
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS) || \
-    BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX)
   return !HANDLE_EINTR(fdatasync(file_.get()));
 #elif BUILDFLAG(IS_APPLE)
   // On macOS and iOS, fsync() is guaranteed to send the file's data to the
@@ -713,37 +636,6 @@ File::Error File::GetLastFileError() {
 
 int File::Stat(const FilePath& path, stat_wrapper_t* sb) {
   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri() || path.IsVirtualDocumentPath()) {
-    std::optional<FilePath> content_uri = base::ResolveToContentUri(path);
-    if (!content_uri) {
-      errno = ENOENT;
-      return -1;
-    }
-    // Attempt to open the file and call GetInfo(), otherwise call Java code
-    // with the path which is required for dirs.
-    File file(*content_uri, base::File::FLAG_OPEN | base::File::FLAG_READ);
-    Info info;
-    if ((file.IsValid() && file.GetInfo(&info)) ||
-        GetContentUriInfo(*content_uri, &info)) {
-      UNSAFE_BUFFERS(memset(sb, 0, sizeof(*sb)));
-      sb->st_mode = info.is_directory ? S_IFDIR : S_IFREG;
-      sb->st_size = info.size;
-      sb->st_mtime = info.last_modified.ToTimeT();
-      // Time internally is stored as microseconds since windows epoch, so first
-      // get subsecond time, and then convert to nanos. Do not subtract
-      // Time::UnixEpoch() (which is a little bigger than 2^53), or convert to
-      // nanos (multiply by 10^3 which is just under 2^10) prior to doing
-      // modulo as these can cause overflow / clamping at [-2^63, 2^63) which
-      // will corrupt the result.
-      sb->st_mtime_nsec =
-          (info.last_modified.ToDeltaSinceWindowsEpoch().InMicroseconds() %
-           Time::kMicrosecondsPerSecond) *
-          Time::kNanosecondsPerMicrosecond;
-      return 0;
-    }
-  }
-#endif
   return stat(path.value().c_str(), sb);
 }
 int File::Fstat(int fd, stat_wrapper_t* sb) {
@@ -756,17 +648,6 @@ int File::Lstat(const FilePath& path, stat_wrapper_t* sb) {
 }
 
 int File::Mkdir(const FilePath& path, mode_t mode) {
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsVirtualDocumentPath()) {
-    std::optional<files_internal::VirtualDocumentPath> vp =
-        files_internal::VirtualDocumentPath::Parse(path.value());
-    if (!vp) {
-      errno = ENOENT;
-      return -1;
-    }
-    return vp->Mkdir(mode) ? 0 : -1;
-  }
-#endif
   return mkdir(path.value().c_str(), mode);
 }
 

@@ -103,9 +103,6 @@ import("//build/config/python.gni")
 import("//build/config/sanitizers/sanitizers.gni")
 import("//build/toolchain/gcc_toolchain.gni")
 import("//tools/grit/grit_args.gni")
-_strip_resource_files = is_android && is_official_build
-_css_minifier = "//tools/grit/minimize_css.py"
-
 grit_resource_id_target = "//tools/gritsettings:default_resource_ids"
 grit_resource_id_file =
     get_label_info(grit_resource_id_target, "target_gen_dir") +
@@ -135,17 +132,6 @@ template("grit") {
         get_path_info(rebase_path(invoker.outputs, ".", _output_dir), "abspath")
   } else {
     _grit_outputs = []
-  }
-
-  _create_android_resources = defined(invoker.create_android_resources) &&
-                              invoker.create_android_resources
-  if (_create_android_resources) {
-    if (defined(invoker.resources_zip)) {
-      _resources_zip = invoker.resources_zip
-    } else {
-      _resources_zip = "$target_out_dir/$target_name.resources.zip"
-    }
-    _grit_outputs += [ _resources_zip ]
   }
 
   # Add .info output for all pak files
@@ -246,13 +232,6 @@ template("grit") {
              "--depend-on-stamp",
            ] + _grit_flags
 
-    if (_create_android_resources) {
-      args += [
-        "--android-output-zip",
-        rebase_path(_resources_zip, root_build_dir),
-      ]
-    }
-
     # Add brotli executable if using brotli.
     if (defined(invoker.use_brotli) && invoker.use_brotli) {
       _brotli_target = "//third_party/brotli:brotli($host_toolchain)"
@@ -323,15 +302,6 @@ template("grit") {
         args += [ "--allowlist-support" ]
       }
     }
-    if (_strip_resource_files) {
-      _css_minifier_command = rebase_path(_css_minifier, root_build_dir)
-      args += [
-        "--css-minifier",
-        _css_minifier_command,
-      ]
-      inputs += [ _css_minifier ]
-    }
-
     if (defined(invoker.visibility)) {
       # This needs to include both what the invoker specified (since they
       # probably include generated headers from this target), as well as the
@@ -508,79 +478,5 @@ template("grit_strings") {
     outputs = _outputs
     grit_flags = _grit_flags
     grit_action_name_override = "${target_name}__strings_grit"
-  }
-}
-
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  # Declare a target that generates localized strings.xml from a .grd file.
-  #
-  # If this target is included in the deps of an android resources/library/apk,
-  # the strings.xml will be included with that target.
-  #
-  # Variables
-  #   deps: Specifies the dependencies of this target.
-  #   grd_file: Path to the .grd file to generate strings.xml from.
-  #   outputs: Expected grit outputs (see grit rule).
-  #
-  # Example
-  #  java_strings_grd("foo_strings_grd") {
-  #    grd_file = "foo_strings.grd"
-  #  }
-  template("java_strings_grd") {
-    _grit_target_name = "${target_name}__grit"
-    _resources_zip = "$target_out_dir/$target_name.resources.zip"
-    grit(_grit_target_name) {
-      forward_variables_from(invoker,
-                             TESTONLY_AND_VISIBILITY + [
-                                   "deps",
-                                   "defines",
-                                 ])
-
-      # TODO(agrieve): Remove outputs from callers.
-      not_needed(invoker, [ "outputs" ])
-      create_android_resources = true
-      resources_zip = _resources_zip
-      grit_flags = [
-        "-E",
-        "ANDROID_JAVA_TAGGED_ONLY=false",
-      ]
-
-      if (translate_genders) {
-        grit_flags += [ "--translate-genders" ]
-      }
-
-      resource_ids = ""
-      source = invoker.grd_file
-    }
-
-    android_generated_resources(target_name) {
-      forward_variables_from(invoker,
-                             TESTONLY_AND_VISIBILITY + [ "resource_overlay" ])
-      generated_resources_zip = _resources_zip
-      generating_target = ":$_grit_target_name"
-    }
-  }
-
-  # An android_generated_resources() for an existing grit() target.
-  #
-  # The grit target must have set create_android_resources = true
-  #
-  # Example
-  #  java_strings_grd_prebuilt("foo_strings_grd") {
-  #    generating_target = ":my_grit_rule"
-  #  }
-  template("java_strings_grd_prebuilt") {
-    android_generated_resources(target_name) {
-      forward_variables_from(invoker,
-                             TESTONLY_AND_VISIBILITY + [
-                                   "generating_target",
-                                   "resource_overlay",
-                                 ])
-      generated_resources_zip =
-          get_label_info(invoker.generating_target, "target_out_dir") + "/" +
-          get_label_info(invoker.generating_target, "name") + ".resources.zip"
-    }
   }
 }

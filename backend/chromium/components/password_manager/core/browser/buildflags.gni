@@ -7,5 +7,4 @@ import("//build/config/chrome_build.gni")
 
 # Drawables from the downstream clank/ repository are
 # used for branded builds.
-password_manager_use_internal_android_resources =
-    is_android && enable_chrome_android_internal && is_chrome_branded
+password_manager_use_internal_android_resources = false

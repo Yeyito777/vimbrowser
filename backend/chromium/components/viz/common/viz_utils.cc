@@ -20,12 +20,6 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/rrect_f.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <array>
-#include <string>
-
-#include "base/android/android_info.h"
-#endif
 
 #if BUILDFLAG(IS_POSIX)
 #include <poll.h>
@@ -34,34 +28,6 @@
 
 namespace viz {
 
-#if BUILDFLAG(IS_ANDROID)
-bool AlwaysUseWideColorGamut() {
-  // Full stack integration tests draw in sRGB and expect to read back in sRGB.
-  // WideColorGamut causes pixels to be drawn in P3, but read back doesn't tell
-  // us the color space. So disable WCG for tests.
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-  static const char kDisableWCGForTest[] = "disable-wcg-for-test";
-  if (command_line.HasSwitch(kDisableWCGForTest))
-    return false;
-
-  // As it takes some work to compute this, cache the result.
-  static bool is_always_use_wide_color_gamut_enabled = [] {
-    const std::string& current_model = base::android::android_info::model();
-    const std::array<std::string, 2> enabled_models = {
-        std::string{"Pixel 4"}, std::string{"Pixel 4 XL"}};
-    for (const std::string& model : enabled_models) {
-      if (model == current_model) {
-        return true;
-      }
-    }
-
-    return false;
-  }();
-
-  return is_always_use_wide_color_gamut_enabled;
-}
-#endif
 
 bool GatherFDStats(base::TimeDelta* delta_time_taken,
                    int* fd_max,

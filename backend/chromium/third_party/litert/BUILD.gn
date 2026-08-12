@@ -356,12 +356,7 @@ source_set("litert_runtime") {
     "src/litert/runtime/tensor_buffer_requirements.cc",
     "src/litert/runtime/tfl_utils.cc",
   ]
-  if (is_android) {
-    sources += [
-      "src/litert/runtime/ahwb_buffer.cc",
-      "src/litert/runtime/ahwb_wrapper.cc",
-    ]
-  }
+
   deps = [
     ":litert_headers",
     "//third_party/xnnpack",

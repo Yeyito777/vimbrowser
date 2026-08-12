@@ -34,7 +34,7 @@ source_set("service") {
     "../../base",
     "../../base:clock_snapshots",
     "../../base:version",
-    "../../protovm:protovm",
+    "../../protovm",
     "../../protozero/filtering:message_filter",
     "../../protozero/filtering:string_filter",
     "../core",
@@ -65,12 +65,6 @@ source_set("service") {
     "tracing_service_session.h",
     "tracing_service_structs.h",
   ]
-  if (is_android && perfetto_build_with_android) {
-    deps += [
-      "../../android_internal:headers",
-      "../../android_internal:lazy_library_loader",
-    ]
-  }
 }
 
 if (enable_perfetto_zlib) {

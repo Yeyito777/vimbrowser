@@ -72,13 +72,6 @@
 #include "third_party/perfetto/protos/perfetto/trace/track_event/track_event.pbzero.h"
 #include "v8/include/v8.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/self_compaction_manager.h"
-#include "base/functional/callback_forward.h"
-#include "base/functional/callback_helpers.h"
-#include "base/task/thread_pool.h"
-#include "base/task/thread_pool/thread_pool_instance.h"
-#endif
 
 namespace base {
 class LazyNow;
@@ -97,23 +90,6 @@ BASE_FEATURE(kBusyLoopAggressiveAfterCommittedLoad,
 BASE_FEATURE(kLowerPriorityForCompositorGestures,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// On devices with at least 3 CPU clusters, only selectively allow the renderer
-// main thread to run on the bigggest one.
-BASE_FEATURE(kRestrictMainThreadBigCoreAffinity,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-namespace {
-bool ShouldRestrictMainThreadBigCoreAffinity() {
-  // Make sure to not query the feature before checking eligibility, so that the
-  // control group only contains eligible devices, as experiments become active
-  // when features are queried.
-  return base::IsEligibleForBigCoreAffinityChange() &&
-         base::FeatureList::IsEnabled(kRestrictMainThreadBigCoreAffinity);
-}
-}  // namespace
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // If set, the PerformanceHelper determines when to boost CPU performance,
 // either via affinity or ADPF hints. It's a slightly different mechanism to
@@ -123,10 +99,6 @@ BASE_FEATURE(kUsePerformanceHelper, base::FEATURE_DISABLED_BY_DEFAULT);
 enum class PerformanceHintMode {
   kNone = 0,
   kCompositor = 1,
-#if BUILDFLAG(IS_ANDROID)
-  kAffinity = 2,
-  kBoth = 3,
-#endif
 };
 constexpr base::FeatureParam<
     PerformanceHintMode>::Option kUsePerformanceHelperModeOption[] = {
@@ -134,19 +106,6 @@ constexpr base::FeatureParam<
     // IMPORTANT: Must be used in conjunction with
     // "EnableAdpfEfficiencyMode:mode/adaptive" to take effect on Android.
     {PerformanceHintMode::kCompositor, "compositor"},
-#if BUILDFLAG(IS_ANDROID)
-    // On devices with at least 3 CPU clusters, only selectively allow the
-    // renderer main thread to run on the biggest one.
-    // IMPORTANT: Must be used in conjunction with
-    // "RestrictBigCoreThreadAffinity" to behave correctly. e.g.
-    // --enable-features=UsePerformanceHelper:mode/affinity,RestrictBigCoreThreadAffinity
-    {PerformanceHintMode::kAffinity, "affinity"},
-    // Combine both strategies (set affinity and the compositor hint together).
-    // IMPORTANT: Must be used with the Adaptive mode and the
-    // "RestrictBigCoreThreadAffinity" feature. e.g.
-    // '--enable-features=EnableAdpfEfficiencyMode:mode/adaptive,UsePerformanceHelper:mode/both,RestrictBigCoreThreadAffinity'
-    {PerformanceHintMode::kBoth, "both"}
-#endif
 };
 
 [[maybe_unused]] const base::FeatureParam<PerformanceHintMode>
@@ -171,13 +130,6 @@ PerformanceHintMode GetPerformanceHelperMode() {
   // we're in one of these groups before querying the UsePerformanceHelper
   // feature, as then we'll be assigned an arm of the experiment. Keep
   // ineligible devices as the control.
-#if BUILDFLAG(IS_ANDROID)
-  static bool is_google_soc = base::SysInfo::SocManufacturer() == "Google";
-  if (!(base::IsEligibleForBigCoreAffinityChange() || is_google_soc)) {
-    // Control.
-    return PerformanceHintMode::kNone;
-  }
-#endif
   if (!base::FeatureList::IsEnabled(kUsePerformanceHelper)) {
     return PerformanceHintMode::kNone;
   }
@@ -294,72 +246,6 @@ BASE_FEATURE(kLoadingModeFromPerformanceScenario,
 
 }  // namespace
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-uint64_t ThreadAffinityBoost::depth_ = 0;
-// static
-base::TaskRunner* ThreadAffinityBoost::task_runner_for_testing_ = nullptr;
-// static
-base::RepeatingCallback<void(base::PlatformThreadId, bool)>*
-    ThreadAffinityBoost::set_can_run_on_big_core_override_ = nullptr;
-
-ThreadAffinityBoost::ThreadAffinityBoost()
-    : thread_id_(base::PlatformThread::CurrentId()) {
-  TRACE_EVENT("blink", __PRETTY_FUNCTION__);
-  base::AutoLock guard(lock());
-  TRACE_EVENT_BEGIN("blink", "ThreadAffinityBoost",
-                    perfetto::Track(reinterpret_cast<uintptr_t>(this)), "depth",
-                    depth_ + 1);
-  if (depth_++ == 0) {
-    if (set_can_run_on_big_core_override_) {
-      set_can_run_on_big_core_override_->Run(thread_id_, true);
-    } else {
-      base::SetCanRunOnBigCore(thread_id_, true);
-    }
-  }
-}
-
-ThreadAffinityBoost::~ThreadAffinityBoost() {
-  // A lock is needed, with atomics we could race with the main thread raising
-  // its priority again.
-  base::AutoLock guard(lock());
-  TRACE_EVENT("blink", __PRETTY_FUNCTION__, "depth", depth_);
-  TRACE_EVENT_END("blink", perfetto::Track(reinterpret_cast<uintptr_t>(this)));
-
-  if (--depth_ == 0) {
-    if (set_can_run_on_big_core_override_) {
-      set_can_run_on_big_core_override_->Run(thread_id_, false);
-    } else {
-      base::SetCanRunOnBigCore(thread_id_, false);
-    }
-  }
-}
-
-// static
-void ThreadAffinityBoost::StopDelayed(
-    std::unique_ptr<ThreadAffinityBoost> boost,
-    base::TimeDelta delay) {
-  TRACE_EVENT("blink", __PRETTY_FUNCTION__);
-  DCHECK(boost);
-  if (!delay.is_zero()) {
-    base::OnceClosure task = base::DoNothingWithBoundArgs(std::move(boost));
-    if (task_runner_for_testing_) {
-      task_runner_for_testing_->PostDelayedTask(FROM_HERE, std::move(task),
-                                                delay);
-    } else if (base::ThreadPoolInstance::Get()) {
-      base::ThreadPool::PostDelayedTask(FROM_HERE, std::move(task), delay);
-    }
-  } else {
-    // The unique_ptr<> will destroy the boost at the end of the scope.
-  }
-}
-
-// static
-base::Lock& ThreadAffinityBoost::lock() {
-  static base::NoDestructor<base::Lock> lock;
-  return *lock;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 MainThreadSchedulerImpl::MainThreadSchedulerImpl(
     std::unique_ptr<base::sequence_manager::SequenceManager> sequence_manager)
@@ -493,24 +379,6 @@ MainThreadSchedulerImpl::MainThreadSchedulerImpl(
   memory_purge_task_queue_->SetQueuePriority(
       ComputePriority(memory_purge_task_queue_.get()));
 
-#if BUILDFLAG(IS_ANDROID)
-  if (ShouldRestrictMainThreadBigCoreAffinity()) {
-    // Start with a "boost", that is initially allow the renderer to run
-    // everywhere. This is meant to help with initialization. In the worst case,
-    // the current use case never changes, and the renderer is always allowed to
-    // run on all cores. But that would also mean a renderer that didn't load
-    // anything, ad was never interacted with, which then means it should not
-    // use a lot of resources.
-    main_thread_only().affinity_boost = std::make_unique<ThreadAffinityBoost>();
-  }
-  if (GetPerformanceHelperMode() >= PerformanceHintMode::kAffinity) {
-    // Ensure that there aren't two duelling versions of affinity hints.
-    DCHECK(!base::FeatureList::IsEnabled(kRestrictMainThreadBigCoreAffinity))
-        << "feature UsePerformanceHelper:mode/{affinity, both} can't be "
-           "enabled at the same time as RestrictMainThreadBigCoreAffinity";
-  }
-
-#endif
 
   PerformanceHelper::Params perf_params = {
       .loading_boost = kPageLoadBoostParam.Get(),
@@ -1265,17 +1133,6 @@ void MainThreadSchedulerImpl::SetRendererBackgroundedForTesting(
   SetRendererBackgrounded(backgrounded);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void MainThreadSchedulerImpl::PauseTimersForAndroidWebView() {
-  main_thread_only().pause_timers_for_webview = true;
-  UpdatePolicy();
-}
-
-void MainThreadSchedulerImpl::ResumeTimersForAndroidWebView() {
-  main_thread_only().pause_timers_for_webview = false;
-  UpdatePolicy();
-}
-#endif
 
 void MainThreadSchedulerImpl::OnAudioStateChanged() {
   bool is_audio_playing = false;
@@ -1802,27 +1659,6 @@ void MainThreadSchedulerImpl::UpdatePolicyLocked(UpdateType update_type) {
 
   MaybeUpdateThreadTypeLease();
 
-#if BUILDFLAG(IS_ANDROID)
-  if (ShouldRestrictMainThreadBigCoreAffinity()) {
-    switch (main_thread_only().current_use_case) {
-      case UseCase::kNone:
-        if (main_thread_only().affinity_boost) {
-          bool was_loading = previous_use_case == UseCase::kLoading ||
-                             previous_use_case == UseCase::kEarlyLoading;
-          base::TimeDelta delay =
-              was_loading ? base::Milliseconds(500) : base::TimeDelta();
-          ThreadAffinityBoost::StopDelayed(
-              std::move(main_thread_only().affinity_boost), delay);
-        }
-        break;
-      default:
-        if (!main_thread_only().affinity_boost) {
-          main_thread_only().affinity_boost =
-              std::make_unique<ThreadAffinityBoost>();
-        }
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void MainThreadSchedulerImpl::IncreaseDefaultThreadTypeUsageCount() {
@@ -2341,16 +2177,6 @@ void MainThreadSchedulerImpl::DidCommitProvisionalLoad(
     }
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (ShouldRestrictMainThreadBigCoreAffinity()) {
-    // A new frame has been committed, let the main thread run on the biggest
-    // core for the next 500ms. We do it even if we are currently boosting,
-    // because we want to make sure that the boost doesn't expire before the
-    // delay.
-    ThreadAffinityBoost::StopDelayed(std::make_unique<ThreadAffinityBoost>(),
-                                     base::Milliseconds(500));
-  }
-#endif
   performance_helper_.Add(PerformanceHelper::BoostType::kPageLoad);
 }
 
@@ -2646,25 +2472,6 @@ void MainThreadSchedulerImpl::RemovePageScheduler(
 
 void MainThreadSchedulerImpl::OnPageFrozen(
     base::MemoryReductionTaskContext called_from) {
-#if BUILDFLAG(IS_ANDROID)
-  base::android::SelfCompactionManager::SetOnStartSelfCompactionCallback(
-      base::BindRepeating(
-          [](scoped_refptr<base::SequencedTaskRunner> task_runner,
-             base::WeakPtr<MainThreadSchedulerImpl> s) {
-            task_runner->PostTask(
-                FROM_HERE,
-                base::BindOnce(
-                    [](base::WeakPtr<MainThreadSchedulerImpl> s) {
-                      s->memory_purge_manager_.RecordAreAllPagesFrozenMetric(
-                          "Memory.SelfCompact2.Renderer.AreAllPagesFrozen");
-                    },
-                    s));
-          },
-          base::SequencedTaskRunner::GetCurrentDefault(),
-          // |memory_purge_manager_| is a member of |this|, and will be deleted
-          // first, so a raw pointer is safe here.
-          weak_factory_.GetWeakPtr()));
-#endif
   memory_purge_manager_.OnPageFrozen(called_from);
   UpdatePolicy();
 }
@@ -2896,14 +2703,6 @@ void MainThreadSchedulerImpl::ApplyPerformanceState(
     const bool prefer_efficient_scheduling) {
   DCHECK(base::FeatureList::IsEnabled(kUsePerformanceHelper));
   bool should_send_to_compositor = true;
-#if BUILDFLAG(IS_ANDROID)
-  if (GetPerformanceHelperMode() >= PerformanceHintMode::kAffinity) {
-    base::SetCanRunOnBigCore(base::PlatformThread::CurrentId(),
-                             !prefer_efficient_scheduling);
-    should_send_to_compositor =
-        GetPerformanceHelperMode() == PerformanceHintMode::kBoth;
-  }
-#endif
   // Emit for tracking.
   main_thread_only().restrict_cpu_performance = prefer_efficient_scheduling;
   if (should_send_to_compositor) {

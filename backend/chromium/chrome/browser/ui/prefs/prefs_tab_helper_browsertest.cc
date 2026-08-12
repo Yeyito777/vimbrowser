@@ -91,7 +91,7 @@ IN_PROC_BROWSER_TEST_F(PrefsTabHelperBrowserTest, WebPrefs) {
 // preferences. Note that these preferences are not handled on non-desktop
 // Android, see http://crbug.com/308033, but can be modified by extension APIs
 // on desktop Android.
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 IN_PROC_BROWSER_TEST_F(PrefsTabHelperBrowserTest, GenericFontFamilies) {
   PrefService* prefs = chrome_test_utils::GetProfile(this)->GetPrefs();
   prefs->SetString(prefs::kWebKitStandardFontFamily, "CustomStandard");
@@ -165,7 +165,7 @@ IN_PROC_BROWSER_TEST_F(PrefsTabHelperBrowserTest, DevanagariDefaultPrefs) {
 
 // Tests that Devanagari font family preferences propagate correctly to Blink's
 // WebPreferences font family maps under the "Deva" script key.
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 IN_PROC_BROWSER_TEST_F(PrefsTabHelperBrowserTest, DevanagariFontFamilies) {
   PrefService* prefs = chrome_test_utils::GetProfile(this)->GetPrefs();
   prefs->SetString(prefs::kWebKitStandardFontFamilyDevanagari,

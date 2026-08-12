@@ -71,7 +71,7 @@ source_set("confidential_compute") {
   ]
 }
 
-if (!is_win && !is_android && !is_ios && !is_fuchsia) {
+if (!is_win && !is_ios && !is_fuchsia) {
   test("federated_compute_tests") {
     testonly = true
     public = [ "chromium/fcp/testing/testing.h" ]

@@ -8,11 +8,6 @@
 
 import("../webrtc.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 rtc_source_set("protobuf_utils") {
   sources = [ "protobuf_utils.h" ]
   if (rtc_enable_protobuf) {
@@ -513,10 +508,6 @@ rtc_library("logging") {
     if (is_mac) {
       frameworks = [ "Foundation.framework" ]
     }
-
-    if (is_android) {
-      libs += [ "log" ]
-    }
   }
 }
 
@@ -540,9 +531,6 @@ rtc_library("checks") {
   if (build_with_chromium) {
     sources += [ "../../webrtc_overrides/rtc_base/checks_overrides.cc" ]
     deps += [ "//base" ]
-  }
-  if (is_android) {
-    libs += [ "log" ]
   }
 }
 
@@ -878,9 +866,7 @@ rtc_library("net_helpers") {
     "system:rtc_export",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_android) {
-    deps += [ ":ifaddrs_android" ]
-  }
+
   if (is_win) {
     deps += [
       ":win32",
@@ -901,9 +887,7 @@ rtc_library("net_test_helpers") {
     ":net_helpers",
     "system:rtc_export",
   ]
-  if (is_android) {
-    deps += [ ":ifaddrs_android" ]
-  }
+
   if (is_win) {
     deps += [
       ":win32",
@@ -1077,9 +1061,7 @@ rtc_library("threading") {
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_android) {
-    deps += [ ":ifaddrs_android" ]
-  }
+
   if (is_win) {
     deps += [ ":win32" ]
   }
@@ -1156,23 +1138,6 @@ rtc_library("network_constants") {
   deps = [ ":checks" ]
 }
 
-if (is_android) {
-  rtc_library("ifaddrs_android") {
-    sources = [
-      "ifaddrs_android.cc",
-      "ifaddrs_android.h",
-    ]
-    libs = [
-      "log",
-      "GLESv2",
-    ]
-    deps = [
-      ":checks",
-      "//third_party/abseil-cpp/absl/cleanup",
-    ]
-  }
-}
-
 if (is_win) {
   rtc_library("win32") {
     sources = [
@@ -1204,10 +1169,6 @@ rtc_library("ifaddrs_converter") {
     ":logging",
     ":net_helpers",
   ]
-
-  if (is_android) {
-    deps += [ ":ifaddrs_android" ]
-  }
 
   if (is_ios || is_mac) {
     sources += [ "mac_ifaddrs_converter.cc" ]
@@ -1987,9 +1948,6 @@ rtc_library("cpu_info") {
     "system:arch",
     "system:unused",
   ]
-  if (is_android) {
-    deps += [ "//third_party/cpu_features:ndk_compat" ]
-  }
 }
 
 if (rtc_include_tests) {
@@ -2421,23 +2379,5 @@ if (rtc_include_tests) {
         configs += [ "..:external_ssl_library" ]
       }
     }
-  }
-}
-
-if (is_android) {
-  rtc_android_library("base_java") {
-    visibility = [ "*" ]
-    sources = [
-      "java/src/org/webrtc/ContextUtils.java",
-      "java/src/org/webrtc/Loggable.java",
-      "java/src/org/webrtc/Logging.java",
-      "java/src/org/webrtc/Size.java",
-      "java/src/org/webrtc/ThreadUtils.java",
-    ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
-  java_cpp_enum("network_monitor_enums") {
-    sources = [ "network_monitor.h" ]
-    visibility = [ "*" ]
   }
 }

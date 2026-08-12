@@ -4,8 +4,6 @@
 
 import("//extensions/buildflags/buildflags.gni")
 
-assert(!is_android)
-
 source_set("app_service") {
   sources = [
     "app_icon_source.cc",

@@ -7,10 +7,6 @@
 # be found in the AUTHORS file in the root of the source tree.
 
 import("../webrtc.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
 
 rtc_source_set("call_api") {
   visibility = [ "*" ]
@@ -859,12 +855,6 @@ rtc_library("rtp_parameters") {
     "//third_party/abseil-cpp/absl/strings:str_format",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("priority_enums") {
-    sources = [ "priority.h" ]
-  }
 }
 
 rtc_source_set("audio_quality_analyzer_api") {
@@ -2003,10 +1993,6 @@ if (rtc_include_tests) {
 
     if (rtc_use_h265) {
       deps += [ "video:rtp_video_frame_h265_assembler_unittests" ]
-    }
-
-    if (is_android) {
-      deps += [ "../pc:android_black_magic" ]
     }
   }
 

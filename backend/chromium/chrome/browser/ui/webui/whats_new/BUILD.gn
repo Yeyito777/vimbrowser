@@ -6,7 +6,7 @@ import("//chrome/common/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 import("//pdf/features.gni")
 
-assert(!is_android && !is_fuchsia)
+assert(!is_fuchsia)
 
 mojom("mojo_bindings") {
   sources = [ "whats_new.mojom" ]
@@ -133,7 +133,7 @@ if (is_linux || is_mac || is_win) {
   }
 }
 
-if (!is_android && !is_chromeos) {
+if (!is_chromeos) {
   source_set("browser_tests") {
     testonly = true
     defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]

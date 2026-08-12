@@ -171,11 +171,6 @@ const Extension* ExtensionActionRunnerBrowserTest::CreateExtension(
 
   TestExtensionDir dir;
   dir.WriteManifest(manifest);
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  // TODO(crbug.com/371432155): kBackgroundScriptSource uses chrome.tabs, which
-  // isn't supported yet.
-  CHECK_EQ(injection_type, CONTENT_SCRIPT);
-#endif
   dir.WriteFile(FILE_PATH_LITERAL("script.js"), injection_type == CONTENT_SCRIPT
                                                     ? kContentScriptSource
                                                     : kBackgroundScriptSource);

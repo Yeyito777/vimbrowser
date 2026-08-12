@@ -805,7 +805,7 @@ const char kMarketUrlForTesting[] = "market-url-for-testing";
 const char kRequestDesktopSites[] = "request-desktop-sites";
 #endif  // BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 // If enabled, overrides the target playout delay for a casting mirroring
 // session. The value will be parsed as milliseconds. Lowering this value will
 // result in a lower end to end latency, but could come at the cost of other

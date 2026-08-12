@@ -51,12 +51,7 @@ constexpr base::FeatureParam<double> kFadeDurationScalingFactor{
     /*default_value=*/1.0};
 
 bool ShouldUseDesktopOverlayScrollbars() {
-#if BUILDFLAG(IS_ANDROID)
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kEnableDesktopAndroidScrollbars);
-#else
   return ui::NativeTheme::GetInstanceForWeb()->use_overlay_scrollbar();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void InitializeScrollbarFadeAndDelay(cc::LayerTreeSettings& settings) {

@@ -59,7 +59,7 @@ generate_grd("build_grdp") {
     ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     input_files += [
       "arrow_right.svg",
       "business.svg",

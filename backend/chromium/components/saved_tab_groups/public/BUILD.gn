@@ -2,12 +2,6 @@
 # Use of this source code is governed by a BSD - style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("public") {
   sources = [
     "collaboration_finder.h",
@@ -43,46 +37,6 @@ source_set("public") {
     ":features",
     ":prefs",
   ]
-}
-
-if (is_android) {
-  source_set("conversion_utils") {
-    sources = [
-      "android/tab_group_sync_conversions_bridge.cc",
-      "android/tab_group_sync_conversions_bridge.h",
-      "android/tab_group_sync_conversions_utils.cc",
-      "android/tab_group_sync_conversions_utils.h",
-    ]
-    deps = [
-      ":conversion_utils_jni_headers",
-      "//base",
-      "//components/saved_tab_groups/public",
-      "//components/tab_groups",
-      "//url",
-    ]
-  }
-
-  android_library("conversion_utils_java") {
-    sources = [ "android/java/src/org/chromium/components/tab_group_sync/TabGroupSyncConversionsBridge.java" ]
-
-    deps = [
-      "//base:base_java",
-      "//components/saved_tab_groups/public:java",
-      "//components/tab_groups:tab_groups_java",
-      "//net/android:net_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//url:gurl_java",
-    ]
-
-    srcjar_deps = [ ":conversion_utils_jni_headers" ]
-  }
-
-  generate_jni("conversion_utils_jni_headers") {
-    visibility = [ ":*" ]
-
-    sources = [ "android/java/src/org/chromium/components/tab_group_sync/TabGroupSyncConversionsBridge.java" ]
-  }
 }
 
 source_set("features") {
@@ -151,72 +105,4 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//url",
   ]
-}
-
-if (is_android) {
-  android_library("java") {
-    sources = [
-      "android/java/src/org/chromium/components/tab_group_sync/EitherId.java",
-      "android/java/src/org/chromium/components/tab_group_sync/EventDetails.java",
-      "android/java/src/org/chromium/components/tab_group_sync/LocalTabGroupId.java",
-      "android/java/src/org/chromium/components/tab_group_sync/SavedTabGroup.java",
-      "android/java/src/org/chromium/components/tab_group_sync/SavedTabGroupTab.java",
-      "android/java/src/org/chromium/components/tab_group_sync/TabGroupSyncController.java",
-      "android/java/src/org/chromium/components/tab_group_sync/TabGroupSyncService.java",
-      "android/java/src/org/chromium/components/tab_group_sync/TabGroupSyncUtils.java",
-      "android/java/src/org/chromium/components/tab_group_sync/TabGroupUiActionHandler.java",
-      "android/java/src/org/chromium/components/tab_group_sync/VersioningMessageController.java",
-    ]
-
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//components/tab_groups:tab_groups_java",
-      "//net/android:net_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//url:gurl_java",
-    ]
-
-    srcjar_deps = [ ":tab_group_sync_enums_java" ]
-  }
-
-  java_cpp_enum("tab_group_sync_enums_java") {
-    visibility = [
-      ":*",
-      "//components/saved_tab_groups:*",
-    ]
-    sources = [
-      "types.h",
-      "versioning_message_controller.h",
-    ]
-  }
-
-  android_library("test_support_java") {
-    testonly = true
-    sources = [ "android/java/src/org/chromium/components/tab_group_sync/SyncedGroupTestHelper.java" ]
-    deps = [
-      ":java",
-      "//base:base_java",
-      "//components/tab_groups:tab_groups_java",
-      "//third_party/mockito:mockito_java",
-      "//ui/android:ui_java_test_support",
-      "//url:gurl_java",
-    ]
-  }
-
-  robolectric_library("junit") {
-    include_android_sdk = false
-    sources = [ "android/java/src/org/chromium/components/tab_group_sync/EitherIdTest.java" ]
-
-    deps = [
-      ":java",
-      "//base:base_java",
-      "//base:base_java_test_support",
-      "//base:base_junit_test_support",
-      "//components/saved_tab_groups/public:java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/junit",
-    ]
-  }
 }

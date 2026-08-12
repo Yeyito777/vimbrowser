@@ -25,10 +25,6 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom-shared.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/permissions/android/android_permission_util.h"
-#include "ui/android/window_android.h"
-#endif
 
 using blink::MediaStreamDevices;
 
@@ -365,13 +361,6 @@ ContentSetting MediaStreamDevicesController::GetContentSetting(
     return CONTENT_SETTING_BLOCK;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (!IsUserAcceptAllowedOnAndroid(permission)) {
-    *denial_reason =
-        blink::mojom::MediaStreamRequestResult::ANDROID_CANT_REQUEST_PERMISSION;
-    return CONTENT_SETTING_BLOCK;
-  }
-#endif
 
   // Don't request if the kill switch is on.
   if (PermissionIsBlockedForReason(
@@ -383,43 +372,6 @@ ContentSetting MediaStreamDevicesController::GetContentSetting(
   return CONTENT_SETTING_ASK;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool MediaStreamDevicesController::IsUserAcceptAllowedOnAndroid(
-    blink::PermissionType permission) const {
-  ui::WindowAndroid* window_android =
-      web_contents_->GetNativeView()->GetWindowAndroid();
-  if (!window_android)
-    return false;
-
-  ContentSettingsType content_type;
-
-  switch (permission) {
-    case blink::PermissionType::AUDIO_CAPTURE:
-      content_type = ContentSettingsType::MEDIASTREAM_MIC;
-      break;
-    case blink::PermissionType::VIDEO_CAPTURE:
-      content_type = ContentSettingsType::MEDIASTREAM_CAMERA;
-      break;
-    default:
-      NOTREACHED();
-  }
-
-  std::vector<std::string> required_android_permissions;
-  permissions::AppendRequiredAndroidPermissionsForContentSetting(
-      content_type, &required_android_permissions);
-  for (const auto& android_permission : required_android_permissions) {
-    if (!window_android->HasPermission(android_permission) &&
-        !window_android->CanRequestPermission(android_permission)) {
-      return false;
-    }
-  }
-
-  // Don't approve device requests if the tab was hidden.
-  // TODO(qinmin): Add a test for this. http://crbug.com/396869.
-  // TODO(raymes): Shouldn't this apply to all permissions not just audio/video?
-  return web_contents_->GetRenderWidgetHostView()->IsShowing();
-}
-#endif
 
 bool MediaStreamDevicesController::PermissionIsBlockedForReason(
     blink::PermissionType permission,

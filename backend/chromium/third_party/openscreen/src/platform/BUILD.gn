@@ -134,7 +134,7 @@ if (!is_ios) {
       ":standalone_config",
     ]
 
-    if (is_linux || is_chromeos || is_android) {
+    if (is_linux || is_chromeos) {
       sources += [ "impl/network_interface_linux.cc" ]
     } else if (is_mac) {
       defines += [

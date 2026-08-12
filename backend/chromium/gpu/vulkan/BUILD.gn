@@ -215,7 +215,7 @@ if (enable_vulkan) {
 
   # TODO(penghuang): support more platforms
   # https://crbug.com/1065499
-  if (is_android || is_win || use_ozone) {
+  if (is_win || use_ozone) {
     test("vulkan_tests") {
       use_xvfb = use_xvfb_in_this_config
 
@@ -247,10 +247,6 @@ if (enable_vulkan) {
         "//ui/gfx:test_support",
         "//ui/gfx/geometry",
       ]
-
-      if (is_android) {
-        deps += [ "//ui/android:ui_java_test_support" ]
-      }
 
       if (use_ozone) {
         deps += [ "//ui/ozone" ]

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CONTENT_BROWSER_BROWSER_CONTEXT_IMPL_H_
+#if !defined(CONTENT_BROWSER_BROWSER_CONTEXT_IMPL_H_)
 #define CONTENT_BROWSER_BROWSER_CONTEXT_IMPL_H_
 
 #include <memory>
@@ -41,9 +41,6 @@ class PermissionController;
 class PrefetchService;
 class StoragePartitionImplMap;
 
-#if BUILDFLAG(IS_ANDROID)
-class NavigationEntryScreenshotManager;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // content-internal parts of BrowserContext.
 //
@@ -100,9 +97,6 @@ class CONTENT_EXPORT BrowserContextImpl {
   void SetPrefetchServiceForTesting(
       std::unique_ptr<PrefetchService> prefetch_service);
 
-#if BUILDFLAG(IS_ANDROID)
-  NavigationEntryScreenshotManager* GetNavigationEntryScreenshotManager();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   InMemoryFederatedPermissionContext* GetFederatedPermissionContext();
   void ResetFederatedPermissionContext();
@@ -152,10 +146,6 @@ class CONTENT_EXPORT BrowserContextImpl {
   std::unique_ptr<PermissionController> permission_controller_;
   scoped_refptr<BackgroundSyncScheduler> background_sync_scheduler_;
   std::unique_ptr<PrefetchService> prefetch_service_;
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<NavigationEntryScreenshotManager>
-      nav_entry_screenshot_manager_;
-#endif  // BUILDFLAG(IS_ANDROID)
   std::unique_ptr<InMemoryFederatedPermissionContext>
       federated_permission_context_;
 

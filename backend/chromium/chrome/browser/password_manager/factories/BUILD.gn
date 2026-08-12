@@ -33,14 +33,13 @@ source_set("factories") {
     "password_sender_service_factory.cc",
     "password_sender_service_factory.h",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check_service_factory.cc",
-      "bulk_leak_check_service_factory.h",
-      "password_counter_factory.cc",
-      "password_counter_factory.h",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check_service_factory.cc",
+    "bulk_leak_check_service_factory.h",
+    "password_counter_factory.cc",
+    "password_counter_factory.h",
+  ]
 
   public_deps = [ ":password_factory_headers" ]
 
@@ -70,11 +69,6 @@ source_set("factories") {
     "//content/public/browser",
     "//services/network/public/cpp",
   ]
-  if (is_android) {
-    deps += [
-      "//chrome/browser/password_manager/android:shared_preferences_delegate",
-    ]
-  }
 }
 
 source_set("backend_factory") {
@@ -92,13 +86,7 @@ source_set("backend_factory") {
     "//components/password_manager/core/common",
     "//components/prefs",
   ]
-  if (is_android) {
-    deps += [
-      "//chrome/browser/password_manager/android:backend",
-      "//chrome/browser/password_manager/android:utils",
-      "//components/webauthn/android",
-    ]
-  }
+
   if (is_win || is_mac) {
     deps += [ "//chrome/browser/policy:path_parser" ]
   }

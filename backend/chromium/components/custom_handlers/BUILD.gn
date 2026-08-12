@@ -28,7 +28,7 @@ static_library("custom_handlers") {
     "//third_party/blink/public/common:headers",
   ]
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [
       "protocol_handler_navigation_throttle.cc",
       "protocol_handler_navigation_throttle.h",
@@ -84,7 +84,7 @@ source_set("browser_tests") {
   testonly = true
   defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
   sources = [ "protocol_handler_registry_browsertest.cc" ]
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [ "protocol_handler_navigation_throttle_browsertest.cc" ]
   }
   deps = [

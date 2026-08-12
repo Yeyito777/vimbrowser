@@ -26,7 +26,7 @@ source_set("unit_tests") {
   testonly = true
   sources = []
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [ "multistep_filter_service_factory_unittest.cc" ]
   }
 

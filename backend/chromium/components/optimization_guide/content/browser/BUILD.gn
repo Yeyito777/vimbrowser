@@ -2,9 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
 import("//components/optimization_guide/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
@@ -41,11 +38,6 @@ static_library("browser") {
     "//services/network/public/cpp",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-
-  if (is_android) {
-    sources += [ "page_content_proto_provider_bridge.cc" ]
-    public_deps += [ "android:jni_headers" ]
-  }
 }
 
 source_set("page_context_eligibility_api") {

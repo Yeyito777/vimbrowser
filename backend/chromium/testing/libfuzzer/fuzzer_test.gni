@@ -324,11 +324,8 @@ template("fuzzer_test") {
       test_data_deps += supporting_file_test_data_deps
     }
 
-    if (is_android) {
-      _template_type = "executable"
-    } else {
-      _template_type = "test"
-    }
+    _template_type = "test"
+
     target(_template_type, target_name) {
       forward_variables_from(invoker,
                              [

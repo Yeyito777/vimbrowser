@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("common_mojom") {
-  generate_java = true
   sources = [ "encryptor.mojom" ]
 
   public_deps = [
@@ -46,8 +45,6 @@ mojom("common_mojom") {
 mojom("algorithm_mojom") {
   # External code should depend on ":common_mojom" instead.
   visibility = [ ":*" ]
-
-  generate_java = true
 
   sources = [ "algorithm.mojom" ]
 

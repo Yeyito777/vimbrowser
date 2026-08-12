@@ -10,62 +10,12 @@ declare_args() {
   build_angle_gles1_conform_tests = checkout_angle_internal
   build_angle_trace_perf_tests = false
   build_angle_perftests =
-      is_win || is_linux || is_chromeos || is_android || is_apple || is_fuchsia
+      is_win || is_linux || is_chromeos || is_apple || is_fuchsia
 }
 
 declare_args() {
   build_angle_trace_tests = is_clang && (build_angle_trace_perf_tests ||
                                          checkout_angle_restricted_traces)
-  if (!build_with_chromium && is_android) {
-    assert(
-        !is_official_build,
-        "is_official_build not supported by ANGLE for Android (https://anglebug.com/42265853)")
-  }
-}
-
-if (is_android) {
-  if (angle_standalone_benchmark) {
-    android_assets("angle_standalone_benchmark_assets") {
-      disable_compression = true
-      sources = [ "$root_gen_dir/trace_list.json" ]
-      foreach(trace, angle_standalone_benchmark_traces) {
-        sources += [ "//src/tests/restricted_traces/" + trace + "/" + trace +
-                     ".angledata.gz" ]
-        sources +=
-            [ "//src/tests/restricted_traces/" + trace + "/" + trace + ".json" ]
-
-        if (angle_standalone_benchmark_goldens_dir != "") {
-          sources += [ angle_standalone_benchmark_goldens_dir + "/" + trace +
-                       "_golden.png" ]
-        }
-      }
-    }
-  }
-  android_library("native_test_java") {
-    testonly = true
-    sources = [
-      "test_utils/runner/android/java/src/com/android/angle/test/AngleNativeTest.java",
-      "test_utils/runner/android/java/src/com/android/angle/test/TestStatusReporter.java",
-    ]
-
-    deps = [
-      "//build/android:build_java",
-      "//build/android/gtest_apk:native_test_instrumentation_test_runner_java",
-    ]
-
-    if (angle_standalone_benchmark) {
-      sources += [ "test_utils/runner/android/java/src/com/android/angle/test/StandaloneBenchmarkActivity.java" ]
-      deps += [ ":angle_standalone_benchmark_assets" ]
-    } else {
-      sources += [ "test_utils/runner/android/java/src/com/android/angle/test/AngleUnitTestActivity.java" ]
-    }
-  }
-
-  angle_source_set("native_test_support_android") {
-    testonly = true
-    sources = [ "test_utils/runner/android/AngleNativeTest.cpp" ]
-    deps = [ "$angle_root:angle_common" ]
-  }
 }
 
 angle_test("test_utils_unittest_helper") {
@@ -244,14 +194,10 @@ angle_test("angle_unittests") {
     ]
   }
 
-  if (!is_android && !is_fuchsia && !is_ios) {
+  if (!is_fuchsia && !is_ios) {
     # SystemUtils.RunApp, the only unittest using a helper binary, is not supported on these
     # platforms yet.
     data_deps = [ ":test_utils_unittest_helper" ]
-  }
-
-  if (is_android) {
-    data += [ "$angle_root/src/tests/angle_android_test_runner.py" ]
   }
 
   if (angle_has_rapidjson) {
@@ -272,7 +218,7 @@ if (is_ios) {
   }
 }
 
-if (is_win || is_linux || is_chromeos || is_android || is_fuchsia || is_apple) {
+if (is_win || is_linux || is_chromeos || is_fuchsia || is_apple) {
   import("angle_end2end_tests.gni")
 
   angle_test("angle_end2end_tests") {
@@ -348,12 +294,6 @@ if (is_win || is_linux || is_chromeos || is_android || is_fuchsia || is_apple) {
       data_deps = [ "$angle_root:angle" ]
     }
 
-    if (is_android) {
-      android_test_runner_script =
-          "$angle_root/src/tests/angle_android_test_runner.py"
-      data += [ "$android_test_runner_script" ]
-    }
-
     if (angle_build_mesa) {
       data_deps += [ "$angle_root/third_party/mesa" ]
     }
@@ -411,9 +351,9 @@ if (angle_enable_cl_testing) {
         "CL_TARGET_OPENCL_VERSION=300",
         "ANGLE_CL_SUITE_NAME=\"${invoker.suite}\"",
       ]
-      if (!is_android) {
-        defines += [ "ANGLE_OPENCL_ICD_PATH=\"$angle_data_dir\"" ]
-      }
+
+      defines += [ "ANGLE_OPENCL_ICD_PATH=\"$angle_data_dir\"" ]
+
       cflags = [
         "-Wno-deprecated-declarations",
         "-Wno-#warnings",
@@ -526,7 +466,7 @@ if (angle_enable_cl_testing) {
   }
 }
 
-if (is_win || is_linux || is_chromeos || is_android || is_fuchsia || is_apple) {
+if (is_win || is_linux || is_chromeos || is_fuchsia || is_apple) {
   import("angle_white_box_tests.gni")
 
   angle_test("angle_white_box_tests") {
@@ -620,7 +560,7 @@ angle_perftests_common("angle_perftests_static") {
   test_utils = ":angle_common_test_utils_static"
 }
 
-if (is_win || is_linux || is_chromeos || is_android || is_apple) {
+if (is_win || is_linux || is_chromeos || is_apple) {
   import("angle_perftests.gni")
 
   # This test suite is for perf tests that use ANGLE's internals in some direct way.
@@ -770,12 +710,6 @@ if (build_angle_trace_tests) {
       ]
     }
 
-    if (is_android) {
-      android_test_runner_script =
-          "$angle_root/src/tests/angle_android_test_runner.py"
-      data += [ "$android_test_runner_script" ]
-    }
-
     data_deps = [ "${angle_root}:angle" ]
 
     if (is_clang) {
@@ -820,9 +754,7 @@ if (build_angle_trace_tests) {
       "capture_tests/capture_tests.py",
       "capture_tests/expected",
     ]
-    if (is_android) {
-      data += [ "$angle_root/src/tests/angle_android_test_runner.py" ]
-    }
+
     data_deps = [ ":angle_end2end_tests" ]
   }
 
@@ -1355,14 +1287,6 @@ if (build_angle_deqp_tests && !is_fuchsia) {
       "ANGLE_DEQP_DATA_DIR=\"gen/vk_gl_cts_data/data\"",
     ]
 
-    if (is_android) {
-      include_dirs += [ "$deqp_path/framework/platform/android" ]
-
-      _android_api = android_ndk_api_level
-
-      defines += [ "DE_ANDROID_API=" + "${_android_api}" ]
-    }
-
     if (is_clang) {
       # TODO(jmadill): Remove this once we fix dEQP.
       cflags_c = [ "-Wno-unused-local-typedef" ]
@@ -1392,10 +1316,8 @@ if (build_angle_deqp_tests && !is_fuchsia) {
       # This has to be GNU_SOURCE as on Linux dEQP uses syscall()
       defines += [ "_GNU_SOURCE" ]
     }
-    if (is_android) {
-      # _XOPEN_SOURCE=600 is what is used in deqp/src/Android.mk
-      defines += [ "_XOPEN_SOURCE=600" ]
-    } else if (is_apple) {
+
+    if (is_apple) {
       # Work-around for https://github.com/llvm/llvm-project/issues/117630
       defines += [ "_XOPEN_SOURCE=700" ]
     }
@@ -1537,7 +1459,7 @@ if (build_angle_deqp_tests && !is_fuchsia) {
     if (is_win) {
       sources += deqp_framework_delibs_sources_win
     }
-    if (is_linux || is_chromeos || is_android || is_apple) {
+    if (is_linux || is_chromeos || is_apple) {
       sources += deqp_framework_delibs_sources_unix
     }
 
@@ -1680,9 +1602,6 @@ if (build_angle_deqp_tests && !is_fuchsia) {
       "${angle_root}:libANGLE_config",
     ]
     sources = deqp_libtester_sources
-    if (is_android) {
-      libs = [ "log" ]
-    }
   }
 
   set_defaults("angle_deqp_gtest") {
@@ -1860,22 +1779,6 @@ if (build_angle_deqp_tests && !is_fuchsia) {
     sources = deqp_egl_sources
     mustpass_dir = _aosp_egl_mustpass
     mustpass_suffix = "main"
-  }
-
-  if (is_android) {
-    angle_deqp_core_gtest("gles3") {
-      defines = [ "ANGLE_DEQP_GLES3_565_NO_DEPTH_NO_STENCIL_TESTS" ]
-      deps = [ ":angle_deqp_gles3_common" ]
-      mustpass_dir = _aosp_gles_mustpass
-      mustpass_suffix = "565-no-depth-no-stencil"
-    }
-
-    angle_deqp_core_gtest("gles31") {
-      defines = [ "ANGLE_DEQP_GLES31_565_NO_DEPTH_NO_STENCIL_TESTS" ]
-      deps = [ ":angle_deqp_gles31_common" ]
-      mustpass_dir = _aosp_gles_mustpass
-      mustpass_suffix = "565-no-depth-no-stencil"
-    }
   }
 
   # The CTS also includes a set of "KHR" tests that are separate from the main body of dEQP tests.
@@ -2147,13 +2050,6 @@ group("angle_tests") {
       ":angle_deqp_khr_noctx_gles32_tests",
       ":angle_deqp_khr_single_gles32_tests",
     ]
-
-    if (is_android) {
-      deps += [
-        ":angle_deqp_gles31_565_no_depth_no_stencil_tests",
-        ":angle_deqp_gles3_565_no_depth_no_stencil_tests",
-      ]
-    }
   }
   if (build_angle_gles1_conform_tests) {
     deps += [

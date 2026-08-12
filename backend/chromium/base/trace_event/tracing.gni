@@ -15,6 +15,5 @@ declare_args() {
   # Whether OPTIONAL_TRACE_EVENT macros are included in the build or not.
   # Disabled by default on Android and ChromeOS due to binary size impact,
   # enabled everywhere else.
-  optional_trace_events_enabled =
-      (!is_android && !is_chromeos) || extended_tracing_enabled
+  optional_trace_events_enabled = !is_chromeos || extended_tracing_enabled
 }

@@ -15,9 +15,6 @@
 #include "build/build_config.h"
 #include "third_party/perfetto/include/perfetto/ext/base/thread_task_runner.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/apk_info.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace base::tracing {
 
@@ -65,11 +62,7 @@ void PerfettoPlatform::ResetTaskRunner(
 // Note that we override the producer name for the mojo backend in ProducerHost,
 // and thus this only affects the producer name for the system backend.
 std::string PerfettoPlatform::GetCurrentProcessName() {
-#if BUILDFLAG(IS_ANDROID)
-  const std::string& host_package_name = android::apk_info::host_package_name();
-#else
   std::string host_package_name;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // On Android we want to include if this is webview inside of an app or
   // Android Chrome. To aid this we add the host_package_name to differentiate

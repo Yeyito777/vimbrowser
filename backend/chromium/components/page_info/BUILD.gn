@@ -44,15 +44,7 @@ static_library("page_info") {
     "//services/metrics/public/cpp:ukm_builders",
   ]
 
-  if (is_android) {
-    deps += [
-      "//components/browser_ui/util/android",
-      "//components/password_manager/core/browser:password_manager_java_enums_srcjar",
-      "//components/resources:android_resources",
-    ]
-  } else {
-    deps += [ "//ui/native_theme" ]
-  }
+  deps += [ "//ui/native_theme" ]
 }
 
 source_set("unit_tests") {

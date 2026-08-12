@@ -331,9 +331,7 @@ aggregate_vector_icons("chrome_vector_icons") {
     ]
   }
 
-  if (!is_android) {
-    sources += [ "nearby_share.icon" ]
-  }
+  sources += [ "nearby_share.icon" ]
 
   if (enable_webui_tab_strip) {
     sources += [ "new_tab_toolbar_button.icon" ]

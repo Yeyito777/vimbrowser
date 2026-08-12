@@ -26,7 +26,6 @@
 //tools/grit/grit/extern/__init__.py
 //tools/grit/grit/extern/tclib.py
 //tools/grit/grit/format/__init__.py
-//tools/grit/grit/format/android_xml.py
 //tools/grit/grit/format/c_format.py
 //tools/grit/grit/format/chrome_messages_json.py
 //tools/grit/grit/format/data_pack.py
@@ -67,7 +66,6 @@
 //tools/grit/grit/tclib.py
 //tools/grit/grit/test_suite_all.py
 //tools/grit/grit/tool/__init__.py
-//tools/grit/grit/tool/android2grd.py
 //tools/grit/grit/tool/build.py
 //tools/grit/grit/tool/buildinfo.py
 //tools/grit/grit/tool/count.py
@@ -90,4 +88,3 @@
 //tools/grit/grit/tool/xmb.py
 //tools/grit/grit/util.py
 //tools/grit/grit/xtb_reader.py
-//tools/grit/grit/zip_helpers.py

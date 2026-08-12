@@ -25,12 +25,10 @@ source_set("impl") {
     "//services/network/public/cpp",
   ]
 
-  if (!is_android) {
-    # device_identity includes are guarded by #if IS_CHROMEOS in the .cc but
-    # the target exists on all non-Android platforms, so add the dep here to
-    # satisfy GN include checking without nogncheck.
-    deps += [ "//chrome/browser/device_identity" ]
-  }
+  # device_identity includes are guarded by #if IS_CHROMEOS in the .cc but
+  # the target exists on all non-Android platforms, so add the dep here to
+  # satisfy GN include checking without nogncheck.
+  deps += [ "//chrome/browser/device_identity" ]
 
   if (is_chromeos) {
     deps += [

@@ -8,9 +8,8 @@ group("child") {
     public_deps = [ "//content" ]
   } else {
     public_deps = [ ":child_sources" ]
-    if (!is_android) {
-      public_deps += [ "//content/gpu" ]
-    }
+
+    public_deps += [ "//content/gpu" ]
   }
 }
 

@@ -208,7 +208,7 @@ component("chromium_sqlite3") {
     }
   }
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     defines += [
       # Linux provides fdatasync(), a faster equivalent of fsync().
       "fdatasync=fdatasync",
@@ -248,11 +248,7 @@ component("chromium_sqlite3") {
     if (!is_ios) {
       frameworks += [ "CoreServices.framework" ]
     }
-  } else if (is_android) {
-    defines += [
-      "SQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576",
-      "SQLITE_DEFAULT_AUTOVACUUM=1",
-    ]
+  } else {
   }
 
   deps = [ "//third_party/icu" ]
@@ -287,7 +283,7 @@ source_set("dev_sqlite3") {
   cflags = []
   defines = []
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     defines += [
       # Linux provides fdatasync(), a faster equivalent of fsync().
       "fdatasync=fdatasync",
@@ -327,11 +323,7 @@ source_set("dev_sqlite3") {
     if (!is_ios) {
       frameworks += [ "CoreServices.framework" ]
     }
-  } else if (is_android) {
-    defines += [
-      "SQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576",
-      "SQLITE_DEFAULT_AUTOVACUUM=1",
-    ]
+  } else {
   }
 
   deps = [ "//third_party/icu" ]

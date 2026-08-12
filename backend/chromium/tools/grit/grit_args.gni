@@ -36,16 +36,12 @@ _grit_defines = [
   # Mac wants Title Case strings.
   "use_titlecase=${is_mac}",
 
-  "is_desktop_android=${is_desktop_android}",
-
   "enable_cef=${enable_cef}",
   "enable_pseudolocales=${enable_pseudolocales}",
 ]
 
 # Must match `enable_hidpi` in ui/base/ui_features.gni.
-if (!is_android) {
-  _grit_defines += [ "scale_factors=2x" ]
-}
+_grit_defines += [ "scale_factors=2x" ]
 
 # Environment variables to be used by grit and its subproceses.
 
@@ -59,10 +55,6 @@ if (is_chrome_branded) {
   _grit_environment_vars += [ "CHROMIUM_BUILD=google_chrome" ]
 } else {
   _grit_environment_vars += [ "CHROMIUM_BUILD=chromium" ]
-}
-
-if (is_android) {
-  _grit_environment_vars += [ "ANDROID_JAVA_TAGGED_ONLY=true" ]
 }
 
 # Convert |_grit_defines| and |_grit_environment_vars| to command line flags.
@@ -82,9 +74,6 @@ foreach(i, _grit_environment_vars) {
 
 _target_platform = ""
 
-if (is_android) {
-  _target_platform = "android"
-}
 if (is_fuchsia) {
   _target_platform = "fuchsia"
 }

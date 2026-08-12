@@ -13,18 +13,16 @@ source_set("sync") {
     "//components/sync_sessions",
   ]
 
-  if (!is_android) {
-    sources += [
-      "browser_synced_tab_delegate.h",
-      "browser_synced_window_delegate.h",
-      "browser_synced_window_delegates_getter.h",
-    ]
-    public_deps += [
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/tabs:tab_strip_model_observer",
-      "//content/public/browser",
-    ]
-  }
+  sources += [
+    "browser_synced_tab_delegate.h",
+    "browser_synced_window_delegate.h",
+    "browser_synced_window_delegates_getter.h",
+  ]
+  public_deps += [
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/tabs:tab_strip_model_observer",
+    "//content/public/browser",
+  ]
 
   if (toolkit_views && !is_chromeos) {
     sources += [ "sync_passphrase_dialog.h" ]
@@ -51,21 +49,19 @@ source_set("impl") {
     deps += [ "//chrome/browser/apps/app_service" ]
   }
 
-  if (!is_android) {
-    sources += [
-      "browser_synced_tab_delegate.cc",
-      "browser_synced_window_delegate.cc",
-      "browser_synced_window_delegates_getter.cc",
-    ]
-    deps += [
-      "//chrome/browser/history",
-      "//chrome/browser/sync",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//components/bookmarks/browser",
-      "//components/browser_sync",
-      "//components/history/core/browser",
-    ]
-  }
+  sources += [
+    "browser_synced_tab_delegate.cc",
+    "browser_synced_window_delegate.cc",
+    "browser_synced_window_delegates_getter.cc",
+  ]
+  deps += [
+    "//chrome/browser/history",
+    "//chrome/browser/sync",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//components/bookmarks/browser",
+    "//components/browser_sync",
+    "//components/history/core/browser",
+  ]
 
   if (toolkit_views) {
     deps += [ "//chrome/common" ]
@@ -99,32 +95,30 @@ source_set("unit_tests") {
     "//third_party/blink/public/common:headers",
   ]
 
-  if (!is_android) {
+  deps += [
+    "//chrome/browser:browser_process",
+    "//chrome/browser/extensions:test_support",
+    "//chrome/browser/history",
+    "//chrome/browser/prefs",
+    "//components/bookmarks/test",
+    "//components/pref_registry",
+    "//components/prefs:test_support",
+    "//components/sync_preferences:test_support",
+  ]
+  if (is_chromeos) {
     deps += [
-      "//chrome/browser:browser_process",
-      "//chrome/browser/extensions:test_support",
-      "//chrome/browser/history",
-      "//chrome/browser/prefs",
-      "//components/bookmarks/test",
-      "//components/pref_registry",
-      "//components/prefs:test_support",
-      "//components/sync_preferences:test_support",
+      "//chrome/browser/ash/login/users",
+      "//chrome/browser/ash/settings:test_support",
     ]
-    if (is_chromeos) {
-      deps += [
-        "//chrome/browser/ash/login/users",
-        "//chrome/browser/ash/settings:test_support",
-      ]
-    }
+  }
 
-    if (is_linux || is_mac || is_win) {
-      sources += [ "sync_passphrase_dialog_unittest.cc" ]
-      deps += [ "//components/sync:test_support" ]
-    }
+  if (is_linux || is_mac || is_win) {
+    sources += [ "sync_passphrase_dialog_unittest.cc" ]
+    deps += [ "//components/sync:test_support" ]
   }
 }
 
-if (!is_android && !is_chromeos_device) {
+if (!is_chromeos_device) {
   source_set("interactive_ui_tests") {
     testonly = true
     defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]

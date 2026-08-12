@@ -14,16 +14,11 @@ import("//build/config/c++/c++.gni")
 import("//build/config/compiler/compiler.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 group("v8_context_snapshot") {
   if (use_v8_context_snapshot) {
     public_deps = [ ":generate_v8_context_snapshot" ]
-    if (!is_android) {
-      data = [ "$root_out_dir/$v8_context_snapshot_filename" ]
-    }
+
+    data = [ "$root_out_dir/$v8_context_snapshot_filename" ]
   }
 }
 
@@ -70,7 +65,7 @@ if (use_v8_context_snapshot) {
     # In the case of compiling for the snapshot `shlib_extension` is ".so"
     # (which is expected), but on disk ".cr.so" is generate, which ends up
     # causing gn to fail.
-    if (is_component_build && target_os != "android") {
+    if (is_component_build) {
       # In the component build mode, the snapshot should be updated when any
       # of the generator executable or the shared libraries get updated. Note
       # that it's possible that some of the shared libraries are updated

@@ -23,10 +23,6 @@ source_set("country_data") {
   ]
 }
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 grit("autofill_address_rewriter_resources") {
   source = "geo/autofill_address_rewriter_resources.grd"
   outputs = [
@@ -905,7 +901,7 @@ static_library("browser") {
   sources += get_target_outputs(":regex_patterns_inl_h")
   sources += get_target_outputs(":entity_schema_enums_and_functions")
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [
       "metrics/payments/credit_card_save_metrics_desktop.cc",
       "metrics/payments/credit_card_save_metrics_desktop.h",
@@ -921,25 +917,7 @@ static_library("browser") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "data_model/valuables/android/loyalty_card_android.h",
-      "metrics/payments/credit_card_save_metrics_android.cc",
-      "metrics/payments/credit_card_save_metrics_android.h",
-      "payments/android_bnpl_strategy.cc",
-      "payments/android_bnpl_strategy.h",
-      "payments/autofill_save_iban_ui_info.cc",
-      "payments/autofill_save_iban_ui_info.h",
-      "ui/addresses/android/autofill_address_editor_ui_info_android.cc",
-      "ui/addresses/android/autofill_address_editor_ui_info_android.h",
-      "ui/addresses/android/autofill_address_ui_component_android.cc",
-      "ui/addresses/android/autofill_address_ui_component_android.h",
-      "ui/addresses/android/dropdown_key_value_android.cc",
-      "ui/addresses/android/dropdown_key_value_android.h",
-    ]
-  }
-
-  if (is_ios || is_android) {
+  if (is_ios) {
     sources += [
       "payments/autofill_save_card_delegate.cc",
       "payments/autofill_save_card_delegate.h",
@@ -971,12 +949,10 @@ static_library("browser") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "ui/autofill_image_fetcher.cc",
-      "ui/autofill_image_fetcher.h",
-    ]
-  }
+  sources += [
+    "ui/autofill_image_fetcher.cc",
+    "ui/autofill_image_fetcher.h",
+  ]
 
   if (build_with_tflite_lib) {
     sources += [
@@ -1107,20 +1083,11 @@ static_library("browser") {
     ]
   }
 
-  if (is_android) {
-    deps += [
-      "//components/autofill/android:main_autofill_jni_headers",
-      "//components/autofill/android:payments_jni_headers",
-      "//components/messages/android:feature_flags",
-      "//components/resources:android_resources",
-    ]
-  }
-
-  if (is_ios || is_android) {
+  if (is_ios) {
     deps += [ "//components/strings" ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     sources += [
       "crowdsourcing/server_prediction_overrides.cc",
       "crowdsourcing/server_prediction_overrides.h",
@@ -1158,18 +1125,6 @@ source_set("payments_sync_utils") {
     "//components/sync/protocol",
     "//components/sync/protocol:util",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("autofill_ai_core_browser_java_enums") {
-    sources = [
-      "$target_gen_dir/data_model/autofill_ai/entity_type_names.h",
-      "data_model/autofill_ai/entity_instance.h",
-      "data_model/autofill_ai/entity_type.h",
-      "permissions/autofill_ai/autofill_ai_permission_utils.h",
-    ]
-    deps = [ ":entity_schema_enums_and_functions" ]
-  }
 }
 
 static_library("test_support") {
@@ -1788,14 +1743,7 @@ source_set("unit_tests") {
     sources += [ "form_import/addresses/autofill_save_update_address_profile_delegate_ios_unittest.cc" ]
   }
 
-  if (is_android) {
-    sources += [
-      "payments/android_bnpl_strategy_unittest.cc",
-      "payments/autofill_save_iban_ui_info_unittest.cc",
-    ]
-  }
-
-  if (is_ios || is_android) {
+  if (is_ios) {
     sources += [
       "payments/autofill_save_card_delegate_unittest.cc",
       "payments/autofill_save_card_ui_info_unittest.cc",
@@ -1813,14 +1761,12 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "ui/autofill_image_fetcher_unittest.cc",
-      "ui/payments/bnpl_tos_controller_impl_unittest.cc",
-    ]
-  }
+  sources += [
+    "ui/autofill_image_fetcher_unittest.cc",
+    "ui/payments/bnpl_tos_controller_impl_unittest.cc",
+  ]
 
-  if (is_win || is_mac || is_android) {
+  if (is_win || is_mac) {
     sources += [
       "metrics/payments/better_auth_metrics_unittest.cc",
       "payments/credit_card_access_manager_better_auth_log_unittest.cc",
@@ -1829,12 +1775,12 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_win || is_mac || is_android || is_ios) {
+  if (is_win || is_mac || is_ios) {
     sources +=
         [ "payments/credit_card_access_manager_mandatory_reauth_unittest.cc" ]
   }
 
-  if (!is_ios && !is_android) {
+  if (!is_ios) {
     sources += [
       "crowdsourcing/server_prediction_overrides_unittest.cc",
       "payments/desktop_bnpl_strategy_unittest.cc",
@@ -1849,7 +1795,7 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_ios && !is_android && !is_fuchsia) {
+  if (!is_ios && !is_fuchsia) {
     sources += [
       "filling/autofill_ai/field_filling_entity_util_unittest.cc",
       "permissions/autofill_ai/autofill_ai_permission_utils_unittest.cc",
@@ -1936,11 +1882,11 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (is_ios || is_android) {
+  if (is_ios) {
     deps += [ "//build:branding_buildflags" ]
   }
 
-  if (!is_ios && !is_android) {
+  if (!is_ios) {
     deps += [ "//ui/native_theme" ]
   }
 

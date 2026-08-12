@@ -83,7 +83,7 @@ is_apple = is_mac || is_ios
 
 if (target_cpu == "") {
   target_cpu = host_cpu
-  if (is_android || is_ios) {
+  if (is_ios) {
     target_cpu = "arm64"
   }
 }
@@ -103,29 +103,6 @@ if (!is_clang && !is_win) {
                            cxx,
                          ],
                          "value")
-}
-
-if (is_android) {
-  ndk_host = ""
-  ndk_target = ""
-
-  if (host_os == "linux") {
-    ndk_host = "linux-x86_64"
-  } else if (host_os == "mac") {
-    ndk_host = "darwin-x86_64"
-  } else if (host_os == "win") {
-    ndk_host = "windows-x86_64"
-  }
-
-  if (target_cpu == "arm64") {
-    ndk_target = "aarch64-linux-android"
-  } else if (target_cpu == "arm") {
-    ndk_target = "armv7a-linux-androideabi"
-  } else if (target_cpu == "x64") {
-    ndk_target = "x86_64-linux-android"
-  } else if (target_cpu == "x86") {
-    ndk_target = "i686-linux-android"
-  }
 }
 
 if (target_os == "win") {

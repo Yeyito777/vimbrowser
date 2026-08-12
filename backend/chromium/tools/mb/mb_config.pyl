@@ -73,8 +73,6 @@
       'Android arm64 Builder Perf': 'official_minimal_symbols_android_arm64',
       'android-builder-perf': 'official_remoteexec_minimal_symbols_android',
       'android-builder-perf-pgo': 'official_remoteexec_minimal_symbols_android_pgo',
-      'android-desktop-arm-builder-perf': 'official_remoteexec_min_symbol_webview_android_desktop_arm64',
-      'android-desktop-x64-builder-perf': 'official_remoteexec_min_symbol_webview_android_desktop_x64',
       'android_arm64-builder-perf': 'official_minimal_symbols_android_arm64',
       'android_arm64-builder-perf-pgo': 'official_remoteexec_minimal_symbols_android_arm64_pgo',
       'android_arm64_high_end-builder-perf': 'official_remoteexec_minimal_symbols_android_arm64_high_end',
@@ -107,8 +105,6 @@
       'Android arm64 Builder Perf': 'official_minimal_symbols_android_arm64',
       'android-builder-perf': 'official_remoteexec_minimal_symbols_android',
       'android-builder-perf-pgo': 'official_remoteexec_minimal_symbols_android_pgo',
-      'android-desktop-arm-builder-perf': 'official_remoteexec_min_symbol_webview_android_desktop_arm64',
-      'android-desktop-x64-builder-perf': 'official_remoteexec_min_symbol_webview_android_desktop_x64',
       'android_arm64-builder-perf': 'official_minimal_symbols_android_arm64',
       'android_arm64-builder-perf-pgo': 'official_remoteexec_minimal_symbols_android_arm64_pgo',
       'android_arm64_high_end-builder-perf': 'official_remoteexec_minimal_symbols_android_arm64_high_end',
@@ -343,18 +339,8 @@
       'clang_tot', 'official', 'full_symbols', 'static', 'x86', 'win_linker_timing',
     ],
 
-    'codesearch_gen_chrome_android_bot_remoteexec': [
-      'codesearch_remoteexec', 'android_without_codecs', 'static',
-      'chrome_branded', 'android_desktop', 'android_fastbuild'
-    ],
-
     'codesearch_gen_chrome_bot_remoteexec': [
       'codesearch_remoteexec', 'chrome_branded',
-    ],
-
-    'codesearch_gen_chromium_android_bot_remoteexec': [
-      'codesearch_remoteexec', 'android_without_codecs', 'static',
-      'android_desktop', 'android_fastbuild',
     ],
 
     'codesearch_gen_chromium_bot_remoteexec': [
@@ -524,14 +510,6 @@
       'official', 'remoteexec', 'no_keystone_registration_framework', 'no_widevine_cdm_host_verification', 'minimal_symbols',
     ],
 
-    'official_remoteexec_min_symbol_webview_android_desktop_arm64': [
-      'official', 'remoteexec', 'minimal_symbols', 'android', 'pgo_phase_0', 'no_default_afdo', 'webview', 'arm64', 'android_desktop', 'dcheck_off'
-    ],
-
-    'official_remoteexec_min_symbol_webview_android_desktop_x64': [
-      'official', 'remoteexec', 'minimal_symbols', 'android', 'pgo_phase_0', 'no_default_afdo', 'webview', 'x64', 'android_desktop', 'dcheck_off'
-    ],
-
     'official_remoteexec_minimal_symbols_android': [
       'official', 'remoteexec', 'minimal_symbols', 'android', 'arm', 'pgo_phase_0', 'no_default_afdo'
     ],
@@ -679,10 +657,6 @@
     # which are not allowed to have proprietary codecs enabled.
     'android': {
       'mixins': ['android_without_codecs', 'chrome_with_codecs'],
-    },
-
-    'android_desktop': {
-      'gn_args': 'is_desktop_android=true',
     },
 
     'android_external': {

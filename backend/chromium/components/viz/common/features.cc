@@ -23,9 +23,6 @@
 #include "media/media_buildflags.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/windows_version.h"
@@ -33,15 +30,6 @@
 
 namespace features {
 
-#if BUILDFLAG(IS_ANDROID)
-// If this flag is enabled, a DumpWithoutCrashing() is captured when a bad
-// state is detected when moving the composited UI. For example, this could
-// mean scrolling without a resource, or OffsetTagValues trying to position
-// the UI outside of their valid constraints.
-BASE_FEATURE(kAndroidDumpForBadCompositedUiState,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // When there is a screenshot request against a surface, issue the copy request
 // into a shared image.
@@ -58,10 +46,6 @@ BASE_FEATURE(kUseDrmBlackFullscreenOptimization,
 #endif
 );
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kUseFrameIntervalDeciderAdaptiveFrameRate,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kUseMultipleOverlays,
 #if BUILDFLAG(IS_CHROMEOS)
@@ -138,27 +122,6 @@ BASE_FEATURE(kWebRtcLogCapturePipeline, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kWebViewVulkanIntermediateBuffer,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Hardcoded as disabled for WebView to have a different default for
-// UseSurfaceLayerForVideo from chrome.
-BASE_FEATURE(kUseSurfaceLayerForVideoDefault, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kWebViewNewInvalidateHeuristic, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kWebViewNewInvalidateHeuristicForTV,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// If enabled and the device's SOC manufacturer is in the allowlist, WebView
-// reports the set of threads involved in frame production to HWUI, and they're
-// included in the HWUI ADPF session.
-// If disabled, WebView never uses ADPF.
-BASE_FEATURE(kWebViewEnableADPF, base::FEATURE_ENABLED_BY_DEFAULT);
-
-// The allowlist format is a "|" separated string, e.g. "A|B|XY" for allowing
-// SoC manufacturers A, B, and XY.
-const base::FeatureParam<std::string> kWebViewADPFSocManufacturerAllowlist{
-    &kWebViewEnableADPF, "webview_soc_manufacturer_allowlist", "Google"};
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 // Increase the max CALayer number allowed for CoreAnimation.
@@ -361,11 +324,7 @@ BASE_FEATURE(kVizDirectCompositorThreadIpcNonRoot,
 // messages and, in turn, all interfaces associated with it e.g. root compositor
 // frame sink, display private - skipping the IO thread hop.
 BASE_FEATURE(kVizDirectCompositorThreadIpcFrameSinkManager,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Switches the message pump to base::MessagePumpType::IO on the Viz thread.
@@ -445,32 +404,9 @@ bool ShouldWebRtcLogCapturePipeline() {
   return base::FeatureList::IsEnabled(kWebRtcLogCapturePipeline);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool UseWebViewNewInvalidateHeuristic() {
-  // For Android TVs we bundle this with WebViewSurfaceControlForTV.
-  if (base::android::device_info::is_tv()) {
-    return base::FeatureList::IsEnabled(kWebViewNewInvalidateHeuristicForTV);
-  }
-
-  return base::FeatureList::IsEnabled(kWebViewNewInvalidateHeuristic);
-}
-#endif
 
 bool UseSurfaceLayerForVideo() {
-#if BUILDFLAG(IS_ANDROID)
-  // SurfaceLayer video should work fine with new heuristic.
-  if (UseWebViewNewInvalidateHeuristic()) {
-    return true;
-  }
-
-  // Allow enabling UseSurfaceLayerForVideo if webview is using surface control.
-  if (::features::IsAndroidSurfaceControlEnabled()) {
-    return true;
-  }
-  return base::FeatureList::IsEnabled(kUseSurfaceLayerForVideoDefault);
-#else
   return true;
-#endif
 }
 
 int MaxOverlaysConsidered() {
@@ -555,14 +491,6 @@ bool ShouldRemoveRedirectionBitmap() {
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-bool ShouldUseAdpfForSoc(std::string_view soc_allowlist,
-                         std::string_view soc) {
-  std::vector<std::string_view> allowlist = base::SplitStringPiece(
-      soc_allowlist, "|", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  return std::ranges::contains(allowlist, soc);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool ShouldAckCOREarlyForViewTransition() {
   return base::FeatureList::IsEnabled(

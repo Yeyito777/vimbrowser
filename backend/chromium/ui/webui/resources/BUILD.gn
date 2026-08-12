@@ -50,7 +50,7 @@ generate_grd("build_grd") {
     "$target_gen_dir/mojo/resources.grdp",
   ]
 
-  if ((!is_android && !is_ios) || is_desktop_android) {
+  if (!is_ios) {
     public_deps += [
       "cr_components/cr_shortcut_input:build_grdp",
       "cr_components/managed_footnote:build_grdp",
@@ -63,7 +63,7 @@ generate_grd("build_grd") {
     ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     public_deps += [
       "cr_components/app_management:build_grdp",
       "cr_components/customize_color_scheme_mode:build_grdp",
@@ -85,31 +85,29 @@ generate_grd("build_grd") {
       "$target_gen_dir/cr_components/most_visited/resources.grdp",
     ]
 
-    if (!is_android) {
-      public_deps += [
-        "cr_components/composebox:build_grdp",
-        "cr_components/history:build_grdp",
-        "cr_components/history_clusters:build_grdp",
-        "cr_components/history_embeddings:build_grdp",
-        "cr_components/search:build_grdp",
-        "cr_components/searchbox:build_grdp",
-        "cr_components/searchbox/icons:build_grdp",
-      ]
-      grdp_files += [
-        "$target_gen_dir/cr_components/history/resources.grdp",
-        "$target_gen_dir/cr_components/history_clusters/resources.grdp",
-        "$target_gen_dir/cr_components/history_embeddings/resources.grdp",
-        "$target_gen_dir/cr_components/composebox/resources.grdp",
-        "$target_gen_dir/cr_components/search/resources.grdp",
-        "$target_gen_dir/cr_components/searchbox/icons/resources.grdp",
-        "$target_gen_dir/cr_components/searchbox/resources.grdp",
-      ]
+    public_deps += [
+      "cr_components/composebox:build_grdp",
+      "cr_components/history:build_grdp",
+      "cr_components/history_clusters:build_grdp",
+      "cr_components/history_embeddings:build_grdp",
+      "cr_components/search:build_grdp",
+      "cr_components/searchbox:build_grdp",
+      "cr_components/searchbox/icons:build_grdp",
+    ]
+    grdp_files += [
+      "$target_gen_dir/cr_components/history/resources.grdp",
+      "$target_gen_dir/cr_components/history_clusters/resources.grdp",
+      "$target_gen_dir/cr_components/history_embeddings/resources.grdp",
+      "$target_gen_dir/cr_components/composebox/resources.grdp",
+      "$target_gen_dir/cr_components/search/resources.grdp",
+      "$target_gen_dir/cr_components/searchbox/icons/resources.grdp",
+      "$target_gen_dir/cr_components/searchbox/resources.grdp",
+    ]
 
-      if (is_chrome_branded) {
-        public_deps +=
-            [ "cr_components/searchbox/icons:chrome_branded_build_grdp" ]
-        grdp_files += [ "$target_gen_dir/cr_components/searchbox/icons/chrome_branded_resources.grdp" ]
-      }
+    if (is_chrome_branded) {
+      public_deps +=
+          [ "cr_components/searchbox/icons:chrome_branded_build_grdp" ]
+      grdp_files += [ "$target_gen_dir/cr_components/searchbox/icons/chrome_branded_resources.grdp" ]
     }
   }
 
@@ -121,7 +119,7 @@ generate_grd("build_grd") {
     grdp_files += [ "$target_gen_dir/cros_styles_resources.grdp" ]
   }
 
-  if (!is_android && !is_ios) {
+  if (!is_ios) {
     public_deps += [
       "cr_components/color_change_listener:build_grdp",
       "cr_components/page_image_service:build_grdp",

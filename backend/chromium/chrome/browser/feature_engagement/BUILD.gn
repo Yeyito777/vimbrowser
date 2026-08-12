@@ -4,30 +4,6 @@
 
 import("//chrome/browser/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-
-  android_library("java") {
-    srcjar_deps = [ ":jni_headers" ]
-    sources = [ "java/src/org/chromium/chrome/browser/feature_engagement/TrackerFactory.java" ]
-
-    deps = [
-      "//base:base_java",
-      "//chrome/browser/profiles/android:java",
-      "//components/feature_engagement/public:public_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/androidx:androidx_core_core_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("jni_headers") {
-    sources = [ "java/src/org/chromium/chrome/browser/feature_engagement/TrackerFactory.java" ]
-  }
-}
-
 source_set("feature_engagement") {
   sources = [ "tracker_factory.h" ]
   public_deps = [
@@ -47,9 +23,7 @@ source_set("impl") {
     "//content/public/browser",
   ]
 
-  if (!is_android) {
-    deps += [ "//chrome/browser/user_education" ]
-  }
+  deps += [ "//chrome/browser/user_education" ]
 
   if (is_chromeos) {
     deps += [ "//chromeos/ash/components/growth:config_provider" ]

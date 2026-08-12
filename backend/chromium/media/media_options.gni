@@ -67,7 +67,7 @@ declare_args() {
   # Enable usage of OpenH264 within the media library. Used for software based
   # encoding of H264 content.
   media_use_openh264 = true
-  if (is_ios || (is_android && current_cpu == "arm") || !proprietary_codecs) {
+  if (is_ios || !proprietary_codecs) {
     media_use_openh264 = false
   }
 
@@ -119,7 +119,7 @@ declare_args() {
 
   # Enable browser managed persistent metadata storage for EME persistent
   # session.
-  enable_media_drm_storage = is_android || is_castos
+  enable_media_drm_storage = is_castos
 
   # Enable HLS manifest parser and demuxer.
   enable_hls_demuxer = proprietary_codecs
@@ -129,12 +129,12 @@ declare_args() {
   # Windows, Mac, and Android.
   enable_hevc_parser_and_hw_decoder =
       proprietary_codecs &&
-      (use_fuzzing_engine || is_win || is_apple || is_android || is_linux)
+      (use_fuzzing_engine || is_win || is_apple || is_linux)
 
   # Determines if a GpuChannel is needed between media capture utility process
   # and gpu process for a given platform.
   enable_gpu_channel_media_capture =
-      is_linux || is_win || is_chromeos || is_apple || is_android || is_fuchsia
+      is_linux || is_win || is_chromeos || is_apple || is_fuchsia
 }
 
 # Use another declare_args() to allow dependence on args defined above.
@@ -156,17 +156,14 @@ declare_args() {
       (enable_hls_demuxer || enable_cast_receiver || use_fuzzing_engine)
 
   # Only Android and Windows actually have bitstream output implementations.
-  enable_passthrough_audio_codecs =
-      (enable_platform_ac3_eac3_audio && is_android) ||
-      (enable_platform_dts_audio && (is_android || is_win))
+  enable_passthrough_audio_codecs = enable_platform_dts_audio && is_win
 }
 
 declare_args() {
   platform_has_optional_hevc_decode_support =
-      enable_platform_hevc &&
-      (is_win || is_chromeos || is_linux || is_apple || is_android)
+      enable_platform_hevc && (is_win || is_chromeos || is_linux || is_apple)
   platform_has_optional_hevc_encode_support =
-      enable_platform_hevc && (is_win || is_apple || is_android)
+      enable_platform_hevc && (is_win || is_apple)
 }
 
 assert(!enable_hls_demuxer || enable_mse_mpeg2ts_stream_parser,
@@ -213,7 +210,7 @@ declare_args() {
   #
   # TODO(crbug.com/1336055): Remove legacy target_cpu hack used for targeting
   # desktop Chromecast builds.
-  if (is_posix && !is_android && !is_apple &&
+  if (is_posix && !is_apple &&
       (!is_castos || (target_cpu == "x86" || target_cpu == "x64") ||
        is_cast_audio_only)) {
     use_alsa = true
@@ -239,8 +236,7 @@ declare_args() {
   # This flag gives the option to override that decision in case there are no
   # hardware decoders. To do so, you will also need to update ffmpeg build files
   # in order to define which decoders to build in.
-  enable_ffmpeg_video_decoders =
-      media_use_ffmpeg && (!is_android || current_cpu != "arm")
+  enable_ffmpeg_video_decoders = media_use_ffmpeg
 }
 
 declare_args() {
@@ -287,14 +283,6 @@ _default_mojo_media_host = ""
 if (is_cast_media_device) {
   _default_mojo_media_services = cast_mojo_media_services
   _default_mojo_media_host = cast_mojo_media_host
-} else if (is_android) {
-  _default_mojo_media_services = [
-    "cdm",
-    "audio_decoder",
-    "audio_encoder",
-    "video_decoder",
-  ]
-  _default_mojo_media_host = "gpu"
 } else if (is_apple || is_win) {
   _default_mojo_media_services = [
     "audio_decoder",
@@ -348,7 +336,7 @@ declare_args() {
 declare_args() {
   # Media Remoting RPC is disabled on Android since it's unused but increases
   # the native binary size by ~70Kb.
-  enable_media_remoting_rpc = enable_media_remoting && !is_android
+  enable_media_remoting_rpc = enable_media_remoting
 }
 
 declare_args() {

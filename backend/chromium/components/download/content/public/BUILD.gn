@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 source_set("public") {
   sources = [
     "all_download_item_notifier.cc",
@@ -14,10 +9,6 @@ source_set("public") {
     "download_navigation_observer.cc",
     "download_navigation_observer.h",
   ]
-
-  if (is_android) {
-    sources += [ "context_menu_download.h" ]
-  }
 
   public_deps = [ "//base" ]
 

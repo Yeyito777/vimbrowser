@@ -33,9 +33,6 @@
 #include "ui/gl/gl_surface.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 using ui::GetLastEGLErrorString;
 
@@ -699,14 +696,6 @@ void GLDisplayEGL::InitializeCommon(bool for_testing) {
   // because it is emulated with pbuffers if native support is not present. See
   // https://crbug.com/382349.
 
-#if BUILDFLAG(IS_ANDROID)
-  // Use the WebGL compatibility extension for detecting ANGLE. ANGLE always
-  // exposes it.
-  bool is_angle = ext->b_EGL_ANGLE_create_context_webgl_compatibility;
-  if (!is_angle) {
-    egl_surfaceless_context_supported_ = false;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (egl_surfaceless_context_supported_) {
     // EGL_KHR_surfaceless_context is supported but ensure
@@ -739,24 +728,6 @@ void GLDisplayEGL::InitializeCommon(bool for_testing) {
   // LINT.IfChange(AndroidSurfaceControlCondition)
   egl_android_native_fence_sync_supported_ =
       ext->b_EGL_ANDROID_native_fence_sync;
-#if BUILDFLAG(IS_ANDROID)
-  if (!egl_android_native_fence_sync_supported_ &&
-      base::android::android_info::sdk_int() >=
-          base::android::android_info::SDK_VERSION_NOUGAT &&
-      g_driver_egl.fn.eglDupNativeFenceFDANDROIDFn &&
-      base::SysInfo::GetAndroidHardwareEGL() != "swiftshader" &&
-      base::SysInfo::GetAndroidHardwareEGL() != "emulation") {
-    egl_android_native_fence_sync_supported_ = true;
-  }
-  UMA_HISTOGRAM_BOOLEAN("GPU.Android.HasEGLDupNativeFenceFunction",
-                        !!g_driver_egl.fn.eglDupNativeFenceFDANDROIDFn);
-
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kDisableAndroidNativeFenceSyncForTesting)) {
-    egl_android_native_fence_sync_supported_ = false;
-  }
-  // LINT.ThenChange(//gpu/config/gpu_finch_features.cc:AndroidSurfaceControlCondition)
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (!for_testing) {
     if (ext->b_EGL_ANGLE_power_preference) {

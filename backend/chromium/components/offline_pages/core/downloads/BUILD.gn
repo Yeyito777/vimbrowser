@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("offline_pages_ui_adapter") {
   sources = [
     "offline_item_conversions.cc",
@@ -19,15 +15,6 @@ static_library("offline_pages_ui_adapter") {
     "//components/offline_pages/core:switches",
     "//components/offline_pages/core/background:background_offliner",
   ]
-
-  if (is_android) {
-    sources += [
-      "download_ui_adapter.cc",
-      "download_ui_adapter.h",
-    ]
-
-    deps += [ "//ui/gfx" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -49,10 +36,6 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//ui/gfx:test_support",
   ]
-
-  if (is_android) {
-    sources += [ "download_ui_adapter_unittest.cc" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

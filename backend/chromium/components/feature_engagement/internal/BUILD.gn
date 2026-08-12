@@ -2,12 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 static_library("internal") {
   visibility = [
     ":*",
@@ -96,15 +90,6 @@ static_library("internal") {
   ]
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-
-  if (is_android) {
-    sources += [
-      "android/tracker_impl_android.cc",
-      "android/tracker_impl_android.h",
-    ]
-
-    deps += [ ":jni_headers" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -159,27 +144,4 @@ source_set("unit_tests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  android_library("internal_java") {
-    visibility = [ "//components/feature_engagement:feature_engagement_java" ]
-
-    srcjar_deps = [ ":jni_headers" ]
-    sources = [ "android/java/src/org/chromium/components/feature_engagement/internal/TrackerImpl.java" ]
-
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//components/feature_engagement/public:public_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//ui/android:ui_java",
-    ]
-  }
-
-  generate_jni("jni_headers") {
-    visibility = [ ":*" ]
-    sources = [ "android/java/src/org/chromium/components/feature_engagement/internal/TrackerImpl.java" ]
-  }
 }

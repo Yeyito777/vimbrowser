@@ -19,8 +19,6 @@ mojom("origin_trial_feature") {
   export_class_attribute_blink = "PLATFORM_EXPORT"
   export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
   export_header_blink = "third_party/blink/renderer/platform/platform_export.h"
-
-  generate_java = true
 }
 
 mojom("origin_trial_state") {
@@ -39,8 +37,6 @@ mojom("origin_trial_state") {
   export_class_attribute_blink = "PLATFORM_EXPORT"
   export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
   export_header_blink = "third_party/blink/renderer/platform/platform_export.h"
-
-  generate_java = true
 }
 
 blink_python_runner("generate_origin_trial_feature") {

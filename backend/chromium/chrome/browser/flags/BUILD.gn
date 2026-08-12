@@ -16,7 +16,6 @@ android_library("java") {
   deps = [
     "//base:base_java",
     "//base/version_info/android:version_constants_java",
-    "//build:android_buildflags",
     "//build:chromeos_buildflags",
     "//build/android:build_java",
     "//chrome/browser/preferences:java",
@@ -63,7 +62,6 @@ static_library("flags_android_impl") {
     ":flags_android",
     ":jni_headers",
     "//base",
-    "//build:android_buildflags",
     "//chrome/browser/android/webapk:webapk_sources",
     "//chrome/browser/contextmenu",
     "//chrome/browser/glic/public:features",

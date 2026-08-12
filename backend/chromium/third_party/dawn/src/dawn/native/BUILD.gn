@@ -427,13 +427,6 @@ source_set("sources") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "AHBFunctions.cpp",
-      "AHBFunctions.h",
-    ]
-  }
-
   # Only win32 app needs to link with user32.lib
   # In UWP, all available APIs are defined in WindowsApp.lib
   if (is_win && !dawn_is_winuwp) {
@@ -941,17 +934,13 @@ source_set("sources") {
       "vulkan/external_semaphore/SemaphoreServiceImplementation.h",
     ]
 
-    if (is_android || is_linux || is_chromeos) {
+    if (is_linux || is_chromeos) {
       sources += [
         "vulkan/external_semaphore/SemaphoreServiceImplementationFD.cpp",
         "vulkan/external_semaphore/SemaphoreServiceImplementationFD.h",
       ]
-      if (is_android) {
-        sources += [
-          "vulkan/external_memory/MemoryServiceImplementationAHardwareBuffer.cpp",
-          "vulkan/external_memory/MemoryServiceImplementationAHardwareBuffer.h",
-        ]
-      } else if (is_linux || is_chromeos) {
+
+      if (is_linux || is_chromeos) {
         sources += [
           "vulkan/external_memory/MemoryServiceImplementationDmaBuf.cpp",
           "vulkan/external_memory/MemoryServiceImplementationDmaBuf.h",
@@ -1044,10 +1033,9 @@ dawn_component("native") {
     if (enable_vulkan_validation_layers) {
       data_deps =
           [ "${dawn_vulkan_validation_layers_dir}:vulkan_validation_layers" ]
-      if (!is_android) {
-        data_deps +=
-            [ "${dawn_vulkan_validation_layers_dir}:vulkan_gen_json_files" ]
-      }
+
+      data_deps +=
+          [ "${dawn_vulkan_validation_layers_dir}:vulkan_gen_json_files" ]
     }
   }
 }

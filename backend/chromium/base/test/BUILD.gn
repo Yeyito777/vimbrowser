@@ -9,11 +9,6 @@ import("//build/rust/rust_static_library.gni")
 import("//build_overrides/build.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 if (is_ios) {
   import("//build/config/ios/rules.gni")
 }
@@ -265,7 +260,7 @@ static_library("test_support") {
     public_deps += [ "//third_party/test_fonts/fontconfig:test_support" ]
   }
 
-  if (is_posix && !is_android && !is_apple) {
+  if (is_posix && !is_apple) {
     sources += [
       "nix/scoped_chrome_version_extra_override.cc",
       "nix/scoped_chrome_version_extra_override.h",
@@ -278,27 +273,6 @@ static_library("test_support") {
       "mock_chrome_application_mac.h",
       "mock_chrome_application_mac.mm",
       "test_file_util_mac.cc",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android/content_uri_test_utils.cc",
-      "android/content_uri_test_utils.h",
-      "android/java_handler_thread_helpers.cc",
-      "android/java_handler_thread_helpers.h",
-      "android/url_utils.cc",
-      "android/url_utils.h",
-      "multiprocess_test_android.cc",
-      "test_file_util_android.cc",
-      "test_file_util_linux.cc",
-      "test_support_android.cc",
-      "test_support_android.h",
-      "thread_pool_test_helpers_android.cc",
-    ]
-    deps += [
-      ":base_unittests_jni_headers",
-      ":test_support_jni_headers",
     ]
   }
 
@@ -453,10 +427,6 @@ shared_library("immediate_crash_test_helper") {
   # Disable sanitization: sanitized builds are assumed to be saner than normal,
   # and can affect codegen in surprising ways, which breaks the tests.
   configs -= [ "//build/config/sanitizers:default_sanitizer_flags" ]
-
-  if (is_android) {
-    configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-  }
 }
 
 # This shared library is dynamically loaded by NativeLibrary unittests.
@@ -481,111 +451,6 @@ if (is_fuchsia || is_linux || is_chromeos) {
     sources = [
       "malloc_wrapper.cc",
       "malloc_wrapper.h",
-    ]
-  }
-}
-
-if (is_android) {
-  generate_jni("base_unittests_jni_headers") {
-    testonly = true
-    sources = [
-      "android/java/src/org/chromium/base/ContentUriTestUtils.java",
-      "android/java/src/org/chromium/base/JavaHandlerThreadHelpers.java",
-    ]
-  }
-
-  generate_jni("test_support_jni_headers") {
-    testonly = true
-    sources = [
-      "android/java/src/org/chromium/base/MainReturnCodeResult.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientLauncher.java",
-      "android/javatests/src/org/chromium/base/test/task/ThreadPoolTestHelpers.java",
-      "android/javatests/src/org/chromium/base/test/util/UrlUtils.java",
-    ]
-  }
-
-  # Used by all base test targets: gtests, robolectric, and instrumentation tests.
-  android_library("test_support_java") {
-    testonly = true
-
-    mergeable_android_manifests =
-        [ "android/java/AndroidManifest_file_provider.xml" ]
-
-    deps = [
-      ":file_provider_resources",
-      "//base:base_java",
-      "//base:content_uri_utils_java",
-      "//base:process_launcher_java",
-      "//base:virtual_document_path_java",
-      "//testing/android/native_test:native_main_runner_java",
-      "//third_party/android_deps:com_google_code_findbugs_jsr305_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-
-    srcjar_deps = [ ":test_support_java_aidl" ]
-    sources = [
-      "android/java/src/org/chromium/base/GarbageCollectionTestUtils.java",
-      "android/java/src/org/chromium/base/InMemoryContentProvider.java",
-      "android/java/src/org/chromium/base/MainReturnCodeResult.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientLauncher.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService0.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService1.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService2.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService3.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService4.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService5.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService6.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService7.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService8.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientService9.java",
-      "android/java/src/org/chromium/base/MultiprocessTestClientServiceDelegate.java",
-      "android/java/src/org/chromium/base/TestDocumentsProvider.java",
-    ]
-  }
-
-  android_aidl("test_support_java_aidl") {
-    testonly = true
-    import_include = [
-      "android/java/src",
-      "//base/android/java/src",
-    ]
-    sources = [
-      "android/java/src/org/chromium/base/ITestCallback.aidl",
-      "android/java/src/org/chromium/base/ITestController.aidl",
-    ]
-  }
-
-  android_resources("file_provider_resources") {
-    testonly = true
-    sources = [ "android/java/res/xml/file_paths_file_provider.xml" ]
-  }
-
-  android_resources("leak_canary_test_resources") {
-    testonly = true
-
-    # This overrides a value set by leakcanary.
-    resource_overlay = true
-    sources = [ "android/javatests/res/values/leak_canary.xml" ]
-  }
-
-  android_library("leak_canary_java") {
-    testonly = true
-    sources = [
-      "android/javatests/src/org/chromium/base/test/util/CommonLeaks.java",
-      "android/javatests/src/org/chromium/base/test/util/LeakCanaryChecker.java",
-    ]
-    deps = [
-      ":leak_canary_test_resources",
-      "//base:base_java_test_support",
-      "//third_party/android_deps:com_squareup_leakcanary_leakcanary_android_core_java",
-      "//third_party/android_deps:com_squareup_leakcanary_leakcanary_android_instrumentation_java",
-      "//third_party/android_deps:com_squareup_leakcanary_leakcanary_android_java",
-      "//third_party/android_deps:com_squareup_leakcanary_shark_android_java",
-      "//third_party/android_deps:com_squareup_leakcanary_shark_java",
-      "//third_party/androidx:androidx_work_work_multiprocess_java",
-      "//third_party/androidx:androidx_work_work_runtime_java",
-      "//third_party/kotlin_stdlib:kotlin_stdlib_java",
     ]
   }
 }
@@ -659,101 +524,11 @@ target(_target_type, "test_trace_processor") {
     "//third_party/abseil-cpp:absl",
     "//third_party/perfetto:libtrace_processor",
   ]
-  if (is_android) {
-    configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-  }
 
   if (is_ios) {
     info_plist = "test_trace_processor_impl.plist"
     output_name = "TestTraceProcessor"
     bundle_deps_filter = [ "//third_party/icu:icudata" ]
-  }
-}
-
-if (is_android) {
-  android_library("public_transit_java") {
-    testonly = true
-
-    deps = [
-      "//base:base_java",
-      "//base:base_java_test_support",
-      "//build/android:build_java",
-      "//third_party/android_deps:com_google_errorprone_error_prone_annotations_java",
-      "//third_party/android_deps:espresso_java",
-      "//third_party/android_deps:guava_android_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/androidx:androidx_core_core_java",
-      "//third_party/androidx:androidx_fragment_fragment_java",
-      "//third_party/androidx:androidx_test_monitor_java",
-      "//third_party/hamcrest:hamcrest_java",
-      "//third_party/junit",
-    ]
-
-    sources = [
-      "android/javatests/src/org/chromium/base/test/transit/ActivityElement.java",
-      "android/javatests/src/org/chromium/base/test/transit/BaseElements.java",
-      "android/javatests/src/org/chromium/base/test/transit/BatchedPublicTransitRule.java",
-      "android/javatests/src/org/chromium/base/test/transit/CallbackCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/Condition.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionChecker.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionStatus.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionStatusWithResult.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionWaiter.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionWithResult.java",
-      "android/javatests/src/org/chromium/base/test/transit/ConditionalState.java",
-      "android/javatests/src/org/chromium/base/test/transit/DisplayedCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/DisplayedPortion.java",
-      "android/javatests/src/org/chromium/base/test/transit/Element.java",
-      "android/javatests/src/org/chromium/base/test/transit/ElementFactory.java",
-      "android/javatests/src/org/chromium/base/test/transit/Elements.java",
-      "android/javatests/src/org/chromium/base/test/transit/EntryPointSentinelStation.java",
-      "android/javatests/src/org/chromium/base/test/transit/Facility.java",
-      "android/javatests/src/org/chromium/base/test/transit/FragmentElement.java",
-      "android/javatests/src/org/chromium/base/test/transit/InstrumentationThreadCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/InternalViewFinder.java",
-      "android/javatests/src/org/chromium/base/test/transit/LogicalElement.java",
-      "android/javatests/src/org/chromium/base/test/transit/MoreViewConditions.java",
-      "android/javatests/src/org/chromium/base/test/transit/NotDisplayedAnymoreCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/OptionalViewElement.java",
-      "android/javatests/src/org/chromium/base/test/transit/PayloadCallbackCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/PublicTransitConfig.java",
-      "android/javatests/src/org/chromium/base/test/transit/RootSpec.java",
-      "android/javatests/src/org/chromium/base/test/transit/ScrollableFacility.java",
-      "android/javatests/src/org/chromium/base/test/transit/SimpleConditions.java",
-      "android/javatests/src/org/chromium/base/test/transit/State.java",
-      "android/javatests/src/org/chromium/base/test/transit/Station.java",
-      "android/javatests/src/org/chromium/base/test/transit/StatusStore.java",
-      "android/javatests/src/org/chromium/base/test/transit/TrafficControl.java",
-      "android/javatests/src/org/chromium/base/test/transit/TransitAsserts.java",
-      "android/javatests/src/org/chromium/base/test/transit/Transition.java",
-      "android/javatests/src/org/chromium/base/test/transit/TravelException.java",
-      "android/javatests/src/org/chromium/base/test/transit/Triggers.java",
-      "android/javatests/src/org/chromium/base/test/transit/Trip.java",
-      "android/javatests/src/org/chromium/base/test/transit/TripBuilder.java",
-      "android/javatests/src/org/chromium/base/test/transit/UiThreadCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewAndRoot.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewConditions.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewElement.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewElementMatchesCondition.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewFinder.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewInterface.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewPresence.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewSettled.java",
-      "android/javatests/src/org/chromium/base/test/transit/ViewSpec.java",
-    ]
-  }
-
-  robolectric_library("public_transit_robolectric_tests_java") {
-    deps = [
-      ":public_transit_java",
-      "//base:base_java_test_support",
-      "//base:base_junit_test_support",
-      "//base:callback_java",
-      "//base:log_java",
-      "//third_party/junit",
-    ]
-
-    sources = [ "android/javatests/src/org/chromium/base/test/transit/ElementFactoryUnitTest.java" ]
   }
 }
 

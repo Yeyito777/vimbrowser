@@ -36,7 +36,7 @@ source_set("system_cpu") {
     sources += [ "cpu_info_provider_mac.cc" ]
   }
 
-  if (is_linux || is_chromeos || enable_desktop_android_extensions) {
+  if (is_linux || is_chromeos) {
     sources += [ "cpu_info_provider_linux.cc" ]
   }
 

@@ -179,16 +179,14 @@ declare_args() {
   # On Android, it requires API level 26 due to libunwindstack.
   enable_perfetto_heapprofd =
       perfetto_build_with_android ||
-      (perfetto_build_standalone && is_clang &&
-       (is_linux || (is_android && android_api_level >= 26)))
+      (perfetto_build_standalone && is_clang && is_linux)
 
   # Build the perf event profiler (traced_perf).
   # TODO(rsavitski): figure out how to make the android-core dependencies build
   # under gcc (_Atomic and other issues).
   enable_perfetto_traced_perf =
       perfetto_build_with_android ||
-      (perfetto_build_standalone && is_clang &&
-       (is_linux || (is_android && android_api_level >= 29)))
+      (perfetto_build_standalone && is_clang && is_linux)
 
   # The Trace Processor: offline analytical engine to process traces and compute
   # metrics using a SQL engine.
@@ -215,9 +213,6 @@ declare_args() {
 
   enable_perfetto_integration_tests =
       perfetto_build_standalone || perfetto_build_with_android
-
-  enable_perfetto_android_java_sdk =
-      perfetto_build_with_android || (is_android && perfetto_build_standalone)
 
   enable_perfetto_benchmarks = perfetto_build_standalone && !is_win && !is_qnx
 
@@ -351,7 +346,7 @@ declare_args() {
   # Enables the REPL interactive prompt in the trace processor.
   enable_perfetto_trace_processor_linenoise =
       perfetto_build_standalone && enable_perfetto_trace_processor &&
-      (is_linux || is_android || is_mac)
+      (is_linux || is_mac)
 
   # Enables JSON support in the trace processor. Required for JSON trace import
   # and export.

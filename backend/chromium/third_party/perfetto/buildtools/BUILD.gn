@@ -553,7 +553,7 @@ source_set("abseil_cpp") {
 
   if (is_win) {
     sources += [ "abseil-cpp/absl/base/internal/spinlock_win32.inc" ]
-  } else if (is_linux || is_android) {
+  } else if (is_linux) {
     sources += [ "abseil-cpp/absl/base/internal/spinlock_linux.inc" ]
   } else {
     sources += [ "abseil-cpp/absl/base/internal/spinlock_posix.inc" ]
@@ -1334,7 +1334,7 @@ if (use_custom_libcxx) {
     # unwinding symbols, unlike Linux does with glibc (same applies for
     # Android). Build and link against libunwind manually to get this
     # functionality.
-    if (is_fuchsia || is_android) {
+    if (is_fuchsia) {
       deps = [ ":libunwind" ]
     }
 
@@ -1367,7 +1367,7 @@ if (use_custom_libcxx) {
     # demangler on android.
     sources += [ "libcxxabi/src/cxa_demangle.cpp" ]
 
-    if (is_fuchsia || is_android || is_linux) {
+    if (is_fuchsia || is_linux) {
       sources += [ "libcxxabi/src/cxa_thread_atexit.cpp" ]
     }
 
@@ -1506,7 +1506,7 @@ if (use_custom_libcxx) {
       "//gn/standalone:rtti_cflags",
       "//gn/standalone:c++17",
     ]
-    if ((is_android || is_mac) && !custom_libcxx_is_static) {
+    if (is_mac && !custom_libcxx_is_static) {
       # Use libc++_perfetto to avoid conflicting with system libc++
       output_name = "libc++_perfettto"
     }
@@ -1625,7 +1625,7 @@ source_set("benchmark") {
 }
 
 # On Linux/Android use libbacktrace in debug builds for better stacktraces.
-if (is_linux || is_android) {
+if (is_linux) {
   config("libbacktrace_config") {
     visibility = _buildtools_visibility
     include_dirs = [
@@ -1967,19 +1967,17 @@ source_set("libunwindstack") {
     "android-unwinding/libunwindstack/Symbols.cpp",
     "android-unwinding/libunwindstack/Unwinder.cpp",
   ]
-  if (!is_android) {
-    sources += [
-      "android-libbase/liblog_symbols.cpp",
-      "android-libbase/logging.cpp",
-      "android-libbase/threads.cpp",
-      "android-logging/liblog/logger_write.cpp",
-      "android-logging/liblog/properties.cpp",
-      "android-unwinding/libunwindstack/LogStdout.cpp",
-      "android-unwinding/libunwindstack/MemoryMte.cpp",
-    ]
-  } else {
-    sources += [ "android-unwinding/libunwindstack/LogAndroid.cpp" ]
-  }
+
+  sources += [
+    "android-libbase/liblog_symbols.cpp",
+    "android-libbase/logging.cpp",
+    "android-libbase/threads.cpp",
+    "android-logging/liblog/logger_write.cpp",
+    "android-logging/liblog/properties.cpp",
+    "android-unwinding/libunwindstack/LogStdout.cpp",
+    "android-unwinding/libunwindstack/MemoryMte.cpp",
+  ]
+
   if (current_cpu == "x86") {
     sources += [ "android-unwinding/libunwindstack/AsmGetRegsX86.S" ]
   } else if (current_cpu == "x64") {

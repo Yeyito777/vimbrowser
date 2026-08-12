@@ -28,16 +28,9 @@
 #include "services/device/wake_lock/wake_lock_provider.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "services/device/device_service_jni_headers/InterfaceRegistrar_jni.h"
-#include "services/device/screen_orientation/screen_orientation_listener_android.h"
-#include "services/device/vibration/vibration_manager_android.h"
-#else
 #include "services/device/battery/battery_monitor_impl.h"
 #include "services/device/battery/battery_status_service.h"
 #include "services/device/hid/hid_manager_impl.h"
-#endif
 
 #if BUILDFLAG(ENABLE_COMPUTE_PRESSURE)
 #include "services/device/compute_pressure/pressure_manager_impl.h"
@@ -78,9 +71,6 @@ DeviceService::DeviceService(
                           params->wake_lock_context_callback) {
   receivers_.Add(this, std::move(receiver));
 
-#if BUILDFLAG(IS_ANDROID)
-  java_nfc_delegate_.Reset(params->java_nfc_delegate);
-#endif
 
 #if defined(IS_SERIAL_ENABLED_PLATFORM)
 #if BUILDFLAG(IS_MAC)
@@ -99,7 +89,7 @@ DeviceService::DeviceService(
       base::SingleThreadTaskRunner::GetCurrentDefault());
 #endif  // defined(IS_SERIAL_ENABLED_PLATFORM)
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS_TVOS)
+#if !BUILDFLAG(IS_IOS_TVOS)
   // Ensure that the battery backend is initialized now; otherwise it may end up
   // getting initialized on access during destruction, when it's no longer safe
   // to initialize.
@@ -108,7 +98,7 @@ DeviceService::DeviceService(
 }
 
 DeviceService::~DeviceService() {
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_IOS_TVOS)
+#if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_IOS_TVOS)
   // NOTE: We don't call this on Chrome OS due to https://crbug.com/856771, as
   // Shutdown() implicitly depends on DBusThreadManager, which may already be
   // destroyed by the time DeviceService is destroyed. Fortunately on Chrome OS
@@ -156,9 +146,7 @@ void DeviceService::OverrideUsbDeviceManagerBinderForTesting(
 
 void DeviceService::BindBatteryMonitor(
     mojo::PendingReceiver<mojom::BatteryMonitor> receiver) {
-#if BUILDFLAG(IS_ANDROID)
-  GetJavaInterfaceProvider()->GetInterface(std::move(receiver));
-#elif !BUILDFLAG(IS_IOS_TVOS)
+#if !BUILDFLAG(IS_IOS_TVOS)
   BatteryMonitorImpl::Create(std::move(receiver));
 #endif
 }
@@ -178,34 +166,13 @@ void DeviceService::BindPressureManager(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-void DeviceService::OverrideNFCProviderBinderForTesting(
-    NFCProviderBinder binder) {
-  internal::GetNFCProviderBinderOverride() = std::move(binder);
-}
-
-void DeviceService::BindNFCProvider(
-    mojo::PendingReceiver<mojom::NFCProvider> receiver) {
-  const auto& binder_override = internal::GetNFCProviderBinderOverride();
-  if (binder_override)
-    binder_override.Run(std::move(receiver));
-  else
-    GetJavaInterfaceProvider()->GetInterface(std::move(receiver));
-}
-#endif
 
 void DeviceService::BindVibrationManager(
     mojo::PendingReceiver<mojom::VibrationManager> receiver,
     mojo::PendingRemote<mojom::VibrationManagerListener> listener) {
-#if BUILDFLAG(IS_ANDROID)
-  VibrationManagerAndroid::Create(std::move(receiver), std::move(listener));
-#else
   VibrationManagerImpl::Create(std::move(receiver), std::move(listener));
-#endif
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void DeviceService::BindHidManager(
     mojo::PendingReceiver<mojom::HidManager> receiver) {
   if (!hid_manager_) {
@@ -213,7 +180,6 @@ void DeviceService::BindHidManager(
   }
   hid_manager_->AddReceiver(std::move(receiver));
 }
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
 void DeviceService::BindMtpManager(
@@ -283,13 +249,6 @@ void DeviceService::BindPublicIpAddressGeolocationProvider(
 
 void DeviceService::BindScreenOrientationListener(
     mojo::PendingReceiver<mojom::ScreenOrientationListener> receiver) {
-#if BUILDFLAG(IS_ANDROID)
-  if (io_task_runner_) {
-    io_task_runner_->PostTask(
-        FROM_HERE, base::BindOnce(&ScreenOrientationListenerAndroid::Create,
-                                  std::move(receiver)));
-  }
-#endif
 }
 
 void DeviceService::BindSensorProvider(
@@ -365,26 +324,5 @@ void DeviceService::BindUsbDeviceManagerTest(
   usb_device_manager_test_->BindReceiver(std::move(receiver));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-service_manager::InterfaceProvider* DeviceService::GetJavaInterfaceProvider() {
-  if (!java_interface_provider_initialized_) {
-    mojo::PendingRemote<service_manager::mojom::InterfaceProvider> provider;
-    JNIEnv* env = base::android::AttachCurrentThread();
-    Java_InterfaceRegistrar_createInterfaceRegistryForContext(
-        env,
-        provider.InitWithNewPipeAndPassReceiver().PassPipe().release().value(),
-        java_nfc_delegate_);
-    java_interface_provider_.Bind(std::move(provider));
-
-    java_interface_provider_initialized_ = true;
-  }
-
-  return &java_interface_provider_;
-}
-#endif
 
 }  // namespace device
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(InterfaceRegistrar)
-#endif

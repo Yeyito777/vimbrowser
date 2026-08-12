@@ -104,14 +104,12 @@ std::unique_ptr<TransientElement> CreateTransientParent(UiElementName name,
   return element;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 std::unique_ptr<UiElement> CreateSpacer(float width, float height) {
   auto spacer = Create<UiElement>(kNone, kPhaseNone);
   spacer->SetType(kTypeSpacer);
   spacer->SetSize(width, height);
   return spacer;
 }
-#endif
 
 void BindIndicatorText(Model* model, Text* text, const IndicatorSpec& spec) {
   text->AddBinding(std::make_unique<Binding<std::pair<bool, bool>>>(
@@ -352,7 +350,6 @@ void UiSceneCreator::CreateWebVrRoot() {
 }
 
 void UiSceneCreator::CreateExternalPromptNotifcationOverlay() {
-#if !BUILDFLAG(IS_ANDROID)
   auto phase = kPhaseForeground;
   auto icon = Create<VectorIcon>(kNone, phase, 100);
   icon->SetType(kTypePromptIcon);
@@ -447,7 +444,6 @@ void UiSceneCreator::CreateExternalPromptNotifcationOverlay() {
           base::Unretained(line1_text), base::Unretained(vector_icon))));
 
   scene_->AddUiElement(kWebVrViewportAwareRoot, std::move(scaler));
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void UiSceneCreator::CreateWebVrSubtree() {

@@ -26,6 +26,15 @@ chromium-metrics-reviews@google.com.
 
 <enums>
 
+<enum name="PrefetchStatus">
+  <int value="0" label="Success"/>
+  <int value="1" label="WrongOrdering"/>
+  <int value="2" label="ForkFailed"/>
+  <int value="3" label="ChildProcessCrashed"/>
+  <int value="4" label="ChildProcessKilled"/>
+  <int value="5" label="MadviseFailed"/>
+</enum>
+
 <!-- LINT.IfChange(PrefetchPotentialCandidateCollectResult) -->
 
 <enum name="PrefetchPotentialCandidateCollectResult">

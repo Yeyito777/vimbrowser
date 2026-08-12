@@ -2840,13 +2840,6 @@ bool PaintLayerScrollableArea::VisualViewportSuppliesScrollbars() const {
     if (!frame->GetSettings()->GetViewportEnabled()) {
       return false;
     }
-
-    // Even if the mobile viewport is enabled, on "desktop Android" (e.g.
-    // large screen optimizations), we prefer the LayoutViewport to handle
-    // scrollbars for a desktop-like experience.
-    if (ScrollbarTheme::DesktopAndroidScrollbarsEnabled()) {
-      return false;
-    }
   }
 
   const TopDocumentRootScrollerController& controller =

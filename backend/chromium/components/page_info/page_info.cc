@@ -84,15 +84,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/browser_ui/util/android/url_constants.h"
-#include "components/permissions/android/permissions_android_feature_map.h"
-#include "components/permissions/permission_request_manager.h"
-#include "components/resources/android/theme_resources.h"
-#include "components/strings/grit/components_branded_strings.h"
-#else
 #include "third_party/blink/public/common/features.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(FULL_SAFE_BROWSING)
 #include "components/safe_browsing/content/browser/password_protection/password_protection_service.h"
@@ -120,32 +112,23 @@ ContentSettingsType kPermissionType[] = {
     ContentSettingsType::SENSORS,
     ContentSettingsType::NOTIFICATIONS,
     ContentSettingsType::JAVASCRIPT,
-#if !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::IMAGES,
-#endif
     ContentSettingsType::POPUPS,
     ContentSettingsType::WINDOW_MANAGEMENT,
     ContentSettingsType::ADS,
     ContentSettingsType::BACKGROUND_SYNC,
     ContentSettingsType::SOUND,
     ContentSettingsType::AUTOMATIC_DOWNLOADS,
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
     ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER,
 #endif
     ContentSettingsType::MIDI_SYSEX,
     ContentSettingsType::CLIPBOARD_READ_WRITE,
-#if BUILDFLAG(IS_ANDROID)
-    ContentSettingsType::NFC,
-#endif
     ContentSettingsType::USB_GUARD,
-#if !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::HID_GUARD,
     ContentSettingsType::SERIAL_GUARD,
-#endif
     ContentSettingsType::FILE_SYSTEM_WRITE_GUARD,
-#if !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::LOCAL_FONTS,
-#endif
     ContentSettingsType::BLUETOOTH_GUARD,
     ContentSettingsType::BLUETOOTH_SCANNING,
     ContentSettingsType::HAND_TRACKING,
@@ -154,15 +137,11 @@ ContentSettingsType kPermissionType[] = {
     ContentSettingsType::IDLE_DETECTION,
     ContentSettingsType::FEDERATED_IDENTITY_API,
     ContentSettingsType::AUTO_PICTURE_IN_PICTURE,
-#if !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::CAPTURED_SURFACE_CONTROL,
-#endif  // !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::AUTOMATIC_FULLSCREEN,
-#if !BUILDFLAG(IS_ANDROID)
     ContentSettingsType::KEYBOARD_LOCK,
     ContentSettingsType::POINTER_LOCK,
     ContentSettingsType::WEB_APP_INSTALLATION,
-#endif  // !BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_CHROMEOS)
     ContentSettingsType::WEB_PRINTING,
 #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -237,7 +216,6 @@ const PageInfo::ChooserUIInfo kChooserUIInfo[] = {
      IDS_PAGE_INFO_USB_DEVICE_SECONDARY_LABEL,
      IDS_PAGE_INFO_USB_DEVICE_ALLOWED_BY_POLICY_LABEL,
      IDS_PAGE_INFO_DELETE_USB_DEVICE_WITH_NAME},
-#if !BUILDFLAG(IS_ANDROID)
     {ContentSettingsType::HID_CHOOSER_DATA,
      IDS_PAGE_INFO_HID_DEVICE_SECONDARY_LABEL,
      IDS_PAGE_INFO_HID_DEVICE_ALLOWED_BY_POLICY_LABEL,
@@ -252,7 +230,6 @@ const PageInfo::ChooserUIInfo kChooserUIInfo[] = {
      IDS_PAGE_INFO_SERIAL_PORT_SECONDARY_LABEL,
      IDS_PAGE_INFO_SERIAL_PORT_ALLOWED_BY_POLICY_LABEL,
      IDS_PAGE_INFO_DELETE_SERIAL_PORT_WITH_NAME},
-#endif
     {ContentSettingsType::BLUETOOTH_CHOOSER_DATA,
      IDS_PAGE_INFO_BLUETOOTH_DEVICE_SECONDARY_LABEL,
      /*allowed_by_policy_description_string_id=*/-1,
@@ -359,7 +336,6 @@ PageInfo::PageInfo(std::unique_ptr<PageInfoDelegate> delegate,
   // open can be measured.
   start_time_ = base::TimeTicks::Now();
 
-#if !BUILDFLAG(IS_ANDROID)
   if (web_contents) {
     cookie_controller_ = delegate_->CreateCookieControlsController();
     cookie_observation_.Observe(cookie_controller_.get());
@@ -373,7 +349,6 @@ PageInfo::PageInfo(std::unique_ptr<PageInfoDelegate> delegate,
       pscs->AddPermissionUsageObserver(this);
     }
   }
-#endif
 }
 
 PageInfo::~PageInfo() {
@@ -416,14 +391,12 @@ PageInfo::~PageInfo() {
 
   base::RecordAction(base::UserMetricsAction("PageInfo.Closed"));
 
-#if !BUILDFLAG(IS_ANDROID)
   if (web_contents_) {
     auto* pscs = GetPageSpecificContentSettings();
     if (pscs) {
       pscs->RemovePermissionUsageObserver(this);
     }
   }
-#endif
 }
 
 void PageInfo::OnStatusChanged(CookieControlsState controls_state,
@@ -476,9 +449,7 @@ void PageInfo::RecordPageInfoAction(page_info::PageInfoAction action) {
     did_perform_action_ = true;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   delegate_->OnPageInfoActionOccurred(action);
-#endif
 
   base::UmaHistogramEnumeration(page_info::kWebsiteSettingsActionHistogram,
                                 action);
@@ -853,9 +824,6 @@ void PageInfo::OnSiteChosenObjectDeleted(const ChooserUIInfo& ui_info,
 }
 
 void PageInfo::OnUIClosing(bool* reload_prompt) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   if (reload_prompt) {
     *reload_prompt = false;
   }
@@ -865,7 +833,6 @@ void PageInfo::OnUIClosing(bool* reload_prompt) {
     }
   }
   delegate_->OnUIClosing();
-#endif
 }
 
 void PageInfo::OnRevokeSSLErrorBypassButtonPressed() {
@@ -883,27 +850,16 @@ void PageInfo::OnPermissionUsageChange() {
 }
 
 void PageInfo::OpenSiteSettingsView() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_SITE_SETTINGS_OPENED);
   delegate_->ShowSiteSettings(site_url_);
-#endif
 }
 
 void PageInfo::OpenCookiesSettingsView() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_COOKIES_SETTINGS_OPENED);
   delegate_->ShowCookiesSettings();
-#endif
 }
 
 void PageInfo::OpenAllSitesViewFilteredToRws() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   auto rws_owner = delegate_->GetRwsOwner(site_url_);
   RecordPageInfoAction(page_info::PAGE_INFO_ALL_SITES_WITH_FPS_FILTER_OPENED);
   if (rws_owner) {
@@ -912,35 +868,23 @@ void PageInfo::OpenAllSitesViewFilteredToRws() {
     delegate_->ShowAllSitesSettingsFilteredByRwsOwner(std::u16string());
   }
 
-#endif
 }
 
 void PageInfo::OpenSyncSettingsView() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_SYNC_SETTINGS_OPENED);
   delegate_->ShowSyncSettings();
-#endif
 }
 
 void PageInfo::OpenCookiesDialog() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   if (!web_contents_ || web_contents_->IsBeingDestroyed()) {
     return;
   }
 
   RecordPageInfoAction(page_info::PAGE_INFO_COOKIES_DIALOG_OPENED);
   delegate_->OpenCookiesDialog();
-#endif
 }
 
 void PageInfo::OpenCertificateDialog(net::X509Certificate* certificate) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   if (!web_contents_ || web_contents_->IsBeingDestroyed()) {
     return;
   }
@@ -950,44 +894,27 @@ void PageInfo::OpenCertificateDialog(net::X509Certificate* certificate) {
     RecordPageInfoAction(page_info::PAGE_INFO_CERTIFICATE_DIALOG_OPENED);
     delegate_->OpenCertificateDialog(certificate);
   }
-#endif
 }
 
 void PageInfo::OpenSafetyTipHelpCenterPage() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_SAFETY_TIP_HELP_OPENED);
   delegate_->OpenSafetyTipHelpCenterPage();
-#endif
 }
 
 void PageInfo::OpenConnectionHelpCenterPage(const ui::Event& event) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_CONNECTION_HELP_OPENED);
   delegate_->OpenConnectionHelpCenterPage(event);
-#endif
 }
 
 void PageInfo::OpenSafeBrowsingHelpCenterPage(const ui::Event& event) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_SAFE_BROWSING_HELP_OPENED);
   delegate_->OpenSafeBrowsingHelpCenterPage(event);
-#endif
 }
 
 void PageInfo::OpenContentSettingsExceptions(
     ContentSettingsType content_settings_type) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   RecordPageInfoAction(page_info::PAGE_INFO_CONNECTION_HELP_OPENED);
   delegate_->OpenContentSettingsExceptions(content_settings_type);
-#endif
 }
 
 void PageInfo::OnChangePasswordButtonPressed() {
@@ -1033,28 +960,19 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
 
   auto security_level = delegate_->GetSecurityLevel();
   auto visible_security_state = delegate_->GetVisibleSecurityState();
-#if !BUILDFLAG(IS_ANDROID)
   // On desktop, internal URLs aren't handled by this class. Instead, a
   // custom and simpler bubble is shown.
   DCHECK(!url.SchemeIs(content::kChromeUIScheme) &&
          !url.SchemeIs(content::kChromeDevToolsScheme) &&
          !url.SchemeIs(content::kViewSourceScheme) &&
          !url.SchemeIs(content_settings::kExtensionScheme));
-#endif
 
   bool is_chrome_ui_native_scheme = false;
-#if BUILDFLAG(IS_ANDROID)
-  is_chrome_ui_native_scheme = url.SchemeIs(browser_ui::kChromeUINativeScheme);
-#endif
 
   if (url.SchemeIs(url::kAboutScheme)) {
     // All about: URLs except about:blank are redirected.
     DCHECK_EQ(url::kAboutBlankURL, url.spec());
     site_identity_status_ = SITE_IDENTITY_STATUS_NO_CERT;
-#if BUILDFLAG(IS_ANDROID)
-    identity_status_description_android_ =
-        l10n_util::GetStringUTF16(IDS_PAGE_INFO_SECURITY_TAB_INSECURE_IDENTITY);
-#endif
     site_connection_status_ = SITE_CONNECTION_STATUS_UNENCRYPTED;
     site_connection_details_ = l10n_util::GetStringFUTF16(
         IDS_PAGE_INFO_SECURITY_TAB_NOT_ENCRYPTED_CONNECTION_TEXT,
@@ -1064,10 +982,6 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
 
   if (url.SchemeIs(content::kChromeUIScheme) || is_chrome_ui_native_scheme) {
     site_identity_status_ = SITE_IDENTITY_STATUS_INTERNAL_PAGE;
-#if BUILDFLAG(IS_ANDROID)
-    identity_status_description_android_ =
-        l10n_util::GetStringUTF16(IDS_PAGE_INFO_INTERNAL_PAGE);
-#endif
     site_connection_status_ = SITE_CONNECTION_STATUS_INTERNAL_PAGE;
     return;
   }
@@ -1100,24 +1014,11 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
             IDS_PAGE_INFO_SECURITY_TAB_UNKNOWN_PARTY));
       }
 
-#if BUILDFLAG(IS_ANDROID)
-      // This string is shown on all non-error HTTPS sites on Android when
-      // the user taps "Details" link on page info.
-      identity_status_description_android_.assign(l10n_util::GetStringFUTF16(
-          IDS_PAGE_INFO_SECURE_IDENTITY_VERIFIED,
-          delegate_->GetClientApplicationName(), issuer_name));
-#endif
     }
     if (security_state::IsSHA1InChain(visible_security_state)) {
       site_identity_status_ =
           SITE_IDENTITY_STATUS_DEPRECATED_SIGNATURE_ALGORITHM;
 
-#if BUILDFLAG(IS_ANDROID)
-      identity_status_description_android_ +=
-          u"\n\n" +
-          l10n_util::GetStringUTF16(
-              IDS_PAGE_INFO_SECURITY_TAB_DEPRECATED_SIGNATURE_ALGORITHM);
-#endif
     }
   } else {
     // HTTP or HTTPS with errors (not warnings).
@@ -1127,19 +1028,6 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
     } else {
       site_identity_status_ = SITE_IDENTITY_STATUS_ERROR;
     }
-#if BUILDFLAG(IS_ANDROID)
-    const std::u16string bullet = u"\n • ";
-    std::vector<ssl_errors::ErrorInfo> errors;
-    ssl_errors::ErrorInfo::GetErrorsForCertStatus(
-        certificate_, visible_security_state.cert_status, url, &errors);
-
-    identity_status_description_android_.assign(l10n_util::GetStringUTF16(
-        IDS_PAGE_INFO_SECURITY_TAB_INSECURE_IDENTITY));
-    for (const ssl_errors::ErrorInfo& error : errors) {
-      identity_status_description_android_ += bullet;
-      identity_status_description_android_ += error.short_description();
-    }
-#endif
   }
 
   if (visible_security_state.malicious_content_status !=
@@ -1148,9 +1036,6 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
     GetSafeBrowsingStatusByMaliciousContentStatus(
         visible_security_state.malicious_content_status, &safe_browsing_status_,
         &safe_browsing_details_);
-#if BUILDFLAG(IS_ANDROID)
-    identity_status_description_android_ = safe_browsing_details_;
-#endif
 
 #if BUILDFLAG(FULL_SAFE_BROWSING)
     bool old_show_change_pw_buttons = show_change_password_buttons_;
@@ -1176,16 +1061,6 @@ void PageInfo::ComputeUIInputs(const GURL& url) {
   }
 
   safety_tip_info_ = visible_security_state.safety_tip_info;
-#if BUILDFLAG(IS_ANDROID)
-  // identity_status_description_android_ is only displayed on Android when
-  // the user taps "Details" link on the page info. Reuse the description from
-  // page info UI.
-  std::unique_ptr<PageInfoUI::SecurityDescription> security_description =
-      PageInfoUI::CreateSafetyTipSecurityDescription(safety_tip_info_);
-  if (security_description) {
-    identity_status_description_android_ = security_description->details;
-  }
-#endif
 
   // Site Connection
   // We consider anything less than 80 bits encryption to be weak encryption.
@@ -1355,26 +1230,6 @@ void PageInfo::PopulatePermissionInfo(PermissionInfo& permission_info,
         << permission_info.default_setting;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(media::kAutoPictureInPictureAndroid) &&
-      permission_info.type == ContentSettingsType::AUTO_PICTURE_IN_PICTURE &&
-      delegate_->HasAutoPictureInPictureBeenRegistered()) {
-    // On Android, Auto-PiP does not have a prompt. For sites that have
-    // registered for Auto-PiP, set the effective default setting based on the
-    // profile type and global default. Auto-PiP is blocked in Incognito for
-    // privacy, or if turned off globally. The global default is already in
-    // permission_info.default_setting. This logic should be removed when a
-    // prompt is implemented for parity with desktop.
-    const ContentSetting global_default_setting =
-        std::get<ContentSetting>(permission_info.default_setting);
-    const ContentSetting effective_default_setting =
-        (delegate_->IsIncognitoProfile() ||
-         global_default_setting == CONTENT_SETTING_BLOCK)
-            ? CONTENT_SETTING_BLOCK
-            : CONTENT_SETTING_ALLOW;
-    permission_info.default_setting = effective_default_setting;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 // Determines whether to show permission |type| in the Page Info UI. Only
@@ -1386,28 +1241,6 @@ bool PageInfo::ShouldShowPermission(
     const PageInfo::PermissionInfo& info) const {
   // For the Clapper experiment Chrome should display NOTIFICATIONS
   // permission while it is being requested.
-#if BUILDFLAG(IS_ANDROID)
-  if (info.type == ContentSettingsType::NOTIFICATIONS &&
-      (base::FeatureList::IsEnabled(
-           permissions::kPermissionsAndroidClapperLoud) ||
-       base::FeatureList::IsEnabled(
-           permissions::kPermissionsAndroidClapperQuiet)
-
-           ) &&
-      web_contents_) {
-    permissions::PermissionRequestManager* manager =
-        permissions::PermissionRequestManager::FromWebContents(
-            web_contents_.get());
-    if (manager && manager->IsRequestInProgress()) {
-      for (const auto& request : manager->Requests()) {
-        if (request->GetContentSettingsType() ==
-            ContentSettingsType::NOTIFICATIONS) {
-          return true;
-        }
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Note |ContentSettingsType::ADS| will show up regardless of its default
   // value when it has been activated on the current origin.
@@ -1459,11 +1292,6 @@ bool PageInfo::ShouldShowPermission(
   }
 
   if (info.type == ContentSettingsType::AUTO_PICTURE_IN_PICTURE) {
-#if BUILDFLAG(IS_ANDROID)
-    if (!base::FeatureList::IsEnabled(media::kAutoPictureInPictureAndroid)) {
-      return false;
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
 
     if (delegate_->HasAutoPictureInPictureBeenRegistered()) {
       return true;
@@ -1479,15 +1307,6 @@ bool PageInfo::ShouldShowPermission(
 
   const bool is_incognito =
       web_contents_->GetBrowserContext()->IsOffTheRecord();
-#if BUILDFLAG(IS_ANDROID)
-  // Special geolocation DSE settings apply only on Android, so make sure it
-  // gets checked there regardless of default setting on Desktop.
-  // DSE settings don't apply to incognito mode.
-  if (info.type == permissions::PermissionUtil::GetGeolocationType() &&
-      !is_incognito) {
-    return true;
-  }
-#else
   // NFC is Android-only at the moment.
   if (info.type == ContentSettingsType::NFC) {
     return false;
@@ -1504,7 +1323,6 @@ bool PageInfo::ShouldShowPermission(
       return false;
     }
   }
-#endif
 
   // Display the File System Access write permission if the File System Access
   // API is currently being used.
@@ -1678,13 +1496,11 @@ void PageInfo::PresentSiteDataInternal(base::OnceClosure done) {
   PageInfoUI::CookiesInfo cookies_info;
   cookies_info.allowed_sites_count = GetSitesWithAllowedCookiesAccessCount();
 
-#if !BUILDFLAG(IS_ANDROID)
   if (auto rws_owner = delegate_->GetRwsOwner(site_url_);
       rws_owner.has_value()) {
     cookies_info.rws_info = PageInfoUI::CookiesRwsInfo(*rws_owner);
     cookies_info.rws_info->is_managed = delegate_->IsRwsManaged(site_url_);
   }
-#endif
   cookies_info.controls_state = cookie_controls_state_;
   cookies_info.enforcement = cookie_enforcement_;
   cookies_info.expiration = cookie_exception_expiration_;
@@ -1717,10 +1533,6 @@ void PageInfo::PresentSiteIdentity() {
   info.safe_browsing_status = safe_browsing_status_;
   info.safe_browsing_details = safe_browsing_details_;
   info.safety_tip_info = safety_tip_info_;
-#if BUILDFLAG(IS_ANDROID)
-  info.identity_status_description_android =
-      UTF16ToUTF8(identity_status_description_android_);
-#endif
 
   info.certificate = certificate_;
   info.two_qwac = two_qwac_;
@@ -1891,11 +1703,7 @@ int PageInfo::GetSitesWithAllowedCookiesAccessCount() {
 }
 
 bool PageInfo::IsIsolatedWebApp() const {
-#if !BUILDFLAG(IS_ANDROID)
   return delegate_->IsIsolatedWebApp();
-#else
-  return false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 #if BUILDFLAG(IS_CHROMEOS)

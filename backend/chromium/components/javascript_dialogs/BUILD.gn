@@ -50,20 +50,6 @@ static_library("javascript_dialogs") {
     deps += [ "//ui/views" ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/app_modal_dialog_view_android.cc",
-      "android/app_modal_dialog_view_android.h",
-      "android/tab_modal_dialog_view_android.cc",
-      "android/tab_modal_dialog_view_android.h",
-    ]
-
-    deps += [
-      "//components/javascript_dialogs/android:jni_headers",
-      "//ui/android",
-    ]
-  }
-
   if (is_ios) {
     sources += [
       "ios/javascript_dialog_view_coordinator.h",

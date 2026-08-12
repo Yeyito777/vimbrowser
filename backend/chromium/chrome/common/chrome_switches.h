@@ -5,7 +5,7 @@
 // Defines the shared command-line switches used by code in the Chrome
 // directory that don't have anywhere more specific to go.
 
-#ifndef CHROME_COMMON_CHROME_SWITCHES_H_
+#if !defined(CHROME_COMMON_CHROME_SWITCHES_H_)
 #define CHROME_COMMON_CHROME_SWITCHES_H_
 
 #include "build/build_config.h"
@@ -239,7 +239,7 @@ extern const char kMarketUrlForTesting[];
 extern const char kRequestDesktopSites[];
 #endif  // BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 extern const char kCastMirroringTargetPlayoutDelay[];
 #endif
 

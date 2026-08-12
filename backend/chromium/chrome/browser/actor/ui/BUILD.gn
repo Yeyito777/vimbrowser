@@ -5,18 +5,6 @@
 import("//chrome/common/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  # Target to generate Java enums from C++ headers
-  java_cpp_enum("enums_java") {
-    sources = [
-      "states/handoff_button_state.h",
-      "states/tab_indicator_state.h",
-    ]
-  }
-}
-
 source_set("states") {
   public = [
     "states/actor_overlay_state.h",
@@ -73,26 +61,24 @@ mojom("mojo_bindings") {
   webui_module_path = "/"
 }
 
-if (!is_android) {
-  source_set("actor_overlay_web_view") {
-    sources = [
-      "actor_overlay_web_view.cc",
-      "actor_overlay_web_view.h",
-    ]
-    deps = [
-      ":actor_overlay",
-      "//base",
-      "//chrome/browser/profiles",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/webui",
-      "//chrome/browser/ui/webui:webui_util",
-      "//chrome/common:chrome_features",
-      "//components/tabs:public",
-      "//content/public/browser",
-      "//ui/views",
-      "//ui/views/controls/webview",
-    ]
-  }
+source_set("actor_overlay_web_view") {
+  sources = [
+    "actor_overlay_web_view.cc",
+    "actor_overlay_web_view.h",
+  ]
+  deps = [
+    ":actor_overlay",
+    "//base",
+    "//chrome/browser/profiles",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/webui",
+    "//chrome/browser/ui/webui:webui_util",
+    "//chrome/common:chrome_features",
+    "//components/tabs:public",
+    "//content/public/browser",
+    "//ui/views",
+    "//ui/views/controls/webview",
+  ]
 }
 
 source_set("actor_overlay") {
@@ -123,9 +109,7 @@ source_set("actor_overlay") {
     "//ui/webui",
   ]
 
-  if (!is_android) {
-    deps += [ "//chrome/browser/themes" ]
-  }
+  deps += [ "//chrome/browser/themes" ]
 }
 
 if (!skip_android_unmigrated_actor_files) {

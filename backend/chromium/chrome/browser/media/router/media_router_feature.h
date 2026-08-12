@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_MEDIA_ROUTER_MEDIA_ROUTER_FEATURE_H_
+#if !defined(CHROME_BROWSER_MEDIA_ROUTER_MEDIA_ROUTER_FEATURE_H_)
 #define CHROME_BROWSER_MEDIA_ROUTER_MEDIA_ROUTER_FEATURE_H_
 
 #include "base/feature_list.h"
@@ -27,7 +27,7 @@ bool MediaRouterEnabled(content::BrowserContext* context);
 // process.
 void ClearMediaRouterStoredPrefsForTesting();
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 // Enables the media router. Can be disabled in tests unrelated to
 // Media Router where it interferes. Can also be useful to disable for local
 // development on Mac because DIAL local discovery opens a local port
@@ -95,8 +95,7 @@ std::optional<base::TimeDelta> GetCastMirroringPlayoutDelay();
 // chrome://media-router-internals.  These logs can verbose and contain
 // sensitive information, so use with caution.
 bool IsCastMessageLoggingEnabled();
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace media_router
 

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
@@ -95,7 +95,6 @@ source_set("webrtc") {
 
   public_deps = [
     "//base",
-    "//build:android_buildflags",
     "//build:buildflag_header_h",
     "//chrome/browser:browser_public_dependencies",
     "//chrome/browser/profiles:profile",
@@ -185,31 +184,29 @@ source_set("webrtc") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "current_tab_desktop_media_list.cc",
-      "current_tab_desktop_media_list.h",
-      "desktop_media_picker_utils.cc",
-      "desktop_media_picker_utils.h",
-      "media_stream_focus_delegate.cc",
-      "media_stream_focus_delegate.h",
-      "tab_desktop_media_list.cc",
-      "tab_desktop_media_list.h",
-    ]
-    public_deps += [
-      "//chrome/browser/ui/tabs:tab_strip_model_observer",
-      "//extensions/buildflags",
-    ]
-    deps += [
-      "//chrome/browser/controlled_frame:media_access_handler",
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/browser/ui/web_applications",
-      "//extensions/browser",
-      "//extensions/browser/kiosk",
-      "//extensions/common",
-    ]
-  }
+  sources += [
+    "current_tab_desktop_media_list.cc",
+    "current_tab_desktop_media_list.h",
+    "desktop_media_picker_utils.cc",
+    "desktop_media_picker_utils.h",
+    "media_stream_focus_delegate.cc",
+    "media_stream_focus_delegate.h",
+    "tab_desktop_media_list.cc",
+    "tab_desktop_media_list.h",
+  ]
+  public_deps += [
+    "//chrome/browser/ui/tabs:tab_strip_model_observer",
+    "//extensions/buildflags",
+  ]
+  deps += [
+    "//chrome/browser/controlled_frame:media_access_handler",
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/browser/ui/web_applications",
+    "//extensions/browser",
+    "//extensions/browser/kiosk",
+    "//extensions/common",
+  ]
 
   if (enable_screen_capture) {
     sources += [
@@ -324,12 +321,4 @@ source_set("test_support") {
     ":webrtc",
     "//testing/gmock",
   ]
-}
-
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  java_cpp_enum("java_enums") {
-    sources = [ "capture_policy_utils.h" ]
-  }
 }

@@ -30,7 +30,7 @@ group("tools") {
     "proto_merger",
     "protoprofile",
   ]
-  if (is_linux || is_android) {
+  if (is_linux) {
     deps += [
       ":idle_alloc",
       "busy_threads",
@@ -61,7 +61,7 @@ if (is_linux && enable_perfetto_heapprofd) {
   }
 }
 
-if (is_linux || is_android) {
+if (is_linux) {
   executable("idle_alloc") {
     deps = [ "../../gn:default_deps" ]
     sources = [ "idle_alloc.cc" ]

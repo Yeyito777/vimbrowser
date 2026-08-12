@@ -73,9 +73,6 @@ template("xnnpack_test") {
       deps += invoker.deps
     }
     ldflags = []
-    if (is_android) {
-      ldflags += [ "-llog" ]
-    }
   }
 }
 
@@ -118,8 +115,5 @@ template("xnnpack_benchmark") {
       deps += invoker.deps
     }
     ldflags = []
-    if (is_android) {
-      ldflags += [ "-llog" ]
-    }
   }
 }

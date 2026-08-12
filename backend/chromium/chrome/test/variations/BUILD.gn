@@ -33,20 +33,6 @@ python_library("fixtures") {
 
   data_deps = [ "//ui/base:goldctl" ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data += [
-      "//build/android/",
-      "//tools/android/avd/proto/",
-    ]
-
-    data_deps += [
-      "//build/android:devil_chromium_py",
-      "//build/android:test_runner_py",
-      "//clank/bin:installer_scripts",
-      "//third_party/catapult/devil",
-    ]
-  }
-
   if (is_chromeos && is_chromeos_device) {
     data += [
       "//third_party/catapult/common/py_utils/",

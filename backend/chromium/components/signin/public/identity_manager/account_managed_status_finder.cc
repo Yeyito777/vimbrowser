@@ -17,10 +17,6 @@
 #include "google_apis/gaia/gaia_auth_util.h"
 #include "google_apis/gaia/google_service_auth_error.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/callback_android.h"
-#include "components/signin/public/android/jni_headers/AccountManagedStatusFinder_jni.h"
-#endif
 
 namespace signin {
 
@@ -693,33 +689,5 @@ void AccountManagedStatusFinder::OutcomeDeterminedAsync(Outcome type) {
   std::move(callback_).Run();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-static int64_t JNI_AccountManagedStatusFinder_CreateNativeObject(
-    JNIEnv* env,
-    IdentityManager* identity_manager,
-    const CoreAccountInfo& account,
-    base::RepeatingClosure&& callback,
-    int64_t timeout_in_millis) {
-  base::TimeDelta timeout = timeout_in_millis < 0
-                                ? base::TimeDelta::Max()
-                                : base::Milliseconds(timeout_in_millis);
-  auto result = std::make_unique<AccountManagedStatusFinder>(
-      identity_manager, account, std::move(callback), timeout);
-  return reinterpret_cast<intptr_t>(result.release());
-}
-
-void AccountManagedStatusFinder::DestroyNativeObject(JNIEnv* env) {
-  delete this;
-}
-
-int32_t AccountManagedStatusFinder::GetOutcomeFromNativeObject(
-    JNIEnv* env) const {
-  return static_cast<int32_t>(GetOutcome());
-}
-#endif
 
 }  // namespace signin
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(AccountManagedStatusFinder)
-#endif

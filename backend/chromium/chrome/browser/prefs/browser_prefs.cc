@@ -14,7 +14,6 @@
 #include "base/json/values_util.h"
 #include "base/time/time.h"
 #include "base/trace_event/trace_event.h"
-#include "build/android_buildflags.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
 #include "cef/libcef/features/features.h"

@@ -18,9 +18,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 
 namespace password_manager {
 
@@ -101,11 +98,6 @@ std::u16string GetLeakDetectionTooltip() {
 }
 
 bool ShouldCheckPasswords(CredentialLeakType leak_type) {
-#if BUILDFLAG(IS_ANDROID)
-  if (base::android::device_info::is_automotive()) {
-    return false;
-  }
-#endif
   return password_manager::IsPasswordUsedOnOtherSites(leak_type);
 }
 
@@ -123,9 +115,7 @@ GURL GetPasswordCheckupURL(PasswordCheckupReferrer referrer) {
   GURL url(kPasswordCheckupURL);
   url = net::AppendQueryParameter(url, "utm_source", "chrome");
 
-#if BUILDFLAG(IS_ANDROID)
-  const char* const medium = "android";
-#elif BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
   const char* const medium = "ios";
 #else
   const char* const medium = "desktop";

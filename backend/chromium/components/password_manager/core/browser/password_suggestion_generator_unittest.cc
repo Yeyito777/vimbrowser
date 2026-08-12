@@ -127,7 +127,7 @@ Matcher<Suggestion> EqualsIdentitySuggestion(
                Field("payload", &Suggestion::payload, payload));
 }
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
 Matcher<Suggestion> EqualsManualFallbackSuggestion(
     SuggestionType id,
     const std::u16string& main_text,
@@ -171,7 +171,6 @@ Matcher<Suggestion> EqualsManagePasswordsSuggestion(
                      Suggestion::Icon::kGooglePasswordManager));
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 Matcher<Suggestion> EqualsTroubleSigningInSuggestion(
     const Suggestion::Payload& payload) {
   return AllOf(
@@ -182,7 +181,6 @@ Matcher<Suggestion> EqualsTroubleSigningInSuggestion(
                                  IDS_PASSWORD_MANAGER_UI_TROUBLE_SIGNING_IN),
                              Suggestion::Text::IsPrimary(false))));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 Matcher<Suggestion> EqualsBackupPasswordSuggestion(
     const std::u16string& main_text,
@@ -476,7 +474,7 @@ TEST_F(PasswordSuggestionGeneratorTest, PasswordSuggestions_FromProfileStore) {
                           EqualsManagePasswordsSuggestion()));
 }
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
 // Verify that the trailing icon is not set for the account store credential.
 TEST_F(PasswordSuggestionGeneratorTest, PasswordSuggestions_FromAccountStore) {
   PasswordFormFillData fill_data = password_form_fill_data();
@@ -846,7 +844,7 @@ TEST_F(PasswordSuggestionGeneratorTest, IdentitySuggestions_SingleAccount) {
 }
 
 // Manual fallback suggestions are only relevant for desktop platform.
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
 
 TEST_F(PasswordSuggestionGeneratorTest, ManualFallback_NoCredentials) {
   std::vector<Suggestion> suggestions = GenerateBothSections(
@@ -1553,7 +1551,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
 }
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
 
-#if !BUILDFLAG(IS_ANDROID)
 TEST_F(PasswordSuggestionGeneratorTest,
        PasswordRecoveryFlow_AppendsTroubleSigningInSuggestion) {
   autofill::PasswordFormFillData fill_data =
@@ -1581,7 +1578,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
           EqualsSuggestion(SuggestionType::kSeparator),
           EqualsManagePasswordsSuggestion()));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 TEST_F(PasswordSuggestionGeneratorTest,
        PasswordRecoveryFlow_AppendsBackupPasswordSuggestion) {
@@ -1595,10 +1591,8 @@ TEST_F(PasswordSuggestionGeneratorTest,
   const auto credential = fill_data.preferred_login;
   const auto payload = PasswordAndMetadataToSuggestionDetails(credential);
   // Simulate the user flow to get to the `kIncludeBackup` state.
-#if !BUILDFLAG(IS_ANDROID)
   undo_controller().OnSuggestionSelected(credential);
   undo_controller().OnTroubleSigningInClicked(payload);
-#endif
 
   std::vector<Suggestion> suggestions = generator().GetSuggestionsForDomain(
       undo_controller(), fill_data, favicon(), /*username_filter=*/u"",
@@ -1620,14 +1614,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
               additional_credential.username_value,
               password_label(additional_credential.password_value.size()),
               /*realm_label=*/u"", favicon()),
-#if BUILDFLAG(IS_ANDROID)
-          // Android displays all backup logins for the domain (not only for the
-          // selected suggestion)
-          EqualsBackupPasswordSuggestion(
-              additional_credential.username_value,
-              additional_credential.backup_password_value.value(),
-              PasswordAndMetadataToSuggestionDetails(additional_credential)),
-#endif
           EqualsSuggestion(SuggestionType::kSeparator),
           EqualsManagePasswordsSuggestion()));
 }
@@ -1649,7 +1635,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
                                    GetFreeformFooterText())));
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 TEST_F(PasswordSuggestionGeneratorTest,
        PasswordRecoveryFlow_TroubleSigningInIsAppendedLast) {
   autofill::PasswordFormFillData fill_data =
@@ -1686,7 +1671,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
           EqualsSuggestion(SuggestionType::kSeparator),
           EqualsManagePasswordsSuggestion()));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 TEST_F(PasswordSuggestionGeneratorTest,
        PasswordRecoveryFlow_NoRecoveryFlowForCredentialWithoutBackupPassword) {
@@ -1716,7 +1700,6 @@ TEST_F(PasswordSuggestionGeneratorTest,
           EqualsManagePasswordsSuggestion()));
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 TEST_F(PasswordSuggestionGeneratorTest,
        GetWebauthnSignInWithAnotherDeviceSuggestion) {
 #if !BUILDFLAG(IS_IOS)
@@ -1913,6 +1896,5 @@ TEST_F(PasswordSuggestionGeneratorTest, WebAuthnSuggestionPosition) {
               Suggestion::Icon::kDevice),
           EqualsManagePasswordsSuggestion()));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace password_manager

@@ -4,12 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("geolocation") {
   visibility = [
     ":*",
@@ -66,22 +60,12 @@ source_set("geolocation") {
     "//services/network/public/cpp",
   ]
 
-  if (is_android) {
-    sources += [
-      "location_api_adapter_android.cc",
-      "location_api_adapter_android.h",
-      "location_provider_android.cc",
-      "location_provider_android.h",
-    ]
-    deps += [ ":geolocation_jni_headers" ]
-  } else {
-    sources += [
-      "network_location_provider.cc",
-      "network_location_provider.h",
-      "wifi_data_provider_common.cc",
-      "wifi_data_provider_common.h",
-    ]
-  }
+  sources += [
+    "network_location_provider.cc",
+    "network_location_provider.h",
+    "wifi_data_provider_common.cc",
+    "wifi_data_provider_common.h",
+  ]
 
   if (is_apple) {
     frameworks = [ "Security.framework" ]
@@ -138,42 +122,6 @@ source_set("geolocation") {
     sources += [
       "empty_wifi_data_provider.cc",
       "empty_wifi_data_provider.h",
-    ]
-  }
-}
-
-if (is_android) {
-  generate_jni("geolocation_jni_headers") {
-    sources = [
-      "android/java/src/org/chromium/device/geolocation/LocationProviderAdapter.java",
-      "android/java/src/org/chromium/device/geolocation/LocationProviderFactory.java",
-    ]
-  }
-
-  android_library("geolocation_java") {
-    srcjar_deps = [ ":geolocation_jni_headers" ]
-    sources = [
-      "android/java/src/org/chromium/device/geolocation/LocationProviderAdapter.java",
-      "android/java/src/org/chromium/device/geolocation/LocationProviderAndroid.java",
-      "android/java/src/org/chromium/device/geolocation/LocationProviderFactory.java",
-      "android/java/src/org/chromium/device/geolocation/LocationProviderGmsCore.java",
-    ]
-
-    deps = [
-      ":geolocation_jni_headers",
-      "$google_play_services_package:google_play_services_base_java",
-      "$google_play_services_package:google_play_services_basement_java",
-      "$google_play_services_package:google_play_services_location_java",
-      "$google_play_services_package:google_play_services_tasks_java",
-      "//base:base_java",
-      "//build/android:build_java",
-      "//components/location/android:location_java",
-      "//components/permissions/android:core_java",
-      "//services/device/public/java:device_feature_list_java",
-      "//services/device/public/java:geolocation_java",
-      "//third_party/android_deps:chromium_play_services_availability_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
     ]
   }
 }

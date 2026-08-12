@@ -34,58 +34,18 @@
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "ui/base/page_transition_types.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_string.h"
-#include "chrome/browser/android/background_tab_manager.h"
-#include "chrome/browser/feed/feed_service_factory.h"
-#include "chrome/browser/flags/android/chrome_session_state.h"
-#include "chrome/browser/history/jni_headers/HistoryTabHelper_jni.h"
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#include "components/feed/core/v2/public/feed_api.h"      // nogncheck
-#include "components/feed/core/v2/public/feed_service.h"  // nogncheck
-#include "content/public/browser/web_contents.h"
-#else
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_finder.h"
-#endif
 
 namespace {
 
 using content::NavigationEntry;
 using content::WebContents;
-#if BUILDFLAG(IS_ANDROID)
-using base::android::ConvertUTF8ToJavaString;
-using chrome::android::BackgroundTabManager;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-bool IsNavigationFromFeed(content::WebContents& web_contents, const GURL& url) {
-  feed::FeedService* feed_service =
-      feed::FeedServiceFactory::GetForBrowserContext(
-          web_contents.GetBrowserContext());
-  if (!feed_service) {
-    return false;
-  }
-
-  return feed_service->GetStream()->WasUrlRecentlyNavigatedFromFeed(url);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool ShouldConsiderForNtpMostVisited(
     content::WebContents& web_contents,
     content::NavigationHandle* navigation_handle) {
-#if BUILDFLAG(IS_ANDROID)
-  // Clicks on content suggestions on the NTP should not contribute to the
-  // Most Visited tiles in the NTP.
-  DCHECK(!navigation_handle->GetRedirectChain().empty());
-  if (ui::PageTransitionCoreTypeIs(navigation_handle->GetPageTransition(),
-                                   ui::PAGE_TRANSITION_AUTO_BOOKMARK) &&
-      IsNavigationFromFeed(web_contents,
-                           navigation_handle->GetRedirectChain()[0])) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   return true;
 }
@@ -124,25 +84,6 @@ std::optional<history::Opener> GetHistoryOpenerFromWeakWebContents(
 
 history::VisitContextAnnotations::BrowserType GetBrowserType(
     WebContents* web_contents) {
-#if BUILDFLAG(IS_ANDROID)
-  TabModel* tab_model = TabModelList::GetTabModelForWebContents(web_contents);
-  if (!tab_model) {
-    return history::VisitContextAnnotations::BrowserType::kUnknown;
-  }
-  switch (tab_model->activity_type()) {
-    case chrome::android::ActivityType::kTabbed:
-      return history::VisitContextAnnotations::BrowserType::kTabbed;
-    case chrome::android::ActivityType::kCustomTab:
-      return history::VisitContextAnnotations::BrowserType::kCustomTab;
-    case chrome::android::ActivityType::kAuthTab:
-      return history::VisitContextAnnotations::BrowserType::kAuthTab;
-    case chrome::android::ActivityType::kTrustedWebActivity:
-    case chrome::android::ActivityType::kWebapp:
-    case chrome::android::ActivityType::kWebApk:
-    case chrome::android::ActivityType::kPreFirstTab:
-      return history::VisitContextAnnotations::BrowserType::kUnknown;
-  }
-#else
   Browser* browser = chrome::FindBrowserWithTab(web_contents);
   if (!browser) {
     return history::VisitContextAnnotations::BrowserType::kUnknown;
@@ -158,7 +99,6 @@ history::VisitContextAnnotations::BrowserType GetBrowserType(
     case Browser::TYPE_DEVTOOLS:
       return history::VisitContextAnnotations::BrowserType::kUnknown;
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 history::VisitContentAnnotations::PasswordState
@@ -321,7 +261,6 @@ history::HistoryAddPageArgs HistoryTabHelper::CreateHistoryAddPageArgs(
   // Most Visited tiles in the NTP.
   bool visit_source_qualifies_for_ntp_most_visited = true;
   std::optional<int32_t> actor_task_id;
-#if !BUILDFLAG(IS_ANDROID)
   actor_task_id =
       chrome_ui_data && chrome_ui_data->actor_task_id()
           ? std::make_optional(chrome_ui_data->actor_task_id().value())
@@ -329,7 +268,6 @@ history::HistoryAddPageArgs HistoryTabHelper::CreateHistoryAddPageArgs(
   visit_source_qualifies_for_ntp_most_visited =
       !history::IsBrowsingHistoryActorIntegrationM2Enabled() ||
       !actor_task_id.has_value();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   const bool should_consider_for_ntp_most_visited =
       status_code_qualifies_for_ntp_most_visited &&
@@ -646,64 +584,8 @@ bool HistoryTabHelper::IsEligibleTab(
     return true;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (web_contents()) {
-    auto* background_tab_manager =
-        BackgroundTabManager::FromWebContents(web_contents());
-    if (background_tab_manager) {
-      // No history insertion is done for now since this is a tab that
-      // speculates future navigations. Just caching and returning for now.
-      background_tab_manager->CacheHistory(add_page_args);
-      return false;
-    }
-  }
-  return true;
-#else
   // Don't update history if this web contents isn't associated with a tab.
   return chrome::FindBrowserWithTab(web_contents()) != nullptr;
-#endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void HistoryTabHelper::SetClearAppIdAfterFirstCommit() {
-  history::HistoryService* history_service = GetHistoryService();
-  if (!history_service) {
-    return;
-  }
-  clear_app_id_after_first_commit_ = true;
-  history_service->AddObserver(this);
-  history_service_ = history_service;
-}
-
-static void JNI_HistoryTabHelper_SetAppIdNative(
-    JNIEnv* env,
-    const std::optional<std::string>& app_id,
-    const base::android::JavaRef<jobject>& jweb_contents) {
-  auto* web_contents = content::WebContents::FromJavaWebContents(jweb_contents);
-  auto* history_tab_helper = HistoryTabHelper::FromWebContents(web_contents);
-  history_tab_helper->SetAppId(app_id);
-}
-static void JNI_HistoryTabHelper_SetAppIdForViewIntentNative(
-    JNIEnv* env,
-    const std::optional<std::string>& app_id,
-    const base::android::JavaRef<jobject>& jweb_contents) {
-  auto* web_contents = content::WebContents::FromJavaWebContents(jweb_contents);
-  auto* history_tab_helper = HistoryTabHelper::FromWebContents(web_contents);
-  history_tab_helper->SetClearAppIdAfterFirstCommit();
-  history_tab_helper->SetAppId(app_id);
-}
-static base::android::ScopedJavaLocalRef<jstring>
-JNI_HistoryTabHelper_GetAppIdForTestingNative(
-    JNIEnv* env,
-    const base::android::JavaRef<jobject>& jweb_contents) {
-  auto* web_contents = content::WebContents::FromJavaWebContents(jweb_contents);
-  auto* history_tab_helper = HistoryTabHelper::FromWebContents(web_contents);
-  auto appId = history_tab_helper->GetAppId();
-  return appId ? ConvertUTF8ToJavaString(env, *appId) : nullptr;
-}
-#endif
 WEB_CONTENTS_USER_DATA_KEY_IMPL(HistoryTabHelper);
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(HistoryTabHelper)
-#endif

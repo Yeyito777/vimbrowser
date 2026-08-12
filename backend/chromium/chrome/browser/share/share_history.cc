@@ -17,15 +17,6 @@
 #include "components/leveldb_proto/public/proto_database_provider.h"
 #include "content/public/browser/storage_partition.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_string.h"
-#include "chrome/browser/profiles/profile.h"
-
-// Must come after other includes, because FromJniType() uses Profile.
-#include "chrome/browser/share/jni_headers/ShareHistoryBridge_jni.h"
-
-using base::android::JavaRef;
-#endif
 
 namespace sharing {
 
@@ -244,23 +235,3 @@ mojom::TargetShareHistory* ShareHistory::TargetShareHistoryByName(
 }
 
 }  // namespace sharing
-
-#if BUILDFLAG(IS_ANDROID)
-static void JNI_ShareHistoryBridge_AddShareEntry(JNIEnv* env,
-                                                 Profile* profile,
-                                                 const JavaRef<jstring>& name) {
-  auto* instance = sharing::ShareHistory::Get(profile);
-  if (instance)
-    instance->AddShareEntry(base::android::ConvertJavaStringToUTF8(env, name));
-}
-
-static void JNI_ShareHistoryBridge_Clear(JNIEnv* env, Profile* profile) {
-  auto* instance = sharing::ShareHistory::Get(profile);
-  if (instance)
-    instance->Clear();
-}
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ShareHistoryBridge)
-#endif

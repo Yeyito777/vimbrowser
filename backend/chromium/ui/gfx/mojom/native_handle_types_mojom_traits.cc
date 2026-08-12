@@ -23,62 +23,9 @@
 #include "ui/gfx/gpu_memory_buffer_handle.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_handle.h"
-#include "mojo/public/cpp/system/message_pipe.h"
-#include "mojo/public/cpp/system/scope_to_message_pipe.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace mojo {
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-PlatformHandle StructTraits<gfx::mojom::AHardwareBufferHandleDataView,
-                            ::base::android::ScopedHardwareBufferHandle>::
-    buffer_handle(::base::android::ScopedHardwareBufferHandle& handle) {
-  return PlatformHandle(handle.SerializeAsFileDescriptor());
-}
-
-// static
-ScopedMessagePipeHandle
-StructTraits<gfx::mojom::AHardwareBufferHandleDataView,
-             ::base::android::ScopedHardwareBufferHandle>::
-    tracking_pipe(::base::android::ScopedHardwareBufferHandle& handle) {
-  // We must keep a ref to the AHardwareBuffer alive until the receiver has
-  // acquired its own reference. We do this by sending a message pipe handle
-  // along with the buffer. When the receiver deserializes (or even if they
-  // die without ever reading the message) their end of the pipe will be
-  // closed. We will eventually detect this and release the AHB reference.
-  mojo::MessagePipe tracking_pipe;
-  // Pass ownership of the input handle to our tracking pipe to keep the AHB
-  // alive until it's deserialized.
-  //
-  // SUBTLE: Both `buffer_handle` and `tracking_pipe` use `handle`, but the line
-  // below consumes `handle` by tying its lifetime to the message pipe. This is
-  // not a use-after-move, but it depends on internal details of Mojo
-  // serialization; specifically, the fact that struct fields are serialized in
-  // ordinal order. Since `buffer_handle` is declared before `tracking_pipe`,
-  // and neither has an explicit ordinal, Mojo will always serialize
-  // `buffer_handle` before `tracking_pipe`.
-  mojo::ScopeToMessagePipe(std::move(handle), std::move(tracking_pipe.handle0));
-  return std::move(tracking_pipe.handle1);
-}
-
-// static
-bool StructTraits<gfx::mojom::AHardwareBufferHandleDataView,
-                  ::base::android::ScopedHardwareBufferHandle>::
-    Read(gfx::mojom::AHardwareBufferHandleDataView data,
-         base::android::ScopedHardwareBufferHandle* handle) {
-  base::ScopedFD scoped_fd = data.TakeBufferHandle().TakeFD();
-  if (!scoped_fd.is_valid()) {
-    return false;
-  }
-  *handle =
-      base::android::ScopedHardwareBufferHandle::DeserializeFromFileDescriptor(
-          std::move(scoped_fd));
-  return handle->is_valid();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OZONE)
 mojo::PlatformHandle StructTraits<
@@ -219,10 +166,6 @@ gfx::mojom::GpuMemoryBufferPlatformHandleDataView::Tag UnionTraits<
     case gfx::DXGI_SHARED_HANDLE:
       return Tag::kDxgiHandle;
 #endif
-#if BUILDFLAG(IS_ANDROID)
-    case gfx::ANDROID_HARDWARE_BUFFER:
-      return Tag::kAndroidHardwareBufferHandle;
-#endif  // BUILDFLAG(IS_ANDROID)
   }
   NOTREACHED();
 }
@@ -302,12 +245,6 @@ bool UnionTraits<gfx::mojom::GpuMemoryBufferPlatformHandleDataView,
       gmb_handle->type = gfx::DXGI_SHARED_HANDLE;
       return data.ReadDxgiHandle(&gmb_handle->dxgi_handle_);
 #endif  // BUILDFLAG(IS_WIN)
-#if BUILDFLAG(IS_ANDROID)
-    case Tag::kAndroidHardwareBufferHandle:
-      gmb_handle->type = gfx::ANDROID_HARDWARE_BUFFER;
-      return data.ReadAndroidHardwareBufferHandle(
-          &gmb_handle->android_hardware_buffer);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
   return false;
 }

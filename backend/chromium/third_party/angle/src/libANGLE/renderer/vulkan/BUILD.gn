@@ -106,7 +106,7 @@ template("angle_vulkan_backend_template") {
       "$angle_spirv_headers_dir:spv_headers",
     ]
 
-    if (angle_enable_cl || is_android) {
+    if (angle_enable_cl) {
       deps += [ "$angle_root:angle_version_info" ]
     }
 

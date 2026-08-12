@@ -188,13 +188,6 @@
 #include "media/base/media_switches.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-#include "base/system/sys_info.h"
-#include "content/browser/android/battery_metrics.h"
-#include "content/browser/android/browser_startup_controller.h"
-#include "content/common/android/cpu_time_metrics.h"
-#endif
 
 #if BUILDFLAG(IS_FUCHSIA)
 #include "base/fuchsia/system_info.h"
@@ -221,25 +214,11 @@ namespace {
 using ::sandbox::policy::IsUnsandboxedSandboxType;
 using ::sandbox::policy::SandboxTypeFromCommandLine;
 
-#if defined(V8_USE_EXTERNAL_STARTUP_DATA) && BUILDFLAG(IS_ANDROID)
-#if defined __LP64__
-#define kV8SnapshotDataDescriptor kV8Snapshot64DataDescriptor
-#define kV8ContextSnapshotDataDescriptor kV8ContextSnapshot64DataDescriptor
-#else
-#define kV8SnapshotDataDescriptor kV8Snapshot32DataDescriptor
-#define kV8ContextSnapshotDataDescriptor kV8ContextSnapshot32DataDescriptor
-#endif
-#endif
 
 #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
 
 gin::V8SnapshotFileType GetSnapshotType(const base::CommandLine& command_line) {
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  if (command_line.HasSwitch(switches::kUseContextSnapshotSwitch)) {
-    return gin::V8SnapshotFileType::kWithAdditionalContext;
-  }
-  return gin::V8SnapshotFileType::kDefault;
-#elif BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
+#if BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
   return gin::V8SnapshotFileType::kWithAdditionalContext;
 #else
   return gin::V8SnapshotFileType::kDefault;
@@ -248,12 +227,7 @@ gin::V8SnapshotFileType GetSnapshotType(const base::CommandLine& command_line) {
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  if (command_line.HasSwitch(switches::kUseContextSnapshotSwitch)) {
-    return kV8ContextSnapshotDataDescriptor;
-  }
-  return kV8SnapshotDataDescriptor;
-#elif BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
+#if BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
   return kV8ContextSnapshotDataDescriptor;
 #else
   return kV8SnapshotDataDescriptor;
@@ -806,11 +780,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
   std::string process_type =
       command_line.GetSwitchValueASCII(switches::kProcessType);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Initialize the background threadpool field trial before creating the
-  // thread pools.
-  base::android::BackgroundThreadPoolFieldTrial::Initialize();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Create and start the ThreadPool early to allow the rest of the startup
   // code to use the thread_pool.h API.
@@ -835,7 +804,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 // On Android, the shared descriptors are passed through the Java service,
 // which takes care of updating these mappings; otherwise, we need to update
 // the mappings explicitly.
-#if !BUILDFLAG(IS_ANDROID)
   g_fds->Set(kMojoIPCChannel,
              kMojoIPCChannel + base::GlobalDescriptors::kBaseDescriptor);
   g_fds->Set(kFieldTrialDescriptor,
@@ -852,7 +820,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
   g_fds->Set(kPseudonymizationSaltDescriptor,
              kPseudonymizationSaltDescriptor +
                  base::GlobalDescriptors::kBaseDescriptor);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OPENBSD)
   g_fds->Set(kCrashDumpSignal,
@@ -869,7 +836,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 // On Android, AtExitManager is set up when library is loaded.
 // A consequence of this is that you can't use the ctor/dtor-based
 // TRACE_EVENT methods on Linux or iOS builds till after we set this up.
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
   if (!content_main_params_->ui_task) {
     // When running browser tests, don't create a second AtExitManager as that
     // interfers with shutdown when objects created before ContentMain is
@@ -940,23 +907,8 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 
   RegisterPathProvider();
 
-#if BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
-  if (!process_type.empty()) {
-    // In child process map ICU data files loaded by browser process.
-    int icu_data_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
-    if (icu_data_fd == -1) {
-      return TerminateForFatalInitializationError();
-    }
-    auto icu_data_region = g_fds->GetRegion(kAndroidICUDataDescriptor);
-    if (!base::i18n::InitializeICUWithFileDescriptor(icu_data_fd,
-                                                     icu_data_region)) {
-      return TerminateForFatalInitializationError();
-    }
-  }
-#else
   if (!base::i18n::InitializeICU())
     return TerminateForFatalInitializationError();
-#endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
 
 #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
   if (delegate_->ShouldLoadV8Snapshot(process_type)) {
@@ -1254,12 +1206,6 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
     // Ensure the visibility tracker is created on the main thread.
     ProcessPriorityTracker::GetInstance();
 
-#if BUILDFLAG(IS_ANDROID)
-    SetupCpuTimeMetrics();
-
-    // Requires base::PowerMonitor to be initialized first.
-    AndroidBatteryMetrics::CreateInstance();
-#endif
 
     GetContentClient()->browser()->SetIsMinimalMode(start_minimal_browser);
     if (start_minimal_browser) {
@@ -1283,12 +1229,6 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
 
     InitializeBrowserMemoryInstrumentationClient();
 
-#if BUILDFLAG(IS_ANDROID)
-    if (start_minimal_browser) {
-      base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-          FROM_HERE, base::BindOnce(&MinimalBrowserStartupComplete));
-    }
-#endif
   }
 
   if (!delegate_->IsInitFeatureListEarly()) {

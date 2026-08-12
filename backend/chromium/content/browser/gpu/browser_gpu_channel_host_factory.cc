@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/android/orderfile/orderfile_buildflags.h"
 #include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/functional/bind.h"
@@ -443,8 +442,7 @@ void BrowserGpuChannelHostFactory::RestartTimeout() {
   if (!pending_request_ || !is_visible_)
     return;
 
-#if defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER) || \
-    BUILDFLAG(ORDERFILE_INSTRUMENTATION)
+#if defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER)
   constexpr int64_t kGpuChannelTimeoutInSeconds = 40;
 #else
   // This is also monitored by the GPU watchdog (restart or initialization

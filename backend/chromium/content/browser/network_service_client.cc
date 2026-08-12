@@ -42,9 +42,6 @@
 #include "services/network/public/mojom/shared_storage.mojom.h"
 #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/task/current_thread.h"
@@ -112,11 +109,6 @@ class NetworkInterfaceChangeHelper {
 #endif
 
 NetworkServiceClient::NetworkServiceClient()
-#if BUILDFLAG(IS_ANDROID)
-    : app_status_listener_(base::android::ApplicationStatusListener::New(
-          base::BindRepeating(&NetworkServiceClient::OnApplicationStateChange,
-                              base::Unretained(this))))
-#endif
 {
 
 #if BUILDFLAG(IS_MAC)
@@ -136,7 +128,7 @@ NetworkServiceClient::NetworkServiceClient()
 NetworkServiceClient::~NetworkServiceClient() {
   if (IsOutOfProcessNetworkService()) {
     net::CertDatabase::GetInstance()->RemoveObserver(this);
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     bool remove_ncn_observers = true;
 #if BUILDFLAG(IS_LINUX)
     remove_ncn_observers = base::FeatureList::IsEnabled(
@@ -163,14 +155,8 @@ void NetworkServiceClient::OnPeerToPeerConnectionsCountChange(uint32_t count) {
   GetNetworkService()->OnPeerToPeerConnectionsCountChange(count);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void NetworkServiceClient::OnApplicationStateChange(
-    base::android::ApplicationState state) {
-  GetNetworkService()->OnApplicationStateChange(state);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void NetworkServiceClient::OnConnectionTypeChanged(
     net::NetworkChangeNotifier::ConnectionType type) {
   network_change_manager_->OnNetworkChanged(
@@ -226,7 +212,7 @@ NetworkServiceClient::BindURLLoaderNetworkServiceObserver() {
 
 void NetworkServiceClient::OnNetworkServiceInitialized(
     network::mojom::NetworkService* service) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   bool add_ncn_observers = true;
 #if BUILDFLAG(IS_LINUX)
   add_ncn_observers = base::FeatureList::IsEnabled(

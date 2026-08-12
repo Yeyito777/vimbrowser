@@ -82,14 +82,7 @@ target(link_target_type, "renderer_sources") {
     sources += [ "plugin_ax_tree_action_target_adapter.h" ]
   }
 
-  if (is_android) {
-    sources += [ "seccomp_sandbox_status_android.h" ]
-
-    # For seccomp_sandbox_status_android.h.
-    deps += [ "//sandbox" ]
-  }
-
-  if (enable_library_cdms || is_win || is_android) {
+  if (enable_library_cdms || is_win) {
     sources += [
       "key_system_support.cc",
       "key_system_support.h",

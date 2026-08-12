@@ -362,9 +362,7 @@ static_library("libaom") {
     # This is needed by all arm boards due to aom_arm_cpu_caps()
     sources += [ "source/libaom/aom_ports/aarch32_cpudetect.c" ]
   }
-  if (is_android) {
-    deps += [ "//third_party/cpu_features:ndk_compat" ]
-  }
+
   public_configs = [ ":libaom_public_config" ]
 }
 
@@ -424,17 +422,11 @@ test("test_libaom") {
 
   defines = [ "CHROMIUM" ]
 
-  if (is_android) {
-    use_raw_android_executable = true
-    defines += [ "LIBAOM_TEST_DATA_PATH=/data/local/tmp/chromium_tests_root/third_party/libaom/testdata" ]
-    data = [ "testdata/" ]
-  } else {
-    defines += [ string_join("",
-                             [
-                               "LIBAOM_TEST_DATA_PATH=",
-                               rebase_path("testdata", root_build_dir),
-                             ]) ]
-  }
+  defines += [ string_join("",
+                           [
+                             "LIBAOM_TEST_DATA_PATH=",
+                             rebase_path("testdata", root_build_dir),
+                           ]) ]
 
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [

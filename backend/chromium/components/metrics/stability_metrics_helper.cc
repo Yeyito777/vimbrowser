@@ -28,14 +28,10 @@
 #include <windows.h>  // Needed for STATUS_* codes
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#endif
 
 namespace metrics {
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 // Converts an exit code into something that can be inserted into our
 // histograms (which expect non-negative numbers less than MAX_INT).
 int MapCrashExitCodeForHistogram(int exit_code) {
@@ -50,9 +46,8 @@ int MapCrashExitCodeForHistogram(int exit_code) {
 
   return std::abs(exit_code);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
 const char* HostedContentTypeToString(
     RendererHostedContentType hosted_content_type) {
   switch (hosted_content_type) {
@@ -111,36 +106,9 @@ StabilityMetricsHelper::StabilityMetricsHelper(PrefService* local_state)
 
 StabilityMetricsHelper::~StabilityMetricsHelper() = default;
 
-#if BUILDFLAG(IS_ANDROID)
-void StabilityMetricsHelper::ProvideStabilityMetrics(
-    SystemProfileProto* system_profile_proto) {
-  SystemProfileProto_Stability* stability_proto =
-      system_profile_proto->mutable_stability();
-
-  int count = local_state_->GetInteger(prefs::kStabilityPageLoadCount);
-  if (count) {
-    stability_proto->set_page_load_count(count);
-    local_state_->SetInteger(prefs::kStabilityPageLoadCount, 0);
-  }
-  count = local_state_->GetInteger(prefs::kStabilityRendererLaunchCount);
-  if (count) {
-    stability_proto->set_renderer_launch_count(count);
-    local_state_->SetInteger(prefs::kStabilityRendererLaunchCount, 0);
-  }
-}
-
-void StabilityMetricsHelper::ClearSavedStabilityMetrics() {
-  local_state_->SetInteger(prefs::kStabilityPageLoadCount, 0);
-  local_state_->SetInteger(prefs::kStabilityRendererLaunchCount, 0);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // static
 void StabilityMetricsHelper::RegisterPrefs(PrefRegistrySimple* registry) {
-#if BUILDFLAG(IS_ANDROID)
-  registry->RegisterIntegerPref(prefs::kStabilityPageLoadCount, 0);
-  registry->RegisterIntegerPref(prefs::kStabilityRendererLaunchCount, 0);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void StabilityMetricsHelper::IncreaseRendererCrashCount() {
@@ -238,9 +206,6 @@ void StabilityMetricsHelper::CdmUtilityProcessLaunchFailed(
 }
 
 void StabilityMetricsHelper::LogLoadStarted() {
-#if BUILDFLAG(IS_ANDROID)
-  IncrementPrefValue(prefs::kStabilityPageLoadCount);
-#endif
   RecordStabilityEvent(StabilityEventType::kPageLoad);
 }
 
@@ -250,7 +215,7 @@ void StabilityMetricsHelper::LogRendererCrash() {
   constexpr int kDummyExitCode = 105;
   LogRendererCrashImpl(CoarseRendererType::kRenderer, kDummyExitCode);
 }
-#elif !BUILDFLAG(IS_ANDROID)
+#else
 void StabilityMetricsHelper::LogRendererCrash(
     RendererHostedContentType hosted_content_type,
     base::TerminationStatus status,
@@ -316,10 +281,6 @@ void StabilityMetricsHelper::LogRendererLaunched(bool was_extension_process) {
                     ? StabilityEventType::kExtensionRendererLaunch
                     : StabilityEventType::kRendererLaunch;
   RecordStabilityEvent(metric);
-#if BUILDFLAG(IS_ANDROID)
-  if (!was_extension_process)
-    IncrementPrefValue(prefs::kStabilityRendererLaunchCount);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void StabilityMetricsHelper::IncrementPrefValue(const char* path) {
@@ -334,7 +295,6 @@ void StabilityMetricsHelper::RecordStabilityEvent(
                                       stability_event_type);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void StabilityMetricsHelper::LogRendererCrashImpl(
     CoarseRendererType renderer_type,
     int exit_code) {
@@ -355,6 +315,5 @@ void StabilityMetricsHelper::LogRendererCrashImpl(
   base::UmaHistogramEnumeration("BrowserRenderProcessHost.ChildCrashes",
                                 renderer_type);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace metrics

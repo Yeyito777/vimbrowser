@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <grit-part>
-  <if expr="not is_android and not is_ios">
+  <if expr="not is_ios">
     <message name="IDS_GEOLOCATION_INFOBAR_TEXT" desc="Text requesting permission for a site to access the user's physical location">
       <ph name="URL">$1<ex>maps.google.com</ex></ph> wants to use your computer's location
     </message>
   </if>
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <message name="IDS_GEOLOCATION_INFOBAR_TEXT" desc="Mobile: Text requesting permission for a site to access the user's physical location">
       <ph name="URL">$1<ex>maps.google.com</ex></ph> wants to use your device's location
     </message>
@@ -113,7 +113,7 @@
       <ph name="URL">$1<ex>google.com</ex></ph> wants to manage windows on all your displays
     </message>
   </if>
-  <if expr="is_android or is_chromeos or is_win">
+  <if expr="is_chromeos or is_win">
     <message name="IDS_PROTECTED_MEDIA_IDENTIFIER_PERMISSION_FRAGMENT" desc="Permission fragment shown in the permissions bubble when a web page requests access to the computer's protected media identifier.">
       Know your unique device identifier
     </message>
@@ -228,41 +228,40 @@ This will otherwise be blocked by your privacy settings. This will allow the con
   <message name="IDS_PERMISSION_DENY" desc="Label on button to deny a permissions request.">
     Block
   </message>
-  <message name="IDS_PERMISSION_ALLOW_THIS_TIME" desc="Label on button to one time grant in a one-time granting use case" formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_THIS_TIME" desc="Label on button to one time grant in a one-time granting use case">
     Allow this time
   </message>
-  <message name="IDS_PERMISSION_ALLOW_EVERY_VISIT" desc="Label on button to permanent grant in a one-time granting use case" formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_EVERY_VISIT" desc="Label on button to permanent grant in a one-time granting use case">
     Allow on every visit
   </message>
   <message name="IDS_PERMISSION_ALLOW_WHILE_VISITING" desc="Label on button to grant a permission to a site to do X permanently, that is, on the user's current visit and subsequent visits. This contrasts with the temporary grant through a button labeled [Allow this time], which only allows the site to do X on the current visit. The context for this choice is a prompt that says [The site wants to do X]. Therefore, for some languages it might be possible to drop the _the site_ suffix if it is evident from this context and its absensce does not feel dangling in the language.">
     Allow while visiting the site
   </message>
-  <message name="IDS_PERMISSION_DONT_ALLOW" desc="Label on button to permanent deny in a one-time granting use case" formatter_data="android_java">
+  <message name="IDS_PERMISSION_DONT_ALLOW" desc="Label on button to permanent deny in a one-time granting use case">
     Don't allow
   </message>
   <message name="IDS_PERMISSION_NEVER_ALLOW" desc="(Alternative label, to compare) label on button to permanent deny in a one-time granting use case.">
     Never allow
   </message>
-  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO" desc="Label on a radio button to select approximate geolocation permission for a site." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO" desc="Label on a radio button to select approximate geolocation permission for a site.">
     Approximate
   </message>
-  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO" desc="Label on a radio button to select precise geolocation permission for a site." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO" desc="Label on a radio button to select precise geolocation permission for a site.">
     Precise
   </message>
-  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO_DESCRIPTION" desc="Description for a radio button to select precise geolocation permission for a site." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO_DESCRIPTION" desc="Description for a radio button to select precise geolocation permission for a site.">
     Exact location
   </message>
-  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO_DESCRIPTION" desc="Description for a radio button to select approximate geolocation permission for a site." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO_DESCRIPTION" desc="Description for a radio button to select approximate geolocation permission for a site.">
     Neighborhood
   </message>
-  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO_LONG_DESCRIPTION" desc="Description for a radio button to select precise geolocation permission for a site. This is a longer version of the description used for experimentation." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_PRECISE_GEO_LONG_DESCRIPTION" desc="Description for a radio button to select precise geolocation permission for a site. This is a longer version of the description used for experimentation.">
     Often used for directions, deliveries, and more
   </message>
-  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO_LONG_DESCRIPTION" desc="Description for a radio button to select approximate geolocation permission for a site. This is a longer version of the description used for experimentation." formatter_data="android_java">
+  <message name="IDS_PERMISSION_ALLOW_APPROXIMATE_GEO_LONG_DESCRIPTION" desc="Description for a radio button to select approximate geolocation permission for a site. This is a longer version of the description used for experimentation.">
     Often used for weather, local news, and more
   </message>
   <!-- Device Chooser -->
-  <if expr="not is_android">
     <message name="IDS_BLUETOOTH_DEVICE_CHOOSER_PROMPT" desc="The label that is used to introduce Bluetooth chooser details to the user in a popup.">
       <ph name="Origin">$1<ex>www.google.com</ex></ph> wants to pair
     </message>
@@ -287,27 +286,24 @@ This will otherwise be blocked by your privacy settings. This will allow the con
     <message name="IDS_BLUETOOTH_DEVICE_CHOOSER_AUTHORIZE_BLUETOOTH_LINK_TEXT" desc="Text of the link for opening system settings when browser does not have Bluetooth permission.">
       System Settings
     </message>
-  </if>
   <message name="IDS_DEVICE_CHOOSER_DEVICE_NAME_WITH_ID" desc="To distinguish devices with the same name, the device chooser shows the device name with id.">
     <ph name="DEVICE_NAME">$1<ex>device name</ex></ph> (<ph name="DEVICE_ID">$2<ex>device id</ex></ph>)
   </message>
 
   <!-- Bluetooth Scanning Prompt -->
-  <if expr="not is_android">
     <message name="IDS_BLUETOOTH_SCANNING_PROMPT" desc="The label that is used to introduce Bluetooth scanning prompt details to the user.">
       <ph name="Origin">$1<ex>www.google.com</ex></ph> wants to scan for nearby Bluetooth devices. The following devices have been found:
     </message>
     <message name="IDS_BLUETOOTH_SCANNING_DEVICE_UNKNOWN" desc="Text to identify Bluetooth devices of unknown or unsupported class.">
       Unknown or unsupported device (<ph name="DEVICE_ID">$1<ex>A1:B2:C3:D4:E5:F6</ex></ph>)
     </message>
-  </if>
-  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_NO_DEVICES_FOUND_PROMPT" desc="The label shown to the user to inform them that no nearby Bluetooth devices were found using the requirements that the application provided." formatter_data="android_java">
+  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_NO_DEVICES_FOUND_PROMPT" desc="The label shown to the user to inform them that no nearby Bluetooth devices were found using the requirements that the application provided.">
     No nearby devices found.
   </message>
-  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_ALLOW_BUTTON_TEXT" desc="Label on the button that allows Bluetooth scanning." formatter_data="android_java">
+  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_ALLOW_BUTTON_TEXT" desc="Label on the button that allows Bluetooth scanning.">
     Allow
   </message>
-  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_BLOCK_BUTTON_TEXT" desc="Label on the button that blocks Bluetooth scanning." formatter_data="android_java">
+  <message name="IDS_BLUETOOTH_SCANNING_PROMPT_BLOCK_BUTTON_TEXT" desc="Label on the button that blocks Bluetooth scanning.">
     Block
   </message>
 
@@ -330,7 +326,6 @@ This will otherwise be blocked by your privacy settings. This will allow the con
     Finding USB devices...
   </message>
 
-  <if expr="not is_android">
     <message name="IDS_GEOLOCATION_PERMISSION_CHIP" desc="Button text representing a request for the user's physical location from a website. When clicked, shows a permission prompt bubble with more information.">
       Use your location?
     </message>
@@ -533,7 +528,6 @@ This will otherwise be blocked by your privacy settings. This will allow the con
     <message name="IDS_PERMISSIONS_MOTION_SENSORS_NOT_ALLOWED_CONFIRMATION_SCREENREADER_ANNOUNCEMENT" is_accessibility_with_no_ui="true" desc="Announcement to screen readers confirming that a motion sensors permission requested has been denied.">
      Motion sensors not allowed
     </message>
-  </if>
   <if expr="is_chromeos">
     <message name="IDS_SMART_CARD_PERMISSION_PROMPT" desc="Text on dialog that asks the user for permission to access a smart card reader device and the card inserted in it (or presented to it, if contactless).">
       Control authentication devices of type <ph name="ReaderName">$1<ex>HID Omnikey</ex></ph> and smart cards accessible to them
@@ -549,22 +543,12 @@ This will otherwise be blocked by your privacy settings. This will allow the con
   </if>
 
   <!-- Quota messages -->
-  <if expr="is_android">
-    <message name="IDS_REQUEST_QUOTA_INFOBAR_TEXT" desc="Mobile: For Android device. Text requesting permission for a site to use a new (larger) quota to persistently store data on the device (e.g. for persistent-type filesystem).">
-      <ph name="URL">$1<ex>html5rocks.com</ex></ph> wants to permanently store data on your device
-    </message>
-    <message name="IDS_REQUEST_LARGE_QUOTA_INFOBAR_TEXT" desc="Mobile: For Android device. Text requesting permission for a site to use a new (larger) quota to persistently store large data on the user's device (e.g. for persistent-type filesystem).">
-      <ph name="URL">$1<ex>html5rocks.com</ex></ph> wants to permanently store large data on your device
-    </message>
-  </if>
-  <if expr="not is_android">
     <message name="IDS_REQUEST_QUOTA_INFOBAR_TEXT" desc="Text requesting permission for a site to use a new (larger) quota to persistently store data on the user's local computer (e.g. for persistent-type filesystem).">
       <ph name="URL">$1<ex>html5rocks.com</ex></ph> wants to permanently store data on your local computer
     </message>
     <message name="IDS_REQUEST_LARGE_QUOTA_INFOBAR_TEXT" desc="Text requesting permission for a site to use a new (larger) quota to persistently store large data on the user's local computer (e.g. for persistent-type filesystem).">
       <ph name="URL">$1<ex>html5rocks.com</ex></ph> wants to permanently store large data on your local computer
     </message>
-  </if>
   <message name="IDS_REQUEST_QUOTA_PERMISSION_FRAGMENT" desc="Permission fragment presented in the permission bubble when the webapp requests new larger quota to persistently store data on the device. Follows a 'This site would like to:' prompt.">
     Store files on this device
   </message>
@@ -609,11 +593,6 @@ This will otherwise be blocked by your privacy settings. This will allow the con
   <message name="IDS_CHROMEOS_NAME_FRAGMENT" desc="Text fragment identifying the ChromeOS">
     ChromeOS
   </message>
-  <if expr="is_android">
-    <message name="IDS_ANDROID_NAME_FRAGMENT" desc="Text fragment identifying the Android">
-      Android
-    </message>
-  </if>
   <!--Embedded permission prompts: button labels-->
   <message name="IDS_EMBEDDED_PROMPT_OK_LABEL" desc="Label used on a button that allows the user to acknowledge and close an informational dialog">
     OK
@@ -624,26 +603,10 @@ This will otherwise be blocked by your privacy settings. This will allow the con
   <message name="IDS_EMBEDDED_PROMPT_STOP_ALLOWING" desc="Label on button to stop allowing a permissions , when the user clicks on the embedded permission element but they have previously granted permission to the site">
     Stop allowing
   </message>
-  <if expr="is_android">
-    <message name="IDS_EMBEDDED_PROMPT_CANCEL_LABEL" desc="Label used on a button that allows the user to cancel and close an informational dialog">
-     Cancel
-    </message>
-  </if>
   <message name="IDS_EMBEDDED_PROMPT_OPEN_SYSTEM_SETTINGS" desc="Label used on a button that on click sends the users to the system settings.">
     <ph name="operating_system">$1<ex>MacOS</ex></ph> settings
   </message>
   <message name="IDS_EMBEDDED_PROMPT_CONTINUE_NOT_ALLOWING" desc="Label used on a button that to continue not allowing a permission prompt that the user has previously also not allowed for the site.">
     Continue not allowing
   </message>
-  <if expr="is_android">
-   <message name="IDS_NOTIFICATION_TITLE_MESSAGE_UI" desc="Title text representing a request for showing notifications from a website. Displayed on a dialog on Android.">
-      Get notifications?
-   </message>
-    <message name="IDS_NOTIFICATION_DESCRIPTION_MESSAGE_UI" desc="Description text representing a request for showing notifications from a website. Displayed on a dialog on Android.">
-      From <ph name="site">$1<ex>mail.google.com</ex></ph>
-    </message>
-   <message name="IDS_NOTIFICATION_CTA_MESSAGE_UI" desc="Label used on a button that allows the user to open a new UI surface where they can manage their permissions including the currently requested notifications permission from a website. Displayed on a dialog on Android.">
-      Manage
-   </message>
-  </if>
 </grit-part>

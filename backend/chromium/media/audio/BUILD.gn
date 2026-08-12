@@ -246,47 +246,6 @@ source_set("audio") {
     ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/aaudio_bluetooth_output.cc",
-      "android/aaudio_bluetooth_output.h",
-      "android/aaudio_input.cc",
-      "android/aaudio_input.h",
-      "android/aaudio_output.cc",
-      "android/aaudio_output.h",
-      "android/aaudio_stream_wrapper.cc",
-      "android/aaudio_stream_wrapper.h",
-      "android/audio_device.cc",
-      "android/audio_device.h",
-      "android/audio_device_id.cc",
-      "android/audio_device_id.h",
-      "android/audio_device_type.cc",
-      "android/audio_device_type.h",
-      "android/audio_manager_android.cc",
-      "android/audio_manager_android.h",
-      "android/muteable_audio_output_stream.h",
-    ]
-    if (media_use_opensles) {
-      sources += [
-        "android/opensles_input.cc",
-        "android/opensles_input.h",
-        "android/opensles_output.cc",
-        "android/opensles_output.h",
-        "android/opensles_util.cc",
-        "android/opensles_util.h",
-        "android/opensles_wrapper.cc",
-      ]
-    }
-    if (enable_passthrough_audio_codecs) {
-      sources += [
-        "android/audio_track_output_stream.cc",
-        "android/audio_track_output_stream.h",
-      ]
-    }
-    libs += [ "aaudio" ]
-
-  }
-
   if (is_linux || is_chromeos) {
     sources += [ "linux/audio_manager_linux.cc" ]
   }
@@ -470,19 +429,6 @@ source_set("unit_tests") {
     ":platform_config",
     "//media:media_config",
   ]
-
-  if (is_android) {
-    sources += [
-      "android/audio_android_unittest.cc",
-      "android/audio_device_id_unittest.cc",
-      "android/audio_device_type_unittest.cc",
-      "android/audio_device_unittest.cc",
-    ]
-    deps += [
-      "//media/gpu",
-      "//ui/gl",
-    ]
-  }
 
   if (is_apple) {
     sources += [

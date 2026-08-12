@@ -4,10 +4,6 @@
 
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 proto_library("proto") {
   proto_in_dir = "//"
   sources = [
@@ -18,15 +14,4 @@ proto_library("proto") {
     "segmentation_platform.proto",
     "types.proto",
   ]
-}
-
-if (is_android) {
-  proto_java_library("segmentation_platform_proto_java") {
-    proto_path = "//"
-    sources = [
-      "output_config.proto",
-      "prediction_result.proto",
-      "segmentation_platform.proto",
-    ]
-  }
 }

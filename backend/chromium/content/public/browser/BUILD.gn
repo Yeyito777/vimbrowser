@@ -11,10 +11,6 @@ import("//media/media_options.gni")
 import("//third_party/protobuf/proto_library.gni")
 import("//third_party/webrtc/webrtc.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 # See //content/BUILD.gn for how this works.
 group("browser") {
   if (is_component_build) {
@@ -112,6 +108,7 @@ source_set("browser_sources") {
     "client_hints_controller_delegate.h",
     "clipboard_types.cc",
     "clipboard_types.h",
+    "color_chooser.h",
     "commit_deferring_condition.cc",
     "commit_deferring_condition.h",
     "console_message.cc",
@@ -492,10 +489,10 @@ source_set("browser_sources") {
     "web_authentication_delegate.cc",
     "web_authentication_delegate.h",
     "web_authentication_request_proxy.h",
-    "web_contents_accessibility.cc",
-    "web_contents_accessibility.h",
     "web_contents.cc",
     "web_contents.h",
+    "web_contents_accessibility.cc",
+    "web_contents_accessibility.h",
     "web_contents_capability_type.h",
     "web_contents_delegate.cc",
     "web_contents_delegate.h",
@@ -549,10 +546,6 @@ source_set("browser_sources") {
     "//build/config/compiler:wexit_time_destructors",
     "//content:content_implementation",
   ]
-
-  if (is_android) {
-    sources += [ "color_chooser.h" ]
-  }
 
   if (rtc_use_pipewire) {
     configs +=
@@ -654,37 +647,6 @@ source_set("browser_sources") {
     sources += [ "posix_file_descriptor_info.h" ]
   }
 
-  if (is_android) {
-    deps += [
-      "//cc/slim",
-      "//third_party/jni_zero",
-      "//ui/android",
-    ]
-    sources += [
-      "android/additional_navigation_params_android.h",
-      "android/android_overlay_provider.h",
-      "android/browser_context_handle.h",
-      "android/child_process_importance.h",
-      "android/compositor.h",
-      "android/compositor_client.h",
-      "android/devtools_auth.h",
-      "android/gpu_video_accelerator_factories_provider.h",
-      "android/impression_android.h",
-      "android/java_interfaces.h",
-      "android/message_payload.h",
-      "android/message_payload_type.h",
-      "android/message_port_helper.h",
-      "android/motion_event_action.h",
-      "android/selection_popup_delegate.cc",
-      "android/selection_popup_delegate.h",
-      "android/synchronous_compositor.cc",
-      "android/synchronous_compositor.h",
-      "android/synchronous_compositor_client.h",
-      "ax_inspect_factory_android.cc",
-      "tts_environment_android.h",
-    ]
-  }
-
   if (use_aura || is_mac) {
     sources += [ "context_factory.h" ]
   }
@@ -731,16 +693,14 @@ source_set("browser_sources") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      "direct_sockets_delegate.h",
+  sources += [
+    "direct_sockets_delegate.h",
 
-      # Some Web Authentication related targets only apply to desktop because
-      # Android provides its own native implementation of that API.
-      "authenticator_request_client_delegate.cc",
-      "authenticator_request_client_delegate.h",
-    ]
-  }
+    # Some Web Authentication related targets only apply to desktop because
+    # Android provides its own native implementation of that API.
+    "authenticator_request_client_delegate.cc",
+    "authenticator_request_client_delegate.h",
+  ]
 
   if (enable_vr) {
     sources += [
@@ -759,24 +719,6 @@ source_set("browser_sources") {
 
   if (use_clang_profiling_inside_sandbox) {
     sources += [ "profiling_utils.h" ]
-  }
-}
-
-if (is_android) {
-  java_cpp_enum("contacts_picker_properties_javagen") {
-    sources = [ "contacts_picker_properties.h" ]
-  }
-  java_cpp_enum("bluetooth_chooser_event_javagen") {
-    sources = [ "bluetooth_chooser.h" ]
-  }
-  java_cpp_enum("digital_identity_enum") {
-    sources = [
-      "digital_identity_interstitial_type.h",
-      "digital_identity_provider.h",
-    ]
-  }
-  java_cpp_enum("transfer_input_to_viz_result_enum") {
-    sources = [ "android/transfer_input_to_viz_result.h" ]
   }
 }
 

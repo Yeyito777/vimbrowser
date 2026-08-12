@@ -29,9 +29,6 @@
 #include "components/sync/service/sync_service.h"
 #include "components/sync_device_info/device_info.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/android/chrome_jni_headers/SharingJNIBridge_jni.h"
-#endif
 
 using instance_id::InstanceID;
 using sync_pb::SharingSpecificFields;
@@ -232,12 +229,7 @@ SharingDeviceRegistrationImpl::GetEnabledFeatures() const {
 }
 
 bool SharingDeviceRegistrationImpl::IsClickToCallSupported() const {
-#if BUILDFLAG(IS_ANDROID)
-  JNIEnv* env = jni_zero::AttachCurrentThread();
-  return Java_SharingJNIBridge_isTelephonySupported(env);
-#else
   return false;
-#endif
 }
 
 bool SharingDeviceRegistrationImpl::IsSharedClipboardSupported() const {
@@ -250,11 +242,7 @@ bool SharingDeviceRegistrationImpl::IsSharedClipboardSupported() const {
 }
 
 bool SharingDeviceRegistrationImpl::IsSmsFetcherSupported() const {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
   return false;
-#endif
 }
 
 bool SharingDeviceRegistrationImpl::IsRemoteCopySupported() const {
@@ -281,7 +269,3 @@ void SharingDeviceRegistrationImpl::SetEnabledFeaturesForTesting(
     std::set<SharingSpecificFields::EnabledFeatures> enabled_features) {
   enabled_features_testing_value_ = std::move(enabled_features);
 }
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(SharingJNIBridge)
-#endif

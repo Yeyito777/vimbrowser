@@ -4,8 +4,6 @@
 
 import("//extensions/buildflags/buildflags.gni")
 
-assert(!is_android)
-
 source_set("direct_sockets") {
   sources = [ "chrome_direct_sockets_delegate.h" ]
   public_deps = [ "//content/public/browser" ]

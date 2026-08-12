@@ -165,8 +165,7 @@ declare_args() {
   if (build_with_chromium) {
     rtc_use_h264 = media_use_openh264
   } else {
-    rtc_use_h264 =
-        proprietary_codecs && !is_android && !is_ios && !(is_win && !is_clang)
+    rtc_use_h264 = proprietary_codecs && !is_ios && !(is_win && !is_clang)
   }
 
   # Use system OpenH264
@@ -513,21 +512,6 @@ template("rtc_test") {
     ]
     if (defined(invoker.public_configs)) {
       public_configs += invoker.public_configs
-    }
-    if (!build_with_chromium && is_android) {
-      use_default_launcher = false
-      android_manifest = webrtc_root + "test/android/AndroidManifest.xml"
-      use_raw_android_executable = false
-      min_sdk_version = 23
-      target_sdk_version = 24
-      deps += [
-        "//build/android/gtest_apk:native_test_instrumentation_test_runner_java",
-        webrtc_root + "sdk/android:native_test_jni_onload",
-        webrtc_root + "sdk/android:base_java",
-        webrtc_root + "test:native_test_java",
-        webrtc_root + "test:native_test_support",
-        "//third_party/jni_zero:jni_zero_java",
-      ]
     }
 
     # TODO: bugs.webrtc.org/467294026 - Support iOS too.
@@ -1225,55 +1209,6 @@ if (is_mac || is_ios) {
         ]
         deps = [ ":umbrella_header_$this_target_name" ]
       }
-    }
-  }
-}
-
-if (is_android) {
-  template("rtc_android_library") {
-    android_library(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-
-      # Add any arguments defined by the invoker.
-      if (defined(invoker.errorprone_args)) {
-        errorprone_args = invoker.errorprone_args
-      }
-
-      not_needed([ "android_manifest" ])
-    }
-  }
-
-  template("rtc_android_apk") {
-    android_apk(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-    }
-  }
-
-  template("rtc_instrumentation_test_apk") {
-    instrumentation_test_apk(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-      deps += [ "//third_party/jni_zero:jni_zero_java" ]
     }
   }
 }

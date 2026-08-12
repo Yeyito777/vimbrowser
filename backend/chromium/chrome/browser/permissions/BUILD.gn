@@ -126,34 +126,6 @@ source_set("permissions") {
     "//services/device/public/cpp/geolocation",
   ]
 
-  if (is_android) {
-    sources += [
-      "permission_blocked_dialog_controller_android.cc",
-      "permission_blocked_dialog_controller_android.h",
-      "permission_blocked_message_delegate_android.cc",
-      "permission_blocked_message_delegate_android.h",
-      "permission_update_message_controller_android.cc",
-      "permission_update_message_controller_android.h",
-      "permission_update_message_delegate_android.cc",
-      "permission_update_message_delegate_android.h",
-      "permission_update_requester_android.cc",
-      "permission_update_requester_android.h",
-      "quiet_permission_prompt_model_android.cc",
-      "quiet_permission_prompt_model_android.h",
-    ]
-
-    deps += [
-      "//chrome/android:chrome_jni_headers",
-      "//chrome/browser/android:tabs_public",
-      "//components/messages/android",
-      "//components/messages/android:feature_flags",
-      "//ui/android",
-    ]
-
-    if (enable_openxr) {
-      deps += [ "//device/vr/public/cpp:features" ]
-    }
-  }
   allow_circular_includes_from = []
 
   if (enable_extensions) {
@@ -180,9 +152,9 @@ source_set("permissions") {
       "prediction_service/prediction_model_handler_provider_factory.cc",
       "prediction_service/prediction_model_handler_provider_factory.h",
     ]
-    if (!is_android) {
-      deps += [ "//third_party/tflite_support" ]
-    }
+
+    deps += [ "//third_party/tflite_support" ]
+
     deps += [
       "//chrome/browser/passage_embeddings",
       "//components/passage_embeddings/core",
@@ -190,9 +162,7 @@ source_set("permissions") {
     ]
   }
 
-  if (!is_android) {
-    deps += [ "//chrome/browser/ui/permission_bubble" ]
-  }
+  deps += [ "//chrome/browser/ui/permission_bubble" ]
 
   if (safe_browsing_mode != 0) {
     sources += [
@@ -247,9 +217,7 @@ source_set("unit_tests") {
     sources += [ "prediction_service/passage_embedder_delegate_unittest.cc" ]
   }
 
-  if (!is_android) {
-    sources += [ "one_time_permissions_tracker_unittest.cc" ]
-  }
+  sources += [ "one_time_permissions_tracker_unittest.cc" ]
 
   deps = [
     ":permissions",
@@ -278,19 +246,8 @@ source_set("unit_tests") {
     deps += [ "//components/passage_embeddings/core" ]
   }
 
-  if (is_android) {
-    sources += [
-      "permission_blocked_message_delegate_android_unittest.cc",
-      "permission_update_message_controller_android_unittest.cc",
-    ]
-    deps += [
-      "//components/messages/android:test_support",
-      "//components/ukm:test_support",
-    ]
-  } else {
-    sources += [ "permission_hats_trigger_unittest.cc" ]
-    deps += [ "//chrome/browser/ui/hats" ]
-  }
+  sources += [ "permission_hats_trigger_unittest.cc" ]
+  deps += [ "//chrome/browser/ui/hats" ]
 
   if (is_chromeos) {
     deps += [
@@ -304,58 +261,56 @@ source_set("unit_tests") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
+source_set("browser_tests") {
+  testonly = true
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    sources = [
-      "geolocation_element_browsertest.cc",
-      "one_time_permissions_browsertest.cc",
-      "permission_delegation_browsertest.cc",
-      "permission_element_browsertest.cc",
-      "permission_manager_browsertest.cc",
-      "permission_request_manager_browsertest.cc",
-      "permission_settings_page_browsertest.cc",
-      "permission_ukm_browsertest.cc",
-    ]
+  sources = [
+    "geolocation_element_browsertest.cc",
+    "one_time_permissions_browsertest.cc",
+    "permission_delegation_browsertest.cc",
+    "permission_element_browsertest.cc",
+    "permission_manager_browsertest.cc",
+    "permission_request_manager_browsertest.cc",
+    "permission_settings_page_browsertest.cc",
+    "permission_ukm_browsertest.cc",
+  ]
 
-    deps = [
-      ":permissions",
-      ":test_support",
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/browser/custom_handlers",
-      "//chrome/browser/geolocation",
-      "//chrome/browser/media/webrtc",
-      "//chrome/browser/optimization_guide",
-      "//chrome/browser/optimization_guide:test_support",
-      "//chrome/browser/permissions/system",
-      "//chrome/browser/ui:browser_element_identifiers",
-      "//chrome/browser/ui:ui_features",
-      "//chrome/test:test_support",
-      "//components/back_forward_cache",
-      "//components/optimization_guide/core:test_support",
-      "//components/passage_embeddings/core:test_support",
-    ]
+  deps = [
+    ":permissions",
+    ":test_support",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/custom_handlers",
+    "//chrome/browser/geolocation",
+    "//chrome/browser/media/webrtc",
+    "//chrome/browser/optimization_guide",
+    "//chrome/browser/optimization_guide:test_support",
+    "//chrome/browser/permissions/system",
+    "//chrome/browser/ui:browser_element_identifiers",
+    "//chrome/browser/ui:ui_features",
+    "//chrome/test:test_support",
+    "//components/back_forward_cache",
+    "//components/optimization_guide/core:test_support",
+    "//components/passage_embeddings/core:test_support",
+  ]
 
-    if (is_chromeos) {
-      sources += [ "system/system_permission_settings_chromeos_unittest.cc" ]
-      deps += [ "//chrome/browser/ash/privacy_hub" ]
-    }
-
-    if (build_with_tflite_lib) {
-      sources += [ "prediction_service/prediction_service_browsertest.cc" ]
-      deps += [ "//components/permissions/prediction_service" ]
-    }
-
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+  if (is_chromeos) {
+    sources += [ "system/system_permission_settings_chromeos_unittest.cc" ]
+    deps += [ "//chrome/browser/ash/privacy_hub" ]
   }
+
+  if (build_with_tflite_lib) {
+    sources += [ "prediction_service/prediction_service_browsertest.cc" ]
+    deps += [ "//components/permissions/prediction_service" ]
+  }
+
+  # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
+  # enable the diagnostic by removing this line.
+  configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (!is_android && !is_chromeos_device) {
+if (!is_chromeos_device) {
   source_set("interactive_ui_tests") {
     testonly = true
 

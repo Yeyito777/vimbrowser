@@ -5,7 +5,7 @@
 import("//build/config/chromeos/args.gni")
 import("//build/config/ozone.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("blocked_content") {
   sources = [
@@ -25,12 +25,10 @@ source_set("blocked_content") {
     "//url",
   ]
 
-  if (!is_android) {
-    sources += [
-      "framebust_block_tab_helper.h",
-      "popunder_preventer.h",
-    ]
-  }
+  sources += [
+    "framebust_block_tab_helper.h",
+    "popunder_preventer.h",
+  ]
 }
 
 source_set("impl") {
@@ -54,51 +52,41 @@ source_set("impl") {
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 
-  if (!is_android) {
-    sources += [
-      "framebust_block_tab_helper.cc",
-      "popunder_preventer.cc",
-    ]
+  sources += [
+    "framebust_block_tab_helper.cc",
+    "popunder_preventer.cc",
+  ]
 
-    deps += [
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//components/guest_view/browser",
-      "//extensions/common:common_constants",
-    ]
-  } else {  # !is_android
-    deps += [
-      "//chrome/browser/ui/android/tab_model",
-      "//components/messages/android",
-      "//components/messages/android:feature_flags",
-    ]
+  deps += [
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//components/guest_view/browser",
+    "//extensions/common:common_constants",
+  ]
+}
+
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "popup_opener_tab_helper_browsertest.cc",
+    "popup_tracker_browsertest.cc",
+    "safe_browsing_triggered_popup_blocker_browsertest.cc",
+  ]
+  deps = [
+    ":blocked_content",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/test:test_support",
+    "//components/back_forward_cache",
+    "//components/content_settings/browser",
+  ]
+  if (use_ozone) {
+    deps += [ "//ui/ozone" ]
   }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "popup_opener_tab_helper_browsertest.cc",
-      "popup_tracker_browsertest.cc",
-      "safe_browsing_triggered_popup_blocker_browsertest.cc",
-    ]
-    deps = [
-      ":blocked_content",
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/test:test_support",
-      "//components/back_forward_cache",
-      "//components/content_settings/browser",
-    ]
-    if (use_ozone) {
-      deps += [ "//ui/ozone" ]
-    }
-  }
-}
-
-if (!is_android && !is_chromeos_device) {
+if (!is_chromeos_device) {
   source_set("interactive_ui_tests") {
     testonly = true
     defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
@@ -129,11 +117,4 @@ source_set("unit_tests") {
     "//components/content_settings/browser",
     "//components/ukm/content",
   ]
-  if (is_android) {
-    deps += [
-      "//components/infobars/android",
-      "//components/messages/android:test_support",
-      "//components/ukm:test_support",
-    ]
-  }
 }

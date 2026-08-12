@@ -33,11 +33,9 @@ config("freetype_component_config") {
     "WITHOUT_HARFBUZZ",
   ]
 
-  if (!is_android) {
-    # Selects type1cid.c and type1.c modules in
-    # freetype-custom-include/freetype/config/ftmodule.h.
-    defines += [ "PDFIUM_REQUIRED_MODULES" ]
-  }
+  # Selects type1cid.c and type1.c modules in
+  # freetype-custom-include/freetype/config/ftmodule.h.
+  defines += [ "PDFIUM_REQUIRED_MODULES" ]
 
   if (!is_component_build) {
     defines += [ "CHROMIUM_RESTRICT_VISIBILITY" ]
@@ -129,13 +127,11 @@ component("freetype") {
     sources += [ "src/src/base/ftsystem.c" ]
   }
 
-  if (!is_android) {
-    sources += [
-      "src/src/base/ftcid.c",
-      "src/src/cid/type1cid.c",
-      "src/src/type1/type1.c",
-    ]
-  }
+  sources += [
+    "src/src/base/ftcid.c",
+    "src/src/cid/type1cid.c",
+    "src/src/type1/type1.c",
+  ]
 
   if (is_linux || is_chromeos || is_cast_android) {
     # Needed for content_shell on Linux and Chromecast, since fontconfig

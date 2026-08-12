@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("browser") {
   sources = [
     "contextual_search_context.cc",
@@ -36,12 +32,6 @@ static_library("browser") {
     "//third_party/blink/public/common",
     "//url",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("quick_action_category_enum_javagen") {
-    sources = [ "resolved_search_term.h" ]
-  }
 }
 
 source_set("unit_tests") {

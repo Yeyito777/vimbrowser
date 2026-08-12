@@ -79,9 +79,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/android/view_android.h"
-#endif
 
 using content::BrowserThread;
 using content::WebContents;
@@ -1115,12 +1112,7 @@ void ClientSideDetectionHost::OnCreditCardFormVisitCount(
   }
 
   credit_card_form::ReferringApp referring_app =
-#if BUILDFLAG(IS_ANDROID)
-      credit_card_form::FromReferringAppInfo(
-          delegate_->GetReferringAppInfo(web_contents()));
-#else
       credit_card_form::kNoReferringApp;
-#endif
   credit_card_form::LogEvent(site_visit, referring_app, field_heuristic);
 
   // Do not proceed with preclassification if it has already been done for
@@ -1148,16 +1140,9 @@ void ClientSideDetectionHost::OnCreditCardFormVisitCount(
   }
 
   if (kCsdCreditCardFormEnableReferringAppFilter.Get()) {
-#if BUILDFLAG(IS_ANDROID)
-    // Early exit if referring app is not an SMS app.
-    if (referring_app != credit_card_form::ReferringApp::kSmsApp) {
-      return;
-    }
-#else
     // On non-Android platforms, we do not have referring app info,
     // so always fail the check for SMS app.
     return;
-#endif
   }
 
   MaybeStartPreClassification(ClientSideDetectionType::CREDIT_CARD_FORM);
@@ -1450,21 +1435,6 @@ ClientSideDetectionHost::DetermineVisualFeaturesExtraction() {
   int viewport_height = -1;
   visual_utils::CanExtractVisualFeaturesResult
       can_extract_visual_features_result;
-#if BUILDFLAG(IS_ANDROID)
-  gfx::Size size;
-  content::RenderWidgetHostView* view =
-      web_contents()->GetRenderWidgetHostView();
-  // native view can be null in tests.
-  if (view && view->GetNativeView()) {
-    gfx::SizeF viewport = view->GetNativeView()->viewport_size();
-    viewport_width = static_cast<int>(viewport.width());
-    viewport_height = static_cast<int>(viewport.height());
-    size = gfx::Size(viewport_width, viewport_height);
-  }
-  can_extract_visual_features_result = visual_utils::CanExtractVisualFeatures(
-      IsEnhancedProtectionEnabled(*delegate_->GetPrefs()),
-      web_contents()->GetBrowserContext()->IsOffTheRecord(), size);
-#else
   gfx::Size size;
   content::RenderWidgetHostView* view =
       web_contents()->GetRenderWidgetHostView();
@@ -1477,7 +1447,6 @@ ClientSideDetectionHost::DetermineVisualFeaturesExtraction() {
       IsEnhancedProtectionEnabled(*delegate_->GetPrefs()),
       web_contents()->GetBrowserContext()->IsOffTheRecord(), size,
       zoom::ZoomController::GetZoomLevelForWebContents(web_contents()));
-#endif
   base::UmaHistogramSparse("SBClientPhishing.Viewport.Width", viewport_width);
   base::UmaHistogramSparse("SBClientPhishing.Viewport.Height", viewport_height);
   if (viewport_width <= 0xFFFF && viewport_width >= 0 &&

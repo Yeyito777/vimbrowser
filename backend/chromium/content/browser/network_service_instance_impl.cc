@@ -84,17 +84,13 @@
 #include "services/network/public/mojom/network_service_test.mojom.h"
 #include "services/network/public/mojom/socket_broker.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-#else
 #include "content/browser/network_sandbox.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "content/browser/network/network_service_process_tracker_win.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/browser/system_dns_resolution/system_dns_resolver.h"
 #include "services/network/public/mojom/system_dns_resolution.mojom-forward.h"
 #endif
@@ -401,29 +397,12 @@ void CreateInProcessNetworkService(
             network::features::kNetworkServiceTaskScheduler)) {
       network::ConfigureSequenceManager(options);
     }
-#if BUILDFLAG(IS_ANDROID)
-    // Local testing shows that when priority inheritance (PI) locks are enabled
-    // on Android, the network service thread is frequently queued behind thread
-    // pool worker threads when contending for a PI lock, regressing startup
-    // time. This is because of the Linux kernel enforcing FIFO ordering on
-    // threads of same priority contending on a PI lock. Increase the network
-    // thread's priority when PI locks are enabled to compensate for the shift
-    // from an unfair to a fair lock.
-    if (base::android::BackgroundThreadPoolFieldTrial::
-            ShouldUsePriorityInheritanceLocks()) {
-      options.thread_type = base::ThreadType::kPresentation;
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
     GetNetworkServiceDedicatedThread().StartWithOptions(std::move(options));
     task_runner = GetNetworkServiceDedicatedThread().task_runner();
     task_runner->PostTask(
         FROM_HERE, base::BindOnce([]() {
           mojo::InterfaceEndpointClient::SetThreadNameSuffixForMetrics(
               "NetworkService");
-#if BUILDFLAG(IS_ANDROID)
-          base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(
-              "NetworkService");
-#endif  // BUILDFLAG(IS_ANDROID)
         }));
   } else {
     task_runner = GetIOThreadTaskRunner({});
@@ -440,7 +419,7 @@ void CreateInProcessNetworkService(
       }));
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 // Runs a self-owned SystemDnsResolverMojoImpl. This is meant to run on a
 // high-priority thread pool.
 void RunSystemDnsResolverOnThreadPool(
@@ -506,7 +485,7 @@ network::mojom::NetworkServiceParamsPtr CreateNetworkServiceParams() {
   }
 #endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (GetContentClient()
           ->browser()
           ->ShouldRunOutOfProcessSystemDnsResolution() &&
@@ -1066,45 +1045,11 @@ void CreateNetworkContextInNetworkService(
             .InitWithNewPipeAndPassReceiver());
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, if a cookie_manager pending receiver was passed then migration
-  // should not be attempted as the cookie file is already being accessed by the
-  // browser instance.
-  if (params->cookie_manager) {
-    if (params->file_paths) {
-      // No migration should ever be attempted under this configuration.
-      DCHECK(!params->file_paths->unsandboxed_data_path);
-    }
-    CreateNetworkContextInternal(
-        std::move(context), std::move(params),
-        SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess);
-    return;
-  }
-
-  // Note: This logic is duplicated from MaybeGrantAccessToDataPath to this fast
-  // path. This should be kept in sync if there are any changes to the logic.
-  SandboxGrantResult grant_result = SandboxGrantResult::kNoMigrationRequested;
-  if (!params->file_paths) {
-    // No file paths (e.g. in-memory context) so nothing to do.
-    grant_result = SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess;
-  } else {
-    // If no `unsandboxed_data_path` is supplied, it means this is network
-    // context has been created by Android Webview, which does not understand
-    // the concept of `unsandboxed_data_path`. In this case, `data_directory`
-    // should always be used, if present.
-    if (!params->file_paths->unsandboxed_data_path)
-      grant_result = SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess;
-  }
-  // Create network context immediately without thread hops.
-  CreateNetworkContextInternal(std::move(context), std::move(params),
-                               grant_result);
-#else
   // Restrict disk access to a certain path (on another thread) and continue
   // with network context creation.
   GrantSandboxAccessOnThreadPool(
       std::move(params),
       base::BindOnce(&CreateNetworkContextInternal, std::move(context)));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace content

@@ -15,17 +15,15 @@ source_set("resource_coordinator") {
   sources = []
   public_deps = []
 
-  if (!is_android) {
-    sources += [
-      "lifecycle_unit.h",
-      "tab_lifecycle_unit_external.h",
-      "tab_load_tracker.h",
-    ]
-    public_deps += [
-      ":mojo_bindings",
-      ":mojo_bindings__generator",
-      "//base",
-      "//content/public/browser",
-    ]
-  }
+  sources += [
+    "lifecycle_unit.h",
+    "tab_lifecycle_unit_external.h",
+    "tab_load_tracker.h",
+  ]
+  public_deps += [
+    ":mojo_bindings",
+    ":mojo_bindings__generator",
+    "//base",
+    "//content/public/browser",
+  ]
 }

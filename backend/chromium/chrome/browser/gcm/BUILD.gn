@@ -44,30 +44,28 @@ source_set("unit_tests") {
   testonly = true
 
   # GCMDriverAndroid is not yet implemented.
-  if (!is_android) {
-    sources = [ "gcm_profile_service_unittest.cc" ]
+  sources = [ "gcm_profile_service_unittest.cc" ]
 
-    deps = [
-      ":gcm",
-      "//base",
-      "//chrome/browser/signin",
-      "//chrome/common:channel_info",
-      "//chrome/test:test_support",
-      "//components/gcm_driver",
-      "//components/gcm_driver:test_support",
-      "//components/os_crypt/async/browser:test_support",
-      "//components/pref_registry",
-      "//content/public/browser",
-      "//content/test:test_support",
-      "//mojo/public/cpp/bindings",
-      "//services/network:test_support",
-      "//services/network/public/cpp",
-      "//services/network/public/mojom",
-      "//testing/gtest",
-    ]
+  deps = [
+    ":gcm",
+    "//base",
+    "//chrome/browser/signin",
+    "//chrome/common:channel_info",
+    "//chrome/test:test_support",
+    "//components/gcm_driver",
+    "//components/gcm_driver:test_support",
+    "//components/os_crypt/async/browser:test_support",
+    "//components/pref_registry",
+    "//content/public/browser",
+    "//content/test:test_support",
+    "//mojo/public/cpp/bindings",
+    "//services/network:test_support",
+    "//services/network/public/cpp",
+    "//services/network/public/mojom",
+    "//testing/gtest",
+  ]
 
-    if (is_chromeos) {
-      deps += [ "//chromeos/ash/components/dbus/concierge" ]
-    }
+  if (is_chromeos) {
+    deps += [ "//chromeos/ash/components/dbus/concierge" ]
   }
 }

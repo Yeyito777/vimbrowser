@@ -277,26 +277,6 @@ _BANNED_JAVA_FUNCTIONS: Sequence[BanRule] = (
         False,
     ),
     BanRule(
-        pattern=
-        (r'/((DeviceInfo\.isDesktop\()|IS_DESKTOP_ANDROID|PackageManager\.FEATURE_PC)'
-         ),
-        explanation=
-        ('Usage of IS_DESKTOP_ANDROID build flag or DeviceInfo.isDesktop() '
-         'is discouraged. Use system affordances (see guidelines link below) to determine feature '
-         'availablility. '
-         'To request an exception, file a bug at '
-         'https://b.corp.google.com/issues/new?component=1753515&template=2172655'
-         ' . Once approved, use centralized util DeviceInfo.isDesktop() '
-         'instead of direct build flag or PackageManager.FEATURE_PC checks. '
-         'Allowances may be granted to only the directories below: '
-         '[build/, chrome/, components/, extensions/, infra/, tools/] '
-         'Note: in particular we need to avoid components shared with '
-         'WebView. Refer to https://chromium.googlesource.com/chromium/src/+/HEAD/docs/ui/android/device_form_factor.md for guidelines. ',
-         ),
-        treat_as_error=False,
-        surface_as_gerrit_lint=True,
-    ),
-    BanRule(
         r'/(?:org\.junit\.)?(?<!\w)Assert\.assertThat\(',
         ('Use com.google.common.truth.Truth.assertThat() instead of '
          'org.junit.Assert.assertThat().', ),
@@ -2274,23 +2254,6 @@ _BANNED_CPP_FUNCTIONS: Sequence[BanRule] = (
             'use-after-free bugs. Instead, use AddChildView(std::unique_ptr). '
             'See https://crbug.com/40485510 for more details.', ),
         treat_as_error=False,
-    ),
-    BanRule(
-        pattern=(r'IS_DESKTOP_ANDROID'),
-        explanation=
-        ('Usage of IS_DESKTOP_ANDROID build flag '
-         'is discouraged. Use system affordances to determine feature '
-         'availablility. Refer to https://chromium.googlesource.com/chromium/src/+/HEAD/docs/ui/android/device_form_factor.md for guidelines. '
-         'To request an exception, file a bug at '
-         'https://b.corp.google.com/issues/new?component=1753515&template=2172655'
-         'Once approved, use centralized util DeviceInfo.isDesktop() '
-         'instead of direct build flag or PackageManager.FEATURE_PC checks. '
-         'Allowances may be granted to only the directories below: '
-         '[build/, chrome/, components/, extensions/, infra/, tools/] '
-         'Note: in particular we need to avoid components shared with '
-         'WebView.', ),
-        treat_as_error=False,
-        surface_as_gerrit_lint=True,
     ),
     BanRule(
         pattern='PageActionIconView',
@@ -8342,4 +8305,3 @@ def CheckSettingsChanges(input_api, output_api):
             '  Detailed issues found in your changes:\n',
             problems)
     ]
-

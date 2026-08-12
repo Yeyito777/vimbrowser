@@ -31,13 +31,6 @@ config("config") {
       "-Wno-unused-value",
     ]
   }
-
-  # Platform-specific defines.
-  if (is_android) {
-    # Android NDK is necessary for its cpufeatures and this define is what
-    # OpenH264 code uses to check if it should be used.
-    defines += [ "ANDROID_NDK" ]
-  }
 }
 
 # MSAN builds are flaky with assembler. crbug.com/685168
@@ -52,7 +45,7 @@ if (use_assembler) {
   if (!is_component_build) {
     if (is_apple) {
       asm_defines += [ "WELS_PRIVATE_EXTERN=private_extern" ]
-    } else if (is_linux || is_chromeos || is_android || is_fuchsia) {
+    } else if (is_linux || is_chromeos || is_fuchsia) {
       asm_defines += [ "WELS_PRIVATE_EXTERN=hidden" ]
     }
   }
@@ -146,15 +139,6 @@ source_set("common") {
   if (use_assembler) {
     defines = [ "X86_ASM" ]
     deps += [ ":openh264_common_asm" ]
-  }
-  if (is_android) {
-    deps += [
-      # Defines "android_get/setCpu..." functions. The original OpenH264 build
-      # files replaces these using macros for "wels_..." versions of the same
-      # functions. We do not have access to these and use the <cpu-features.h>
-      # ones instead.
-      "//third_party/cpu_features:ndk_compat",
-    ]
   }
 }
 

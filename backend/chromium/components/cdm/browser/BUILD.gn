@@ -16,10 +16,6 @@ if (enable_media_drm_storage) {
       "//fuchsia_web/*",
     ]
 
-    if (is_android) {
-      visibility += [ "//components/browser_ui/site_settings/android" ]
-    }
-
     sources = [
       "media_drm_storage_impl.cc",
       "media_drm_storage_impl.h",

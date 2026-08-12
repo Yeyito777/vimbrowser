@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("time_zone_monitor") {
   visibility = [
     ":test_support",
@@ -28,14 +23,6 @@ source_set("time_zone_monitor") {
   ]
 
   public_deps = [ "//services/device/public/mojom" ]
-
-  if (is_android) {
-    sources += [
-      "time_zone_monitor_android.cc",
-      "time_zone_monitor_android.h",
-    ]
-    deps += [ ":time_zone_monitor_jni_headers" ]
-  }
 
   if (is_win) {
     sources += [ "time_zone_monitor_win.cc" ]
@@ -67,25 +54,4 @@ source_set("test_support") {
   sources = [ "fake_time_zone_monitor.h" ]
 
   public_deps = [ ":time_zone_monitor" ]
-}
-
-if (is_android) {
-  generate_jni("time_zone_monitor_jni_headers") {
-    visibility = [ ":*" ]
-    sources = [ "android/java/src/org/chromium/device/time_zone_monitor/TimeZoneMonitor.java" ]
-  }
-
-  android_library("java") {
-    # Conceptually, this should be visible only to //services/device:java.
-    # However, various generated targets also need to see this target as a
-    # result of //services/device:java depending on it.
-    visibility = [ "//services/device:*" ]
-    srcjar_deps = [ ":time_zone_monitor_jni_headers" ]
-    sources = [ "android/java/src/org/chromium/device/time_zone_monitor/TimeZoneMonitor.java" ]
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
 }

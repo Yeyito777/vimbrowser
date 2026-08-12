@@ -40,14 +40,6 @@ source_set("memory_system") {
     deps += [ "//components/gwp_asan/client" ]
   }
 
-  # Regardless of `enable_gwp_asan`, we must depend directly
-  # on the presence of the `base::Feature` that governs it. This is
-  # because WebView depends on it, but support cannot be "compiled out"
-  # hinging on a buildflag.
-  if (is_android) {
-    deps += [ "//components/gwp_asan/client:features" ]
-  }
-
   is_heap_profiling_supported = !is_ios || use_allocator_shim
 
   if (is_heap_profiling_supported) {

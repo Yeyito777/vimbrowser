@@ -41,10 +41,6 @@
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_service.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#include "chrome/browser/enterprise/util/android_enterprise_info.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/enterprise_util.h"
@@ -128,13 +124,6 @@ bool ShouldEnableAsyncDns() {
   }
 #endif
   bool feature_can_be_enabled = true;
-#if BUILDFLAG(IS_ANDROID)
-  int min_sdk = base::GetFieldTrialParamByFeatureAsInt(net::features::kAsyncDns,
-                                                       "min_sdk", 0);
-  if (base::android::android_info::sdk_int() < min_sdk) {
-    feature_can_be_enabled = false;
-  }
-#endif
   return feature_can_be_enabled &&
          base::FeatureList::IsEnabled(net::features::kAsyncDns);
 }
@@ -220,12 +209,6 @@ StubResolverConfigReader::StubResolverConfigReader(PrefService* local_state,
       base::BindOnce(&StubResolverConfigReader::OnParentalControlsDelayTimer,
                      base::Unretained(this)));
 
-#if BUILDFLAG(IS_ANDROID)
-  enterprise_util::AndroidEnterpriseInfo::GetInstance()
-      ->GetAndroidEnterpriseInfoState(base::BindOnce(
-          &StubResolverConfigReader::OnAndroidOwnedStateCheckComplete,
-          weak_factory_.GetWeakPtr()));
-#endif
 }
 
 StubResolverConfigReader::~StubResolverConfigReader() = default;
@@ -258,17 +241,7 @@ void StubResolverConfigReader::UpdateNetworkService(bool record_metrics) {
 
 bool StubResolverConfigReader::ShouldDisableDohForManaged() {
 // This function ignores cloud policies which are loaded on a per-profile basis.
-#if BUILDFLAG(IS_ANDROID)
-  // Check for MDM/management/owner apps. android_has_owner_ is true if either a
-  // device or policy owner app is discovered by
-  // GetAndroidEnterpriseInfoState(). If android_has_owner_ is nullopt, take a
-  // value of false so that we don't disable DoH during the async check.
-
-  // Because Android policies can only be loaded with owner apps this is
-  // sufficient to check for the prescences of policies as well.
-  if (android_has_owner_.value_or(false))
-    return true;
-#elif BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN)
   // TODO(crbug.com/40229843): What is the correct function to use here? (This
   // may or may not obsolete the following TODO)
   // TODO(crbug.com/40223626): For legacy compatibility, this uses
@@ -277,7 +250,7 @@ bool StubResolverConfigReader::ShouldDisableDohForManaged() {
   if (base::win::IsEnrolledToDomain())
     return true;
 #endif
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
+#if !BUILDFLAG(IS_CHROMEOS)
   if (g_browser_process->browser_policy_connector()->HasMachineLevelPolicies())
     return true;
 #endif
@@ -474,15 +447,3 @@ SecureDnsConfig StubResolverConfigReader::GetAndUpdateConfiguration(
                          forced_management_mode,
                          std::move(fallback_doh_nameservers));
 }
-
-#if BUILDFLAG(IS_ANDROID)
-void StubResolverConfigReader::OnAndroidOwnedStateCheckComplete(
-    bool has_profile_owner,
-    bool has_device_owner) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  android_has_owner_ = has_profile_owner || has_device_owner;
-  // update the network service if the actual result is "true" to save time.
-  if (android_has_owner_.value())
-    UpdateNetworkService(false /* record_metrics */);
-}
-#endif

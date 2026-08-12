@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/allocator/partition_alloc_support.h"
-#include "base/android/android_info.h"
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
 #include "base/feature_list.h"
@@ -84,10 +83,6 @@
 #include "ui/gl/init/gl_factory.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/viz/service/gl/throw_uncaught_exception.h"
-#include "media/base/android/media_codec_util.h"
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
 #include "components/chromeos_camera/gpu_mjpeg_decode_accelerator_factory.h"
@@ -358,42 +353,6 @@ void GpuServiceImpl::UpdateGPUInfoGL() {
   gpu_host_->DidUpdateGPUInfo(gpu_info_);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void GpuServiceImpl::InitializeWithHost(
-    mojo::PendingRemote<mojom::GpuHost> pending_gpu_host,
-    gpu::GpuProcessShmCount use_shader_cache_shm_count,
-    scoped_refptr<gl::GLSurface> default_offscreen_surface,
-    mojom::GpuServiceCreationParamsPtr creation_params,
-    gpu::SyncPointManager* sync_point_manager,
-    gpu::SharedImageManager* shared_image_manager,
-    gpu::Scheduler* scheduler,
-    base::WaitableEvent* shutdown_event,
-    const gpu::SharedContextState::GrContextOptionsProvider*
-        gr_context_options_provider) {
-  if (!sync_point_manager) {
-    sync_point_manager = CreateSyncPointManager();
-  }
-
-  if (!shared_image_manager) {
-    shared_image_manager = CreateSharedImageManager();
-  }
-
-  if (!scheduler) {
-    scheduler = CreateScheduler(sync_point_manager);
-  }
-
-  if (!shutdown_event) {
-    shutdown_event = CreateShutdownEvent();
-  }
-
-  gr_context_options_provider_ = gr_context_options_provider;
-
-  InitializeWithHostInternal(
-      std::move(pending_gpu_host), std::move(use_shader_cache_shm_count),
-      default_offscreen_surface, std::move(creation_params), sync_point_manager,
-      shared_image_manager, scheduler, shutdown_event);
-}
-#else
 void GpuServiceImpl::InitializeWithHost(
     mojo::PendingRemote<mojom::GpuHost> pending_gpu_host,
     gpu::GpuProcessShmCount use_shader_cache_shm_count,
@@ -432,7 +391,6 @@ void GpuServiceImpl::InitializeWithHost(
   }
 #endif
 }
-#endif
 
 void GpuServiceImpl::InitializeWithHostInternal(
     mojo::PendingRemote<mojom::GpuHost> pending_gpu_host,
@@ -763,10 +721,6 @@ std::string GpuServiceImpl::GetShaderPrefixKey() {
         "-" + active_gpu.driver_version + "-" + active_gpu.driver_vendor + "-" +
         base::SysInfo::ProcessCPUArchitecture();
 
-#if BUILDFLAG(IS_ANDROID)
-    std::string build_fp = base::android::android_info::android_build_fp();
-    shader_prefix_key_ += "-" + build_fp;
-#endif
   }
 
   return shader_prefix_key_;
@@ -986,11 +940,7 @@ void GpuServiceImpl::WakeUpGpu() {
 
 void GpuServiceImpl::WakeUpGpuOnMainThread() {
   if (gpu_feature_info_.IsWorkaroundEnabled(gpu::WAKE_UP_GPU_BEFORE_DRAWING)) {
-#if BUILDFLAG(IS_ANDROID)
-    gpu_channel_manager_->WakeUpGpu();
-#else
     NOTREACHED() << "WakeUpGpu() not supported on this platform.";
-#endif
   }
 }
 
@@ -1066,29 +1016,12 @@ void GpuServiceImpl::OnBackgroundCleanup() {
 
 void GpuServiceImpl::OnBackgroundCleanupGpuMainThread() {
   // Currently only called on Android.
-#if BUILDFLAG(IS_ANDROID)
-  if (!main_runner_->BelongsToCurrentThread()) {
-    main_runner_->PostTask(
-        FROM_HERE,
-        base::BindOnce(&GpuServiceImpl::OnBackgroundCleanupGpuMainThread,
-                       weak_ptr_));
-    return;
-  }
-  DVLOG(1) << "GPU: Performing background cleanup";
-  gpu_channel_manager_->OnBackgroundCleanup();
-#else
   NOTREACHED();
-#endif
 }
 
 void GpuServiceImpl::OnBackgroundCleanupCompositorGpuThread() {
   // Currently only called on Android.
-#if BUILDFLAG(IS_ANDROID)
-  if (compositor_gpu_thread_)
-    compositor_gpu_thread_->OnBackgroundCleanup();
-#else
   NOTREACHED();
-#endif
 }
 
 void GpuServiceImpl::OnBackgrounded() {
@@ -1175,11 +1108,7 @@ void GpuServiceImpl::Hang() {
 
 void GpuServiceImpl::ThrowJavaException() {
   DCHECK(io_runner_->BelongsToCurrentThread());
-#if BUILDFLAG(IS_ANDROID)
-  ThrowUncaughtException();
-#else
   NOTREACHED() << "Java exception not supported on this platform.";
-#endif
 }
 
 void GpuServiceImpl::StartPeakMemoryMonitorOnMainThread(uint32_t sequence_num) {
@@ -1368,11 +1297,6 @@ void GpuServiceImpl::GetDawnInfoOnMain(bool collect_metrics,
                        base::BindOnce(std::move(callback), dawn_info_list));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void GpuServiceImpl::SetHostProcessId(base::ProcessId pid) {
-  host_process_id_ = pid;
-}
-#endif
 
 GpuServiceImpl::InitParams::InitParams() = default;
 GpuServiceImpl::InitParams::InitParams(InitParams&& other) = default;

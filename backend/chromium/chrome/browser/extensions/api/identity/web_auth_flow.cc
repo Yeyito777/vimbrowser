@@ -34,17 +34,8 @@
 #include "url/gurl.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_window.h"
-#else
-static_assert(BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS));
-#include "base/functional/callback_forward.h"
-#include "chrome/browser/android/tab_android.h"
-#include "chrome/browser/tab_list/tab_list_interface.h"
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -166,18 +157,6 @@ void WebAuthFlow::CloseInfoBar() {
   }
 }
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-void WebAuthFlow::OnBrowserWindowInterfaceInitialized(
-    BrowserWindowInterface* browser) {
-  TabModel* tab_model =
-      TabModelList::FindTabModelWithWindowSessionId(browser->GetSessionID());
-  tab_model->CreateTab(
-      TabAndroid::FromWebContents(tab_model->GetActiveWebContents()),
-      std::move(web_contents_), TabModel::kInvalidIndex,
-      TabModel::TabLaunchType::FROM_RECENT_TABS_FOREGROUND,
-      /*should_pin=*/false);
-}
-#endif
 
 bool WebAuthFlow::DisplayAuthPageInPopupWindow() {
   if (GetBrowserWindowCreationStatusForProfile(*profile_) !=
@@ -185,7 +164,6 @@ bool WebAuthFlow::DisplayAuthPageInPopupWindow() {
     return false;
   }
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
   Browser::CreateParams browser_params(Browser::TYPE_POPUP, profile_,
                                        user_gesture_);
   browser_params.omit_from_session_restore = true;
@@ -201,19 +179,6 @@ bool WebAuthFlow::DisplayAuthPageInPopupWindow() {
       AddTabTypes::ADD_ACTIVE);
 
   browser->window()->Show();
-#else
-  static_assert(BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS));
-  BrowserWindowCreateParams params(BrowserWindowInterface::TYPE_POPUP,
-                                   *profile_, user_gesture_);
-  if (popup_bounds_.has_value()) {
-    params.initial_bounds = popup_bounds_.value();
-  }
-
-  base::OnceCallback<void(BrowserWindowInterface*)> callback =
-      base::BindOnce(&WebAuthFlow::OnBrowserWindowInterfaceInitialized,
-                     weak_factory_.GetWeakPtr());
-  CreateBrowserWindow(std::move(params), std::move(callback));
-#endif
 
   return true;
 }

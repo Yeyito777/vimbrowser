@@ -235,7 +235,7 @@ declare_args() {
 
   # Enable advanced BigInt algorithms, costing about 10-30 KB binary size
   # depending on platform. Disabled on Android to save binary size.
-  v8_advanced_bigint_algorithms = !is_android
+  v8_advanced_bigint_algorithms = true
 
   # TODO: macros for determining endian type are clang specific.
   v8_use_libm_trig_functions = is_clang
@@ -401,7 +401,7 @@ if (v8_force_optimize_speed) {
   v8_add_configs += [ "//build/config/compiler:optimize_speed" ]
 } else if (is_debug && !v8_optimized_debug) {
   v8_add_configs += [ "//build/config/compiler:no_optimize" ]
-} else if (((is_posix && !is_android) || is_win) && !using_sanitizer) {
+} else if ((is_posix || is_win) && !using_sanitizer) {
   # TODO(crbug.com/621335) Rework this so that we don't have the confusion
   # between "optimize_speed" and "optimize_max".
   v8_add_configs += [ "//build/config/compiler:optimize_speed" ]

@@ -13,8 +13,7 @@ import("//build/config/compiler/compiler.gni")
 # iOS is disabled when !use_partition_alloc due to https://crbug.com/446856826
 supported_platform =
     is_linux || is_chromeos || is_mac || (is_ios && use_partition_alloc) ||
-    (is_win && (current_cpu == "x64" || current_cpu == "arm64")) ||
-    (is_android && !is_component_build && enable_frame_pointers)
+    (is_win && (current_cpu == "x64" || current_cpu == "arm64"))
 
 declare_args() {
   # Is GWP-ASan malloc/PartitionAlloc hooking enabled for chrome/ on a given

@@ -6,10 +6,6 @@ import("//build/buildflag_header.gni")
 import("//components/signin/features.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 buildflag_header("signin_buildflags") {
   header = "signin_buildflags.h"
   flags = [
@@ -81,23 +77,9 @@ static_library("base") {
     "//url",
   ]
 
-  if (is_android) {
-    sources += [ "signin_feature_map.cc" ]
-    deps += [ "//components/signin/public/android:jni_headers" ]
-  }
-
   if (is_chromeos) {
     deps += [ "//components/user_manager" ]
     public_deps += [ "//components/account_manager_core" ]
-  }
-}
-
-if (is_android) {
-  java_cpp_enum("signin_metrics_enum_javagen") {
-    sources = [ "signin_metrics.h" ]
-  }
-  java_cpp_enum("consent_level_enum_javagen") {
-    sources = [ "consent_level.h" ]
   }
 }
 

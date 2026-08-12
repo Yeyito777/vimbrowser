@@ -4,11 +4,6 @@
 
 import("//build/config/ui.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 component("animation") {
   sources = [
     "animation.cc",
@@ -32,10 +27,6 @@ component("animation") {
     "tween.h",
   ]
 
-  if (is_android) {
-    sources += [ "animation_android.cc" ]
-  }
-
   if (is_chromeos) {
     sources += [ "animation_chromeos.cc" ]
   }
@@ -52,12 +43,10 @@ component("animation") {
     sources += [ "animation_linux.cc" ]
   }
 
-  if (!is_android) {
-    sources += [
-      "throb_animation.cc",
-      "throb_animation.h",
-    ]
-  }
+  sources += [
+    "throb_animation.cc",
+    "throb_animation.h",
+  ]
 
   if (is_mac) {
     frameworks = [
@@ -78,10 +67,6 @@ component("animation") {
     "//ui/gfx/geometry",
     "//ui/gfx/geometry:geometry_skia",
   ]
-
-  if (is_android) {
-    deps += [ "//ui/accessibility:ax_base_android" ]
-  }
 
   if (is_linux) {
     deps += [ "//ui/linux:linux_ui" ]

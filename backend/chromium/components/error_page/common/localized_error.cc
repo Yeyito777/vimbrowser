@@ -742,7 +742,7 @@ void GetSuggestionsSummaryList(int error_code,
         "summary", IDS_ERRORPAGES_SUGGESTION_CHECK_CONNECTION_SUMMARY));
   }
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
   if (IsSuggested(suggestions, SUGGEST_DNS_CONFIG) &&
       IsSuggested(suggestions, SUGGEST_FIREWALL_CONFIG) &&
       IsSuggested(suggestions, SUGGEST_PROXY_CONFIG)) {
@@ -771,15 +771,10 @@ void GetSuggestionsSummaryList(int error_code,
     DCHECK(!(suggestions & SUGGEST_DNS_CONFIG));
     DCHECK(!(suggestions & SUGGEST_SECURE_DNS_CONFIG));
   }
-#elif BUILDFLAG(IS_ANDROID)
-  if (IsSuggested(suggestions, SUGGEST_SECURE_DNS_CONFIG)) {
-    suggestions_summary_list.Append(SingleEntryDictionary(
-        "summary", IDS_ERRORPAGES_SUGGESTION_CHECK_SECURE_DNS_SUMMARY));
-  }
 #endif
 
   if (IsSuggested(suggestions, SUGGEST_OFFLINE_CHECKS)) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
     suggestions_summary_list.Append(SingleEntryDictionary(
         "summary", IDS_ERRORPAGES_SUGGESTION_TURN_OFF_AIRPLANE_SUMMARY));
     suggestions_summary_list.Append(SingleEntryDictionary(
@@ -837,7 +832,7 @@ void AddSuggestionDetailDictionaryToList(base::ListValue& list,
   list.Append(std::move(suggestion_list_item));
 }
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
 // Creates a dictionary with "header" and "body" entries and adds it to `list`.
 void AddSuggestionDetailDictionaryToList(base::ListValue& list,
                                          std::u16string header_message,
@@ -867,7 +862,7 @@ void AddSuggestionsDetails(int error_code,
   }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+#if !BUILDFLAG(IS_IOS)
   if (suggestions & SUGGEST_DNS_CONFIG) {
     AddSuggestionDetailDictionaryToList(
         suggestions_details, IDS_ERRORPAGES_SUGGESTION_DNS_CONFIG_HEADER,
@@ -1181,29 +1176,6 @@ LocalizedError::PageState LocalizedError::GetPageState(
                             error_page_params);
   AddSuggestionsDetails(error_code, options.suggestions, suggestions_details);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (!is_post && !result.reload_button_shown && !is_incognito &&
-      failed_url.is_valid() && failed_url.SchemeIsHTTPOrHTTPS() &&
-      LocalizedError::IsOfflineError(error_domain, error_code)) {
-    if (!auto_fetch_feature_enabled) {
-      result.download_button_shown = true;
-      result.strings.SetByDottedPath(
-          "downloadButton.msg",
-          l10n_util::GetStringUTF16(IDS_ERRORPAGES_BUTTON_DOWNLOAD));
-      result.strings.SetByDottedPath(
-          "downloadButton.disabledMsg",
-          l10n_util::GetStringUTF16(IDS_ERRORPAGES_BUTTON_DOWNLOADING));
-    } else {
-      result.auto_fetch_allowed = true;
-      result.strings.SetByDottedPath(
-          "savePageLater.savePageMsg",
-          l10n_util::GetStringUTF16(IDS_ERRORPAGES_SAVE_PAGE_BUTTON));
-      result.strings.SetByDottedPath(
-          "savePageLater.cancelMsg",
-          l10n_util::GetStringUTF16(IDS_ERRORPAGES_CANCEL_SAVE_PAGE_BUTTON));
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   result.strings.Set("suggestionsSummaryList",
                      base::Value(std::move(suggestions_summary_list)));

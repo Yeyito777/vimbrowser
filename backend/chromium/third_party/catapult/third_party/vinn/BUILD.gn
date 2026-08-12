@@ -27,13 +27,13 @@ group("vinn") {
 
   if (is_chromeos) {
     data += [
-        "third_party/v8/linux/arm/",
-        "third_party/v8/linux/mips/",
-        "third_party/v8/linux/mips64/",
+      "third_party/v8/linux/arm/",
+      "third_party/v8/linux/mips/",
+      "third_party/v8/linux/mips64/",
     ]
   }
 
-  if (is_linux || is_chromeos || is_android || is_fuchsia) {
+  if (is_linux || is_chromeos || is_fuchsia) {
     data += [ "third_party/v8/linux/x86_64/" ]
   }
 }

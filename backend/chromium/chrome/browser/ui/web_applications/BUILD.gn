@@ -9,14 +9,12 @@ source_set("web_applications") {
   sources = []
   public_deps = []
 
-  if (!is_android) {
-    sources += [ "web_app_dialog_utils.h" ]
-    public_deps += [
-      "//base",
-      "//chrome/browser/web_applications",
-      "//components/webapps/common",
-    ]
-  }
+  sources += [ "web_app_dialog_utils.h" ]
+  public_deps += [
+    "//base",
+    "//chrome/browser/web_applications",
+    "//components/webapps/common",
+  ]
 
   if (is_chromeos) {
     sources += [
@@ -106,27 +104,25 @@ source_set("impl") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [ "web_app_dialog_utils.cc" ]
-    deps += [
-      ":web_applications",
-      "//base",
-      "//chrome/browser/notifications:system_notification_helper",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/profiles/keep_alive",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/color:mixers",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/browser/ui/tabs:tabs_public",
-      "//chrome/browser/ui/user_education",
-      "//chrome/browser/web_applications",
-      "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
-      "//chrome/common:chrome_features",
-      "//components/feature_engagement/public:feature_constants",
-      "//components/webapps/browser",
-      "//content/public/browser",
-    ]
-  }
+  sources += [ "web_app_dialog_utils.cc" ]
+  deps += [
+    ":web_applications",
+    "//base",
+    "//chrome/browser/notifications:system_notification_helper",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/profiles/keep_alive",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/color:mixers",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/browser/ui/tabs:tabs_public",
+    "//chrome/browser/ui/user_education",
+    "//chrome/browser/web_applications",
+    "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
+    "//chrome/common:chrome_features",
+    "//components/feature_engagement/public:feature_constants",
+    "//components/webapps/browser",
+    "//content/public/browser",
+  ]
 
   if (is_chromeos) {
     sources += [

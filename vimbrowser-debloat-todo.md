@@ -264,7 +264,7 @@ These are reference measurements, not final acceptance values.
     35 additional Chromium-owned Java/JNI roots, and 3,565 Android-referencing
     build/metadata files are classified explicitly rather than guessed from
     names.
-- [ ] **P02:** Remove remaining Android browser/product Java, JNI, resources,
+- [x] **P02:** Remove remaining Android browser/product Java, JNI, resources,
       tests, build rules, manifests, and packaging after disconnecting every
       retained GN reference.
   - [x] Delete the production-disconnected Android-bearing roots and 35
@@ -278,9 +278,13 @@ These are reference measurements, not final acceptance values.
       It passed worker GN generation, the Chromium/CEF build, a clean shell
       build, CTest, checksummed artifact fetch, isolated X11 browser/IPC smoke
       tests, and the full local benchmark without changing the stable runtime.
-  - [ ] Remove their GN/GNI/resource/test/manifest/packaging branches instead of
+  - [x] Remove their GN/GNI/resource/test/manifest/packaging branches instead of
         leaving unsupported `is_android` paths.
-  - [ ] Disconnect the remaining active Android product dependencies.
+    - The final branch/resource sweep removes 5,312 files and 879,605 net lines,
+      leaves zero Android-named labels in the Linux `libcef` closure, and leaves
+      no Java/Kotlin source input. Exact boundaries and validation are recorded
+      in `docs/debloat-android-p02-final.md`.
+  - [x] Disconnect the remaining active Android product dependencies.
     - [x] Remove the 788-file `chrome/browser/android` product tree and its
       unconditional WebAPK proto dependency from desktop sync.
     - [x] Remove desktop remote-Android/ADB/USB DevTools discovery, forwarding,

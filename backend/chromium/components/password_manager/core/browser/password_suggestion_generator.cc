@@ -67,7 +67,6 @@ std::u16string ReplaceEmptyUsername(const std::u16string& username,
   return username;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 Suggestion CreatePasskeyFromAnotherDeviceEntry(bool listed_passkeys) {
   int title_id;
 #if !BUILDFLAG(IS_IOS)
@@ -85,7 +84,6 @@ Suggestion CreatePasskeyFromAnotherDeviceEntry(bool listed_passkeys) {
                     /*label=*/u"", Suggestion::Icon::kDevice,
                     SuggestionType::kWebauthnSignInWithAnotherDevice);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 Suggestion CreateGenerationEntry() {
   // The UI code will pick up an icon from the resources based on the string.
@@ -161,23 +159,17 @@ void AppendSuggestionIfMatching(
     suggestion.icon = Suggestion::Icon::kGlobe;
     suggestions->emplace_back(std::move(suggestion));
 
-#if BUILDFLAG(IS_ANDROID)
-    // Backup password is displayed every time on Android.
-    bool show_recovery_password = true;
-#else
     // Backup password is displayed only after the first attempt to login on
     // Desktop.
     bool show_recovery_password =
         undo_password_change_controller.GetState(credential.username_value) ==
         PasswordRecoveryState::kIncludeBackup;
-#endif
     if (credential.backup_password_value && show_recovery_password) {
       AppendBackupSuggestion(credential, suggestions);
     }
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void AppendTroubleSigningInSuggestion(
     const autofill::PasswordAndMetadata& credential,
     std::vector<Suggestion>* suggestions) {
@@ -217,7 +209,6 @@ void MaybeAppendTroubleSigningInSuggestion(
     }
   }
 }
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // This function attempts to fill |suggestions| from |fill_data| based on
 // |current_username| that is the current value of the field.
@@ -242,10 +233,8 @@ void GetSuggestions(
             [](const Suggestion& a, const Suggestion& b) {
               return a.main_text.value < b.main_text.value;
             });
-#if !BUILDFLAG(IS_ANDROID)
   MaybeAppendTroubleSigningInSuggestion(undo_password_change_controller,
                                         fill_data, suggestions);
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 Suggestion CreateFillPasswordChildSuggestion(
@@ -368,7 +357,6 @@ void RecordPendingStatePromoHistogram(FillingReauthPromoShown sample) {
 
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ShowPasskeysFromAnotherDeviceInAutofill() {
 #if BUILDFLAG(IS_IOS)
   return true;
@@ -384,7 +372,6 @@ bool ShowPasskeysFromAnotherDeviceInAutofill() {
                  kAutofillReintroduceHybridPasskeyDropdownItem);
 #endif  // BUILDFLAG(IS_IOS)
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }  // namespace
 
 PasswordSuggestionGenerator::PasswordSuggestionGenerator(
@@ -469,9 +456,7 @@ std::vector<Suggestion> PasswordSuggestionGenerator::GetSuggestionsForDomain(
   if (show_webauthn_credentials && delegate) {
     delegate->NotifyForPasskeysDisplay();
     if (delegate->GetPasskeys().has_value()) {
-#if !BUILDFLAG(IS_ANDROID)
       uses_passkeys = true;
-#endif
       std::ranges::transform(
           *delegate->GetPasskeys().value(), std::back_inserter(suggestions),
           [&page_favicon](const auto& passkey) {
@@ -666,9 +651,6 @@ PasswordSuggestionGenerator::GetManualFallbackSuggestions(
 std::optional<autofill::Suggestion>
 PasswordSuggestionGenerator::GetWebauthnSignInWithAnotherDeviceSuggestion()
     const {
-#if BUILDFLAG(IS_ANDROID)
-  return std::nullopt;
-#else   // BUILDFLAG(IS_ANDROID)
   WebAuthnCredentialsDelegate* delegate =
       password_client_->GetWebAuthnCredentialsDelegateForDriver(
           password_manager_driver_);
@@ -679,7 +661,6 @@ PasswordSuggestionGenerator::GetWebauthnSignInWithAnotherDeviceSuggestion()
   }
   return CreatePasskeyFromAnotherDeviceEntry(
       /*listed_passkeys=*/delegate->GetPasskeys().value()->size() > 0);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace password_manager

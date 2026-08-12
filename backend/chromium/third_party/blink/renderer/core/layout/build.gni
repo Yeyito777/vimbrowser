@@ -712,13 +712,6 @@ if (is_linux || is_chromeos) {
   ]
 }
 
-if (is_android) {
-  blink_core_sources_layout += [
-    "layout_theme_android.cc",
-    "layout_theme_android.h",
-  ]
-}
-
 if (is_fuchsia) {
   blink_core_sources_layout += [ "layout_theme_fuchsia.cc" ]
 }

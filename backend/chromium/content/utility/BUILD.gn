@@ -123,9 +123,7 @@ source_set("utility") {
   }
 
   # PAC execution is done in process on Android.
-  if (!is_android) {
-    deps += [ "//services/proxy_resolver:lib" ]
-  }
+  deps += [ "//services/proxy_resolver:lib" ]
 
   if (enable_screen_ai_service && (is_linux || is_chromeos)) {
     deps += [ "//services/screen_ai:screen_ai_sandbox_hook" ]
@@ -135,8 +133,7 @@ source_set("utility") {
     deps += [ "//services/accessibility:lib" ]
   }
 
-
-  if (enable_vr && !is_android) {
+  if (enable_vr) {
     deps += [
       "//content/services/isolated_xr_device:lib",
       "//device/vr/public/mojom:isolated_xr_service",

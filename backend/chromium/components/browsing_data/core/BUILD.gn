@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("core") {
   sources = [
     "browsing_data_policies_utils.cc",
@@ -54,27 +50,6 @@ static_library("core") {
 
 source_set("cookie_or_cache_deletion_choice") {
   sources = [ "cookie_or_cache_deletion_choice.h" ]
-}
-
-if (is_android) {
-  java_cpp_enum("browsing_data_utils_javagen") {
-    # External code should depend on ":java" instead.
-    visibility = [ ":*" ]
-    sources = [ "browsing_data_utils.h" ]
-  }
-  java_cpp_enum("cookie_or_cache_deletion_choice_javagen") {
-    # External code should depend on ":java" instead.
-    visibility = [ ":*" ]
-    sources = [ "cookie_or_cache_deletion_choice.h" ]
-  }
-
-  android_library("java") {
-    srcjar_deps = [
-      ":browsing_data_utils_javagen",
-      ":cookie_or_cache_deletion_choice_javagen",
-    ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
 }
 
 source_set("unit_tests") {

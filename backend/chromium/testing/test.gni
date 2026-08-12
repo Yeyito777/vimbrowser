@@ -38,13 +38,7 @@ if (is_fuchsia) {
   exec_target_suffix = ""
 }
 
-if (is_android) {
-  import("//build/android/test_wrapper/logdog_wrapper.gni")
-  import("//build/config/android/config.gni")
-  import("//build/config/android/create_unwind_table.gni")
-  import("//build/config/android/rules.gni")
-  import("//build/config/sanitizers/sanitizers.gni")
-} else if (is_fuchsia) {
+if (is_fuchsia) {
   import("//build/config/fuchsia/generate_runner_scripts.gni")
   import("//third_party/fuchsia-gn-sdk/src/cmc.gni")
   import("//third_party/fuchsia-gn-sdk/src/component.gni")
@@ -437,311 +431,11 @@ template("test") {
     assert(!defined(invoker.is_xctest) || !invoker.is_xctest,
            "is_xctest can be set only for iOS builds")
   }
-  if (!is_android) {
-    assert(!defined(invoker.allow_cleartext_traffic),
-           "allow_cleartext_traffic can be set only for Android tests")
-  }
 
-  if (is_android) {
-    assert(!defined(invoker.use_xvfb) || !invoker.use_xvfb)
+  assert(!defined(invoker.allow_cleartext_traffic),
+         "allow_cleartext_traffic can be set only for Android tests")
 
-    _use_default_launcher =
-        !defined(invoker.use_default_launcher) || invoker.use_default_launcher
-    if (!defined(invoker.use_raw_android_executable)) {
-      # Checkouts where build_with_chromium == false often have a custom GN
-      # template wrapper around test() which sets use_default_launcher == false.
-      # Set the _use_raw_android_executable default so that test() targets which
-      # do not use the custom wrapper
-      # (1) Do not cause "gn gen" to fail
-      # (2) Do not need to be moved into if(build_with_chromium) block.
-      _use_raw_android_executable =
-          !build_with_chromium && _use_default_launcher
-    } else {
-      not_needed([ "_use_default_launcher" ])
-      _use_raw_android_executable = invoker.use_raw_android_executable
-    }
-
-    # output_name is used to allow targets with the same name but in different
-    # packages to still produce unique runner scripts.
-    _output_name = invoker.target_name
-    if (defined(invoker.output_name)) {
-      _output_name = invoker.output_name
-    }
-
-    _test_runner_target = "${_output_name}__test_runner_script"
-    _wrapper_script_vars = [
-      "additional_apks",
-      "android_test_runner_script",
-      "extra_args",
-      "ignore_all_data_deps",
-      "shard_timeout",
-    ]
-
-    assert(_use_raw_android_executable || enable_java_templates)
-
-    if (_use_raw_android_executable) {
-      not_needed(invoker, [ "add_unwind_tables_in_apk" ])
-
-      _exec_target = "${target_name}__exec"
-      _dist_target = "${target_name}__dist"
-      _exec_output =
-          "$target_out_dir/${invoker.target_name}/${invoker.target_name}"
-      _crate_name = "${target_name}"
-
-      mixed_test(_exec_target) {
-        target_type = "executable"
-
-        # Use a crate name that avoids creating a warning due to double
-        # underscore (ie. `__`).
-        crate_name = _crate_name
-
-        # Configs will always be defined since we set_defaults in
-        # BUILDCONFIG.gn.
-        configs = []
-        forward_variables_from(
-            invoker,
-            "*",
-            TESTONLY_AND_VISIBILITY + _wrapper_script_vars + [
-                  "data_deps",
-                  "extra_dist_files",
-                ])
-
-        # Thanks to the set_defaults() for test(), configs are initialized with
-        # the default shared_library configs rather than executable configs.
-        configs -= [
-          "//build/config:shared_library_config",
-          "//build/config/android:hide_all_but_jni",
-        ]
-        configs += [ "//build/config:executable_config" ]
-
-        if (defined(invoker.data_deps)) {
-          data_deps = invoker.data_deps
-        } else {
-          data_deps = []
-        }
-        if (!defined(data)) {
-          data = []
-        }
-        if (tests_have_location_tags) {
-          data += [ "//testing/location_tags.json" ]
-        }
-        if (!defined(deps)) {
-          deps = []
-        }
-
-        # Don't output to the root or else conflict with the group() below.
-        output_name = rebase_path(_exec_output, root_out_dir)
-
-        if (use_rts) {
-          data_deps += [ ":${invoker.target_name}__rts_filters" ]
-        }
-      }
-
-      create_native_executable_dist(_dist_target) {
-        dist_dir = "$root_out_dir/$target_name"
-        binary = _exec_output
-        deps = [ ":$_exec_target" ]
-        if (defined(invoker.extra_dist_files)) {
-          extra_files = invoker.extra_dist_files
-        }
-        if (use_rts) {
-          if (!defined(data_deps)) {
-            data_deps = []
-          }
-          data_deps += [ ":${invoker.target_name}__rts_filters" ]
-        }
-      }
-    } else {
-      _library_target_name = "${target_name}__library"
-      _library_crate_name = "${target_name}_library"
-      _apk_target_name = "${target_name}__apk"
-      _apk_specific_vars = [
-        "allow_cleartext_traffic",
-        "android_manifest",
-        "android_manifest_dep",
-        "android_manifest_template",
-        "app_as_shared_lib",
-        "keystore_name",
-        "keystore_password",
-        "keystore_path",
-        "library_always_compress",
-        "loadable_module_deps",
-        "loadable_modules",
-        "min_sdk_version",
-        "product_config_java_packages",
-        "proguard_configs",
-        "proguard_enabled",
-        "srcjar_deps",
-        "target_sdk_version",
-        "use_default_launcher",
-        "use_native_activity",
-      ]
-
-      _add_unwind_tables_in_apk =
-          defined(invoker.add_unwind_tables_in_apk) &&
-          invoker.add_unwind_tables_in_apk && target_cpu == "arm"
-
-      # Adds the unwind tables from unstripped binary as an asset file in the
-      # apk, if |add_unwind_tables_in_apk| is specified by the test.
-      if (_add_unwind_tables_in_apk) {
-        _unwind_table_v2_name = "${_library_target_name}_unwind_v2"
-        unwind_table_v2(_unwind_table_v2_name) {
-          library_target = ":$_library_target_name"
-        }
-
-        _unwind_table_asset_name = "${target_name}__unwind_assets"
-        android_assets(_unwind_table_asset_name) {
-          disable_compression = true
-          sources = [ "$target_out_dir/$_unwind_table_v2_name/$unwind_table_asset_v2_filename" ]
-          deps = [ ":$_unwind_table_v2_name" ]
-        }
-      }
-
-      _generate_final_jni =
-          !defined(invoker.generate_final_jni) || invoker.generate_final_jni
-      mixed_test(_library_target_name) {
-        if (_generate_final_jni) {
-          target_type = "shared_library_with_jni"
-          java_targets = [ ":$_apk_target_name" ]
-        } else {
-          target_type = "shared_library"
-        }
-
-        # Configs will always be defined since we set_defaults in
-        # BUILDCONFIG.gn.
-        configs = []  # Prevent list overwriting warning.
-        configs = invoker.configs
-
-        forward_variables_from(
-            invoker,
-            "*",
-            [
-                  "configs",
-                  "deps",
-                ] + _apk_specific_vars + _wrapper_script_vars +
-                TESTONLY_AND_VISIBILITY)
-
-        # Use a crate name that avoids creating a warning due to double
-        # underscore (ie. `__`).
-        crate_name = _library_crate_name
-
-        # Native targets do not need to depend on java targets. Filter them out
-        # so that the shared library can be built without needing to wait for
-        # dependent java targets.
-        if (!defined(deps)) {
-          deps = []
-        }
-        if (defined(invoker.deps)) {
-          deps += filter_exclude(invoker.deps, java_target_patterns)
-        }
-
-        if (_use_default_launcher) {
-          deps += [ "//testing/android/native_test:native_test_native_code" ]
-        }
-      }
-      if (defined(invoker.output_name)) {
-        _apk_name = invoker.output_name
-      } else {
-        _apk_name = invoker.target_name
-      }
-      _final_apk_path =
-          "$root_build_dir/${_apk_name}_apk/${_apk_name}-debug.apk"
-
-      unittest_apk(_apk_target_name) {
-        forward_variables_from(invoker, _apk_specific_vars)
-        apk_name = _apk_name
-        final_apk_path = _final_apk_path
-        shared_library = ":$_library_target_name"
-        if (_generate_final_jni) {
-          srcjar_deps = [ "${shared_library}__jni_registration" ]
-        }
-
-        if (defined(invoker.deps)) {
-          deps = invoker.deps
-        } else {
-          deps = []
-        }
-        if (defined(loadable_module_deps)) {
-          deps += loadable_module_deps
-        }
-
-        # Add the Java classes so that each target does not have to do it.
-        if (_use_default_launcher) {
-          deps += [ "//base/test:test_support_java" ]
-        }
-
-        if (defined(_unwind_table_asset_name)) {
-          deps += [ ":${_unwind_table_asset_name}" ]
-        }
-
-        if (use_rts) {
-          data_deps = [ ":${invoker.target_name}__rts_filters" ]
-        }
-      }
-    }
-
-    test_runner_script(_test_runner_target) {
-      forward_variables_from(invoker, _wrapper_script_vars)
-
-      if (_use_raw_android_executable) {
-        executable_dist_dir = "$root_out_dir/$_dist_target"
-        data_deps = [ ":$_exec_target" ]
-      } else {
-        apk_target = ":$_apk_target_name"
-        incremental_apk = incremental_install
-
-        # Dep needed for the test runner .runtime_deps file to pick up data
-        # deps from the forward_variables_from(invoker, "*") on the library.
-        data_deps = [ ":$_library_target_name" ]
-        if (defined(invoker.proguard_enabled) && invoker.proguard_enabled) {
-          proguard_mapping_path = "$_final_apk_path.mapping"
-        }
-      }
-      test_name = _output_name
-      test_suite = _output_name
-      test_type = "gtest"
-      if (use_rts) {
-        data_deps += [ ":${invoker.target_name}__rts_filters" ]
-      }
-    }
-
-    # Create a wrapper script rather than using a group() in order to ensure
-    # "ninja $target_name" always works. If this was a group(), then GN would
-    # not create a top-level alias for it if a target exists in another
-    # directory with the same $target_name.
-    # Also - bots run this script directly for "components_perftests".
-    generate_wrapper(target_name) {
-      forward_variables_from(invoker, [ "visibility" ])
-      executable = "$root_build_dir/bin/run_$_output_name"
-      wrapper_script = "$root_build_dir/$_output_name"
-      deps = [ ":$_test_runner_target" ]
-      if (_use_raw_android_executable) {
-        deps += [ ":$_dist_target" ]
-      } else {
-        # Dep needed for the swarming .isolate file to pick up data
-        # deps from the forward_variables_from(invoker, "*") on the library.
-        deps += [
-          ":$_apk_target_name",
-          ":$_library_target_name",
-        ]
-      }
-
-      if (defined(invoker.data_deps)) {
-        data_deps = invoker.data_deps
-      } else {
-        data_deps = []
-      }
-
-      data_deps += [ "//testing:test_scripts_shared" ]
-
-      if (tests_have_location_tags) {
-        data = [ "//testing/location_tags.json" ]
-      }
-      if (use_rts) {
-        data_deps += [ ":${invoker.target_name}__rts_filters" ]
-      }
-    }
-  } else if (is_fuchsia) {
+  if (is_fuchsia) {
     assert(!defined(invoker.use_xvfb) || !invoker.use_xvfb)
 
     _output_name = invoker.target_name
@@ -1187,13 +881,11 @@ template("test") {
 # Variables:
 #   script: Path to underlying test script.
 #   args: Args to the test script.
-#   enable_android_wrapper: (optional) If true, the test will get wrapped in the
-#       logdog_wrapper on Android, which will stream logcats from the device.
 #   enable_cros_wrapper: (optional) If true, the test will get wrapped by the
 #       cros_test_wrapper on ChromeOS, which will prep the device for testing.
 template("script_test") {
-  _enable_logdog_wrapper = defined(invoker.enable_android_wrapper) &&
-                           invoker.enable_android_wrapper && is_android
+  _enable_logdog_wrapper = false
+
   _enable_cros_wrapper =
       defined(invoker.enable_cros_wrapper) && invoker.enable_cros_wrapper &&
       is_chromeos && is_chromeos_device
@@ -1327,16 +1019,5 @@ template("isolated_script_test") {
 
 # Test defaults.
 set_defaults("test") {
-  if (is_android) {
-    # Should be kept in sync with set_defaults("cronet_test") in
-    # //components/cronet/android/cronet_test_templates.gni
-    # LINT.IfChange
-    configs = default_shared_library_configs
-    configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-    configs += [ "//build/config/android:hide_all_but_jni" ]
-
-    # LINT.ThenChange(/components/cronet/android/cronet_test_templates.gni)
-  } else {
-    configs = default_executable_configs
-  }
+  configs = default_executable_configs
 }

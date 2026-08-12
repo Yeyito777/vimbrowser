@@ -17,32 +17,28 @@ source_set("content_settings") {
     "//services/device/public/cpp/geolocation:buildflags",
   ]
 
-  if (!is_android) {
-    sources += [
-      "content_setting_bubble_model.h",
-      "content_setting_bubble_model_delegate.h",
-      "content_setting_image_model.h",
-      "content_setting_image_model_states.h",
-    ]
-    public_deps += [ "//chrome/app/vector_icons" ]
-  }
+  sources += [
+    "content_setting_bubble_model.h",
+    "content_setting_bubble_model_delegate.h",
+    "content_setting_image_model.h",
+    "content_setting_image_model_states.h",
+  ]
+  public_deps += [ "//chrome/app/vector_icons" ]
 }
 
 source_set("impl") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [
-      "content_setting_bubble_model.cc",
-      "content_setting_image_model.cc",
-      "content_setting_image_model_states.cc",
-    ]
-    deps += [
-      "//chrome/browser/custom_handlers",
-      "//chrome/browser/ui/web_applications",
-    ]
-  }
+  sources += [
+    "content_setting_bubble_model.cc",
+    "content_setting_image_model.cc",
+    "content_setting_image_model_states.cc",
+  ]
+  deps += [
+    "//chrome/browser/custom_handlers",
+    "//chrome/browser/ui/web_applications",
+  ]
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 
@@ -77,13 +73,11 @@ source_set("browser_tests") {
   sources = []
   defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-  if (!is_android) {
-    sources += [
-      "content_setting_bubble_model_browsertest.cc",
-      "content_setting_image_model_browsertest.cc",
-      "framebust_block_browsertest.cc",
-    ]
-  }
+  sources += [
+    "content_setting_bubble_model_browsertest.cc",
+    "content_setting_image_model_browsertest.cc",
+    "framebust_block_browsertest.cc",
+  ]
 
   deps = [
     ":content_settings",
@@ -114,14 +108,12 @@ source_set("unit_tests") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [
-      "content_setting_bubble_model_unittest.cc",
-      "content_setting_image_model_unittest.cc",
-    ]
+  sources += [
+    "content_setting_bubble_model_unittest.cc",
+    "content_setting_image_model_unittest.cc",
+  ]
 
-    deps += [ "//chrome/browser/history" ]
-  }
+  deps += [ "//chrome/browser/history" ]
 
   if (is_mac) {
     sources += [

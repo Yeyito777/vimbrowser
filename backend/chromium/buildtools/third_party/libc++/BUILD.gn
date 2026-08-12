@@ -625,13 +625,9 @@ target(libcxx_target_type, "libc++") {
     use_libcxx_modules = false
   }
 
-  if ((is_android || is_apple) && libcxx_is_shared) {
+  if (is_apple && libcxx_is_shared) {
     # Use libc++_chrome to avoid conflicting with system libc++
     output_name = "libc++_chrome"
-    if (is_android) {
-      # See crbug.com/1076244#c11 for more detail.
-      configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-    }
   }
 
   if (libcxx_is_shared && !is_win) {

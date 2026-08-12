@@ -6,9 +6,6 @@ import("//build/config/features.gni")
 import("//build/config/ui.gni")
 import("//testing/test.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
 if (is_mac) {
   import("//build/config/mac/rules.gni")
 }
@@ -112,19 +109,6 @@ component("shell_dialogs") {
     deps += [ "//ui/aura" ]
   }
 
-  if (is_android) {
-    sources += [
-      "select_file_dialog_android.cc",
-      "select_file_dialog_android.h",
-    ]
-    deps += [
-      "//ui/android",
-      "//ui/base:select_file_dialog_jni_headers",
-    ]
-    include_dirs = [ "$root_gen_dir/ui" ]
-    libs = [ "jnigraphics" ]
-  }
-
   if (is_mac) {
     frameworks = [
       "CoreServices.framework",
@@ -184,11 +168,6 @@ test("shell_dialogs_unittests") {
 
   if (is_mac) {
     deps += [ "//components/remote_cocoa/app_shim" ]
-  }
-
-  # TODO: Remove once http://crbug.com/951419 is fixed.
-  if (is_android) {
-    deps += [ "//ui/android:ui_java" ]
   }
 
   if (is_ios) {

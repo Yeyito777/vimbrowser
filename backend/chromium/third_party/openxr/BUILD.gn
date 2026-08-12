@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 import("//device/vr/buildflags/buildflags.gni")
 
 declare_args() {
@@ -43,50 +39,6 @@ if (enable_openxr) {
     ]
 
     public_configs = [ ":config" ]
-  }
-
-  if (is_android) {
-    # On Android, the loader comes with a couple more external dependencies.
-    source_set("jnipp") {
-      sources = [
-        "src/src/external/jnipp/jnipp.cpp",
-        "src/src/external/jnipp/jnipp.h",
-      ]
-
-      cflags_cc = [ "-Wno-shadow" ]
-
-      configs += [
-        # JNIPP uses exceptions to communicate failures:
-        "//build/config/compiler:exceptions",
-      ]
-    }
-
-    config("android-jni-wrappers-config") {
-      include_dirs = [ "src/src/external/jnipp" ]
-    }
-
-    source_set("android-jni-wrappers") {
-      sources = [
-        "src/src/external/android-jni-wrappers/wrap/ObjectWrapperBase.h",
-        "src/src/external/android-jni-wrappers/wrap/android.content.cpp",
-        "src/src/external/android-jni-wrappers/wrap/android.content.h",
-        "src/src/external/android-jni-wrappers/wrap/android.content.impl.h",
-        "src/src/external/android-jni-wrappers/wrap/android.database.cpp",
-        "src/src/external/android-jni-wrappers/wrap/android.database.h",
-        "src/src/external/android-jni-wrappers/wrap/android.database.impl.h",
-        "src/src/external/android-jni-wrappers/wrap/android.net.cpp",
-        "src/src/external/android-jni-wrappers/wrap/android.net.h",
-        "src/src/external/android-jni-wrappers/wrap/android.net.impl.h",
-      ]
-
-      # android-jni-wrappers assume jnipp headers are in the include path and
-      # they also do so in the headers that are intended to be included by the
-      # consumer of this target, so let's add them to public_configs to
-      # propagate the include dirs to our consumers:
-      public_configs = [ ":android-jni-wrappers-config" ]
-
-      public_deps = [ ":jnipp" ]
-    }
   }
 
   component("openxr") {
@@ -171,37 +123,9 @@ if (enable_openxr) {
       "-Wno-extra-semi",
     ]
 
-    if (is_android) {
-      sources += [
-        "dev/xr_android.h",
-        "src/src/loader/android_utilities.h",
-        "src_overrides/src/loader/android_utilities.cpp",
-      ]
-
-      deps += [ ":android-jni-wrappers" ]
-
-      # OpenXR loader on Android assumes that android-jni-wrappers are in the
-      # include path:
-      include_dirs += [ "src/src/external/android-jni-wrappers" ]
-
-      libs = [
-        "android",
-        "log",
-      ]
-    }
-
     # Missing includes are fixed upstream
     # TODO(crbug.com/440183782): Remove this once a release contains the fix
     use_libcxx_modules = false
-  }
-
-  if (is_android) {
-    java_group("openxr_manifest_java") {
-      if (allow_openxr_content_providers) {
-        mergeable_android_manifests =
-            [ "src_overrides/src/loader/AndroidManifest.xml.in" ]
-      }
-    }
   }
 
   config("config") {

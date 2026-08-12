@@ -18,7 +18,6 @@ import getopt
 from grit import util
 
 import grit.extern.FP
-import grit.tool.android2grd
 import grit.tool.build
 import grit.tool.buildinfo
 import grit.tool.count
@@ -76,9 +75,6 @@ def ToolFactoryUpdateResourceIds():
 def ToolFactoryXmb():
   return grit.tool.xmb.OutputXmb()
 
-def ToolAndroid2Grd():
-  return grit.tool.android2grd.Android2Grd()
-
 # Keys for the following map
 _FACTORY = 1
 _REQUIRES_INPUT = 2
@@ -87,10 +83,6 @@ _HIDDEN = 3  # optional key - presence indicates tool is hidden
 # Maps tool names to the tool's module.  Done as a list of (key, value) tuples
 # instead of a map to preserve ordering.
 _TOOLS = [
-    ['android2grd', {
-        _FACTORY: ToolAndroid2Grd,
-        _REQUIRES_INPUT: False
-    }],
     ['build', {
         _FACTORY: ToolFactoryBuild,
         _REQUIRES_INPUT: True

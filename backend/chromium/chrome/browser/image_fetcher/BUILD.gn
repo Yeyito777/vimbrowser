@@ -22,8 +22,4 @@ source_set("image_fetcher") {
     "//components/keyed_service/core",
     "//content/public/browser",
   ]
-
-  if (is_android) {
-    deps += [ "//components/image_fetcher:android" ]
-  }
 }

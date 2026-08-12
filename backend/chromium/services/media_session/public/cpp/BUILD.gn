@@ -26,15 +26,6 @@ component("base_cpp") {
   # TODO: Remove this (http://crbug.com/101600).
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (is_android) {
-    sources += [
-      "media_image_android.cc",
-      "media_metadata_android.cc",
-      "media_position_android.cc",
-    ]
-    deps += [ "android:media_session_jni_headers" ]
-  }
-
   defines = [ "IS_MEDIA_SESSION_BASE_CPP_IMPL" ]
 }
 

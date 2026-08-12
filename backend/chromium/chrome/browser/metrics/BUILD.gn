@@ -59,10 +59,6 @@ source_set("test_support") {
     "//third_party/metrics_proto",
   ]
 
-  if (is_android) {
-    deps += [ "//content/public/browser" ]
-  }
-
   if (is_chromeos) {
     deps += [ "//chrome/browser/ash/settings" ]
   }

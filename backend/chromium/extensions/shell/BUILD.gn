@@ -292,7 +292,6 @@ test("app_shell_unittests") {
     "//apps",
     "//base",
     "//base/test:test_support",
-    "//build:android_buildflags",
     "//build:chromeos_buildflags",
     "//components/crx_file",
     "//components/feedback",

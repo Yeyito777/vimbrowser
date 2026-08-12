@@ -1022,7 +1022,6 @@ libfuzzer_linux_asan_builder(
         "android",
         "asan",
         "android_fastbuild",
-        "android_desktop",
     ],
     max_concurrent_invocations = 2,
     siso_remote_jobs = siso.remote_jobs.HIGH_JOBS_FOR_CI,

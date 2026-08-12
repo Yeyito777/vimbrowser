@@ -5,8 +5,6 @@
 import("//components/surface_embed/buildflags/buildflags.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-assert(!is_android)
-
 source_set("headers") {
   sources = [ "webui_browser.h" ]
 }

@@ -24,11 +24,6 @@
 #include "content/public/common/content_client.h"
 #include "content/public/common/content_features.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/task_scheduler/post_task_android.h"
-#include "base/android/task_scheduler/task_runner_android.h"
-#include "base/android/task_scheduler/task_traits_android.h"
-#endif
 
 using QueueType = content::BrowserTaskQueues::QueueType;
 
@@ -39,29 +34,6 @@ namespace {
 // |g_browser_task_executor| is intentionally leaked on shutdown.
 BrowserTaskExecutor* g_browser_task_executor = nullptr;
 
-#if BUILDFLAG(IS_ANDROID)
-scoped_refptr<base::SingleThreadTaskRunner> GetTaskRunnerForAndroidMainThread(
-    ::TaskTraits android_traits) {
-  BrowserTaskTraits traits;
-  switch (android_traits) {
-    case ::TaskTraits::UI_BEST_EFFORT:
-      traits = {base::TaskPriority::BEST_EFFORT};
-      break;
-    case ::TaskTraits::UI_USER_VISIBLE:
-      traits = {base::TaskPriority::USER_VISIBLE};
-      break;
-    case ::TaskTraits::UI_USER_BLOCKING:
-      traits = {base::TaskPriority::USER_BLOCKING};
-      break;
-    case ::TaskTraits::UI_STARTUP:
-      traits = {BrowserTaskType::kStartup};
-      break;
-    default:
-      NOTREACHED();
-  }
-  return g_browser_task_executor->GetUIThreadTaskRunner(traits);
-}
-#endif
 
 }  // namespace
 
@@ -183,13 +155,6 @@ void BrowserTaskExecutor::CreateInternal(
     std::move(enable_native_ui_task_execution_callback).Run();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // In Android Java, UI thread is a base/ concept, but needs to know how that
-  // maps onto the BrowserThread::UI in C++.
-  base::TaskRunnerAndroid::SetUiThreadTaskRunnerCallback(
-      base::BindRepeating(&GetTaskRunnerForAndroidMainThread));
-  base::PostTaskAndroid::SignalNativeSchedulerReady();
-#endif
 }
 
 // static
@@ -208,9 +173,6 @@ void BrowserTaskExecutor::ResetForTesting() {
     RunAllPendingTasksOnThreadForTesting(BrowserThread::IO);
     delete g_browser_task_executor;
     g_browser_task_executor = nullptr;
-#if BUILDFLAG(IS_ANDROID)
-    base::PostTaskAndroid::ResetTaskRunnerForTesting();
-#endif
   }
 }
 

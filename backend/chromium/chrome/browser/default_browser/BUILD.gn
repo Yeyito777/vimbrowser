@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(!is_android && !is_chromeos,
+assert(!is_chromeos,
        "Default browser is for desktop platforms only except ChromeOS.")
 
 source_set("default_browser") {

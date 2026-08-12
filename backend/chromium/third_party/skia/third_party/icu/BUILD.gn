@@ -23,8 +23,6 @@ if (skia_use_system_icu) {
     # Use a super super super stripped down version for wasm,
     # which is the same thing flutter is using.
     data_dir += "flutter"
-  } else if (is_android) {
-    data_dir += "android"
   } else if (is_ios) {
     data_dir += "ios"
   } else {

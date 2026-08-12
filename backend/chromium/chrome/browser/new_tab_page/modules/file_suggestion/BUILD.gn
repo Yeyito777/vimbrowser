@@ -4,8 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-assert(!is_android)
-
 mojom("mojo_bindings") {
   sources = [
     "drive_suggestion.mojom",

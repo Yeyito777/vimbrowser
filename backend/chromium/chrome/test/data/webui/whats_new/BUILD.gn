@@ -4,8 +4,6 @@
 
 import("../build_webui_tests.gni")
 
-assert(!is_android)
-
 build_webui_tests("build") {
   cc_test_files = [ "whats_new_browsertest.cc" ]
 

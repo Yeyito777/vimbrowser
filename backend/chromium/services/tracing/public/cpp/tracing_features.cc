@@ -14,9 +14,6 @@
 #include "build/chromecast_buildflags.h"
 #include "components/tracing/common/tracing_switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"  // nogncheck
-#endif
 
 namespace features {
 
@@ -30,7 +27,7 @@ BASE_FEATURE(kPerfettoBackendParams,
 
 // Runs the tracing service as an in-process browser service.
 BASE_FEATURE(kTracingServiceInProcess,
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CASTOS)
+#if BUILDFLAG(IS_CASTOS)
              base::FEATURE_ENABLED_BY_DEFAULT
 #else
              base::FEATURE_DISABLED_BY_DEFAULT
@@ -71,11 +68,6 @@ BASE_FEATURE_PARAM(int,
 namespace tracing {
 
 bool ShouldSetupSystemTracing() {
-#if BUILDFLAG(IS_ANDROID)
-  if (base::android::android_info::is_debug_android()) {
-    return true;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::GetInstance()) {
     return base::FeatureList::IsEnabled(features::kEnablePerfettoSystemTracing);
   }

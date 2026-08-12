@@ -7,10 +7,6 @@
 # be found in the AUTHORS file in the root of the source tree.
 
 import("../../webrtc.gni")
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
 
 rtc_source_set("arch") {
   sources = [ "arch.h" ]
@@ -105,11 +101,4 @@ if (is_mac || is_ios) {
 rtc_library("warn_current_thread_is_deadlocked") {
   sources = [ "warn_current_thread_is_deadlocked.h" ]
   deps = []
-  if (is_android && !build_with_chromium) {
-    sources += [ "warn_current_thread_is_deadlocked.cc" ]
-    deps += [
-      "..:logging",
-      "../../sdk/android:native_api_stacktrace",
-    ]
-  }
 }

@@ -19,7 +19,6 @@ component("shared_mojom_traits") {
 }
 
 mojom("mojom") {
-  generate_java = true
   sources = [ "latency_info.mojom" ]
 
   public_deps = [ "//mojo/public/mojom/base" ]

@@ -4,7 +4,7 @@
 
 import("//build/config/ui.gni")
 
-assert(!is_android && !is_fuchsia)
+assert(!is_fuchsia)
 
 source_set("window_sizer") {
   sources = [ "window_sizer.h" ]

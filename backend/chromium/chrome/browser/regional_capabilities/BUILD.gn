@@ -4,7 +4,7 @@
 
 import("//build/config/chrome_build.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("regional_capabilities") {
   sources = [
@@ -24,16 +24,6 @@ source_set("regional_capabilities") {
     "//components/regional_capabilities",
     "//components/variations/service",
   ]
-
-  if (is_android) {
-    sources += [
-      "android/regional_capabilities_service_factory_android.cc",
-      "regional_capabilities_service_client_android.cc",
-      "regional_capabilities_service_client_android.h",
-    ]
-
-    deps += [ "//chrome/browser/regional_capabilities/android:jni_headers" ]
-  }
 
   if (is_chromeos) {
     sources += [
@@ -89,17 +79,6 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_android) {
-    sources += [ "regional_capabilities_service_client_android_unittest.cc" ]
-
-    # Note: "//components/regional_capabilities/android:test_utils_java" is also
-    # also needed, but it seems that for now it needs to be added in the `deps`
-    # of `//components:components_unittests`.
-    deps += [
-      "//chrome/browser/regional_capabilities/android:test_utils_jni_headers",
-    ]
-  }
-
   if (is_chromeos) {
     sources += [ "regional_capabilities_service_client_chromeos_unittest.cc" ]
 
@@ -111,20 +90,18 @@ source_set("unit_tests") {
   }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    sources = [ "regional_capabilities_service_factory_browsertest.cc" ]
+source_set("browser_tests") {
+  testonly = true
+  sources = [ "regional_capabilities_service_factory_browsertest.cc" ]
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    deps = [
-      ":regional_capabilities",
-      "//base",
-      "//chrome/test:test_support",
-      "//components/country_codes",
-      "//components/regional_capabilities",
-      "//components/variations/service",
-      "//testing/gtest",
-    ]
-  }
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  deps = [
+    ":regional_capabilities",
+    "//base",
+    "//chrome/test:test_support",
+    "//components/country_codes",
+    "//components/regional_capabilities",
+    "//components/variations/service",
+    "//testing/gtest",
+  ]
 }

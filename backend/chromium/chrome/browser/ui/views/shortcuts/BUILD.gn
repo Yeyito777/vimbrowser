@@ -4,7 +4,6 @@
 
 import("//chrome/browser/buildflags.gni")
 
-assert(!is_android)
 assert(!is_chromeos)
 
 source_set("test_support") {

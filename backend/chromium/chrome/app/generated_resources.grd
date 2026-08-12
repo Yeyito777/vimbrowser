@@ -102,93 +102,7 @@ are declared in tools/grit/grit_args.gni.
     <output filename="generated_resources_en-XA.pak" type="data_package" lang="en-XA" />
 
     <!-- On Android, output some strings into Android's xml string format.
-         These strings are tagged with formatter_data="android_java" -->
-    <if expr="is_android">
-      <output filename="java/res/values-af/generated_resources.xml" lang="af" type="android" context="android_java" />
-      <output filename="java/res/values-am/generated_resources.xml" lang="am" type="android" context="android_java" />
-      <output filename="java/res/values-ar/generated_resources.xml" lang="ar" type="android" context="android_java" />
-      <output filename="java/res/values-as/generated_resources.xml" lang="as" type="android" context="android_java" />
-      <output filename="java/res/values-az/generated_resources.xml" lang="az" type="android" context="android_java" />
-      <output filename="java/res/values-be/generated_resources.xml" lang="be" type="android" context="android_java" />
-      <output filename="java/res/values-bg/generated_resources.xml" lang="bg" type="android" context="android_java" />
-      <output filename="java/res/values-bn/generated_resources.xml" lang="bn" type="android" context="android_java" />
-      <output filename="java/res/values-bs/generated_resources.xml" lang="bs" type="android" context="android_java" />
-      <output filename="java/res/values-ca/generated_resources.xml" lang="ca" type="android" context="android_java" />
-      <output filename="java/res/values-cs/generated_resources.xml" lang="cs" type="android" context="android_java" />
-      <output filename="java/res/values-da/generated_resources.xml" lang="da" type="android" context="android_java" />
-      <output filename="java/res/values-de/generated_resources.xml" lang="de" type="android" context="android_java" />
-      <output filename="java/res/values-el/generated_resources.xml" lang="el" type="android" context="android_java" />
-      <output filename="java/res/values/generated_resources.xml" lang="en" type="android" context="android_java" />
-      <output filename="java/res/values-en-rGB/generated_resources.xml" lang="en-GB" type="android" context="android_java" />
-      <output filename="java/res/values-es/generated_resources.xml" lang="es" type="android" context="android_java" />
-      <output filename="java/res/values-es-rUS/generated_resources.xml" lang="es-419" type="android" context="android_java" />
-      <output filename="java/res/values-et/generated_resources.xml" lang="et" type="android" context="android_java" />
-      <output filename="java/res/values-eu/generated_resources.xml" lang="eu" type="android" context="android_java" />
-      <output filename="java/res/values-fa/generated_resources.xml" lang="fa" type="android" context="android_java" />
-      <output filename="java/res/values-fi/generated_resources.xml" lang="fi" type="android" context="android_java" />
-      <output filename="java/res/values-tl/generated_resources.xml" lang="fil" type="android" context="android_java" />
-      <output filename="java/res/values-fr/generated_resources.xml" lang="fr" type="android" context="android_java" />
-      <output filename="java/res/values-fr-rCA/generated_resources.xml" lang="fr-CA" type="android" context="android_java" />
-      <output filename="java/res/values-gl/generated_resources.xml" lang="gl" type="android" context="android_java" />
-      <output filename="java/res/values-gu/generated_resources.xml" lang="gu" type="android" context="android_java" />
-      <output filename="java/res/values-iw/generated_resources.xml" lang="he" type="android" context="android_java" />
-      <output filename="java/res/values-hi/generated_resources.xml" lang="hi" type="android" context="android_java" />
-      <output filename="java/res/values-hr/generated_resources.xml" lang="hr" type="android" context="android_java" />
-      <output filename="java/res/values-hu/generated_resources.xml" lang="hu" type="android" context="android_java" />
-      <output filename="java/res/values-hy/generated_resources.xml" lang="hy" type="android" context="android_java" />
-      <output filename="java/res/values-in/generated_resources.xml" lang="id" type="android" context="android_java" />
-      <output filename="java/res/values-is/generated_resources.xml" lang="is" type="android" context="android_java" />
-      <output filename="java/res/values-it/generated_resources.xml" lang="it" type="android" context="android_java" />
-      <output filename="java/res/values-ja/generated_resources.xml" lang="ja" type="android" context="android_java" />
-      <output filename="java/res/values-ka/generated_resources.xml" lang="ka" type="android" context="android_java" />
-      <output filename="java/res/values-kk/generated_resources.xml" lang="kk" type="android" context="android_java" />
-      <output filename="java/res/values-km/generated_resources.xml" lang="km" type="android" context="android_java" />
-      <output filename="java/res/values-kn/generated_resources.xml" lang="kn" type="android" context="android_java" />
-      <output filename="java/res/values-ko/generated_resources.xml" lang="ko" type="android" context="android_java" />
-      <output filename="java/res/values-ky/generated_resources.xml" lang="ky" type="android" context="android_java" />
-      <output filename="java/res/values-lo/generated_resources.xml" lang="lo" type="android" context="android_java" />
-      <output filename="java/res/values-lt/generated_resources.xml" lang="lt" type="android" context="android_java" />
-      <output filename="java/res/values-lv/generated_resources.xml" lang="lv" type="android" context="android_java" />
-      <output filename="java/res/values-mk/generated_resources.xml" lang="mk" type="android" context="android_java" />
-      <output filename="java/res/values-ml/generated_resources.xml" lang="ml" type="android" context="android_java" />
-      <output filename="java/res/values-mn/generated_resources.xml" lang="mn" type="android" context="android_java" />
-      <output filename="java/res/values-mr/generated_resources.xml" lang="mr" type="android" context="android_java" />
-      <output filename="java/res/values-ms/generated_resources.xml" lang="ms" type="android" context="android_java" />
-      <output filename="java/res/values-my/generated_resources.xml" lang="my" type="android" context="android_java" />
-      <output filename="java/res/values-ne/generated_resources.xml" lang="ne" type="android" context="android_java" />
-      <output filename="java/res/values-nl/generated_resources.xml" lang="nl" type="android" context="android_java" />
-      <output filename="java/res/values-nb/generated_resources.xml" lang="no" type="android" context="android_java" />
-      <output filename="java/res/values-or/generated_resources.xml" lang="or" type="android" context="android_java" />
-      <output filename="java/res/values-pa/generated_resources.xml" lang="pa" type="android" context="android_java" />
-      <output filename="java/res/values-pl/generated_resources.xml" lang="pl" type="android" context="android_java" />
-      <output filename="java/res/values-pt-rBR/generated_resources.xml" lang="pt-BR" type="android" context="android_java" />
-      <output filename="java/res/values-pt-rPT/generated_resources.xml" lang="pt-PT" type="android" context="android_java" />
-      <output filename="java/res/values-ro/generated_resources.xml" lang="ro" type="android" context="android_java" />
-      <output filename="java/res/values-ru/generated_resources.xml" lang="ru" type="android" context="android_java" />
-      <output filename="java/res/values-si/generated_resources.xml" lang="si" type="android" context="android_java" />
-      <output filename="java/res/values-sk/generated_resources.xml" lang="sk" type="android" context="android_java" />
-      <output filename="java/res/values-sl/generated_resources.xml" lang="sl" type="android" context="android_java" />
-      <output filename="java/res/values-sq/generated_resources.xml" lang="sq" type="android" context="android_java" />
-      <output filename="java/res/values-sr/generated_resources.xml" lang="sr" type="android" context="android_java" />
-      <output filename="java/res/values-b+sr+Latn/generated_resources.xml" lang="sr-Latn" type="android" context="android_java" />
-      <output filename="java/res/values-sv/generated_resources.xml" lang="sv" type="android" context="android_java" />
-      <output filename="java/res/values-sw/generated_resources.xml" lang="sw" type="android" context="android_java" />
-      <output filename="java/res/values-ta/generated_resources.xml" lang="ta" type="android" context="android_java" />
-      <output filename="java/res/values-te/generated_resources.xml" lang="te" type="android" context="android_java" />
-      <output filename="java/res/values-th/generated_resources.xml" lang="th" type="android" context="android_java" />
-      <output filename="java/res/values-tr/generated_resources.xml" lang="tr" type="android" context="android_java" />
-      <output filename="java/res/values-uk/generated_resources.xml" lang="uk" type="android" context="android_java" />
-      <output filename="java/res/values-ur/generated_resources.xml" lang="ur" type="android" context="android_java" />
-      <output filename="java/res/values-uz/generated_resources.xml" lang="uz" type="android" context="android_java" />
-      <output filename="java/res/values-vi/generated_resources.xml" lang="vi" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rCN/generated_resources.xml" lang="zh-CN" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rHK/generated_resources.xml" lang="zh-HK" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rTW/generated_resources.xml" lang="zh-TW" type="android" context="android_java" />
-      <output filename="java/res/values-zu/generated_resources.xml" lang="zu" type="android" context="android_java" />
-      <!-- Pseudolocales -->
-      <output filename="java/res/values-ar-rXB/generated_resources.xml" lang="ar-XB" type="android" context="android_java" />
-      <output filename="java/res/values-en-rXA/generated_resources.xml" lang="en-XA" type="android" context="android_java" />
-    </if>
+         These strings are tagged with -->
   </outputs>
   <translations>
     <file path="resources/generated_resources_af.xtb" lang="af" />
@@ -317,19 +231,15 @@ are declared in tools/grit/grit_args.gni.
       </if>
 
       <!-- Settings specific strings -->
-      <if expr="not is_android">
         <part file="settings_strings.grdp" />
         <part file="shared_settings_strings.grdp"/>
-      </if>
 
       <if expr="chrome_root_store_cert_management_ui">
         <part file="certificate_manager.grdp" />
       </if>
 
       <!-- Support Tool strings -->
-      <if expr="not is_android">
         <part file="support_tool_strings.grdp" />
-      </if>
 
       <!-- MD Extensions specific strings -->
       <if expr="enable_extensions_core">
@@ -337,19 +247,13 @@ are declared in tools/grit/grit_args.gni.
       </if>
 
       <!-- Nearby Share specific strings -->
-      <if expr="not is_android">
         <part file="nearby_share_strings.grdp" />
-      </if>
 
       <!-- What's New strings -->
-      <if expr="not is_android">
         <part file="whats_new_strings.grdp" />
-      </if>
 
        <!-- Password Manager strings -->
-      <if expr="not is_android">
         <part file="password_manager_ui_strings.grdp" />
-      </if>
 
       <!-- Skills specific strings -->
       <part file="skills_strings.grdp" />
@@ -402,7 +306,7 @@ are declared in tools/grit/grit_args.gni.
           Permission requested, press ⌘ + Option + Down arrow to respond
         </message>
       </if>
-      <if expr="not is_chromeos and not is_macosx and toolkit_views">
+      <if expr="not is_chromeos and (not is_macosx) and toolkit_views">
         <message name="IDS_PERMISSIONS_REQUESTED_SCREENREADER_ANNOUNCEMENT" desc="Announcement to screen readers on Windows, Linux or Fuchsia when permission is requested to inform users of how to focus the permission UI.">
           Permission requested, press F6 to respond
         </message>
@@ -527,7 +431,6 @@ are declared in tools/grit/grit_args.gni.
         Disable
       </message>
       <!-- Search strings are only used in webui. These aren't needed on android unless are enabled. -->
-      <if expr="not is_android or enable_extensions_core">
         <message name="IDS_SEARCH_CLEARED" desc="Message announced to screenreader users when search is cleared.">
           Search cleared
         </message>
@@ -569,10 +472,8 @@ are declared in tools/grit/grit_args.gni.
           A series of tutorial bubbles with instructions will be displayed.
           Press <ph name="ACCELERATOR">$1<ex>F6</ex></ph> to focus a bubble, then again to focus the element it is pointing to.
         </message>
-      </if>
 
        <!-- content area context menus. Android does not use it -->
-      <if expr="not is_android">
         <message name="IDS_CONTENT_CONTEXT_INSPECTELEMENT" desc="The name of the Inspect Element command in the content area context menu">
           I&amp;nspect
         </message>
@@ -1265,7 +1166,6 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_SHARE_MENU_TITLE" desc="The label of the menu item used to share content (links, images, etc) with others.">
           Share
         </message>
-      </if>
 
       <if expr="not use_titlecase">
         <message name="IDS_CONTENT_CONTEXT_PLUGIN_RUN" desc="The name of the Run command on the blocked plugin context menu">
@@ -1310,7 +1210,6 @@ are declared in tools/grit/grit_args.gni.
       </if>
 
       <!-- Page menu. Android has separate strings for its menu -->
-      <if expr="not is_android">
         <message name="IDS_PROFILE_ROW_VERIFY_MESSAGE" desc="A label to indicate that the profile needs credential verification (reauthentication). This is a shorter version of 'Verify it's you' that is used in other places.">
           Verify
         </message>
@@ -1604,7 +1503,6 @@ are declared in tools/grit/grit_args.gni.
             &amp;Add New Profile
           </message>
         </if>
-      </if>
 
       <if expr="is_chromeos">
         <message name="IDS_VISIT_DESKTOP_OF_LRU_USER" desc="The text label of the menu item which allows the user to move a window from one users desktop to another.">
@@ -1731,7 +1629,7 @@ are declared in tools/grit/grit_args.gni.
           Preferences...
         </message>
       </if>
-      <if expr="is_posix and not is_macosx">
+      <if expr="is_posix and (not is_macosx)">
         <message name="IDS_PREFERENCES" desc="The text label of the Preferences menu item.">
           Preferences
         </message>
@@ -1744,16 +1642,16 @@ are declared in tools/grit/grit_args.gni.
         </message>
       </if>
 
-      <message name="IDS_TOS_NOTIFICATION_TITLE" desc="The title of the notification that informs the user that a term of service change is coming." formatter_data="android_java">
+      <message name="IDS_TOS_NOTIFICATION_TITLE" desc="The title of the notification that informs the user that a term of service change is coming.">
         Chrome's Terms of Service are changing March 31
       </message>
-      <message name="IDS_TOS_NOTIFICATION_BODY_TEXT" desc="The body text of the notification that informs the user that a term of service change is coming." formatter_data="android_java">
+      <message name="IDS_TOS_NOTIFICATION_BODY_TEXT" desc="The body text of the notification that informs the user that a term of service change is coming.">
         Please review the new terms
       </message>
-      <message name="IDS_TOS_NOTIFICATION_ACK_BUTTON_TEXT" desc="The button text on the TOS notification for the user to acknowledge the TOS change." formatter_data="android_java">
+      <message name="IDS_TOS_NOTIFICATION_ACK_BUTTON_TEXT" desc="The button text on the TOS notification for the user to acknowledge the TOS change.">
         Got it
       </message>
-      <message name="IDS_TOS_NOTIFICATION_REVIEW_BUTTON_TEXT" desc="The button text on the TOS notification for the user to review the TOS change." formatter_data="android_java">
+      <message name="IDS_TOS_NOTIFICATION_REVIEW_BUTTON_TEXT" desc="The button text on the TOS notification for the user to review the TOS change.">
         Review
       </message>
       <message name="IDS_TOS_NOTIFICATION_LINK" desc="The URL for the new TOS change link." translateable="false">
@@ -2257,17 +2155,6 @@ are declared in tools/grit/grit_args.gni.
       <message name="IDS_DOWNLOAD_UNCONFIRMED_PREFIX" desc="The prefix used in the unconfirmed download file.">
         Unconfirmed
       </message>
-      <if expr="is_android">
-        <message name="IDS_PROMPT_DANGEROUS_DOWNLOAD"
-                 desc="Mobile: Message shown to the user to validate the download of a dangerous file.">
-          This type of file can harm your device. Do you want to keep <ph name="FILE_NAME">$1<ex>malware.exe</ex></ph> anyway?
-        </message>
-        <message name="IDS_PROMPT_DANGEROUS_DOWNLOAD_EXTENSION"
-           desc="Mobile: Message shown to the user to validate the download of an extension file.">
-          Extensions, apps, and themes can harm your device. Are you sure you want to continue?
-        </message>
-      </if>
-      <if expr="not is_android">
         <message name="IDS_PROMPT_DANGEROUS_DOWNLOAD"
                  desc="Message shown to the user to validate the download of a dangerous file.">
           This type of file can harm your computer. Do you want to keep <ph name="FILE_NAME">$1<ex>malware.exe</ex></ph> anyway?
@@ -2276,7 +2163,6 @@ are declared in tools/grit/grit_args.gni.
            desc="Message shown to the user to validate the download of an extension file.">
           Extensions, apps, and themes can harm your computer. Are you sure you want to continue?
         </message>
-      </if>
       <message name="IDS_PROMPT_UNCOMMON_DOWNLOAD_CONTENT"
          desc="Message shown to the user to validate the download when the download content is classified as uncommon by safebrowsing.">
         <ph name="FILE_NAME">$1<ex>bla.exe</ex></ph> is not commonly downloaded and may be dangerous.
@@ -2714,7 +2600,6 @@ are declared in tools/grit/grit_args.gni.
       </message>
 
       <!-- Download Context Menu Items -->
-      <if expr="not is_android">
         <if expr="not use_titlecase">
           <if expr="is_macosx">
             <message name="IDS_DOWNLOAD_MENU_SHOW"
@@ -2855,7 +2740,6 @@ are declared in tools/grit/grit_args.gni.
           desc="Download context menu: send file for deep scanning">
           Scan file
         </message>
-      </if>
 
       <!-- Touch Bar-->
       <if expr="is_macosx">
@@ -3526,16 +3410,13 @@ are declared in tools/grit/grit_args.gni.
       </message>
 
       <!-- Desktop omnibox PWA install icon -->
-      <if expr="not is_android">
         <message name="IDS_OMNIBOX_PWA_INSTALL_ICON_LABEL" desc="String for the omnibox icon label promoting an app installation">
           Install
         </message>
         <message name="IDS_OMNIBOX_PWA_INSTALL_ICON_TOOLTIP" desc="Tooltip for the omnibox icon label promoting an app installation">
           Install <ph name="APP_NAME">$1<ex>Google Maps</ex></ph>
         </message>
-      </if>
 
-      <if expr="not is_android">
         <message name="IDS_WEBAPP_UPDATE_REVIEW_ACCEPT_BUTTON" desc="The text content of the acceptance button for the PWA app update review dialog. Clicking on this button confirms the user wants to update how the installed app looks.">
           Update
         </message>
@@ -3548,7 +3429,6 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_WEBAPP_UPDATE_REVIEW_ACCEPT_BUTTON_MIGRATION" desc="The text content of the acceptance button for the PWA app update review dialog, but for app migrations. Clicking on this button confirms the user wants to migrate to a new app, pointing to a new url.">
           Relaunch to update
         </message>
-      </if>
 
       <!-- Bookmark app bubble -->
       <if expr="use_titlecase">
@@ -3626,16 +3506,15 @@ are declared in tools/grit/grit_args.gni.
       </message>
 
       <!-- WebApp name/icon update dialog -->
-      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_NAME" desc="The title at the top of the web app update dialog when only the name changed." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_NAME" desc="The title at the top of the web app update dialog when only the name changed.">
         Review name update
       </message>
-      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_ICON" desc="The title at the top of the web app update dialog when only the icon changed." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_ICON" desc="The title at the top of the web app update dialog when only the icon changed.">
         Review icon update
       </message>
-      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_NAME_AND_ICON" desc="The title at the top of the web app update dialog when the name and icon changed." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_NAME_AND_ICON" desc="The title at the top of the web app update dialog when the name and icon changed.">
         Review name &amp; icon updates
       </message>
-      <if expr="not is_android">
         <message name="IDS_WEBAPP_UPDATE_DIALOG_TITLE_LOGO" desc="The title at the top of the web app update dialog when only the icon changed.">
           Review logo update
         </message>
@@ -3663,18 +3542,17 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_WEBAPP_UPDATE_URL_ONLY_NEW_EXPLANATION" desc="The text at the top of the web app update dialog, explaining what to do when an app changes only its url.">
           Review the URL change to make sure you're comfortable with it before updating.
         </message>
-      </if>
-      <message name="IDS_WEBAPP_UPDATE_EXPLANATION" desc="The text at the top of the dialog, explaining what to do when an app changes its identity." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_EXPLANATION" desc="The text at the top of the dialog, explaining what to do when an app changes its identity.">
         If this web app is trying to trick you into thinking it's a different app, uninstall it.
       </message>
-      <message name="IDS_WEBAPP_UPDATE_CURRENT_ICON" desc="The accessibility string explaining which icon is the current icon." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_CURRENT_ICON" desc="The accessibility string explaining which icon is the current icon.">
         Current icon
       </message>
-      <message name="IDS_WEBAPP_UPDATE_NEW_ICON" desc="The accessibility string explaining which icon is the new icon." formatter_data="android_java">
+      <message name="IDS_WEBAPP_UPDATE_NEW_ICON" desc="The accessibility string explaining which icon is the new icon.">
         New icon
       </message>
       <if expr="not use_titlecase">
-        <message name="IDS_WEBAPP_UPDATE_NEGATIVE_BUTTON" desc="The text for the negative button (aka. cancel button), allowing the user to uninstall the app and report it to the abuse team (sentence casing)." formatter_data="android_java">
+        <message name="IDS_WEBAPP_UPDATE_NEGATIVE_BUTTON" desc="The text for the negative button (aka. cancel button), allowing the user to uninstall the app and report it to the abuse team (sentence casing).">
           Uninstall app
         </message>
       </if>
@@ -4271,7 +4149,6 @@ are declared in tools/grit/grit_args.gni.
       </message>
 
       <!-- WebUI Certificate viewer dialog strings. Android uses an OS-level certificate manager. -->
-      <if expr="not is_android">
         <message name="IDS_CERT_INFO_DIALOG_TITLE" desc="Title of dialog displaying info about a certificate">
           Certificate Viewer: <ph name="CERTIFICATE_NAME">$1<ex>www.google.com</ex></ph>
         </message>
@@ -4830,7 +4707,6 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_CERT_MANAGER_EXTENSION_PROVIDED_FORMAT" desc="Format used for showing extension provided certificates.">
           <ph name="CERTIFICATE_NAME">$1<ex>Example Certificate</ex></ph> (extension provided)
         </message>
-      </if>
 
       <!-- DevTools shared process infobar -->
       <message name="IDS_DEV_TOOLS_SHARED_PROCESS_INFOBAR" desc="Label displayed in an infobar when the tab being debugged is run in a process that hosts multiple tabs. The label does not disappear until the user dismisses it or closes the debugger.">
@@ -4955,13 +4831,13 @@ are declared in tools/grit/grit_args.gni.
 
       <!-- Task Manager Window -->
       <if expr="not use_titlecase">
-        <message name="IDS_TASK_MANAGER_KILL" desc="The caption of the Task Manager kill button" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_KILL" desc="The caption of the Task Manager kill button">
           End process
         </message>
         <message name="IDS_TASK_MANAGER_KILL_V2" desc="The caption of the Task Manager kill button">
           End task
         </message>
-        <message name="IDS_TASK_MANAGER_PROCESS_ID_COLUMN" desc="The title for Task Manager process ID column." formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_PROCESS_ID_COLUMN" desc="The title for Task Manager process ID column.">
           Process ID
         </message>
         <message name="IDS_TASK_MANAGER_GDI_HANDLES_COLUMN" desc="The title for Task Manager GDI handles column.">
@@ -4970,13 +4846,13 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_USER_HANDLES_COLUMN" desc="The title for Task Manager USER handles column.">
           USER handles
         </message>
-        <message name="IDS_TASK_MANAGER_TASK_COLUMN" desc="The text of the task column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_TASK_COLUMN" desc="The text of the task column">
           Task
         </message>
-        <message name="IDS_TASK_MANAGER_NET_COLUMN" desc="The text of the network usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_NET_COLUMN" desc="The text of the network usage column">
           Network
         </message>
-        <message name="IDS_TASK_MANAGER_CPU_COLUMN" desc="The text of the CPU usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_CPU_COLUMN" desc="The text of the CPU usage column">
           CPU
         </message>
         <message name="IDS_TASK_MANAGER_START_TIME_COLUMN" desc="The text of the process start time column">
@@ -4985,7 +4861,7 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_CPU_TIME_COLUMN" desc="The text of the CPU time usage column">
           CPU Time
         </message>
-        <message name="IDS_TASK_MANAGER_MEM_FOOTPRINT_COLUMN" desc="Task manager process memory footprint column. This is the amount of memory used by the process." formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_MEM_FOOTPRINT_COLUMN" desc="Task manager process memory footprint column. This is the amount of memory used by the process.">
           Memory footprint
         </message>
         <message name="IDS_TASK_MANAGER_SWAPPED_MEM_COLUMN" desc="Task manager process swapped memory column. Shows the size of the memory that lives in the swap space.">
@@ -5015,7 +4891,7 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_WEBCORE_CSS_CACHE_COLUMN" desc="Task manager WebCore CSS cache size column.">
           CSS cache
         </message>
-        <message name="IDS_TASK_MANAGER_VIDEO_MEMORY_COLUMN" desc="The text of the video memory usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_VIDEO_MEMORY_COLUMN" desc="The text of the video memory usage column">
           GPU memory
         </message>
         <message name="IDS_TASK_MANAGER_SQLITE_MEMORY_USED_COLUMN" desc="Amount of memory used by SQLite.">
@@ -5029,13 +4905,13 @@ are declared in tools/grit/grit_args.gni.
         </message>
       </if>
       <if expr="use_titlecase">
-        <message name="IDS_TASK_MANAGER_KILL" desc="The caption of the Task Manager kill button" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_KILL" desc="The caption of the Task Manager kill button">
           End Process
         </message>
         <message name="IDS_TASK_MANAGER_KILL_V2" desc="The caption of the Task Manager kill button">
           End Task
         </message>
-        <message name="IDS_TASK_MANAGER_PROCESS_ID_COLUMN" desc="The title for Task Manager process ID column." formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_PROCESS_ID_COLUMN" desc="The title for Task Manager process ID column.">
           Process ID
         </message>
         <message name="IDS_TASK_MANAGER_GDI_HANDLES_COLUMN" desc="The title for Task Manager GDI handles column.">
@@ -5044,13 +4920,13 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_USER_HANDLES_COLUMN" desc="The title for Task Manager USER handles column.">
           USER Handles
         </message>
-        <message name="IDS_TASK_MANAGER_TASK_COLUMN" desc="The text of the task column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_TASK_COLUMN" desc="The text of the task column">
           Task
         </message>
-        <message name="IDS_TASK_MANAGER_NET_COLUMN" desc="The text of the network usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_NET_COLUMN" desc="The text of the network usage column">
           Network
         </message>
-        <message name="IDS_TASK_MANAGER_CPU_COLUMN" desc="The text of the CPU usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_CPU_COLUMN" desc="The text of the CPU usage column">
           CPU
         </message>
         <message name="IDS_TASK_MANAGER_START_TIME_COLUMN" desc="The text of the process start time column">
@@ -5059,7 +4935,7 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_CPU_TIME_COLUMN" desc="The text of the CPU time column. This is the time that this process actually occupies the CPU.">
           CPU Time
         </message>
-        <message name="IDS_TASK_MANAGER_MEM_FOOTPRINT_COLUMN" desc="Task manager process memory footprint column. This is the amount of memory used by the process." formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_MEM_FOOTPRINT_COLUMN" desc="Task manager process memory footprint column. This is the amount of memory used by the process.">
           Memory Footprint
         </message>
         <message name="IDS_TASK_MANAGER_SWAPPED_MEM_COLUMN" desc="Task manager process swapped memory column. Shows the size of the memory that lives in the swap space.">
@@ -5089,7 +4965,7 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_TASK_MANAGER_WEBCORE_CSS_CACHE_COLUMN" desc="Task manager WebCore CSS cache size column.">
           CSS Cache
         </message>
-        <message name="IDS_TASK_MANAGER_VIDEO_MEMORY_COLUMN" desc="The text of the video memory usage column" formatter_data="android_java">
+        <message name="IDS_TASK_MANAGER_VIDEO_MEMORY_COLUMN" desc="The text of the video memory usage column">
           GPU Memory
         </message>
         <message name="IDS_TASK_MANAGER_SQLITE_MEMORY_USED_COLUMN" desc="Amount of memory used by SQLite.">
@@ -5102,13 +4978,13 @@ are declared in tools/grit/grit_args.gni.
           Keepalive Count
         </message>
       </if>
-      <message name="IDS_TASK_MANAGER_MEM_CELL_TEXT" desc="The value displayed in the memory usage cells." formatter_data="android_java">
+      <message name="IDS_TASK_MANAGER_MEM_CELL_TEXT" desc="The value displayed in the memory usage cells.">
         <ph name="NUM_KILOBYTES">$1<ex>5,000</ex></ph>K
       </message>
       <message name="IDS_TASK_MANAGER_CACHE_SIZE_CELL_TEXT" desc="The value displayed in the cache size cells.">
         <ph name="NUM_KILOBYTES">$1<ex>5,000</ex></ph>K (<ph name="NUM_KILOBYTES_LIVE">$2<ex>5,000</ex></ph>K live)
       </message>
-      <message name="IDS_TASK_MANAGER_NA_CELL_TEXT" desc="The value displayed for resource usage when the information is not available, or not applicable to the process." formatter_data="android_java">
+      <message name="IDS_TASK_MANAGER_NA_CELL_TEXT" desc="The value displayed for resource usage when the information is not available, or not applicable to the process.">
         &#8211;
       </message>
       <message name="IDS_TASK_MANAGER_BACKGROUNDED_TEXT" desc="The value displayed for a process with backgrounded priority">
@@ -5253,11 +5129,9 @@ are declared in tools/grit/grit_args.gni.
       <message name="IDS_UTILITY_PROCESS_FILE_UTILITY_NAME" desc="The name of the utility process used for various Chrome specific file operations.">
           Chrome File Utilities
       </message>
-      <if expr="not is_android">
         <message name="IDS_UTILITY_PROCESS_PROFILE_IMPORTER_NAME" desc="The name of the utility process used for importing profiles.">
           Profile Importer
         </message>
-      </if>
       <message name="IDS_UTILITY_PROCESS_QRCODE_GENERATOR_SERVICE_NAME" desc="The name of the utility process used for encoding QR Codes.">
         QR Code Generator
       </message>
@@ -5278,7 +5152,7 @@ are declared in tools/grit/grit_args.gni.
           </message>
         </if>
       </if>
-      <if expr="enable_extensions or is_android">
+      <if expr="enable_extensions">
         <message name="IDS_UTILITY_PROCESS_MEDIA_GALLERY_UTILITY_NAME" desc="The name of the utility process used for checking media files.">
           Media File Checker
         </message>
@@ -5919,7 +5793,7 @@ are declared in tools/grit/grit_args.gni.
           To use this extension, type "<ph name="EXTENSION_KEYWORD">$1<ex>search</ex></ph>", then TAB, then your command or search.
         </message>
 
-        <if expr="not is_chromeos and not is_macosx">
+        <if expr="not is_chromeos and (not is_macosx)">
           <message name="IDS_EXTENSION_INSTALLED_MANAGE_INFO" desc="Text displayed in the InfoBubble with instructions on how to find the chrome://extensions/ management page">
             Manage your extensions by clicking Extensions in the Tools menu.
           </message>
@@ -5935,11 +5809,6 @@ are declared in tools/grit/grit_args.gni.
           </message>
         </if>
 
-        <if expr="is_android">
-          <message name="IDS_EXTENSION_INSTALLED_OK_BUTTON" desc="The text for the ok button in the post install dialog.">
-            Got it
-          </message>
-        </if>
 
         <message name="IDS_EXTENSION_INSTALLED_MANAGE_SHORTCUTS" desc="Text for a link in the extension installed dialog that opens the page for managing extension shortcuts (chrome://extensions/configureCommands).">
           <ph name="MANAGE_SHORTCUTS_LINK">$1<ex>Manage shortcuts</ex></ph>
@@ -5974,7 +5843,6 @@ are declared in tools/grit/grit_args.gni.
       </message>
 
       <!-- Direct Sockets connection dialog -->
-      <if expr="not is_android">
         <message name="IDS_DIRECT_SOCKETS_CONNECTION_BUBBLE_TITLE_LABEL" desc="Name shown in the direct sockets connection dialog's title">
           Connection Dialog
         </message>
@@ -5984,7 +5852,6 @@ are declared in tools/grit/grit_args.gni.
         <message name="IDS_DIRECT_SOCKETS_CONNECTION_BUBBLE_PORT_LABEL" desc="The remote port number that direct sockets will connect to">
           Port
         </message>
-      </if>
 
       <!-- Extensions strings, which are not used by chrome://extensions. -->
       <if expr="enable_extensions_core">
@@ -6059,7 +5926,7 @@ are declared in tools/grit/grit_args.gni.
           <message name="IDS_MANAGE_EXTENSION" desc="The text for the button in the extension's context menu used to open the chrome://extensions/?id=xxx page and manage a specific extension (sentence case).">
             Manage extension
           </message>
-          <message name="IDS_MANAGE_EXTENSIONS" desc="The text of the button in the extensions toolbar menu used to open the chrome://extensions page and manage all extensions (sentence case)." formatter_data="android_java">
+          <message name="IDS_MANAGE_EXTENSIONS" desc="The text of the button in the extensions toolbar menu used to open the chrome://extensions page and manage all extensions (sentence case).">
             Manage extensions
           </message>
           <message name="IDS_VIEW_WEB_PERMISSIONS" desc="The text for the button in the extension context menu used to open the chrome://settings/content/siteDetails?site=xxx page and view the site details for a specific extension (sentence case).">
@@ -6629,13 +6496,13 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_EXTENSIONS_REQUEST_ACCESS_BUTTON_TOOLTIP_MULTIPLE_EXTENSIONS" desc="The tooltip text of the request access button that appears on the toolbar when an extension requests access to the site">
           Click to allow on <ph name="ORIGIN">$1<ex>google.com</ex></ph>:
         </message>
-        <message name="IDS_EXTENSIONS_MENU_TITLE" desc="Title of the Extensions Menu" formatter_data="android_java">
+        <message name="IDS_EXTENSIONS_MENU_TITLE" desc="Title of the Extensions Menu">
           Extensions
         </message>
-        <message name="IDS_EXTENSIONS_MENU_CONTEXT_MENU_TOOLTIP" desc="Title of the context menu for individual extensions in the Extensions Menu" formatter_data="android_java">
+        <message name="IDS_EXTENSIONS_MENU_CONTEXT_MENU_TOOLTIP" desc="Title of the context menu for individual extensions in the Extensions Menu">
           More options
         </message>
-        <message name="IDS_EXTENSIONS_MENU_ZERO_STATE_HEADER" desc="Header in the Extensions Menu when there are no extensions installed." formatter_data="android_java">
+        <message name="IDS_EXTENSIONS_MENU_ZERO_STATE_HEADER" desc="Header in the Extensions Menu when there are no extensions installed.">
           Get started with extensions
         </message>
       </if>
@@ -6736,7 +6603,7 @@ Keep your key file in a safe place. You will need it to create new versions of y
         No access needed
       </message>
       <if expr="enable_extensions_core">
-        <message name="IDS_EXTENSIONS_MENU_MAIN_PAGE_DISCOVER_EXTENSIONS" desc="Text of the button that opens the extensions webstore." formatter_data="android_java">
+        <message name="IDS_EXTENSIONS_MENU_MAIN_PAGE_DISCOVER_EXTENSIONS" desc="Text of the button that opens the extensions webstore.">
           Discover more extensions
         </message>
       </if>
@@ -6938,10 +6805,10 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_WEB_APP_BLOCKED_MIGRATION_MESSAGE" desc="Message shown in an info bar when a web app update is blocked by enterprise policy.">
         An update for this app has been blocked by your admin and the app may not work correctly
       </message>
-      <message name="IDS_WEB_APP_ENABLE_WINDOW_CONTROLS_OVERLAY_TOOLTIP" formatter_data="android_java">
+      <message name="IDS_WEB_APP_ENABLE_WINDOW_CONTROLS_OVERLAY_TOOLTIP">
         Hide title bar
       </message>
-      <message name="IDS_WEB_APP_DISABLE_WINDOW_CONTROLS_OVERLAY_TOOLTIP" formatter_data="android_java">
+      <message name="IDS_WEB_APP_DISABLE_WINDOW_CONTROLS_OVERLAY_TOOLTIP">
         Show title bar
       </message>
       <message name="IDS_WEB_APP_WINDOW_CONTROLS_OVERLAY_ENABLED_ALERT" desc="Status change notification that the title bar is hidden after window controls overlay is enabled">
@@ -7118,7 +6985,7 @@ Keep your key file in a safe place. You will need it to create new versions of y
        <message name="IDS_PASSWORD_GENERATION_EDITING_SUGGESTION" desc="Notification text next to the generated password assuring the user that the password has been saved.">
         Saved password
       </message>
-      <message name="IDS_SAVE_PASSWORD" desc="The title of the save password bubble when a password can be saved." formatter_data="android_java">
+      <message name="IDS_SAVE_PASSWORD" desc="The title of the save password bubble when a password can be saved.">
         Save password?
       </message>
       <message name="IDS_SAVE_ACCOUNT" desc="The title of the save password bubble when a federated credential can be saved.">
@@ -7148,11 +7015,6 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_PASSWORD_ERROR_VERIFY_BUTTON_TITLE" desc="The title of the verify button in the password manager error message.">
         Verify
       </message>
-      <if expr="is_android">
-        <message name="IDS_PASSWORD_ERROR_SIGN_IN_BUTTON_TITLE" desc="The title of the sign in button in the password manager error message." formatter_data="android_java">
-          Sign in
-        </message>
-      </if>
       <message name="IDS_SAVE_PASSWORD_DIFFERENT_DOMAINS_TITLE" desc="The title of the save password bubble when the submitted form origin isn't equal to the page origin.">
         Save password for <ph name="ORIGIN">$1<ex>example.com</ex></ph>?
       </message>
@@ -7410,7 +7272,6 @@ Keep your key file in a safe place. You will need it to create new versions of y
       </message>
 
       <!-- about:system strings -->
-      <if expr="not is_android">
         <message name="IDS_ABOUT_SYS_TITLE" desc="about:system page title">
           About System
         </message>
@@ -7438,10 +7299,9 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_ABOUT_SYS_PARSE_ERROR" desc="error message displayed if parsing of custom uploaded log fails">
           Unable to parse file: <ph name="FILE_NAME">$1<ex>Log.txt</ex></ph>
         </message>
-      </if>
 
       <!-- chrome://browser-switch strings -->
-      <if expr="toolkit_views and not is_chromeos">
+      <if expr="toolkit_views and (not is_chromeos)">
         <message name="IDS_ABOUT_BROWSER_SWITCH_TITLE" desc="about:browser-switch page title">
           Legacy Browser Support
         </message>
@@ -7832,7 +7692,7 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_NTP_CUSTOM_LINKS_DETAILS" desc="The text label of the custom link details button. (On the New Tab Page)">
         Details
       </message>
-      <message name="IDS_NTP_CUSTOM_LINKS_INVALID_URL" desc="Error message for when an invalid URL is provided while creating a custom link. (On the New Tab Page)" formatter_data="android_java">
+      <message name="IDS_NTP_CUSTOM_LINKS_INVALID_URL" desc="Error message for when an invalid URL is provided while creating a custom link. (On the New Tab Page)">
        Type a valid URL
       </message>
       <message name="IDS_NTP_CUSTOM_LINKS_CANT_CREATE" desc="A catchall error message for when the shortcut cannot be created. (On the New Tab Page)">
@@ -7844,7 +7704,7 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_NTP_CUSTOM_LINKS_CANT_REMOVE" desc="A catchall error message for when the shortcut cannot be removed. (On the New Tab Page)">
        Can't remove shortcut
       </message>
-      <message name="IDS_NTP_CUSTOM_LINKS_HELP_PIN" desc="The in-product help text instructing the user on how to pin a shortcut (On the New Tab Page)" formatter_data="android_java">
+      <message name="IDS_NTP_CUSTOM_LINKS_HELP_PIN" desc="The in-product help text instructing the user on how to pin a shortcut (On the New Tab Page)">
         Tap and hold to pin shortcuts
       </message>
       <message name="IDS_NTP_CONFIRM_MSG_SHORTCUT_REMOVED" desc="The title of the shortcut removed confirmation message when removing a custom link. (On the New Tab Page)">
@@ -7856,7 +7716,7 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_NTP_CONFIRM_MSG_SHORTCUT_ADDED" desc="The title of the shortcut added confirmation message when adding a custom link. (On the New Tab Page)">
         Shortcut added
       </message>
-      <message name="IDS_NTP_CUSTOM_LINKS_ALREADY_EXISTS" desc="When adding/editing a custom link, this error is shown when the URL already exists in another custom link. (On the New Tab Page)" formatter_data="android_java">
+      <message name="IDS_NTP_CUSTOM_LINKS_ALREADY_EXISTS" desc="When adding/editing a custom link, this error is shown when the URL already exists in another custom link. (On the New Tab Page)">
         Shortcut already exists
       </message>
       <message name="IDS_NTP_CONFIRM_MSG_RESTORE_DEFAULTS" desc="The text label of the restore default shortcuts button when editing a custom link. (On the New Tab Page)">
@@ -8797,19 +8657,19 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <message name="IDS_NTP_COMPOSE_SMART_COMPOSE_TAB" desc="The label for the call to action to accept the inline suggestion.">
         Tab
       </message>
-      <message name="IDS_NTP_COMPOSE_DEEP_SEARCH" desc="The label for the deep search button in the context menu in the composebox as well as the chip that indicates that the user is in deep search mode." formatter_data="android_java">
+      <message name="IDS_NTP_COMPOSE_DEEP_SEARCH" desc="The label for the deep search button in the context menu in the composebox as well as the chip that indicates that the user is in deep search mode.">
         Deep Search
       </message>
       <message name="IDS_NTP_COMPOSE_CREATE_IMAGES" desc="The label for the create images button in the context menu in the composebox as well as the chip that indicates that the user is in create images mode.">
         Create images
       </message>
-      <message name="IDS_NTP_COMPOSE_CANVAS" desc="The label for the canvas button in the context menu in the composebox as well as the chip that indicates that the user is in canvas mode." formatter_data="android_java">
+      <message name="IDS_NTP_COMPOSE_CANVAS" desc="The label for the canvas button in the context menu in the composebox as well as the chip that indicates that the user is in canvas mode.">
         Canvas
       </message>
       <message name="IDS_NTP_COMPOSE_MODELS_LABEL" desc="The label for the models label in the context menu in the composebox.">
         Models
       </message>
-      <message name="IDS_NTP_COMPOSE_AUTO_MODEL" desc="The label for the Auto model button in the context menu in the composebox as well as the chip that indicates that the user is using the Auto model." formatter_data="android_java">
+      <message name="IDS_NTP_COMPOSE_AUTO_MODEL" desc="The label for the Auto model button in the context menu in the composebox as well as the chip that indicates that the user is using the Auto model.">
         Auto
       </message>
       <message name="IDS_NTP_COMPOSE_THINKING_3_PRO" desc="The label for the Thinking 3 Pro model button in the context menu in the composebox as well as the chip that indicates that the user is using the Thinking 3 Pro model.">
@@ -10139,19 +9999,19 @@ Keep your key file in a safe place. You will need it to create new versions of y
         Hidden toolbar buttons
       </message>
       <if expr="enable_extensions_core">
-      <message name="IDS_TOOLTIP_EXTENSIONS_BUTTON_ALL_EXTENSIONS_BLOCKED" desc="The tooltip for the extensions button when all the extensions are blocked on the current site." formatter_data="android_java">
+      <message name="IDS_TOOLTIP_EXTENSIONS_BUTTON_ALL_EXTENSIONS_BLOCKED" desc="The tooltip for the extensions button when all the extensions are blocked on the current site.">
         Extensions not allowed on this site
       </message>
-      <message name="IDS_TOOLTIP_EXTENSIONS_BUTTON_ANY_EXTENSION_HAS_ACCESS" desc="The tooltip for the extensions button when any extension has access to the current site." formatter_data="android_java">
+      <message name="IDS_TOOLTIP_EXTENSIONS_BUTTON_ANY_EXTENSION_HAS_ACCESS" desc="The tooltip for the extensions button when any extension has access to the current site.">
         Extensions allowed on this site
       </message>
       <message name="IDS_ACC_NAME_EXTENSIONS_BUTTON" desc="The accessible text for the extensions button.">
         Extensions menu
       </message>
-          <message name="IDS_ACC_NAME_EXTENSIONS_BUTTON_ALL_EXTENSIONS_BLOCKED" desc="The accessible text for the extensions button when all the extensions are blocked on the current site." formatter_data="android_java">
+          <message name="IDS_ACC_NAME_EXTENSIONS_BUTTON_ALL_EXTENSIONS_BLOCKED" desc="The accessible text for the extensions button when all the extensions are blocked on the current site.">
         Extensions not allowed on this site. Select to open menu
       </message>
-      <message name="IDS_ACC_NAME_EXTENSIONS_BUTTON_ANY_EXTENSION_HAS_ACCESS" desc="The accessible text for the extensions button when all the extensions are blocked on the current site." formatter_data="android_java">
+      <message name="IDS_ACC_NAME_EXTENSIONS_BUTTON_ANY_EXTENSION_HAS_ACCESS" desc="The accessible text for the extensions button when all the extensions are blocked on the current site.">
         Extensions allowed on this site. Select to open menu
       </message>
       </if>
@@ -10534,7 +10394,6 @@ Keep your key file in a safe place. You will need it to create new versions of y
       <!-- /Projects Panel Strings -->
 
       <!-- Strings for intent picker -->
-      <if expr="not is_android">
         <message name="IDS_TOOLTIP_INTENT_PICKER_ICON" desc="The tooltip for the intent picker bubble icon">
           To open this link, choose an app
         </message>
@@ -10566,12 +10425,10 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDR_INTENT_PICKER_SUPPORTED_LINKS_INFOBAR_OK_LABEL" desc="The label of a confirm button for an infobar asking if the user wants to open web links in an app. If clicked, the selected app will always be opened when clicking supported web links.">
           Always use
         </message>
-      </if>
 
       <!--TODO(crbug.com/339262105): Clean up the old password promo methods after the generic promo launch.-->
       <!--iOS password promo strings-->
       <if expr="_google_chrome">
-        <if expr="not is_android">
           <if expr="use_titlecase">
             <message name="IDS_IOS_PASSWORD_PROMO_BUBBLE_TITLE" desc="In Title Case: The title for the iOS promo bubble letting users know their password is saved.">
               Your Password Is Saved
@@ -10606,11 +10463,9 @@ Keep your key file in a safe place. You will need it to create new versions of y
           <message name="IDS_IOS_PASSWORD_PROMO_BUBBLE_FOOTER_DESCRIPTION_GENERIC" desc="The description for the iOS promo bubble footer which lets the user know how to use their saved passwords on their phone: download Chrome for iOS and sign in to their account.">
             To use your saved passwords on your phone, download Chrome for iOS and sign in to your Google Account.
           </message>
-        </if>
       </if>
 
       <!--Desktop to iOS promo strings-->
-      <if expr="not is_android">
         <if expr="use_titlecase">
           <message name="IDS_IOS_DESKTOP_PROMO_BUBBLE_BUTTON_ACCEPT_REMINDER" desc="The text inside the iOS promo bubble button allowing the user to accept by getting a reminder.">
             Remind Me on iOS
@@ -10654,10 +10509,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_NTP_MOBILE_PROMO_PASSWORDS_BODY" desc="Body text of the NTP promo that promotes Chrome on mobile for passwords.">
           Scan this with your phone to save and autofill your passwords to easily sign in to sites and apps
         </message>
-      </if>
 
       <!--Desktop to iOS password promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_PASSWORD_PROMO_BUBBLE_TITLE" desc="The title for the iOS desktop password promo bubble letting users know their password is saved.">
           Your password is saved
         </message>
@@ -10673,10 +10526,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_PASSWORD_PROMO_NOTIFICATION_BODY" desc="The body for the iOS desktop Password promo notification.">
           Save and autofill your passwords to easily sign in to sites and apps
         </message>
-      </if>
 
       <!--Desktop to iOS address promo strings-->
-      <if expr="not is_android">
         <if expr="use_titlecase">
           <message name="IDS_IOS_DESKTOP_ADDRESS_PROMO_BUBBLE_TITLE" desc="In Title Case: The title for the iOS desktop address promo bubble letting users know their address is saved.">
             Your Address Is Saved
@@ -10705,10 +10556,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_ADDRESS_PROMO_BUBBLE_FOOTER_DESCRIPTION_QR" desc="The description for the iOS desktop address promo bubble footer which lets the user know how to use their saved addresses on their phone: follow the QR code, download Chrome for iOS and sign in to their account.">
           Download Chrome with this QR code, and sign in to your Google Account.
         </message>
-      </if>
 
       <!--Desktop to iOS payment promo strings-->
-      <if expr="not is_android">
         <if expr="use_titlecase">
           <message name="IDS_IOS_DESKTOP_PAYMENT_PROMO_BUBBLE_TITLE" desc="In Title Case: The title for the iOS desktop payment promo bubble letting users know their card is saved.">
             Your Card Is Saved
@@ -10737,10 +10586,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_PAYMENT_PROMO_BUBBLE_FOOTER_DESCRIPTION_QR" desc="The description for the iOS desktop payment promo bubble footer which lets the user know how to use their saved payment methods on their phone: follow the QR code, download Chrome for iOS and sign in to their account.">
           Download Chrome with this QR code, and sign in to your Google Account.
         </message>
-      </if>
 
       <!--Desktop to iOS Enhanced Browsing promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_ESB_PROMO_BUBBLE_DESCRIPTION_QR" desc="The description for the iOS desktop ESB promo bubble with a QR code.">
           Add an extra layer of protection when you're on the go
         </message>
@@ -10750,10 +10597,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_SAFE_BROWSING_PROMO_NOTIFICATION_BODY" desc="The body for the iOS desktop Enhanced Safe Browsing promo notification.">
           Add an extra layer of protection against online threats
         </message>
-      </if>
 
       <!--Desktop to iOS Lens promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_LENS_PROMO_BUBBLE_DESCRIPTION_QR" desc="The description for the iOS desktop Lens promo bubble with a QR Code.">
           Shop, translate and identify what you see with your camera on the go
         </message>
@@ -10763,10 +10608,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_LENS_PROMO_NOTIFICATION_BODY" desc="The body for the iOS desktop Lens promo notification.">
           Shop, translate, and identify what you see with your camera.
         </message>
-      </if>
 
       <!--Desktop to iOS Price Tracking promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_PRICE_TRACKING_PROMO_BUBBLE_DESCRIPTION_REMINDER" desc="The description for the iOS desktop Price Tracking promo bubble with a reminder button.">
           Keep up with all your price drops on the go
         </message>
@@ -10782,10 +10625,8 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_PRICE_TRACKING_PROMO_NOTIFICATION_TITLE" desc="The title for the iOS desktop Price Tracking promo notification.">
           Enable price tracking alerts
         </message>
-      </if>
 
       <!--Desktop to iOS Tab Groups promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_TAB_GROUPS_PROMO_BUBBLE_DESCRIPTION_REMINDER" desc="The description for the iOS desktop Tab Groups promo bubble with a reminder button.">
           You can pick up where you left off or create new tab groups on the go
         </message>
@@ -10801,7 +10642,6 @@ Keep your key file in a safe place. You will need it to create new versions of y
         <message name="IDS_IOS_DESKTOP_TAB_GROUPS_PROMO_NOTIFICATION_TITLE" desc="The title for the iOS desktop Tab Groups promo notification.">
           Reminder: Your tab groups
         </message>
-      </if>
 
       <!--Accessible name/action strings-->
       <message name="IDS_ACCESSIBLE_INCOGNITO_WINDOW_TITLE_FORMAT" desc="The format for the accessible title of an Incognito window">
@@ -11421,13 +11261,12 @@ Keep your key file in a safe place. You will need it to create new versions of y
           No thanks
         </message>
       </if>
-      <message name="IDS_PASSWORD_MANAGER_USERNAME_LABEL" desc="Label for the username field in a prompt to store new credential" formatter_data="android_java">
+      <message name="IDS_PASSWORD_MANAGER_USERNAME_LABEL" desc="Label for the username field in a prompt to store new credential">
         Username
       </message>
-      <message name="IDS_PASSWORD_MANAGER_PASSWORD_LABEL" desc="Label for the password field in a prompt to store new credential" formatter_data="android_java">
+      <message name="IDS_PASSWORD_MANAGER_PASSWORD_LABEL" desc="Label for the password field in a prompt to store new credential">
         Password
       </message>
-      <if expr="not is_android">
         <message name="IDS_PASSWORD_MANAGER_UPDATED_BUBBLE_TITLE" desc="Title of the bubble notifying the user that the password was updated.">
           Password updated
         </message>
@@ -11554,75 +11393,8 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
         <message name="IDS_PASSWORD_MANAGER_TOOLTIP_KEYCHAIN_ERROR" desc="Text for the 'Manage Passwords' icon's 'keychain error' state">
           Fix password error
         </message>
-      </if>
-      <if expr="is_android">
-        <message name="IDS_PASSWORD_MANAGER_SAVE_BUTTON" desc="Mobile: Button text for the 'Save Password' infobar's 'Remember password' option"  formatter_data="android_java">
-          Save
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_BLOCKLIST_BUTTON" desc="Mobile: Button text for the 'Save Password' infobar's 'Never remember for this site' option">
-          Never
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_UPDATE_BUTTON" desc="Label for the 'update' button in the Update Password infobar. This infobar asks if the user wishes to update the saved password for a site to a new password the user has just entered; the button applies the suggested update." formatter_data="android_java">
-          Update
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_CONTINUE_BUTTON" desc="Label for the 'continue' button in the Update Password prompt that will be followed by username confirmation dialog. This prompt asks if the user wishes to update the saved password for a site to a new password the user has just entered; the button applies the suggested update.">
-          Continue
-        </message>
-        <message name="IDS_PASSWORD_SAVING_STATUS_TOGGLE" desc="Label for the toggle that shows whether saving passwords for the current site is enabled or disabled.">
-          Save passwords for this site
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_PASSWORD_DESCRIPTION" desc="Description for a field containing a password that belongs to a user.">
-          Password for <ph name="username">$1<ex>Alexander</ex></ph>
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_PASSWORD_LIST_EMPTY_MESSAGE" desc="Message indicating that the list of saved passwords for this site is empty.">
-          No saved passwords for <ph name="domain">$1<ex>example.com</ex></ph>
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_TRUSTED_VAULT_KEY_RETRIEVAL_REQUIRED_MESSAGE" desc="Message indicating that trusted vault key retrieval is required before passwords can be used.">
-          You need to verify it's you before you can access your passwords
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_PASSWORD_LIST_TITLE" desc="The title of a list of saved passwords for the currently visible site." translateable="false">
-          Saved passwords for <ph name="domain">$1<ex>example.com</ex></ph>
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_ALL_PASSWORDS_LINK" desc="The text of the link in the password sheet that opens the password management section.">
-          Manage passwords
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_ALL_PASSWORDS_AND_PASSKEYS_LINK" desc="The text of the link in the password sheet that opens the password management section, when there are passkeys in the list.">
-          Manage passwords and passkeys
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_SELECT_PASSWORD" desc="The text of the link in the password sheet that opens a bottom sheet which shows all saved credentials from any origin if the user is about to fill a password or username field. Allows user to pick one of the saved passwords to be filled in.">
-          Select password
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_RETRIEVE_TRUSTED_VAULT_KEY" desc="The text of the link in the password sheet that opens the trusted vault key retrieval flow.">
-          Verify it's you
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_SELECT_PASSKEY" desc="The text of the link in the password sheet that opens the system's selection for available Passkeys.">
-          Select passkey
-        </message>
-        <message name="IDS_PASSWORD_MANAGER_ACCESSORY_GENERATE_PASSWORD_BUTTON_TITLE" desc="Text for the button used to generate a password.">
-          Suggest strong password
-        </message>
-        <message name ="IDS_PASSWORD_MANAGER_ACCESSORY_USE_DEVICE_PASSKEY" desc="The text of the link in the password sheet that will use a different device’s passkey.">
-          Use a passkey on a different device
-        </message>
-        <message name="IDS_PASSWORD_GENERATION_DIALOG_DESCRIPTION_BRANDED" desc="Text for password generation dialog, explaining that the password will be saved in Google Account. Unified Password Manager branded variant.">
-          You won’t need to remember this password. It will be saved to Google Password Manager for <ph name="ACCOUNT">$1<ex>user@gmail.com</ex></ph>.
-        </message>
-        <message name="IDS_CONFIRM_USERNAME_DIALOG_TITLE" desc="The title of the confirm username dialog." formatter_data="android_java">
-          Confirm your username
-        </message>
-        <message name="IDS_PASSWORD_MESSAGE_NEVER_SAVE_MENU_ITEM" desc="Mobile: Label for 'Save Password' prompt cogwheel menu button via which users can tell the password manager to never offer to save passwords for the current site[CHAR_LIMIT=32]">
-          Never for this site
-        </message>
-        <message name="IDS_PASSWORD_MESSAGE_NEVER_SAVE_MENU_ITEM_DESC" desc="Mobile: The description to be announced by TalkBack for the 'Never save' button via which the users can tell the password manager to never ask to save passwords for this site again. This button is displayed as a secondary action in the 'Save password' prompt.">
-          Never save passwords for this site
-        </message>
-        <message name="IDS_PASSWORD_MESSAGE_EDIT_PASSWORD_MENU_ITEM" desc="Mobile: Label for 'Save Password' prompt cogwheel menu button via which users can tell the password manager to show the password edit dialog.">
-          Edit password
-        </message>
-      </if>
 
       <!-- Android uses custom UI for Bookmark importing -->
-      <if expr="not is_android">
         <!-- Import Settings Dialog -->
         <if expr="is_win">
           <message name="IDS_IMPORT_FROM_IE" desc="browser combo box: Microsoft Internet Explorer">
@@ -11655,7 +11427,7 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
             Import Bookmarks and Settings...
           </message>
         </if> <!-- is_macosx -->
-      </if> <!-- not is_android -->
+       <!-- not is_android -->
 
       <if expr="is_macosx">
         <!-- Confirm to quit panel -->
@@ -13808,13 +13580,12 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       </message>
 
       <!-- chrome://help -->
-      <if expr="not is_android">
         <if expr="not is_chromeos and use_titlecase">
           <message name="IDS_RELAUNCH_BUTTON" desc="Titlecase: The label for the relaunch button that relaunches the browser once update is complete">
             Relaunch
           </message>
         </if>
-        <if expr="not is_chromeos and not use_titlecase">
+        <if expr="not is_chromeos and (not use_titlecase)">
           <message name="IDS_RELAUNCH_BUTTON" desc="The label for the relaunch button that relaunches the browser once update is complete">
             Relaunch
           </message>
@@ -13824,13 +13595,13 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
             Restart
           </message>
         </if>
-        <if expr="is_chromeos and not use_titlecase">
+        <if expr="is_chromeos and (not use_titlecase)">
           <message name="IDS_RELAUNCH_BUTTON" desc="The label for the relaunch button that relaunches the browser once update is complete">
             Restart
           </message>
         </if>
-      </if> <!-- not is_android -->
-      <if expr="(not is_android or enable_extensions_core) and not is_chromeos">
+       <!-- not is_android -->
+      <if expr="not is_chromeos">
         <message name="IDS_HELP_MANAGED_BY_YOUR_PARENT" desc="The text label shown in chrome://settings/help for users subject to parental controls.">
           Your browser is managed by your parent
         </message>
@@ -13848,7 +13619,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       <!-- Settings related strings not specific to chrome://settings.
            (Settings specific strings are in settings_strings.grdp).
            Not necessary on Android that uses native UI in settings unless extensions are enabled. -->
-      <if expr="not is_android or enable_extensions_core">
         <message name="IDS_TOOLBAR_INFORM_SET_HOME_PAGE" desc="The confirmation message when dropping a link on the Home toolbar button">
            Your home page has been set.
         </message>
@@ -13984,13 +13754,7 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
         <message name="IDS_RESET_PROFILE_SETTINGS_PROCESSING_SHORTCUTS" desc="A placeholder for the actual shortcuts in the Reset Profile Settings dialog (shortcut refers to the desktop icon on windows)">
           Processing shortcuts...
         </message>
-      </if>
 
-      <if expr="is_android">
-        <message name="IDS_OPTIONS_HOMEPAGE_TITLE" desc="The title of Chrome's homepage setting screen on Android. " formatter_data="android_java">
-          Homepage
-        </message>
-      </if>
 
       <!-- Autofill dialog: field labels. -->
       <message name="IDS_AUTOFILL_DIALOG_PLACEHOLDER_EXPIRY_MONTH" desc="The placeholder/label text for credit card expiration month in the card unmask dialog.">
@@ -13999,7 +13763,7 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       <message name="IDS_AUTOFILL_DIALOG_PLACEHOLDER_EXPIRY_YEAR" desc="The placeholder/label text for credit card expiration year in the card unmask dialog.">
         Year
       </message>
-      <message name="IDS_AUTOFILL_FROM_GOOGLE_ACCOUNT" desc="The name of the Google product that stores user addresses or credit cards in the cloud. This should not be translated." formatter_data="android_java">
+      <message name="IDS_AUTOFILL_FROM_GOOGLE_ACCOUNT" desc="The name of the Google product that stores user addresses or credit cards in the cloud. This should not be translated.">
         Google Pay
       </message>
 
@@ -14055,14 +13819,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       <message name="IDS_SEND_TAB_TO_SELF" desc="The title of an action or bubble letting the user share the current tab to other devices">
         Send to your devices
       </message>
-      <if expr="is_android">
-      <message name="IDS_SEND_TAB_TO_SELF_MESSAGE" desc="Text for a message indicating that the tab was shared from a syncing device.">
-        Page shared from <ph name="device_name">$1<ex>Tanya's Pixel 2</ex></ph>
-      </message>
-      <message name="IDS_SEND_TAB_TO_SELF_MESSAGE_OPEN" desc="Label for the button to open a tab received from another device.">
-        Open
-      </message>
-      </if>
       <message name="IDS_SEND_TAB_TO_SELF_SENDING_ANNOUNCE" desc="Text read by a screenreader when a tab is sent to a target device." is_accessibility_with_no_ui="true">
         Sending link to <ph name="DEVICE_NAME">$1<ex>Ted's Pixel2</ex></ph>
       </message>
@@ -14099,14 +13855,12 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
           Create QR Code for this Link
         </message>
       </if>
-      <if expr="not is_android">
         <message name="IDS_OMNIBOX_QRCODE_GENERATOR_ICON_LABEL" desc="String for the omnibox icon label for the QR Code Generator">
           QR Code
         </message>
         <message name="IDS_OMNIBOX_QRCODE_GENERATOR_ICON_TOOLTIP" desc="Tooltip for the omnibox icon label for the QR Code Generator">
           Create QR Code for this Page
         </message>
-      </if>
       <message name="IDS_BROWSER_SHARING_QR_CODE_DIALOG_TITLE"
           desc="Title for the QR Generator dialog.">
         Scan QR Code
@@ -14164,7 +13918,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       </message>
 
       <!-- Desktop Screenshots feature within the share hub; desktop-only. -->
-      <if expr="not is_android">
         <message name="IDS_BROWSER_SHARING_SCREENSHOT_POST_CAPTURE_TITLE"
             desc="Title for the dialog shown after a screenshot is captured.">
         Screenshot copied to clipboard
@@ -14279,7 +14032,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
         <message name="IDS_BROWSER_SHARING_SCREENSHOT_IMAGE_EDITOR_TOOLTIP_FONT_OUTLINE" desc="The text for the image editor's text outlne font selector.">
           Outline font
         </message>
-      </if>
 
       <!-- Clipboard History Menu feature. -->
       <message name="IDS_CONTEXT_MENU_PASTE_FROM_CLIPBOARD"
@@ -14576,7 +14328,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       </message>
 
       <!-- Managed UI on pages like chrome://settings and chrome://downloads -->
-      <if expr="not is_android">
         <if expr="is_chromeos">
           <message name="IDS_DEVICE_MANAGED_WITH_HYPERLINK" desc="Message to end users in Enterprise/EDU, with a link for more info (ChromeOS)">
             Your <ph name="BEGIN_LINK">&lt;a target="_blank" href="$1"&gt;</ph><ph name="DEVICE_TYPE">$2<ex>Chromebook</ex></ph> is managed<ph name="END_LINK">&lt;/a&gt;</ph> by your organization
@@ -14585,8 +14336,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
             Your <ph name="BEGIN_LINK">&lt;a target="_blank" href="$1"&gt;</ph><ph name="DEVICE_TYPE">$2<ex>Chromebook</ex></ph> is managed<ph name="END_LINK">&lt;/a&gt;</ph> by <ph name="ENROLLMENT_DOMAIN">$3<ex>example.com</ex></ph>
           </message>
         </if>
-      </if>
-      <if expr="not is_android or enable_extensions_core">
         <message name="IDS_MANAGED_WITH_HYPERLINK" desc="Message to end users in Enterprise/EDU, with a link for more info (non-ChromeOS)">
           Your <ph name="BEGIN_LINK">&lt;a href="$1"&gt;</ph>browser is managed<ph name="END_LINK">&lt;/a&gt;</ph> by your organization
         </message>
@@ -14614,7 +14363,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
         <message name="IDS_BROWSER_AND_PROFILE_DIFFERENT_MANAGED_BY_TOOLTIP" desc="Text displayed in a tooltip to inform that the browser is managed by BROWSER_DOMAIN and the profile by PROFILE_DOMAIN.">
          Browser managed by <ph name="BROWSER_DOMAIN">$1<ex>foo.com</ex></ph>, profile managed by <ph name="PROFILE_DOMAIN">$2<ex>bar.com</ex></ph>
         </message>
-      </if>
 
       <!-- Cookies tree model -->
       <message name="IDS_COOKIES_COOKIE_EXPIRES_SESSION" desc="The Cookie Expires field value for a session cookie">
@@ -14673,7 +14421,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
       </message>
 
       <!-- Strings used for non-Android builds -->
-      <if expr="not is_android">
         <message name="IDS_APP_DEFAULT_PAGE_NAME"
                  desc="Default name for the first 'Apps' page on the New Tab Page.">
           Apps
@@ -14717,7 +14464,6 @@ Check your passwords anytime in <ph name="GOOGLE_PASSWORD_MANAGER">$1<ex>Google 
                  desc="The name for the 'Most Visited' navigation control on the New Tab Page.">
           Most visited
         </message>
-      </if>
 
       <message name="IDS_NEW_TAB_RESTORE_THUMBNAILS_SHORT_LINK"
                desc="The link that restores previously removed thumbnails. Context is 'Thumbnail removed. Undo | Restore all'">
@@ -15065,7 +14811,7 @@ This can include information about installed software, files, your browser, the 
         Loading account information...
       </message>
 
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <!-- Dice Web Signin Interception Bubble-->
         <message name="IDS_SIGNIN_DICE_WEB_INTERCEPT_BUBBLE_NEW_PROFILE_BUTTON_LABEL" desc="Label of the confirmation button in the web signin interception bubble">
           Ok
@@ -15180,7 +14926,7 @@ This can include information about installed software, files, your browser, the 
         </if>
       </if>
 
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <message name="IDS_SIGNIN_DICE_WEB_INTERCEPT_ENTERPRISE_PROFILE_NAME" desc="Default name for work profiles created after signin interception">
           Work
         </message>
@@ -15835,29 +15581,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
           Snooze
         </message>
       </if>
-      <if expr="is_android">
-        <message name="IDS_NOTIFICATION_BUTTON_MANAGE" desc="Text of a button shown on notification permission requests, that opens the Chrome notifications settings page. This allows users to edit notification settings when a site asks them to allow notifications.">
-          Manage
-        </message>
-        <message name="IDS_NOTIFICATION_QUIET_PERMISSION_MINI_INFOBAR_DETAILS_LINK" desc="Blue text on a notification infobar that when clicked expands the infobar to show more details.">
-          Details
-        </message>
-        <message name="IDS_NOTIFICATION_QUIET_PERMISSION_MINI_INFOBAR_MESSAGE" desc="Text on an infobar that informs the user that notifications are blocked, in a very short form. [CHAR_LIMIT=20]">
-          Notifications blocked.
-        </message>
-        <message name="IDS_NOTIFICATION_QUIET_PERMISSION_INFOBAR_TITLE" desc="Title of an infobar that informs the user that notifications are blocked. [CHAR_LIMIT=32]">
-          Notifications blocked
-        </message>
-        <message name="IDS_LOCATION_QUIET_PERMISSION_MESSAGE_UI_TITLE" desc="Title of the notification that informs the user that location is blocked. [CHAR_LIMIT=32]">
-          Location blocked
-        </message>
-        <message name="IDS_NOTIFICATION_QUIET_PERMISSION_INFOBAR_ABUSIVE_MESSAGE" desc="Description for the expanded infobar that informs the user that notifications are automatically blocked because the site is known to employ dark patterns to trick users into accepting the permission.">
-          This site may be trying to trick you into allowing intrusive notifications.
-        </message>
-        <message name="IDS_NOTIFICATION_QUIET_PERMISSION_INFOBAR_DISRUPTIVE_MESSAGE" desc="Description for the expanded infobar that informs the user that loud notification prompts are  blocked because the site may engage in disruptive notification practices.">
-          Notifications from this site may be disruptive
-        </message>
-      </if>
       <if expr="is_macosx">
         <message name="IDS_NOTIFICATIONS" desc="Description text next to the notifications icon inside the pop-up bubble which describes that the notification permission is blocked on an OS level.">
           Notifications
@@ -16229,7 +15952,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
       </if> <!-- is_macosx -->
 
       <!-- Linux Global Menubar Menus -->
-      <if expr="is_posix and not is_macosx">
+      <if expr="is_posix and (not is_macosx)">
         <!-- Unity and some other GNOME configurations now have a permanent,
              Mac-like menu bar that lives outside the window at the top of the
              screen. The following strings should be in Linux style, not Mac
@@ -16499,11 +16222,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_PASSWORDS_WEB_LINK" translateable="false">
         https://passwords.google.com
       </message>
-      <if expr="is_android">
-        <message name="IDS_MANAGE_PASSWORDS_CONFIRM_GENERATED_TEXT_INFOBAR" desc="A message that the browser shows after saving a password it has autogenerated for the user. This message appears in an infobar and contains a link to all the user's saved autogenerated passwords. The link text is a separate string in the translation console and appears here as placeholder text.">
-          Password saved. View and manage saved passwords in your <ph name="SAVED_PASSWORDS_STORE">$1<ex>Google Account</ex></ph>.
-        </message>
-      </if>
       <message name="IDS_MANAGE_PASSWORDS_LINK" desc="The text for a link to the user's saved passwords. This is inserted into an infobar or a bubble that the browser shows to the user. The infobar and the bubble use a separate string in the translation console that has a placeholder for this link title.">
         Google Account
       </message>
@@ -16607,18 +16325,11 @@ Please help our engineers fix this problem. Tell us what happened right before y
       </if>
 
       <!-- File Selection Dialog Policy - Infobar -->
-      <if expr="is_android">
-        <message name="IDS_FILE_SELECTION_DIALOG_INFOBAR" desc="Mobile: Infobar message on disallowed file selection dialog.">
-          Access to local files on your device is disabled by your administrator
-        </message>
-      </if>
-      <if expr="not is_android">
         <message name="IDS_FILE_SELECTION_DIALOG_INFOBAR" desc="Infobar message on disallowed file selection dialog.">
           Access to local files on your machine is disabled by your administrator
         </message>
-      </if>
 
-      <if expr="is_posix and not is_macosx">
+      <if expr="is_posix and (not is_macosx)">
         <!-- Linux proxy configuration fallback help -->
         <message name="IDS_ABOUT_LINUX_PROXY_CONFIG_TITLE" desc="Title of HTML page shown on systems where system proxy configuration is unsupported.">
           Proxy Configuration Help
@@ -16767,7 +16478,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       </if>
 
       <!-- Media Galleries. -->
-      <if expr="not is_android">
         <message name="IDS_MEDIA_GALLERIES_DIALOG_HEADER" desc="Header for media gallery permissions dialog.">
           Media-File Permissions for "<ph name="EXTENSION">$1<ex>Photo Editor</ex></ph>"
         </message>
@@ -16816,7 +16526,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
         <message name="IDS_MEDIA_GALLERIES_DIALOG_DELETE" desc="Text label of the menu item which removes selected media gallery access for all apps.">
           Permanently remove access for all apps
         </message>
-      </if>
 
       <!-- App List. -->
       <if expr="is_chromeos">
@@ -17135,7 +16844,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
           <ph name="WINDOW_TITLE">$1<ex>Google Search</ex></ph> - Permission requested, press ⌘ + Option + Up arrow to respond
         </message>
       </if>
-      <if expr="not is_chromeos and not is_macosx and toolkit_views">
+      <if expr="not is_chromeos and (not is_macosx) and toolkit_views">
         <message name="IDS_TAB_AX_LABEL_PERMISSION_REQUESTED_FORMAT" desc="Accessibility label text for Windows, Linux or Fuchsia, when a tab has a pending request. Example: 'Google Search - Permission requested, press F6 to respond'.">
           <ph name="WINDOW_TITLE">$1<ex>Google Search</ex></ph> - Permission requested, press F6 to respond
         </message>
@@ -17401,7 +17110,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <ph name="USB_DEVICE_NAME">$1<ex>Nexus 5</ex></ph> detected
     </message>
 
-    <if expr="not is_android">
       <!-- WebHID and WebUSBSystem Tray Icon -->
       <message name="IDS_WEBHID_SYSTEM_TRAY_ICON_HID_SETTINGS" desc="Text for the WebHID system tray icon button that opens the HID settings page.">
         HID settings
@@ -17439,7 +17147,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
           </message>
         </else>
       </if>
-    </if>
 
     <if expr="is_chromeos">
       <!-- CrOSUsb Notification -->
@@ -17478,31 +17185,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
         Communications
       </message>
     </if>
-    <if expr="is_android">
-      <message name="IDS_GENERIC_AUDIO_DEVICE_NAME" desc="Generic input or output audio device of an unspecified type. Used as a final fallback if no other more specific name can be given to the audio device. This is typically presented to users in a drop-down list of device choices.">
-        Audio device
-      </message>
-      <message name="IDS_INTERNAL_SPEAKER_AUDIO_DEVICE_NAME" desc="Speaker that is internal to / built into the device running the browser. This is typically presented to users in a drop-down list of device choices.">
-        Speaker (internal)
-      </message>
-      <message name="IDS_INTERNAL_MIC_AUDIO_DEVICE_NAME" desc="Microphone that is internal to / built into the device running the browser. This is typically presented to users in a drop-down list of device choices.">
-        Mic (internal)
-      </message>
-      <message name="IDS_WIRED_HEADPHONES_AUDIO_DEVICE_NAME" desc="Pair of wired headphones, for instance connected via an audio phone connector. May be used when presenting the headphones as an input device (if the headphones also function as a microphone) or as an output device. This is typically presented to users in a drop-down list of device choices.">
-        Wired headphones
-      </message>
-      <message name="IDS_BLUETOOTH_AUDIO_DEVICE_NAME" desc="Audio device connected over Bluetooth. May be used when presenting the Bluetooth device as an input device (e.g. if it is a microphone or a headset) or as an output device (e.g. if it is a speaker or a headset). This is typically presented to users in a drop-down list of device choices.">
-        Bluetooth device
-      </message>
-      <message name="IDS_USB_AUDIO_DEVICE_NAME" desc="Audio device connected over USB. May be used when presenting the USB device as an input device (e.g. if it is a microphone or a headset) or as an output device (e.g. if it is a speaker or a headset). This is typically presented to users in a drop-down list of device choices.">
-        USB device
-      </message>
-      <message name="IDS_HDMI_AUDIO_DEVICE_NAME" desc="Audio device connected over HDMI. May be used when presenting the HDMI device as an input device or as an output device. This is typically presented to users in a drop-down list of device choices.">
-        HDMI device
-      </message>
-    </if>
 
-    <if expr="not is_android">
       <!-- Device Chooser Prompt -->
       <message name="IDS_SERIAL_DEVICE_CHOOSER_ADAPTER_OFF" desc="Text of a link the user can click to get help information when Bluetooth adapter is turned off.">
         <ph name="TURN_ON_BLUETOOTH_LINK">$1<ex>Turn on Bluetooth</ex></ph> to explore Bluetooth devices
@@ -17531,7 +17214,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_DEVICE_CHOOSER_DEVICE_NAME_AND_PAIRED_STATUS_TEXT" desc="Text of the device name and paired status.">
         <ph name="DEVICE_NAME">$1<ex>device name</ex></ph> - Paired
       </message>
-    </if>
     <message name="IDS_DEVICE_CHOOSER_ACCNAME_COMPATIBLE_DEVICES_LIST" desc="The accessible name for the list of compatible devices, read to screen reader users when navigating to the container.">
       Compatible devices
     </message>
@@ -17562,7 +17244,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </message>
 
     <!-- Serial port chooser -->
-    <if expr="not is_android">
       <message name="IDS_SERIAL_PORT_CHOOSER_PROMPT" desc="The label that is used to introduce serial port chooser details to the user in a popup.">
         <ph name="Origin">$1<ex>www.google.com</ex></ph> wants to connect to a serial port
       </message>
@@ -17581,7 +17262,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_SERIAL_POLICY_DESCRIPTION_FOR_USB_VENDOR_NAME" desc="String describing a USB device permission granted by enterprise policy to a site for all devices from a single vendor.">
         USB devices from <ph name="VENDOR_NAME">$1<ex>Google</ex></ph>
       </message>
-    </if>
     <message name="IDS_SERIAL_PORT_CHOOSER_NAME_WITH_PATH" desc="User option displaying a human-readable name for a serial port with the device path in parenthesis">
       <ph name="FRIENDLY_NAME">$1<ex>Virtual COM Port</ex></ph> (<ph name="DEVICE_PATH">$2<ex>COM1</ex></ph>)
     </message>
@@ -17596,7 +17276,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </message>
 
     <!-- HID (Human Interface Device) chooser -->
-    <if expr="not is_android">
       <message name="IDS_HID_CHOOSER_PROMPT" desc="The label that is used to introduce the Human Interface Device (HID) chooser details to the user in a popup.">
         <ph name="Origin">$1<ex>www.google.com</ex></ph> wants to connect to a HID device
       </message>
@@ -17624,10 +17303,8 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_HID_POLICY_DESCRIPTION_FOR_ANY_DEVICE" desc="String describing a HID device permission granted by permission policy to a site for all devices.">
         Any HID device
       </message>
-    </if>
 
     <!-- File Handling launch prompt -->
-    <if expr="not is_android">
       <message name="IDS_WEB_APP_FILE_HANDLING_LIST_SEPARATOR" desc="Text/punctuation that separates items in a lists. For example, this is used in a list of files, such as 'todo_list.txt, shopping_list.txt', and file types/extensions, such as '.txt, .csv.'" meaning="List separator for files.">
          , '''
       </message>
@@ -17668,17 +17345,13 @@ Please help our engineers fix this problem. Tell us what happened right before y
           Don&#x2019;t allow
         </message>
       </if>
-    </if>
 
     <!-- Protocol Handling launch prompt -->
-    <if expr="not is_android">
       <message name="IDS_PROTOCOL_HANDLER_INTENT_PICKER_QUESTION" desc="Label on the protocol handler intent picker.">
         Allow app to open <ph name="PROTOCOL_SCHEME">$1<ex>mailto</ex></ph> links?
       </message>
-    </if>
 
     <!-- Font Access chooser -->
-    <if expr="not is_android">
       <message name="IDS_FONT_ACCESS_CHOOSER_PROMPT_ORIGIN" desc="The label that is used to introduce Local Font Access chooser details to the user in a popup when it is from a website.">
         <ph name="Origin">$1<ex>www.google.com</ex></ph> wants to use local fonts
       </message>
@@ -17700,7 +17373,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_FONT_ACCESS_CHOOSER_LOADING_LABEL_TOOLTIP" desc="Tooltip for the label that the browser is loading the list of available fonts.">
         Loading fonts...
       </message>
-    </if>
 
     <!-- Chrome IME API activated bubble. -->
     <message name="IDS_IME_API_ACTIVATED_WARNING" desc="The Warning info when an IME extension is trying to activate.">
@@ -17749,14 +17421,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </if>
 
     <!-- Consistent omnibox geolocation -->
-    <if expr="is_android">
-        <message name="IDS_SEARCH_GEOLOCATION_DISCLOSURE_INFOBAR_TEXT" desc="Text to put in the infobar disclosing the default search engine's usage of location. The message contains a link to a settings page. The link text is a separate string in the translation console and appears here as a placeholder text.">
-          <ph name="SEARCH_ENGINE_NAME">$1<ex>Google</ex></ph> uses your location to give you local content. You can change this in <ph name="SETTINGS_LINK">$2<ex>Settings</ex></ph>.
-        </message>
-        <message name="IDS_SEARCH_GEOLOCATION_DISCLOSURE_INFOBAR_SETTINGS_LINK_TEXT" desc="Text to put in the link to the Settings page in the search geolocation disclosure UI.">
-          Settings
-        </message>
-    </if>
 
     <!-- Automation infobar -->
     <message name="IDS_CONTROLLED_BY_AUTOMATION" desc="Message shown when the browser session is being controlled by an automated test.">
@@ -17776,13 +17440,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </message>
 
     <!-- Security Key permission -->
-    <if expr="is_android">
-      <message name="IDS_SECURITY_KEY_ATTESTATION_INFOBAR_QUESTION" desc="An infobar prompt shown to a user when a website wants to see information that identifies the user's Security Key, such as make and model number. The 'make' of a device is the brand name of the manufacturer, e.g. Yubikey is a make of Security Key. The 'model' of a device is the specific product, e.g. Yubikey Neo is a model of Security Key.">
-        <ph name="URL">
-          $1<ex>maps.google.com</ex>
-        </ph> wants to see the make and model of your Security Key
-      </message>
-    </if>
 
     <!-- Download open confirmation dialog -->
     <message name="IDS_DOWNLOAD_OPEN_CONFIRMATION_DIALOG_TITLE" desc="Title of the dialog prompt shown to users when an extension is trying to open a downloaded file.">
@@ -17996,7 +17653,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </message>
 
     <!-- Relaunch notification bubble and dialog. -->
-    <if expr="not is_android">
       <if expr="not is_chromeos">
         <message name="IDS_RELAUNCH_ACCEPT_BUTTON" desc="The text in the accept button of a dialog that causes the browser to be relaunched immediately.">
           Relaunch now
@@ -18010,10 +17666,9 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_RELAUNCH_REQUIRED_CANCEL_BUTTON" desc="The text in the cancel button that dismisses a dialog telling users the browser must be relaunched.">
         Dismiss
       </message>
-    </if>
 
     <!-- Idle timeout dialog. -->
-    <if expr="not is_android and not is_chromeos">
+    <if expr="not is_chromeos">
       <message name="IDS_IDLE_TIMEOUT_INCOGNITO" desc="The text in the Idle Timeout dialog when there are Incognito windows open. This warns the user that Incognito windows will close automatically, and their content will be lost.">
         {COUNT, plural,
           =1 {Your Incognito window won't reopen.}
@@ -18950,7 +18605,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </message>
 
     <!-- Extension request -->
-    <if expr="not is_android">
       <message name="IDS_ENTERPRISE_EXTENSION_REQUEST_APPROVED_TITLE" desc="The notification title when there are some extension requests approved.">
         {NUM_EXTENSIONS, plural,
           =1 {An extension has been approved}
@@ -18977,7 +18631,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
           =1 {Click to view the extension}
           other {Click to view these extensions}}
       </message>
-    </if>
     <message name="IDS_ENTERPRISE_EXTENSION_REQUEST_JUSTIFICATION" desc="Text describing the extension request justificaion textfield.">
       Justification for requesting this extension:
     </message>
@@ -19232,7 +18885,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </if>
 
     <!-- Battery Saver Toolbar strings  -->
-    <if expr="not is_android">
       <message name="IDS_BATTERY_SAVER_BUTTON_TOOLTIP" desc="The tooltip for the battery saver toolbar button">
         Energy Saver is on
       </message>
@@ -19262,9 +18914,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
           Turn off now
         </message>
       </if>
-    </if>
     <!-- High Efficiency Chip strings -->
-    <if expr="not is_android">
       <if expr="use_titlecase">
         <message name="IDS_MEMORY_SAVER_CHIP_LABEL" desc="In Title Case: Label for a page action chip that highlights that the Memory Saver setting is enabled">
           Tab Active Again
@@ -19348,9 +18998,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
           Huge savings
         </message>
       </if>
-    </if>
     <!-- Performance hovercard strings -->
-    <if expr="not is_android">
       <message name="IDS_HOVERCARD_TAB_MEMORY_USAGE" desc="Text at the bottom of a hovercard that shows how much memory a specific tab is using.">
         Memory usage: <ph name="MEMORY_USAGE">$1<ex>300 MB</ex></ph>
       </message>
@@ -19363,9 +19011,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_HOVERCARD_INACTIVE_TAB" desc="Text at the bottom of a hovercard indicating that a tab is inactive.">
         Inactive tab
       </message>
-    </if>
     <!-- Performance Intervention Strings-->
-    <if expr="not is_android">
         <message name="IDS_PERFORMANCE_INTERVENTION_CLOSE_BUTTON_ACCNAME" desc="The accessibility text for the performance intervention close button that removes an item from the list of tabs to deactivate when clicked.">
           Remove <ph name="SITE_NAME">$1<ex>Google</ex></ph> from list of tabs to make inactive
         </message>
@@ -19442,10 +19088,8 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_PERFORMANCE_INTERVENTION_BUTTON_ACCNAME" desc="The accessibility text for the performance intervention toolbar button">
         Performance issue alert
       </message>
-    </if>
 
     <!-- Toast Strings-->
-    <if expr="not is_android">
       <message name="IDS_TOAST_MENU_BUTTON_NAME" desc="Accessible name of the 3-dot button to open the menu attached to the toast.">
         More actions
       </message>
@@ -19491,19 +19135,7 @@ Please help our engineers fix this problem. Tell us what happened right before y
       <message name="IDS_COPIED_TO_CLIPBOARD_TOAST_BODY" desc="Text on a toast notification that is shown when an item has been copied to clipboard.">
         Copied to clipboard
       </message>
-    </if>
 
-    <if expr="is_android">
-      <message name="IDS_FAST_CHECKOUT_A11Y_ADDRESS_FORM_FILLED" desc="Accessibility string announced when an address form was filled.">
-        <ph name="ADDRESS_LABEL">$1<ex>Work</ex></ph> address form filled.
-      </message>
-      <message name="IDS_FAST_CHECKOUT_A11Y_CREDIT_CARD_FORM_FILLED" desc="Accessibility string announced when a credit card form was filled.">
-        <ph name="CARD_IDENTIFIER">$1<ex>Visa 1111</ex></ph> filled.
-      </message>
-      <message name="IDS_FAST_CHECKOUT_A11Y_EMAIL_FILLED" desc="Accessibility string announced when an email field was filled.">
-        Email filled.
-      </message>
-    </if>
 
     <!-- Infobar shown when Protected Audiences Debugging is enabled -->
     <message name="IDS_PROTECTED_AUDIENCE_DEBUGGING_DISCLAIMER" desc="Text of infobar that shows up when the consented debugging feature for Protected Audiences is enabled.">
@@ -19719,26 +19351,6 @@ Please help our engineers fix this problem. Tell us what happened right before y
 
     <!-- Safety Hub elements. -->
     <!-- TODO(crbug.com/324562205): Make strings translateable once finalized. -->
-    <if expr="is_android">
-        <message name="IDS_SETTINGS_SAFETY_HUB_SAFE_BROWSING_MENU_NOTIFICATION" desc="Summary for the Safe Browsing module of Safety Check in the Magic Stack. Shown when Safe Browsing is turned off by the user.">
-          Get protection against dangerous sites
-        </message>
-        <message name="IDS_SETTINGS_SAFETY_HUB_REVIEW_NOTIFICATION_PERMISSIONS_MENU_NOTIFICATION" desc="Summary for the notification review Safety Check module on the Magic Stack. Shown when Safety Check has identified several sites that sent lots of notifications.">
-          {NUM_SITES, plural,
-          =1 {Found 1 site with lots of notifications}
-          other {Found {NUM_SITES} sites with lots of notifications}}
-        </message>
-        <message name="IDS_SETTINGS_SAFETY_HUB_REVOKED_PERMISSIONS_MENU_NOTIFICATION" desc="Title for the permissions review Safety Check module on the Magic Stack. Shown when Safety Check has identified several sites that send abusive notifications.">
-          {NUM_SITES, plural,
-          =1 {Chrome removed permissions from 1 site}
-          other {Chrome removed permissions from {NUM_SITES} sites}}
-        </message>
-        <message name="IDS_SETTINGS_SAFETY_HUB_COMPROMISED_PASSWORDS_MENU_NOTIFICATION" desc="Summary for the compromised passwords Safety Check module on the Magic Stack. Shown when Safety Check has identified insecure credentials.">
-          {NUM_SITES, plural,
-          =1 {Found 1 compromised password}
-          other {Found {NUM_SITES} compromised passwords}}
-        </message>
-    </if>
 
     <!-- PDF Ink Signatures elements. -->
     <message name="IDS_PDF_INK_SIGNATURES_IPH_BODY" desc="Content of in-product help to introduce the PDF Ink Signatures feature.">
@@ -19911,11 +19523,9 @@ Please help our engineers fix this problem. Tell us what happened right before y
     </if>
 
     <!-- New Tab Page browser feature promotions. -->
-    <if expr="not is_android">
       <message name="IDS_NTP_EXTENSIONS_PROMO" desc="The text shown in the body of the New Tab Page extensions promotion">
         Add extensions to stay organized, simplify tasks, and enhance your browsing
       </message>
-    </if>
 
     <!-- Save to Drive -->
     <message name="IDS_ACCOUNT_CHOOSER_SINGLE_ACCOUNT_TITLE" desc="Text to prompt a user to save a file to their account.">

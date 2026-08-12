@@ -11,9 +11,6 @@
 #include "base/path_service.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/path_utils.h"
-#endif
 
 namespace ui {
 
@@ -27,10 +24,7 @@ bool PathProvider(int key, base::FilePath* result) {
 #if !BUILDFLAG(IS_IOS)
     // DIR_LOCALES is unsupported on iOS.
     case DIR_LOCALES: {
-#if BUILDFLAG(IS_ANDROID)
-      if (!base::PathService::Get(DIR_RESOURCE_PAKS_ANDROID, &cur))
-        return false;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       if (!base::PathService::Get(base::DIR_MODULE, &cur))
         return false;
       // On Mac, locale files are in Contents/Resources, a sibling of the
@@ -65,21 +59,9 @@ bool PathProvider(int key, base::FilePath* result) {
       if (!base::PathExists(cur))  // we don't want to create this
         return false;
       break;
-#if BUILDFLAG(IS_ANDROID)
-    case DIR_RESOURCE_PAKS_ANDROID:
-      if (!base::PathService::Get(base::DIR_ANDROID_APP_DATA, &cur))
-        return false;
-      cur = cur.Append(FILE_PATH_LITERAL("paks"));
-      break;
-#endif
     case UI_TEST_PAK:
-#if BUILDFLAG(IS_ANDROID)
-      if (!base::PathService::Get(ui::DIR_RESOURCE_PAKS_ANDROID, &cur))
-        return false;
-#else
       if (!base::PathService::Get(base::DIR_ASSETS, &cur))
         return false;
-#endif
       cur = cur.AppendASCII("ui_test.pak");
       break;
     default:

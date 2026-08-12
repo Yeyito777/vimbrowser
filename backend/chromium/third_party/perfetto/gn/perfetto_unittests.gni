@@ -43,7 +43,7 @@ _tracing_unittests_targets += [
 
 _misc_unittests_targets += [ "src/shared_lib/track_event:unittests" ]
 
-if ((is_linux || is_android) && !perfetto_build_with_embedder) {
+if (is_linux && !perfetto_build_with_embedder) {
   # This test depends on pthread and can't run on non-Linux-based OS.
   _base_unittests_targets += [ "test/sanitizers:unittests" ]
 }
@@ -103,11 +103,6 @@ if (enable_perfetto_trace_processor) {
 
 if (enable_perfetto_traced_relay) {
   _tracing_unittests_targets += [ "src/traced_relay:unittests" ]
-}
-
-if (enable_perfetto_android_java_sdk) {
-  _misc_unittests_targets +=
-      [ "src/android_sdk/perfetto_sdk_for_jni:unittests" ]
 }
 
 # This list MUST be defined in the end of the file, to concat all the updated sub-lists.

@@ -44,44 +44,33 @@ source_set("data_controls") {
     "//url",
   ]
 
-  if (is_android) {
+  sources += [
+    "desktop_data_controls_dialog.cc",
+    "desktop_data_controls_dialog.h",
+    "desktop_data_controls_dialog_factory.cc",
+    "desktop_data_controls_dialog_factory.h",
+    "dlp_reporting_manager.cc",
+    "dlp_reporting_manager.h",
+  ]
+  if (safe_browsing_mode != 0) {
     sources += [
-      "android_data_controls_dialog.cc",
-      "android_data_controls_dialog.h",
-      "android_data_controls_dialog_factory.cc",
-      "android_data_controls_dialog_factory.h",
+      # TODO(crbug.com/435459809): Uncomment these lines to compile these
+      # files in the proper long-term target.
+      # "reporting_service.cc",
+      # "reporting_service.h",
     ]
-    deps += [ "//ui/android" ]
   }
+  deps += [
+    "//components/constrained_window",
+    "//components/guest_view/browser",
+    "//components/reporting/client:report_queue",
+    "//components/reporting/client:report_queue_configuration",
+    "//components/reporting/client:report_queue_factory",
+    "//components/reporting/proto:record_constants",
+    "//components/reporting/util:status",
+    "//ui/views",
+  ]
 
-  if (!is_android) {
-    sources += [
-      "desktop_data_controls_dialog.cc",
-      "desktop_data_controls_dialog.h",
-      "desktop_data_controls_dialog_factory.cc",
-      "desktop_data_controls_dialog_factory.h",
-      "dlp_reporting_manager.cc",
-      "dlp_reporting_manager.h",
-    ]
-    if (safe_browsing_mode != 0) {
-      sources += [
-        # TODO(crbug.com/435459809): Uncomment these lines to compile these
-        # files in the proper long-term target.
-        # "reporting_service.cc",
-        # "reporting_service.h",
-      ]
-    }
-    deps += [
-      "//components/constrained_window",
-      "//components/guest_view/browser",
-      "//components/reporting/client:report_queue",
-      "//components/reporting/client:report_queue_configuration",
-      "//components/reporting/client:report_queue_factory",
-      "//components/reporting/proto:record_constants",
-      "//components/reporting/util:status",
-      "//ui/views",
-    ]
-  }
   if (enable_extensions) {
     deps += [ "//chrome/browser/extensions" ]
   }
@@ -121,19 +110,18 @@ source_set("test_support") {
   if (is_chromeos) {
     public_deps += [ "//components/user_manager" ]
   }
-  if (!is_android) {
-    sources = [
-      "desktop_data_controls_dialog_test_helper.cc",
-      "desktop_data_controls_dialog_test_helper.h",
-      "dlp_reporting_manager_test_helper.cc",
-      "dlp_reporting_manager_test_helper.h",
-    ]
-    public_deps += [
-      "//chrome/test:test_support",
-      "//components/reporting/client:test_support",
-      "//components/reporting/util:status",
-    ]
-  }
+
+  sources = [
+    "desktop_data_controls_dialog_test_helper.cc",
+    "desktop_data_controls_dialog_test_helper.h",
+    "dlp_reporting_manager_test_helper.cc",
+    "dlp_reporting_manager_test_helper.h",
+  ]
+  public_deps += [
+    "//chrome/test:test_support",
+    "//components/reporting/client:test_support",
+    "//components/reporting/util:status",
+  ]
 }
 
 source_set("unit_tests") {

@@ -41,20 +41,7 @@ source_set("profiler") {
     "//third_party/abseil-cpp:absl",
   ]
 
-  if (is_android) {
-    deps += [
-      "//base:native_unwinder_android",
-      "//chrome/android/features/stack_unwinder/public:native",
-      "//chrome/android/modules/stack_unwinder/public:module",
-    ]
-    public += [ "native_unwinder_android_map_delegate_impl.h" ]
-    sources += [
-      "core_unwinders_android.cc",
-      "native_unwinder_android_map_delegate_impl.cc",
-    ]
-  } else {
-    sources += [ "core_unwinders.cc" ]
-  }
+  sources += [ "core_unwinders.cc" ]
 
   if (enable_extensions) {
     deps += [ "//extensions/common" ]
@@ -85,10 +72,6 @@ source_set("unit_tests") {
     "//content/public/common",
     "//extensions/buildflags",
   ]
-
-  if (is_android) {
-    sources += [ "core_unwinders_android_unittest.cc" ]
-  }
 
   if (enable_extensions) {
     deps += [ "//extensions/common" ]

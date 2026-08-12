@@ -65,40 +65,25 @@ source_set("browser") {
     "//url",
   ]
   public_deps = [
-    "//build:android_buildflags",
     "//components/media_router/common",
     "//components/media_router/common/mojom:media_router",
     "//extensions/buildflags",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (is_android) {
-    sources += [
-      "android/flinging_controller_bridge.cc",
-      "android/flinging_controller_bridge.h",
-      "android/media_router_android.cc",
-      "android/media_router_android.h",
-      "android/media_router_android_bridge.cc",
-      "android/media_router_android_bridge.h",
-      "android/media_router_dialog_controller_android.cc",
-      "android/media_router_dialog_controller_android.h",
-    ]
-    deps += [ "android:jni_headers" ]
-  } else {
-    sources += [
-      "issues_observer.cc",
-      "issues_observer.h",
-      "log_util.cc",
-      "log_util.h",
-      "logger_impl.cc",
-      "logger_impl.h",
-      "media_router_debugger.h",
-      "mirroring_to_flinging_switcher.cc",
-      "mirroring_to_flinging_switcher.h",
-      "presentation/presentation_navigation_policy.cc",
-      "presentation/presentation_navigation_policy.h",
-    ]
-  }
+  sources += [
+    "issues_observer.cc",
+    "issues_observer.h",
+    "log_util.cc",
+    "log_util.h",
+    "logger_impl.cc",
+    "logger_impl.h",
+    "media_router_debugger.h",
+    "mirroring_to_flinging_switcher.cc",
+    "mirroring_to_flinging_switcher.h",
+    "presentation/presentation_navigation_policy.cc",
+    "presentation/presentation_navigation_policy.h",
+  ]
 }
 
 source_set("test_support") {
@@ -116,10 +101,7 @@ source_set("test_support") {
     "//content/public/browser",
     "//testing/gmock",
   ]
-  public_deps = [
-    ":browser",
-    "//build:android_buildflags",
-  ]
+  public_deps = [ ":browser" ]
 }
 
 source_set("unit_tests") {
@@ -149,14 +131,9 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_android) {
-    sources += [ "android/media_router_android_unittest.cc" ]
-    deps += [ "android:test_jni_headers" ]
-  } else {
-    sources += [
-      "issue_manager_unittest.cc",
-      "logger_impl_unittest.cc",
-      "mirroring_to_flinging_switcher_unittest.cc",
-    ]
-  }
+  sources += [
+    "issue_manager_unittest.cc",
+    "logger_impl_unittest.cc",
+    "mirroring_to_flinging_switcher_unittest.cc",
+  ]
 }

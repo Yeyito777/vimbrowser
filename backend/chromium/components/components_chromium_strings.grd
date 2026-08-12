@@ -193,7 +193,7 @@
   <release seq="1">
     <messages fallback_to_english="true">
       <!-- Network Error Pages -->
-      <if expr="not is_android and not is_ios">
+      <if expr="not is_ios">
         <message name="IDS_ERRORPAGES_SUGGESTION_NETWORK_PREDICTION_BODY" desc="When a page fails to load, sometimes we suggest disabling predicting network actions.  These are details below a header for non Android devices.">
           Go to
           the Chromium menu &gt;

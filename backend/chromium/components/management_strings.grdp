@@ -321,7 +321,7 @@
 
 
     <!-- Strings related to browser reporting section of the management page -->
-    <message name="IDS_MANAGEMENT_BROWSER_REPORTING_EXPLANATION" desc="Message explaining to users what browser information is being reported that admins can access" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_BROWSER_REPORTING_EXPLANATION" desc="Message explaining to users what browser information is being reported that admins can access">
       Your administrator may be able to view:
     </message>
     <message name="IDS_MANAGEMENT_EXTENSION_REPORT_MACHINE_NAME" desc="Message explaining that an extension currently reports the user's machine name">
@@ -330,10 +330,10 @@
     <message name="IDS_MANAGEMENT_EXTENSION_REPORT_MACHINE_NAME_ADDRESS" desc="Message explaining that an extension currently reports the user's machine name and address">
       Your device name and network address
     </message>
-    <message name="IDS_MANAGEMENT_EXTENSION_REPORT_USERNAME" desc="Message explaining that an extension currently reports the user's username" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_EXTENSION_REPORT_USERNAME" desc="Message explaining that an extension currently reports the user's username">
       Your device username and Chrome username
     </message>
-    <message name="IDS_MANAGEMENT_EXTENSION_REPORT_VERSION" desc="Message explaining that an extension currently reports the user's browser and machine version" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_EXTENSION_REPORT_VERSION" desc="Message explaining that an extension currently reports the user's browser and machine version">
       Version information about your device and browser
     </message>
     <message name="IDS_MANAGEMENT_EXTENSION_REPORT_EXTENSIONS_PLUGINS" desc="Message explaining that an extension currently reports the user's exensions and plugins">
@@ -348,15 +348,15 @@
     <message name="IDS_MANAGEMENT_EXTENSION_REPORT_VISITED_URL" desc="Message explaining that an extension currently reports the user's visited URLs">
       Which URLs you visit
     </message>
-    <message name="IDS_MANAGEMENT_LEGACY_TECH_REPORT" desc="Message explaining that browser will upload a report when a legacy technology is used for a webpage" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_LEGACY_TECH_REPORT" desc="Message explaining that browser will upload a report when a legacy technology is used for a webpage">
       A limited list of URLs of pages you visit where <ph name="BEGIN_LINK">&lt;a target="_blank" href="https://chromestatus.com/features#browsers.chrome.status%3A%22Deprecated%22" &gt;</ph>legacy technology events<ph name="END_LINK">&lt;/a&gt;</ph> are occuring
     </message>
-    <message name="IDS_MANAGEMENT_LEGACY_TECH_REPORT_NO_LINK" desc="Message explaining that browser will upload a report when a legacy technology is used for a webpage" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_LEGACY_TECH_REPORT_NO_LINK" desc="Message explaining that browser will upload a report when a legacy technology is used for a webpage">
       A limited list of URLs of pages you visit where legacy technology events are occuring
     </message>
 
     <!-- Strings related to Chrome Enterprise Connectors -->
-    <message name="IDS_MANAGEMENT_THREAT_PROTECTION_MORE" desc="Label of a button to view more details about Chrome Enterprise Connectors" formatter_data="android_java">
+    <message name="IDS_MANAGEMENT_THREAT_PROTECTION_MORE" desc="Label of a button to view more details about Chrome Enterprise Connectors">
       More about Chrome Enterprise Connectors
     </message>
     <message name="IDS_MANAGEMENT_FILE_ATTACHED_EVENT" desc="Event for the file attachment scanning feature.">
@@ -404,7 +404,7 @@
   </if>
 
   <!-- Strings related to browser reporting section of the management page -->
-  <message name="IDS_MANAGEMENT_BROWSER_REPORTING" desc="Title of the types of browser reporting section of the page" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_BROWSER_REPORTING" desc="Title of the types of browser reporting section of the page">
     Browser
   </message>
   <if expr="is_ios">
@@ -436,19 +436,19 @@
 
 
   <!-- Profile reporting management message-->
-  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_EXPLANATION" desc="Message explaining browser reporting" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_EXPLANATION" desc="Message explaining browser reporting">
     Managed profile, browser, and some device information is accessible to your administrator. They can see information such as the following:
   </message>
-  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_OVERVIEW" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile overview. A work profile is a managed profile in an enterprise environment, such as a business, government organization, or other workplace." formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_OVERVIEW" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile overview. A work profile is a managed profile in an enterprise environment, such as a business, government organization, or other workplace.">
     Work profile overview
   </message>
-  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_USERNAME" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile username." formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_USERNAME" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile username.">
     Work profile information (such as your username)
   </message>
-  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_BROWSER" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the device information that user's work profile belong to" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_BROWSER" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the device information that user's work profile belong to">
     Browser and device OS information (such as the browser &amp; OS versions)
   </message>
-  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_POLICY" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile policies. A work profile is a managed profile in an enterprise environment, such as a business, government organization, or other workplace." formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PROFILE_REPORTING_POLICY" desc="Item in a list of information viewable by the enterprise admin, indicating that the admin can view the user's work profile policies. A work profile is a managed profile in an enterprise environment, such as a business, government organization, or other workplace.">
     Applied browser policies in your work profile
   </message>
   <message name="IDS_MANAGEMENT_PROFILE_REPORTING_LEARN_MORE" desc="Learn more link for profile reporting management information to provide additional informaiton">
@@ -482,31 +482,31 @@
   </if>
 
   <!-- Strings related to Chrome Enterprise Connectors -->
-  <message name="IDS_MANAGEMENT_THREAT_PROTECTION" desc="Title of the Chrome Enterprise Connectors section of the page" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_THREAT_PROTECTION" desc="Title of the Chrome Enterprise Connectors section of the page">
     Chrome Enterprise Connectors
   </message>
-  <message name="IDS_MANAGEMENT_THREAT_PROTECTION_DESCRIPTION" desc="Description of the Chrome Enterprise Connectors section of the page" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_THREAT_PROTECTION_DESCRIPTION" desc="Description of the Chrome Enterprise Connectors section of the page">
     Your administrator has turned on Chrome Enterprise Connectors on your browser. These connectors have access to some of your data.
   </message>
   <message name="IDS_MANAGEMENT_THREAT_PROTECTION_DESCRIPTION_BY" desc="Description of the Chrome Enterprise Connectors section of the page">
     <ph name="ENROLLMENT_DOMAIN">$1<ex>example.com</ex></ph> has turned on Chrome Enterprise Connectors on your browser. These connectors have access to some of your data.
   </message>
-  <message name="IDS_MANAGEMENT_CONNECTORS_EVENT" desc="Title of a column of the Connectors table showing the event that triggers a Connector" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_CONNECTORS_EVENT" desc="Title of a column of the Connectors table showing the event that triggers a Connector">
     Event
   </message>
-  <message name="IDS_MANAGEMENT_CONNECTORS_VISIBLE_DATA" desc="Title of a column of the Connectors table showing the data visible to a Connector" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_CONNECTORS_VISIBLE_DATA" desc="Title of a column of the Connectors table showing the data visible to a Connector">
     Visible data
   </message>
-  <message name="IDS_MANAGEMENT_ENTERPRISE_REPORTING_EVENT" desc="Event for the enterprise reporting feature" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_ENTERPRISE_REPORTING_EVENT" desc="Event for the enterprise reporting feature">
     Security event occurs
   </message>
-  <message name="IDS_MANAGEMENT_PAGE_VISITED_EVENT" desc="Event for the real time URL check feature." formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PAGE_VISITED_EVENT" desc="Event for the real time URL check feature.">
     Page is visited
   </message>
-  <message name="IDS_MANAGEMENT_PAGE_VISITED_VISIBLE_DATA" desc="Description of the visible data for the real time URL check feature." formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_PAGE_VISITED_VISIBLE_DATA" desc="Description of the visible data for the real time URL check feature.">
     URLs of pages you visit are sent to Google Cloud or third parties for analysis, and may be visible to your administrator. For example, they might be scanned to detect unsafe websites or filter websites based on rules set by the administrator.
   </message>
-  <message name="IDS_MANAGEMENT_ENTERPRISE_REPORTING_VISIBLE_DATA" desc="Description of the visible data for the Connectors reporting feature" formatter_data="android_java">
+  <message name="IDS_MANAGEMENT_ENTERPRISE_REPORTING_VISIBLE_DATA" desc="Description of the visible data for the Connectors reporting feature">
     When security events are flagged by Chrome, relevant data about the events is sent to your administrator. This can include URLs of pages you visit in Chrome, URLs of pages you copied data from, file names or metadata, IP addresses, browser or tab crashes, and the username that you use to sign in to web based applications, your device and Chrome.
   </message>
 

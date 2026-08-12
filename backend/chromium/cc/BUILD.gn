@@ -9,10 +9,6 @@ import("//ui/gl/features.gni")
 
 import("//cc/cc.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 cc_component("layer_selection_bound") {
   # Without this separates from :cc, there will be a circular dependency:
   # :cc -> cc/mojom:mojo_layer_trees -> :cc.
@@ -544,15 +540,6 @@ cc_component("cc") {
     "//ui/latency",
   ]
 
-  if (is_android) {
-    sources += [
-      "input/android/offset_tag_android.cc",
-      "input/android/offset_tag_android.h",
-    ]
-
-    deps += [ ":cc_jni_headers" ]
-  }
-
   defines = [ "CC_IMPLEMENTATION=1" ]
 }
 
@@ -758,9 +745,9 @@ cc_test_static_library("test_support") {
   if (enable_vulkan) {
     deps += [ "//gpu/vulkan/init" ]
   }
-  if (!is_android) {
-    data_deps = [ "//third_party/angle:includes" ]
-  }
+
+  data_deps = [ "//third_party/angle:includes" ]
+
   if (skia_use_dawn) {
     deps += [
       "//third_party/dawn/src/dawn:proc",
@@ -1033,10 +1020,6 @@ cc_test("cc_unittests") {
     "//third_party/angle:includes",
   ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data_deps += [ "//clank/build/bot/filters:cc_unittests_filters" ]
-  }
-
   if (skia_support_skottie) {
     data += [ "test/data/" ]
   }
@@ -1129,40 +1112,4 @@ cc_test("cc_perftests") {
     # Needed for isolate script to execute.
     "//testing:run_perf_test",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("cc_android_java_enums_srcjar") {
-    sources = [ "//cc/input/browser_controls_state.h" ]
-  }
-
-  generate_jni("cc_jni_headers") {
-    sources = [
-      "input/android/java/src/org/chromium/cc/input/BrowserControlsOffsetTagModifications.java",
-      "input/android/java/src/org/chromium/cc/input/BrowserControlsOffsetTags.java",
-      "input/android/java/src/org/chromium/cc/input/OffsetTag.java",
-    ]
-  }
-
-  android_library("cc_java") {
-    # Right now, this only includes the Java switches. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [
-      ":cc_android_java_enums_srcjar",
-      ":cc_jni_headers",
-    ]
-
-    sources = [
-      "input/android/java/src/org/chromium/cc/input/BrowserControlsOffsetTagModifications.java",
-      "input/android/java/src/org/chromium/cc/input/BrowserControlsOffsetTags.java",
-      "input/android/java/src/org/chromium/cc/input/OffsetTag.java",
-    ]
-
-    deps = [
-      "//base:base_java",
-      "//third_party/android_deps:com_google_errorprone_error_prone_annotations_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
 }

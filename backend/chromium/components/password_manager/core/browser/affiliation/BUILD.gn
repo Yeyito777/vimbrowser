@@ -30,13 +30,13 @@ source_set("affiliation_fetching") {
     "//net",
     "//url",
   ]
-  if (!is_android) {
-    sources += [
-      "passkey_affiliation_source_adapter.cc",
-      "passkey_affiliation_source_adapter.h",
-    ]
-    deps += [ "//components/webauthn/core/browser:passkey_model" ]
-  }
+
+  sources += [
+    "passkey_affiliation_source_adapter.cc",
+    "passkey_affiliation_source_adapter.h",
+  ]
+  deps += [ "//components/webauthn/core/browser:passkey_model" ]
+
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
@@ -100,8 +100,6 @@ source_set("affiliation_fetching_unittests") {
     "//testing/gtest",
   ]
 
-  if (!is_android) {
-    sources += [ "passkey_affiliation_source_adapter_unittest.cc" ]
-    deps += [ "//components/webauthn/core/browser:test_support" ]
-  }
+  sources += [ "passkey_affiliation_source_adapter_unittest.cc" ]
+  deps += [ "//components/webauthn/core/browser:test_support" ]
 }

@@ -11,9 +11,6 @@
 #include "base/metrics/field_trial_params.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS)
 #include "ui/base/shortcut_mapping_pref_delegate.h"
@@ -174,11 +171,7 @@ BASE_FEATURE(kExperimentalFlingAnimation,
 #if !BUILDFLAG(IS_APPLE)
 // Cached in Java as well, make sure defaults are updated together.
 BASE_FEATURE(kElasticOverscroll,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else  // BUILDFLAG(IS_ANDROID)
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 #endif
 
@@ -226,7 +219,7 @@ bool IsTouchTextEditingRedesignEnabled() {
 
 // This feature enables drag and drop using touch input devices.
 BASE_FEATURE(kTouchDragAndDrop,
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
              base::FEATURE_ENABLED_BY_DEFAULT
 #else
              base::FEATURE_DISABLED_BY_DEFAULT
@@ -321,13 +314,8 @@ BASE_FEATURE(kUIDebugTools,
 
 bool IsSwipeToMoveCursorEnabled() {
   static const bool enabled =
-#if BUILDFLAG(IS_ANDROID)
-      base::android::android_info::sdk_int() >=
-      base::android::android_info::SDK_VERSION_R;
-#else
       base::FeatureList::IsEnabled(kSwipeToMoveCursor) ||
       IsTouchTextEditingRedesignEnabled();
-#endif
   return enabled;
 }
 

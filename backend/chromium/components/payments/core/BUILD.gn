@@ -61,19 +61,17 @@ static_library("core") {
     "url_util.h",
   ]
 
-  if (!is_android) {
-    sources += [
-      "payment_options.cc",
-      "payment_options.h",
-      "payment_options_provider.h",
-      "payment_response.cc",
-      "payment_response.h",
-      "payments_profile_comparator.cc",
-      "payments_profile_comparator.h",
-      "strings_util.cc",
-      "strings_util.h",
-    ]
-  }
+  sources += [
+    "payment_options.cc",
+    "payment_options.h",
+    "payment_options_provider.h",
+    "payment_response.cc",
+    "payment_response.h",
+    "payments_profile_comparator.cc",
+    "payments_profile_comparator.h",
+    "strings_util.cc",
+    "strings_util.h",
+  ]
 
   deps = [
     ":currency_formatter",
@@ -189,15 +187,13 @@ source_set("unit_tests") {
     "url_util_unittest.cc",
   ]
 
-  if (!is_android) {
-    sources += [
-      "payment_address_unittest.cc",
-      "payment_options_unittest.cc",
-      "payment_request_data_util_unittest.cc",
-      "payment_response_unittest.cc",
-      "payments_profile_comparator_unittest.cc",
-    ]
-  }
+  sources += [
+    "payment_address_unittest.cc",
+    "payment_options_unittest.cc",
+    "payment_request_data_util_unittest.cc",
+    "payment_response_unittest.cc",
+    "payments_profile_comparator_unittest.cc",
+  ]
 
   deps = [
     ":core",

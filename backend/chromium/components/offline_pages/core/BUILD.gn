@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("core") {
   sources = [
     "archive_manager.cc",
@@ -192,16 +188,4 @@ source_set("unit_tests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  java_cpp_enum("offline_page_model_enums_java") {
-    sources = [
-      "background/request_notifier.h",
-      "background/request_queue_results.h",
-      "background/save_page_request.h",
-      "offline_page_types.h",
-      "offline_store_types.h",
-    ]
-  }
 }

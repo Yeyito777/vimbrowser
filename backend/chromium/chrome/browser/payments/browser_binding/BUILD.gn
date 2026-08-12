@@ -23,17 +23,6 @@ source_set("browser_bound_key_deleter") {
     "//content/public/browser",
   ]
 
-  if (is_android) {
-    sources += [
-      "browser_bound_key_deleter_service_android.cc",
-      "browser_bound_key_deleter_service_android.h",
-    ]
-    deps += [
-      "//components/webauthn/android",
-      "//components/webauthn/core/browser",
-    ]
-  }
-
   if (is_desktop) {
     sources += [
       "browser_bound_key_deleter_service_desktop.cc",
@@ -59,10 +48,6 @@ source_set("unittests") {
     "//content/test:test_support",
     "//third_party/blink/public:blink_headers",
   ]
-
-  if (is_android) {
-    sources += [ "browser_bound_key_deleter_service_android_unittest.cc" ]
-  }
 
   if (is_desktop) {
     sources += [ "browser_bound_key_deleter_service_desktop_unittest.cc" ]

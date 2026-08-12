@@ -115,18 +115,9 @@
 #include "chromeos/ash/experiences/arc/arc_util.h"
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#include "chrome/browser/android/webapk/webapk_sync_service.h"
-#include "chrome/browser/android/webapk/webapk_sync_service_factory.h"
-
-// Must come after other includes, because FromJniType() uses Profile.
-#include "chrome/browser/sync/android/jni_headers/SyncServiceFactory_jni.h"
-#else  // BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/contextual_tasks/contextual_tasks_service_factory.h"
 #include "chrome/browser/skills/skills_service_factory.h"
 #include "chrome/browser/webauthn/passkey_model_factory.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 
@@ -134,19 +125,7 @@ namespace {
 // Tab group sync is enabled via separate feature flags on different platforms.
 tab_groups::TabGroupSyncService* GetTabGroupSyncService(Profile* profile) {
   CHECK(profile);
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || \
-    BUILDFLAG(IS_WIN)
-  tab_groups::TabGroupSyncService* service =
-      tab_groups::TabGroupSyncServiceFactory::GetForProfile(profile);
-  CHECK(service);
-  return service;
-#elif BUILDFLAG(IS_ANDROID)
-  const bool enable_tab_group_sync =
-      tab_groups::IsTabGroupSyncEnabled(profile->GetPrefs());
-  tab_groups::TabGroupTrial::OnTabGroupSyncEnabled(enable_tab_group_sync);
-  if (!enable_tab_group_sync) {
-    return nullptr;
-  }
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   tab_groups::TabGroupSyncService* service =
       tab_groups::TabGroupSyncServiceFactory::GetForProfile(profile);
   CHECK(service);
@@ -206,12 +185,10 @@ syncer::DataTypeController::TypeVector CreateCommonControllers(
   builder.SetConsentAuditor(ConsentAuditorFactory::GetForProfile(profile));
   builder.SetCollaborationService(
       collaboration::CollaborationServiceFactory::GetForProfile(profile));
-#if !BUILDFLAG(IS_ANDROID)
   builder.SetAimEligibilityService(
       AimEligibilityServiceFactory::GetForProfile(profile));
   builder.SetContextualTasksService(
       contextual_tasks::ContextualTasksServiceFactory::GetForProfile(profile));
-#endif
   builder.SetDataSharingService(
       data_sharing::DataSharingServiceFactory::GetForProfile(profile));
   builder.SetPersonalCollaborationDataService(
@@ -230,9 +207,7 @@ syncer::DataTypeController::TypeVector CreateCommonControllers(
   builder.SetIdentityManager(IdentityManagerFactory::GetForProfile(profile));
   builder.SetDataTypeStoreService(
       DataTypeStoreServiceFactory::GetForProfile(profile));
-#if !BUILDFLAG(IS_ANDROID)
   builder.SetPasskeyModel(PasskeyModelFactory::GetForProfile(profile));
-#endif  // !BUILDFLAG(IS_ANDROID)
   builder.SetPasswordReceiverService(
       PasswordReceiverServiceFactory::GetForProfile(profile));
   builder.SetPasswordSenderService(
@@ -249,11 +224,7 @@ syncer::DataTypeController::TypeVector CreateCommonControllers(
   builder.SetPrefServiceSyncable(PrefServiceSyncableFromProfile(profile));
   builder.SetTabGroupSyncService(GetTabGroupSyncService(profile));
   builder.SetTemplateURLService(
-#if BUILDFLAG(IS_ANDROID)
-      nullptr
-#else   // BUILDFLAG(IS_ANDROID)
       TemplateURLServiceFactory::GetForProfile(profile)
-#endif  // BUILDFLAG(IS_ANDROID)
   );
   builder.SetSendTabToSelfSyncService(
       SendTabToSelfSyncServiceFactory::GetForProfile(profile));
@@ -269,11 +240,7 @@ syncer::DataTypeController::TypeVector CreateCommonControllers(
   builder.SetUserEventService(
       browser_sync::UserEventServiceFactory::GetForProfile(profile));
   builder.SetSkillsService(
-#if BUILDFLAG(IS_ANDROID)
-      nullptr
-#else   // BUILDFLAG(IS_ANDROID)
       skills::SkillsServiceFactory::GetForProfile(profile)
-#endif  // BUILDFLAG(IS_ANDROID)
   );
 
   return builder.Build(/*disabled_types=*/{}, sync_service,
@@ -310,12 +277,6 @@ syncer::DataTypeController::TypeVector CreateChromeControllers(
           : nullptr);
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
-#if BUILDFLAG(IS_ANDROID)
-  builder.SetWebApkSyncService(
-      base::FeatureList::IsEnabled(syncer::kWebApkBackupAndRestoreBackend)
-          ? webapk::WebApkSyncServiceFactory::GetForProfile(profile)
-          : nullptr);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS)
   const bool arc_enabled =
@@ -534,9 +495,7 @@ SyncServiceFactory::SyncServiceFactory()
   DependsOn(browser_sync::UserEventServiceFactory::GetInstance());
   DependsOn(collaboration::CollaborationServiceFactory::GetInstance());
   DependsOn(ConsentAuditorFactory::GetInstance());
-#if !BUILDFLAG(IS_ANDROID)
   DependsOn(contextual_tasks::ContextualTasksServiceFactory::GetInstance());
-#endif  // !BUILDFLAG(IS_ANDROID)
   DependsOn(DataTypeStoreServiceFactory::GetInstance());
   DependsOn(DeviceInfoSyncServiceFactory::GetInstance());
   DependsOn(data_sharing::DataSharingServiceFactory::GetInstance());
@@ -548,9 +507,7 @@ SyncServiceFactory::SyncServiceFactory()
   DependsOn(HistoryServiceFactory::GetInstance());
   DependsOn(IdentityManagerFactory::GetInstance());
   DependsOn(LocalOrSyncableBookmarkSyncServiceFactory::GetInstance());
-#if !BUILDFLAG(IS_ANDROID)
   DependsOn(PasskeyModelFactory::GetInstance());
-#endif  // !BUILDFLAG(IS_ANDROID)
   DependsOn(PasswordReceiverServiceFactory::GetInstance());
   DependsOn(PasswordSenderServiceFactory::GetInstance());
   DependsOn(PlusAddressSettingServiceFactory::GetInstance());
@@ -559,22 +516,13 @@ SyncServiceFactory::SyncServiceFactory()
   DependsOn(SecurityEventRecorderFactory::GetInstance());
   DependsOn(SendTabToSelfSyncServiceFactory::GetInstance());
   DependsOn(SharingMessageBridgeFactory::GetInstance());
-#if !BUILDFLAG(IS_ANDROID)
   DependsOn(skills::SkillsServiceFactory::GetInstance());
-#endif  // !BUILDFLAG(IS_ANDROID)
   DependsOn(SyncInvalidationsServiceFactory::GetInstance());
   DependsOn(supervised_user::FamilyLinkSettingsServiceFactory::GetInstance());
   DependsOn(SessionSyncServiceFactory::GetInstance());
   DependsOn(TemplateURLServiceFactory::GetInstance());
-#if !BUILDFLAG(IS_ANDROID)
   DependsOn(ThemeServiceFactory::GetInstance());
-#endif  // !BUILDFLAG(IS_ANDROID)
   DependsOn(TrustedVaultServiceFactory::GetInstance());
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(syncer::kWebApkBackupAndRestoreBackend)) {
-    DependsOn(webapk::WebApkSyncServiceFactory::GetInstance());
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   DependsOn(WebDataServiceFactory::GetInstance());
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
@@ -657,21 +605,3 @@ SyncServiceFactory::GetDefaultFactory(
   return base::BindRepeating(
       &BuildSyncService, std::move(create_http_post_provider_factory_for_test));
 }
-
-#if BUILDFLAG(IS_ANDROID)
-static base::android::ScopedJavaLocalRef<jobject>
-JNI_SyncServiceFactory_GetForProfile(JNIEnv* env, Profile* profile) {
-  DCHECK(profile);
-
-  syncer::SyncService* sync_service =
-      SyncServiceFactory::GetForProfile(profile);
-  if (!sync_service) {
-    return base::android::ScopedJavaLocalRef<jobject>();
-  }
-  return sync_service->GetJavaObject();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(SyncServiceFactory)
-#endif

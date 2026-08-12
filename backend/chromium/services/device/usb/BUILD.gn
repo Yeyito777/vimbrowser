@@ -7,11 +7,6 @@ import("//testing/libfuzzer/fuzzer_test.gni")
 
 assert(use_blink)
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 static_library("usb") {
   # Only targets under //services/device folder can depend on it.
   visibility = [
@@ -48,25 +43,6 @@ static_library("usb") {
     "//base",
     "//url",
   ]
-
-  if (is_android) {
-    sources += [
-      "usb_configuration_android.cc",
-      "usb_configuration_android.h",
-      "usb_device_android.cc",
-      "usb_device_android.h",
-      "usb_device_handle_android.cc",
-      "usb_device_handle_android.h",
-      "usb_endpoint_android.cc",
-      "usb_endpoint_android.h",
-      "usb_interface_android.cc",
-      "usb_interface_android.h",
-      "usb_service_android.cc",
-      "usb_service_android.h",
-    ]
-
-    deps += [ ":jni_headers" ]
-  }
 
   if (is_win) {
     sources += [
@@ -130,14 +106,14 @@ static_library("usb") {
     deps += [ "//device/udev_linux" ]
   }
 
-  if (is_android || is_chromeos || is_linux) {
+  if (is_chromeos || is_linux) {
     sources += [
       "usb_device_handle_usbfs.cc",
       "usb_device_handle_usbfs.h",
     ]
   }
 
-  if (is_android || is_linux) {
+  if (is_linux) {
     sources += [
       "usb_interface_detach_allowlist.cc",
       "usb_interface_detach_allowlist.h",
@@ -208,30 +184,4 @@ fuzzer_test("usb_string_read_fuzzer") {
   ]
   seed_corpus = "fuzz_corpus"
   libfuzzer_options = [ "max_len=2048" ]
-}
-
-if (is_android) {
-  java_sources_needing_jni = [
-    "android/java/src/org/chromium/device/usb/ChromeUsbConfiguration.java",
-    "android/java/src/org/chromium/device/usb/ChromeUsbConnection.java",
-    "android/java/src/org/chromium/device/usb/ChromeUsbDevice.java",
-    "android/java/src/org/chromium/device/usb/ChromeUsbEndpoint.java",
-    "android/java/src/org/chromium/device/usb/ChromeUsbInterface.java",
-    "android/java/src/org/chromium/device/usb/ChromeUsbService.java",
-  ]
-
-  generate_jni("jni_headers") {
-    sources = java_sources_needing_jni
-  }
-
-  android_library("java") {
-    srcjar_deps = [ ":jni_headers" ]
-    sources = java_sources_needing_jni
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
 }

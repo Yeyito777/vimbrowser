@@ -26,7 +26,7 @@ if (is_asan || is_tsan || is_ubsan) {
   }
   if (is_ubsan) {
     _sanitizer_lib_base_name = "clang_rt.ubsan"
-    if (is_android || is_linux) {
+    if (is_linux) {
       _sanitizer_lib_base_name += "_standalone"
     }
   }
@@ -47,10 +47,6 @@ declare_args() {
 
       # sanitizer_lib_dir is unused on linux. All usages of sanitizer_lib_dir
       # are gated by an if (!sanitizer_lib_dir_is_static).
-    }
-    if (is_android) {
-      sanitizer_lib = "${_sanitizer_lib_base_name}-${android_llvm_arch}-android"
-      sanitizer_lib_dir = android_clangrt_dir
     }
   }
 }

@@ -7,10 +7,6 @@ import("//build/config/features.gni")
 import("//components/password_manager/core/browser/buildflags.gni")
 import("//third_party/libprotobuf-mutator/fuzzable_proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
-
 config("password_reuse_detection_config") {
   defines = []
   if (!is_ios) {
@@ -217,28 +213,11 @@ static_library("browser") {
     "//ui/accessibility",
   ]
 
-  if (is_android) {
-    sources += [
-      "first_cct_page_load_passwords_ukm_recorder.cc",
-      "first_cct_page_load_passwords_ukm_recorder.h",
-      "password_credential_filler.h",
-      "password_credential_filler_impl.cc",
-      "password_credential_filler_impl.h",
-    ]
-    public_deps += [ ":split_stores_and_local_upm" ]
-    deps += [
-      "//components/webauthn/android",
-      "//services/metrics/public/cpp:ukm_builders",
-    ]
-  }
-
-  if (!is_android) {
-    sources += [
-      "os_crypt_async_migrator.cc",
-      "os_crypt_async_migrator.h",
-    ]
-    deps += [ "//components/webauthn/core/browser:passkey_model" ]
-  }
+  sources += [
+    "os_crypt_async_migrator.cc",
+    "os_crypt_async_migrator.h",
+  ]
+  deps += [ "//components/webauthn/core/browser:passkey_model" ]
 
   if (is_win || is_mac || is_linux || is_chromeos) {
     sources += [
@@ -260,25 +239,10 @@ static_library("browser") {
     deps += [ "//content/public/browser" ]
   }
 
-  if (!is_chromeos && !is_android) {
+  if (!is_chromeos) {
     sources += [
       "password_reuse_manager_signin_notifier_impl.cc",
       "password_reuse_manager_signin_notifier_impl.h",
-    ]
-  }
-}
-
-if (is_android) {
-  source_set("split_stores_and_local_upm") {
-    sources = [
-      "split_stores_and_local_upm.cc",
-      "split_stores_and_local_upm.h",
-    ]
-    deps = [
-      "//base",
-      "//components/password_manager/core/browser/features:password_features",
-      "//components/password_manager/core/common",
-      "//components/prefs",
     ]
   }
 }
@@ -325,9 +289,6 @@ source_set("passkey_credential") {
     "//device/fido",
     "//ui/base",
   ]
-  if (is_android) {
-    deps += [ "//components/webauthn/android" ]
-  }
 }
 
 source_set("metrics_util") {
@@ -347,26 +308,6 @@ source_set("metrics_util") {
     "//services/metrics/public/cpp:metrics_cpp",
     "//services/metrics/public/cpp:ukm_builders",
   ]
-}
-
-if (is_android) {
-  # Wrap the java_cpp_enum in android_library so it can be used by both
-  # chrome_java and modules.
-  android_library("password_manager_java_enums") {
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-    srcjar_deps = [ ":password_manager_java_enums_srcjar" ]
-  }
-
-  java_cpp_enum("password_manager_java_enums_srcjar") {
-    sources = [
-      "manage_passwords_referrer.h",
-      "password_check_referrer_android.h",
-      "password_manager_metrics_util.h",
-      "password_manager_setting.h",
-      "password_manager_util.h",
-      "password_store/android_backend_error.h",
-    ]
-  }
 }
 
 static_library("password_hash_data") {
@@ -434,13 +375,6 @@ static_library("test_support") {
     "sync_username_test_base.cc",
     "sync_username_test_base.h",
   ]
-
-  if (is_android) {
-    sources += [
-      "mock_password_credential_filler.cc",
-      "mock_password_credential_filler.h",
-    ]
-  }
 
   public_deps = [
     ":browser",
@@ -534,15 +468,9 @@ source_set("unit_tests") {
     "vote_uploads_test_matchers.h",
     "votes_uploader_unittest.cc",
   ]
-  if (is_android) {
-    sources += [
-      "first_cct_page_load_passwords_ukm_recorder_unittest.cc",
-      "password_credential_filler_impl_unittest.cc",
-      "split_stores_and_local_upm_unittest.cc",
-    ]
-  } else {
-    sources += [ "os_crypt_async_migrator_unittest.cc" ]
-  }
+
+  sources += [ "os_crypt_async_migrator_unittest.cc" ]
+
   if (use_blink) {
     sources += [ "http_credentials_cleaner_unittest.cc" ]
   }
@@ -551,7 +479,7 @@ source_set("unit_tests") {
     sources += [ "hash_password_manager_unittest.cc" ]
   }
 
-  if (!is_chromeos && !is_android) {
+  if (!is_chromeos) {
     sources += [ "password_reuse_manager_signin_notifier_impl_unittest.cc" ]
   }
 
@@ -599,19 +527,10 @@ source_set("unit_tests") {
     "//ui/gfx:test_support",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/webauthn/core/browser:test_support" ]
-  }
+  deps += [ "//components/webauthn/core/browser:test_support" ]
 
   if (is_ios) {
     deps += [ "//components/test:password_manager_test_bundle_data" ]
-  }
-
-  if (is_android) {
-    deps += [
-      ":password_manager_buildflags",
-      "//components/webauthn/android",
-    ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

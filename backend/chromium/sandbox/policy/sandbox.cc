@@ -11,10 +11,6 @@
 #include "sandbox/policy/mojom/sandbox.mojom.h"
 #include "sandbox/policy/switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "third_party/jni_zero/common_apis.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "sandbox/policy/linux/sandbox_linux.h"
@@ -88,12 +84,7 @@ bool Sandbox::IsProcessSandboxed() {
     return true;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Note that this does not check the status of the Seccomp sandbox. Call
-  // https://developer.android.com/reference/android/os/Process#isIsolated().
-  JNIEnv* env = base::android::AttachCurrentThread();
-  return jni_zero::ProcessIsIsolated(env);
-#elif BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_FUCHSIA)
   // TODO(crbug.com/40126761): Figure out what to do here. Process
   // launching controls the sandbox and there are no ambient capabilities, so
   // basically everything but the browser is considered sandboxed.

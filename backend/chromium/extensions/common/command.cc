@@ -17,7 +17,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/extension.h"
@@ -118,9 +117,6 @@ std::string Command::CommandPlatform() {
 #elif BUILDFLAG(IS_CHROMEOS)
   return ui::kKeybindingPlatformChromeOs;
 #elif BUILDFLAG(IS_LINUX)
-  return ui::kKeybindingPlatformLinux;
-#elif BUILDFLAG(IS_DESKTOP_ANDROID)
-  // For now, we use linux keybindings on desktop android.
   return ui::kKeybindingPlatformLinux;
 #else
 #error Unsupported platform

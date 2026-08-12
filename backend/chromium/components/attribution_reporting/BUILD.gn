@@ -19,7 +19,6 @@ mojom("mojom") {
 
   # Used by Blink, so requires legacy JS bindings.
   generate_legacy_js_bindings = true
-  generate_java = true
 
   disallow_interfaces = true
 }
@@ -214,8 +213,6 @@ source_set("test_support") {
 
 mojom("registration_mojom") {
   sources = [ "registration.mojom" ]
-
-  generate_java = true
   webui_module_path = "/"
   disallow_interfaces = true
 
@@ -421,8 +418,6 @@ component("registration_mojom_traits") {
 mojom("registration_header_error_mojom") {
   sources = [ "registration_header_error.mojom" ]
 
-  generate_java = true
-
   deps = [ ":mojom" ]
 
   export_class_attribute_blink = "PLATFORM_EXPORT"
@@ -477,7 +472,6 @@ mojom("source_type_mojom") {
   sources = [ "source_type.mojom" ]
   webui_module_path = "/"
   disallow_interfaces = true
-  generate_java = false
 }
 
 source_set("fuzzer_support") {
@@ -496,8 +490,6 @@ source_set("fuzzer_support") {
 
 mojom("data_host_mojom") {
   sources = [ "data_host.mojom" ]
-
-  generate_java = true
 
   deps = [
     ":registration_header_error_mojom",

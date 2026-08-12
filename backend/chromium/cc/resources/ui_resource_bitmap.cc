@@ -22,9 +22,6 @@
 #include "third_party/skia/include/gpu/ganesh/GrDirectContext.h"
 #include "third_party/skia/include/gpu/ganesh/GrRecordingContext.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace cc {
 namespace {
@@ -98,39 +95,6 @@ UIResourceBitmap::UIResourceBitmap(const SkBitmap& skbitmap) {
   DCHECK(skbitmap.isImmutable());
 
   const SkBitmap* target = &skbitmap;
-#if BUILDFLAG(IS_ANDROID)
-  SkBitmap copy;
-  if (features::ShouldEnableDrDc() ||
-      base::android::device_info::is_desktop()) {
-    // On android desktop, where JavaBitmap ensures 4 byte alignment, uploading
-    // ALPHA_8 to angle_vulkan_image_backing may fail because it expects 1 byte
-    // alignment stride. Workaround via copying it to N32.
-    // TODO(https://crbug.com/485286876): Remove this workaround once stride
-    // information is passed along with pixel_data to shared_image.
-
-    // If GpuFeatureInfo is available, replace ShouldEnableDrDc() with
-    // IsDrDcEnabled(gpu_feature_info) which is set after checking drdc
-    // workarounds;
-
-    // TODO(vikassoni): Forcing everything to N32 while android backing cannot
-    // support some other formats. Note that DrDc is disabled on some gl
-    // renderers and hence gpus via gpu driver bug workaround. That workaround
-    // is not applied here and so on those disable gpus, everything will still
-    // be forced to N32 even though drdc is disabled. This should be fine for
-    // now and would be fixed later. crbug.com/1354201.
-    if (skbitmap.colorType() != kN32_SkColorType) {
-      SkImageInfo new_info = skbitmap.info().makeColorType(kN32_SkColorType);
-      copy.allocPixels(new_info, new_info.minRowBytes());
-      SkCanvas copy_canvas(copy);
-      copy_canvas.drawImage(skbitmap.asImage(), 0, 0, SkSamplingOptions(),
-                            nullptr);
-      copy.setImmutable();
-      target = &copy;
-    }
-    DCHECK_EQ(target->width(), target->rowBytesAsPixels());
-    DCHECK(target->isImmutable());
-  }
-#endif
   sk_sp<SkPixelRef> pixel_ref = sk_ref_sp(target->pixelRef());
   Create(std::move(pixel_ref), target->info(),
          SkColorTypeToUIResourceFormat(target->colorType()));

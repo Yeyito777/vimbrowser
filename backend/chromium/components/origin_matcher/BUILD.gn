@@ -51,12 +51,6 @@ source_set("origin_matcher") {
     "//url",
   ]
 
-  if (is_android) {
-    sources += [ "android/origin_matcher_bindings.cc" ]
-
-    deps += [ "//components/origin_matcher/android:jni" ]
-  }
-
   # origin_matcher_internal is needed by mojom traits and tests.
   friend = [ ":*" ]
 }

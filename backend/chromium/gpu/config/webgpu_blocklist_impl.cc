@@ -19,9 +19,6 @@
 #include "base/mac/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 #include "third_party/dawn/include/dawn/webgpu_cpp.h"
 
@@ -109,48 +106,6 @@ WebGPUBlocklistReason GetWebGPUAdapterBlocklistReason(
   }
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-  constexpr uint32_t kARMVendorID = 0x13B5;
-  constexpr uint32_t kQualcommVendorID = 0x5143;
-  constexpr uint32_t kIntelVendorID = 0x8086;
-  constexpr uint32_t kImgTecVendorID = 0x1010;
-
-  switch (info.vendorID) {
-    case kARMVendorID:
-    case kQualcommVendorID:
-    case kIntelVendorID:
-      // ARM, Qualcomm, and Intel GPUs are supported on Android 12+ on Vulkan
-      if (info.backendType == wgpu::BackendType::Vulkan &&
-          (base::android::android_info::sdk_int() <
-           base::android::android_info::SDK_VERSION_S)) {
-        reason = reason | WebGPUBlocklistReason::AndroidLimitedSupport;
-      }
-      // and Android 10+ on OpenGLES (currently Chrome's minimum, so no version
-      // check here)
-      break;
-
-    case kImgTecVendorID:
-      // Imagination GPUs are supported on Android 16+ on Vulkan
-      if (info.backendType == wgpu::BackendType::Vulkan &&
-          (base::android::android_info::sdk_int() <
-           base::android::android_info::SDK_VERSION_BAKLAVA)) {
-        reason = reason | WebGPUBlocklistReason::AndroidLimitedSupport;
-      }
-      // and Android 13+ on OpenGLES
-      if (info.backendType == wgpu::BackendType::OpenGLES &&
-          (base::android::android_info::sdk_int() <
-           base::android::android_info::SDK_VERSION_T)) {
-        reason = reason | WebGPUBlocklistReason::AndroidLimitedSupport;
-      }
-      break;
-
-    default:
-      // Other OS versions/GPU vendor combinations may be fine, but have not had
-      // sufficient testing yet.
-      reason = reason | WebGPUBlocklistReason::AndroidLimitedSupport;
-      break;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS)
   constexpr uint32_t kAMDVendorID = 0x1002;

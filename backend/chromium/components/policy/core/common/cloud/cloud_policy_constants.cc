@@ -9,9 +9,6 @@
 #include "base/command_line.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 #include "components/policy/core/common/policy_switches.h"
 
 namespace policy {
@@ -96,9 +93,7 @@ const char kChromeSigninExtensionPolicyType[] =
     "google/chromeos/signinextension";
 
 const char kChromeMachineLevelUserCloudPolicyType[] =
-#if BUILDFLAG(IS_ANDROID)
-    "google/chrome/machine-level-user-android";
-#elif BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
     "google/chrome/machine-level-user-ios";
 #else
     "google/chrome/machine-level-user";
@@ -141,12 +136,6 @@ const char kChromeMachineLevelUserCloudPolicyTypeBase64[] =
 const char* GetChromeUserPolicyType() {
 #if BUILDFLAG(IS_CHROMEOS)
   return "google/chromeos/user";
-#elif BUILDFLAG(IS_ANDROID)
-  if (base::android::device_info::is_desktop()) {
-    return "google/chrome/user";
-  } else {
-    return "google/android/user";
-  }
 #elif BUILDFLAG(IS_IOS)
   return "google/ios/user";
 #else

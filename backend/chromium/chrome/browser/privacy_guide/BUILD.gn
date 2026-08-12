@@ -7,16 +7,3 @@ static_library("privacy_guide") {
 
   deps = [ "//base" ]
 }
-
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  android_library("privacy_guide_enum_java") {
-    srcjar_deps = [ ":privacy_guide_enum_javagen" ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
-
-  java_cpp_enum("privacy_guide_enum_javagen") {
-    sources = [ "privacy_guide.h" ]
-  }
-}

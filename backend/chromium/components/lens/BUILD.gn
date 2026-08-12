@@ -75,9 +75,7 @@ static_library("lens") {
     deps += [ "//skia" ]
   }
 
-  if (!is_android) {
-    deps += [ "//third_party/zstd:compress" ]
-  }
+  deps += [ "//third_party/zstd:compress" ]
 
   if (enable_pdf) {
     public_deps += [

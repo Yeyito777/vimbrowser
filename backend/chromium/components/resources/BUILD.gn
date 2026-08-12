@@ -24,10 +24,6 @@ buildflag_header("generate_about_credits_header") {
   flags = [ "GENERATE_ABOUT_CREDITS=$generate_about_credits" ]
 }
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 if (is_ios) {
   import("//build/config/ios/bundle_data_from_filelist.gni")
 }
@@ -104,10 +100,6 @@ grit("components_resources") {
       "//components/safe_browsing/content/resources:make_file_types_protobuf",
     ]
   }
-
-  if (is_android && safe_browsing_mode == 2) {
-    deps += [ "//components/safe_browsing/content/resources/real_time_url_checks_allowlist:make_real_time_url_allowlist_protobuf" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -180,22 +172,6 @@ if (generate_about_credits) {
   copy("about_credits") {
     sources = [ "sample_credits.html" ]
     outputs = [ about_credits_file ]
-  }
-}
-
-if (is_android) {
-  source_set("android_resources") {
-    sources = [
-      "android/autofill_resource_id.h",
-      "android/blocked_content_resource_id.h",
-      "android/page_info_resource_id.h",
-      "android/permissions_resource_id.h",
-      "android/sms_resource_id.h",
-      "android/theme_resources.h",
-      "android/webxr_resource_id.h",
-    ]
-
-    public_deps = [ "//device/vr/buildflags" ]
   }
 }
 

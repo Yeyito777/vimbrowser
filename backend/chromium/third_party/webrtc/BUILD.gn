@@ -27,11 +27,6 @@ import("webrtc.gni")
 if (rtc_enable_protobuf) {
   import("//third_party/protobuf/proto_library.gni")
 }
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
 
 if (!build_with_chromium) {
   # This target should (transitively) cause everything to be built; if you run
@@ -100,15 +95,9 @@ if (!build_with_chromium) {
           "sdk:sdk_unittests",
         ]
       }
-      if (is_android) {
-        deps += [
-          "examples:android_examples_junit_tests",
-          "sdk/android:android_instrumentation_test_apk",
-          "sdk/android:android_sdk_junit_tests",
-        ]
-      } else {
-        deps += [ "modules/video_capture:video_capture_tests" ]
-      }
+
+      deps += [ "modules/video_capture:video_capture_tests" ]
+
       if (rtc_enable_protobuf) {
         deps += [
           "logging:rtc_event_log_rtp_dump",
@@ -118,9 +107,6 @@ if (!build_with_chromium) {
       if ((is_linux || is_chromeos) && rtc_use_pipewire) {
         deps += [ "modules/desktop_capture:shared_screencast_stream_test" ]
       }
-    }
-    if (target_os == "android") {
-      deps += [ "tools_webrtc:binary_version_check" ]
     }
   }
 }
@@ -236,16 +222,7 @@ config("common_inherited_config") {
   if (is_win) {
     defines += [ "WEBRTC_WIN" ]
   }
-  if (is_android) {
-    defines += [
-      "WEBRTC_LINUX",
-      "WEBRTC_ANDROID",
-    ]
 
-    if (build_with_mozilla) {
-      defines += [ "WEBRTC_ANDROID_OPENSLES" ]
-    }
-  }
   if (is_chromeos) {
     defines += [ "CHROMEOS" ]
   }
@@ -449,17 +426,6 @@ config("common_config") {
     }
   }
 
-  if (is_android && !is_clang) {
-    # The Android NDK doesn"t provide optimized versions of these
-    # functions. Ensure they are disabled for all compilers.
-    cflags += [
-      "-fno-builtin-cos",
-      "-fno-builtin-sin",
-      "-fno-builtin-cosf",
-      "-fno-builtin-sinf",
-    ]
-  }
-
   if (use_fuzzing_engine) {
     # Used in Chromium's overrides to disable logging
     defines += [ "WEBRTC_UNSAFE_FUZZER_MODE" ]
@@ -564,9 +530,6 @@ if (!build_with_chromium) {
       deps += [ "api/audio:create_audio_device_module" ]
     }
     if (!build_with_chromium) {
-      if (is_android) {
-        deps += [ "sdk/android" ]
-      }
       if (is_ios) {
         deps += [ "sdk:framework_objc" ]
       }
@@ -671,17 +634,6 @@ if (rtc_include_tests && !build_with_chromium) {
     if (is_ios) {
       deps += [ ":rtc_unittests_bundle_data" ]
     }
-
-    if (is_android) {
-      # Do not use Chromium's launcher. native_unittests defines its own JNI_OnLoad.
-      use_default_launcher = false
-
-      deps += [
-        "sdk/android:native_unittests",
-        "sdk/android:native_unittests_java",
-      ]
-      shard_timeout = 900
-    }
   }
 
   rtc_test("rtc_p2p_unittests") {
@@ -704,11 +656,6 @@ if (rtc_include_tests && !build_with_chromium) {
   rtc_test("audio_engine_tests") {
     testonly = true
     deps = [ "audio:audio_tests" ]
-
-    if (is_android) {
-      use_default_launcher = false
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-    }
   }
 
   # TODO(pbos): Rename test suite, this is no longer "just" for video targets.
@@ -727,11 +674,6 @@ if (rtc_include_tests && !build_with_chromium) {
 
     data_deps = [ "resources:video_engine_tests_data" ]
 
-    if (is_android) {
-      use_default_launcher = false
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-      shard_timeout = 900
-    }
     if (is_ios) {
       deps += [ "resources:video_engine_tests_bundle_data" ]
     }
@@ -750,11 +692,6 @@ if (rtc_include_tests && !build_with_chromium) {
 
     data_deps = [ "resources:webrtc_perf_tests_data" ]
 
-    if (is_android) {
-      use_default_launcher = false
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-      shard_timeout = 4500
-    }
     if (is_ios) {
       deps += [ "resources:webrtc_perf_tests_bundle_data" ]
     }
@@ -763,9 +700,6 @@ if (rtc_include_tests && !build_with_chromium) {
   rtc_test("webrtc_nonparallel_tests") {
     testonly = true
     deps = [ "rtc_base:rtc_base_nonparallel_tests" ]
-    if (is_android) {
-      shard_timeout = 900
-    }
   }
 
   rtc_test("voip_unittests") {

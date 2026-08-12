@@ -8,10 +8,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//services/device/public/cpp/compute_pressure/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
-
 mojom("web_test_common_mojom") {
   sources = [
     "common/fake_bluetooth_chooser.mojom",

@@ -355,7 +355,5 @@ if (enable_surface_embed) {
   browser_exposed_mojom_targets += [ "//components/surface_embed/common:mojom" ]
 }
 
-if (!is_android) {
-  browser_exposed_mojom_targets +=
-      [ "//chrome/browser/ui/webui/feedback/report_unsafe_site:mojo_bindings" ]
-}
+browser_exposed_mojom_targets +=
+    [ "//chrome/browser/ui/webui/feedback/report_unsafe_site:mojo_bindings" ]

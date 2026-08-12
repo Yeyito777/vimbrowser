@@ -58,8 +58,6 @@ source_set("lib") {
       "text_detection_impl_win.cc",
       "text_detection_impl_win.h",
     ]
-  } else if (is_android) {
-    # No C++ sources needed, face and text detection is provided by Java.
   } else {
     sources += [
       "face_detection_provider_impl.cc",
@@ -78,8 +76,6 @@ source_set("lib") {
       "barcode_detection_provider_mac.h",
       "barcode_detection_provider_mac.mm",
     ]
-  } else if (is_android) {
-    # No C++ sources needed, barcode detection is provided by Java.
   } else if (build_with_internal_shape_detection) {
     sources += [
       "barcode_detection_impl_chrome.cc",
@@ -104,53 +100,12 @@ source_set("lib") {
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (is_android) {
-    deps += [ ":shape_detection_jni_headers" ]
-  } else if (is_chromeos || is_linux) {
+  if (is_chromeos || is_linux) {
     sources += [
       "shape_detection_sandbox_hook.cc",
       "shape_detection_sandbox_hook.h",
     ]
     deps += [ "//sandbox/policy" ]
-  }
-}
-
-if (is_android) {
-  generate_jni("shape_detection_jni_headers") {
-    sources = [
-      "android/java/src/org/chromium/shape_detection/InterfaceRegistrar.java",
-    ]
-  }
-
-  android_library("shape_detection_java") {
-    sources = [
-      "android/java/src/org/chromium/shape_detection/BarcodeDetectionImpl.java",
-      "android/java/src/org/chromium/shape_detection/BarcodeDetectionProviderImpl.java",
-      "android/java/src/org/chromium/shape_detection/BitmapUtils.java",
-      "android/java/src/org/chromium/shape_detection/FaceDetectionImpl.java",
-      "android/java/src/org/chromium/shape_detection/FaceDetectionImplGmsCore.java",
-      "android/java/src/org/chromium/shape_detection/FaceDetectionProviderImpl.java",
-      "android/java/src/org/chromium/shape_detection/InterfaceRegistrar.java",
-      "android/java/src/org/chromium/shape_detection/TextDetectionImpl.java",
-    ]
-
-    deps = [
-      "$google_play_services_package:google_play_services_base_java",
-      "$google_play_services_package:google_play_services_basement_java",
-      "$google_play_services_package:google_play_services_vision_common_java",
-      "$google_play_services_package:google_play_services_vision_java",
-      "//base:base_java",
-      "//mojo/public/java:base_java",
-      "//mojo/public/java:bindings_java",
-      "//mojo/public/java:system_java",
-      "//mojo/public/java/system:system_impl_java",
-      "//mojo/public/mojom/base:base_java",
-      "//services/shape_detection/public/mojom:mojom_java",
-      "//skia/public/mojom:mojom_java",
-      "//third_party/android_deps:chromium_play_services_availability_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//ui/gfx/geometry/mojom:mojom_java",
-    ]
   }
 }
 

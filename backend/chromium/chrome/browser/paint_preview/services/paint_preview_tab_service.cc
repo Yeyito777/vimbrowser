@@ -23,14 +23,6 @@
 #include "ui/accessibility/ax_mode.h"
 #include "ui/gfx/geometry/rect.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/callback_android.h"
-#include "base/android/jni_android.h"
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "base/logging.h"
-#include "chrome/browser/paint_preview/android/jni_headers/PaintPreviewTabService_jni.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace paint_preview {
 
@@ -43,13 +35,6 @@ constexpr int kMaxCaptureSizePixels = 100000;
 constexpr size_t kMaxPerCaptureSizeBytes = 8 * 1000L * 1000L;       // 8 MB.
 constexpr uint64_t kMaxDecodedImageSizeBytes = 10 * 1000L * 1000L;  // 10 MB.
 
-#if BUILDFLAG(IS_ANDROID)
-void JavaBooleanCallbackAdapter(base::OnceCallback<void(bool)> callback,
-                                PaintPreviewTabService::Status status) {
-  DVLOG(1) << "Capture finished with status: " << status;
-  std::move(callback).Run(status == PaintPreviewTabService::Status::kOk);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Safe since Tab ID are just converted to strings to be directory keys.
 int TabIdFromDirectoryKey(const DirectoryKey& key) {
@@ -107,21 +92,10 @@ PaintPreviewTabService::PaintPreviewTabService(
             "Browser.PaintPreview.TabService.DiskUsageAtStartup",
             size_bytes / 1000);
       }));
-#if BUILDFLAG(IS_ANDROID)
-  JNIEnv* env = base::android::AttachCurrentThread();
-  java_ref_.Reset(Java_PaintPreviewTabService_Constructor(
-      env, reinterpret_cast<intptr_t>(this),
-      reinterpret_cast<intptr_t>(static_cast<PaintPreviewBaseService*>(this))));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 PaintPreviewTabService::~PaintPreviewTabService() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if BUILDFLAG(IS_ANDROID)
-  JNIEnv* env = base::android::AttachCurrentThread();
-  Java_PaintPreviewTabService_onNativeDestroyed(env, java_ref_);
-  java_ref_.Reset();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void PaintPreviewTabService::CaptureTab(int tab_id,
@@ -217,52 +191,6 @@ void PaintPreviewTabService::AuditArtifacts(
                      weak_ptr_factory_.GetWeakPtr(), active_tab_ids));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void PaintPreviewTabService::CaptureTabAndroid(
-    JNIEnv* env,
-    int32_t j_tab_id,
-    const base::android::JavaRef<jobject>& j_web_contents,
-    bool j_accessibility_enabled,
-    float j_page_scale_factor,
-    int32_t j_x,
-    int32_t j_y,
-    const base::android::JavaRef<jobject>& j_callback) {
-  content::WebContents* web_contents =
-      content::WebContents::FromJavaWebContents(j_web_contents);
-  CaptureTab(static_cast<int>(j_tab_id), web_contents, j_accessibility_enabled,
-             j_page_scale_factor, static_cast<int>(j_x), static_cast<int>(j_y),
-             base::BindOnce(
-                 &JavaBooleanCallbackAdapter,
-                 base::BindOnce(
-                     &base::android::RunBooleanCallbackAndroid,
-                     base::android::ScopedJavaGlobalRef<jobject>(j_callback))));
-}
-
-void PaintPreviewTabService::TabClosedAndroid(JNIEnv* env, int32_t j_tab_id) {
-  TabClosed(static_cast<int>(j_tab_id));
-}
-
-bool PaintPreviewTabService::HasCaptureForTabAndroid(JNIEnv* env,
-                                                     int32_t j_tab_id) {
-  return static_cast<bool>(HasCaptureForTab(static_cast<int>(j_tab_id)));
-}
-
-void PaintPreviewTabService::AuditArtifactsAndroid(
-    JNIEnv* env,
-    const base::android::JavaRef<jintArray>& j_tab_ids) {
-  std::vector<int> tab_ids;
-  base::android::JavaIntArrayToIntVector(env, j_tab_ids, &tab_ids);
-  AuditArtifacts(tab_ids);
-}
-
-bool PaintPreviewTabService::IsCacheInitializedAndroid(JNIEnv* env) {
-  return static_cast<bool>(CacheInitialized());
-}
-
-std::string PaintPreviewTabService::GetPathAndroid(JNIEnv* env) {
-  return GetFileMixin()->GetFileManager()->GetPath().AsUTF8Unsafe();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void PaintPreviewTabService::DeleteTask(int tab_id) {
   tasks_.erase(tab_id);
@@ -417,7 +345,3 @@ void PaintPreviewTabService::RunAudit(
 }
 
 }  // namespace paint_preview
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(PaintPreviewTabService)
-#endif

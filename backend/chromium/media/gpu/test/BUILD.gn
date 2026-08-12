@@ -6,8 +6,7 @@ import("//build/config/ui.gni")
 import("//media/gpu/args.gni")
 import("//media/media_options.gni")
 
-if (enable_av1_decoder &&
-    (use_linux_video_acceleration || is_win || is_android)) {
+if (enable_av1_decoder && (use_linux_video_acceleration || is_win)) {
   test("video_decode_accelerator_tests") {
     testonly = true
     sources = [
@@ -85,13 +84,6 @@ if (enable_av1_decoder &&
       "//testing/gmock",
       "//testing/gtest",
     ]
-
-    if (is_android) {
-      deps += [
-        # The test needs the java dependencies to add the java classes for their
-        # native counterparts to the test apk.
-      ]
-    }
   }
 
   test("video_encode_accelerator_perf_tests") {

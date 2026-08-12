@@ -31,7 +31,7 @@ template("arch") {
 }
 
 arch("skcms_TransformHsw") {
-  enabled = current_cpu == "x64" && target_os != "android"
+  enabled = current_cpu == "x64"
   sources = skcms_TransformHsw
   if (is_win) {
     if (is_clang) {
@@ -53,7 +53,7 @@ arch("skcms_TransformHsw") {
 }
 
 arch("skcms_TransformSkx") {
-  enabled = current_cpu == "x64" && target_os != "android"
+  enabled = current_cpu == "x64"
   sources = skcms_TransformSkx
   if (is_win) {
     if (is_clang) {
@@ -85,7 +85,7 @@ static_library("skcms") {
   if (!is_win || is_clang) {
     cflags += [ "-std=c11" ]
   }
-  if (target_cpu != "x64" || target_os == "android") {
+  if (target_cpu != "x64") {
     defines = [
       "SKCMS_DISABLE_HSW",
       "SKCMS_DISABLE_SKX",

@@ -27,11 +27,6 @@ source_set("features") {
     "//build/config/compiler:wexit_time_destructors",
     "//build/config/compiler:wglobal_constructors",
   ]
-
-  if (is_android) {
-    sources += [ "feature_map.cc" ]
-    deps += [ "android:gwp_asan_jni" ]
-  }
 }
 
 component("client") {
@@ -101,7 +96,7 @@ component("client") {
 
   configs += [ ":gwp_asan_implementation" ]
 
-  if (is_android || is_ios) {
+  if (is_ios) {
     deps += [ "//components/crash/core/app" ]
   }
 }

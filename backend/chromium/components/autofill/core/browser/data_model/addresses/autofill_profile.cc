@@ -64,12 +64,6 @@
 #include "third_party/libaddressinput/src/cpp/include/libaddressinput/address_formatter.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "components/autofill/android/main_autofill_jni_headers/AutofillProfile_jni.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using ::i18n::addressinput::AddressData;
 using ::i18n::addressinput::AddressField;
@@ -170,36 +164,6 @@ void GetFieldsForDistinguishingProfiles(
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// Constructs an AutofillProfile using the provided `existing_profile` as a
-// foundation. In case that the `existing_profile` is invalid, an empty profile
-// with a unique identifier (GUID) corresponding to the Java profile
-// (`jprofile`) is initialized.
-AutofillProfile CreateStarterProfile(
-    const base::android::JavaRef<jobject>& jprofile,
-    JNIEnv* env,
-    const AutofillProfile* existing_profile) {
-  std::string guid = Java_AutofillProfile_getGUID(env, jprofile);
-  if (!existing_profile) {
-    AutofillProfile::RecordType record_type =
-        Java_AutofillProfile_getRecordType(env, jprofile);
-    AddressCountryCode country_code =
-        AddressCountryCode(Java_AutofillProfile_getCountryCode(env, jprofile));
-    AutofillProfile profile = AutofillProfile(record_type, country_code);
-    // Only set the guid if CreateStartProfile is called on an existing profile
-    // (java guid not empty). Otherwise, keep the generated one.
-    // TODO(crbug.com/40282123): `guid` should be always empty when existing
-    // profile is not set. CHECK should be added when this condition holds.
-    if (!guid.empty()) {
-      profile.set_guid(guid);
-    }
-    return profile;
-  }
-
-  CHECK_EQ(existing_profile->guid(), guid);
-  return *existing_profile;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -285,76 +249,6 @@ AutofillProfile& AutofillProfile::operator=(const AutofillProfile& profile) {
   return *this;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject> AutofillProfile::CreateJavaObject(
-    std::string_view app_locale) const {
-  JNIEnv* env = base::android::AttachCurrentThread();
-  base::android::ScopedJavaLocalRef<jobject> jprofile =
-      Java_AutofillProfile_Constructor(
-          env, guid(), static_cast<int32_t>(record_type()), language_code());
-
-  for (FieldType type : AutofillProfile::kDatabaseStoredTypes) {
-    auto status = static_cast<int32_t>(GetVerificationStatus(type));
-    // TODO(crbug.com/40278253): Reconcile usage of GetInfo and GetRawInfo
-    // below.
-    if (type == NAME_FULL) {
-      Java_AutofillProfile_setInfo(env, jprofile, static_cast<int32_t>(type),
-                                   GetInfo(type, app_locale), status);
-    } else {
-      Java_AutofillProfile_setInfo(env, jprofile, static_cast<int32_t>(type),
-                                   GetRawInfo(type), status);
-    }
-  }
-  return jprofile;
-}
-
-// static
-AutofillProfile AutofillProfile::CreateFromJavaObject(
-    const base::android::JavaRef<jobject>& jprofile,
-    const AutofillProfile* existing_profile,
-    std::string_view app_locale) {
-  JNIEnv* env = base::android::AttachCurrentThread();
-  AutofillProfile profile =
-      CreateStarterProfile(jprofile, env, existing_profile);
-
-  std::vector<int> field_types =
-      Java_AutofillProfile_getFieldTypes(env, jprofile);
-
-  std::vector<std::tuple<FieldType, std::u16string, VerificationStatus>>
-      modified_fields;
-  for (int int_field_type : field_types) {
-    FieldType field_type = ToSafeFieldType(int_field_type, NO_SERVER_DATA);
-    CHECK(field_type != NO_SERVER_DATA);
-    VerificationStatus status =
-        Java_AutofillProfile_getInfoStatus(env, jprofile, field_type);
-    std::u16string value =
-        Java_AutofillProfile_getInfo(env, jprofile, field_type);
-
-    if (value != profile.GetInfo(field_type, app_locale) ||
-        status != profile.GetVerificationStatus(field_type)) {
-      modified_fields.emplace_back(field_type, value, status);
-    }
-  }
-
-  for (const auto& field_data : modified_fields) {
-    const auto& [field_type, value, status] = field_data;
-    // TODO(crbug.com/40278253): Reconcile usage of GetInfo and GetRawInfo
-    // below.
-    if (field_type == NAME_FULL || field_type == ADDRESS_HOME_COUNTRY) {
-      profile.SetInfoWithVerificationStatus(field_type, value, app_locale,
-                                            status);
-    } else {
-      profile.SetRawInfoWithVerificationStatus(field_type, value, status);
-    }
-  }
-
-  profile.set_language_code(
-      Java_AutofillProfile_getLanguageCode(env, jprofile));
-  profile.FinalizeAfterImport();
-
-  return profile;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 double AutofillProfile::GetRankingScore(base::Time current_time) const {
   return usage_history_information_.GetRankingScore(current_time);
@@ -1280,7 +1174,3 @@ const UsageHistoryInformation& AutofillProfile::usage_history() const {
 }
 
 }  // namespace autofill
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(AutofillProfile)
-#endif

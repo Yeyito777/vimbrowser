@@ -4,9 +4,6 @@
 
 import("//components/lens/features.gni")
 
-# Contained Lens dependencies are currently for desktop platforms only
-assert(!is_android, "Lens Region Search is for desktop platforms only")
-
 static_library("region_search") {
   sources = [
     "lens_region_search_controller.cc",

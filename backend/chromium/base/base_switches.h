@@ -170,10 +170,6 @@ inline constexpr char kDefaultCountryCodeAtInstall[] = "default-country-code";
 // Adds additional thread idle time information into the trace event output.
 inline constexpr char kEnableIdleTracing[] = "enable-idle-tracing";
 
-// Forces the DeviceInfo.isDesktop() check to return true. Can be used to enable
-// desktop-only features on other form factors.
-inline constexpr char kForceDesktopAndroid[] = "force-desktop-android";
-
 // When we retrieve the package name within the SDK Runtime, we need to use
 // a bit of a hack to do this by taking advantage of the fact that the pid
 // is the same pid as the application's pid + 10000.

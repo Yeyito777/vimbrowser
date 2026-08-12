@@ -71,17 +71,6 @@
 #include "google_apis/gaia/google_service_auth_error.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#include "base/android/jni_android.h"
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "components/password_manager/core/browser/split_stores_and_local_upm.h"
-#include "components/sync/android/jni_headers/ExplicitPassphrasePlatformClient_jni.h"
-#include "components/sync/android/sync_service_android_bridge.h"
-#include "components/sync/engine/nigori/nigori.h"
-#include "components/sync/protocol/nigori_specifics.pb.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace syncer {
 
@@ -90,14 +79,6 @@ namespace {
 BASE_FEATURE(kSyncUnsubscribeFromTypesWithPermanentErrors,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-constexpr int kMinGmsVersionCodeWithCustomPassphraseApi = 235204000;
-
-// Keep in sync with the corresponding string in
-// ExplicitPassphrasePlatformClientTest.java
-constexpr char kIgnoreMinGmsVersionWithPassphraseSupportForTest[] =
-    "ignore-min-gms-version-with-passphrase-support-for-test";
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // The initial state of sync, for the Sync.InitialState2 histogram. Even if
 // this value indicates that sync (the feature or the transport) can start, the
@@ -201,7 +182,7 @@ void MaybeClearAccountKeyedPreferences(
     signin::IdentityManager* identity_manager,
     const signin::AccountsInCookieJarInfo& accounts_in_cookie_jar_info,
     SyncUserSettingsImpl& user_settings) {
-#if !BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
+#if !BUILDFLAG(IS_IOS)
   if (accounts_in_cookie_jar_info.AreAccountsFresh()) {
     // Clear settings for accounts no longer in the cookie jar. On Android
     // and iOS this is done when the account is removed from the OS instead.
@@ -783,14 +764,6 @@ std::unique_ptr<SyncEngine> SyncServiceImpl::ResetEngine(
   return engine_to_be_destroyed;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject> SyncServiceImpl::GetJavaObject() {
-  if (!sync_service_android_) {
-    sync_service_android_ = std::make_unique<SyncServiceAndroidBridge>(this);
-  }
-  return sync_service_android_->GetJavaObject();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 SyncUserSettings* SyncServiceImpl::GetUserSettings() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -926,12 +899,6 @@ SyncService::UserActionableError SyncServiceImpl::GetUserActionableError()
                      kTrustedVaultRecoverabilityDegradedForPasswords;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (user_settings_->GetSelectedTypes().Has(UserSelectableType::kPasswords) &&
-      password_manager::IsGmsCoreUpdateRequired()) {
-    return UserActionableError::kNeedsUPMBackendUpgrade;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // This error should ideally be the last one to be checked. Any new identity
   // errors should be handled before this.
@@ -1151,7 +1118,7 @@ void SyncServiceImpl::OnActionableProtocolError(
       // immediately because IsEngineAllowedToRun() is almost certainly true at
       // this point and StopAndClear() leads to TryStart().
       user_settings_->SetSyncFeatureDisabledViaDashboard();
-#else  // !BUILDFLAG(IS_CHROMEOS)
+#else
       // On every platform except ash, revoke the Sync consent/Clear primary
       // account after a dashboard clear.
       // TODO(crbug.com/40066949): Simplify once kSync becomes unreachable or is
@@ -1168,7 +1135,7 @@ void SyncServiceImpl::OnActionableProtocolError(
         // platforms. Any platforms which support a single-step flow that signs
         // in and enables sync should clear the primary account here for
         // symmetry.
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
         // On mobile, fully sign out the user (clear the primary account) but
         // do not remove the list of known accounts, as the user may sign in
         // again.
@@ -1818,11 +1785,6 @@ void SyncServiceImpl::UpdateDataTypesForInvalidations() {
     types.RemoveAll(data_type_manager_->GetDataTypesWithPermanentErrors());
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, don't subscribe to HISTORY invalidations, to save network
-  // traffic.
-  types.Remove(HISTORY);
-#endif
   types.RemoveAll(data_type_manager_->GetActiveProxyDataTypes());
 
   sync_client_->GetSyncInvalidationsService()->SetInterestedDataTypes(types);
@@ -2152,37 +2114,6 @@ void SyncServiceImpl::SendExplicitPassphraseToPlatformClient() {
 }
 
 void SyncServiceImpl::SendExplicitPassphraseToPlatformClientImpl() {
-#if BUILDFLAG(IS_ANDROID)
-  CHECK(engine_ && engine_->IsInitialized());
-  int version_code = 0;
-  bool has_min_gms_version =
-      base::StringToInt(base::android::device_info::gms_version_code(),
-                        &version_code) &&
-      version_code >= kMinGmsVersionCodeWithCustomPassphraseApi;
-  has_min_gms_version |= base::CommandLine::ForCurrentProcess()->HasSwitch(
-      kIgnoreMinGmsVersionWithPassphraseSupportForTest);
-  if (!has_min_gms_version) {
-    return;
-  }
-
-  std::unique_ptr<syncer::Nigori> nigori_key =
-      crypto_.GetExplicitPassphraseDecryptionNigoriKey();
-  if (!nigori_key) {
-    return;
-  }
-
-  sync_pb::NigoriKey proto;
-  proto.set_deprecated_name(nigori_key->GetKeyName());
-  nigori_key->ExportKeys(proto.mutable_deprecated_user_key(),
-                         proto.mutable_encryption_key(),
-                         proto.mutable_mac_key());
-  int32_t byte_size = proto.ByteSizeLong();
-  std::vector<uint8_t> bytes(byte_size);
-  proto.SerializeToArray(bytes.data(), byte_size);
-  JNIEnv* env = base::android::AttachCurrentThread();
-  Java_ExplicitPassphrasePlatformClient_setExplicitDecryptionPassphrase(
-      env, GetAccountInfo(), base::android::ToJavaByteArray(env, bytes));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void SyncServiceImpl::StopAndClear(ResetEngineReason reset_engine_reason) {
@@ -2238,7 +2169,7 @@ SyncTokenStatus SyncServiceImpl::GetSyncTokenStatusForDebugging() const {
   return auth_manager_->GetSyncTokenStatus();
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
+#if BUILDFLAG(IS_IOS)
 void SyncServiceImpl::OverrideNetworkForTest(
     const CreateHttpPostProviderFactory& create_http_post_provider_factory_cb) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -2492,7 +2423,3 @@ void SyncServiceImpl::AcknowledgeBookmarksLimitExceededError(
 }
 
 }  // namespace syncer
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ExplicitPassphrasePlatformClient)
-#endif
