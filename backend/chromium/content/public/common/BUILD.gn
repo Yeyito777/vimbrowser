@@ -319,11 +319,6 @@ source_set("common_sources") {
     sources += [ "zygote/zygote_handle.h" ]
   }
 
-  if (rtc_use_pipewire) {
-    configs +=
-        [ "//third_party/webrtc/modules/desktop_capture:pipewire_config" ]
-  }
-
   # //content/common needs to include public headers.
   allow_circular_includes_from = [
     ":interfaces",

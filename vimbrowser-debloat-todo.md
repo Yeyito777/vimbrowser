@@ -318,6 +318,19 @@ These are reference measurements, not final acceptance values.
 - [ ] **P03:** Remove residual iOS, Windows, ChromeOS, Fuchsia, Cast, and Wayland
       branches/files that survived because they are embedded in shared
       directories.
+  - [x] Inventory residual platform paths against the exact Linux CEF closure
+        and transitive input graph.
+  - [x] Remove the active WebRTC/GTK Wayland desktop-capture bridge while
+        retaining direct X11 capture and PipeWire camera support.
+  - [x] Physically delete the first 3,351 closure-free residual platform files;
+        preserve active/shared boundaries and record the validated checkpoint in
+        `docs/debloat-platform-p03-disconnected.md`.
+  - [ ] Disconnect active iOS desktop-promo/push/model integration and remove its
+        remaining production inputs.
+  - [ ] Remove dead unsupported-platform branches from shared GN/GNI and C/C++
+        files, then physically delete their now-unreferenced implementations.
+  - [ ] Disconnect Cast/Media Router production integration without weakening
+        ordinary audio/video playback or retained WebRTC.
 - [ ] **P04:** Remove obsolete platform toolchains and SDK/download declarations
       only after Linux x86-64 and macOS GN generation no longer parse them.
 - [ ] **P05:** Retain Linux ARM/ARM64 CPU definitions and architecture-neutral

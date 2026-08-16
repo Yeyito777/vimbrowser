@@ -20,11 +20,6 @@
 #include "content/browser/media/capture/desktop_capturer_android.h"
 #endif
 
-#if defined(WEBRTC_USE_PIPEWIRE)
-#include "base/environment.h"
-#include "base/nix/xdg_util.h"
-#endif
-
 #if BUILDFLAG(IS_WIN)
 #include "base/win/windows_version.h"
 #endif
@@ -81,9 +76,6 @@ webrtc::DesktopCaptureOptions CreateDesktopCaptureOptions() {
     options.set_allow_iosurface(true);
   }
 #endif
-#if defined(WEBRTC_USE_PIPEWIRE)
-  options.set_allow_pipewire(true);
-#endif  // defined(WEBRTC_USE_PIPEWIRE)
   return options;
 }
 
@@ -117,17 +109,7 @@ std::unique_ptr<webrtc::DesktopCapturer> CreateWindowCapturer(
 }
 
 bool CanUsePipeWire() {
-#if defined(WEBRTC_USE_PIPEWIRE)
-  static base::nix::SessionType session_type = base::nix::SessionType::kUnset;
-  if (session_type == base::nix::SessionType::kUnset) {
-    std::unique_ptr<base::Environment> env = base::Environment::Create();
-    session_type = base::nix::GetSessionType(*env);
-  }
-
-  return session_type == base::nix::SessionType::kWayland;
-#else
   return false;
-#endif
 }
 
 bool ShouldEnumerateCurrentProcessWindows() {

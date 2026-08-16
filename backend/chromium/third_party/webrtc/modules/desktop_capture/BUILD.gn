@@ -77,56 +77,11 @@ if (rtc_include_tests) {
         "window_finder_unittest.cc",
       ]
 
-      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-        configs += [ "../portal:gio" ]
-      }
-
       public_configs = [ ":x11_config" ]
 
       if (is_win) {
         deps += [ "../../rtc_base/win:windows_version" ]
       }
-    }
-  }
-
-  if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-    rtc_test("shared_screencast_stream_test") {
-      testonly = true
-
-      sources = [
-        "linux/wayland/shared_screencast_stream_unittest.cc",
-        "linux/wayland/test/test_egl_dmabuf.cc",
-        "linux/wayland/test/test_egl_dmabuf.h",
-        "linux/wayland/test/test_screencast_stream_provider.cc",
-        "linux/wayland/test/test_screencast_stream_provider.h",
-      ]
-
-      configs += [ "../portal:pipewire_all" ]
-
-      deps = [
-        ":desktop_capture",
-        ":desktop_capture_mock",
-        ":primitives",
-        "../../api:scoped_refptr",
-        "../../rtc_base:checks",
-        "../../rtc_base:logging",
-        "../../rtc_base:random",
-        "../../rtc_base:stringutils",
-        "../../rtc_base:timeutils",
-        "../portal",
-
-        # TODO(bugs.webrtc.org/9987): Remove this dep on rtc_base:rtc_base once
-        # rtc_base:threading is fully defined.
-        "../../rtc_base:task_queue_for_test",
-        "../../rtc_base:threading",
-        "../../system_wrappers",
-        "../../test:test_support",
-        "//api/units:time_delta",
-        "//rtc_base:rtc_event",
-      ]
-
-      data = [ "../../third_party/pipewire" ]
-      public_configs = [ "../portal:pipewire_config" ]
     }
   }
 
@@ -150,10 +105,6 @@ if (rtc_include_tests) {
       "test_utils.h",
       "test_utils_unittest.cc",
     ]
-
-    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-      configs += [ "../portal:gio" ]
-    }
 
     deps = [
       ":desktop_capture",
@@ -261,22 +212,11 @@ if (rtc_include_tests) {
       "mock_desktop_capturer_callback.h",
     ]
 
-    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-      configs += [ "../portal:gio" ]
-    }
-
     deps = [
       ":desktop_capture",
       ":primitives",
       "../../test:test_support",
     ]
-  }
-}
-
-# TODO(bugs.webrtc.org/14187): remove when all users are gone
-if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-  config("pipewire_config") {
-    configs = [ "../portal:pipewire_config" ]
   }
 }
 
@@ -368,7 +308,7 @@ rtc_library("desktop_capture") {
       ]
     }
   }
-  if (rtc_use_x11_extensions || rtc_use_pipewire) {
+  if (rtc_use_x11_extensions) {
     sources += [
       "mouse_cursor_monitor_linux.cc",
       "screen_capturer_linux.cc",
@@ -425,8 +365,7 @@ rtc_library("desktop_capture") {
     ]
   }
 
-  if (!is_win && !is_mac && !rtc_use_x11_extensions && !rtc_use_pipewire &&
-      !is_fuchsia) {
+  if (!is_win && !is_mac && !rtc_use_x11_extensions && !is_fuchsia) {
     sources += [
       "mouse_cursor_monitor_null.cc",
       "screen_capturer_null.cc",
@@ -553,40 +492,6 @@ rtc_library("desktop_capture") {
 
   if (use_desktop_capture_differ_sse2) {
     deps += [ ":desktop_capture_differ_sse2" ]
-  }
-
-  if (rtc_use_pipewire) {
-    sources += [
-      "linux/wayland/base_capturer_pipewire.cc",
-      "linux/wayland/base_capturer_pipewire.h",
-      "linux/wayland/egl_dmabuf.cc",
-      "linux/wayland/egl_dmabuf.h",
-      "linux/wayland/mouse_cursor_monitor_pipewire.cc",
-      "linux/wayland/mouse_cursor_monitor_pipewire.h",
-      "linux/wayland/portal_request_response.h",
-      "linux/wayland/restore_token_manager.cc",
-      "linux/wayland/restore_token_manager.h",
-      "linux/wayland/scoped_glib.h",
-      "linux/wayland/screen_capture_portal_interface.cc",
-      "linux/wayland/screen_capture_portal_interface.h",
-      "linux/wayland/screencast_portal.cc",
-      "linux/wayland/screencast_portal.h",
-      "linux/wayland/screencast_stream_utils.cc",
-      "linux/wayland/screencast_stream_utils.h",
-      "linux/wayland/shared_screencast_stream.cc",
-      "linux/wayland/shared_screencast_stream.h",
-      "linux/wayland/xdg_desktop_portal_utils.h",
-      "linux/wayland/xdg_session_details.h",
-    ]
-
-    configs += [ "../portal:pipewire_all" ]
-
-    public_configs += [ "../portal:pipewire_config" ]
-
-    deps += [
-      "../../rtc_base:sanitizer",
-      "../portal",
-    ]
   }
 
   if (rtc_enable_win_wgc) {

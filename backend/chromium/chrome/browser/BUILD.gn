@@ -5763,11 +5763,6 @@ static_library("browser") {
       "//ui/linux:display_server_utils",
     ]
 
-    if (rtc_use_pipewire) {
-      configs +=
-          [ "//third_party/webrtc/modules/desktop_capture:pipewire_config" ]
-    }
-
     if (use_dbus) {
       sources += [
         "dbus_memory_pressure_evaluator_linux.cc",

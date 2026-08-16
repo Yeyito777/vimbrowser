@@ -19,10 +19,6 @@
 #include "modules/desktop_capture/linux/x11/shared_x_display.h"
 #endif
 
-#if defined(WEBRTC_USE_PIPEWIRE)
-#include "modules/desktop_capture/linux/wayland/shared_screencast_stream.h"
-#endif
-
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
 #include "modules/desktop_capture/mac/desktop_configuration_monitor.h"
 #endif
@@ -230,40 +226,9 @@ class RTC_EXPORT DesktopCaptureOptions {
 #endif  // defined(RTC_ENABLE_WIN_WGC)
 #endif  // defined(WEBRTC_WIN)
 
-#if defined(WEBRTC_USE_PIPEWIRE)
-  bool allow_pipewire() const { return allow_pipewire_; }
-  void set_allow_pipewire(bool allow) { allow_pipewire_ = allow; }
-
-  const scoped_refptr<SharedScreenCastStream>& screencast_stream() const {
-    return screencast_stream_;
-  }
-  void set_screencast_stream(scoped_refptr<SharedScreenCastStream> stream) {
-    screencast_stream_ = stream;
-  }
-
-  void set_width(uint32_t width) { width_ = width; }
-  uint32_t get_width() const { return width_; }
-
-  void set_height(uint32_t height) { height_ = height; }
-  uint32_t get_height() const { return height_; }
-
-  void set_pipewire_use_damage_region(bool use_damage_regions) {
-    pipewire_use_damage_region_ = use_damage_regions;
-  }
-  bool pipewire_use_damage_region() const {
-    return pipewire_use_damage_region_;
-  }
-#endif
-
  private:
 #if defined(WEBRTC_USE_X11)
   scoped_refptr<SharedXDisplay> x_display_;
-#endif
-#if defined(WEBRTC_USE_PIPEWIRE)
-  // An instance of shared PipeWire ScreenCast stream we share between
-  // BaseCapturerPipeWire and MouseCursorMonitorPipeWire as cursor information
-  // is sent together with screen content.
-  scoped_refptr<SharedScreenCastStream> screencast_stream_;
 #endif
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
   scoped_refptr<DesktopConfigurationMonitor> configuration_monitor_;
@@ -295,12 +260,6 @@ class RTC_EXPORT DesktopCaptureOptions {
   bool disable_effects_ = true;
   bool detect_updated_region_ = false;
   bool prefer_cursor_embedded_ = false;
-#if defined(WEBRTC_USE_PIPEWIRE)
-  bool allow_pipewire_ = false;
-  bool pipewire_use_damage_region_ = true;
-  uint32_t width_ = 0;
-  uint32_t height_ = 0;
-#endif
 };
 
 }  // namespace webrtc

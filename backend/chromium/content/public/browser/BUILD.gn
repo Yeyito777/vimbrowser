@@ -547,11 +547,6 @@ source_set("browser_sources") {
     "//content:content_implementation",
   ]
 
-  if (rtc_use_pipewire) {
-    configs +=
-        [ "//third_party/webrtc/modules/desktop_capture:pipewire_config" ]
-  }
-
   public_deps = [
     "//base",
     "//build:chromecast_buildflags",

@@ -156,13 +156,6 @@ component("gtk") {
     ]
   }
 
-  if (ozone_platform_wayland) {
-    sources += [
-      "wayland/gtk_ui_platform_wayland.cc",
-      "wayland/gtk_ui_platform_wayland.h",
-    ]
-  }
-
   # TODO: This should be removed.
   deps += [ "//ui/ozone" ]
 

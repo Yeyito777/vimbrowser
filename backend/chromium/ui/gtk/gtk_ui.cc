@@ -89,10 +89,6 @@
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/views/window/window_button_order_provider.h"
 
-#if BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
-#include "ui/gtk/wayland/gtk_ui_platform_wayland.h"
-#endif  // BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
-
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "ui/gtk/x/gtk_ui_platform_x11.h"
 #endif  // BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -164,10 +160,6 @@ std::unique_ptr<GtkUiPlatform> CreateGtkUiPlatform(ui::LinuxUiBackend backend) {
     case ui::LinuxUiBackend::kX11:
       return std::make_unique<GtkUiPlatformX11>();
 #endif  // BUILDFLAG(SUPPORTS_OZONE_X11)
-#if BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
-    case ui::LinuxUiBackend::kWayland:
-      return std::make_unique<GtkUiPlatformWayland>();
-#endif  // BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
     default:
       NOTREACHED();
   }

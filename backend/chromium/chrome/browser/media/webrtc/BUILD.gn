@@ -303,11 +303,6 @@ source_set("webrtc") {
     deps += [ "//ui/aura" ]
   }
 
-  if (rtc_use_pipewire) {
-    configs +=
-        [ "//third_party/webrtc/modules/desktop_capture:pipewire_config" ]
-  }
-
   defines = [ "ZLIB_CONST" ]
 }
 
