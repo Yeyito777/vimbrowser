@@ -75,11 +75,10 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   if (!field) {
     return;
   }
-  // The command line is a real focused native textfield. We intercept editing
-  // keys in BrowserWindow and drive vim::LineEditState ourselves, but the
-  // textfield owns all text/caret/selection painting. This keeps normal-mode
-  // block cursors and insert-mode bar cursors in Chromium's renderer instead of
-  // using overlay views that can drift, move text, or fail to erase glyphs.
+  // The command line is a real focused native textfield. We intercept modeled
+  // input in BrowserWindow, while the textfield owns native editing and all
+  // text/caret/selection painting. This keeps the insertion caret in Chromium's
+  // renderer instead of using an overlay that can drift or fail to erase.
   field->SetReadOnly(false);
   field->SetFocusable(true);
   field->SetFontList("monospace, 13px");

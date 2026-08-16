@@ -121,9 +121,7 @@ Match the cursor behavior from `~/Config/st` where possible:
 - Cursor color: `#48cae4` (`defaultcs`, st color 258).
 - Bar/underline cursor thickness in st is `2px`; vimbrowser bar cursors should
   read as a thin terminal caret, not a wide widget caret.
-- Vim normal mode uses a steady block cursor (`cursorshape = 2`, DECSCUSR
-  `\e[2 q`).
-- Vim insert mode uses a steady bar cursor (DECSCUSR `\e[6 q`).
+- The insert-only command line uses a steady bar cursor (DECSCUSR `\e[6 q`).
 - The cursor does not blink.
 - The cursor is square/terminal-like: no rounded caret, no native toolkit glow.
 - The cursor is rendered separately from the text buffer. Do not insert cursor
@@ -131,18 +129,12 @@ Match the cursor behavior from `~/Config/st` where possible:
 - Insert-mode bar cursor is an independently drawn `2px` bar using the command
   row's glyph-height cursor box. It must not replace, hide, shift, or otherwise
   consume a text character.
-- Normal-mode block cursor is an independently drawn `#48cae4` cell behind the
-  character at the cursor. The text under that block changes to `#00050f`, so the
-  result reads as a true reverse-video terminal cursor.
 - Cursor placement follows `st`'s cell model, not proportional text metrics:
   cursor x-position is the start of terminal cell `cx`, equivalent to
   `borderpx + cx * win.cw` in `~/Config/st/x.c`.
 - The bar cursor is drawn at the left edge of the current cell with width
   `cursorthickness` (`2px`). In the graphical command row, the cursor box should
   be the tasteful glyph-height box used by the UI, not a massive full-row slab.
-- The block cursor occupies the command row's terminal glyph cell. The glyph
-  inside that cell is centered by the cell layout, not left-aligned against the
-  block, and must remain visible in `#00050f` over the cursor background.
 - If the vimbrowser window/surface is unfocused in the future, follow st's
   unfocused convention: show an outline/hollow cursor rather than a filled one.
 

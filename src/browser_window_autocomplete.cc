@@ -239,10 +239,7 @@ void BrowserWindow::UpdateCommandAutocomplete() {
   if (command_text_.find('\n') != std::string::npos) {
     return;
   }
-  const size_t cursor =
-      command_vim_.mode == vim::Mode::kNormal
-          ? std::min(command_vim_.cursor + 1, command_text_.size())
-          : command_vim_.cursor;
+  const size_t cursor = command_vim_.cursor;
   if (cursor != command_text_.size()) {
     return;
   }
@@ -552,8 +549,7 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
   // the native field so a platform focus traversal/selection can never leak
   // back into the command model.
   if (IsTabKey(event)) {
-    if ((IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) &&
-        command_vim_.mode == vim::Mode::kInsert) {
+    if (IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) {
       CycleCommandAutocomplete((event.modifiers & EVENTFLAG_SHIFT_DOWN) ? -1
                                                                         : 1);
     }
@@ -562,19 +558,14 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
 
   // Keep the editable field focused and delegate native editing operations to
   // it on every desktop platform.
-  if (command_vim_.mode == vim::Mode::kInsert &&
-      (IsNavigationEditingKey(event) || IsDeleteKey(event) ||
-       IsNativeCommandEditingShortcut(event))) {
+  if (IsNavigationEditingKey(event) || IsDeleteKey(event) ||
+      IsNativeCommandEditingShortcut(event)) {
     return false;
   }
 
   // Some platform textfield edit commands are applied natively without reaching
-  // our key model. Synchronize those insert-mode edits before handling the next
-  // modeled key. In normal mode the vim model is authoritative: the textfield
-  // is only a renderer for text/cursor state, and syncing it can resurrect
-  // stale native contents after commands like dd/D/cw just rewrote
-  // command_text_.
-  if (command_vim_.mode == vim::Mode::kInsert && !suppress_next_char_event_) {
+  // our key model. Synchronize them before handling the next modeled key.
+  if (!suppress_next_char_event_) {
     SyncCommandTextFromField();
   }
 
@@ -588,26 +579,13 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
       return;
     }
     if (result.text_changed || result.cursor_changed) {
-      if (command_vim_.mode == vim::Mode::kInsert) {
-        UpdateCommandAutocomplete();
-      } else {
-        ClearCommandAutocomplete();
-      }
+      UpdateCommandAutocomplete();
       Layout();
-    }
-    if (result.mode_changed) {
-      ClearCommandAutocomplete();
-      Layout();
-      UpdateModeIndicator();
-    }
-    if (result.text_changed || result.cursor_changed || result.mode_changed ||
-        result.pending) {
       SetCommandText(command_text_);
     }
   };
 
   auto process_key = [&](vim::KeyInput key, bool suppress_char) {
-    const vim::Mode old_mode = command_vim_.mode;
     const size_t old_cursor = command_vim_.cursor;
     const std::string old_text = command_text_;
     vim::LineEditResult result =
@@ -619,8 +597,6 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
       result.text_changed = true;
     if (command_vim_.cursor != old_cursor)
       result.cursor_changed = true;
-    if (command_vim_.mode != old_mode)
-      result.mode_changed = true;
     apply_result(result);
     if (suppress_char)
       suppress_next_char_event_ = true;
@@ -637,15 +613,7 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
       return process_key({vim::KeyType::kEnter}, false);
     }
     if (IsEscapeKey(event)) {
-      // Exocortex sidebar search is a transient insert-only bar: one Escape
-      // closes it and restores the exact pre-search folder/selection. Keep the
-      // regular two-stage insert -> command-normal behavior for other commands.
-      if (IsSidebarSearchMode()) {
-        CancelCommand();
-        return true;
-      }
-      const bool shifted = event.modifiers & EVENTFLAG_SHIFT_DOWN;
-      return process_key({vim::KeyType::kEscape, 0, shifted}, false);
+      return process_key({vim::KeyType::kEscape}, false);
     }
     if (IsBackspaceKey(event)) {
       if (IsSidebarSearchMode() && command_vim_.cursor <= 1) {
@@ -664,10 +632,7 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
   if (IsRawKeyDown(event)) {
     const char key = PlainKeyChar(event);
     if (key) {
-      return process_key(
-          {vim::KeyType::kChar, key,
-           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
-          true);
+      return process_key({vim::KeyType::kChar, key}, true);
     }
     return true;
   }
@@ -700,10 +665,7 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
       return process_key({vim::KeyType::kBackspace}, false);
     }
     if (!ctrl && !alt && !command && IsPrintableAscii(c)) {
-      return process_key(
-          {vim::KeyType::kChar, static_cast<char>(c),
-           static_cast<bool>(event.modifiers & EVENTFLAG_SHIFT_DOWN)},
-          false);
+      return process_key({vim::KeyType::kChar, static_cast<char>(c)}, false);
     }
     return true;
   }
@@ -728,15 +690,6 @@ bool BrowserWindow::SyncCommandTextFromField() {
 
   std::string text = command_field_->GetText().ToString();
   size_t cursor = std::min(command_field_->GetCursorPosition(), text.size());
-  if (command_text_.empty() && text == " ") {
-    // Empty command-normal mode renders one harmless space as the block cursor
-    // target. If CEF still reports that rendered placeholder after returning to
-    // insert mode, do not sync it into the real command model; otherwise typing
-    // ':' after dd creates a hidden trailing space and autocomplete refuses to
-    // open because the model cursor is no longer at end-of-line.
-    text.clear();
-    cursor = 0;
-  }
   if (text == command_text_ && cursor == command_vim_.cursor) {
     return false;
   }
@@ -752,11 +705,7 @@ bool BrowserWindow::SyncCommandTextFromField() {
     command_vim_.cursor = std::max<size_t>(1, command_vim_.cursor);
   }
   vim::Clamp(command_vim_, command_text_);
-  if (command_vim_.mode == vim::Mode::kInsert) {
-    UpdateCommandAutocomplete();
-  } else {
-    ClearCommandAutocomplete();
-  }
+  UpdateCommandAutocomplete();
   return true;
 }
 
@@ -776,8 +725,7 @@ void BrowserWindow::RebuildCommandCells() {
     return;
   }
 
-  const size_t cursor = vim::CursorDisplayOffset(command_vim_, command_text_);
-  const bool normal = command_vim_.mode == vim::Mode::kNormal;
+  const size_t cursor = std::min(command_vim_.cursor, command_text_.size());
   size_t command_end = 0;
   size_t open_arg_start = 0;
   size_t open_arg_end = 0;
@@ -843,15 +791,13 @@ void BrowserWindow::RebuildCommandCells() {
     }
   }
 
-  std::string rendered_text =
-      normal && command_text_.empty() ? std::string(" ") : command_text_;
+  const std::string &rendered_text = command_text_;
   const size_t previous_rendered_length =
       command_field_->GetText().ToString().size();
   if (previous_rendered_length > rendered_text.size()) {
     // CEF textfields can leave stale glyphs behind when their contents shrink
-    // after a programmatic vim edit (dd/D/cw/etc). Paint over the old contents
-    // with spaces before installing the real model text so deletions visibly
-    // erase instead of only moving the native caret/selection.
+    // after a programmatic completion or edit. Paint over the old contents
+    // before installing the model text so deletions visibly erase.
     command_field_->SetText(std::string(previous_rendered_length, ' '));
   }
   command_field_->SetText(rendered_text);
@@ -876,14 +822,8 @@ void BrowserWindow::RebuildCommandCells() {
         CefRange(static_cast<uint32_t>(search_engine_arg_start),
                  static_cast<uint32_t>(search_engine_arg_end)));
   }
-  if (normal) {
-    const size_t selection_end = std::min(cursor + 1, rendered_text.size());
-    command_field_->SelectRange(CefRange(static_cast<uint32_t>(cursor),
-                                         static_cast<uint32_t>(selection_end)));
-  } else {
-    command_field_->SelectRange(
-        CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(cursor)));
-  }
+  command_field_->SelectRange(
+      CefRange(static_cast<uint32_t>(cursor), static_cast<uint32_t>(cursor)));
   if (mode_ != Mode::kNormal && !command_field_->HasFocus()) {
     command_field_->RequestFocus();
   }

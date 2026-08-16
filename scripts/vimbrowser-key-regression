@@ -602,7 +602,7 @@ def reset_to_website_mode(h: Harness, *, focus_input: bool) -> dict:
     h.reset(focus_input=focus_input)
     if focus_input:
         # Focusing a text field now intentionally auto-enters insert mode.  Wait
-        # for that signal so Escape/Escape reliably returns to website mode while
+        # for that signal so Escape can begin the return to website mode while
         # preserving the focused input for tests that verify website-mode keys.
         try:
             h.wait_for_mode("INSERT", timeout=2)
@@ -610,8 +610,9 @@ def reset_to_website_mode(h: Harness, *, focus_input: bool) -> dict:
             pass
     status = h.ipc(["status"])
     if status.get("mode") == "INSERT":
-        h.key("Escape", "Escape", pause=0.25)
-    elif status.get("mode") in ("NORMAL", "VISUAL"):
+        h.key("Escape", pause=0.2)
+        status = h.ipc(["status"])
+    if status.get("mode") in ("NORMAL", "VISUAL"):
         h.key("Escape", pause=0.2)
     status = h.ipc(["status"])
     require(status.get("mode") == "WEBSITE",
@@ -716,6 +717,29 @@ def test_insert_escape_exits_without_passthrough(h: Harness) -> None:
     require(snap["value"] == "a", "insert Escape did not exit before normal-mode j", snap)
     require("Escape" not in snap["keys"], "insert-mode Escape leaked to the page", snap)
     require(snap["scrollY"] > 0, "normal-mode j did not scroll after insert Escape", snap)
+
+
+def test_insert_escape_skips_normal_without_focused_editable(h: Harness) -> None:
+    reset_to_website_mode(h, focus_input=False)
+    h.clear()
+    h.key("i", pause=0.2)
+    insert_status = h.ipc(["status"])
+    before_escape = h.snapshot()
+    require(insert_status.get("mode") == "INSERT" and
+            before_escape.get("active") != "input",
+            "could not enter insert mode without a focused input",
+            {"status": insert_status, "snapshot": before_escape})
+
+    h.key("Escape", pause=0.2)
+    website_status = h.ipc(["status"])
+    snap = h.snapshot()
+    require(website_status.get("mode") == "WEBSITE",
+            "insert Escape did not skip normal mode without a focused input",
+            {"status": website_status, "snapshot": snap})
+    require(not any(e.get("type") == "keydown" and e.get("key") == "Escape"
+                    for e in snap["events"]),
+            "insert Escape leaked to the page while returning to website mode",
+            snap)
 
 
 def test_normal_escape_returns_to_website_mode(h: Harness) -> None:
@@ -862,17 +886,13 @@ def test_sidebar_t_opens_tab_focus_command(h: Harness) -> None:
             "sidebar t did not open the tab-focus command line", command_mode)
 
     h.key("Escape", pause=0.2)
-    command_normal = h.ipc(["status"])
-    require(command_normal.get("mode") == "CMD-N",
-            "first Escape did not leave command insert mode", command_normal)
-
-    h.key("Escape", pause=0.2)
     after_cancel = h.ipc(["status"])
     require(after_cancel.get("mode") == "SIDEBAR" and
             after_cancel.get("active_tabid") == before.get("active_tabid") and
             after_cancel.get("sidebar_selected_id") ==
                 before.get("sidebar_selected_id"),
-            "second Escape did not restore sidebar focus", after_cancel)
+            "Escape did not dismiss the command line and restore sidebar focus",
+            after_cancel)
 
     h.key("t", pause=0.2)
     reopened = h.ipc(["status"])
@@ -1904,6 +1924,7 @@ TESTS = [
     test_first_i_and_shift_i_type_in_insert_mode,
     test_shifted_jk_type_in_insert_mode,
     test_insert_escape_exits_without_passthrough,
+    test_insert_escape_skips_normal_without_focused_editable,
     test_normal_escape_returns_to_website_mode,
     test_website_keybinds_do_not_type,
     test_sidebar_jk_moves_selection_and_enter_activates,

@@ -1972,17 +1972,13 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   }
   if (mode_ != Mode::kNormal && (command_id == kAcceleratorCommandTab ||
                                  command_id == kAcceleratorCommandBacktab)) {
-    if (command_vim_.mode == vim::Mode::kInsert) {
-      CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1
-                                                                        : 1);
-    }
+    CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
     return true;
   }
-  if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
-    if (command_id == kAcceleratorCommandDeleteCompletion) {
-      DeleteSelectedCommandAutocomplete();
-      return true;
-    }
+  if (mode_ != Mode::kNormal &&
+      command_id == kAcceleratorCommandDeleteCompletion) {
+    DeleteSelectedCommandAutocomplete();
+    return true;
   }
   if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
     return false;
@@ -2408,8 +2404,7 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
   }
   if ((textfield != command_field_ &&
        (!textfield || textfield->GetID() != kCommandFieldId)) ||
-      mode_ == Mode::kNormal || command_vim_.mode != vim::Mode::kInsert ||
-      suppress_next_char_event_) {
+      mode_ == Mode::kNormal || suppress_next_char_event_) {
     return;
   }
 
@@ -4254,9 +4249,15 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent &event) {
           website_mode_ = vim::Mode::kWebsiteNormal;
           ScheduleActivePageBlur();
         } else {
-          website_mode_ = (event.modifiers & EVENTFLAG_SHIFT_DOWN)
-                              ? vim::Mode::kWebsiteNormal
-                              : vim::Mode::kNormal;
+          // Insert mode can also be entered while page content rather than a
+          // text control has focus. In that case there is no editing context to
+          // leave via regular Vim normal mode, so one Escape returns directly
+          // to website mode. A focused editable retains the staged transition.
+          const bool skip_normal_mode =
+              (event.modifiers & EVENTFLAG_SHIFT_DOWN) ||
+              !PageHasFocusedEditable(event);
+          website_mode_ = skip_normal_mode ? vim::Mode::kWebsiteNormal
+                                           : vim::Mode::kNormal;
         }
         UpdateModeIndicator();
         return true;
@@ -6422,7 +6423,7 @@ std::string BrowserWindow::ModeIndicatorText() const {
     return "SIDEBAR";
   }
   if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
-    return command_vim_.mode == vim::Mode::kNormal ? "CMD-N" : "CMD-I";
+    return "CMD-I";
   }
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";

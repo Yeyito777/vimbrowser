@@ -293,15 +293,15 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   website-normal/normal web modes, `Space` toggles playback; in insert mode,
   `h` / `l` seek -/+5s and `j` / `k` adjust volume -/+5% unless a page text
   field is focused, in which case the keys type into the field normally
-- `Escape` from insert mode enters regular Vim normal mode; `Escape` again
-  returns to website-normal mode
+- `Escape` from insert mode enters regular Vim normal mode when a page text
+  control is focused; without a focused editable it returns directly to
+  website-normal mode. A second `Escape` leaves regular normal mode.
 - when a page text field receives focus, including via native hints, web mode
   automatically enters insert mode so typing can start immediately
 - left qutebrowser-style tab sidebar
 - bottom qutebrowser-style command line while command mode is active
-- command line starts in insert mode, shows a block cursor, supports `Escape` to
-  command-normal mode, then `i` / `a` / `h` / `l` / `x` for a minimal shared Vim
-  editing skeleton
+- command-line editing is insert-only and `Escape` dismisses the command line in
+  one step, restoring its previous focus area
 - `:open` / `:open tab` autocomplete includes the last 1000 command-opened
   entries, shortest matching URLs first; long history entries are ellipsized in
   the popup while still completing to the full text. `:open tab` inserts the new
