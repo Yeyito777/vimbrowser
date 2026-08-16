@@ -433,7 +433,6 @@ crypto_sources = [
     "crypto/rand/fork_detect.cc",
     "crypto/rand/forkunsafe.cc",
     "crypto/rand/getentropy.cc",
-    "crypto/rand/ios.cc",
     "crypto/rand/passive.cc",
     "crypto/rand/rand.cc",
     "crypto/rand/trusty.cc",

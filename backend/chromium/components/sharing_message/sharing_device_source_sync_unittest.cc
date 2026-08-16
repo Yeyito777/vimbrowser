@@ -34,7 +34,6 @@ namespace {
 const char kSenderIdFCMToken[] = "sharing_fcm_token";
 const char kSenderIdP256dh[] = "sharing_p256dh";
 const char kSenderIdAuthSecret[] = "sharing_auth_secret";
-const char kChimeRepresentativeTargetId[] = "chime_rep_id";
 
 std::unique_ptr<syncer::DeviceInfo> CreateDeviceInfo(
     const std::string& client_name,
@@ -42,10 +41,9 @@ std::unique_ptr<syncer::DeviceInfo> CreateDeviceInfo(
     const std::string& manufacturer_name = "manufacturer",
     const std::string& model_name = "model",
     syncer::DeviceInfo::SharingTargetInfo sender_id_target_info =
-        {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret},
-    const std::string& chime_rep_id = kChimeRepresentativeTargetId) {
+        {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret}) {
   syncer::DeviceInfo::SharingInfo sharing_info(std::move(sender_id_target_info),
-                                               chime_rep_id, {enabled_feature});
+                                               {enabled_feature});
 
   return CreateFakeDeviceInfo(
       base::Uuid::GenerateRandomV4().AsLowercaseString(), client_name,

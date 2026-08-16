@@ -13164,24 +13164,6 @@
             ]
         }
     ],
-    "IOSDefaultBrowserPromoPropensityStudy": [
-        {
-            "platforms": [
-                "ios"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled",
-                    "params": {
-                        "cooldown-days": "14"
-                    },
-                    "enable_features": [
-                        "DefaultBrowserPromoPropensityModel"
-                    ]
-                }
-            ]
-        }
-    ],
     "IOSDefaultBrowserRemindMeLater": [
         {
             "platforms": [
@@ -16081,47 +16063,6 @@
                     "name": "Enabled",
                     "enable_features": [
                         "MigrateSyncingUserToSignedIn"
-                    ]
-                }
-            ]
-        }
-    ],
-    "MobilePromoOnDesktop": [
-        {
-            "platforms": [
-                "ios"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled",
-                    "params": {
-                        "mobile_promo_on_desktop_notification": "true"
-                    },
-                    "enable_features": [
-                        "MobilePromoOnDesktopWithReminder"
-                    ]
-                }
-            ]
-        },
-        {
-            "platforms": [
-                "linux",
-                "mac",
-                "windows",
-                "chromeos"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled_ESB",
-                    "params": {
-                        "mobile_promo_on_desktop_promo_type": "2"
-                    },
-                    "enable_features": [
-                        "EnableCrossDevicePrefTracker",
-                        "MobilePromoOnDesktopWithReminder"
-                    ],
-                    "disable_features": [
-                        "MobilePromoOnDesktopWithQRCode"
                     ]
                 }
             ]
@@ -21348,21 +21289,6 @@
                     "name": "Enabled",
                     "enable_features": [
                         "SafeBrowsingSyncCheckerCheckAllowlist"
-                    ]
-                }
-            ]
-        }
-    ],
-    "SafetyCheckMagicStackWithCaching": [
-        {
-            "platforms": [
-                "ios"
-            ],
-            "experiments": [
-                {
-                    "name": "Enabled",
-                    "enable_features": [
-                        "SegmentationPlatformIosModuleRankerSplitBySurface"
                     ]
                 }
             ]

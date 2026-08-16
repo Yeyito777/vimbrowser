@@ -135,7 +135,6 @@ void SharingDeviceRegistrationImpl::OnSharingTargetInfoRetrieved(
   syncer::DeviceInfo::SharingInfo sharing_info(
       sharing_target_info ? std::move(*sharing_target_info)
                           : syncer::DeviceInfo::SharingTargetInfo(),
-      /*chime_representative_target_id=*/std::string(),
       std::move(enabled_features));
   sharing_sync_preference_->SetLocalSharingInfo(std::move(sharing_info));
   sharing_sync_preference_->SetFCMRegistration(

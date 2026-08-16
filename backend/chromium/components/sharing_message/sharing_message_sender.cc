@@ -13,21 +13,9 @@
 #include "components/sharing_message/sharing_fcm_sender.h"
 #include "components/sharing_message/sharing_metrics.h"
 #include "components/sharing_message/sharing_utils.h"
-#include "components/sync/protocol/unencrypted_sharing_message.pb.h"
 #include "components/sync_device_info/device_name_util.h"
 #include "components/sync_device_info/local_device_info_provider.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
-
-namespace {
-bool MessageTypeExpectsAck(sharing_message::MessageType message_type) {
-  switch (message_type) {
-    case sharing_message::SEND_TAB_TO_SELF_PUSH_NOTIFICATION:
-      return false;
-    default:
-      return true;
-  }
-}
-}  // namespace
 
 SharingMessageSender::SharingMessageSender(
     syncer::LocalDeviceInfoProvider* local_device_info_provider,
@@ -102,58 +90,6 @@ base::OnceClosure SharingMessageSender::SendMessageToDevice(
                         SharingSendMessageResult::kCancelled, nullptr);
 }
 
-base::OnceClosure SharingMessageSender::SendUnencryptedMessageToDevice(
-    const SharingTargetDeviceInfo& device,
-    sync_pb::UnencryptedSharingMessage message,
-    DelegateType delegate_type,
-    ResponseCallback callback) {
-  sharing_message::MessageType message_type =
-      SharingPayloadCaseToMessageType(message.payload_case());
-  int trace_id = GenerateSharingTraceId();
-  std::string message_guid = base::Uuid::GenerateRandomV4().AsLowercaseString();
-
-  TRACE_EVENT_BEGIN("sharing", "Sharing.SendMessage", perfetto::Track(trace_id),
-                    "message_type", SharingMessageTypeToString(message_type));
-
-  auto [it, inserted] = message_metadata_.insert_or_assign(
-      message_guid, SentMessageMetadata(
-                        std::move(callback), base::TimeTicks::Now(),
-                        message_type, device.platform(), trace_id,
-                        SharingChannelType::kUnknown, device.pulse_interval()));
-  DCHECK(inserted);
-
-  SendMessageDelegate* delegate = MaybeGetSendMessageDelegate(
-      device, message_type, trace_id, message_guid, delegate_type);
-  if (!delegate) {
-    InvokeSendMessageCallback(message_guid,
-                              SharingSendMessageResult::kInternalError,
-                              /*response=*/nullptr);
-    return base::NullCallback();
-  }
-
-  const syncer::DeviceInfo* local_device_info =
-      local_device_info_provider_->GetLocalDeviceInfo();
-
-  // Guaranteed by MaybeGetSendMessageDelegate().
-  CHECK(local_device_info);
-
-  message.set_sender_guid(local_device_info->guid());
-  message.set_sender_device_name(
-      syncer::GetDeviceDisplayNames(local_device_info).full_name);
-
-  TRACE_EVENT_BEGIN("sharing", "Sharing.DoSendMessage",
-                    perfetto::Track(trace_id));
-  delegate->DoSendUnencryptedMessageToDevice(
-      device, std::move(message),
-      base::BindOnce(&SharingMessageSender::OnMessageSent,
-                     weak_ptr_factory_.GetWeakPtr(), message_guid,
-                     message_type));
-
-  return base::BindOnce(&SharingMessageSender::InvokeSendMessageCallback,
-                        weak_ptr_factory_.GetWeakPtr(), message_guid,
-                        SharingSendMessageResult::kCancelled, nullptr);
-}
-
 SharingMessageSender::SendMessageDelegate*
 SharingMessageSender::MaybeGetSendMessageDelegate(
     const SharingTargetDeviceInfo& device,
@@ -194,10 +130,8 @@ void SharingMessageSender::OnMessageSent(
                   perfetto::Track(metadata_iter->second.trace_id), "result",
                   SharingSendMessageResultToString(result));
   metadata_iter->second.channel_type = channel_type;
-  // For unsuccessful responses or for messages that don't expect an Ack
-  // response, record the result here.
-  if (result != SharingSendMessageResult::kSuccessful ||
-      !MessageTypeExpectsAck(message_type)) {
+  // For unsuccessful responses, record the result here.
+  if (result != SharingSendMessageResult::kSuccessful) {
     InvokeSendMessageCallback(message_guid, result,
                               /*response=*/nullptr);
     return;

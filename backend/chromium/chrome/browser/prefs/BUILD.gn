@@ -302,7 +302,6 @@ source_set("impl") {
 
   deps += [
     "//chrome/browser/actor/ui",
-    "//chrome/browser/desktop_to_mobile_promos:utils",
     "//chrome/browser/device_identity",
     "//chrome/browser/screen_ai:prefs",
     "//chrome/browser/search_engine_choice",

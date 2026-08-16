@@ -66,7 +66,6 @@ class HomePageUndoBubble;
 class MediaDialogView;
 class HatsNextWebDialog;
 class IncognitoClearBrowsingDataDialog;
-class IOSPromoBubbleView;
 class LocationBarBubbleDelegateView;
 class NetworkProfileBubbleView;
 class PageInfoBubbleViewBase;
@@ -820,7 +819,6 @@ class VIEWS_EXPORT BubbleDialogDelegateView : public View,
   friend class ::FlyingIndicator;
   friend class ::GlobalErrorBubbleView;
   friend class ::HomePageUndoBubble;
-  friend class ::IOSPromoBubbleView;
   friend class ::MediaDialogView;
   friend class ::HatsNextWebDialog;
   friend class ::IncognitoClearBrowsingDataDialog;

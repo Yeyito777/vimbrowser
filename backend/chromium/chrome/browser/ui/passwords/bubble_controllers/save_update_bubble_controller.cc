@@ -141,7 +141,6 @@ void SaveUpdateBubbleController::OnSaveClicked() {
     CleanStatisticsForSite(GetProfile(), GetOrigin());
     delegate_->SavePassword(GetPendingPassword().username_value,
                             GetPendingPassword().password_value);
-    delegate_->MaybeShowIOSPasswordPromo();
   }
 }
 

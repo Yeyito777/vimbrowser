@@ -56,7 +56,6 @@
 #include "chrome/browser/ui/call_to_action/call_to_action_lock.h"
 #include "chrome/browser/ui/context_highlight/context_highlight_window_feature.h"
 #include "chrome/browser/ui/contextual_search/searchbox_context_data.h"
-#include "chrome/browser/ui/desktop_to_mobile_promos/ios_promo_controller.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/extensions/extension_installed_watcher.h"
 #include "chrome/browser/ui/extensions/mv2_disabled_dialog_controller.h"
@@ -148,7 +147,6 @@
 #include "components/commerce/core/feature_utils.h"
 #include "components/commerce/core/shopping_service.h"
 #include "components/contextual_tasks/public/features.h"
-#include "components/desktop_to_mobile_promos/features.h"
 #include "components/feature_engagement/public/feature_constants.h"
 #include "components/lens/lens_features.h"
 #include "components/omnibox/browser/location_bar_model.h"
@@ -520,12 +518,6 @@ void BrowserWindowFeatures::InitPostWindowConstruction(Browser* browser) {
     if (IsChromeLabsEnabled()) {
       chrome_labs_coordinator_ =
           std::make_unique<ChromeLabsCoordinator>(browser);
-    }
-
-    if (MobilePromoOnDesktopEnabled()) {
-      ios_promo_controller_ =
-          GetUserDataFactory().CreateInstance<IOSPromoController>(*browser,
-                                                                  browser);
     }
 
     send_tab_to_self_toolbar_bubble_controller_ = std::make_unique<
@@ -1041,8 +1033,6 @@ void BrowserWindowFeatures::TearDownPreBrowserWindowDestruction() {
   webui_browser_exclusive_access_context_.reset();
 
   scrim_view_controller_.reset();
-
-  ios_promo_controller_.reset();
 
   if (auto* const provider = browser_elements_->AsA<BrowserElementsViews>()) {
     provider->TearDown();

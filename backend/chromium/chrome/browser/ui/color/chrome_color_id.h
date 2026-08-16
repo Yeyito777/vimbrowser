@@ -119,8 +119,6 @@
   /* Desktop media tab list colors. */ \
   E_CPONLY(kColorDesktopMediaTabListBorder) \
   E_CPONLY(kColorDesktopMediaTabListPreviewBackground) \
-  /* Desktop to iOS promo bubble. */ \
-  E_CPONLY(kColorDesktopToIOSPromoFooterSubtitleLabel) \
   /* Download bubble and toolbar button colors. */\
   E_CPONLY(kColorDownloadItemIconDangerous) \
   E_CPONLY(kColorDownloadItemTextDangerous) \

@@ -199,8 +199,8 @@ enum OptimizationTarget {
   OPTIMIZATION_TARGET_SEGMENTATION_BOTTOM_TOOLBAR = 35;
   // Target for Autofill field type classification model.
   OPTIMIZATION_TARGET_AUTOFILL_FIELD_CLASSIFICATION = 36;
-  // Target for ranking ios start page modules.
-  OPTIMIZATION_TARGET_SEGMENTATION_IOS_MODULE_RANKER = 37;
+  reserved 37;
+  reserved "OPTIMIZATION_TARGET_SEGMENTATION_IOS_MODULE_RANKER";
   // Target for segmentation: Determine what modules a user should see on their
   // Desktop New Tab Page.
   OPTIMIZATION_TARGET_SEGMENTATION_DESKTOP_NTP_MODULE = 38;
@@ -253,8 +253,8 @@ enum OptimizationTarget {
   OPTIMIZATION_TARGET_NOTIFICATION_IMAGE_PERMISSION_RELEVANCE = 61;
   // Target for Proofreader API.
   OPTIMIZATION_TARGET_MODEL_EXECUTION_FEATURE_PROOFREADER_API = 62;
-  // Target to determine whether to show the iOS default browser promo.
-  OPTIMIZATION_TARGET_SEGMENTATION_IOS_DEFAULT_BROWSER_PROMO = 63;
+  reserved 63;
+  reserved "OPTIMIZATION_TARGET_SEGMENTATION_IOS_DEFAULT_BROWSER_PROMO";
   // Target for education classifier.
   OPTIMIZATION_TARGET_EDU_CLASSIFIER = 64;
   // Target for the text+image AIv4 geolocation permission feature model.

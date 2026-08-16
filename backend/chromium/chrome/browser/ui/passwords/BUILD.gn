@@ -128,7 +128,6 @@ source_set("impl") {
   deps += [
     "//chrome/app:command_ids",
     "//chrome/browser/actor",
-    "//chrome/browser/desktop_to_mobile_promos:utils",
     "//chrome/browser/password_manager/factories:password_factory_headers",
     "//chrome/browser/password_manager/password_change",
     "//chrome/browser/signin",
@@ -136,8 +135,6 @@ source_set("impl") {
     "//chrome/browser/ui/actions:actions_headers",
     "//chrome/browser/ui/autofill",
     "//chrome/browser/ui/browser_window",
-    "//chrome/browser/ui/desktop_to_mobile_promos:service",
-    "//chrome/browser/ui/desktop_to_mobile_promos:utils",
     "//chrome/browser/ui/hats",
     "//chrome/browser/ui/location_bar",
     "//chrome/browser/ui/page_action:icon_type",
@@ -147,7 +144,6 @@ source_set("impl") {
     "//chrome/browser/web_applications",
     "//components/browsing_data/content",
     "//components/constrained_window",
-    "//components/desktop_to_mobile_promos",
     "//components/password_manager/core/browser/features:password_features",
   ]
 

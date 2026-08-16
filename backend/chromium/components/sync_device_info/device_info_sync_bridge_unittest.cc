@@ -89,16 +89,6 @@ const DeviceInfo::OsType kLocalDeviceOS = DeviceInfo::OsType::kLinux;
 const DeviceInfo::FormFactor kLocalDeviceFormFactor =
     DeviceInfo::FormFactor::kDesktop;
 
-MobilePromoOnDesktopPromoTypeSet SpecificsToPromoTypes(
-    const DeviceInfoSpecifics& specifics) {
-  MobilePromoOnDesktopPromoTypeSet types;
-  for (const auto& type :
-       specifics.feature_fields().desktop_to_ios_promo_receiving_types()) {
-    types.Put(static_cast<MobilePromoOnDesktopPromoType>(type));
-  }
-  return types;
-}
-
 MATCHER_P(HasDeviceInfo, expected, "") {
   return arg.device_info().SerializeAsString() == expected.SerializeAsString();
 }
@@ -118,8 +108,6 @@ MATCHER_P(ModelEqualsSpecifics, expected_specifics, "") {
             arg_info.sender_id_target_info.p256dh ||
         expected_fields.sender_id_auth_secret_v2() !=
             arg_info.sender_id_target_info.auth_secret ||
-        expected_fields.chime_representative_target_id() !=
-            arg_info.chime_representative_target_id ||
         static_cast<size_t>(expected_fields.enabled_features_size()) !=
             arg_info.enabled_features.size()) {
       return false;
@@ -155,11 +143,6 @@ MATCHER_P(ModelEqualsSpecifics, expected_specifics, "") {
          expected_specifics.feature_fields()
                  .send_tab_to_self_receiving_type() ==
              arg.send_tab_to_self_receiving_type() &&
-         expected_specifics.feature_fields()
-                 .desktop_to_ios_promo_receiving_enabled() ==
-             arg.desktop_to_ios_promo_receiving_enabled() &&
-         SpecificsToPromoTypes(expected_specifics) ==
-             arg.desktop_to_ios_promo_receiving_types() &&
          expected_specifics.invalidation_fields().instance_id_token() ==
              arg.fcm_registration_token();
 }
@@ -257,10 +240,6 @@ std::string SharingSenderIdFcmTokenForSuffix(int suffix) {
   return base::StringPrintf("sharing sender-id fcm token %d", suffix);
 }
 
-std::string SharingChimeRepresentativeTargetIdForSuffix(int suffix) {
-  return base::StringPrintf("chime representative target id %d", suffix);
-}
-
 std::string SharingSenderIdP256dhForSuffix(int suffix) {
   return base::StringPrintf("sharing sender-id p256dh %d", suffix);
 }
@@ -311,8 +290,6 @@ DeviceInfoSpecifics CreateSpecifics(
           SyncEnums_SendTabReceivingType_SEND_TAB_RECEIVING_TYPE_CHROME_OR_UNSPECIFIED);
   specifics.mutable_sharing_fields()->set_sender_id_fcm_token_v2(
       SharingSenderIdFcmTokenForSuffix(suffix));
-  specifics.mutable_sharing_fields()->set_chime_representative_target_id(
-      SharingChimeRepresentativeTargetIdForSuffix(suffix));
   specifics.mutable_sharing_fields()->set_sender_id_p256dh_v2(
       SharingSenderIdP256dhForSuffix(suffix));
   specifics.mutable_sharing_fields()->set_sender_id_auth_secret_v2(
@@ -429,12 +406,10 @@ class TestLocalDeviceInfoProvider : public MutableLocalDeviceInfoProvider {
             {SharingSenderIdFcmTokenForSuffix(kLocalSuffix),
              SharingSenderIdP256dhForSuffix(kLocalSuffix),
              SharingSenderIdAuthSecretForSuffix(kLocalSuffix)},
-            SharingChimeRepresentativeTargetIdForSuffix(kLocalSuffix),
             sharing_enabled_features),
         /*paask_info=*/std::nullopt, last_fcm_registration_token,
         last_interested_data_types,
-        /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-        /*desktop_to_ios_promo_receiving_enabled=*/false);
+        /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
   }
 
   void Clear() override { local_device_info_.reset(); }
@@ -468,10 +443,6 @@ class TestLocalDeviceInfoProvider : public MutableLocalDeviceInfoProvider {
         auto copy = *paask_info_;
         local_device_info_->set_paask_info(std::move(copy));
       }
-      if (promo_types_) {
-        local_device_info_->set_desktop_to_ios_promo_receiving_types(
-            *promo_types_);
-      }
     }
     return local_device_info_.get();
   }
@@ -495,17 +466,11 @@ class TestLocalDeviceInfoProvider : public MutableLocalDeviceInfoProvider {
     paask_info_ = paask_info;
   }
 
-  void UpdateDesktopToIOSPromoReceivingTypes(
-      const MobilePromoOnDesktopPromoTypeSet& promo_types) {
-    promo_types_ = promo_types;
-  }
-
  private:
   std::unique_ptr<DeviceInfo> local_device_info_;
   std::optional<std::string> fcm_registration_token_;
   std::optional<DataTypeSet> interested_data_types_;
   std::optional<DeviceInfo::PhoneAsASecurityKeyInfo> paask_info_;
-  std::optional<MobilePromoOnDesktopPromoTypeSet> promo_types_;
 };  // namespace
 
 class DeviceInfoSyncBridgeTest : public testing::Test,
@@ -866,49 +831,6 @@ TEST_F(DeviceInfoSyncBridgeTest, GetAllData) {
                   Pair(local_device()->GetLocalDeviceInfo()->guid(), _),
                   Pair(specifics1.cache_guid(), HasDeviceInfo(specifics1)),
                   Pair(specifics2.cache_guid(), HasDeviceInfo(specifics2))));
-}
-
-TEST_F(DeviceInfoSyncBridgeTest, LegacyDesktopToIOSPromoReceivingEnabled) {
-  InitializeAndMergeInitialData(SyncMode::kFull);
-
-  // If Lens is the only granular type enabled, the legacy boolean should be
-  // false, because Lens is not a legacy promo.
-  local_device()->UpdateDesktopToIOSPromoReceivingTypes(
-      MobilePromoOnDesktopPromoTypeSet{
-          MobilePromoOnDesktopPromoType::kLensPromo});
-  ForcePulse();
-  auto data = GetAllData();
-  ASSERT_EQ(1u, data.size());
-  EXPECT_FALSE(data.begin()
-                   ->second.device_info()
-                   .feature_fields()
-                   .desktop_to_ios_promo_receiving_enabled());
-
-  // If a legacy type (e.g. Autofill) is enabled, the legacy boolean should be
-  // true.
-  local_device()->UpdateDesktopToIOSPromoReceivingTypes(
-      MobilePromoOnDesktopPromoTypeSet{
-          MobilePromoOnDesktopPromoType::kLensPromo,
-          MobilePromoOnDesktopPromoType::kAutofillPromo});
-  ForcePulse();
-  data = GetAllData();
-  ASSERT_EQ(1u, data.size());
-  EXPECT_TRUE(data.begin()
-                  ->second.device_info()
-                  .feature_fields()
-                  .desktop_to_ios_promo_receiving_enabled());
-
-  // If kAllPromos is enabled, the legacy boolean should be true.
-  local_device()->UpdateDesktopToIOSPromoReceivingTypes(
-      MobilePromoOnDesktopPromoTypeSet{
-          MobilePromoOnDesktopPromoType::kAllPromos});
-  ForcePulse();
-  data = GetAllData();
-  ASSERT_EQ(1u, data.size());
-  EXPECT_TRUE(data.begin()
-                  ->second.device_info()
-                  .feature_fields()
-                  .desktop_to_ios_promo_receiving_enabled());
 }
 
 TEST_F(DeviceInfoSyncBridgeTest, ApplyIncrementalSyncChangesEmpty) {

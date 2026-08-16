@@ -16,7 +16,6 @@
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
 #include "components/content_settings/core/common/content_settings_constraints.h"
 #include "components/content_settings/core/common/content_settings_types.h"
-#include "components/prefs/pref_change_registrar.h"
 #include "extensions/browser/extension_prefs_observer.h"
 #include "extensions/browser/extension_registry_observer.h"
 #include "extensions/common/extension_id.h"
@@ -250,10 +249,6 @@ class SafetyHubHandler : public settings::SettingsPageUIHandler,
   // Record an interaction with one of the Safety Hub modules.
   void HandleRecordSafetyHubInteraction(const base::ListValue& args);
 
-  // Called when value of the `kSafeBrowsingEnhanced` has changed. Callback for
-  // the PrefChangeRegistrar.
-  void OnSafeBrowsingEnhancedChanged();
-
   // The `extension_sh_result_` contains the needed information about how
   // many extensions should be reviewed by the user.
   std::unique_ptr<SafetyHubExtensionsResult> extension_sh_result_;
@@ -272,8 +267,6 @@ class SafetyHubHandler : public settings::SettingsPageUIHandler,
   base::ScopedObservation<extensions::ExtensionPrefs,
                           extensions::ExtensionPrefsObserver>
       prefs_observation_{this};
-
-  PrefChangeRegistrar pref_change_registrar_;
 
   base::WeakPtrFactory<SafetyHubHandler> weak_ptr_factory_{this};
 };

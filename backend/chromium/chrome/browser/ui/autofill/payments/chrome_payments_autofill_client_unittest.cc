@@ -963,10 +963,10 @@ TEST_P(ChromePaymentsAutofillClientWalletBrandingTest,
 #endif  // BUILDFLAG(IS_ANDROID)
 
 #if !BUILDFLAG(IS_ANDROID)
-class ChromePaymentsAutofillIOSPromoClientTest
+class ChromePaymentsAutofillConfirmationClientTest
     : public ChromePaymentsAutofillClientTest {
  public:
-  ChromePaymentsAutofillIOSPromoClientTest() {
+  ChromePaymentsAutofillConfirmationClientTest() {
     feature_list_.InitWithFeatures(
         /*enabled_features=*/
         {features::kAutofillEnableCvcStorageAndFilling,
@@ -978,11 +978,9 @@ class ChromePaymentsAutofillIOSPromoClientTest
   base::test::ScopedFeatureList feature_list_;
 };
 
-// Test that calling `CreditCardUploadCompleted` still calls
-// SaveCardBubbleControllerImpl::ShowConfirmationBubbleView on card upload
-// success as callback, after failing to show the iOS promo.
-TEST_F(ChromePaymentsAutofillIOSPromoClientTest,
-       IOSPaymentPromoFailedToShow_CallsShowConfirmationBubbleView) {
+// A successful card upload displays the normal confirmation bubble.
+TEST_F(ChromePaymentsAutofillConfirmationClientTest,
+       UploadSuccessShowsConfirmationBubble) {
   EXPECT_CALL(save_card_bubble_controller(),
               ShowConfirmationBubbleView(/*card_saved=*/true,
                                          /*is_for_save_and_fill=*/true, _));

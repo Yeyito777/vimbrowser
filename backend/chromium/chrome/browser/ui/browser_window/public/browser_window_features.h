@@ -63,7 +63,6 @@ class HistoryClustersSidePanelCoordinator;
 class HistorySidePanelCoordinator;
 class IncognitoClearBrowsingDataDialogCoordinator;
 class ImmersiveModeController;
-class IOSPromoController;
 class InitialWebUIManager;
 class InitialWebUIWindowMetricsManager;
 class LocationBarModel;
@@ -571,8 +570,6 @@ class BrowserWindowFeatures {
 
   std::unique_ptr<InitialWebUIWindowMetricsManager>
       initial_webui_window_metrics_manager_;
-
-  std::unique_ptr<IOSPromoController> ios_promo_controller_;
 
   std::unique_ptr<lens::LensOverlayEntryPointController>
       lens_overlay_entry_point_controller_;

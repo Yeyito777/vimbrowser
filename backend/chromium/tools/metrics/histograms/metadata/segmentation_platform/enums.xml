@@ -96,14 +96,12 @@ chromium-metrics-reviews@google.com.
   <int value="29" label="TabletProductivityUser"/>
   <int value="32" label="WebAppInstallationPromo"/>
   <int value="35" label="BottomToolbar"/>
-  <int value="37" label="IosModuleRanker"/>
   <int value="38" label="DesktopNtpModule"/>
   <int value="41" label="AndroidHomeModuleRanker"/>
   <int value="45" label="ComposePromotion"/>
   <int value="46" label="UrlVisitResumptionRanker"/>
   <int value="50" label="MetricsClustering"/>
   <int value="58" label="FedCmUser"/>
-  <int value="63" label="IosDefaultBrowserPromo"/>
 </enum>
 
 <enum name="SegmentationPlatformTrainingDataCollectionEvent">

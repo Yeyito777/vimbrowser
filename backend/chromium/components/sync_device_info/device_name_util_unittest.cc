@@ -50,14 +50,12 @@ static std::unique_ptr<DeviceInfo> CreateFakeDeviceInfo(
           SyncEnums_SendTabReceivingType_SEND_TAB_RECEIVING_TYPE_CHROME_OR_UNSPECIFIED,
       DeviceInfo::SharingInfo(
           {"sender_id_fcm_token", "sender_id_p256dh", "sender_id_auth_secret"},
-          "chime_representative_target_id",
           std::set<sync_pb::SharingSpecificFields::EnabledFeatures>{
               sync_pb::SharingSpecificFields::CLICK_TO_CALL_V2}),
       /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
 }
 
 }  // namespace

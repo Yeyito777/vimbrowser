@@ -70,10 +70,8 @@ source_set("sharing_message") {
     "//components/gcm_driver/instance_id",
     "//components/keyed_service/core",
     "//components/optimization_guide/core:features",
-    "//components/send_tab_to_self",
     "//components/sharing_message/proto",
     "//components/sharing_message/shared_clipboard",
-    "//components/strings",
     "//components/sync/model",
     "//components/sync/protocol",
     "//components/sync/service",
@@ -83,7 +81,6 @@ source_set("sharing_message") {
     "//components/version_info",
     "//net",
     "//third_party/re2",
-    "//ui/base",
   ]
 }
 
@@ -133,10 +130,7 @@ source_set("unit_tests") {
     "//components/favicon/core/test:test_support",
     "//components/gcm_driver:test_support",
     "//components/send_tab_to_self",
-    "//components/send_tab_to_self:test_support",
-    "//components/sharing_message/ios_push",
     "//components/sharing_message/proto",
-    "//components/strings",
     "//components/sync:test_support",
     "//components/sync/model",
     "//components/sync_device_info",

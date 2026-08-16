@@ -42,7 +42,6 @@
 *HomeModulesCardRegistryIOSTest.*
 *InputContextAndroidTest.*
 *IntentionalUserModelTest.*
-*IosModuleRankerTest.*
 *LensEphemeralModuleTest.*
 *LowUserEngagementModelTest.*
 *MetadataUtilsTest.*

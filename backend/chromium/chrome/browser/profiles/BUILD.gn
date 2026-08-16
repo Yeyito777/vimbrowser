@@ -398,7 +398,6 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/search",
     "//chrome/browser/search_engine_choice",
     "//chrome/browser/themes",
-    "//chrome/browser/ui/desktop_to_mobile_promos:service",
     "//chrome/browser/ui/global_error",
     "//chrome/browser/ui/global_media_controls",
     "//chrome/browser/ui/lens",

@@ -325,8 +325,15 @@ These are reference measurements, not final acceptance values.
   - [x] Physically delete the first 3,351 closure-free residual platform files;
         preserve active/shared boundaries and record the validated checkpoint in
         `docs/debloat-platform-p03-disconnected.md`.
-  - [ ] Disconnect active iOS desktop-promo/push/model integration and remove its
+  - [x] Disconnect active iOS desktop-promo/push/model integration and remove its
         remaining production inputs.
+      - Removed desktop-to-iOS promos, iOS Chime/unencrypted Sharing delivery,
+        synced promo/push state, iOS segmentation models, and their resources,
+        tests, metrics, and generated inputs while preserving encrypted FCM Send
+        Tab behavior and reserving retired sync wire identifiers.
+      - The exact worker snapshot, affected unit-test compilation, benchmark,
+        artifact delta, and 9,688-line net reduction are recorded in
+        `docs/debloat-platform-p03-ios-integration.md`.
   - [ ] Remove dead unsupported-platform branches from shared GN/GNI and C/C++
         files, then physically delete their now-unreferenced implementations.
   - [ ] Disconnect Cast/Media Router production integration without weakening

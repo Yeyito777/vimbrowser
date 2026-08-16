@@ -1042,23 +1042,6 @@ const char* ProtoEnumToString(
 }
 
 const char* ProtoEnumToString(
-    sync_pb::SharingMessageSpecifics::ChannelConfiguration::
-        ChimeChannelConfiguration::ChimeChannelType channel_type) {
-  ASSERT_ENUM_BOUNDS(sync_pb::SharingMessageSpecifics::ChannelConfiguration::
-                         ChimeChannelConfiguration,
-                     ChimeChannelType, CHANNEL_TYPE_UNSPECIFIED, APPLE_PUSH);
-  switch (channel_type) {
-    ENUM_CASE(sync_pb::SharingMessageSpecifics::ChannelConfiguration::
-                  ChimeChannelConfiguration,
-              CHANNEL_TYPE_UNSPECIFIED);
-    ENUM_CASE(sync_pb::SharingMessageSpecifics::ChannelConfiguration::
-                  ChimeChannelConfiguration,
-              APPLE_PUSH);
-  }
-  NOTREACHED();
-}
-
-const char* ProtoEnumToString(
     sync_pb::UserColorTheme::BrowserColorVariant browser_color_variant) {
   ASSERT_ENUM_BOUNDS(sync_pb::UserColorTheme, BrowserColorVariant,
                      BROWSER_COLOR_VARIANT_UNSPECIFIED, EXPRESSIVE);

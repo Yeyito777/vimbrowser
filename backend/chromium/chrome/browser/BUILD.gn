@@ -1640,7 +1640,6 @@ static_library("browser") {
     "//chrome/browser/custom_handlers",
     "//chrome/browser/data_saver",
     "//chrome/browser/data_sharing",
-    "//chrome/browser/desktop_to_mobile_promos:utils",
     "//chrome/browser/devtools",
     "//chrome/browser/diagnostics",
     "//chrome/browser/diagnostics:impl",
@@ -1984,7 +1983,6 @@ static_library("browser") {
     "//components/data_sharing/migration/internal",
     "//components/data_sharing/public",
     "//components/data_sharing/public:personal_collaboration_data",
-    "//components/desktop_to_mobile_promos",
     "//components/device_event_log",
     "//components/device_reauth",
     "//components/device_signals/core/browser",
@@ -2231,7 +2229,6 @@ static_library("browser") {
     "//components/sessions",
     "//components/shared_highlighting/core/common",
     "//components/sharing_message:buildflags",
-    "//components/sharing_message/ios_push",
     "//components/sharing_message/proto",
     "//components/sharing_message/shared_clipboard",
     "//components/signin/core/browser",
@@ -3041,8 +3038,6 @@ static_library("browser") {
     "//chrome/browser/ui/commerce",
     "//chrome/browser/ui/commerce:impl",
     "//chrome/browser/ui/content_settings:impl",
-    "//chrome/browser/ui/desktop_to_mobile_promos:impl",
-    "//chrome/browser/ui/desktop_to_mobile_promos:utils",
     "//chrome/browser/ui/exclusive_access",
     "//chrome/browser/ui/global_media_controls",
     "//chrome/browser/ui/global_media_controls:impl",
@@ -3331,7 +3326,6 @@ static_library("browser") {
     "//chrome/browser/ui/tabs:tab_strip_impl",
     "//chrome/browser/ui/tabs/tab_strip_api:impl",
     "//chrome/browser/ui/bookmarks:impl",
-    "//chrome/browser/ui/desktop_to_mobile_promos:impl",
 
     # TODO(crbug.com/437811373): Remove this circular dependency when
     # c/b/password_manager/password_store_utils.h gets componentized.

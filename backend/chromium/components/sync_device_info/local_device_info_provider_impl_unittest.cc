@@ -29,8 +29,6 @@ const char kLocalFullHardwareClass[] = "test_full_hardware_class";
 const char kSharingSenderIdFCMRegistrationToken[] = "test_sender_id_fcm_token";
 const char kSharingSenderIdP256dh[] = "test_sender_id_p256_dh";
 const char kSharingSenderIdAuthSecret[] = "test_sender_id_auth_secret";
-const char kSharingChimeRepresentativeTargetId[] =
-    "chime_representative_target_id";
 const sync_pb::SharingSpecificFields::EnabledFeatures
     kSharingEnabledFeatures[] = {
         sync_pb::SharingSpecificFields::CLICK_TO_CALL_V2};
@@ -71,11 +69,6 @@ class MockDeviceInfoSyncClient : public DeviceInfoSyncClient {
               (),
               (const override));
   MOCK_METHOD(bool, IsUmaEnabledOnCrOSDevice, (), (const override));
-  MOCK_METHOD(bool, GetDesktopToIOSPromoReceivingEnabled, (), (const override));
-  MOCK_METHOD(MobilePromoOnDesktopPromoTypeSet,
-              GetDesktopToIOSPromoReceivingTypes,
-              (),
-              (const override));
 };
 
 class LocalDeviceInfoProviderImplTest : public testing::Test {
@@ -230,35 +223,6 @@ TEST_F(LocalDeviceInfoProviderImplTest, SendTabToSelfReceivingType) {
           SyncEnums_SendTabReceivingType_SEND_TAB_RECEIVING_TYPE_CHROME_AND_PUSH_NOTIFICATION);
 }
 
-TEST_F(LocalDeviceInfoProviderImplTest, DesktopToIOSPromoReceivingEnabled) {
-  ON_CALL(device_info_sync_client_, GetDesktopToIOSPromoReceivingEnabled())
-      .WillByDefault(Return(true));
-  ON_CALL(device_info_sync_client_, GetDesktopToIOSPromoReceivingTypes())
-      .WillByDefault(Return(MobilePromoOnDesktopPromoTypeSet{
-          MobilePromoOnDesktopPromoType::kAllPromos}));
-
-  InitializeProvider();
-
-  ASSERT_THAT(provider_->GetLocalDeviceInfo(), NotNull());
-  EXPECT_TRUE(provider_->GetLocalDeviceInfo()
-                  ->desktop_to_ios_promo_receiving_enabled());
-  EXPECT_TRUE(provider_->GetLocalDeviceInfo()
-                  ->desktop_to_ios_promo_receiving_types()
-                  .Has(MobilePromoOnDesktopPromoType::kAllPromos));
-
-  ON_CALL(device_info_sync_client_, GetDesktopToIOSPromoReceivingEnabled())
-      .WillByDefault(Return(false));
-  ON_CALL(device_info_sync_client_, GetDesktopToIOSPromoReceivingTypes())
-      .WillByDefault(Return(MobilePromoOnDesktopPromoTypeSet{}));
-
-  ASSERT_THAT(provider_->GetLocalDeviceInfo(), NotNull());
-  EXPECT_FALSE(provider_->GetLocalDeviceInfo()
-                   ->desktop_to_ios_promo_receiving_enabled());
-  EXPECT_TRUE(provider_->GetLocalDeviceInfo()
-                  ->desktop_to_ios_promo_receiving_types()
-                  .empty());
-}
-
 TEST_F(LocalDeviceInfoProviderImplTest, SharingInfo) {
   ON_CALL(device_info_sync_client_, GetLocalSharingInfo())
       .WillByDefault(Return(std::nullopt));
@@ -275,7 +239,7 @@ TEST_F(LocalDeviceInfoProviderImplTest, SharingInfo) {
           DeviceInfo::SharingTargetInfo{kSharingSenderIdFCMRegistrationToken,
                                         kSharingSenderIdP256dh,
                                         kSharingSenderIdAuthSecret},
-          kSharingChimeRepresentativeTargetId, enabled_features);
+          enabled_features);
   ON_CALL(device_info_sync_client_, GetLocalSharingInfo())
       .WillByDefault(Return(sharing_info));
 
@@ -287,8 +251,6 @@ TEST_F(LocalDeviceInfoProviderImplTest, SharingInfo) {
             local_sharing_info->sender_id_target_info.fcm_token);
   EXPECT_EQ(kSharingSenderIdP256dh,
             local_sharing_info->sender_id_target_info.p256dh);
-  EXPECT_EQ(kSharingChimeRepresentativeTargetId,
-            local_sharing_info->chime_representative_target_id);
   EXPECT_EQ(kSharingSenderIdAuthSecret,
             local_sharing_info->sender_id_target_info.auth_secret);
   EXPECT_EQ(enabled_features, local_sharing_info->enabled_features);
@@ -338,8 +300,7 @@ TEST_F(LocalDeviceInfoProviderImplTest, ShouldKeepStoredInvalidationFields) {
           SyncEnums_SendTabReceivingType_SEND_TAB_RECEIVING_TYPE_CHROME_OR_UNSPECIFIED,
       /*sharing_info=*/std::nullopt, paask_info, kFCMRegistrationToken,
       kInterestedDataTypes,
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
 
   // |kFCMRegistrationToken|, |kInterestedDataTypes|,
   // and |paask_info| should be taken from |device_info_restored_from_store|

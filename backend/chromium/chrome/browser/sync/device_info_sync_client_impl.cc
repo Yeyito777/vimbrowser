@@ -97,14 +97,4 @@ bool DeviceInfoSyncClientImpl::IsUmaEnabledOnCrOSDevice() const {
 #endif
 }
 
-bool DeviceInfoSyncClientImpl::GetDesktopToIOSPromoReceivingEnabled() const {
-  return false;
-}
-
-MobilePromoOnDesktopPromoTypeSet
-DeviceInfoSyncClientImpl::GetDesktopToIOSPromoReceivingTypes() const {
-  // This is only required on iOS.
-  return {};
-}
-
 }  // namespace browser_sync

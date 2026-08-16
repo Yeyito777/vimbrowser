@@ -353,7 +353,6 @@
 #include "chrome/browser/speech/speech_recognition_service_factory.h"
 #include "chrome/browser/storage/storage_notification_service_factory.h"
 #include "chrome/browser/ui/browser_manager_service_factory.h"
-#include "chrome/browser/ui/desktop_to_mobile_promos/ios_promo_trigger_service_factory.h"
 #include "chrome/browser/ui/global_error/global_error_service_factory.h"
 #include "chrome/browser/ui/global_media_controls/media_notification_service_factory.h"
 #include "chrome/browser/ui/lens/lens_keyed_service_factory.h"
@@ -985,9 +984,6 @@ void ChromeBrowserMainExtraPartsProfiles::
   visited_url_ranking::VisitedURLRankingServiceFactory::GetInstance();
 #if !BUILDFLAG(IS_ANDROID)
   InstantServiceFactory::GetInstance();
-#endif
-#if !BUILDFLAG(IS_ANDROID)
-  IOSPromoTriggerServiceFactory::GetInstance();
 #endif
 #if BUILDFLAG(IS_WIN)
   JumpListFactory::GetInstance();

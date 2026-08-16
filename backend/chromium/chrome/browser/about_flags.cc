@@ -96,7 +96,6 @@
 #include "components/contextual_tasks/public/features.h"
 #include "components/data_sharing/public/features.h"
 #include "components/data_sharing/public/switches.h"
-#include "components/desktop_to_mobile_promos/features.h"
 #include "components/device_signals/core/common/signals_features.h"
 #include "components/dom_distiller/core/dom_distiller_features.h"
 #include "components/dom_distiller/core/dom_distiller_switches.h"
@@ -3342,96 +3341,6 @@ const FeatureEntry::FeatureVariation
 constexpr char kWebiumFlag[] = "webium";
 constexpr char kWebiumFeatures[] =
     "Webium,AttachUnownedInnerWebContents,ExtensionsMenuAccessControl";
-
-const FeatureEntry::FeatureParam kMobileNTPPromoOnDesktopGeneral[] = {
-    {kMobileNTPPromoOnDesktopVariationParam, "0"}};
-const FeatureEntry::FeatureParam kMobileNTPPromoOnDesktopPasswords[] = {
-    {kMobileNTPPromoOnDesktopVariationParam, "1"}};
-const FeatureEntry::FeatureParam kMobileNTPPromoOnDesktopAll[] = {
-    {kMobileNTPPromoOnDesktopVariationParam, "2"}};
-
-const FeatureEntry::FeatureVariation kMobileNTPPromoOnDesktopVariations[] = {
-    {"General", kMobileNTPPromoOnDesktopGeneral, nullptr},
-    {"Passwords", kMobileNTPPromoOnDesktopPasswords, nullptr},
-    {"All", kMobileNTPPromoOnDesktopAll, nullptr},
-};
-
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopForcePromoTypeQRCode[] = {
-    {kMobilePromoOnDesktopForcePromoTypeParam, "0"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopForcePromoTypeReminder[] =
-    {{kMobilePromoOnDesktopForcePromoTypeParam, "1"}};
-
-const FeatureEntry::FeatureVariation
-    kMobilePromoOnDesktopForcePromoTypeVariations[] = {
-        {"QRCode", kMobilePromoOnDesktopForcePromoTypeQRCode, nullptr},
-        {"Reminder", kMobilePromoOnDesktopForcePromoTypeReminder, nullptr},
-};
-
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopLens[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "1"},
-    {kMobilePromoOnDesktopNotificationParam, "false"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopLensNotification[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "1"},
-    {kMobilePromoOnDesktopNotificationParam, "true"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopESB[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "2"},
-    {kMobilePromoOnDesktopNotificationParam, "false"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopESBNotification[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "2"},
-    {kMobilePromoOnDesktopNotificationParam, "true"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopAutofill[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "3"},
-    {kMobilePromoOnDesktopNotificationParam, "false"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopAutofillNotification[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "3"},
-    {kMobilePromoOnDesktopNotificationParam, "true"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopTabGroups[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "4"},
-    {kMobilePromoOnDesktopNotificationParam, "false"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopTabGroupsNotification[] =
-    {{kMobilePromoOnDesktopPromoTypeParam, "4"},
-     {kMobilePromoOnDesktopNotificationParam, "true"}};
-const FeatureEntry::FeatureParam kMobilePromoOnDesktopPriceTracking[] = {
-    {kMobilePromoOnDesktopPromoTypeParam, "5"},
-    {kMobilePromoOnDesktopNotificationParam, "false"}};
-const FeatureEntry::FeatureParam
-    kMobilePromoOnDesktopPriceTrackingNotification[] = {
-        {kMobilePromoOnDesktopPromoTypeParam, "5"},
-        {kMobilePromoOnDesktopNotificationParam, "true"}};
-
-const FeatureEntry::FeatureVariation kMobilePromoOnDesktopVariations[] = {
-    {" - ESB", kMobilePromoOnDesktopESB, nullptr},
-    {" - ESB with push notification", kMobilePromoOnDesktopESBNotification,
-     nullptr},
-    {" - PW Autofill", kMobilePromoOnDesktopAutofill, nullptr},
-    {" - PW Autofill with push notification",
-     kMobilePromoOnDesktopAutofillNotification, nullptr},
-};
-
-const FeatureEntry::FeatureVariation
-    kMobilePromoOnDesktopWithQRCodeVariations[] = {
-        {" - ESB", kMobilePromoOnDesktopESB, nullptr},
-        {" - PW Autofill", kMobilePromoOnDesktopAutofill, nullptr},
-};
-
-const FeatureEntry::FeatureVariation kMobilePromoOnDesktopVariationsWave1[] = {
-    {" - Tab Groups", kMobilePromoOnDesktopTabGroups, nullptr},
-    {" - Tab Groups with push notification",
-     kMobilePromoOnDesktopTabGroupsNotification, nullptr},
-    {" - Price Tracking", kMobilePromoOnDesktopPriceTracking, nullptr},
-    {" - Price Tracking with push notification",
-     kMobilePromoOnDesktopPriceTrackingNotification, nullptr},
-    {" - Lens Promo", kMobilePromoOnDesktopLens, nullptr},
-    {" - Lens Promo with push notification",
-     kMobilePromoOnDesktopLensNotification, nullptr},
-};
-
-const FeatureEntry::FeatureVariation
-    kMobilePromoOnDesktopWithQRCodeVariationsWave1[] = {
-        {" - Tab Groups", kMobilePromoOnDesktopTabGroups, nullptr},
-        {" - Price Tracking", kMobilePromoOnDesktopPriceTracking, nullptr},
-        {" - Lens Promo", kMobilePromoOnDesktopLens, nullptr},
-};
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -9253,26 +9162,6 @@ const FeatureEntry kFeatureEntries[] = {
      kOsAll,
      FEATURE_VALUE_TYPE(
          autofill::features::kAutofillEnableSupportForNameAndEmail)},
-    {"mobile-promo-on-desktop-force-promo-type",
-     flag_descriptions::kMobilePromoOnDesktopForcePromoTypeName,
-     flag_descriptions::kMobilePromoOnDesktopForcePromoTypeDescription, kOsAll,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(
-         kMobilePromoOnDesktopForcePromoType,
-         kMobilePromoOnDesktopForcePromoTypeVariations,
-         "MobilePromoOnDesktopForcePromo")},
-    {"mobile-promo-on-desktop-with-qr-code",
-     flag_descriptions::kMobilePromoOnDesktopWithQRCodeName,
-     flag_descriptions::kMobilePromoOnDesktopWithQRCodeDescription, kOsAll,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(kMobilePromoOnDesktopWithQRCode,
-                                    kMobilePromoOnDesktopWithQRCodeVariations,
-                                    "MobilePromoOnDesktopWithQRCode")},
-    {"mobile-promo-on-desktop-with-reminder",
-     flag_descriptions::kMobilePromoOnDesktopWithReminderName,
-     flag_descriptions::kMobilePromoOnDesktopWithReminderDescription, kOsAll,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(kMobilePromoOnDesktopWithReminder,
-                                    kMobilePromoOnDesktopVariations,
-                                    "MobilePromoOnDesktopWithReminder")},
-
     {"reintroduce-hybrid-passkey-entry-point",
      flag_descriptions::kAutofillReintroduceHybridPasskeyDropdownItemName,
      flag_descriptions::
@@ -9934,14 +9823,6 @@ const FeatureEntry kFeatureEntries[] = {
 
 
 
-    {"mobile-ntp-promo-on-desktop",
-     flag_descriptions::kMobileNTPPromoOnDesktopName,
-     flag_descriptions::kMobileNTPPromoOnDesktopDescription, kOsDesktop,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(kMobileNTPPromoOnDesktop,
-                                    kMobileNTPPromoOnDesktopVariations,
-                                    "MobileNTPPromoOnDesktop")},
-
-
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
     {"signin-promo-on-avatar-pill",
      flag_descriptions::kSigninPromoOnAvatarPillName,
@@ -9951,20 +9832,6 @@ const FeatureEntry kFeatureEntries[] = {
                                     kSigninPromoOnAvatarPillVariation,
                                     "SigninPromoOnAvatarPillVariation")},
 #endif
-    {"mobile-promo-on-desktop-with-qr-code-wave-1",
-     flag_descriptions::kMobilePromoOnDesktopWithQRCodeWave1Name,
-     flag_descriptions::kMobilePromoOnDesktopWithQRCodeWave1Description, kOsAll,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(
-         kMobilePromoOnDesktopWithQRCodeWave1,
-         kMobilePromoOnDesktopWithQRCodeVariationsWave1,
-         "MobilePromoOnDesktopWithQRCodeWave1")},
-    {"mobile-promo-on-desktop-with-reminder-wave-1",
-     flag_descriptions::kMobilePromoOnDesktopWithReminderWave1Name,
-     flag_descriptions::kMobilePromoOnDesktopWithReminderWave1Description,
-     kOsAll,
-     FEATURE_WITH_PARAMS_VALUE_TYPE(kMobilePromoOnDesktopWithReminderWave1,
-                                    kMobilePromoOnDesktopVariationsWave1,
-                                    "MobilePromoOnDesktopWithReminderWave1")},
     // Add new entries above this line.
     // NOTE: Adding a new flag requires adding a corresponding entry to enum
     // "LoginCustomFlags" in tools/metrics/histograms/enums.xml. See "Flag

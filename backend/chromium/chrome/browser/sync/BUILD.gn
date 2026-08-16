@@ -110,7 +110,6 @@ source_set("sync") {
 
     # TODO(crbug.com/374910357): Investigate for a better dependency injection.
     "//chrome/browser/autofill",
-    "//chrome/browser/desktop_to_mobile_promos:utils",
     "//chrome/browser/favicon",
     "//chrome/browser/prefs:util",
     "//chrome/browser/profiles",
@@ -125,7 +124,6 @@ source_set("sync") {
     "//components/autofill/core/browser",
     "//components/consent_auditor",
     "//components/data_sharing/public",
-    "//components/desktop_to_mobile_promos",
     "//components/dom_distiller/core",
     "//components/favicon/content",
     "//components/history/core/browser",
