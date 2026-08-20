@@ -12,9 +12,6 @@
 #include "build/build_config.h"
 #include "components/enterprise/client_certificates/core/private_key.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <Security/Security.h>
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace crypto {
 class UnexportableSigningKey;
@@ -41,9 +38,6 @@ class UnexportablePrivateKey : public PrivateKey {
   crypto::SignatureVerifier::SignatureAlgorithm GetAlgorithm() const override;
   client_certificates_pb::PrivateKey ToProto() const override;
   base::DictValue ToDict() const override;
-#if BUILDFLAG(IS_IOS)
-  SecKeyRef GetSecKeyRef() const override;
-#endif  // BUILDFLAG(IS_IOS)
 
  private:
   friend class base::RefCountedThreadSafe<UnexportablePrivateKey>;

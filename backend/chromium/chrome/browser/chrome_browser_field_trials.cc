@@ -30,10 +30,6 @@
 #include "third_party/blink/public/common/features.h"
 
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/common/channel_info.h"
-#include "chromeos/ash/services/multidevice_setup/public/cpp/first_run_field_trial.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
@@ -70,11 +66,6 @@ void ChromeBrowserFieldTrials::SetUpClientSideFieldTrials(
   metrics::CreateFallbackUkmSamplingTrialIfNeeded(
       entropy_providers.default_entropy(), feature_list);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!has_seed) {
-    ash::multidevice_setup::CreateFirstRunFieldTrial(feature_list);
-  }
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   // This trial is client controlled on Mac and Linux because the survey is

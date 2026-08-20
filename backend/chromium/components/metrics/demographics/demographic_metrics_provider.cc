@@ -61,7 +61,6 @@ DemographicMetricsProvider::ProvideSyncedUserNoisedBirthYearAndGender() {
   if (!base::FeatureList::IsEnabled(kDemographicMetricsReporting))
     return std::nullopt;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Skip if not exactly one Profile on disk. Having more than one Profile that
   // is using the browser can make demographics less relevant. This approach
   // cannot determine if there is more than 1 distinct user using the Profile.
@@ -74,7 +73,6 @@ DemographicMetricsProvider::ProvideSyncedUserNoisedBirthYearAndGender() {
         UserDemographicsStatus::kMoreThanOneProfile);
     return std::nullopt;
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   syncer::SyncService* sync_service = profile_client_->GetSyncService();
   // Skip if no sync service.

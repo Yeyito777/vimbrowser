@@ -1134,11 +1134,6 @@ scoped_refptr<VideoFrame> MappableSharedImageVideoFramePool::PoolImpl::
   bool allow_overlay = false;
   if (frame_resource->shared_image->usage().Has(
           gpu::SHARED_IMAGE_USAGE_SCANOUT)) {
-#if BUILDFLAG(IS_WIN)
-    // Windows direct composition path only supports NV12 video overlays.
-    allow_overlay =
-        output_format_ == GpuVideoAcceleratorFactories::OutputFormat::NV12;
-#else
     switch (output_format_) {
       case GpuVideoAcceleratorFactories::OutputFormat::YV12:
         allow_overlay = video_frame_allow_overlay;
@@ -1159,7 +1154,6 @@ scoped_refptr<VideoFrame> MappableSharedImageVideoFramePool::PoolImpl::
       case GpuVideoAcceleratorFactories::OutputFormat::UNDEFINED:
         break;
     }
-#endif  // BUILDFLAG(IS_WIN)
   }
   frame->metadata().allow_overlay = allow_overlay;
   frame->metadata().read_lock_fences_enabled = true;
@@ -1249,17 +1243,9 @@ MappableSharedImageVideoFramePool::PoolImpl::GetOrCreateFrameResource(
     // SCANOUT usage should be added only if scanout of SharedImages for this
     // use case is supported.
     auto si_caps = sii->GetCapabilities();
-#if BUILDFLAG(IS_WIN)
-    // On Windows, overlays are in general not supported. However, in some
-    // cases they are supported for the software video frame use case in
-    // particular. This cap details whether that support is present.
-    bool add_scanout_usage =
-        si_caps.supports_scanout_shared_images_for_software_video_frames;
-#else
     // On all other platforms, whether scanout for SharedImages is supported
     // for this particular use case is no different than the general case.
     bool add_scanout_usage = si_caps.supports_scanout_shared_images;
-#endif
 
     if (add_scanout_usage) {
       si_usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT;
@@ -1267,13 +1253,7 @@ MappableSharedImageVideoFramePool::PoolImpl::GetOrCreateFrameResource(
 
     // TOOD(crbug.com/425634684): Check for webgpu support from
     // SharedImageCapabilities, once this metadata is compatible.
-#if BUILDFLAG(IS_CHROMEOS)
-    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-            switches::kEnableUnsafeWebGPU)) {
-      // This SharedImage may be used for zero-copy import into WebGPU.
-      si_usage |= gpu::SHARED_IMAGE_USAGE_WEBGPU_READ;
-    }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     // This SharedImage may be used for zero-copy import into WebGPU.
     si_usage |= gpu::SHARED_IMAGE_USAGE_WEBGPU_READ;
 #endif

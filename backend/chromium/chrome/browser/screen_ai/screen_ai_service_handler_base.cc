@@ -31,9 +31,6 @@
 #include "services/network/public/mojom/network_change_manager.mojom.h"
 #include "services/screen_ai/public/cpp/utilities.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif
 
 namespace screen_ai {
 
@@ -75,11 +72,7 @@ ComponentFiles::ComponentFiles(
       continue;
     }
 
-#if BUILDFLAG(IS_WIN)
-    base::FilePath relative_path(base::UTF8ToWide(relative_file_path));
-#else
     base::FilePath relative_path(relative_file_path);
-#endif
     const base::FilePath full_path = component_folder.Append(relative_path);
     model_files_[relative_path] =
         base::File(full_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
@@ -250,9 +243,7 @@ void ScreenAIServiceHandlerBase::LaunchIfNotRunning() {
   }
 
   base::FilePath binary_path = state_instance->get_component_binary_path();
-#if BUILDFLAG(IS_WIN)
-  std::vector<base::FilePath> preload_libraries = {binary_path};
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   std::vector<std::string> extra_switches = {
       base::StringPrintf("--%s=%s", screen_ai::GetBinaryPathSwitch(),
                          binary_path.MaybeAsASCII().c_str())};
@@ -263,11 +254,7 @@ void ScreenAIServiceHandlerBase::LaunchIfNotRunning() {
       screen_ai_service_factory_.BindNewPipeAndPassReceiver(),
       content::ServiceProcessHost::Options()
           .WithDisplayName(process_name)
-#if BUILDFLAG(IS_WIN)
-          .WithPreloadedLibraries(
-              preload_libraries,
-              content::ServiceProcessHostPreloadLibraries::GetPassKey())
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
           .WithExtraCommandLineSwitches(extra_switches)
 #endif  // BUILDFLAG(IS_WIN)
           .WithProcessCallback(

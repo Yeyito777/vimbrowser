@@ -114,7 +114,6 @@ void RemoveUrlsFromAutofillData(std::string& autofill_metadata) {
 // not pass on OS_WIN.
 // This function is only called on ChromeOS.
 // See https://crbug.com/1119560.
-#if !BUILDFLAG(IS_WIN)
 std::optional<std::string> ReadEndOfFile(const base::FilePath& path,
                                          size_t max_size) {
   if (path.ReferencesParent()) {
@@ -167,6 +166,5 @@ std::optional<std::string> ReadEndOfFile(const base::FilePath& path,
 
   return contents;
 }
-#endif  // !BUILDFLAG(IS_WIN)
 
 }  // namespace feedback_util

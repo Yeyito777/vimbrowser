@@ -32,9 +32,6 @@
 #include "ui/base/ozone_buildflags.h"
 #include "ui/gfx/ca_layer_params.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/gfx/android/surface_control_frame_rate.h"
-#endif
 
 namespace viz {
 
@@ -75,9 +72,6 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
 
   // mojom::DisplayPrivate:
   void SetDisplayVisible(bool visible) override;
-#if BUILDFLAG(IS_WIN)
-  void DisableSwapUntilResize(DisableSwapUntilResizeCallback callback) override;
-#endif
   void Resize(const gfx::Size& size) override;
   void SetDisplayColorMatrix(const gfx::Transform& color_matrix) override;
   void SetDisplayColorSpaces(
@@ -89,13 +83,6 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   void SetDisplayVSyncParameters(base::TimeTicks timebase,
                                  base::TimeDelta interval) override;
   void ForceImmediateDrawAndSwapIfPossible() override;
-#if BUILDFLAG(IS_ANDROID)
-  void UpdateRefreshRate(float refresh_rate) override;
-  void SetAdaptiveRefreshRateInfo(
-      mojom::AdaptiveRefreshRateInfoPtr info) override;
-  void PreserveChildSurfaceControls() override;
-  void SetSwapCompletionCallbackEnabled(bool enable) override;
-#endif  // BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
   void SetSupportedRefreshRates(
       const std::vector<float>& supported_refresh_rates) override;
@@ -122,13 +109,7 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   void NotifyNewLocalSurfaceIdExpectedWhilePaused() override;
   void BindLayerContext(mojom::PendingLayerContextPtr context,
                         mojom::LayerContextSettingsPtr settings) override;
-#if BUILDFLAG(IS_ANDROID)
-  void SetThreads(const std::vector<Thread>& threads) override;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  base::ScopedClosureRunner GetCacheBackBufferCb();
-#endif
   ExternalBeginFrameSource* external_begin_frame_source() {
     return external_begin_frame_source_.get();
   }
@@ -195,10 +176,6 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   bool interval_decider_use_fixed_intervals_ = true;
   // The current display frame interval that FrameIntervalDecider decided on.
   base::TimeDelta decided_display_interval_;
-#if BUILDFLAG(IS_ANDROID)
-  gfx::SurfaceControlFrameRateCompatibility decided_display_frame_rate_compat_ =
-      gfx::SurfaceControlFrameRateCompatibility::kFixedSource;
-#endif
 
   // RootCompositorFrameSinkImpl holds a Display and a BeginFrameSource if it
   // was created with a non-null gpu::SurfaceHandle. The source can either be a
@@ -232,16 +209,6 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   base::TimeTicks next_forced_ca_layer_params_update_time_;
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // Let client control whether it wants `DidCompleteSwapWithSize`.
-  bool enable_swap_completion_callback_ = false;
-
-  bool supports_adaptive_refresh_rate_ = false;
-  base::TimeDelta suggested_frame_interval_high_;
-  float device_scale_factor_ = 1.0f;
-  std::vector<mojom::FrameRateVelocityPoint>
-      adaptive_refresh_rate_velocity_points_;
-#endif
 
   // Map which retains the exact supported refresh rates, keyed by their
   // interval conversion value which may be subject to precision loss.

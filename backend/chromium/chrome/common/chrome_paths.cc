@@ -29,9 +29,6 @@
 #include "components/policy/core/common/policy_paths.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/registry.h"
-#endif
 
 #if BUILDFLAG(ENABLE_WIDEVINE)
 #include "third_party/widevine/cdm/widevine_cdm_common.h"  // nogncheck
@@ -61,32 +58,6 @@ const base::FilePath::CharType kComponentUpdatedWidevineCdmHint[] =
     FILE_PATH_LITERAL("latest-component-updated-widevine-cdm");
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
-#if BUILDFLAG(IS_CHROMEOS)
-const base::FilePath::CharType kDeviceRefreshTokenFilePath[] =
-    FILE_PATH_LITERAL("/home/chronos/device_refresh_token");
-
-bool GetChromeOsCrdDataDirInternal(base::FilePath* result,
-                                   bool* should_be_created) {
-#if BUILDFLAG(IS_CHROMEOS_DEVICE)
-  *result = base::FilePath::FromASCII("/run/crd");
-  // The directory is created by ChromeOS (since we do not have the permissions
-  // to create anything in /run).
-  *should_be_created = false;
-  return true;
-#else
-  // On glinux-ChromeOS builds `/run/` doesn't exist, so we simply use the temp
-  // directory.
-  base::FilePath temp_directory;
-  if (!base::PathService::Get(base::DIR_TEMP, &temp_directory)) {
-    return false;
-  }
-
-  *result = temp_directory.Append(FILE_PATH_LITERAL("crd"));
-  *should_be_created = true;
-  return true;
-#endif  // BUILDFLAG(IS_CHROMEOS_DEVICE)
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 base::FilePath& GetInvalidSpecifiedUserDataDirInternal() {
   static base::NoDestructor<base::FilePath> s;
@@ -193,10 +164,6 @@ bool PathProvider(int key, base::FilePath* result) {
 // Only use /var/log/chrome on IS_CHROMEOS_DEVICE builds. For non-device
 // ChromeOS builds we fall back to the #else below and store relative to the
 // default user-data directory.
-#if BUILDFLAG(IS_CHROMEOS_DEVICE)
-      // ChromeOS uses a separate directory. See http://crosbug.com/25089
-      cur = base::FilePath("/var/log/chrome");
-#else
       // The crash reports are always stored relative to the default user data
       // directory.  This avoids the problem of having to re-initialize the
       // exception handler after parsing command line options, which may
@@ -206,7 +173,6 @@ bool PathProvider(int key, base::FilePath* result) {
       if (!GetDefaultUserDataDirectory(&cur)) {
         return false;
       }
-#endif
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
 #else
@@ -221,23 +187,6 @@ bool PathProvider(int key, base::FilePath* result) {
       cur = cur.Append(FILE_PATH_LITERAL("Local Traces"));
       create_dir = true;
       break;
-#if BUILDFLAG(IS_WIN)
-    case chrome::DIR_WATCHER_DATA:
-      // The watcher data is always stored relative to the default user data
-      // directory.  This allows the watcher to be initialized before
-      // command-line options have been parsed.
-      if (!GetDefaultUserDataDirectory(&cur)) {
-        return false;
-      }
-      cur = cur.Append(FILE_PATH_LITERAL("Diagnostics"));
-      break;
-    case chrome::DIR_ROAMING_USER_DATA:
-      if (!GetDefaultRoamingUserDataDirectory(&cur)) {
-        return false;
-      }
-      create_dir = true;
-      break;
-#endif
     case chrome::DIR_RESOURCES:
 #if BUILDFLAG(IS_MAC)
       cur = base::apple::FrameworkBundlePath();
@@ -250,19 +199,11 @@ bool PathProvider(int key, base::FilePath* result) {
 #endif
       break;
     case chrome::DIR_APP_DICTIONARIES:
-#if !BUILDFLAG(IS_WIN)
       // On most platforms, we can't write into the directory where
       // binaries are stored, so keep dictionaries in the user data dir.
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur)) {
         return false;
       }
-#else
-      // TODO(crbug.com/40840089): Migrate Windows to use `DIR_USER_DATA` like
-      // other platforms.
-      if (!base::PathService::Get(base::DIR_EXE, &cur)) {
-        return false;
-      }
-#endif
       cur = cur.Append(FILE_PATH_LITERAL("Dictionaries"));
       create_dir = true;
       break;
@@ -324,14 +265,6 @@ bool PathProvider(int key, base::FilePath* result) {
 #endif
       break;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    case chrome::DIR_CHROMEOS_CRD_DATA:
-      if (!GetChromeOsCrdDataDirInternal(&cur,
-                                         /*should_be_created=*/&create_dir)) {
-        return false;
-      }
-      break;
-#endif
 
     // The following are only valid in the development environment, and
     // will fail if executed from an installed executable (because the
@@ -469,11 +402,6 @@ bool PathProvider(int key, base::FilePath* result) {
       cur = cur.Append(kGCMStoreDirname);
       break;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    case chrome::FILE_CHROME_OS_DEVICE_REFRESH_TOKEN:
-      cur = base::FilePath(kDeviceRefreshTokenFilePath);
-      break;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     case chrome::DIR_OPTIMIZATION_GUIDE_PREDICTION_MODELS:
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur)) {

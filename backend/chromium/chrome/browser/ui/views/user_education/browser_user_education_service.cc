@@ -133,9 +133,6 @@
 #include "components/plus_addresses/core/browser/resources/vector_icons.h"
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/user_education/views/help_bubble_factory_views_ash.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "components/user_education/views/help_bubble_factory_mac.h"
@@ -282,13 +279,6 @@ void RegisterChromeHelpBubbleFactories(
     user_education::HelpBubbleFactoryRegistry& registry) {
   const user_education::HelpBubbleDelegate* const delegate =
       GetHelpBubbleDelegate();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Try to create an Ash-specific help bubble first. Note that an Ash-specific
-  // help bubble will only take precedence over a standard Views-specific help
-  // bubble if the tracked element's help bubble context is explicitly set to
-  // `ash::HelpBubbleContext::kAsh`.
-  registry.MaybeRegister<ash::HelpBubbleFactoryViewsAsh>(delegate);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   // Autofill bubbles require special handling.
   registry.MaybeRegister<AutofillHelpBubbleFactory>(delegate);
   registry.MaybeRegister<user_education::HelpBubbleFactoryViews>(delegate);
@@ -838,12 +828,7 @@ void MaybeRegisterChromeFeaturePromos(
   registry.RegisterFeature(std::move(
       FeaturePromoSpecification::CreateForToastPromo(
           feature_engagement::kIPHPasswordsSavePrimingPromoFeature,
-#if BUILDFLAG(IS_CHROMEOS)
-          // No avatar button on ChromeOS, so anchor to app menu instead.
-          kToolbarAppMenuButtonElementId,
-#else
           kToolbarAvatarButtonElementId,
-#endif
           IDS_PASSWORDS_SAVE_PRIMING_PROMO_BODY_TEMPLATE,
           IDS_PASSWORDS_SAVE_PRIMING_PROMO_SCREENREADER,
           FeaturePromoSpecification::AcceleratorInfo())
@@ -978,7 +963,6 @@ void MaybeRegisterChromeFeaturePromos(
                                  "Triggered when a bookmark is added from the "
                                  "bookmark page action in omnibox.")));
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // kIPHSwitchProfileFeature:
   registry.RegisterFeature(FeaturePromoSpecification::CreateForToastPromo(
       feature_engagement::kIPHProfileSwitchFeature,
@@ -1010,7 +994,6 @@ void MaybeRegisterChromeFeaturePromos(
           .SetBubbleArrow(HelpBubbleArrow::kTopRight)
           .SetBubbleIcon(&vector_icons::kCelebrationIcon)
           .SetReshowPolicy(base::Days(14), /*max_show_count=*/6)));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // kIPHPwaQuietNotificationFeature:
   registry.RegisterFeature(std::move(

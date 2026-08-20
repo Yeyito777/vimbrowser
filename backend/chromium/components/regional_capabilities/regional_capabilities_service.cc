@@ -214,10 +214,6 @@ std::pair<CountryId, LoadedCountrySource> SelectCountryId(
 // the program checks.
 Program CountryIdToProgram(const CountryId& country_id) {
   static constexpr Program kCountryDerivedPrograms[] = {
-#if BUILDFLAG(IS_IOS)
-      // Only iOS can derive Taiyaki scope directly from the country.
-      Program::kTaiyaki,
-#endif
 
       Program::kWaffle,
   };

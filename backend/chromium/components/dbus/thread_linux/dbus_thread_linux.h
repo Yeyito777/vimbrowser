@@ -9,9 +9,6 @@
 #include "base/memory/scoped_refptr.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#error On ChromeOS, use DBusThreadManager instead.
-#endif
 
 namespace dbus {
 class Bus;

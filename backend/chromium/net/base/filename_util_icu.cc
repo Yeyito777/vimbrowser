@@ -79,13 +79,6 @@ base::FilePath GenerateFileName(const GURL& url,
       default_file_name, should_replace_extension,
       &base::i18n::ReplaceIllegalCharactersInPath));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // When doing file manager operations on ChromeOS, the file paths get
-  // normalized in WebKit layer, so let's ensure downloaded files have
-  // normalized names. Otherwise, we won't be able to handle files with NFD
-  // utf8 encoded characters in name.
-  base::i18n::NormalizeFileNameEncoding(&generated_name);
-#endif
 
   DCHECK(!generated_name.empty());
 

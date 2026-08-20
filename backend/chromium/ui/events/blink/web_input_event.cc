@@ -18,9 +18,6 @@
 #include "ui/events/event_utils.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/events/blink/web_input_event_builders_win.h"
-#endif
 
 namespace ui {
 
@@ -45,28 +42,6 @@ blink::WebGestureEvent MakeWebGestureEventFromUIEvent(
 
 }  // namespace
 
-#if BUILDFLAG(IS_WIN)
-// On Windows, we can just use the builtin WebKit factory methods to fully
-// construct our pre-translated events.
-
-blink::WebMouseEvent MakeUntranslatedWebMouseEventFromNativeEvent(
-    const PlatformEvent& native_event,
-    const base::TimeTicks& time_stamp,
-    blink::WebPointerProperties::PointerType pointer_type) {
-  return WebMouseEventBuilder::Build(native_event.hwnd, native_event.message,
-                                     native_event.wParam, native_event.lParam,
-                                     time_stamp, pointer_type);
-}
-
-blink::WebMouseWheelEvent MakeUntranslatedWebMouseWheelEventFromNativeEvent(
-    const PlatformEvent& native_event,
-    const base::TimeTicks& time_stamp,
-    blink::WebPointerProperties::PointerType pointer_type) {
-  return WebMouseWheelEventBuilder::Build(
-      native_event.hwnd, native_event.message, native_event.wParam,
-      native_event.lParam, time_stamp, pointer_type);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 blink::WebKeyboardEvent MakeWebKeyboardEventFromUiEvent(const KeyEvent& event) {
   WebInputEvent::Type type = WebInputEvent::Type::kUndefined;
@@ -229,17 +204,7 @@ blink::WebMouseWheelEvent MakeWebMouseWheelEventFromUiEvent(
 blink::WebMouseEvent MakeWebMouseEvent(const MouseEvent& event) {
   // Construct an untranslated event from the platform event data.
   blink::WebMouseEvent webkit_event =
-#if BUILDFLAG(IS_WIN)
-      // On Windows we have WM_ events coming from desktop and pure Events
-      // coming from metro mode.
-      event.native_event().message && (event.type() != EventType::kMouseExited)
-          ? MakeUntranslatedWebMouseEventFromNativeEvent(
-                event.native_event(), event.time_stamp(),
-                event.pointer_details().pointer_type)
-          : MakeWebMouseEventFromUiEvent(event);
-#else
       MakeWebMouseEventFromUiEvent(event);
-#endif
 
   webkit_event.UpdateEventModifiersToMatchButton();
 
@@ -252,11 +217,6 @@ blink::WebMouseEvent MakeWebMouseEvent(const MouseEvent& event) {
     webkit_event.is_raw_movement_event = true;
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (event.native_event().message && event.type() != EventType::kMouseExited) {
-    return webkit_event;
-  }
-#endif
 
   const gfx::PointF screen_point = GetScreenLocationFromEvent(event);
   webkit_event.SetPositionInScreen(screen_point.x(), screen_point.y());
@@ -265,18 +225,8 @@ blink::WebMouseEvent MakeWebMouseEvent(const MouseEvent& event) {
 }
 
 blink::WebMouseWheelEvent MakeWebMouseWheelEvent(const MouseWheelEvent& event) {
-#if BUILDFLAG(IS_WIN)
-  // Construct an untranslated event from the platform event data.
-  blink::WebMouseWheelEvent webkit_event =
-      event.native_event().message
-          ? MakeUntranslatedWebMouseWheelEventFromNativeEvent(
-                event.native_event(), event.time_stamp(),
-                event.pointer_details().pointer_type)
-          : MakeWebMouseWheelEventFromUiEvent(event);
-#else
   blink::WebMouseWheelEvent webkit_event =
       MakeWebMouseWheelEventFromUiEvent(event);
-#endif
 
   // Replace the event's coordinate fields with translated position data from
   // |event|.
@@ -289,18 +239,8 @@ blink::WebMouseWheelEvent MakeWebMouseWheelEvent(const MouseWheelEvent& event) {
 }
 
 blink::WebMouseWheelEvent MakeWebMouseWheelEvent(const ScrollEvent& event) {
-#if BUILDFLAG(IS_WIN)
-  // Construct an untranslated event from the platform event data.
-  blink::WebMouseWheelEvent webkit_event =
-      event.native_event().message
-          ? MakeUntranslatedWebMouseWheelEventFromNativeEvent(
-                event.native_event(), event.time_stamp(),
-                event.pointer_details().pointer_type)
-          : MakeWebMouseWheelEventFromUiEvent(event);
-#else
   blink::WebMouseWheelEvent webkit_event =
       MakeWebMouseWheelEventFromUiEvent(event);
-#endif
 
   // Replace the event's coordinate fields with translated position data from
   // |event|.
@@ -321,19 +261,6 @@ blink::WebKeyboardEvent MakeWebKeyboardEvent(const KeyEvent& event) {
   // is_char() == true. We need to pass the KeyEvent to the X11 function
   // to detect this case so the right event type can be constructed.
   blink::WebKeyboardEvent webkit_event = MakeWebKeyboardEventFromUiEvent(event);
-#if BUILDFLAG(IS_WIN)
-  if (event.HasNativeEvent()) {
-    const PlatformEvent& native_event = event.native_event();
-
-    // System key events are explicitly distinguished, under Windows.
-    webkit_event.is_system_key = native_event.message == WM_SYSCHAR ||
-                                 native_event.message == WM_SYSKEYDOWN ||
-                                 native_event.message == WM_SYSKEYUP;
-
-    // Copy the OEM scancode, including flag bits, directly from the event.
-    webkit_event.native_key_code = static_cast<int>(native_event.lParam);
-  }
-#endif
   return webkit_event;
 }
 

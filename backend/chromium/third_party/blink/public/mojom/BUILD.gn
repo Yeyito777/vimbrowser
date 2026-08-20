@@ -287,10 +287,6 @@ mojom("mojom_platform") {
     "worker/worklet_global_scope_creation_params.mojom",
   ]
 
-  if (is_win) {
-    sources += [ "dwrite_font_proxy/dwrite_font_proxy.mojom" ]
-  }
-
   if (is_mac) {
     sources += [ "input/text_input_host.mojom" ]
   }

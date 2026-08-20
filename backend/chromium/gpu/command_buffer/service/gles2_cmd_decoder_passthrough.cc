@@ -42,9 +42,6 @@
 #include "ui/gl/progress_reporter.h"
 #include "ui/gl/scoped_make_current.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/service/shared_image/d3d_image_backing_factory.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace gpu {
 namespace gles2 {
@@ -838,14 +835,8 @@ gpu::ContextResult GLES2DecoderPassthroughImpl::Initialize(
     static constexpr const char* kRequiredFunctionalityExtensions[] = {
         "GL_ANGLE_blob_cache",
         "GL_ANGLE_framebuffer_blit",
-#if BUILDFLAG(IS_FUCHSIA)
-        "GL_ANGLE_memory_object_fuchsia",
-#endif
         "GL_ANGLE_memory_size",
         "GL_ANGLE_native_id",
-#if BUILDFLAG(IS_FUCHSIA)
-        "GL_ANGLE_semaphore_fuchsia",
-#endif
         "GL_ANGLE_texture_storage_external",
         "GL_ANGLE_texture_usage",
         "GL_CHROMIUM_bind_uniform_location",
@@ -893,11 +884,6 @@ gpu::ContextResult GLES2DecoderPassthroughImpl::Initialize(
           "GL_EXT_unpack_subimage",
           "GL_KHR_parallel_shader_compile",
           "GL_KHR_robust_buffer_access_behavior",
-#if BUILDFLAG(IS_CHROMEOS)
-          // Required for Webgl to display in overlay on ChromeOS devices.
-          // TODO(crbug.com/40244202): Consider for other platforms.
-          "GL_MESA_framebuffer_flip_y",
-#endif
           "GL_NV_pack_subimage",
           "GL_OES_depth32",
           "GL_OES_packed_depth_stencil",
@@ -1319,9 +1305,6 @@ gpu::Capabilities GLES2DecoderPassthroughImpl::GetCapabilities() {
   caps.mesa_framebuffer_flip_y =
       feature_info_->feature_flags().mesa_framebuffer_flip_y;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  PopulateDRMCapabilities(&caps, feature_info_.get());
-#endif
 
   return caps;
 }
@@ -1567,13 +1550,6 @@ void GLES2DecoderPassthroughImpl::BeginDecoding() {
   gpu_trace_commands_ = gpu_tracer_->IsTracing() && *gpu_decoder_category_;
   gpu_debug_commands_ = log_commands() || debug() || gpu_trace_commands_;
 
-#if BUILDFLAG(IS_WIN)
-  if (!resources_->ResumeSharedImageAccessIfNeeded(api())) {
-    LOG(ERROR) << "  GLES2DecoderPassthroughImpl: Failed to resume shared "
-                  "image access.";
-    group_->LoseContexts(error::kUnknown);
-  }
-#endif
 
   auto it = active_queries_.find(GL_COMMANDS_ISSUED_CHROMIUM);
   if (it != active_queries_.end()) {
@@ -1591,9 +1567,6 @@ void GLES2DecoderPassthroughImpl::EndDecoding() {
     api()->glFramebufferPixelLocalStorageInterruptANGLEFn();
   }
 
-#if BUILDFLAG(IS_WIN)
-  resources_->SuspendSharedImageAccessIfNeeded();
-#endif
 
   gpu_tracer_->EndDecoding();
 

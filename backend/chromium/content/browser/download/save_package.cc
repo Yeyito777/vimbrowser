@@ -87,14 +87,7 @@ const char kDefaultSaveName[] = "saved_resource";
 // name-conflict files which has same base file name.
 const int32_t kMaxFileOrdinalNumber = 9999;
 
-#if BUILDFLAG(IS_WIN)
-// Maximum length for file path. Since Windows have MAX_PATH limitation for
-// file path, we need to make sure length of file path of every saved file
-// is less than MAX_PATH.
-const uint32_t kMaxFilePathLength = MAX_PATH - 1;
-// Maximum component length for NTFS/FAT32 compatibility.
-const uint32_t kMaxComponentLength = 255;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 const uint32_t kMaxFilePathLength = PATH_MAX - 1;
 #endif
 
@@ -416,10 +409,7 @@ uint32_t SavePackage::ComputeMaxPathLengthForDirectory(
     max_component_length = static_cast<uint32_t>(runtime_max);
   } else {
     // Fall back to platform defaults if query fails.
-#if BUILDFLAG(IS_WIN)
-    // NTFS/FAT32 compatible.
-    max_component_length = kMaxComponentLength;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     // Standard POSIX limit.
     max_component_length = NAME_MAX;
 #endif
@@ -434,9 +424,7 @@ uint32_t SavePackage::GetMaxPathLengthForDirectory() const {
   // Use platform defaults to avoid blocking I/O during save operations.
   uint32_t max_component_length;
 
-#if BUILDFLAG(IS_WIN)
-  max_component_length = kMaxComponentLength;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   max_component_length = NAME_MAX;
 #endif
 
@@ -466,13 +454,6 @@ bool SavePackage::TruncateBaseNameToFitPathConstraints(
 
   // Limited room. Truncate |base_name| to fit, respecting character boundaries.
   if (available_length > 0) {
-#if BUILDFLAG(IS_WIN)
-    // On Windows, FilePath uses UTF-16, so truncate at UTF-16 code unit
-    // boundaries.
-    if (static_cast<size_t>(available_length) < base_name->length()) {
-      *base_name = base_name->substr(0, available_length);
-    }
-#else
     // On POSIX, FilePath uses native encoding (usually UTF-8)
     // Convert to UTF-8, truncate safely, then convert back.
     std::string utf8_name = base::FilePath(*base_name).AsUTF8Unsafe();
@@ -490,7 +471,6 @@ bool SavePackage::TruncateBaseNameToFitPathConstraints(
       // as a last resort (this should be rare).
       *base_name = base_name->substr(0, available_length);
     }
-#endif
     return true;
   }
 
@@ -1557,14 +1537,6 @@ void SavePackage::OnPathPicked(
   // Ensure the filename is safe.
   saved_main_file_path_ = params.file_path;
 
-#if BUILDFLAG(IS_ANDROID)
-  if (saved_main_file_path_.IsContentUri()) {
-    save_type_ = SAVE_PAGE_TYPE_AS_MHTML;
-    saved_main_file_display_name_ = params.display_name;
-    Init(std::move(download_created_callback));
-    return;
-  }
-#endif
   // TODO(asanka): This call may block on IO and shouldn't be made
   // from the UI thread.  See http://crbug.com/61827.
   std::string mime_type =

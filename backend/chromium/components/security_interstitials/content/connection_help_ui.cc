@@ -60,17 +60,9 @@ ConnectionHelpUI::ConnectionHelpUI(content::WebUI* web_ui)
                                   IDS_CONNECTION_HELP_INCORRECT_CLOCK_DETAILS);
 
 // The superfish section should only be added on Windows.
-#if BUILDFLAG(IS_WIN)
-  html_source->AddBoolean("isWindows", true);
-  html_source->AddLocalizedString("connectionHelpMitmSoftwareTitle",
-                                  IDS_CONNECTION_HELP_MITM_SOFTWARE_TITLE);
-  html_source->AddLocalizedString("connectionHelpMitmSoftwareDetails",
-                                  IDS_CONNECTION_HELP_MITM_SOFTWARE_DETAILS);
-#else
   html_source->AddBoolean("isWindows", false);
   html_source->AddString("connectionHelpMitmSoftwareTitle", "");
   html_source->AddString("connectionHelpMitmSoftwareDetails", "");
-#endif
 
   html_source->AddLocalizedString("connectionHelpShowMore",
                                   IDS_CONNECTION_HELP_SHOW_MORE);

@@ -39,37 +39,4 @@ mojom("mojom") {
       ]
     },
   ]
-
-  if (is_chromeos) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "printing.mojom.AdvancedCapability"
-            cpp = "::printing::AdvancedCapability"
-          },
-          {
-            mojom = "printing.mojom.AdvancedCapabilityValue"
-            cpp = "::printing::AdvancedCapabilityValue"
-          },
-        ]
-      },
-    ]
-  }
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "printing.mojom.PageOutputQualityAttribute"
-            cpp = "::printing::PageOutputQualityAttribute"
-          },
-          {
-            mojom = "printing.mojom.PageOutputQuality"
-            cpp = "::printing::PageOutputQuality"
-          },
-        ]
-      },
-    ]
-  }
 }

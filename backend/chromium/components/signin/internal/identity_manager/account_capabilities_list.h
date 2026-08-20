@@ -48,68 +48,38 @@ ACCOUNT_CAPABILITY(kCanFetchFamilyMemberInfoCapabilityName,
                    CAN_FETCH_FAMILY_MEMBER_INFO_CAPABILITY_NAME,
                    "accountcapabilities/ge2dinbnmnqxa")
 
-#if !BUILDFLAG(IS_IOS)
 ACCOUNT_CAPABILITY(kCanHaveEmailAddressDisplayedCapabilityName,
                    CAN_HAVE_EMAIL_ADDRESS_DISPLAYED_CAPABILITY_NAME,
                    "accountcapabilities/haytqlldmfya")
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 ACCOUNT_CAPABILITY(kCanMakeChromeSearchEngineChoiceScreenChoice,
                    CAN_MAKE_CHROME_SEARCH_ENGINE_CHOICE_SCREEN_CHOICE,
                    "accountcapabilities/ge4tenznmnqxa")
-#endif
 
-#if !BUILDFLAG(IS_IOS)
 ACCOUNT_CAPABILITY(kCanRunChromePrivacySandboxTrialsCapabilityName,
                    CAN_RUN_CHROME_PRIVACY_SANDBOX_TRIALS_CAPABILITY_NAME,
                    "accountcapabilities/gu2dqlldmfya")
-#endif
 
 ACCOUNT_CAPABILITY(
     kCanShowHistorySyncOptInsWithoutMinorModeRestrictionsCapabilityName,
     CAN_SHOW_HISTORY_SYNC_OPT_INS_WITHOUT_MINOR_MODE_RESTRICTIONS_CAPABILITY_NAME,
     "accountcapabilities/gi2tklldmfya")
 
-#if BUILDFLAG(IS_CHROMEOS)
-ACCOUNT_CAPABILITY(kCanToggleAutoUpdatesName,
-                   CAN_TOGGLE_AUTO_UPDATES_NAME,
-                   "accountcapabilities/gu4dmlldmfya")
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-ACCOUNT_CAPABILITY(kCanUseChromeOSGenerativeAi,
-                   CAN_USE_CHROMEOS_GENERATIVE_AI,
-                   "accountcapabilities/ge3dgmjnmnqxa")
-#endif
 
-#if !BUILDFLAG(IS_IOS)
 ACCOUNT_CAPABILITY(kCanUseDevToolsGenerativeAiFeaturesCapabilityName,
                    CAN_USE_DEVTOOLS_GENERATIVE_AI_FEATURES_CAPABILITY_NAME,
                    "accountcapabilities/geztenjnmnqxa")
-#endif
 
-#if !BUILDFLAG(IS_IOS)
 ACCOUNT_CAPABILITY(kCanUseEduFeaturesCapabilityName,
                    CAN_USE_EDU_FEATURES_CAPABILITY_NAME,
                    "accountcapabilities/gezdsmbnmnqxa")
-#endif
 
 ACCOUNT_CAPABILITY(kCanUseGeminiInChromeCapabilityName,
                    CAN_USE_GEMINI_IN_CHROME_CAPABILITY_NAME,
                    "accountcapabilities/giytmnrnmnqxa")
 
-#if BUILDFLAG(IS_CHROMEOS)
-ACCOUNT_CAPABILITY(kCanUseGenerativeAiInRecorderApp,
-                   CAN_USE_GENERATIVE_AI_IN_RECORDER_APP,
-                   "accountcapabilities/ge2tkobnmnqxa")
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-ACCOUNT_CAPABILITY(kCanUseGenerativeAiPhotoEditing,
-                   CAN_USE_GENERATIVE_AI_PHOTO_EDITING,
-                   "accountcapabilities/ge3dgobnmnqxa")
-#endif
 
 ACCOUNT_CAPABILITY(kCanUseMantaServiceName,
                    CAN_USE_MANTA_SERVICE_NAME,
@@ -149,19 +119,7 @@ ACCOUNT_CAPABILITY(kIsSubjectToParentalControlsCapabilityName,
                    IS_SUBJECT_TO_PARENTAL_CONTROLS_CAPABILITY_NAME,
                    "accountcapabilities/guydolldmfya")
 
-#if BUILDFLAG(IS_IOS)
-ACCOUNT_CAPABILITY_F(kCanContextuallyUseModelExecutionFeaturesName,
-                     CAN_CONTEXTUALLY_USE_MODEL_EXECUTION_FEATURES_NAME,
-                     "accountcapabilities/giztinznmnqxa",
-                     switches::kReadContextualAccountCapabilities)
-#endif
 
-#if BUILDFLAG(IS_IOS)
-ACCOUNT_CAPABILITY_F(kCanSignInToChromeCapabilityName,
-                     CAN_SIGN_IN_TO_CHROME_CAPABILITY_NAME,
-                     "accountcapabilities/giztambnmnqxa",
-                     switches::kEnforceCanSignInToChromeCapability)
-#endif
 
 #if !defined(NDEBUG)
 // This is a fake account capability, used for unit tests only.

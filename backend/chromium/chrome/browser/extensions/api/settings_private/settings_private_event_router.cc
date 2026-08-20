@@ -48,9 +48,6 @@ void SettingsPrivateEventRouter::Shutdown() {
   EventRouter::Get(context_)->UnregisterObserver(this);
 
   if (listening_) {
-#if BUILDFLAG(IS_CHROMEOS)
-    cros_settings_subscription_map_.clear();
-#endif
     const PrefsUtil::TypedPrefMap& keys = prefs_util_->GetAllowlistedKeys();
     settings_private::GeneratedPrefs* generated_prefs =
         settings_private::GeneratedPrefsFactory::GetForBrowserContext(context_);
@@ -100,16 +97,6 @@ void SettingsPrivateEventRouter::StartOrStopListeningForPrefsChanges() {
     for (const auto& it : keys) {
       std::string pref_name = it.first;
       if (prefs_util_->IsCrosSetting(pref_name)) {
-#if BUILDFLAG(IS_CHROMEOS)
-        base::CallbackListSubscription subscription =
-            ash::CrosSettings::Get()->AddSettingsObserver(
-                pref_name.c_str(),
-                base::BindRepeating(
-                    &SettingsPrivateEventRouter::OnPreferenceChanged,
-                    base::Unretained(this), pref_name));
-        cros_settings_subscription_map_.insert(
-            make_pair(pref_name, std::move(subscription)));
-#endif
       } else if (generated_prefs && generated_prefs->HasPref(pref_name)) {
         generated_prefs->AddObserver(pref_name, this);
       } else {
@@ -123,9 +110,6 @@ void SettingsPrivateEventRouter::StartOrStopListeningForPrefsChanges() {
     const PrefsUtil::TypedPrefMap& keys = prefs_util_->GetAllowlistedKeys();
     for (const auto& it : keys) {
       if (prefs_util_->IsCrosSetting(it.first)) {
-#if BUILDFLAG(IS_CHROMEOS)
-        cros_settings_subscription_map_.erase(it.first);
-#endif
       } else if (generated_prefs && generated_prefs->HasPref(it.first)) {
         generated_prefs->RemoveObserver(it.first, this);
       } else {

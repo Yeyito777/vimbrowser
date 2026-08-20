@@ -13,10 +13,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/metrics/histogram_macros.h"
-#include "chromeos/ash/components/memory/pressure/system_memory_pressure_evaluator.h"
-#endif
 
 namespace performance_manager::policies {
 
@@ -24,16 +20,6 @@ namespace {
 
 bool g_disabled_for_testing = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<memory_pressure::ReclaimTarget> GetReclaimTarget() {
-  std::optional<memory_pressure::ReclaimTarget> reclaim_target = std::nullopt;
-  auto* evaluator = ash::memory::SystemMemoryPressureEvaluator::Get();
-  if (evaluator) {
-    reclaim_target = evaluator->GetCachedReclaimTarget();
-  }
-  return reclaim_target;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -67,34 +53,6 @@ void UrgentPageDiscardingPolicy::OnTakenFromGraph(Graph* graph) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void UrgentPageDiscardingPolicy::OnReclaimTarget(
-    base::TimeTicks on_memory_pressure_at,
-    std::optional<memory_pressure::ReclaimTarget> reclaim_target) {
-  bool discard_protected_pages = true;
-  std::optional<base::TimeTicks> origin_time = std::nullopt;
-  if (reclaim_target) {
-    discard_protected_pages = reclaim_target->discard_protected;
-    origin_time = reclaim_target->origin_time;
-  }
-  std::optional<base::TimeTicks> first_discarded_at =
-      PageDiscardingHelper::GetFromGraph(GetOwningGraph())
-          ->DiscardMultiplePages(
-              reclaim_target, discard_protected_pages,
-              DiscardEligibilityPolicy::DiscardReason::URGENT);
-
-  if (origin_time && first_discarded_at) {
-    base::TimeDelta reclaim_arrival_duration =
-        on_memory_pressure_at - *origin_time;
-    DEPRECATED_UMA_HISTOGRAM_MEDIUM_TIMES("Discarding.ReclaimArrivalLatency",
-                                          reclaim_arrival_duration);
-    base::TimeDelta discard_duration =
-        *first_discarded_at - on_memory_pressure_at;
-    DEPRECATED_UMA_HISTOGRAM_MEDIUM_TIMES("Discarding.DiscardLatency",
-                                          discard_duration);
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void UrgentPageDiscardingPolicy::DisableForTesting() {
   g_disabled_for_testing = true;
@@ -140,16 +98,8 @@ void UrgentPageDiscardingPolicy::HandleMemoryPressureEvent() {
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::TimeTicks on_memory_pressure_at = base::TimeTicks::Now();
-  // Chrome OS memory pressure evaluator provides the memory reclaim target to
-  // leave critical memory pressure. When Chrome OS is under heavy memory
-  // pressure, discards multiple tabs to meet the memory reclaim target.
-  OnReclaimTarget(on_memory_pressure_at, GetReclaimTarget());
-#else
   PageDiscardingHelper::GetFromGraph(GetOwningGraph())
       ->DiscardAPage(DiscardEligibilityPolicy::DiscardReason::URGENT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace performance_manager::policies

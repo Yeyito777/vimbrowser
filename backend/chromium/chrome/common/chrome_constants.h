@@ -35,11 +35,6 @@ extern const base::FilePath::CharType kFrameworkExecutableName[];
 // kept in sync with the value in alert_helper_params (//chrome/BUILD.gn).
 extern const char kMacHelperSuffixAlerts[];
 #endif  // BUILDFLAG(IS_MAC)
-#if BUILDFLAG(IS_WIN)
-extern const base::FilePath::CharType kBrowserResourcesDll[];
-extern const base::FilePath::CharType kElfDll[];
-extern const base::FilePath::CharType kStatusTrayWindowClass[];
-#endif  // BUILDFLAG(IS_WIN)
 
 extern const char kInitialProfile[];
 extern const char kMultiProfileDirPrefix[];
@@ -86,16 +81,8 @@ extern const base::FilePath::CharType kVideoTutorialsStorageDirname[];
 extern const base::FilePath::CharType kWebAppDirname[];
 extern const base::FilePath::CharType kDeviceBoundSessionsFilename[];
 
-#if BUILDFLAG(IS_WIN)
-extern const base::FilePath::CharType kJumpListIconDirname[];
-#endif
 
 // directory names
-#if BUILDFLAG(IS_WIN)
-extern const wchar_t kUserDataDirname[];
-#elif BUILDFLAG(IS_ANDROID)
-extern const base::FilePath::CharType kOTRTempStateDirname[];
-#endif
 
 // Fraction of the soft process limit that can be consumed by extensions, before
 // additional extension processes are ignored. By allowing this many extension

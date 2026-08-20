@@ -60,72 +60,34 @@ config("runtime_library") {
 
   defines += [ "CR_LIBCXX_REVISION=$libcxx_revision" ]
 
-  if (is_win) {
-    # Intentionally not using libc++abi on Windows because libc++abi only
-    # implements the Itanium C++ ABI, and not the Microsoft ABI which we use on
-    # Windows (and we need to use in order to interoperate correctly with COM
-    # among other things).
-    assert(!export_libcxxabi_from_executables,
-           "Don't use libcxxabi on Windows.")
+  cflags_cc += [
+    "-nostdinc++",
+    "-isystem" + rebase_path("$libcxx_prefix/include", root_build_dir),
+    "-isystem" + rebase_path("$libcxxabi_prefix/include", root_build_dir),
+  ]
 
-    cflags_cc +=
-        [ "-I" + rebase_path("$libcxx_prefix/include", root_build_dir) ]
+  cflags_objcc = cflags_cc
 
-    # Add a debug visualizer for Microsoft's debuggers so that they can display
-    # libc++ types well.
-    if (libcxx_natvis_include) {
-      # chrome.natvis listed as an input in //buildtools/third_party/libc++ to
-      # guarantee relinking on changes.
-      ldflags += [ "/NATVIS:" + rebase_path("libc++.natvis", root_build_dir) ]
-    }
+  # Make sure we don't link against the system libstdc++ or libc++.
+  if (is_clang) {
+    ldflags += [ "-nostdlib++" ]
   } else {
-    cflags_cc += [
-      "-nostdinc++",
-      "-isystem" + rebase_path("$libcxx_prefix/include", root_build_dir),
-      "-isystem" + rebase_path("$libcxxabi_prefix/include", root_build_dir),
-    ]
+    # Gcc has a built-in abs() definition with default visibility.
+    # If it was not disabled, it would conflict with libc++'s abs()
+    # with hidden visibility.
+    cflags += [ "-fno-builtin-abs" ]
 
-    cflags_objcc = cflags_cc
+    ldflags += [ "-nodefaultlibs" ]
 
-    # Make sure we don't link against the system libstdc++ or libc++.
-    if (is_clang) {
-      ldflags += [ "-nostdlib++" ]
-    } else {
-      # Gcc has a built-in abs() definition with default visibility.
-      # If it was not disabled, it would conflict with libc++'s abs()
-      # with hidden visibility.
-      cflags += [ "-fno-builtin-abs" ]
-
-      ldflags += [ "-nodefaultlibs" ]
-
-      # Unfortunately, there's no way to disable linking against just libc++
-      # (gcc doesn't have -notstdlib++:
-      # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83931); -nodefaultlibs
-      # removes all of the default libraries, so add back the ones that we need.
-      libs += [
-        "c",
-        "gcc_s",
-        "m",
-        "rt",
-      ]
-    }
-  }
-
-  if (is_ios) {
-    swiftflags = [
-      # Prevent the swift compiler from leaking the system's default C++
-      # toolchain into the build.
-      "-Xcc=-nostdinc++",
-      "-Xcc=-nodefaultlibs",
-
-      # Add the path to our custom libc++ to the swift compiler. This is used
-      # when enabling the C++/Swift interoperability.
-      "-isystem",
-      rebase_path("//third_party/libc++/src/include", root_build_dir),
-      "-isystem",
-      rebase_path("//third_party/libc++abi/src/include", root_build_dir),
-      "-I",
-      rebase_path("//buildtools/third_party/libc++", root_build_dir),
+    # Unfortunately, there's no way to disable linking against just libc++
+    # (gcc doesn't have -notstdlib++:
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83931); -nodefaultlibs
+    # removes all of the default libraries, so add back the ones that we need.
+    libs += [
+      "c",
+      "gcc_s",
+      "m",
+      "rt",
     ]
   }
 

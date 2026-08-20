@@ -51,10 +51,6 @@ class GpuHostImplTestApi {
     void DidCreateContextSuccessfully() override;
     void MaybeShutdownGpuProcess() override;
     void DidUpdateGPUInfo(const gpu::GPUInfo& gpu_info) override;
-#if BUILDFLAG(IS_WIN)
-    void DidUpdateOverlayInfo(const gpu::OverlayInfo& overlay_info) override;
-    void DidUpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) override;
-#endif
     void BlockDomainsFrom3DAPIs(const std::set<GURL>& urls,
                                 gpu::DomainGuilt guilt) override;
     std::string GetIsolationKey(

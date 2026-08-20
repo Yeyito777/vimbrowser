@@ -36,8 +36,4 @@ source_set("idle") {
     "//content/public/browser",
     "//extensions/common/api",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/dbus/power" ]
-  }
 }

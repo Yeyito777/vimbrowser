@@ -47,16 +47,9 @@ bool ViewsTextServicesContextMenuBase::GetAcceleratorForCommandId(
     int command_id,
     ui::Accelerator* accelerator) const {
   if (command_id == IDS_CONTENT_CONTEXT_EMOJI) {
-#if BUILDFLAG(IS_WIN)
-    *accelerator = ui::Accelerator(ui::VKEY_OEM_PERIOD, ui::EF_COMMAND_DOWN);
-    return true;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     *accelerator = ui::Accelerator(ui::VKEY_SPACE,
                                    ui::EF_COMMAND_DOWN | ui::EF_CONTROL_DOWN);
-    return true;
-#elif BUILDFLAG(IS_CHROMEOS)
-    *accelerator = ui::Accelerator(ui::VKEY_SPACE,
-                                   ui::EF_SHIFT_DOWN | ui::EF_COMMAND_DOWN);
     return true;
 #else
     return false;

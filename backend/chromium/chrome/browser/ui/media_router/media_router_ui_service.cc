@@ -62,11 +62,6 @@ void MediaRouterUIService::ConfigureService() {
       action_controller_ =
           std::make_unique<CastToolbarButtonController>(profile_);
     }
-#if BUILDFLAG(IS_CHROMEOS)
-    // Ensure that MediaNotificationService is instantiated so that it can
-    // show the Cast device picker in Global Media Controls.
-    MediaNotificationServiceFactory::GetForProfile(profile_);
-#endif
   } else {
     DisableService();
   }

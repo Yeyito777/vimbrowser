@@ -81,10 +81,8 @@ content::WebUIDataSource* CreateAndAddHistoryUIHTMLSource(Profile* profile) {
       "replaceSyncPromosWithSignInPromos",
       base::FeatureList::IsEnabled(syncer::kReplaceSyncPromosWithSignInPromos));
 
-#if !BUILDFLAG(IS_CHROMEOS)
   source->AddBoolean("unoPhase2FollowUp",
                      base::FeatureList::IsEnabled(syncer::kUnoPhase2FollowUp));
-#endif  // BUILDFLAG!(IS_CHROMEOS)
 
   HistoryUtil::PopulateCommonSourceForHistory(source, profile);
 
@@ -147,10 +145,6 @@ content::WebUIDataSource* CreateAndAddHistoryUIHTMLSource(Profile* profile) {
   source->AddBoolean("isGlicWebActuationAvailable",
                      is_glic_web_actuation_available);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  source->AddLocalizedString("turnOnSyncButton",
-                             IDS_HISTORY_TURN_ON_SYNC_BUTTON);
-#else
   signin::IdentityManager* identity_manager =
       IdentityManagerFactory::GetForProfile(profile);
   bool has_primary_account =
@@ -189,7 +183,6 @@ content::WebUIDataSource* CreateAndAddHistoryUIHTMLSource(Profile* profile) {
        IDS_HISTORY_SYNC_PROMO_BODY_SIGN_IN_PENDING_SYNC_HISTORY_ON},
   };
   source->AddLocalizedStrings(kHistorySyncStrings);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool enable_history_embeddings =
       history_embeddings::IsHistoryEmbeddingsEnabledForProfile(profile);

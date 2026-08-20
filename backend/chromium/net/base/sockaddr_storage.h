@@ -9,10 +9,7 @@
 #include "build/build_config.h"
 #include "net/base/net_export.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <sys/socket.h>
 #include <sys/types.h>
 #endif

@@ -156,10 +156,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT RichNotificationData {
   // Large image to display on the notification. Optional.
   gfx::Image image;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The path to the file that backs `image`. Set if `image` is file backed.
-  std::optional<base::FilePath> image_path;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Small badge to display on the notification to illustrate the source of the
   // notification. Optional.
@@ -170,11 +166,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT RichNotificationData {
   // is in the views hierarchy or about to be passed to the OS.
   bool small_image_needs_additional_masking = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If true, we simply use the raw |small_image| icon, ignoring accent color
-  // styling. For example, this is used with raw icons received from Android.
-  bool ignore_accent_color_for_small_image = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Vector version of |small_image|.
   // Used by Notification::GenerateMaskedSmallIcon.
@@ -224,11 +215,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT RichNotificationData {
   // depending on visual assistance systems.
   bool should_make_spoken_feedback_for_popup_updates = true;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Flag if the notification is pinned. If true, the notification is pinned
-  // and the user can't remove it.
-  bool pinned = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Vibration pattern to play when displaying the notification. There must be
   // an odd number of entries in this pattern when it's set: numbers of
@@ -448,11 +434,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT Notification {
   const gfx::Image& image() const { return optional_fields_.image; }
   void SetImage(const gfx::Image& image);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_image_path(const base::FilePath& image_path) {
-    optional_fields_.image_path = image_path;
-  }
-#endif
 
   const gfx::Image& small_image() const { return optional_fields_.small_image; }
   void SetSmallImage(const gfx::Image& image);
@@ -516,15 +497,8 @@ class MESSAGE_CENTER_PUBLIC_EXPORT Notification {
   }
 
   bool pinned() const {
-#if BUILDFLAG(IS_CHROMEOS)
-    return optional_fields_.pinned;
-#else
     return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_pinned(bool pinned) { optional_fields_.pinned = pinned; }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Gets a text for spoken feedback.
   const std::u16string& accessible_name() const {
@@ -602,16 +576,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT Notification {
   // default state.
   void ClearGroupParent();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_system_notification_warning_level(
-      SystemNotificationWarningLevel warning_level) {
-    system_notification_warning_level_ = warning_level;
-  }
-
-  SystemNotificationWarningLevel system_notification_warning_level() const {
-    return system_notification_warning_level_;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const std::string& custom_view_type() const { return custom_view_type_; }
   void set_custom_view_type(const std::string& custom_view_type) {
@@ -682,11 +646,6 @@ class MESSAGE_CENTER_PUBLIC_EXPORT Notification {
   // this notification.
   ui::ElementIdentifier host_view_element_id_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The warning level of a system notification.
-  SystemNotificationWarningLevel system_notification_warning_level_ =
-      SystemNotificationWarningLevel::NORMAL;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace message_center

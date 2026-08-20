@@ -69,9 +69,6 @@ class FeedbackCommon : public base::RefCountedThreadSafe<FeedbackCommon> {
   // Mahi feature has the dedicated product id.
   static int GetMahiProductId();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static int GetChromeOSProductId();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Getters
   const std::optional<std::string>& mac_address() const { return mac_address_; }

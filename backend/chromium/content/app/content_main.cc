@@ -48,15 +48,6 @@
 #include "ui/base/ui_base_paths.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/process_startup_helper.h"
-#include "base/win/win_util.h"
-#include "base/win/windows_version.h"
-#include "ui/base/win/atl_module.h"
-#include "ui/gfx/switches.h"
-#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
 #include <locale.h>
@@ -123,16 +114,6 @@ bool IsSubprocess() {
 }
 
 void CommonSubprocessInit() {
-#if BUILDFLAG(IS_WIN)
-  // HACK: Let Windows know that we have started.  This is needed to suppress
-  // the IDC_APPSTARTING cursor from being displayed for a prolonged period
-  // while a subprocess is starting.
-  if (base::win::IsUser32AndGdi32Available()) {
-    PostThreadMessage(GetCurrentThreadId(), WM_NULL, 0, 0);
-    MSG msg;
-    PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-  }
-#endif
 
 #if !defined(OFFICIAL_BUILD) && BUILDFLAG(IS_WIN)
   base::RouteStdioToConsole(false);
@@ -211,9 +192,7 @@ int ContentMainInitialize(ContentMainParams params,
   // may re-run Main() without restarting the browser process. This flag
   // prevents initializing things more than once.
   static bool is_initialized = false;
-#if !BUILDFLAG(IS_ANDROID)
   DCHECK(!is_initialized);
-#endif
   if (is_initialized) {
     content_main_runner->ReInitializeParams(std::move(params));
   } else {
@@ -238,32 +217,22 @@ int ContentMainInitialize(ContentMainParams params,
     setenv("DBUS_SESSION_BUS_ADDRESS", "disabled:", kNoOverrideIfAlreadySet);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-    base::win::RegisterInvalidParamHandler();
-    ui::win::CreateATLModuleIfNeeded();
-#endif  // BUILDFLAG(IS_WIN)
 
-#if !BUILDFLAG(IS_ANDROID)
     // On Android, the command line is initialized when library is loaded.
     int argc = 0;
     const char** argv = nullptr;
 
-#if !BUILDFLAG(IS_WIN)
     // argc/argv are ignored on Windows; see command_line.h for details.
     argc = params.argc;
     argv = params.argv;
-#endif
 
     base::CommandLine::Init(argc, argv);
 
-#if BUILDFLAG(IS_POSIX)
     PopulateFileDescriptorStoreFromFdTable();
-#endif
 
     base::EnableTerminationOnHeapCorruption();
 
     base::SetProcessTitleFromCommandLine(argv);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
     InitTimeTicksAtUnixEpoch();
 
@@ -289,28 +258,11 @@ int ContentMainInitialize(ContentMainParams params,
     }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-    base::win::SetupCRT(*base::CommandLine::ForCurrentProcess());
-#endif
 
 #if BUILDFLAG(IS_MAC)
     InitializeMac();
 #endif
 
-#if BUILDFLAG(IS_IOS)
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    command_line->AppendSwitch(switches::kEnableViewport);
-    command_line->AppendSwitch(embedder_support::kUseMobileUserAgent);
-
-#if BUILDFLAG(IS_IOS_TVOS)
-    // Set tvOS to single-process mode by default.
-    command_line->AppendSwitch(switches::kSingleProcess);
-
-    // Enable spatial navigation; we interpret remote control swipes as arrow
-    // keys.
-    command_line->AppendSwitch(switches::kEnableSpatialNavigation);
-#endif
-#endif
 
 #if (BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)) && !defined(COMPONENT_BUILD)
     base::subtle::EnableFDOwnershipEnforcement(true);
@@ -323,20 +275,6 @@ int ContentMainInitialize(ContentMainParams params,
       return exit_code;
     }
 
-#if BUILDFLAG(IS_WIN)
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    if (command_line->HasSwitch(switches::kHeadless)) {
-      // When running in headless mode we want stdio routed however if
-      // console does not exist we should not create one.
-      base::RouteStdioToConsole(/*create_console_if_not_found*/ false);
-    } else if (command_line->HasSwitch(switches::kEnableLogging)) {
-      // Route stdio to parent console (if any) or create one, do not create a
-      // console in children if handles are being passed.
-      bool create_console = command_line->GetSwitchValueASCII(
-                                switches::kEnableLogging) != "handle";
-      base::RouteStdioToConsole(create_console);
-    }
-#endif
 
     static base::NoDestructor<TracingEnabledStateObserver> tracing_observer;
   }

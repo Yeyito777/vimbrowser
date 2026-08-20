@@ -63,11 +63,7 @@ Operation::Operation(base::WeakPtr<OperationManager> manager,
                      const base::FilePath& download_folder)
     : manager_(manager),
       extension_id_(extension_id),
-#if BUILDFLAG(IS_WIN)
-      device_path_(base::FilePath::FromUTF8Unsafe(device_path)),
-#else
       device_path_(device_path),
-#endif
       temp_dir_(std::make_unique<base::ScopedTempDir>()),
       stage_(image_writer_api::Stage::kUnknown),
       progress_(0),
@@ -110,12 +106,7 @@ void Operation::PostTask(base::OnceClosure task) {
 
 void Operation::Start() {
   DCHECK(IsRunningInCorrectSequence());
-#if BUILDFLAG(IS_CHROMEOS)
-  if (download_folder_.empty() ||
-      !temp_dir_->CreateUniqueTempDirUnderPath(download_folder_)) {
-#else
   if (!temp_dir_->CreateUniqueTempDir()) {
-#endif
     Error(error::kTempDirError);
     return;
   }
@@ -230,7 +221,6 @@ void Operation::CompleteAndContinue(base::OnceClosure continuation) {
   PostTask(std::move(continuation));
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void Operation::StartUtilityClient() {
   DCHECK(IsRunningInCorrectSequence());
   if (!image_writer_client_.get()) {
@@ -256,7 +246,6 @@ void Operation::WriteImageProgress(int64_t total_bytes, int64_t curr_bytes) {
     SetProgress(progress);
   }
 }
-#endif
 
 void Operation::GetMD5SumOfFile(
     const base::FilePath& file_path,

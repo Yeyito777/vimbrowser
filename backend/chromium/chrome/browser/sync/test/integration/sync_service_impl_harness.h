@@ -78,15 +78,12 @@ class SyncServiceImplHarness {
   // This is similar to click the reset button on chrome.google.com/data.
   [[nodiscard]] bool ResetSyncForPrimaryAccount();
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Signs out of the primary account. ChromeOS doesn't have the concept of
   // sign-out, so this only exists on other platforms.
   void SignOutPrimaryAccount();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // The underlying implementation for mimic-ing persistent auth errors isn't
   // implemented on Android, see https://crbug.com/1373448.
-#if !BUILDFLAG(IS_ANDROID)
   // Enters/exits the "Sync paused" state, which in real life happens if a
   // syncing user signs out of the content area.
   // TODO(crbug.com/401470426): Replace the usages with
@@ -100,7 +97,6 @@ class SyncServiceImplHarness {
   // Exits the "Sign-in pending" state and waits until the sync transport layer
   // is active. Returns true if successful.
   bool ExitSignInPendingStateForPrimaryAccount();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Enables and configures sync for all available datatypes. Returns true only
   // after sync has been fully initialized and authenticated, and we are ready
@@ -192,22 +188,12 @@ class SyncServiceImplHarness {
   [[nodiscard]] bool EnableSelectableType(syncer::UserSelectableType type);
   [[nodiscard]] bool DisableSelectableType(syncer::UserSelectableType type);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Enables a particular selectable OS type. The user must already be signed
-  // in, or this has no effect.
-  [[nodiscard]] bool EnableSelectableOsType(syncer::UserSelectableOsType type);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Enables/disables all available selectable types. The user must already be
   // signed in, or this has no effect.
   [[nodiscard]] bool EnableAllSelectableTypes();
   [[nodiscard]] bool DisableAllSelectableTypes();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Disables all available selectable OS types. The user must already be signed
-  // in, or this has no effect.
-  [[nodiscard]] bool DisableAllSelectableOsTypes();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns a snapshot of the current sync session.
   syncer::SyncCycleSnapshot GetLastCycleSnapshot() const;

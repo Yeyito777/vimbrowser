@@ -26,14 +26,7 @@
 #include "base/task/thread_pool.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/task/cancelable_task_tracker.h"
-#include "components/variations/variations_crash_keys_android.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/variations/variations_crash_keys_chromeos.h"
-#endif
 
 namespace variations {
 
@@ -118,11 +111,6 @@ class VariationsCrashKeys final : public base::FieldTrialList::Observer {
   scoped_refptr<base::SequencedTaskRunner> background_thread_task_runner_;
 #endif  // IS_CHROMEOS || IS_ANDROID
 
-#if BUILDFLAG(IS_ANDROID)
-  // A task tracker that allows us to cancel any tasks that have been posted
-  // but have not started to run.
-  base::CancelableTaskTracker cancelable_task_tracker_;
-#endif  // IS_ANDROID
 
   // A serialized string containing the variations state.
   std::string variations_string_;
@@ -269,14 +257,7 @@ void VariationsCrashKeys::UpdateCrashKeys() {
         variations::switches::kVariationsSeedVersion));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  SaveVariationsForAnrReporting(&cancelable_task_tracker_,
-                                background_thread_task_runner_, info);
-#endif  // IS_ANDROID
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ReportVariationsToChromeOs(background_thread_task_runner_, info);
-#endif  // IS_CHROMEOS
 }
 
 void VariationsCrashKeys::OnSyntheticTrialsChanged(

@@ -65,9 +65,6 @@ EstimateCpuThroughput();
 // current CPU core.
 BASE_EXPORT CpuFrequencyInfo GetCpuFrequencyInfo();
 
-#if BUILDFLAG(IS_WIN)
-BASE_EXPORT void GenerateCpuInfoForTracingMetadata(base::DictValue* metadata);
-#endif
 }  // namespace base
 
 #endif  // BASE_POWER_MONITOR_CPU_FREQUENCY_UTILS_H_

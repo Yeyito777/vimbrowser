@@ -42,16 +42,7 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "ui/base/resource/resource_bundle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/installer/util/google_update_settings.h"
-#include "components/language/core/browser/pref_names.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/settings/about_flags.h"
-#include "chromeos/ash/components/dbus/dbus_thread_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -170,23 +161,12 @@ void ChromeFeatureListCreator::CreatePrefService() {
       base::PathService::Get(chrome::FILE_LOCAL_STATE, &local_state_file);
   DCHECK(result);
 
-#if BUILDFLAG(IS_ANDROID)
-  base::UmaHistogramBoolean("UMA.Startup.LocalStateFileExistence",
-                            base::PathExists(local_state_file));
-#endif  // BUILDFLAG(IS_ANDROID)
 
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   RegisterLocalState(pref_registry.get());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // DBus must be initialized before constructing the policy connector.
-  CHECK(ash::DBusThreadManager::IsInitialized());
-  browser_policy_connector_ =
-      std::make_unique<policy::BrowserPolicyConnectorAsh>();
-#else
   browser_policy_connector_ =
       std::make_unique<policy::ChromeBrowserPolicyConnector>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // ManagementService needs Local State but creating local state needs
   // ManagementService, instantiate the underlying PrefStore early and share it
@@ -215,19 +195,6 @@ void ChromeFeatureListCreator::CreatePrefService() {
 // TODO(asvitkine): This is done here so that the pref is set before
 // VariationsService queries the locale. This should potentially be moved to
 // somewhere better, e.g. as a helper in first_run namespace.
-#if BUILDFLAG(IS_WIN)
-  if (first_run::IsChromeFirstRun()) {
-    // During first run we read the google_update registry key to find what
-    // language the user selected when downloading the installer. This
-    // becomes our default language in the prefs.
-    // Other platforms obey the system locale.
-    std::wstring install_lang;
-    if (GoogleUpdateSettings::GetLanguage(&install_lang)) {
-      local_state_->SetString(language::prefs::kApplicationLocale,
-                              base::WideToASCII(install_lang));
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void ChromeFeatureListCreator::ConvertFlagsToSwitches() {
@@ -237,18 +204,7 @@ void ChromeFeatureListCreator::ConvertFlagsToSwitches() {
   DCHECK(!ui::ResourceBundle::HasSharedInstance());
   TRACE_EVENT0("startup", "ChromeFeatureListCreator::ConvertFlagsToSwitches");
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, flags are passed on the command line when Chrome gets launched
-  // by session_manager. There are separate sets of flags for the login screen
-  // environment and user sessions. session_manager populates the former from
-  // signed device settings, while flags for user session are stored in
-  // preferences and applied via a chrome restart upon user login, see
-  // UserSessionManager::RestartToApplyPerSessionFlagsIfNeed for the latter.
-  ash::about_flags::ReadOnlyFlagsStorage flags_storage(
-      base::CommandLine::ForCurrentProcess());
-#else
   flags_ui::PrefServiceFlagsStorage flags_storage(local_state_.get());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   about_flags::ConvertFlagsToSwitches(&flags_storage,
                                       base::CommandLine::ForCurrentProcess(),
@@ -277,11 +233,6 @@ void ChromeFeatureListCreator::SetUpFieldTrials(
 
   metrics_services_manager_->InstantiateFieldTrialList();
   auto feature_list = std::make_unique<base::FeatureList>();
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the platform needs to be able to access the
-  // FeatureList::Accessor. On other platforms, this API should not be used.
-  cros_feature_list_accessor_ = feature_list->ConstructAccessor();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Associate parameters chosen in about:flags and create trial/group for them.
   flags_ui::PrefServiceFlagsStorage flags_storage(local_state_.get());

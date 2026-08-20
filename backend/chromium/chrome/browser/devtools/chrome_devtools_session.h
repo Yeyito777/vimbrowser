@@ -75,9 +75,6 @@ class ChromeDevToolsSession : public protocol::FrontendChannel {
   std::unique_ptr<StorageHandler> storage_handler_;
   std::unique_ptr<SystemInfoHandler> system_info_handler_;
   std::unique_ptr<TargetHandler> target_handler_;
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<WindowManagerHandler> window_manager_handler_;
-#endif
   raw_ptr<content::DevToolsAgentHostClientChannel> client_channel_;
 };
 

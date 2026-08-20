@@ -153,14 +153,7 @@ if (current_cpu == "x86" || current_cpu == "x64") {
       ]
     }
 
-    if (is_win) {
-      defines += [ "MSVC" ]
-      if (current_cpu == "x86") {
-        defines += [ "WIN32" ]
-      } else {
-        defines += [ "WIN64" ]
-      }
-    } else if (is_mac || is_ios) {
+    if (is_mac || is_ios) {
       defines += [ "MACHO" ]
     } else if (is_linux || is_fuchsia || is_chromeos) {
       defines += [ "ELF" ]
@@ -231,10 +224,6 @@ static_library("simd") {
 
     configs -= [ "//build/config/compiler:default_optimization" ]
     configs += [ "//build/config/compiler:optimize_speed" ]
-  }
-
-  if (is_win) {
-    cflags = [ "/wd4245" ]
   }
 }
 
@@ -509,9 +498,5 @@ if (build_with_chromium) {
       ":libjpeg_simd_config",
       "//build/config/compiler:no_chromium_code",
     ]
-
-    if (is_win) {
-      cflags = [ "-U_CRT_SECURE_NO_DEPRECATE" ]
-    }
   }
 }

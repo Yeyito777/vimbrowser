@@ -29,9 +29,6 @@
 #include "services/device/public/cpp/usb/usb_utils.h"
 #include "services/device/usb/usb_device_linux.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
 #include "base/metrics/histogram_macros.h"
@@ -620,15 +617,6 @@ void UsbDeviceHandleUsbfs::ClaimInterface(int interface_number,
   // First detach the interface from a kernel driver that might be attached to
   // it, then claim the interface.
   // Note: |ClaimInterface| is invoked from |DetachInterfaceComplete|.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (client_id_.has_value()) {
-    chromeos::PermissionBrokerClient::Get()->DetachInterface(
-        client_id_.value(), interface_number,
-        base::BindOnce(&UsbDeviceHandleUsbfs::DetachInterfaceComplete, this,
-                       interface_number, std::move(callback)));
-    return;
-  }
-#endif
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
   if (base::FeatureList::IsEnabled(features::kAutomaticUsbDetach)) {
     const mojom::UsbConfigurationInfo* config =
@@ -968,13 +956,6 @@ void UsbDeviceHandleUsbfs::ReleaseInterfaceComplete(int interface_number,
     RefreshEndpointInfo();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (client_id_.has_value()) {
-    chromeos::PermissionBrokerClient::Get()->ReattachInterface(
-        client_id_.value(), interface_number, std::move(callback));
-    return;
-  }
-#endif
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
   if (base::FeatureList::IsEnabled(features::kAutomaticUsbDetach)) {
     helper_.AsyncCall(&BlockingTaskRunnerHelper::ReattachInterface)

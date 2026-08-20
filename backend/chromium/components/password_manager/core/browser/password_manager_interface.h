@@ -162,58 +162,6 @@ class PasswordManagerInterface : public FormSubmissionObserver {
   virtual bool HaveFormManagersReceivedData(
       const PasswordManagerDriver* driver) const = 0;
 
-#if BUILDFLAG(IS_IOS)
-  // Handles a subframe form submission. In contrast to OnPasswordFormSubmitted
-  // this method does not wait for OnPasswordFormsRendered before invoking
-  // OnLoginSuccessful), but rather invokes ProvisionallySave immediately and
-  // then calls OnLoginSuccessful if applicable. It is the iOS pendant to
-  // PasswordManager::OnDynamicFormSubmission.
-  virtual void OnSubframeFormSubmission(
-      PasswordManagerDriver* driver,
-      const autofill::FormData& form_data) = 0;
-
-  // Updates the state in the PasswordFormManager which corresponds to the form
-  // with `form_id` if available or the one that has `field_id` as a fallback.
-  // In case there is a presaved credential, it updates the presaved credential.
-  // Cross-platform method PasswordManager::OnInformAboutUserInput cannot
-  // replace this method, as it needs an observed FormData object on every
-  // keystroke and parsing the full FormData on iOS is more expensive operation,
-  // than in Blink.
-  virtual void UpdateStateOnUserInput(
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager,
-      std::optional<autofill::FormRendererId> form_id,
-      autofill::FieldRendererId field_id,
-      const std::u16string& field_value) = 0;
-
-  // Stops treating a password as generated.
-  virtual void OnPasswordNoLongerGenerated() = 0;
-
-  // Call when one or more forms are removed. This class will determine whether
-  // any of them were submitted.
-  //  - removed_forms: The renderer identifiers of the removed password forms.
-  //  - removed_unowned_fields: The renderer identifiers of the removed form
-  //  fields not owned by a form element. Used to detect formless form
-  //  submissions.
-  virtual void OnPasswordFormsRemoved(
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager,
-      const std::set<autofill::FormRendererId>& removed_forms,
-      const std::set<autofill::FieldRendererId>& removed_unowned_fields) = 0;
-
-  // Checks if there is a submitted PasswordFormManager for a form from the
-  // detached frame.
-  virtual void OnIframeDetach(
-      const std::string& frame_id,
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager) = 0;
-
-  // Propagates all available field data manager info to existing form managers
-  // and provisionally saves them if the relevant data is retrieved.
-  virtual void PropagateFieldDataManagerInfo(
-      const autofill::FieldDataManager& field_data_manager,
-      const PasswordManagerDriver* driver) = 0;
-#endif
 
   // Returns true if a form manager is processing a password update.
   virtual bool IsFormManagerPendingPasswordUpdate() const = 0;

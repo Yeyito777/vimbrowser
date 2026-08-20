@@ -85,9 +85,6 @@ class BrowserXRRuntimeImpl : public content::BrowserXRRuntime,
 
   device::mojom::XRDeviceId GetId() const { return id_; }
 
-#if BUILDFLAG(IS_WIN)
-  std::optional<CHROME_LUID> GetLuid() const;
-#endif
 
   // BrowserXRRuntime
   void AddObserver(Observer* observer) override;

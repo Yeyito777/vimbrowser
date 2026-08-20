@@ -191,17 +191,6 @@ bool VideoFrameLayout::FitsInContiguousBufferOfSize(size_t data_size) const {
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (format_ == PIXEL_FORMAT_MJPEG) {
-    if (planes_.size() != 1) {
-      return false;
-    }
-    const auto& plane = planes_[0];
-    size_t plane_end;
-    return base::CheckAdd(plane.size, plane.offset).AssignIfValid(&plane_end) &&
-           plane_end <= data_size;
-  }
-#endif
 
   if (planes_.size() != VideoFrame::NumPlanes(format_)) {
     return false;

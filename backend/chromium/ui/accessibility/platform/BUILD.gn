@@ -12,16 +12,6 @@ import("//testing/test.gni")
 import("//tools/json_schema_compiler/json_schema_api.gni")
 import("//ui/base/ui_features.gni")
 
-if (is_win) {
-  import("//build/toolchain/win/midl.gni")
-}
-
-if (is_win) {
-  midl("ichromeaccessible") {
-    sources = [ "ichromeaccessible.idl" ]
-  }
-}
-
 component("platform") {
   output_name = "accessibility_platform"
 
@@ -126,13 +116,6 @@ component("platform") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "ax_android_constants.cc",
-      "ax_android_constants.h",
-    ]
-  }
-
   # BrowserAccessibility was historically used only by AXNodes
   # coming from blink and has a dependency on `cc/base/rtree.h`.
   # If we want to support using BrowserAccessibility on platforms
@@ -150,107 +133,11 @@ component("platform") {
     ]
   }
 
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia/accessibility_bridge_fuchsia.h",
-      "fuchsia/accessibility_bridge_fuchsia_impl.cc",
-      "fuchsia/accessibility_bridge_fuchsia_impl.h",
-      "fuchsia/accessibility_bridge_fuchsia_registry.cc",
-      "fuchsia/accessibility_bridge_fuchsia_registry.h",
-      "fuchsia/ax_platform_node_fuchsia.cc",
-      "fuchsia/ax_platform_node_fuchsia.h",
-      "fuchsia/browser_accessibility_fuchsia.cc",
-      "fuchsia/browser_accessibility_fuchsia.h",
-      "fuchsia/browser_accessibility_manager_fuchsia.cc",
-      "fuchsia/browser_accessibility_manager_fuchsia.h",
-      "fuchsia/semantic_provider.h",
-      "fuchsia/semantic_provider_impl.cc",
-      "fuchsia/semantic_provider_impl.h",
-      "inspect/ax_event_recorder_fuchsia.cc",
-      "inspect/ax_event_recorder_fuchsia.h",
-    ]
-
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/inspect_component_cpp" ]
-
-    public_deps += [
-      "//base",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.accessibility.semantics:fuchsia.accessibility.semantics_cpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.math:fuchsia.math_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.gfx:fuchsia.ui.gfx_cpp_hlcpp_conversion",
-      "//third_party/fuchsia-sdk/sdk/pkg/component_incoming_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/inspect",
-      "//third_party/fuchsia-sdk/sdk/pkg/scenic_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-      "//ui/aura",
-      "//ui/gfx/geometry",
-    ]
-  }
-
   if (has_native_accessibility) {
     sources += [
       "ax_platform_text_boundary.cc",
       "ax_platform_text_boundary.h",
     ]
-
-    if (is_win) {
-      sources += [
-        "ax_fragment_root_delegate_win.h",
-        "ax_fragment_root_win.cc",
-        "ax_fragment_root_win.h",
-        "ax_platform_node_delegate_utils_win.cc",
-        "ax_platform_node_delegate_utils_win.h",
-        "ax_platform_node_textchildprovider_win.cc",
-        "ax_platform_node_textchildprovider_win.h",
-        "ax_platform_node_textprovider_win.cc",
-        "ax_platform_node_textprovider_win.h",
-        "ax_platform_node_textrangeprovider_win.cc",
-        "ax_platform_node_textrangeprovider_win.h",
-        "ax_platform_node_win.cc",
-        "ax_platform_node_win.h",
-        "ax_platform_relation_win.cc",
-        "ax_platform_relation_win.h",
-        "ax_system_caret_win.cc",
-        "ax_system_caret_win.h",
-        "browser_accessibility_com_win.cc",
-        "browser_accessibility_com_win.h",
-        "browser_accessibility_manager_win.cc",
-        "browser_accessibility_manager_win.h",
-        "browser_accessibility_win.cc",
-        "browser_accessibility_win.h",
-        "iaccessible2/scoped_co_mem_array.cc",
-        "iaccessible2/scoped_co_mem_array.h",
-        "inspect/ax_call_statement_invoker_win.cc",
-        "inspect/ax_call_statement_invoker_win.h",
-        "inspect/ax_event_recorder_win.cc",
-        "inspect/ax_event_recorder_win.h",
-        "inspect/ax_event_recorder_win_uia.cc",
-        "inspect/ax_event_recorder_win_uia.h",
-        "inspect/ax_inspect_utils_win.cc",
-        "inspect/ax_inspect_utils_win.h",
-        "inspect/ax_target_win.cc",
-        "inspect/ax_target_win.h",
-        "inspect/ax_tree_formatter_uia_win.cc",
-        "inspect/ax_tree_formatter_uia_win.h",
-        "inspect/ax_tree_formatter_win.cc",
-        "inspect/ax_tree_formatter_win.h",
-        "inspect/ax_tree_indexer_win.h",
-        "sequence_affine_com_object_root_win.cc",
-        "sequence_affine_com_object_root_win.h",
-        "uia_registrar_win.cc",
-        "uia_registrar_win.h",
-      ]
-
-      public_deps += [
-        "//third_party/iaccessible2",
-        "//third_party/isimpledom",
-        "//ui/accessibility/platform:ichromeaccessible",
-      ]
-
-      libs = [
-        "oleacc.lib",
-        "uiautomationcore.lib",
-      ]
-    }
 
     if (is_mac) {
       sources += [
@@ -293,25 +180,6 @@ component("platform") {
       frameworks = [
         "Accessibility.framework",
         "AppKit.framework",
-        "Foundation.framework",
-      ]
-    }
-
-    if (is_ios) {
-      sources += [
-        "ax_platform_node_ios.h",
-        "ax_platform_node_ios.mm",
-        "ax_platform_node_ui_kit_element.h",
-        "ax_platform_node_ui_kit_element.mm",
-        "browser_accessibility_ios.h",
-        "browser_accessibility_ios.mm",
-        "browser_accessibility_manager_ios.h",
-        "browser_accessibility_manager_ios.mm",
-      ]
-
-      frameworks = [
-        "Accessibility.framework",
-        "UIKit.framework",
         "Foundation.framework",
       ]
     }

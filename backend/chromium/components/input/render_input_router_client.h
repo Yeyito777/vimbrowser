@@ -46,9 +46,6 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouterClient {
   // Caret position is only updated if the target element doesn't already have
   // focus.
   virtual void UpdateElementFocusForStylusWriting(
-#if BUILDFLAG(IS_WIN)
-      const gfx::Rect& focus_widget_rect_in_dips
-#endif  // BUILDFLAG(IS_WIN)
       ) = 0;
 
   virtual void OnUnconfirmedTapConvertedToTap() = 0;

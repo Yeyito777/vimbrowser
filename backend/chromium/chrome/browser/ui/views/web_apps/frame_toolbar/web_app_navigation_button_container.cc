@@ -34,11 +34,7 @@ namespace {
 
 constexpr int kPaddingBetweenNavigationButtons = 5;
 
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr int kWebAppFrameLeftMargin = 2;
-#else
 constexpr int kWebAppFrameLeftMargin = 7;
-#endif
 
 }  // namespace
 

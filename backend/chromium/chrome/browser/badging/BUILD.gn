@@ -19,10 +19,6 @@ source_set("badging") {
     "//url",
   ]
 
-  if (is_win) {
-    sources += [ "badge_manager_delegate_win.h" ]
-  }
-
   if (is_mac) {
     sources += [ "badge_manager_delegate_mac.h" ]
   }
@@ -48,11 +44,6 @@ source_set("impl") {
     "//ui/strings:ui_strings",
     "//ui/strings:ui_strings_grit",
   ]
-
-  if (is_win) {
-    sources += [ "badge_manager_delegate_win.cc" ]
-    deps += [ "//chrome/browser/ui/browser_window" ]
-  }
 
   if (is_mac) {
     sources += [ "badge_manager_delegate_mac.cc" ]

@@ -149,9 +149,6 @@ class AccessTokenFetcher : public ProfileOAuth2TokenServiceObserver,
   // profile or on the device itself.
   enum class Source {
     kProfile,
-#if BUILDFLAG(IS_IOS)
-    kDevice,
-#endif
   };
 
   // Callback for when a request completes (successful or not). On successful

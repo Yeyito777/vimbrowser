@@ -157,11 +157,7 @@ template("rust_cxx") {
       # their component. cxxbridge --cxx-impl-annotations adds this annotation
       # to each exported C++ function.
       args += [ "--cxx-impl-annotations" ]
-      if (is_win) {
-        args += [ "__declspec(dllexport)" ]
-      } else {
-        args += [ "__attribute__((visibility(\"default\")))" ]
-      }
+      args += [ "__attribute__((visibility(\"default\")))" ]
     }
   }
 

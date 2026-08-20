@@ -68,13 +68,6 @@ source_set("impl") {
     deps += [ "//extensions/browser" ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/profiles",
-      "//components/user_manager",
-    ]
-  }
-
   sources += [ "web_serial_chooser_desktop.cc" ]
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]

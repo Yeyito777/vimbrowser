@@ -85,10 +85,8 @@
 #include "components/sync_user_events/user_event_service.h"
 #include "components/variations/service/google_groups_manager.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "components/webauthn/core/browser/passkey_data_type_controller.h"
 #include "components/webauthn/core/browser/passkey_model.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_SUPERVISED_USERS)
 #include "components/supervised_user/core/browser/family_link_settings_data_type_controller.h"
@@ -113,7 +111,6 @@ AutocompleteDelegateFromDataService(autofill::AutofillWebDataService* service) {
       ->GetControllerDelegate();
 }
 
-#if !BUILDFLAG(IS_IOS)
 base::WeakPtr<syncer::DataTypeControllerDelegate>
 AutofillValuableDelegateFromDataService(
     autofill::AutofillWebDataService* service) {
@@ -129,7 +126,6 @@ AutofillValuableMetadataDelegateFromDataService(
       ->change_processor()
       ->GetControllerDelegate();
 }
-#endif
 
 base::WeakPtr<syncer::DataTypeControllerDelegate>
 AutofillProfileDelegateFromDataService(
@@ -172,7 +168,6 @@ AutofillWalletOfferDelegateFromDataService(
       ->GetControllerDelegate();
 }
 
-#if !BUILDFLAG(IS_IOS)
 base::WeakPtr<syncer::DataTypeControllerDelegate>
 AutofillWalletUsageDataDelegateFromDataService(
     autofill::AutofillWebDataService* service) {
@@ -181,7 +176,6 @@ AutofillWalletUsageDataDelegateFromDataService(
       ->change_processor()
       ->GetControllerDelegate();
 }
-#endif
 
 base::WeakPtr<syncer::DataTypeControllerDelegate>
 ContactInfoDelegateFromDataService(autofill::AutofillWebDataService* service) {
@@ -325,12 +319,10 @@ void CommonControllerBuilder::SetSkillsService(
   skills_service_.Set(skills_service);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void CommonControllerBuilder::SetPasskeyModel(
     webauthn::PasskeyModel* passkey_model) {
   passkey_model_.Set(passkey_model);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void CommonControllerBuilder::SetPasswordReceiverService(
     password_manager::PasswordReceiverService* password_receiver_service) {
@@ -511,7 +503,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
     }
 
     // Wallet usage data sync depends on Wallet data sync.
-#if !BUILDFLAG(IS_IOS)
     if (!disabled_types.Has(syncer::AUTOFILL_WALLET_DATA) &&
         !disabled_types.Has(syncer::AUTOFILL_WALLET_USAGE)) {
       controllers.push_back(CreateWalletDataTypeController(
@@ -519,7 +510,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
           base::BindRepeating(&AutofillWalletUsageDataDelegateFromDataService),
           sync_service, /*with_transport_mode_support=*/true));
     }
-#endif
 
     // Wallet credential data sync depends on Wallet data sync.
     if (base::FeatureList::IsEnabled(
@@ -822,7 +812,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
             delegate)));
   }
 
-#if !BUILDFLAG(IS_IOS)
   if (!disabled_types.Has(syncer::AUTOFILL_VALUABLE) &&
       base::FeatureList::IsEnabled(syncer::kSyncAutofillLoyaltyCard)) {
     scoped_refptr<autofill::AutofillWebDataService> autofill_web_data_service =
@@ -866,9 +855,7 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
                         profile_autofill_web_data_service_.value())))));
   }
 
-#endif
 
-#if !BUILDFLAG(IS_IOS)
   if (!disabled_types.Has(syncer::ACCOUNT_SETTING) &&
       account_setting_service_.value() &&
       base::FeatureList::IsEnabled(syncer::kSyncAccountSettings)) {
@@ -879,7 +866,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
         /*delegate_for_transport_mode=*/
         account_setting_service_.value()->GetSyncControllerDelegate()));
   }
-#endif
 
   if (!disabled_types.Has(syncer::SHARED_TAB_GROUP_ACCOUNT_DATA) &&
       base::FeatureList::IsEnabled(syncer::kSyncSharedTabGroupAccountData) &&
@@ -1030,7 +1016,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
   }
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   if (!disabled_types.Has(syncer::WEBAUTHN_CREDENTIAL)) {
     syncer::DataTypeControllerDelegate* delegate =
         passkey_model_.value()->GetDataTypeControllerDelegate().get();
@@ -1044,7 +1029,6 @@ CommonControllerBuilder::Build(syncer::DataTypeSet disabled_types,
         std::make_unique<syncer::ForwardingDataTypeControllerDelegate>(
             delegate)));
   }
-#endif
 
 #if BUILDFLAG(ENABLE_SUPERVISED_USERS)
   if (family_link_settings_service_.value()) {

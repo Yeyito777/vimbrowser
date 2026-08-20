@@ -9,9 +9,6 @@
 #include "build/build_config.h"
 #include "third_party/sqlite/sqlite3.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <string>
-#endif
 
 namespace sql {
 
@@ -39,9 +36,6 @@ struct VfsFile {
   // This field is not a raw_ptr<> because it was filtered by the rewriter for:
   // #reinterpret-cast-trivial-type
   RAW_PTR_EXCLUSION sqlite3_file* wrapped_file;
-#if BUILDFLAG(IS_FUCHSIA)
-  std::string file_name;
-#endif
 };
 
 }  // namespace sql

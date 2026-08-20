@@ -685,35 +685,13 @@ if (is_mac) {
   ]
 }
 
-if (is_ios) {
-  blink_core_sources_layout += [
-    "layout_theme_ios.h",
-    "layout_theme_ios.mm",
-  ]
-}
-
-if (is_win) {
-  blink_core_sources_layout += [
-    "layout_theme_font_provider_win.cc",
-    "layout_theme_win.cc",
-    "layout_theme_win.h",
-    "web_font_rendering_win.cc",
-    "layout_font_accessor_win.h",
-    "layout_font_accessor_win.cc",
-  ]
-} else {  # Not Windows.
-  blink_core_sources_layout += [ "layout_theme_font_provider_default.cc" ]
-}
+blink_core_sources_layout += [ "layout_theme_font_provider_default.cc" ]
 
 if (is_linux || is_chromeos) {
   blink_core_sources_layout += [
     "layout_theme_linux.cc",
     "layout_theme_linux.h",
   ]
-}
-
-if (is_fuchsia) {
-  blink_core_sources_layout += [ "layout_theme_fuchsia.cc" ]
 }
 
 blink_core_tests_layout = [

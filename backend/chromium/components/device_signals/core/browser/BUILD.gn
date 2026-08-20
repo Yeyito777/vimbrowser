@@ -52,15 +52,13 @@ static_library("browser") {
     "//net",
   ]
 
-  if (!is_ios) {
-    public += [ "browser_utils.h" ]
-    sources += [ "browser_utils.cc" ]
+  public += [ "browser_utils.h" ]
+  sources += [ "browser_utils.cc" ]
 
-    deps += [
-      "//components/policy/core/browser",
-      "//content/public/browser",
-    ]
-  }
+  deps += [
+    "//components/policy/core/browser",
+    "//content/public/browser",
+  ]
 
   if (is_win || is_mac || is_linux) {
     public += [
@@ -76,22 +74,12 @@ static_library("browser") {
     deps += [ "//services/data_decoder/public/cpp" ]
   }
 
-  if (is_win) {
-    sources += [ "win/browser_utils_win.cc" ]
-
-    public_deps += [ "//components/device_signals/core/common/win" ]
-  }
-
   if (is_mac) {
     sources += [ "mac/browser_utils_mac.cc" ]
   }
 
   if (is_linux) {
     sources += [ "linux/browser_utils_linux.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "chromeos/browser_utils_chromeos.cc" ]
   }
 }
 
@@ -158,15 +146,7 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//components/device_signals/core/browser/win:unit_tests" ]
-  }
-
   if (is_mac) {
     deps += [ "//components/device_signals/core/browser/mac:unit_tests" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//components/device_signals/core/browser/ash:unit_tests" ]
   }
 }

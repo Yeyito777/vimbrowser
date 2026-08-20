@@ -49,10 +49,6 @@ class ShellWebContentsViewDelegate : public WebContentsViewDelegate {
   ContextMenuParams params_;
 #endif
 
-#if BUILDFLAG(IS_IOS)
-  // A hidden button used for displaying context menus.
-  std::unique_ptr<ShellWebContentsUIButtonHolder> hidden_button_;
-#endif
 
 #if defined(SHELL_USE_TOOLKIT_VIEWS)
   std::unique_ptr<ui::SimpleMenuModel> context_menu_model_;

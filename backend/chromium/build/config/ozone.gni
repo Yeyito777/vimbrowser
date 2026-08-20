@@ -63,29 +63,9 @@ declare_args() {
 
     if (is_cast_audio_only) {
       # Just use headless for audio-only Cast platforms.
-    } else if (is_castos) {
-      # Enable the Cast ozone platform on all video CastOS builds.
-      ozone_platform_cast = true
-
-      # For visual desktop Chromecast builds, override the default "headless"
-      # platform with --ozone-platform=x11.
-      # NOTE: The CQ is one such case.
-      if (target_os == "linux" &&
-          (target_cpu == "x86" || target_cpu == "x64")) {
-        ozone_platform_x11 = true
-      } else {
-        ozone_platform = "cast"
-      }
-    } else if (is_chromeos) {
-      ozone_platform = "x11"
-      ozone_platform_drm = true
-      ozone_platform_x11 = true
     } else if (is_linux) {
       ozone_platform = "x11"
       ozone_platform_x11 = true
-    } else if (is_fuchsia) {
-      ozone_platform = "flatland"
-      ozone_platform_flatland = true
     }
   }
 

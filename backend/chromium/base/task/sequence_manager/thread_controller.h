@@ -140,11 +140,6 @@ class BASE_EXPORT ThreadController {
   virtual void AttachToMessagePump() = 0;
 #endif
 
-#if BUILDFLAG(IS_IOS)
-  // Detaches this ThreadController from the message pump, allowing the
-  // controller to be shut down cleanly.
-  virtual void DetachFromMessagePump() = 0;
-#endif
 
   // Initializes features for this class. See `base::features::Init()`.
   static void InitializeFeatures();

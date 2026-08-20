@@ -38,12 +38,7 @@ component("system_media_controls") {
 
   public_deps = [ "//skia" ]
 
-  if (is_win) {
-    sources = [
-      "win/system_media_controls_win.cc",
-      "win/system_media_controls_win.h",
-    ]
-  } else if (use_mpris) {
+  if (use_mpris) {
     sources = [
       "linux/system_media_controls_linux.cc",
       "linux/system_media_controls_linux.h",

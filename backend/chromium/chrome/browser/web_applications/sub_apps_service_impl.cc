@@ -53,9 +53,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/notifier_catalogs.h"
-#endif
 
 using blink::mojom::SubAppsService;
 using blink::mojom::SubAppsServiceAddParametersPtr;
@@ -180,23 +177,7 @@ bool CanAccessSubAppsApi(content::RenderFrameHost& render_frame_host) {
 }
 
 bool ShouldSkipUserConfirmation(content::RenderFrameHost& frame) {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto const* profile = Profile::FromBrowserContext(frame.GetBrowserContext());
-  if (!profile) {
-    return false;
-  }
-
-  auto const* prefs = profile->GetPrefs();
-  if (!prefs) {
-    return false;
-  }
-
-  return policy::IsOriginInAllowlist(
-      frame.GetLastCommittedURL(), prefs,
-      prefs::kSubAppsAPIsAllowedWithoutGestureAndAuthorizationForOrigins);
-#else   // BUILDFLAG(IS_CHROMEOS)
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace
@@ -635,16 +616,9 @@ void SubAppsServiceImpl::NotifyUninstall(
         kSubAppsUninstallNotificationId, title, message, ui::ImageModel(),
         /*display_source=*/std::u16string(),
         /*origin_url=*/start_url,
-#if BUILDFLAG(IS_CHROMEOS)
-        message_center::NotifierId(
-            message_center::NotifierType::SYSTEM_COMPONENT,
-            kSubAppsUninstallNotifierId,
-            ash::NotificationCatalogName::kSubAppsUninstall),
-#else
         message_center::NotifierId(
             message_center::NotifierType::SYSTEM_COMPONENT,
             kSubAppsUninstallNotifierId),
-#endif
         message_center::RichNotificationData(),
         /*delegate=*/nullptr);
     notification.SetSystemPriority();

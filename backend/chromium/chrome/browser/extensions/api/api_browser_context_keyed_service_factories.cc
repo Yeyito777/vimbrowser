@@ -58,13 +58,6 @@
 
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/extensions/wm/wm_desks_private_events.h"
-#include "chrome/browser/extensions/api/document_scan/document_scan_api_handler.h"
-#include "chrome/browser/extensions/api/input_ime/input_ime_api.h"
-#include "chrome/browser/extensions/api/platform_keys/verify_trust_api_service.h"
-#include "chrome/browser/extensions/api/terminal/terminal_private_api.h"
-#endif
 
 #if BUILDFLAG(ENABLE_SERVICE_DISCOVERY)
 #include "chrome/browser/extensions/api/mdns/mdns_api.h"
@@ -113,13 +106,7 @@ void EnsureApiBrowserContextKeyedServiceFactoriesBuilt() {
   extensions::BluetoothLowEnergyAPI::GetFactoryInstance();
   extensions::BookmarkManagerPrivateAPI::GetFactoryInstance();
   extensions::BrailleDisplayPrivateAPI::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  extensions::DocumentScanAPIHandler::GetFactoryInstance();
-#endif
   extensions::EnterpriseReportingPrivateEventRouterFactory::GetInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  extensions::InputImeAPI::GetFactoryInstance();
-#endif
   extensions::image_writer::OperationManager::GetFactoryInstance();
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   auto networking_private_ui_delegate_factory =
@@ -138,13 +125,6 @@ void EnsureApiBrowserContextKeyedServiceFactoriesBuilt() {
   extensions::SettingsPrivateEventRouterFactory::GetInstance();
   extensions::SettingsOverridesAPI::GetFactoryInstance();
   extensions::SidePanelService::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  extensions::TerminalPrivateAPI::GetFactoryInstance();
-  extensions::VerifyTrustApiService::GetFactoryInstance();
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  extensions::WMDesksPrivateEventsAPI::GetFactoryInstance();
-#endif
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 }
 

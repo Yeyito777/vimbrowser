@@ -7,17 +7,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/dbus/attestation/attestation_ca.pb.h"
-
-namespace enterprise_connectors {
-
-// Use Chrome OS' signals definition.
-using SignalsType = ::attestation::DeviceTrustSignals;
-
-}  // namespace enterprise_connectors
-
-#else
 #include "chrome/browser/enterprise/connectors/device_trust/attestation/common/proto/device_trust_attestation_ca.pb.h"  // nogncheck
 
 namespace enterprise_connectors {
@@ -27,6 +16,5 @@ using SignalsType = DeviceTrustSignals;
 
 }  // namespace enterprise_connectors
 
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #endif  // CHROME_BROWSER_ENTERPRISE_CONNECTORS_DEVICE_TRUST_ATTESTATION_COMMON_SIGNALS_TYPE_H_

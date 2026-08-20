@@ -16,7 +16,6 @@ namespace password_manager::features {
 // All features in alphabetical order. The features should be documented
 // alongside the definition of their values in the .cc file.
 
-#if !BUILDFLAG(IS_IOS)
 BASE_DECLARE_FEATURE(kActorLogin);
 // Enables FedCM support for Actor Login.
 BASE_DECLARE_FEATURE(kActorLoginFederatedLoginSupport);
@@ -34,12 +33,7 @@ BASE_DECLARE_FEATURE(kActorLoginReauthTaskRefocus);
 BASE_DECLARE_FEATURE(kActorLoginQualityLogs);
 // Enables finding and filling forms in same-site iframes for actor login.
 BASE_DECLARE_FEATURE(kActorLoginSameSiteIframeSupport);
-#endif  // !BUILDFLAG(IS_IOS)
 
-#if BUILDFLAG(IS_ANDROID)
-// Enables filling of OTPs received via SMS on Android.
-BASE_DECLARE_FEATURE(kAndroidSmsOtpFilling);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Enables using clientside form classifier predictions for password forms.
 BASE_DECLARE_FEATURE(kApplyClientsideModelPredictionsForPasswordTypes);
@@ -109,41 +103,12 @@ BASE_DECLARE_FEATURE(kFillChangePasswordFormByTyping);
 // selection, rather than autofilling on page load, with highlighting of fields.
 BASE_DECLARE_FEATURE(kFillOnAccountSelect);
 
-#if BUILDFLAG(IS_ANDROID)
-// When enabled, the user can be prompted to retrieve the trusted vault key
-// during a password saving flow.
-BASE_DECLARE_FEATURE(kInFlowTrustedVaultKeyRetrievalAndroid);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_IOS)
-// When enabled, the user can be prompted to retrieve the trusted vault key
-// during a password saving flow.
-BASE_DECLARE_FEATURE(kInFlowTrustedVaultKeyRetrievalIos);
-
-// Enables the clean up of hanging form extraction requests made by the
-// password suggestion helper. This is to fix the cases where the suggestions
-// pipeline is broken because the pipeline is waiting for password suggestions
-// that are never provided.
-BASE_DECLARE_FEATURE(kIosCleanupHangingPasswordFormExtractionRequests);
-
-// The feature parameter that determines the minimal period of time in
-// milliseconds before the form extraction request times out.
-extern const base::FeatureParam<int>
-    kIosPasswordFormExtractionRequestsTimeoutMs;
-
-// Enables password generation bottom sheet to be displayed (on iOS) when a user
-// is signed-in and taps on a new password field.
-BASE_DECLARE_FEATURE(kIOSProactivePasswordGenerationBottomSheet);
-#endif  // BUILDFLAG(IS_IOS)
 
 // Marks all submitted credentials as leaked, useful for testing of a password
 // leak dialog.
 BASE_DECLARE_FEATURE(kMarkAllCredentialsAsLeaked);
 
-#if BUILDFLAG(IS_ANDROID)
-// Enables OTP phishing checks.
-BASE_DECLARE_FEATURE(kOtpPhishGuard);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Populate the `date_last_filled` timestamp for passwords.
 BASE_DECLARE_FEATURE(kPasswordDateLastFilled);

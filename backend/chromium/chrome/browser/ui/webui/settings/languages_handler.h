@@ -8,20 +8,13 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-class Profile;
-#endif
 
 namespace settings {
 
 // Chrome "Languages" settings page UI handler.
 class LanguagesHandler : public SettingsPageUIHandler {
  public:
-#if BUILDFLAG(IS_CHROMEOS)
-  explicit LanguagesHandler(Profile* profile);
-#else
   LanguagesHandler();
-#endif
 
   LanguagesHandler(const LanguagesHandler&) = delete;
   LanguagesHandler& operator=(const LanguagesHandler&) = delete;
@@ -43,9 +36,6 @@ class LanguagesHandler : public SettingsPageUIHandler {
   // The actual UI language will not change until the next restart.
   void HandleSetProspectiveUILanguage(const base::ListValue& args);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  raw_ptr<Profile> profile_;  // Weak pointer.
-#endif
 };
 
 }  // namespace settings

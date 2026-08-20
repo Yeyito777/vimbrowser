@@ -32,12 +32,7 @@ namespace reporting {
 namespace {
 std::unique_ptr<ConfigurationFileController> CreateConfigurationFileController(
     UploadClient::UpdateConfigInMissiveCallback update_config_in_missive_cb) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<ConfigurationFileController>(
-      update_config_in_missive_cb);
-#else   // !BUILDFLAG(IS_CHROMEOS)
   return nullptr;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 }  // namespace
 

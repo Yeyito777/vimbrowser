@@ -36,9 +36,6 @@
 #include "ui/views/widget/widget.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/l10n/l10n_util_win.h"
-#endif
 
 namespace {
 
@@ -73,27 +70,12 @@ ExclusiveAccessBubbleViews::ExclusiveAccessBubbleViews(
   view_->SetProperty(views::kElementIdentifierKey,
                      kExclusiveAccessBubbleViewElementId);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Technically the exit fullscreen key on ChromeOS is F11 and the
-  // "Fullscreen" key on the keyboard is just translated to F11 or F4 (which
-  // is also a toggle-fullscreen command on ChromeOS). However most Chromebooks
-  // have media keys - including "fullscreen" - but not function keys, so
-  // instructing the user to "Press [F11] to exit fullscreen" isn't useful.
-  //
-  // An obvious solution might be to change the primary accelerator to the
-  // fullscreen key, but since translation to a function key is done at system
-  // level we can't actually do that. Instead we provide specific messaging for
-  // the platform here. (See crbug.com/1110468 for details.)
-  browser_fullscreen_exit_accelerator_ =
-      l10n_util::GetStringUTF16(IDS_APP_FULLSCREEN_KEY);
-#else
   ui::Accelerator accelerator(ui::VKEY_UNKNOWN, ui::EF_NONE);
   bool got_accelerator =
       bubble_view_context_->GetAcceleratorProvider()
           ->GetAcceleratorForCommandId(IDC_FULLSCREEN, &accelerator);
   DCHECK(got_accelerator);
   browser_fullscreen_exit_accelerator_ = accelerator.GetShortcutText();
-#endif
 
   UpdateViewContent(params_.type);
 
@@ -330,21 +312,6 @@ gfx::Rect ExclusiveAccessBubbleViews::GetPopupRect() const {
   int x = widget_bounds.x() + (widget_bounds.width() - size.width()) / 2;
 
   int top_container_bottom = widget_bounds.y();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (bubble_view_context_->IsImmersiveModeEnabled()) {
-    // Skip querying the top container height in CrOS non-immersive fullscreen
-    // because:
-    // - The top container height is always zero in non-immersive fullscreen.
-    // - Querying the top container height may return the height before entering
-    //   fullscreen because layout is disabled while entering fullscreen.
-    // A visual glitch due to the delayed layout is avoided in immersive
-    // fullscreen because entering fullscreen starts with the top container
-    // revealed. When revealed, the top container has the same height as before
-    // entering fullscreen.
-    top_container_bottom =
-        bubble_view_context_->GetTopContainerBoundsInScreen().bottom();
-  }
-#endif
   // Space between top of screen and popup.
   static constexpr int kPopupTopPx = 45;
   // |desired_top| is the top of the bubble area including the shadow.

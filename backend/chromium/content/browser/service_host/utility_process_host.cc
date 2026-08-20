@@ -52,9 +52,6 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "services/network/public/mojom/network_service.mojom.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_switches.h"
@@ -70,13 +67,6 @@
 #include "base/pickle.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/synchronization/waitable_event.h"
-#include "components/app_launch_prefetch/app_launch_prefetch.h"
-#include "media/capture/capture_switches.h"
-#include "services/audio/public/mojom/audio_service.mojom.h"
-#include "services/network/public/mojom/network_service.mojom.h"
-#endif
 
 #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
 #include "base/task/sequenced_task_runner.h"
@@ -118,23 +108,6 @@ base::ScopedFD PassNetworkContextParentDirs(
 }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-base::CommandLine::StringViewType UtilityToAppLaunchPrefetchArg(
-    const std::string& utility_type) {
-  // Set the default prefetch type for utility processes.
-  app_launch_prefetch::SubprocessType prefetch_type =
-      app_launch_prefetch::SubprocessType::kUtilityOther;
-
-  if (utility_type == network::mojom::NetworkService::Name_) {
-    prefetch_type = app_launch_prefetch::SubprocessType::kUtilityNetworkService;
-  } else if (utility_type == storage::mojom::StorageService::Name_) {
-    prefetch_type = app_launch_prefetch::SubprocessType::kUtilityStorage;
-  } else if (utility_type == audio::mojom::AudioService::Name_) {
-    prefetch_type = app_launch_prefetch::SubprocessType::kUtilityAudio;
-  }
-  return app_launch_prefetch::GetPrefetchSwitch(prefetch_type);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -215,13 +188,6 @@ UtilityProcessHost::Options::WithExtraCommandLineSwitches(
   return *this;
 }
 
-#if BUILDFLAG(IS_WIN)
-UtilityProcessHost::Options& UtilityProcessHost::Options::WithPreloadLibraries(
-    const std::vector<base::FilePath>& preloads) {
-  preload_libraries_ = preloads;
-  return *this;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 UtilityProcessHost::Options&
 UtilityProcessHost::Options::WithGpuClientAllowed() {
@@ -241,13 +207,11 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
 }
 #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_POSIX)
 UtilityProcessHost::Options& UtilityProcessHost::Options::WithEnvironment(
     const base::EnvironmentMap& env) {
   env_ = env;
   return *this;
 }
-#endif
 
 #if BUILDFLAG(USE_ZYGOTE)
 UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
@@ -328,17 +292,6 @@ bool UtilityProcessHost::StartProcess() {
   bool has_cmd_prefix =
       browser_command_line.HasSwitch(switches::kUtilityCmdPrefix);
 
-#if BUILDFLAG(IS_ANDROID)
-  // readlink("/prof/self/exe") sometimes fails on Android at startup.
-  // As a workaround skip calling it here, since the executable name is
-  // not needed on Android anyway. See crbug.com/500854.
-  std::unique_ptr<base::CommandLine> cmd_line =
-      std::make_unique<base::CommandLine>(base::CommandLine::NO_PROGRAM);
-  if (options_.metrics_name_ == network::mojom::NetworkService::Name_ &&
-      base::FeatureList::IsEnabled(features::kWarmUpNetworkProcess)) {
-    process_->EnableWarmUpConnection();
-  }
-#else  // BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_MAC)
   if (options_.sandbox_type_ == sandbox::mojom::Sandbox::kServiceWithJit) {
     DCHECK_EQ(options_.child_flags_, ChildProcessHost::CHILD_RENDERER);
@@ -362,7 +315,6 @@ bool UtilityProcessHost::StartProcess() {
 
   std::unique_ptr<base::CommandLine> cmd_line =
       std::make_unique<base::CommandLine>(exe_path);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   cmd_line->AppendSwitchASCII(switches::kProcessType,
                               switches::kUtilityProcess);
@@ -372,10 +324,6 @@ bool UtilityProcessHost::StartProcess() {
   std::string locale = GetContentClient()->browser()->GetApplicationLocale();
   cmd_line->AppendSwitchASCII(switches::kLang, locale);
 
-#if BUILDFLAG(IS_WIN)
-  cmd_line->AppendArgNative(
-      UtilityToAppLaunchPrefetchArg(options_.metrics_name_));
-#endif  // BUILDFLAG(IS_WIN)
 
   sandbox::policy::SetCommandLineFlagsForSandboxType(cmd_line.get(),
                                                      options_.sandbox_type_);
@@ -432,21 +380,8 @@ bool UtilityProcessHost::StartProcess() {
 #if BUILDFLAG(USE_CRAS)
       switches::kUseCras,
 #endif
-#if BUILDFLAG(IS_WIN)
-      switches::kDisableHighResTimer,
-      switches::kEnableExclusiveAudio,
-      switches::kForceWaveAudio,
-      switches::kRaiseTimerFrequency,
-      switches::kTrySupportedChannelLayouts,
-      switches::kWaveOutBuffers,
-      switches::kWebXrForceRuntime,
-      sandbox::policy::switches::kAddXrAppContainerCaps,
-#endif
 #if BUILDFLAG(ENABLE_VR)
       device::switches::kWebXrHandAnonymizationStrategy,
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-      switches::kSchedulerBoostUrgent,
 #endif
       switches::kFakeBackgroundBlurTogglePeriod,
 #if BUILDFLAG(USE_V4L2_CODEC)
@@ -487,17 +422,6 @@ bool UtilityProcessHost::StartProcess() {
     cmd_line->AppendSwitch(extra_switch);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (media::IsMediaFoundationD3D11VideoCaptureEnabled()) {
-    // MediaFoundationD3D11VideoCapture requires Gpu memory buffers,
-    // which are unavailable if the GPU process isn't running or if
-    // D3D shared images are not supported.
-    if (!GpuDataManagerImpl::GetInstance()->IsGpuCompositingDisabled() &&
-        GpuDataManagerImpl::GetInstance()->GetGPUInfo().shared_image_d3d) {
-      cmd_line->AppendSwitch(switches::kVideoCaptureUseGpuMemoryBuffer);
-    }
-  }
-#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
   options_.file_data_->files_to_preload.merge(
@@ -538,17 +462,6 @@ bool UtilityProcessHost::StartProcess() {
       std::make_unique<UtilitySandboxedProcessLauncherDelegate>(
           options_.sandbox_type_, options_.env_, *cmd_line);
 
-#if BUILDFLAG(IS_WIN)
-  if (!options_.preload_libraries_.empty()) {
-    delegate->SetPreloadLibraries(options_.preload_libraries_);
-  }
-
-  // Not possible to transfer the event for an unsandboxed process.
-  if (!sandbox::policy::IsUnsandboxedSandboxType(options_.sandbox_type_)) {
-    delegate->SetBootstrapStatusEvent(bootstrap_signal_event_.emplace());
-  }
-
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
   if (options_.zygote_for_testing_.has_value()) {
@@ -584,13 +497,6 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
 
   Client::CrashType type = Client::CrashType::kPostIpcInitialization;
 
-#if BUILDFLAG(IS_WIN)
-  if (bootstrap_signal_event_) {
-    type = bootstrap_signal_event_->IsSignaled()
-               ? Client::CrashType::kPostIpcInitialization
-               : Client::CrashType::kPreIpcInitialization;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   client->OnProcessCrashed(type);
 }
 

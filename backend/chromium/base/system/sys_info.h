@@ -37,11 +37,6 @@ namespace base {
 BASE_EXPORT BASE_DECLARE_FEATURE(kNumberOfCoresWithCpuSecurityMitigation);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Strings for environment variables.
-BASE_EXPORT extern const char kLsbReleaseKey[];
-BASE_EXPORT extern const char kLsbReleaseTimeKey[];
-#endif
 
 namespace debug {
 FORWARD_DECLARE_TEST(SystemMetricsTest, ParseMeminfo);
@@ -126,11 +121,6 @@ class BASE_EXPORT SysInfo {
   // TODO(crbug.com/429140103): Convert the return type to ByteSize.
   static std::optional<int64_t> AmountOfTotalDiskSpace(const FilePath& path);
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // Sets the total amount of disk space to report under the specified |path|.
-  // If |bytes| is -ve then any existing entry for |path| is removed.
-  static void SetAmountOfTotalDiskSpace(const FilePath& path, int64_t bytes);
-#endif
 
   // Returns system uptime.
   static TimeDelta Uptime();
@@ -215,7 +205,6 @@ class BASE_EXPORT SysInfo {
                                             int32_t* minor_version,
                                             int32_t* bugfix_version);
 
-#if BUILDFLAG(IS_POSIX)
   // Struct containing the the kernel version number of the host operating
   // system.
   struct BASE_EXPORT KernelVersionNumber {
@@ -234,7 +223,6 @@ class BASE_EXPORT SysInfo {
     int32_t minor = 0;
     int32_t bugfix = 0;
   };
-#endif  // BUILDFLAG(IS_POSIX)
 
   // Returns the architecture of the running operating system.
   // Exact return value may differ across platforms.
@@ -260,83 +248,8 @@ class BASE_EXPORT SysInfo {
   // granularity).
   static size_t VMAllocationGranularity();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Set |value| and return true if LsbRelease contains information about |key|.
-  static bool GetLsbReleaseValue(const std::string& key, std::string* value);
 
-  // Convenience function for GetLsbReleaseValue("CHROMEOS_RELEASE_BOARD",...).
-  // Returns "unknown" if CHROMEOS_RELEASE_BOARD is not set. Otherwise, returns
-  // the full name of the board. Note that the returned value often differs
-  // between developers' systems and devices that use official builds. E.g. for
-  // a developer-built image, the function could return 'glimmer', while in an
-  // official build, it may be something like 'glimmer-signed-mp-v4keys'.
-  //
-  // NOTE: Strings returned by this function should be treated as opaque values
-  // within Chrome (e.g. for reporting metrics elsewhere). If you need to make
-  // Chrome behave differently for different Chrome OS devices, either directly
-  // check for the hardware feature that you care about (preferred) or add a
-  // command-line flag to Chrome and pass it from session_manager (based on
-  // whether a USE flag is set or not). See https://goo.gl/BbBkzg for more
-  // details.
-  static std::string GetLsbReleaseBoard();
 
-  // Returns the creation time of /etc/lsb-release. (Used to get the date and
-  // time of the Chrome OS build).
-  static Time GetLsbReleaseTime();
-
-  // Returns true when actually running in a Chrome OS environment.
-  static bool IsRunningOnChromeOS();
-
-  // Overrides |lsb_release| and |lsb_release_time|. Overrides cannot be nested.
-  // Call ResetChromeOSVersionInfoForTest() to restore the previous values.
-  // Prefer base::test::ScopedChromeOSVersionInfo to calling this function.
-  static void SetChromeOSVersionInfoForTest(const std::string& lsb_release,
-                                            const Time& lsb_release_time);
-
-  // Undoes the function above.
-  static void ResetChromeOSVersionInfoForTest();
-
-  // Returns the kernel version of the host operating system.
-  static std::string KernelVersion();
-
-  // Crashes if running on Chrome OS non-test image. Use only for really
-  // sensitive and risky use cases. Only works while running in verified mode,
-  // this check an easily be bypassed in dev mode.
-  static void CrashIfChromeOSNonTestImage();
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_ANDROID)
-  // Returns the Android build's codename.
-  static std::string GetAndroidBuildCodename();
-
-  // Returns the Android build ID.
-  static std::string GetAndroidBuildID();
-
-  // Returns the Android hardware system property, equivalent to Java's
-  // Build.HARDWARE.
-  static std::string GetAndroidHardware();
-
-  // Returns the Android hardware EGL system property.
-  static std::string GetAndroidHardwareEGL();
-
-  // Returns the Android hardware class system property. Unlike individual
-  // component Hardware ID, this is at a device level to capture a class of
-  // devices with similar hardware components.
-  static std::string GetAndroidHardwareClass();
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_IOS)
-  // Returns the iOS build number string which is normally an alphanumeric
-  // string like 12E456. This build number can differentiate between different
-  // versions of iOS that may have the same major/minor/bugfix version numbers.
-  // For example, iOS beta releases have the same version number but different
-  // build number strings.
-  static std::string GetIOSBuildNumber();
-
-  // Overrides the hardware model name. The overridden value is used instead of
-  // `StringSysctl({CTL_HW, HW_MACHINE})`. `name` should not be empty.
-  static void OverrideHardwareModelName(std::string name);
-#endif  // BUILDFLAG(IS_IOS)
 
   // Returns true for low-end devices that may require extreme tradeoffs,
   // including user-visible changes, for acceptable performance.
@@ -405,12 +318,10 @@ class BASE_EXPORT SysInfo {
   static void ClearAmountOfPhysicalMemoryForTesting();
 };
 
-#if BUILDFLAG(IS_POSIX)
 // Stream operator so that SysInfo::KernelVersionNumber can be logged with a
 // consistent format.
 BASE_EXPORT std::ostream& operator<<(std::ostream& out,
                                      const SysInfo::KernelVersionNumber& v);
-#endif  // BUILDFLAG(IS_POSIX)
 
 }  // namespace base
 

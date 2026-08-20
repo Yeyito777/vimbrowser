@@ -21,10 +21,6 @@
 #include "content/public/common/content_constants.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace data_controls {
 // TODO(1187477, marcgrimme): revisit if this should be refactored.
@@ -90,33 +86,8 @@ Rule::Restriction DlpEventRestriction2RuleRestriction(
 }
 
 DlpPolicyEvent_UserType GetCurrentUserType() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Could be not initialized in tests.
-  if (!user_manager::UserManager::IsInitialized() ||
-      !user_manager::UserManager::Get()->GetPrimaryUser()) {
-    return DlpPolicyEvent_UserType_UNDEFINED_USER_TYPE;
-  }
-  const user_manager::User* const user =
-      user_manager::UserManager::Get()->GetPrimaryUser();
-  DCHECK(user);
-  switch (user->GetType()) {
-    case user_manager::UserType::kRegular:
-      return DlpPolicyEvent_UserType_REGULAR;
-    case user_manager::UserType::kPublicAccount:
-      return DlpPolicyEvent_UserType_MANAGED_GUEST;
-    case user_manager::UserType::kKioskChromeApp:
-    case user_manager::UserType::kKioskWebApp:
-    case user_manager::UserType::kKioskIWA:
-    case user_manager::UserType::kKioskArcvmApp:
-      return DlpPolicyEvent_UserType_KIOSK;
-    case user_manager::UserType::kGuest:
-    case user_manager::UserType::kChild:
-      return DlpPolicyEvent_UserType_UNDEFINED_USER_TYPE;
-  }
-#else
   // TODO(b/303640183): Revisit what this should return for non-CrOS platforms.
   return DlpPolicyEvent_UserType_UNDEFINED_USER_TYPE;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // static
@@ -168,41 +139,6 @@ void DlpPolicyEventBuilder::SetDestinationUrl(const std::string& dst_url) {
   event.set_allocated_destination(event_destination);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void DlpPolicyEventBuilder::SetDestinationComponent(
-    Component dst_component) {
-  DlpPolicyEventDestination* event_destination = new DlpPolicyEventDestination;
-  switch (dst_component) {
-    case (Component::kArc):
-      event_destination->set_component(DlpPolicyEventDestination_Component_ARC);
-      break;
-    case (Component::kCrostini):
-      event_destination->set_component(
-          DlpPolicyEventDestination_Component_CROSTINI);
-      break;
-    case (Component::kPluginVm):
-      event_destination->set_component(
-          DlpPolicyEventDestination_Component_PLUGIN_VM);
-      break;
-    case (Component::kUsb):
-      event_destination->set_component(DlpPolicyEventDestination_Component_USB);
-      break;
-    case (Component::kDrive):
-      event_destination->set_component(
-          DlpPolicyEventDestination_Component_DRIVE);
-      break;
-    case (Component::kOneDrive):
-      event_destination->set_component(
-          DlpPolicyEventDestination_Component_ONEDRIVE);
-      break;
-    case (Component::kUnknownComponent):
-      event_destination->set_component(
-          DlpPolicyEventDestination_Component_UNDEFINED_COMPONENT);
-      break;
-  }
-  event.set_allocated_destination(event_destination);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void DlpPolicyEventBuilder::SetContentName(const std::string& content_name) {
   event.set_content_name(content_name);
@@ -246,20 +182,6 @@ DlpPolicyEvent CreateDlpPolicyEvent(const std::string& src_url,
   return event_builder->Create();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-DlpPolicyEvent CreateDlpPolicyEvent(const std::string& src_url,
-                                    Component dst_component,
-                                    Rule::Restriction restriction,
-                                    const std::string& rule_name,
-                                    const std::string& rule_id,
-                                    Rule::Level level) {
-  auto event_builder = DlpPolicyEventBuilder::Event(src_url, rule_name, rule_id,
-                                                    restriction, level);
-  event_builder->SetDestinationComponent(dst_component);
-
-  return event_builder->Create();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 DlpReportingManager::DlpReportingManager()
     : report_queue_(
@@ -302,18 +224,6 @@ void DlpReportingManager::ReportEvent(const std::string& src_url,
   ReportEvent(std::move(event));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void DlpReportingManager::ReportEvent(const std::string& src_url,
-                                      const Component dst_component,
-                                      Rule::Restriction restriction,
-                                      Rule::Level level,
-                                      const std::string& rule_name,
-                                      const std::string& rule_id) {
-  auto event = CreateDlpPolicyEvent(src_url, dst_component, restriction,
-                                    rule_name, rule_id, level);
-  ReportEvent(std::move(event));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void DlpReportingManager::OnEventEnqueued(reporting::Status status) {
   if (!status.ok()) {

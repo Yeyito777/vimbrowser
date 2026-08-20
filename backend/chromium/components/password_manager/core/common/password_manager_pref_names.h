@@ -51,12 +51,6 @@ inline constexpr char kCredentialsEnableService[] =
 inline constexpr char kCredentialsEnablePasskeys[] =
     "credentials_enable_passkeys";
 
-#if BUILDFLAG(IS_IOS)
-// The value of this preference determines whether the user had enabled the
-// credential provider in their iOS settings at startup.
-inline constexpr char kCredentialProviderEnabledOnStartup[] =
-    "credential_provider_enabled_on_startup";
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_IOS)
@@ -67,26 +61,6 @@ inline constexpr char kDeletingUndecryptablePasswordsEnabled[] =
     "password_manager.deleteting_undecryptable_passwords_enabled";
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-
-// Boolean controlling whether the password manager allows automatic signing in
-// through Credential Management API. This pref is not synced. Its value is set
-// by fetching the latest value from Google Mobile Services. Except for
-// migration steps, it should not be modified in Chrome.
-inline constexpr char kAutoSignInEnabledGMS[] =
-    "profile.auto_sign_in_enabled_gms";
-
-// Boolean controlling whether the password manager offers to save passwords.
-// If false, the password manager will not save credentials, but it will still
-// fill previously saved ones. This pref is not synced. Its value is set
-// by fetching the latest value from Google Mobile Services. Except for
-// migration steps, it should not be modified in Chrome.
-//
-// This pref doesn't have a policy mapped to it directly, instead, the policy
-// mapped to `kCredentialEnableService` will be applied.
-inline constexpr char kOfferToSavePasswordsEnabledGMS[] =
-    "profile.save_passwords_enabed_gms";
-#endif
 
 // The total amount of passwords available in Password Manager account store.
 inline constexpr char kTotalPasswordsAvailableForAccount[] =
@@ -108,14 +82,6 @@ inline constexpr char kPasswordRemovalReasonForAccount[] =
 inline constexpr char kPasswordRemovalReasonForProfile[] =
     "password_removal_reason_for_profile";
 
-#if BUILDFLAG(IS_ANDROID)
-// Timestamp at which the last UPM error message was shown to the user in
-// milliseconds since UNIX epoch (used in Java).
-// This is needed to ensure that the UI is prompted only once per given
-// time interval (currently 24h).
-inline constexpr char kUPMErrorUIShownTimestamp[] =
-    "profile.upm_error_ui_shown_timestamp";
-#endif
 
 // Maintains a list of password hashes of enterprise passwords. This pref
 // differs from |kPasswordHashDataList| in two ways: it only stores password
@@ -124,26 +90,7 @@ inline constexpr char kUPMErrorUIShownTimestamp[] =
 inline constexpr char kLocalPasswordHashDataList[] =
     "local.password_hash_data_list";
 
-#if BUILDFLAG(IS_ANDROID)
-// How many times the password generation bottom sheet was dismissed by the user
-// in a row. The counter resets when the user applies password generation.
-inline constexpr char kPasswordGenerationBottomSheetDismissCount[] =
-    "password_generation_bottom_sheet_dismiss_count";
-#endif
 
-#if BUILDFLAG(IS_WIN)
-// Whether the password was blank, only valid if OS password was last changed
-// on or before the value contained in kOsPasswordLastChanged.
-inline constexpr char kOsPasswordBlank[] = "password_manager.os_password_blank";
-
-// The number of seconds since epoch that the OS password was last changed.
-inline constexpr char kOsPasswordLastChanged[] =
-    "password_manager.os_password_last_changed";
-
-// Whether biometric authentication is available on this device.
-inline constexpr char kIsBiometricAvailable[] =
-    "password_manager.is_biometric_avaliable";
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 // The current status of migrating the passwords from the Keychain to the
@@ -259,12 +206,10 @@ inline constexpr char kRelaunchChromeBubbleDismissedCounter[] =
     "password_manager.relaunch_chrome_bubble_dismissed_counter";
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 // Boolean pref indicating if the user is in one of the groups of the
 // kClearUndecryptablePasswords experiment.
 inline constexpr char kClearingUndecryptablePasswords[] =
     "password_manager.clearing_undecryptable_passwords";
-#endif
 
 // Boolean pref indicating if passwords were migrated to OSCryptAsync. Two for
 // each store.
@@ -293,10 +238,6 @@ inline constexpr char kPasswordManagerBlocklist[] =
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) ||
         // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr char kPinAuthenticationAvailableOnChromeOS[] =
-    "password_manager.pin_authentication_available_on_chrome_os";
-#endif
 
 }  // namespace password_manager::prefs
 

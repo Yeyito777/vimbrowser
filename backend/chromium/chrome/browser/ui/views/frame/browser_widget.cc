@@ -43,22 +43,11 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/native_widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/system_web_apps/system_web_app_ui_utils.h"
-#include "chromeos/ui/base/window_properties.h"
-#include "chromeos/ui/base/window_state_type.h"
-#include "chromeos/ui/wm/desks/desks_helper.h"
-#include "components/user_manager/user_manager.h"
-#include "ui/aura/window.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/linux/linux_ui.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/mica_titlebar.h"
-#endif
 
 namespace {
 
@@ -183,7 +172,6 @@ void BrowserWidget::InitBrowserWidget() {
   if (browser->is_type_picture_in_picture()) {
     params.z_order = ui::ZOrderLevel::kFloatingWindow;
     params.visible_on_all_workspaces = true;
-#if !BUILDFLAG(IS_WIN)
     // This has the side-effect of keeping the pip window in the tab order.
     //
     // On all platforms, except for Windows, this doesn't change anything
@@ -191,7 +179,6 @@ void BrowserWidget::InitBrowserWidget() {
     // affected. Specifically, the title bar will not render correctly, see
     // https://crbug.com/1456231 for more details.
     params.remove_standard_frame = true;
-#endif  // !BUILDFLAG(IS_WIN)
   }
 
 #if BUILDFLAG(IS_OZONE)
@@ -474,12 +461,6 @@ ui::ColorProviderKey BrowserWidget::GetColorProviderKey() const {
 
   key.app_controller = browser_view_->browser()->app_controller();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS SystemWebApps use the OS theme all the time.
-  if (ash::IsSystemWebApp(browser_view_->browser())) {
-    return key;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   auto* theme_service = GetThemeService();
 
@@ -547,11 +528,6 @@ ui::ColorProviderKey BrowserWidget::GetColorProviderKey() const {
       browser_native_widget_ && browser_native_widget_->UseCustomFrame();
   key.frame_type = use_custom_frame ? ui::ColorProviderKey::FrameType::kChromium
                                     : ui::ColorProviderKey::FrameType::kNative;
-#if BUILDFLAG(IS_WIN)
-  if (theme_service && theme_service->UsingDeviceTheme() && use_custom_frame) {
-    key.frame_style = ui::ColorProviderKey::FrameStyle::kSystem;
-  }
-#endif
 
   return key;
 }
@@ -617,19 +593,7 @@ bool BrowserWidget::RegenerateFrameOnThemeChange(
   need_regenerate = true;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, DWM transition does not performed for a frame regeneration in
-  // fullscreen mode, so do a lighweight theme change to refresh a bookmark bar
-  // on new tab. (see crbug/1002480)
-  // With Mica, toggling titlebar accent colors in the native theme needs a
-  // frame regen to switch between the system-drawn and custom-drawn titlebars.
-  need_regenerate |=
-      (theme_change_type == BrowserThemeChangeType::kBrowserTheme ||
-       SystemTitlebarCanUseMicaMaterial()) &&
-      !IsFullscreen();
-#else
   need_regenerate |= theme_change_type == BrowserThemeChangeType::kBrowserTheme;
-#endif
 
   if (need_regenerate) {
     // This is a heavyweight theme change that requires regenerating the frame

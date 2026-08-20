@@ -9,9 +9,7 @@ config("snappy_config") {
 
   # These OS-specific generated headers were made by running the configure
   # script offline.
-  if (is_win) {
-    include_dirs += [ "win32" ]
-  } else if (is_mac) {
+  if (is_mac) {
     include_dirs += [ "mac" ]
   } else {
     include_dirs += [ "linux" ]
@@ -20,10 +18,6 @@ config("snappy_config") {
 
 config("snappy_warnings") {
   cflags = []
-
-  if (is_win) {
-    cflags += [ "/wd4018" ]  # Signed/unsigned mismatch in comparison.
-  }
 }
 
 static_library("snappy") {
@@ -37,9 +31,7 @@ static_library("snappy") {
     "src/snappy.h",
   ]
 
-  if (is_win) {
-    sources += [ "win32/snappy-stubs-public.h" ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [ "mac/snappy-stubs-public.h" ]
   } else {
     sources += [ "linux/snappy-stubs-public.h" ]

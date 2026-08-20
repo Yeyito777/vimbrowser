@@ -29,30 +29,20 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "services/device/public/cpp/usb/usb_ids.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
 constexpr char kPortNameKey[] = "name";
 constexpr char kTokenKey[] = "token";
 constexpr char kBluetoothDevicePathKey[] = "bluetooth_device_path";
-#if BUILDFLAG(IS_WIN)
-constexpr char kDeviceInstanceIdKey[] = "device_instance_id";
-#else
 constexpr char kVendorIdKey[] = "vendor_id";
 constexpr char kProductIdKey[] = "product_id";
 constexpr char kSerialNumberKey[] = "serial_number";
 #if BUILDFLAG(IS_MAC)
 constexpr char kUsbDriverKey[] = "usb_driver";
 #endif  // BUILDFLAG(IS_MAC)
-#endif  // BUILDFLAG(IS_WIN)
 
 using content_settings::SettingSource;
 
@@ -87,7 +77,6 @@ bool IsPolicyGrantedObject(const base::DictValue& object) {
 base::Value VendorAndProductIdsToValue(uint16_t vendor_id,
                                        uint16_t product_id) {
   base::DictValue object;
-#if !BUILDFLAG(IS_ANDROID)
   const char* product_name =
       device::UsbIds::GetProductName(vendor_id, product_id);
   if (product_name) {
@@ -102,23 +91,19 @@ base::Value VendorAndProductIdsToValue(uint16_t vendor_id,
               base::ASCIIToUTF16(base::StringPrintf("%04X", product_id)),
               base::UTF8ToUTF16(vendor_name)));
     } else {
-#endif  // !BUILDFLAG(IS_ANDROID)
       object.Set(
           kPortNameKey,
           l10n_util::GetStringFUTF16(
               IDS_SERIAL_POLICY_DESCRIPTION_FOR_USB_PRODUCT_ID_AND_VENDOR_ID,
               base::ASCIIToUTF16(base::StringPrintf("%04X", product_id)),
               base::ASCIIToUTF16(base::StringPrintf("%04X", vendor_id))));
-#if !BUILDFLAG(IS_ANDROID)
     }
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   return base::Value(std::move(object));
 }
 
 base::Value VendorIdToValue(uint16_t vendor_id) {
   base::DictValue object;
-#if !BUILDFLAG(IS_ANDROID)
   const char* vendor_name = device::UsbIds::GetVendorName(vendor_id);
   if (vendor_name) {
     object.Set(kPortNameKey,
@@ -126,14 +111,11 @@ base::Value VendorIdToValue(uint16_t vendor_id) {
                    IDS_SERIAL_POLICY_DESCRIPTION_FOR_USB_VENDOR_NAME,
                    base::UTF8ToUTF16(vendor_name)));
   } else {
-#endif  // !BUILDFLAG(IS_ANDROID)
     object.Set(kPortNameKey,
                l10n_util::GetStringFUTF16(
                    IDS_SERIAL_POLICY_DESCRIPTION_FOR_USB_VENDOR_ID,
                    base::ASCIIToUTF16(base::StringPrintf("%04X", vendor_id))));
-#if !BUILDFLAG(IS_ANDROID)
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   return base::Value(std::move(object));
 }
 
@@ -174,11 +156,6 @@ base::DictValue SerialChooserContext::PortInfoToValue(
       port.bluetooth_service_class_id->IsValid()) {
     value.Set(kBluetoothDevicePathKey, port.path.LossyDisplayName());
   } else {
-#if BUILDFLAG(IS_WIN)
-    // Windows provides a handy device identifier which we can rely on to be
-    // sufficiently stable for identifying devices across restarts.
-    value.Set(kDeviceInstanceIdKey, port.device_instance_id);
-#else
     CHECK(port.has_vendor_id);
     value.Set(kVendorIdKey, port.vendor_id);
     CHECK(port.has_product_id);
@@ -189,7 +166,6 @@ base::DictValue SerialChooserContext::PortInfoToValue(
     CHECK(port.usb_driver_name && !port.usb_driver_name->empty());
     value.Set(kUsbDriverKey, *port.usb_driver_name);
 #endif  // BUILDFLAG(IS_MAC)
-#endif  // BUILDFLAG(IS_WIN)
   }
   return value;
 }
@@ -209,9 +185,6 @@ std::string SerialChooserContext::GetKeyForObject(
     return *bluetooth_device_path;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return *(object.FindString(kDeviceInstanceIdKey));
-#else
   std::vector<std::string> key_pieces{
       base::NumberToString(*(object.FindInt(kVendorIdKey))),
       base::NumberToString(*(object.FindInt(kProductIdKey))),
@@ -220,7 +193,6 @@ std::string SerialChooserContext::GetKeyForObject(
   key_pieces.push_back(*(object.FindString(kUsbDriverKey)));
 #endif  // BUILDFLAG(IS_MAC)
   return base::JoinString(key_pieces, "|");
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 bool SerialChooserContext::IsValidObject(const base::DictValue& object) {
@@ -239,9 +211,6 @@ bool SerialChooserContext::IsValidObject(const base::DictValue& object) {
     return object.size() == 2;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return object.size() == 2 && object.FindString(kDeviceInstanceIdKey);
-#else
   if (!object.FindInt(kVendorIdKey) || !object.FindInt(kProductIdKey) ||
       !object.FindString(kSerialNumberKey)) {
     return false;
@@ -251,7 +220,6 @@ bool SerialChooserContext::IsValidObject(const base::DictValue& object) {
 #else
   return object.size() == 4;
 #endif  // BUILDFLAG(IS_MAC)
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 std::u16string SerialChooserContext::GetObjectDisplayName(
@@ -493,14 +461,6 @@ bool SerialChooserContext::HasPortPermission(
       }
       return true;
     } else {
-#if BUILDFLAG(IS_WIN)
-      const std::string* device_instance_id =
-          device.FindString(kDeviceInstanceIdKey);
-      if (device_instance_id &&
-          port.device_instance_id == *device_instance_id) {
-        return true;
-      }
-#else
       const std::optional<int> vendor_id = device.FindInt(kVendorIdKey);
       const std::optional<int> product_id = device.FindInt(kProductIdKey);
       const std::string* serial_number = device.FindString(kSerialNumberKey);
@@ -528,7 +488,6 @@ bool SerialChooserContext::HasPortPermission(
 #endif  // BUILDFLAG(IS_MAC)
 
       return true;
-#endif  // BUILDFLAG(IS_WIN)
     }
   }
   return false;
@@ -551,9 +510,6 @@ bool SerialChooserContext::CanStorePersistentEntry(
     return true;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return !port.device_instance_id.empty();
-#else
   const bool has_usb = port.has_vendor_id && port.has_product_id &&
                        port.serial_number && !port.serial_number->empty();
   if (!has_usb) {
@@ -573,7 +529,6 @@ bool SerialChooserContext::CanStorePersistentEntry(
 #endif  // BUILDFLAG(IS_MAC)
 
   return true;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 const device::mojom::SerialPortInfo* SerialChooserContext::GetPortInfo(
@@ -709,13 +664,5 @@ void SerialChooserContext::OnPortManagerConnectionError() {
 }
 
 bool SerialChooserContext::CanApplyPortSpecificPolicy() {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* profile_helper = ash::ProfileHelper::Get();
-  DCHECK(profile_helper);
-  user_manager::User* user = profile_helper->GetUserByProfile(profile_);
-  DCHECK(user);
-  return user->IsAffiliated();
-#else
   return true;
-#endif
 }

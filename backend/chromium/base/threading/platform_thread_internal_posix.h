@@ -58,14 +58,7 @@ void SetThreadTypeLinux(ProcessId process_id,
                         PlatformThreadId thread_id,
                         ThreadType thread_type);
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-void SetThreadTypeChromeOS(ProcessId process_id,
-                           PlatformThreadId thread_id,
-                           ThreadType thread_type);
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr auto SetThreadType = SetThreadTypeChromeOS;
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 inline constexpr auto SetThreadType = SetThreadTypeLinux;
 #endif
 

@@ -150,12 +150,6 @@ source_set("impl_for_embedder") {
     public_deps += [ "//mojo/core/ports" ]
   }
 
-  if (is_fuchsia) {
-    sources += [ "channel_fuchsia.cc" ]
-
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fdio" ]
-  }
-
   if (is_posix && !mojo_use_apple_channel) {
     sources += [
       "broker_posix.cc",
@@ -186,13 +180,6 @@ source_set("impl_for_embedder") {
 
   defines = [ "MOJO_SYSTEM_IMPL_IMPLEMENTATION" ]
   deps = [ "//crypto" ]
-
-  if (is_win) {
-    sources += [
-      "broker_win.cc",
-      "channel_win.cc",
-    ]
-  }
 
   # Use target_os == "chromeos" instead of is_chromeos because we need to
   # build NaCl targets (i.e. IRT) for ChromeOS the same as the rest of ChromeOS.

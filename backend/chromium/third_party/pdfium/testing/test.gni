@@ -12,63 +12,21 @@
 #   use_raw_android_executable: Use executable() rather than android_apk().
 #   use_native_activity: Test implements ANativeActivity_onCreate().
 template("test") {
-  if (is_ios) {
-    import("//build/config/ios/rules.gni")
+  executable(target_name) {
+    deps = []
+    forward_variables_from(invoker, "*")
 
-    _test_target = target_name
-    _resources_bundle_data = target_name + "_resources_bundle_data"
+    testonly = true
+    deps += [
+      # Give tests the default manifest on Windows (a no-op elsewhere).
+      "//build/win:default_exe_manifest",
+    ]
+  }
 
-    bundle_data(_resources_bundle_data) {
-      visibility = [ ":$_test_target" ]
-      sources = [ "//testing/gtest_ios/Default.png" ]
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-
-    ios_app_bundle(_test_target) {
+  if (defined(invoker.output_name) && target_name != invoker.output_name) {
+    group("${invoker.output_name}_run") {
       testonly = true
-
-      # See above call.
-      forward_variables_from(invoker, "*", [ "testonly" ])
-
-      # Provide sensible defaults in case invoker did not define any of those
-      # required variables.
-      if (!defined(info_plist) && !defined(info_plist_target)) {
-        info_plist = "//testing/gtest_ios/unittest-Info.plist"
-      }
-
-      _bundle_id_suffix = target_name
-      if (ios_automatically_manage_certs) {
-        # Use the same bundle identifier for all unit tests when managing
-        # certificates automatically as the number of free certs is limited.
-        _bundle_id_suffix = "generic-unit-test"
-      }
-      if (!defined(extra_substitutions)) {
-        extra_substitutions = []
-      }
-      extra_substitutions += [ "GTEST_BUNDLE_ID_SUFFIX=$_bundle_id_suffix" ]
-
-      if (!defined(bundle_deps)) {
-        bundle_deps = []
-      }
-      bundle_deps += [ ":$_resources_bundle_data" ]
-    }
-  } else {
-    executable(target_name) {
-      deps = []
-      forward_variables_from(invoker, "*")
-
-      testonly = true
-      deps += [
-        # Give tests the default manifest on Windows (a no-op elsewhere).
-        "//build/win:default_exe_manifest",
-      ]
-    }
-
-    if (defined(invoker.output_name) && target_name != invoker.output_name) {
-      group("${invoker.output_name}_run") {
-        testonly = true
-        deps = [ ":${invoker.target_name}" ]
-      }
+      deps = [ ":${invoker.target_name}" ]
     }
   }
 }

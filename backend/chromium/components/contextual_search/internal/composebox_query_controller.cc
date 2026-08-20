@@ -56,10 +56,8 @@
 #include "third_party/lens_server_proto/lens_overlay_visual_search_interaction_data.pb.h"
 #include "third_party/omnibox_proto/chrome_aim_entry_point.pb.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "services/data_decoder/public/cpp/decode_image.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#endif  // !BUILDFLAG(IS_IOS)
 
 using endpoint_fetcher::CredentialsMode;
 using endpoint_fetcher::EndpointFetcher;
@@ -862,13 +860,6 @@ void ComposeboxQueryController::StartFileUploadFlow(
   }
   // Create a file info struct to hold the file upload data.
   auto file_info = std::make_unique<FileInfo>();
-#if BUILDFLAG(IS_IOS)
-  // Ensure the app doesn't suspend while we are uploading a file. By creating a
-  // ScopedCriticalAction, we tell the system that a critical task is running,
-  // granting a grace period if the app is backgrounded.
-  file_info->background_action =
-      std::make_unique<base::ios::ScopedCriticalAction>("ComposeboxFileUpload");
-#endif
   file_info->file_token = file_token;
   if (contextual_input_data->primary_content_type.has_value()) {
     file_info->mime_type = contextual_input_data->primary_content_type.value();
@@ -1635,7 +1626,6 @@ void ComposeboxQueryController::ProcessDecodedImageAndContinue(
     RequestBodyProtoCreatedCallback callback,
     std::optional<std::string> file_name,
     const SkBitmap& bitmap) {
-#if !BUILDFLAG(IS_IOS)
   scoped_refptr<lens::RefCountedLensOverlayClientLogs> ref_counted_logs =
       base::MakeRefCounted<lens::RefCountedLensOverlayClientLogs>();
   if (bitmap.isNull() || bitmap.empty()) {
@@ -1661,7 +1651,6 @@ void ComposeboxQueryController::ProcessDecodedImageAndContinue(
                          CreateFileUploadRequestProtoWithImageDataAndContinue,
                      request_id, CreateClientContext(), ref_counted_logs,
                      std::move(callback), file_name));
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 void ComposeboxQueryController::CreateImageUploadRequest(
@@ -1670,7 +1659,6 @@ void ComposeboxQueryController::CreateImageUploadRequest(
     std::optional<lens::ImageEncodingOptions> image_options,
     std::optional<std::string> file_name,
     RequestBodyProtoCreatedCallback callback) {
-#if !BUILDFLAG(IS_IOS)
   CHECK(image_options.has_value());
   data_decoder::DecodeImageIsolated(
       image_data, data_decoder::mojom::ImageCodec::kDefault,
@@ -1680,7 +1668,6 @@ void ComposeboxQueryController::CreateImageUploadRequest(
       base::BindOnce(&ComposeboxQueryController::ProcessDecodedImageAndContinue,
                      weak_ptr_factory_.GetWeakPtr(), request_id,
                      image_options.value(), std::move(callback), file_name));
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 void ComposeboxQueryController::CreateUploadRequestBodiesAndContinue(
@@ -2049,9 +2036,6 @@ void ComposeboxQueryController::HandleUploadResponse(
   if (response->http_status_code != google_apis::ApiErrorCode::HTTP_SUCCESS) {
     file_info->upload_error_type =
         contextual_search::ContextUploadErrorType::kServerError;
-#if BUILDFLAG(IS_IOS)
-    file_info->background_action.reset();
-#endif
     UpdateContextUploadStatus(
         file_token, contextual_search::ContextUploadStatus::kUploadFailed,
         contextual_search::ContextUploadErrorType::kServerError);
@@ -2068,9 +2052,6 @@ void ComposeboxQueryController::HandleUploadResponse(
   if (file_info->upload_status ==
           contextual_search::ContextUploadStatus::kUploadStarted &&
       file_info->num_outstanding_network_requests_ == 0) {
-#if BUILDFLAG(IS_IOS)
-    file_info->background_action.reset();
-#endif
     UpdateContextUploadStatus(
         file_token, contextual_search::ContextUploadStatus::kUploadSuccessful,
         std::nullopt);

@@ -65,9 +65,6 @@ BASE_FEATURE(kEnableMSAAOnNewIntelGPUs,
              base::FEATURE_DISABLED_BY_DEFAULT
 );
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kNoUndamagedOverlayPromotion, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS)
 // If enabled, the TASK_CATEGORY_POLICY value of the GPU process will be
@@ -202,11 +199,7 @@ BASE_FEATURE(kSkiaGraphitePrecompilation, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kConditionallySkipGpuChannelFlush,
 // To enable on ChromeOS, test failures must be investigated
 // (crrev.com/c/5435673).
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 // Whether the Dawn "skip_validation" toggle is enabled for Skia Graphite.
@@ -252,21 +245,6 @@ BASE_FEATURE_PARAM(bool,
 const base::FeatureParam<bool> kSkiaGraphiteEnableMSAAOnNewerIntel{
     &kSkiaGraphite, "enable_msaa_on_newer_intel", true};
 
-#if BUILDFLAG(IS_WIN)
-// Whether the we should DumpWithoutCrashing when D3D related errors are detected.
-const base::FeatureParam<bool> kSkiaGraphiteDawnDumpWCOnD3DError{
-    &kSkiaGraphite, "dawn_dumpwc_d3d_errors", false};
-
-// Whether to disable D3D shader optimizations.
-const base::FeatureParam<bool> kSkiaGraphiteDawnDisableD3DShaderOptimizations{
-    &kSkiaGraphite, "dawn_disable_d3d_shader_optimizations", false};
-
-// Whether the Dawn D3D11 flush should be delayed until the end of the frame.
-const base::FeatureParam<bool> kSkiaGraphiteDawnD3D11DelayFlush{
-    &kSkiaGraphite, "dawn_d3d11_delay_flush", true};
-
-BASE_FEATURE(kSkiaGraphiteDawnUseD3D12, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Whether to use the GpuPersistentCache for caching GPU process shader blobs.
 // Usage for Graphite is controlled independently with
@@ -295,10 +273,6 @@ BASE_FEATURE(kDeferredOverlaysRelease,
 
 // Use d3d11 UpdateSubresource() (instead of a staging texture) to upload pixels
 // to textures.
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kD3DBackingUploadWithUpdateSubresource,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // This feature allows enabling specific entries in
 // software_rendering_list.json, via experimentation. The entries must have
@@ -395,15 +369,9 @@ bool IsSkiaGraphiteSupportedByDevice(const base::CommandLine* command_line) {
   }
 #endif  // BUILDFLAG(IS_MAC)
   return true;
-#elif BUILDFLAG(IS_CHROMEOS)
-  // Graphite on ChromeOS uses the Dawn Vulkan backend. Only enable Graphite if
-  // device would already be using Ganesh/Vulkan.
-  return IsUsingVulkan();
 #elif BUILDFLAG(IS_WIN) && defined(ARCH_CPU_ARM64)
   // Graphite on Windows ARM requires further research.
   return false;
-#elif BUILDFLAG(IS_WIN)
-  return true;
 #else
   // Disallow Graphite from being enabled via the base::Feature on
   // not-yet-supported platforms to avoid users experiencing undefined behavior,
@@ -529,9 +497,6 @@ BASE_FEATURE(kWebGPUCompatibilityMode, base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kWebGPUAndroidOpenGLES, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kWebGPUQualcommWindows, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Enables runtime configuration of the GPU watchdog timeout via
 // experimentation.

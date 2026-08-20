@@ -52,7 +52,6 @@ constexpr char kProfile[] = "Profile";
 constexpr char kBrowser[] = "Browser";
 #endif  // BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES)
 
-#if !BUILDFLAG(IS_ANDROID)
 std::string ConvertPolicyLevelToString(DTCPolicyLevel level) {
   switch (level) {
     case DTCPolicyLevel::kBrowser:
@@ -61,7 +60,6 @@ std::string ConvertPolicyLevelToString(DTCPolicyLevel level) {
       return "User";
   }
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_ANDROID)
@@ -86,9 +84,6 @@ ConnectorsInternalsPageHandler::~ConnectorsInternalsPageHandler() = default;
 
 void ConnectorsInternalsPageHandler::GetDeviceTrustState(
     GetDeviceTrustStateCallback callback) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
   auto* device_trust_service =
       DeviceTrustServiceFactory::GetForProfile(profile_);
 
@@ -114,7 +109,6 @@ void ConnectorsInternalsPageHandler::GetDeviceTrustState(
       base::BindOnce(&ConnectorsInternalsPageHandler::OnSignalsCollected,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback),
                      device_trust_service->IsEnabled()));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void ConnectorsInternalsPageHandler::DeleteDeviceTrustKey(
@@ -253,7 +247,6 @@ void ConnectorsInternalsPageHandler::GetSignalsReportingState(
         // BUILDFLAG(IS_ANDROID)
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ConnectorsInternalsPageHandler::OnSignalsCollected(
     GetDeviceTrustStateCallback callback,
     bool is_device_trust_enabled,
@@ -287,6 +280,5 @@ void ConnectorsInternalsPageHandler::OnSignalsCollected(
       signals_json, std::move(consent_metadata));
   std::move(callback).Run(std::move(state));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace enterprise_connectors

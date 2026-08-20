@@ -7,10 +7,6 @@ import("//build/config/features.gni")
 if (is_win || ((is_linux || is_chromeos) && use_udev) || is_mac) {
   config("platform_support") {
     visibility = [ ":serial" ]
-    if (is_win) {
-      libs = [ "setupapi.lib" ]
-      ldflags = [ "/DELAYLOAD:setupapi.dll" ]
-    }
   }
 
   source_set("serial") {
@@ -66,15 +62,6 @@ if (is_win || ((is_linux || is_chromeos) && use_udev) || is_mac) {
       ]
     }
 
-    if (is_win) {
-      sources += [
-        "serial_device_enumerator_win.cc",
-        "serial_device_enumerator_win.h",
-        "serial_io_handler_win.cc",
-        "serial_io_handler_win.h",
-      ]
-    }
-
     if (is_posix) {
       sources += [
         "serial_io_handler_posix.cc",
@@ -86,21 +73,10 @@ if (is_win || ((is_linux || is_chromeos) && use_udev) || is_mac) {
       deps += [ "//device/udev_linux" ]
     }
 
-    if (is_chromeos) {
-      deps += [ "//chromeos/dbus/permission_broker" ]
-    }
-
     if (is_mac) {
       frameworks = [
         "Foundation.framework",
         "IOKit.framework",
-      ]
-    }
-
-    if (is_win) {
-      deps += [
-        "//device/base",
-        "//third_party/re2",
       ]
     }
   }

@@ -49,16 +49,8 @@ enum VirtualConnectPlatformValue {
 constexpr VirtualConnectPlatformValue GetVirtualConnectPlatform() {
   // Based on //build/build_config.h in the Chromium project. The order of these
   // matters!
-#if BUILDFLAG(IS_ANDROID)
-  return kAndroid;
-#elif BUILDFLAG(IS_IOS)
-  return kIOS;
-#elif BUILDFLAG(IS_WIN)
-  return kWindows;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return kMacOSX;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return kChromeOS;
 #elif BUILDFLAG(IS_LINUX)
   return kLinux;
 #else

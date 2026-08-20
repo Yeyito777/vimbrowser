@@ -28,11 +28,7 @@ class CertificateManagerUIConfig
 // because it can be opened in a dialog window by the login screen (see
 // chrome/browser/ash/login/screens/error_screen.cc).
 class CertificateManagerUI
-#if BUILDFLAG(IS_CHROMEOS)
-    : public ui::MojoWebDialogUI
-#else
     : public ui::MojoWebUIController
-#endif
 #if BUILDFLAG(CHROME_ROOT_STORE_CERT_MANAGEMENT_UI)
     ,
       public certificate_manager::mojom::CertificateManagerPageHandlerFactory

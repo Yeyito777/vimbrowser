@@ -34,9 +34,6 @@
 #include "mojo/public/cpp/system/invitation.h"
 #include "services/resource_coordinator/public/mojom/memory_instrumentation/memory_instrumentation.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/object_watcher.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/browser/child_thread_type_switcher_linux.h"
@@ -62,9 +59,6 @@ class BrowserChildProcessHostImpl
     : public BrowserChildProcessHost,
       public ChildProcessHostDelegate,
       public metrics::HistogramChildProcess,
-#if BUILDFLAG(IS_WIN)
-      public base::win::ObjectWatcher::Delegate,
-#endif
       public ChildProcessLauncher::Client,
       public memory_instrumentation::mojom::CoordinatorConnector,
       public base::MemoryPressureListener {
@@ -127,14 +121,8 @@ class BrowserChildProcessHostImpl
       std::unique_ptr<base::CommandLine> cmd_line,
       std::unique_ptr<ChildProcessLauncherFileData> file_data);
 
-#if !BUILDFLAG(IS_ANDROID)
   void SetProcessPriority(base::Process::Priority priority);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-  void EnableWarmUpConnection();
-  void DumpProcessStack();
-#endif
 
   BrowserChildProcessHostDelegate* delegate() const { return delegate_; }
 
@@ -173,9 +161,6 @@ class BrowserChildProcessHostImpl
   // ChildProcessLauncher::Client implementation.
   void OnProcessLaunched() override;
   void OnProcessLaunchFailed(int error_code) override;
-#if BUILDFLAG(IS_ANDROID)
-  bool CanUseWarmUpConnection() override;
-#endif
 
   // memory_instrumentation::mojom::CoordinatorConnector implementation:
   void RegisterCoordinatorClient(
@@ -199,10 +184,6 @@ class BrowserChildProcessHostImpl
       base::WeakPtr<BrowserChildProcessHostImpl> process,
       const std::string& error);
 
-#if BUILDFLAG(IS_WIN)
-  // ObjectWatcher::Delegate implementation.
-  void OnObjectSignaled(HANDLE object) override;
-#endif
 
   ChildProcessData data_;
   std::string metrics_name_;
@@ -213,12 +194,6 @@ class BrowserChildProcessHostImpl
   mojo::BinderMapWithContext<BrowserChildProcessHost*> binder_map_;
   std::unique_ptr<ChildProcessLauncher> child_process_launcher_;
 
-#if BUILDFLAG(IS_WIN)
-  // Watches to see if the child process exits before the IPC channel has
-  // been connected. Thereafter, its exit is determined by an error on the
-  // IPC channel.
-  base::win::ObjectWatcher early_exit_watcher_;
-#endif
 
   // The memory allocator, if any, in which the process will write its metrics.
   std::unique_ptr<base::PersistentMemoryAllocator> metrics_allocator_;
@@ -265,11 +240,6 @@ class BrowserChildProcessHostImpl
   // Whether the child process exited abnormally (killed or crashed).
   bool exited_abnormally_ = false;
 
-#if BUILDFLAG(IS_ANDROID)
-  // whether the child process can use pre-warmed up connection for better
-  // performance.
-  bool can_use_warm_up_connection_ = false;
-#endif
 
   // Keeps this process registered with the tracing subsystem.
   std::unique_ptr<TracingServiceController::ClientRegistration>

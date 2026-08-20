@@ -21,11 +21,6 @@
 #include "client/annotation.h"
 
 namespace crashpad {
-#if BUILDFLAG(IS_IOS)
-namespace internal {
-class InProcessIntermediateDumpHandler;
-}  // namespace internal
-#endif
 
 //! \brief A list that contains all the currently set annotations.
 //!
@@ -114,9 +109,6 @@ class AnnotationList {
   ConstIterator cend() const;
 
  protected:
-#if BUILDFLAG(IS_IOS)
-  friend class internal::InProcessIntermediateDumpHandler;
-#endif
 
   //! \brief Returns a pointer to the tail node.
   const Annotation* tail_pointer() const { return tail_pointer_; }

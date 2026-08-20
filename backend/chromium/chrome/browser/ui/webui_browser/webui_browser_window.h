@@ -147,12 +147,8 @@ class WebUIBrowserWindow : public BrowserWindow,
   send_tab_to_self::SendTabToSelfBubbleView* ShowSendTabToSelfPromoBubble(
       content::WebContents* contents,
       bool show_signin_button) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void ToggleMultitaskMenu() override;
-#else
   sharing_hub::SharingHubBubbleView* ShowSharingHubBubble(
       share::ShareAttempt attempt) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   DownloadBubbleUIController* GetDownloadBubbleUIController() override;
   void ConfirmBrowserCloseWithPendingDownloads(
       int download_count,

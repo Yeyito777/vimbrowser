@@ -18,9 +18,6 @@
 #include "extensions/browser/pending_extension_manager_factory.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/extensions/install_limiter_factory.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -61,9 +58,6 @@ ExternalProviderManagerFactory::ExternalProviderManagerFactory()
   DependsOn(PendingExtensionManagerFactory::GetInstance());
   DependsOn(ExtensionsBrowserClient::Get()->GetExtensionSystemFactory());
   DependsOn(InstallStageTrackerFactory::GetInstance());
-#if BUILDFLAG(IS_CHROMEOS)
-  DependsOn(InstallLimiterFactory::GetInstance());
-#endif
 }
 
 ExternalProviderManagerFactory::~ExternalProviderManagerFactory() = default;

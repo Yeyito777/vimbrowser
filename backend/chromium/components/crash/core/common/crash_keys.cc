@@ -79,11 +79,7 @@ void SetSwitchesFromCommandLine(const base::CommandLine& command_line,
   // Go through the argv, skipping the exec path. Stop if there are too many
   // switches to hold in crash keys.
   for (size_t i = 1; i < argv.size(); ++i) {
-#if BUILDFLAG(IS_WIN)
-    std::string switch_str = base::WideToUTF8(argv[i]);
-#else
     std::string switch_str = argv[i];
-#endif
 
     // Skip uninteresting switches.
     if (skip_filter && (*skip_filter)(switch_str))

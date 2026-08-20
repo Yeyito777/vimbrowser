@@ -44,15 +44,7 @@ constexpr int kUserDemographicsMaxAgeInYears = 85;
 // provided by the sync server. This is a read-only syncable priority pref on
 // all platforms except ChromeOS Ash, where it is a syncable OS-level priority
 // pref.
-#if !BUILDFLAG(IS_CHROMEOS)
 inline constexpr char kSyncDemographicsPrefName[] = "sync.demographics";
-#else
-inline constexpr char kSyncOsDemographicsPrefName[] = "sync.os_demographics";
-// TODO(crbug.com/40240008): Make this non-syncable (on Ash only) after full
-// rollout of the syncable os priority pref; then delete it locally from Ash
-// devices.
-inline constexpr char kSyncDemographicsPrefName[] = "sync.demographics";
-#endif
 
 // Stores a "secret" offset that is used to randomize the birth year for metrics
 // reporting. This value should not be logged to UMA directly; instead, it

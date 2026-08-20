@@ -30,9 +30,6 @@ class UsbDeviceLinux : public UsbDevice {
   UsbDeviceLinux& operator=(const UsbDeviceLinux&) = delete;
 
 // UsbDevice implementation:
-#if BUILDFLAG(IS_CHROMEOS)
-  void CheckUsbAccess(ResultCallback callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void Open(OpenCallback callback) override;
 
   const std::string& device_path() const { return device_path_; }
@@ -53,20 +50,10 @@ class UsbDeviceLinux : public UsbDevice {
   ~UsbDeviceLinux() override;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnOpenRequestComplete(OpenCallback callback,
-                             base::ScopedFD fd,
-                             const std::string& client_id,
-                             base::ScopedFD lifeline_fd);
-  void OnOpenRequestError(OpenCallback callback,
-                          const std::string& error_name,
-                          const std::string& error_message);
-#else
   void OpenOnBlockingThread(
       OpenCallback callback,
       scoped_refptr<base::SequencedTaskRunner> task_runner,
       scoped_refptr<base::SequencedTaskRunner> blocking_task_runner);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void Opened(base::ScopedFD fd,
               base::ScopedFD lifeline_fd,
               const std::string& client_id,

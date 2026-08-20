@@ -93,21 +93,6 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
 // enabled as part of the FLEDGE origin trial.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kAllowURNsInIframes);
 
-#if BUILDFLAG(IS_ANDROID)
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kAndroidDesktopWebPrefsLargeDisplays);
-
-// If enabled, renders styling similar to Android native UI for spelling and
-// grammar errors in textboxes.
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kAndroidSpellcheckNativeUi);
-
-// If enabled, provides API support for custom spell check menus that are
-// rendered by Android applications.
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kAndroidSpellcheckFullApiBlink);
-
-// If enabled, the platform in the User-Agent metadata for Android desktop will
-// be "Android" instead of "Linux".
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kAndroidDesktopUAPlatform);
-#endif
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kDisplayWarningDeprecateURNIframesUseFencedFrames);
@@ -709,12 +694,10 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kIgnoreInputWhileHidden);
 // applied. See https://crbug.com/1369823.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kImageLoadingPrioritizationFix);
 
-#if !BUILDFLAG(IS_ANDROID)
 // If enabled, the initial WebUI will not interact with extensions. This feature
 // intends to optimize performance by reducting extension related tasks.
 // See crbug.com/450192387.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kInitialWebUIWithoutExtensions);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Use Snappy to compress values for IndexedDB before wiring them to the
 // browser.

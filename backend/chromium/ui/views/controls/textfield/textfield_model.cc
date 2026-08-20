@@ -382,13 +382,6 @@ void SelectRangeInCompositionText(gfx::RenderText* render_text,
   DCHECK(range.IsValid());
   size_t start = range.GetMin();
   size_t end = range.GetMax();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Swap |start| and |end| so that GetCaretBounds() can always return the same
-  // value during conversion.
-  // TODO(yusukes): Check if this works for other platforms. If it is, use this
-  // on all platforms.
-  std::swap(start, end);
-#endif
   render_text->SelectRange(gfx::Range(cursor + start, cursor + end));
 }
 

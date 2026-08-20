@@ -756,18 +756,6 @@ cc_test_static_library("test_support") {
   }
 }
 
-if (is_ios) {
-  bundle_data("unit_tests_bundle_data") {
-    testonly = true
-    sources = [
-      "//testing/buildbot/filters/ios.cc_unittests.filter",
-      "test/data/lottie/animation_with_2_text_nodes.json",
-    ]
-    outputs = [ "{{bundle_resources_dir}}/" +
-                "{{source_root_relative_dir}}/{{source_file_part}}" ]
-  }
-}
-
 cc_test("cc_unittests") {
   use_xvfb = use_xvfb_in_this_config
 
@@ -1024,32 +1012,10 @@ cc_test("cc_unittests") {
     data += [ "test/data/" ]
   }
 
-  if (is_fuchsia) {
-    # TODO(crbug.com/42050042): Some of these tests use SwiftShader,
-    # which requires ambient VMEX.
-    test_runner_shard = "//build/config/fuchsia/test/elf_test_ambient_exec_runner.shard.test-cml"
-
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-
-      # TODO(crbug.com/40055105): Investigate removing the requirement
-      # for VmexResource.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
-  }
-
   if (enable_vulkan) {
     deps += [
       "//gpu/vulkan:test_support",
       "//gpu/vulkan/init",
-    ]
-  }
-
-  if (is_ios) {
-    public_deps = [
-      ":unit_tests_bundle_data",
-      "//components/test:viz_test_bundle_data",
     ]
   }
 }

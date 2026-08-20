@@ -51,9 +51,6 @@ class DeviceFactory {
       mojo::PendingRemote<mojom::DevicesChangedObserver> observer,
       bool raise_event_if_virtual_devices_already_present) = 0;
 
-#if BUILDFLAG(IS_WIN)
-  virtual void OnGpuInfoUpdate(const CHROME_LUID& luid) = 0;
-#endif
 
   virtual ~DeviceFactory() = default;
 };

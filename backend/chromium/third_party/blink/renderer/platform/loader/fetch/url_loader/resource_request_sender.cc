@@ -74,15 +74,6 @@ namespace blink {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// Converts |time| from a remote to local TimeTicks, overwriting the original
-// value.
-void RemoteToLocalTimeTicks(const InterProcessTimeTicksConverter& converter,
-                            base::TimeTicks* time) {
-  RemoteTimeTicks remote_time = RemoteTimeTicks::FromTimeTicks(*time);
-  *time = converter.ToLocalTimeTicks(remote_time).ToTimeTicks();
-}
-#endif
 
 void CheckSchemeForReferrerPolicy(const network::ResourceRequest& request) {
   if ((request.referrer_policy ==
@@ -253,22 +244,6 @@ int ResourceRequestSender::SendAsync(
     throttles.insert(throttles.begin(),
                      std::make_unique<ContentDecodingURLLoaderThrottle>());
   }
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/1286053): This used to be a DCHECK asserting "Main frame
-  // shouldn't come here", but after removing and re-landing the DCHECK later it
-  // started tripping in some teses. Was the DCHECK invalid or is there a bug
-  // somewhere?
-  if (!(request->is_outermost_main_frame &&
-        IsRequestDestinationFrame(request->destination))) {
-    // Having the favicon request extend user gesture carryover doesn't make
-    // sense and causes flakiness in tests when the async favicon request
-    // unexpectedly extends the navigation chain.
-    if (request->has_user_gesture && !request->is_favicon) {
-      resource_load_info_notifier_wrapper
-          ->NotifyUpdateUserGestureCarryoverInfo();
-    }
-  }
-#endif
   code_cache_fetcher_ = CodeCacheFetcher::TryCreateAndStart(
       *request, code_cache_host, loading_task_runner_,
       blink::BindOnce(&ResourceRequestSender::DidReceiveCachedCode,
@@ -690,41 +665,6 @@ base::TimeTicks ResourceRequestSender::ToLocalURLResponseHead(
     return remote_response_start;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // This code below can only be reached on Windows as the
-  // base::TimeTicks::IsConsistentAcrossProcesses() above always returns true
-  // except on Windows platform.
-  InterProcessTimeTicksConverter converter(
-      LocalTimeTicks::FromTimeTicks(request_info.local_request_start),
-      LocalTimeTicks::FromTimeTicks(request_info.local_response_start),
-      RemoteTimeTicks::FromTimeTicks(response_head.request_start),
-      RemoteTimeTicks::FromTimeTicks(remote_response_start));
-
-  net::LoadTimingInfo* load_timing = &response_head.load_timing;
-  RemoteToLocalTimeTicks(converter, &load_timing->request_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->proxy_resolve_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->proxy_resolve_end);
-  RemoteToLocalTimeTicks(converter,
-                         &load_timing->connect_timing.domain_lookup_start);
-  RemoteToLocalTimeTicks(converter,
-                         &load_timing->connect_timing.domain_lookup_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->connect_timing.connect_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->connect_timing.connect_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->connect_timing.ssl_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->connect_timing.ssl_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->send_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->send_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->receive_headers_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->receive_headers_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->push_start);
-  RemoteToLocalTimeTicks(converter, &load_timing->push_end);
-  RemoteToLocalTimeTicks(converter, &load_timing->service_worker_start_time);
-  RemoteToLocalTimeTicks(converter, &load_timing->service_worker_ready_time);
-  RemoteToLocalTimeTicks(converter, &load_timing->service_worker_fetch_start);
-  RemoteToLocalTimeTicks(converter,
-                         &load_timing->service_worker_respond_with_settled);
-  RemoteToLocalTimeTicks(converter, &remote_response_start);
-#endif
   return remote_response_start;
 }
 

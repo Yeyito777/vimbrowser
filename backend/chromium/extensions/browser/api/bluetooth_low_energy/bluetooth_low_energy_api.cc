@@ -1267,12 +1267,8 @@ BluetoothLowEnergyCreateServiceFunction::
 
 bool BluetoothLowEnergyCreateServiceFunction::ParseParams() {
 // Causes link error on Windows. API will never be on Windows, so #ifdefing.
-#if !BUILDFLAG(IS_WIN)
   params_ = apibtle::CreateService::Params::Create(args());
   return params_.has_value();
-#else
-  return true;
-#endif
 }
 
 void BluetoothLowEnergyCreateServiceFunction::DoWork() {
@@ -1280,7 +1276,6 @@ void BluetoothLowEnergyCreateServiceFunction::DoWork() {
 // TODO: Ideally this should be handled by our feature system, so that this
 // code doesn't even compile on OSes it isn't being used on, but currently this
 // is not possible.
-#if !BUILDFLAG(IS_WIN)
   base::WeakPtr<device::BluetoothLocalGattService> service =
       event_router_->adapter()->CreateLocalGattService(
           device::BluetoothUUID(params_->service.uuid),
@@ -1289,9 +1284,6 @@ void BluetoothLowEnergyCreateServiceFunction::DoWork() {
   event_router_->AddServiceToApp(extension_id(), service->GetIdentifier());
   Respond(ArgumentList(
       apibtle::CreateService::Results::Create(service->GetIdentifier())));
-#else
-  Respond(Error(kErrorPlatformNotSupported));
-#endif
 }
 
 // createCharacteristic:

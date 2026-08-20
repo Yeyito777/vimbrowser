@@ -262,9 +262,6 @@ AddressSpace IPAddressSpaceForSpecialScheme(const GURL& url,
       kChromeDevToolsScheme,
       kChromeUIScheme,
       kChromeUIUntrustedScheme,
-#if BUILDFLAG(IS_CHROMEOS)
-      kExternalFileScheme,
-#endif
   };
 
   for (auto* scheme : special_content_schemes) {

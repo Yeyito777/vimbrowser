@@ -14,11 +14,7 @@
 #include "chrome/app/startup_timestamps.h"
 #include "content/public/test/test_launcher.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/app/android/chrome_main_delegate_android.h"
-#else
 #include "chrome/app/chrome_main_delegate.h"
-#endif
 
 class ChromeTestSuite;
 
@@ -39,25 +35,14 @@ class ChromeTestSuiteRunner {
 
 // Acts like normal ChromeMainDelegate but injects behaviour for browser tests.
 class ChromeTestChromeMainDelegate
-#if BUILDFLAG(IS_ANDROID)
-    : public ChromeMainDelegateAndroid {
-#else
     : public ChromeMainDelegate {
-#endif
  public:
-#if BUILDFLAG(IS_ANDROID)
-  ChromeTestChromeMainDelegate() : ChromeMainDelegateAndroid() {}
-#else
   ChromeTestChromeMainDelegate()
       : ChromeMainDelegate({.exe_entry_point_ticks = base::TimeTicks::Now()}) {}
-#endif
 
   // ChromeMainDelegateOverrides.
   content::ContentUtilityClient* CreateContentUtilityClient() override;
   std::optional<int> PostEarlyInitialization(InvokedIn invoked_in) override;
-#if BUILDFLAG(IS_WIN)
-  bool ShouldHandleConsoleControlEvents() override;
-#endif
   void CreateThreadPool(std::string_view name) override;
   bool IsInitFeatureListEarly() override;
 };
@@ -76,18 +61,11 @@ class ChromeTestLauncherDelegate : public content::TestLauncherDelegate {
   // content::TestLauncherDelegate:
   int RunTestSuite(int argc, char** argv) override;
   std::string GetUserDataDirectoryCommandLineSwitch() override;
-#if !BUILDFLAG(IS_ANDROID)
   content::ContentMainDelegate* CreateContentMainDelegate() override;
-#endif
   void PreSharding() override;
   void OnDoneRunningTests() override;
 
  private:
-#if BUILDFLAG(IS_WIN)
-  class ScopedFirewallRules;
-
-  std::unique_ptr<ScopedFirewallRules> firewall_rules_;
-#endif
 
   raw_ptr<ChromeTestSuiteRunner> runner_;
 };

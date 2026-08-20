@@ -454,9 +454,6 @@ class TestAutofillClientTemplate : public T {
     device_authenticator_ = std::move(device_authenticator);
   }
 
-#if BUILDFLAG(IS_IOS)
-  bool IsLastQueriedField(FieldGlobalId field_id) override { return true; }
-#endif
 
   OtpPhishGuardDelegate* GetOtpPhishGuardDelegate() override {
     return otp_phish_guard_delegate_.get();

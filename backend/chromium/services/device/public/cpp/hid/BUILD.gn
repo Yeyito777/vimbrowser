@@ -34,11 +34,4 @@ source_set("hid") {
     "//services/device/public/mojom",
     "//services/service_manager/public/cpp",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "fake_input_service_linux.cc",
-      "fake_input_service_linux.h",
-    ]
-  }
 }

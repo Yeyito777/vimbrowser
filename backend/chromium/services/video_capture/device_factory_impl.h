@@ -16,9 +16,6 @@
 #include "services/video_capture/device_factory.h"
 #include "services/video_capture/public/mojom/devices_changed_observer.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "media/capture/video/chromeos/video_capture_device_factory_chromeos.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace video_capture {
 
@@ -30,14 +27,7 @@ class DeviceMediaToMojoAdapter;
 // same media::VideoCaptureDevice at the same time.
 class DeviceFactoryImpl : public DeviceFactory {
  public:
-#if BUILDFLAG(IS_CHROMEOS)
-  DeviceFactoryImpl(
-      std::unique_ptr<media::VideoCaptureSystem> capture_system,
-      media::MojoMjpegDecodeAcceleratorFactoryCB jpeg_decoder_factory_callback,
-      scoped_refptr<base::SequencedTaskRunner> jpeg_decoder_task_runner);
-#else
   DeviceFactoryImpl(std::unique_ptr<media::VideoCaptureSystem> capture_system);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   DeviceFactoryImpl(const DeviceFactoryImpl&) = delete;
   DeviceFactoryImpl& operator=(const DeviceFactoryImpl&) = delete;
@@ -66,9 +56,6 @@ class DeviceFactoryImpl : public DeviceFactory {
       mojo::PendingRemote<mojom::DevicesChangedObserver> observer,
       bool raise_event_if_virtual_devices_already_present) override;
 
-#if BUILDFLAG(IS_WIN)
-  void OnGpuInfoUpdate(const CHROME_LUID& luid) override;
-#endif
 
  private:
   void CreateAndAddNewDevice(const std::string& device_id,
@@ -76,20 +63,11 @@ class DeviceFactoryImpl : public DeviceFactory {
 
   void OnClientConnectionErrorOrClose(const std::string& device_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void RecordCollision();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const std::unique_ptr<media::VideoCaptureSystem> capture_system_;
   std::map<std::string, std::unique_ptr<DeviceMediaToMojoAdapter>>
       active_devices_by_id_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const media::MojoMjpegDecodeAcceleratorFactoryCB
-      jpeg_decoder_factory_callback_;
-  scoped_refptr<base::SequencedTaskRunner> jpeg_decoder_task_runner_;
-  base::DelayTimer collision_delay_timer_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool has_called_get_device_infos_;
   base::WeakPtrFactory<DeviceFactoryImpl> weak_factory_{this};

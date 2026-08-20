@@ -13,16 +13,6 @@ namespace gl {
 
 // static
 ShaderTracking* ShaderTracking::GetInstance() {
-#if BUILDFLAG(IS_WIN)
-  // Shaders can only be reliably retrieved with ANGLE backend. Therefore,
-  // limit to Windows platform only.
-  static bool enabled =
-      base::FeatureList::IsEnabled(features::kTrackCurrentShaders);
-  if (enabled) {
-    static base::NoDestructor<ShaderTracking> instance;
-    return instance.get();
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return nullptr;
 }
 

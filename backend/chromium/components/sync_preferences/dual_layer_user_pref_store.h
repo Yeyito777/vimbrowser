@@ -122,11 +122,6 @@ class DualLayerUserPrefStore : public PersistentPrefStore,
   void SetUserSelectedTypesForTest(
       syncer::UserSelectableTypeSet user_selected_types);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  syncer::UserSelectableOsTypeSet GetUserSelectedOsTypesForTest() const;
-  void SetUserSelectedOsTypesForTest(
-      syncer::UserSelectableOsTypeSet user_selected_types);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  protected:
   ~DualLayerUserPrefStore() override;
@@ -217,17 +212,6 @@ class DualLayerUserPrefStore : public PersistentPrefStore,
   void SetInterestingUserSelectedTypes(
       syncer::UserSelectableTypeSet user_selected_types);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns the subset of user selected OS types that are of relevance in
-  // determining whether an account pref should be exposed. This is stored in
-  // the local pref store for early availability.
-  syncer::UserSelectableOsTypeSet GetInterestingUserSelectedOsTypes() const;
-  // Sets the subset of user selected OS types that are of relevance in
-  // determining whether an account pref should be exposed. These are set when
-  // the sync service is initialized and/or when sync service state changes.
-  void SetInterestingUserSelectedOsTypes(
-      syncer::UserSelectableOsTypeSet user_selected_types);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // The two underlying pref stores, scoped to this device/profile and to the
   // user's signed-in account, respectively.

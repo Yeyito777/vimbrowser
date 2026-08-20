@@ -41,14 +41,6 @@ class DefaultBrowserMonitor {
   void NotifyObservers();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // The callback executed on the DefaultBrowserManager thread when the Worker
-  // detects a change.
-  void OnDefaultBrowserChangedWin();
-
-  // The monitor owns the watcher.
-  std::unique_ptr<RegistryWatcher> registry_watcher_;
-#endif  //  BUILDFLAG(IS_WIN)
 
   base::RepeatingClosureList callback_list_;
 

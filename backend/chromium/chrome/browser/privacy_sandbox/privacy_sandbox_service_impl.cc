@@ -47,16 +47,9 @@
 #include "third_party/blink/public/common/features.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/privacy_sandbox/privacy_sandbox_queue_manager.h"
 #include "ui/views/widget/widget.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/profiles/profiles_state.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#endif
 
 namespace {
 
@@ -126,14 +119,7 @@ bool IsRegularProfile(profile_metrics::BrowserProfileType profile_type) {
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Any Device Local account, which is a CrOS concept powering things like
-  // Kiosks and Managed Guest Sessions, is not considered regular.
-  return !chromeos::IsManagedGuestSession() && !chromeos::IsKioskSession() &&
-         !profiles::IsChromeAppKioskSession();
-#else
   return true;
-#endif
 }
 
 // Returns the text contents of the Topics Consent dialog.
@@ -422,17 +408,13 @@ PrivacySandboxServiceImpl::PrivacySandboxServiceImpl(
                           {browsing_topics::Topic(4), kFakeTaxonomyVersion}};
 
 // Create queue manager
-#if !BUILDFLAG(IS_ANDROID)
   queue_manager_ =
       std::make_unique<privacy_sandbox::PrivacySandboxQueueManager>(profile_);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   DCHECK(privacy_sandbox_settings_);
   DCHECK(pref_service_);
   DCHECK(cookie_settings_);
-#if !BUILDFLAG(IS_ANDROID)
   CHECK(queue_manager_);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Register observers for the Privacy Sandbox preferences.
   user_prefs_registrar_.Init(pref_service_);
@@ -687,9 +669,7 @@ void PrivacySandboxServiceImpl::PromptActionOccurred(PromptAction action,
       pref_service_->SetBoolean(prefs::kPrivacySandboxM1AdMeasurementEnabled,
                                 true);
     }
-#if !BUILDFLAG(IS_ANDROID)
     MaybeCloseOpenPrompts();
-#endif  // !BUILDFLAG(IS_ANDROID)
     // Consent-related PromptActions refer to to Topics Notice Consent
   } else if (kConsentAccepted == action) {
     DCHECK(IsConsentRequired());
@@ -712,13 +692,10 @@ void PrivacySandboxServiceImpl::PromptActionOccurred(PromptAction action,
         prefs::kPrivacySandboxM1RestrictedNoticeAcknowledged, true);
     pref_service_->SetBoolean(prefs::kPrivacySandboxM1AdMeasurementEnabled,
                               true);
-#if !BUILDFLAG(IS_ANDROID)
     MaybeCloseOpenPrompts();
-#endif  // !BUILDFLAG(IS_ANDROID)
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void PrivacySandboxServiceImpl::PromptOpenedForBrowser(
     BrowserWindowInterface* browser,
     views::Widget* widget) {
@@ -741,7 +718,6 @@ privacy_sandbox::PrivacySandboxQueueManager&
 PrivacySandboxServiceImpl::GetPrivacySandboxNoticeQueueManager() {
   return *queue_manager_.get();
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void PrivacySandboxServiceImpl::ForceChromeBuildForTests(
     bool force_chrome_build) {
@@ -1328,7 +1304,6 @@ void PrivacySandboxServiceImpl::RecordUpdatedTopicsConsent(
                            consent_text);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void PrivacySandboxServiceImpl::MaybeCloseOpenPrompts() {
   // Take a copy to avoid concurrent modification issues as widgets close and
   // remove themselves from the map synchronously. The map will typically have
@@ -1346,7 +1321,6 @@ void PrivacySandboxServiceImpl::MaybeCloseOpenPrompts() {
   // After we are done closing the last prompt, release the handle
   queue_manager_->MaybeUnqueueNotice();
 }
-#endif
 
 std::string GetPromptActionHistogramSuffix(PromptAction action) {
   switch (action) {

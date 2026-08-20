@@ -145,9 +145,6 @@ void SecurePaymentConfirmationApp::InvokePaymentApp(
   // Last used time is needed on platforms where the credentials cannot be
   // listed by platform APIs.
   std::optional<base::Time> last_used;
-#if BUILDFLAG(IS_WIN)
-  last_used = base::Time::NowFromSystemTime();
-#endif
 
   if (passkey_browser_binder_) {
     std::vector<device::PublicKeyCredentialParams::CredentialInfo>
@@ -350,10 +347,6 @@ void SecurePaymentConfirmationApp::OnGetBrowserBoundKey(
 
       // Update last used on platforms where the credentials cannot be listed by
       // platform APIs.
-#if BUILDFLAG(IS_WIN)
-      passkey_browser_binder_->UpdateKeyLastUsedToNow(
-          credential_id_, effective_relying_party_identity_);
-#endif
     }
   } else if (passkey_browser_binder_) {
     RecordBrowserBoundKeyInclusion(

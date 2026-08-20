@@ -124,10 +124,6 @@ class InterstitialHTMLSource : public content::URLDataSource {
  private:
   std::string GetSupervisedUserAskParentInterstitialHTML(
       const std::string& path);
-#if BUILDFLAG(IS_ANDROID)
-  std::string GetSupervisedUserSiteBlockedInterstitialHTML(
-      const std::string& path);
-#endif  // BUILDFLAG(IS_ANDROID)
 };
 
 std::unique_ptr<SSLBlockingPage> CreateSslBlockingPage(
@@ -659,10 +655,6 @@ void InterstitialHTMLSource::StartDataRequest(
   if (path_without_query == "/supervised-user-ask-parent") {
 #endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
     html = GetSupervisedUserAskParentInterstitialHTML(path);
-#if BUILDFLAG(IS_ANDROID)
-  } else if (path_without_query == "/supervised-user-site-blocked") {
-    html = GetSupervisedUserSiteBlockedInterstitialHTML(path);
-#endif  // BUILDFLAG(IS_ANDROID)
   } else if (interstitial_delegate.get()) {
     html = interstitial_delegate.get()->GetHTMLContents();
   } else {
@@ -723,13 +715,3 @@ std::string InterstitialHTMLSource::GetSupervisedUserAskParentInterstitialHTML(
       /*already_sent_remote_request=*/false,
       /*is_main_frame=*/true, /*ios_font_size_multiplier=*/std::nullopt);
 }
-
-#if BUILDFLAG(IS_ANDROID)
-std::string
-InterstitialHTMLSource::GetSupervisedUserSiteBlockedInterstitialHTML(
-    const std::string& path) {
-  return supervised_user::BuildErrorPageHtmlWithoutApprovals(
-      GURL("https://localhost/" + path),
-      g_browser_process->GetApplicationLocale());
-}
-#endif  // BUILDFLAG(IS_ANDROID)

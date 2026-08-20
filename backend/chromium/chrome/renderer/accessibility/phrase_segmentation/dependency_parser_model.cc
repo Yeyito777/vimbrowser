@@ -67,13 +67,8 @@ void DependencyParserModel::UpdateWithFile(base::File model_file) {
   base::ElapsedTimer timer;
   auto tflite_engine = std::make_unique<tflite::task::core::TfLiteEngine>(
       std::make_unique<DependencyParserOpResolver>());
-#if BUILDFLAG(IS_WIN)
-  absl::Status model_load_status =
-      tflite_engine->BuildModelFromFileHandle(model_file_.GetPlatformFile());
-#else
   absl::Status model_load_status = tflite_engine->BuildModelFromFileDescriptor(
       model_file_.GetPlatformFile());
-#endif
   if (!model_load_status.ok()) {
     LOCAL_HISTOGRAM_BOOLEAN(
         "Accessibility.DependencyParserModel.InvalidModelFile", true);

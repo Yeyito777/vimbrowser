@@ -127,12 +127,7 @@ void MetadataDataSource::WriteMetadata(
       auto* bundle = packet->set_chrome_events();
       base::CommandLine::StringType command_line =
           base::CommandLine::ForCurrentProcess()->GetCommandLineString();
-#if BUILDFLAG(IS_WIN)
-      AddMetadataToBundle(kCommandLineKey, base::WideToUTF8(command_line),
-                          bundle);
-#else
       AddMetadataToBundle(kCommandLineKey, command_line, bundle);
-#endif
       AddMetadataToBundle(kClockDomainMetadataKey,
                           GetClockString(base::TimeTicks::GetClock()), bundle);
       AddMetadataToBundle(
@@ -210,12 +205,8 @@ void MetadataDataSource::AddMetadataToBundle(
 
 void MetadataDataSource::RecordDefaultBundleMetadata(
     perfetto::protos::pbzero::ChromeEventBundle* bundle) {
-#if BUILDFLAG(IS_CHROMEOS)
-  MetadataDataSource::AddMetadataToBundle(kOSNameMetadataKey, "CrOS", bundle);
-#else
   MetadataDataSource::AddMetadataToBundle(
       kOSNameMetadataKey, base::SysInfo::OperatingSystemName(), bundle);
-#endif
   MetadataDataSource::AddMetadataToBundle(
       kOSVersionMetadataKey, base::SysInfo::OperatingSystemVersion(), bundle);
 

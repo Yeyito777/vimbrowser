@@ -28,14 +28,11 @@
 #include "chrome/browser/win/installer_downloader/installer_downloader_pref_names.h"
 #endif  // BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "ui/accessibility/accessibility_features.h"
-#endif
 
 void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(prefs::kAllowFileSelectionDialogs, true);
 
-#if !BUILDFLAG(IS_ANDROID)
   registry->RegisterIntegerPref(prefs::kRelaunchNotification, 0);
   registry->RegisterIntegerPref(
       prefs::kRelaunchNotificationPeriod,
@@ -44,7 +41,6 @@ void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
               .InMilliseconds()));
   registry->RegisterDictionaryPref(prefs::kRelaunchWindow);
   registry->RegisterIntegerPref(prefs::kRelaunchFastIfOutdated, 0);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
   registry->RegisterIntegerPref(
@@ -94,19 +90,13 @@ void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
                                std::string());
   registry->RegisterBooleanPref(prefs::kNTPFooterManagementNoticeEnabled, true);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
-#if !BUILDFLAG(IS_ANDROID)
   registry->RegisterIntegerPref(prefs::kSplitViewDragAndDropNudgeShownCount, 0);
   registry->RegisterIntegerPref(prefs::kSplitViewDragAndDropNudgeUsedCount, 0);
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
-#if BUILDFLAG(IS_ANDROID)
-  const uint32_t pref_registration_flags = PrefRegistry::NO_REGISTRATION_FLAGS;
-#else
   const uint32_t pref_registration_flags =
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF;
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   registry->RegisterIntegerPref(prefs::kSessionRestoreInfoBarTimesShown, 0);
@@ -181,9 +171,6 @@ void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterBooleanPref(prefs::kFullscreenAllowed, true);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterBooleanPref(prefs::kForceMaximizeOnFirstRun, false);
-#endif
 
   registry->RegisterBooleanPref(prefs::kEnterpriseHardwarePlatformAPIEnabled,
                                 false);
@@ -198,15 +185,11 @@ void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
 
   registry->RegisterBooleanPref(prefs::kCaretBrowsingEnabled, false);
   registry->RegisterBooleanPref(prefs::kShowCaretBrowsingDialog, true);
-#if !BUILDFLAG(IS_ANDROID)
   registry->RegisterBooleanPref(prefs::kNTPFooterExtensionAttributionEnabled,
                                 true);
-#endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
   registry->RegisterBooleanPref(prefs::kAccessibilityFocusHighlightEnabled,
                                 false);
-#endif
 
   registry->RegisterBooleanPref(
       prefs::kHttpsOnlyModeEnabled, false,

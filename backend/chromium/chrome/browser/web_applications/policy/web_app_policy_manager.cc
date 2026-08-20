@@ -61,24 +61,6 @@
 #include "third_party/blink/public/common/manifest/manifest.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "ash/constants/ash_pref_names.h"
-#include "chrome/common/web_app_id_constants.h"
-#include "ash/edusumer/graduation_utils.h"
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/policy/profile_policy_connector.h"
-#include "chrome/browser/policy/system_features_disable_list_policy_handler.h"
-#include "chrome/browser/web_applications/policy/app_service_web_app_policy.h"
-#include "chrome/browser/web_applications/web_app_system_web_app_delegate_map_utils.h"
-#include "chrome/browser/web_applications/web_app_utils.h"
-#include "chromeos/ash/components/file_manager/app_id.h"
-#include "chromeos/ash/components/policy/system_features_disable_list/system_features_disable_list_policy_utils.h"
-#include "components/policy/core/common/policy_pref_names.h"
-#include "components/policy/core/common/system_features_disable_list_constants.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace {
 
@@ -97,19 +79,6 @@ bool IsForceUnregistrationPolicyEnabled() {
       web_app::kDesktopPWAsForceUnregisterOSIntegration);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr std::string_view kDisabled = "disabled";
-
-// Note that this mapping lists only selected Preinstalled Web Apps
-// actively used in policies and is not meant to be exhaustive.
-// These app Id constants need to be kept in sync with java/com/
-// google/chrome/cros/policyconverter/ChromePolicySettingsProcessor.java
-// LINT.IfChange
-constexpr auto kPreinstalledWebAppsMapping =
-    base::MakeFixedFlatMap<std::string_view, std::string_view>(
-        {{"cursive", ash::kCursiveAppId}, {"canvas", ash::kCanvasAppId}});
-// LINT.ThenChange(//depot/google3/java/com/google/chrome/cros/policyconverter/ChromePolicySettingsProcessor.java)
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::optional<base::flat_map<std::string_view, std::string_view>>&
 GetPreinstalledWebAppsMappingForTesting() {
@@ -141,12 +110,6 @@ WebAppPolicyManager::WebAppPolicyManager(Profile* profile)
 
 WebAppPolicyManager::~WebAppPolicyManager() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebAppPolicyManager::SetSystemWebAppDelegateMap(
-    const ash::SystemWebAppDelegateMap* system_web_apps_delegate_map) {
-  system_web_apps_delegate_map_ = system_web_apps_delegate_map;
-}
-#endif
 
 void WebAppPolicyManager::SetProvider(base::PassKey<WebAppProvider>,
                                       WebAppProvider& provider) {
@@ -256,13 +219,6 @@ WebAppPolicyManager::GetPolicyIdForPreinstalledWebApp(std::string_view app_id) {
     return {};
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  for (const auto& [policy_id, mapped_app_id] : kPreinstalledWebAppsMapping) {
-    if (mapped_app_id == app_id) {
-      return policy_id;
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return {};
 }
 
@@ -280,11 +236,7 @@ bool WebAppPolicyManager::IsPreinstalledWebAppPolicyId(
   if (auto& mapping = GetPreinstalledWebAppsMappingForTesting()) {  // IN-TEST
     return mapping->contains(policy_id);
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  return kPreinstalledWebAppsMapping.contains(policy_id);
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // static
@@ -313,22 +265,6 @@ std::vector<std::string> WebAppPolicyManager::GetPolicyIds(
     policy_ids.emplace_back(*preinstalled_web_app_policy_id);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const auto& swa_data = web_app.client_data().system_web_app_data;
-  if (swa_data) {
-    const ash::SystemWebAppType swa_type = swa_data->system_app_type;
-    const std::optional<std::string_view> swa_policy_id =
-        GetPolicyIdForSystemWebAppType(swa_type);
-    if (swa_policy_id) {
-      policy_ids.emplace_back(*swa_policy_id);
-    }
-
-    // File Manager SWA uses File Manager Extension's ID for policy.
-    if (swa_type == ash::SystemWebAppType::FILE_MANAGER) {
-      policy_ids.push_back(file_manager::kFileManagerAppId);
-    }
-  }
-#endif  // BUIDLFLAG(IS_CHROMEOS)
 
   for (const auto& [source, external_config] :
        web_app.management_to_external_config_map()) {
@@ -366,32 +302,11 @@ void WebAppPolicyManager::InitChangeRegistrarAndRefreshPolicy() {
                           weak_ptr_factory_.GetWeakPtr()));
 
   RefreshPolicySettings();
-#if BUILDFLAG(IS_CHROMEOS)
-  RefreshPolicyInstalledApps(
-      /*allow_close_and_relaunch=*/base::FeatureList::IsEnabled(
-          features::kForcedAppRelaunchOnPlaceholderUpdate));
-  pref_change_registrar_.Add(
-      ash::prefs::kDefaultHandlersForFileExtensions,
-      base::BindRepeating(
-          &WebAppPolicyManager::SynchronizeOsWithPolicyDefinedFileHandlers,
-          weak_ptr_factory_.GetWeakPtr()));
-#else
   RefreshPolicyInstalledApps(/*allow_close_and_relaunch=*/false);
-#endif
   ObserveDisabledSystemFeaturesPolicy();
 }
 
 void WebAppPolicyManager::OnDisableListPolicyChanged() {
-#if BUILDFLAG(IS_CHROMEOS)
-  PopulateDisabledWebAppsIdsLists();
-  std::vector<webapps::AppId> app_ids =
-      provider_->registrar_unsafe().GetAppIds();
-  WebAppProvider* provider = WebAppProvider::GetForLocalAppsUnchecked(profile_);
-  for (const auto& id : app_ids) {
-    const bool is_disabled = disabled_web_apps_.contains(id);
-    provider->scheduler().SetAppIsDisabled(id, is_disabled, base::DoNothing());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void WebAppPolicyManager::OnSyncPolicySettingsCommandsComplete() {
@@ -401,25 +316,6 @@ void WebAppPolicyManager::OnSyncPolicySettingsCommandsComplete() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-const absl::flat_hash_set<ash::SystemWebAppType>&
-WebAppPolicyManager::GetDisabledSystemWebApps() const {
-  return disabled_system_apps_;
-}
-
-bool WebAppPolicyManager::IsDisabledAppsModeHidden(
-    std::optional<ash::SystemWebAppType> system_app_type) const {
-  if (system_app_type.has_value() &&
-      disabled_system_apps_not_hidden_.contains(system_app_type.value())) {
-    return false;
-  }
-  PrefService* const local_state = g_browser_process->local_state();
-  if (!local_state) {  // Sometimes it's not available in tests.
-    return false;
-  }
-  return policy::IsDisabledAppsModeHidden(*local_state);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool WebAppPolicyManager::IsWebAppInDisabledList(
     const webapps::AppId& app_id) const {
@@ -428,9 +324,7 @@ bool WebAppPolicyManager::IsWebAppInDisabledList(
 
 void WebAppPolicyManager::RefreshPolicyInstalledApps(
     bool allow_close_and_relaunch) {
-#if !BUILDFLAG(IS_CHROMEOS)
   CHECK(!allow_close_and_relaunch);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   if (!web_app::AreWebAppsForceInstallable(profile_)) {
     OnWebAppForceInstallPolicyParsed();
@@ -820,27 +714,7 @@ void WebAppPolicyManager::MaybeOverrideManifest(
 // `IsolatedWebAppPolicyManager`.
 bool WebAppPolicyManager::IsPreventCloseEnabled(
     const webapps::AppId& app_id) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(features::kDesktopPWAsPreventClose)) {
-    return false;
-  }
-
-  if (!provider_->registrar_unsafe().IsInstalledByPolicy(app_id)) {
-    return false;
-  }
-
-  const webapps::ManifestId manifest_id =
-      provider_->registrar_unsafe().GetComputedManifestId(app_id);
-  auto it = settings_by_url_.find(manifest_id.spec());
-  if (it != settings_by_url_.end()) {
-    return it->second.prevent_close;
-  }
-  // `default_settings_` must be ignored for prevent close feature. Only app
-  // specific value is applied.
   return false;
-#else
-  return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool WebAppPolicyManager::GetEffectiveInstallPolicyValue() {
@@ -927,165 +801,14 @@ void WebAppPolicyManager::CustomManifestValues::SetIcon(const GURL& icon_gurl) {
 }
 
 void WebAppPolicyManager::ObserveDisabledSystemFeaturesPolicy() {
-#if BUILDFLAG(IS_CHROMEOS)
-  PrefService* const local_state = g_browser_process->local_state();
-  if (!local_state) {  // Sometimes it's not available in tests.
-    return;
-  }
-  local_state_pref_change_registrar_.Init(local_state);
-
-  local_state_pref_change_registrar_.Add(
-      policy::policy_prefs::kSystemFeaturesDisableList,
-      base::BindRepeating(&WebAppPolicyManager::OnDisableListPolicyChanged,
-                          base::Unretained(this)));
-  local_state_pref_change_registrar_.Add(
-      policy::policy_prefs::kSystemFeaturesDisableMode,
-      base::BindRepeating(&WebAppPolicyManager::OnDisableModePolicyChanged,
-                          base::Unretained(this)));
-  if (ash::features::IsGraduationEnabled()) {
-    pref_change_registrar_.Add(
-        ash::prefs::kGraduationEnablementStatus,
-        base::BindRepeating(&WebAppPolicyManager::OnDisableListPolicyChanged,
-                            weak_ptr_factory_.GetWeakPtr()));
-  }
-  pref_change_registrar_.Add(
-      ash::prefs::kClassManagementToolsAvailabilitySetting,
-      base::BindRepeating(&WebAppPolicyManager::OnDisableListPolicyChanged,
-                          weak_ptr_factory_.GetWeakPtr()));
-  // Make sure we get the right disabled mode in case it was changed before
-  // policy registration.
-  OnDisableModePolicyChanged();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void WebAppPolicyManager::OnDisableModePolicyChanged() {
-#if BUILDFLAG(IS_CHROMEOS)
-  provider_->sync_bridge_unsafe().UpdateAppsDisableMode();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void WebAppPolicyManager::PopulateDisabledWebAppsIdsLists() {
   disabled_web_apps_.clear();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  disabled_system_apps_.clear();
-  disabled_system_apps_not_hidden_.clear();
-
-  if (ash::features::IsGraduationEnabled() &&
-      !ash::graduation::IsEligibleForGraduation(pref_service_)) {
-    disabled_system_apps_.insert(ash::SystemWebAppType::GRADUATION);
-    disabled_system_apps_not_hidden_.insert(ash::SystemWebAppType::GRADUATION);
-  }
-
-  if (!ash::features::IsBocaEnabled() &&
-      pref_service_->GetString(
-          ash::prefs::kClassManagementToolsAvailabilitySetting) == kDisabled) {
-    disabled_system_apps_.insert(ash::SystemWebAppType::BOCA);
-    disabled_system_apps_not_hidden_.insert(ash::SystemWebAppType::BOCA);
-  }
-
-  PrefService* const local_state = g_browser_process->local_state();
-  if (!local_state) {  // Sometimes it's not available in tests.
-    return;
-  }
-
-  const base::ListValue& disabled_system_features_pref =
-      local_state->GetList(policy::policy_prefs::kSystemFeaturesDisableList);
-
-  for (const auto& entry : disabled_system_features_pref) {
-    switch (static_cast<policy::SystemFeature>(entry.GetInt())) {
-      case policy::SystemFeature::kCanvas:
-        disabled_web_apps_.insert(ash::kCanvasAppId);
-        break;
-      case policy::SystemFeature::kCamera:
-        disabled_system_apps_.insert(ash::SystemWebAppType::CAMERA);
-        break;
-      case policy::SystemFeature::kOsSettings:
-        disabled_system_apps_.insert(ash::SystemWebAppType::SETTINGS);
-        break;
-      case policy::SystemFeature::kScanning:
-        disabled_system_apps_.insert(ash::SystemWebAppType::SCANNING);
-        break;
-      case policy::SystemFeature::kExplore:
-        disabled_system_apps_.insert(ash::SystemWebAppType::HELP);
-        break;
-      case policy::SystemFeature::kCrosh:
-        disabled_system_apps_.insert(ash::SystemWebAppType::CROSH);
-        break;
-      case policy::SystemFeature::kTerminal:
-        disabled_system_apps_.insert(ash::SystemWebAppType::TERMINAL);
-        break;
-      case policy::SystemFeature::kGallery:
-        disabled_system_apps_.insert(ash::SystemWebAppType::MEDIA);
-        break;
-      case policy::SystemFeature::kPrintJobs:
-        disabled_system_apps_.insert(ash::SystemWebAppType::PRINT_MANAGEMENT);
-        break;
-      case policy::SystemFeature::kKeyShortcuts:
-        disabled_system_apps_.insert(
-            ash::SystemWebAppType::SHORTCUT_CUSTOMIZATION);
-        break;
-      case policy::SystemFeature::kRecorder:
-        disabled_system_apps_.insert(ash::SystemWebAppType::RECORDER);
-        break;
-      case policy::SystemFeature::kGmail:
-        disabled_web_apps_.insert(ash::kGmailAppId);
-        break;
-      case policy::SystemFeature::kGoogleDocs:
-        disabled_web_apps_.insert(ash::kGoogleDocsAppId);
-        break;
-      case policy::SystemFeature::kGoogleSlides:
-        disabled_web_apps_.insert(ash::kGoogleSlidesAppId);
-        break;
-      case policy::SystemFeature::kGoogleSheets:
-        disabled_web_apps_.insert(ash::kGoogleSheetsAppId);
-        break;
-      case policy::SystemFeature::kGoogleDrive:
-        disabled_web_apps_.insert(ash::kGoogleDriveAppId);
-        break;
-      case policy::SystemFeature::kGoogleKeep:
-        disabled_web_apps_.insert(ash::kGoogleKeepAppId);
-        break;
-      case policy::SystemFeature::kGoogleCalendar:
-        disabled_web_apps_.insert(ash::kGoogleCalendarAppId);
-        break;
-      case policy::SystemFeature::kGoogleChat:
-        disabled_web_apps_.insert(ash::kGoogleChatAppId);
-        disabled_web_apps_.insert(ash::kOldGoogleChatAppId);
-        break;
-      case policy::SystemFeature::kYoutube:
-        disabled_web_apps_.insert(ash::kYoutubeAppId);
-        break;
-      case policy::SystemFeature::kGoogleMaps:
-        disabled_web_apps_.insert(ash::kGoogleMapsAppId);
-        break;
-      case policy::SystemFeature::kCalculator:
-        disabled_web_apps_.insert(ash::kCalculatorAppId);
-        break;
-      case policy::SystemFeature::kVids:
-        disabled_web_apps_.insert(ash::kVidsAppId);
-        break;
-      case policy::SystemFeature::kUnknownSystemFeature:
-      case policy::SystemFeature::kBrowserSettings:
-      case policy::SystemFeature::kWebStore:
-      case policy::SystemFeature::kTextEditor:
-      case policy::SystemFeature::kGoogleNewsDeprecated:
-        break;
-    }
-  }
-
-  DCHECK(system_web_apps_delegate_map_);
-  // TODO(413343732): Remove/fix - IDs are not (always) resolved when this
-  // function runs.
-  for (const ash::SystemWebAppType& app_type : disabled_system_apps_) {
-    std::optional<webapps::AppId> app_id =
-        GetAppIdForSystemApp(provider_->registrar_unsafe(),
-                             *system_web_apps_delegate_map_, app_type);
-    if (app_id.has_value()) {
-      disabled_web_apps_.insert(app_id.value());
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void WebAppPolicyManager::OnWebAppForceInstallPolicyParsed() {

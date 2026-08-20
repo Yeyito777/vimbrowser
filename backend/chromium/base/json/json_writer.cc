@@ -21,11 +21,7 @@
 
 namespace base {
 
-#if BUILDFLAG(IS_WIN)
-const char kPrettyPrintLineEnding[] = "\r\n";
-#else
 const char kPrettyPrintLineEnding[] = "\n";
-#endif
 
 // static
 bool JSONWriter::Write(ValueView node, std::string* json, size_t max_depth) {

@@ -20,9 +20,6 @@
 #include "content/common/features.h"
 #include "content/public/child/child_thread.h"
 #include "skia/ext/font_utils.h"
-#if BUILDFLAG(IS_WIN)
-#include "third_party/skia/src/ports/SkTypeface_win_dw.h"  // nogncheck
-#endif
 #if BUILDFLAG(ENABLE_FREETYPE)
 #include "third_party/skia/include/ports/SkFontMgr_empty.h"
 #endif
@@ -224,12 +221,6 @@ sk_sp<SkTypeface> FontDataManager::onMakeFromStreamArgs(
 
   // DWRITE is only an option on Windows. Other platforms must use Freetype or
   // Fontations.
-#if BUILDFLAG(IS_WIN)
-  if (features::kFontDataServiceTypefaceType.Get() ==
-      features::FontDataServiceTypefaceType::kDwrite) {
-    return DWriteFontTypeface::MakeFromStream(std::move(stream), args);
-  }
-#endif
   // Chromium currently always sets ENABLE_FREETYPE, but nonetheless allow
   // falling back to fontations if the param is set to freetype but freetype
   // isn't enabled.

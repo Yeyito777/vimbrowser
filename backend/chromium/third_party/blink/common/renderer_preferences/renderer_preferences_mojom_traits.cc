@@ -28,10 +28,6 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
     return false;
   out->use_subpixel_positioning = data.use_subpixel_positioning();
 
-#if BUILDFLAG(IS_WIN)
-  out->text_contrast = data.text_contrast();
-  out->text_gamma = data.text_gamma();
-#endif  // BUILDFLAG(IS_WIN)
 
   out->focus_ring_color = data.focus_ring_color();
   out->active_selection_bg_color = data.active_selection_bg_color();
@@ -47,9 +43,6 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
 
   out->use_custom_colors = data.use_custom_colors();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  out->use_overlay_scrollbar = data.use_overlay_scrollbar();
-#endif
 
   out->enable_referrers = data.enable_referrers();
   out->allow_cross_origin_auth_prompt = data.allow_cross_origin_auth_prompt();
@@ -82,37 +75,6 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
   if (!data.ReadSystemFontFamilyName(&out->system_font_family_name))
     return false;
 #endif
-#if BUILDFLAG(IS_WIN)
-  if (!data.ReadCaptionFontFamilyName(&out->caption_font_family_name))
-    return false;
-  out->caption_font_height = data.caption_font_height();
-
-  if (!data.ReadSmallCaptionFontFamilyName(
-          &out->small_caption_font_family_name))
-    return false;
-  out->small_caption_font_height = data.small_caption_font_height();
-
-  if (!data.ReadMenuFontFamilyName(&out->menu_font_family_name))
-    return false;
-  out->menu_font_height = data.menu_font_height();
-
-  if (!data.ReadStatusFontFamilyName(&out->status_font_family_name))
-    return false;
-  out->status_font_height = data.status_font_height();
-
-  if (!data.ReadMessageFontFamilyName(&out->message_font_family_name))
-    return false;
-  out->message_font_height = data.message_font_height();
-
-  out->vertical_scroll_bar_width_in_dips =
-      data.vertical_scroll_bar_width_in_dips();
-  out->horizontal_scroll_bar_height_in_dips =
-      data.horizontal_scroll_bar_height_in_dips();
-  out->arrow_bitmap_height_vertical_scroll_bar_in_dips =
-      data.arrow_bitmap_height_vertical_scroll_bar_in_dips();
-  out->arrow_bitmap_width_horizontal_scroll_bar_in_dips =
-      data.arrow_bitmap_width_horizontal_scroll_bar_in_dips();
-#endif
 #if BUILDFLAG(IS_OZONE)
   out->selection_clipboard_buffer_available =
       data.selection_clipboard_buffer_available();
@@ -123,9 +85,6 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
   out->plugin_fullscreen_allowed = data.plugin_fullscreen_allowed();
   out->caret_browsing_enabled = data.caret_browsing_enabled();
 
-#if BUILDFLAG(IS_ANDROID)
-  out->uses_platform_autofill = data.uses_platform_autofill();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (!data.ReadExplicitlyAllowedNetworkPorts(
           &out->explicitly_allowed_network_ports)) {

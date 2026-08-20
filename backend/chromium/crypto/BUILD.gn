@@ -6,10 +6,6 @@ import("//build/buildflag_header.gni")
 import("//crypto/features.gni")
 import("//testing/test.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 buildflag_header("buildflags") {
   header = "crypto_buildflags.h"
   flags = [ "USE_NSS_CERTS=$use_nss_certs" ]
@@ -126,20 +122,6 @@ component("crypto") {
     }
   }
 
-  if (is_win) {
-    sources += [
-      "scoped_capi_types.h",
-      "scoped_cng_types.h",
-      "unexportable_key_win.cc",
-      "unexportable_key_win.h",
-      "user_verifying_key_win.cc",
-    ]
-    libs = [
-      "crypt32.lib",
-      "ncrypt.lib",
-    ]
-  }
-
   # Some files are built when NSS is used for the platform certificate library.
   if (use_nss_certs) {
     sources += [
@@ -151,14 +133,6 @@ component("crypto") {
       "nss_util_internal.h",
     ]
     configs += [ "//build/config/linux/nss" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "chaps_support.cc",
-      "chaps_support.h",
-      "nss_util_chromeos.cc",
-    ]
   }
 
   defines = [ "CRYPTO_IMPLEMENTATION" ]
@@ -238,15 +212,7 @@ test("crypto_unittests") {
     }
   }
 
-  if (is_ios) {
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-
-    deps += [ ":unittests_bundle_data" ]
-  } else {
-    data = [ "test/data/" ]
-  }
+  data = [ "test/data/" ]
 
   if (is_mac) {
     sources += [
@@ -262,10 +228,6 @@ test("crypto_unittests") {
       "nss_util_unittest.cc",
     ]
     configs += [ "//build/config/linux/nss" ]
-  }
-
-  if (is_win) {
-    libs = [ "ncrypt.lib" ]
   }
 
   if (is_apple) {
@@ -292,15 +254,6 @@ static_library("test_support") {
       "scoped_test_nss_db.h",
     ]
     configs += [ "//build/config/linux/nss" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "scoped_test_nss_chromeos_user.cc",
-      "scoped_test_nss_chromeos_user.h",
-      "scoped_test_system_nss_key_slot.cc",
-      "scoped_test_system_nss_key_slot.h",
-    ]
   }
 
   if (is_mac || is_ios) {

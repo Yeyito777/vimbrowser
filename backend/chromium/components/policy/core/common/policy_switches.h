@@ -19,9 +19,6 @@ extern const char kChromePolicy[];
 extern const char kSecureConnectApiUrl[];
 extern const char kFileStorageServerUploadUrl[];
 extern const char kPolicyVerificationKey[];
-#if BUILDFLAG(IS_CHROMEOS)
-extern const char kDisablePolicyKeyVerification[];
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace switches
 }  // namespace policy

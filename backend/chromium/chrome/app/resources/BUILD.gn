@@ -19,16 +19,8 @@ grit_strings("locale_settings") {
 }
 
 grit_strings("platform_locale_settings") {
-  if (is_win) {
-    source = "locale_settings_win.grd"
-  } else if (is_mac) {
+  if (is_mac) {
     source = "locale_settings_mac.grd"
-  } else if (is_chromeos) {
-    if (is_chrome_branded) {
-      source = "locale_settings_google_chromeos.grd"
-    } else {
-      source = "locale_settings_chromiumos.grd"
-    }
   } else if (is_posix) {
     # All other POSIX systems use the Linux one.
     source = "locale_settings_linux.grd"

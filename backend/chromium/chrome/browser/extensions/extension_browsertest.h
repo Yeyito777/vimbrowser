@@ -421,11 +421,6 @@ class ExtensionBrowserTest : public PlatformBrowserTest,
   // maps to chrome/test/data/extensions/foo.
   ExtensionProtocolTestHandler test_protocol_handler_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // True if the command line should be tweaked as if ChromeOS user is
-  // already logged in.
-  bool set_chromeos_user_ = true;
-#endif
 
  private:
   // Common implementation for all our various install and update methods.
@@ -451,10 +446,6 @@ class ExtensionBrowserTest : public PlatformBrowserTest,
 
   ExtensionId last_loaded_extension_id_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Feature flags overrides are only used on Android.
-  base::test::ScopedFeatureList feature_list_;
-#endif
 
   // Used for setting the default scoped current channel for extension browser
   // tests to UNKNOWN (trunk), in order to enable channel restricted features.
@@ -468,14 +459,6 @@ class ExtensionBrowserTest : public PlatformBrowserTest,
   // Disable external install UI.
   FeatureSwitch::ScopedOverride override_prompt_for_external_extensions_;
 
-#if BUILDFLAG(IS_WIN)
-  // Use mock shortcut directories to ensure app shortcuts are cleaned up.
-  base::ScopedPathOverride user_desktop_override_;
-  base::ScopedPathOverride common_desktop_override_;
-  base::ScopedPathOverride user_quick_launch_override_;
-  base::ScopedPathOverride start_menu_override_;
-  base::ScopedPathOverride common_start_menu_override_;
-#endif
 
   std::unique_ptr<ExtensionCache> test_extension_cache_;
 

@@ -93,20 +93,7 @@ static_library("content") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "android_app_communication_ash.cc",
-      "android_app_communication_helpers.cc",
-      "android_app_communication_helpers.h",
-    ]
-
-    deps += [
-      "//chromeos/ash/experiences/arc",
-      "//chromeos/components/payments/mojom",
-    ]
-  } else {
-    sources += [ "android_app_communication_stub.cc" ]
-  }
+  sources += [ "android_app_communication_stub.cc" ]
 
   sources += [
     "content_payment_request_delegate.cc",
@@ -302,23 +289,7 @@ source_set("payment_content_unit_tests") {
     "//third_party/libaddressinput:test_support",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "android_app_communication_test_support_ash.cc",
-      "android_app_communication_test_support_chrome_os.cc",
-      "android_app_communication_test_support_chrome_os.h",
-    ]
-    deps += [
-      "//chromeos/ash/experiences/arc",
-      "//chromeos/ash/experiences/arc:arc_test_support",
-      "//chromeos/ash/experiences/arc/intent_helper",
-      "//chromeos/ash/experiences/arc/mojom",
-      "//chromeos/components/payments:test_support",
-      "//chromeos/components/payments/mojom",
-    ]
-  } else {
-    sources += [ "android_app_communication_test_support_stub.cc" ]
-  }
+  sources += [ "android_app_communication_test_support_stub.cc" ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

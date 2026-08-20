@@ -109,14 +109,6 @@ rtc_source_set("frame_counts") {
 if (rtc_include_tests && !build_with_chromium) {
   common_video_resources = [ "../resources/foreman_cif.yuv" ]
 
-  if (is_ios) {
-    bundle_data("common_video_unittests_bundle_data") {
-      testonly = true
-      sources = common_video_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
   rtc_test("common_video_unittests") {
     testonly = true
 
@@ -167,9 +159,5 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
 
     data = common_video_resources
-
-    if (is_ios) {
-      deps += [ ":common_video_unittests_bundle_data" ]
-    }
   }
 }

@@ -196,22 +196,6 @@ bool FrameResources::Initialize(VideoPixelFormat format,
 
   gfx::BufferUsage buffer_usage = gfx::BufferUsage::SCANOUT_CPU_READ_WRITE;
 
-#if BUILDFLAG(IS_WIN)
-  // For CEF OSR feature, currently there's no other place in chromium use RGBA.
-  // If the format is RGBA, currently CEF do not write to the texture anymore
-  // once the GMB is returned from CopyRequest. So there will be no race
-  // condition on that texture. We can request a GMB without a keyed mutex to
-  // accelerate and probably prevent some driver deadlock.
-  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR) {
-    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
-    // cause there's no real SCANOUT on Windows. We simply use this enum as a
-    // flag to disable mutex in the GMBFactoryDXGI because this enum is also
-    // used above in macOS and CrOS for similar usage (claim no other one will
-    // concurrently use the resource).
-    // https://chromium-review.googlesource.com/c/chromium/src/+/5302103
-    buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
-  }
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
   buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
@@ -244,17 +228,9 @@ bool FrameResources::Initialize(VideoPixelFormat format,
       gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 
   auto si_caps = context->GetCapabilities();
-#if BUILDFLAG(IS_WIN)
-  // On Windows, overlays are in general not supported. However, in some
-  // cases they are supported for the software video frame use case in
-  // particular. This cap details whether that support is present.
-  const bool add_scanout_usage =
-      si_caps.supports_scanout_shared_images_for_software_video_frames;
-#else
   // On all other platforms, whether scanout for SharedImages is supported
   // for this particular use case is no different than the general case.
   const bool add_scanout_usage = si_caps.supports_scanout_shared_images;
-#endif
   if (add_scanout_usage) {
     usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT;
   }

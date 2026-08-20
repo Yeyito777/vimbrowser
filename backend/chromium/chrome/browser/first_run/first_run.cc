@@ -155,11 +155,7 @@ void ImportFromFile(Profile* profile,
   source_profile.importer_type = user_data_importer::TYPE_BOOKMARKS_FILE;
 
   const base::FilePath::StringType& import_bookmarks_path_str =
-#if BUILDFLAG(IS_WIN)
-      base::UTF8ToWide(import_bookmarks_path);
-#else
       import_bookmarks_path;
-#endif
   source_profile.source_path = base::FilePath(import_bookmarks_path_str);
 
   ImportFromSourceProfile(source_profile, profile,

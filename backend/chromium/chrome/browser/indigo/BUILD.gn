@@ -67,8 +67,4 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/network:test_support" ]
-  }
 }

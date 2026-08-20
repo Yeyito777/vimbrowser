@@ -117,20 +117,7 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "chrome/browser/ash/login/demo_mode/demo_session.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/chromeos/policy/dlp/dlp_content_manager.h"
-#include "chrome/browser/extensions/extension_assets_manager_chromeos.h"
-#include "chrome/browser/extensions/updater/chromeos_extension_cache_delegate.h"
-#include "chrome/browser/extensions/updater/extension_cache_impl.h"
-#include "chromeos/ash/components/demo_mode/utils/demo_session_utils.h"
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#include "components/user_manager/user_manager.h"
-#else
 #include "extensions/browser/updater/null_extension_cache.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "chrome/common/extensions/manifest_handlers/settings_overrides_handler.h"
@@ -348,22 +335,6 @@ bool ChromeExtensionsBrowserClient::AreExtensionsDisabledForContext(
       AreExtensionsDisabledForProfile(Profile::FromBrowserContext(context));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool ChromeExtensionsBrowserClient::IsActiveContext(
-    content::BrowserContext* browser_context) const {
-  // Since we are creating one instance per profile / user, we should be fine
-  // comparing against the active user. That said - if we ever change that,
-  // this code will need to be changed.
-  return static_cast<Profile*>(browser_context)
-      ->IsSameOrParent(ProfileManager::GetActiveUserProfile());
-}
-
-std::string ChromeExtensionsBrowserClient::GetUserIdHashFromContext(
-    content::BrowserContext* context) {
-  return ash::ProfileHelper::GetUserIdHashFromProfile(
-      static_cast<Profile*>(context));
-}
-#endif
 
 bool ChromeExtensionsBrowserClient::IsGuestSession(
     content::BrowserContext* context) const {
@@ -489,20 +460,12 @@ void ChromeExtensionsBrowserClient::PermitExternalProtocolHandler() {
 }
 
 bool ChromeExtensionsBrowserClient::IsInDemoMode() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ash::demo_mode::IsDeviceInDemoMode();
-#else
   return false;
-#endif
 }
 
 bool ChromeExtensionsBrowserClient::IsScreensaverInDemoMode(
     const std::string& app_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return app_id == ash::DemoSession::GetScreensaverAppId() && IsInDemoMode();
-#else
   return false;
-#endif
 }
 
 bool ChromeExtensionsBrowserClient::IsRunningInForcedAppMode() {
@@ -515,11 +478,7 @@ bool ChromeExtensionsBrowserClient::IsAppModeForcedForApp(
 }
 
 bool ChromeExtensionsBrowserClient::IsLoggedInAsPublicAccount() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return chromeos::IsManagedGuestSession();
-#else
   return false;
-#endif
 }
 
 ExtensionSystemProvider*
@@ -559,12 +518,7 @@ void ChromeExtensionsBrowserClient::BroadcastEventToRenderers(
 
 ExtensionCache* ChromeExtensionsBrowserClient::GetExtensionCache() {
   if (!extension_cache_.get()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    extension_cache_ = std::make_unique<ExtensionCacheImpl>(
-        std::make_unique<ChromeOSExtensionCacheDelegate>());
-#else
     extension_cache_ = std::make_unique<NullExtensionCache>();
-#endif
   }
   return extension_cache_.get();
 }
@@ -763,12 +717,7 @@ bool ChromeExtensionsBrowserClient::HasIsolatedStorage(
 
 bool ChromeExtensionsBrowserClient::IsScreenshotRestricted(
     content::WebContents* web_contents) const {
-#if !BUILDFLAG(IS_CHROMEOS)
   return false;
-#else
-  return policy::DlpContentManager::Get()->IsScreenshotApiRestricted(
-      web_contents);
-#endif
 }
 
 bool ChromeExtensionsBrowserClient::IsValidTabId(
@@ -1118,15 +1067,8 @@ void ChromeExtensionsBrowserClient::set_did_chrome_update_for_testing(
 }
 
 ExtensionAssetsManager* ChromeExtensionsBrowserClient::GetAssetsManager() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!assets_manager_) {
-    assets_manager_ = std::make_unique<ExtensionAssetsManagerChromeOS>();
-  }
-  return assets_manager_.get();
-#else
   // If not Chrome OS, use trivial implementation that doesn't share anything.
   return ExtensionsBrowserClient::GetAssetsManager();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 Blocklist* ChromeExtensionsBrowserClient::GetBlocklist(

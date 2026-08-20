@@ -81,12 +81,6 @@ class CFX_FontMapper {
   bool HasInstalledFont(ByteStringView name) const;
   bool HasLocalizedFont(ByteStringView name) const;
 
-#if BUILDFLAG(IS_WIN)
-  std::optional<ByteString> InstalledFontNameStartingWith(
-      const ByteString& name) const;
-  std::optional<ByteString> LocalizedFontNameStartingWith(
-      const ByteString& name) const;
-#endif  // BUILDFLAG(IS_WIN)
 
 #ifdef PDF_ENABLE_XFA
   // `index` must be less than GetFaceSize().

@@ -178,15 +178,6 @@ source_set("app_shell_lib") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "browser/shell_audio_controller_chromeos.cc",
-      "browser/shell_audio_controller_chromeos.h",
-      "browser/shell_network_controller_chromeos.cc",
-      "browser/shell_network_controller_chromeos.h",
-    ]
-  }
-
   if (use_aura) {
     sources += [
       "browser/root_window_controller.cc",
@@ -204,9 +195,6 @@ source_set("app_shell_lib") {
       "//ui/wm",
       "//ui/wm/public",
     ]
-    if (is_chromeos) {
-      deps += [ "//ui/ozone" ]
-    }
   }
 
   if (is_linux) {
@@ -217,34 +205,6 @@ source_set("app_shell_lib") {
     deps += [
       "//build:branding_buildflags",
       "//components/version_info:generate_version_info",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/dbus/constants",
-      "//chromeos/dbus/power",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "browser/shell_screen.cc",
-      "browser/shell_screen.h",
-    ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/dbus",
-      "//chromeos/ash/components/dbus/audio",
-      "//chromeos/ash/components/dbus/cros_disks",
-      "//chromeos/ash/components/dbus/hermes",
-      "//chromeos/ash/components/dbus/shill",
-      "//chromeos/ash/components/disks",
-      "//chromeos/ash/components/login/login_state",
-      "//chromeos/ash/components/network",
-      "//ui/chromeos",
-      "//ui/display/manager",
     ]
   }
 }
@@ -260,12 +220,6 @@ executable("app_shell") {
     "//content/public/app",
     "//extensions:shell_and_test_pak",
   ]
-
-  if (is_win) {
-    configs += [ "//build/config/win:windowed" ]
-    configs -= [ "//build/config/win:console" ]
-    deps += [ "//sandbox/win:sandbox" ]
-  }
 }
 
 test("app_shell_unittests") {
@@ -333,22 +287,6 @@ test("app_shell_unittests") {
       "//ui/compositor:test_support",
     ]
   }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/dbus/power" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "browser/shell_audio_controller_chromeos_unittest.cc",
-      "browser/shell_screen_unittest.cc",
-    ]
-    deps += [
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/dbus:test_support",
-      "//chromeos/ash/components/dbus/audio",
-    ]
-  }
 }
 
 process_version("version_header") {
@@ -413,8 +351,4 @@ source_set("unit_tests") {
     "//base/test:test_support",
     "//extensions/browser",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//components/keyed_service/content" ]
-  }
 }

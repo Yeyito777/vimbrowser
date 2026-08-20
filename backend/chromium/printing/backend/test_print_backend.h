@@ -13,9 +13,6 @@
 #include "printing/backend/print_backend.h"
 #include "printing/mojom/print.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/types/expected.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace printing {
 
@@ -35,23 +32,9 @@ class TestPrintBackend : public PrintBackend {
   mojom::ResultCode GetPrinterSemanticCapsAndDefaults(
       const std::string& printer_name,
       PrinterSemanticCapsAndDefaults* printer_info) override;
-#if BUILDFLAG(IS_WIN)
-  mojom::ResultCode GetPrinterCapsAndDefaults(
-      const std::string& printer_name,
-      PrinterCapsAndDefaults* printer_info) override;
-  std::optional<gfx::Rect> GetPaperPrintableArea(
-      const std::string& printer_name,
-      const std::string& paper_vendor_id,
-      const gfx::Size& paper_size_um) override;
-#endif
   std::vector<std::string> GetPrinterDriverInfo(
       const std::string& printer_name) override;
   bool IsValidPrinter(const std::string& printer_name) override;
-#if BUILDFLAG(IS_WIN)
-  base::expected<std::string, mojom::ResultCode>
-  GetXmlPrinterCapabilitiesForXpsDriver(
-      const std::string& printer_name) override;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Methods for test setup:
 
@@ -78,15 +61,6 @@ class TestPrintBackend : public PrintBackend {
   // calls specific to a particular `printer_name`.
   void AddAccessDeniedPrinter(const std::string& printer_name);
 
-#if BUILDFLAG(IS_WIN)
-  // Sets the XML capabilities of an existing printer to be used by
-  // GetXmlPrinterCapabilitiesForXpsDriver(). `printer_name` must be a valid
-  // name of an added printer. Passing an empty `capabilities_xml` will cause
-  // GetXmlPrinterCapabilitiesForXpsDriver() to fail, otherwise any string will
-  // succeed.
-  void SetXmlCapabilitiesForPrinter(const std::string& printer_name,
-                                    const std::string& capabilities_xml);
-#endif  // BUILDFLAG(IS_WIN)
 
  protected:
   ~TestPrintBackend() override;
@@ -106,9 +80,6 @@ class TestPrintBackend : public PrintBackend {
     std::unique_ptr<PrinterSemanticCapsAndDefaults> caps;
     std::unique_ptr<PrinterBasicInfo> info;
     bool blocked_by_permissions = false;
-#if BUILDFLAG(IS_WIN)
-    std::string capabilities_xml;
-#endif  // BUILDFLAG(IS_WIN)
   };
 
   std::string default_printer_name_;

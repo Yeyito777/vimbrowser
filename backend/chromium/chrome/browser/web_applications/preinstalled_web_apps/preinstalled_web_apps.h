@@ -29,13 +29,6 @@ struct DeviceInfo {
   DeviceInfo& operator=(DeviceInfo&&);
   ~DeviceInfo();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The OOBE timestamp corresponding to the time of device registration.
-  // If absent, the timestamp is unavailable. This is known to occur during
-  // first boot due to a race condition between device registration and
-  // preinstallation.
-  std::optional<base::Time> oobe_timestamp;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // An allow list for a set of preinstalled web app that will be installed even

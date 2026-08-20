@@ -71,12 +71,6 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
     kInnerSpinButton,
     kMenuList,
     kMenuPopupBackground,
-#if BUILDFLAG(IS_WIN)
-    kMenuCheck,
-    kMenuCheckBackground,
-    kMenuPopupArrow,
-    kMenuPopupGutter,
-#endif
     kMenuPopupSeparator,
     kMenuItemBackground,
     kProgressBar,

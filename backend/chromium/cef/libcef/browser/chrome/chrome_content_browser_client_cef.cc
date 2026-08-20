@@ -51,9 +51,6 @@
 #include "cef/libcef/browser/chrome/chrome_web_contents_view_delegate_cef.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "cef/libcef_dll/bootstrap/bootstrap_util_win.h"
-#endif
 
 namespace {
 
@@ -165,17 +162,6 @@ void HandleExternalProtocolHelper(
       isolation_info, nullptr);
 }
 
-#if BUILDFLAG(IS_WIN)
-// Returns the module handle that contains this code (e.g. libcef.dll).
-HINSTANCE GetCodeModuleHandle() {
-  HMODULE hModule = nullptr;
-  CHECK(::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                            reinterpret_cast<LPCWSTR>(GetCodeModuleHandle),
-                            &hModule));
-  return hModule;
-}
-#endif
 
 }  // namespace
 
@@ -231,22 +217,6 @@ void ChromeContentBrowserClientCef::AppendExtraCommandLineSwitches(
     command_line->CopySwitchesFrom(*browser_cmd, kSwitchNames);
   }
 
-#if BUILDFLAG(IS_WIN)
-  {
-    const auto& exe_path = bootstrap_util::GetExePath();
-    const auto& module_value =
-        bootstrap_util::GetValidatedModuleValue(*browser_cmd, exe_path);
-    if (!module_value.empty()) {
-      command_line->AppendSwitchNative(bootstrap_util::switches::kModule,
-                                       module_value);
-    }
-    const auto& libcef_path =
-        bootstrap_util::GetModulePath(GetCodeModuleHandle());
-    if (libcef_path.DirName() != exe_path.DirName()) {
-      command_line->AppendSwitchPath(switches::kLibcefPath, libcef_path);
-    }
-  }
-#endif
 
   const std::string& process_type =
       command_line->GetSwitchValueASCII(switches::kProcessType);

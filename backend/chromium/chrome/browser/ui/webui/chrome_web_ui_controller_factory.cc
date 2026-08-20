@@ -57,9 +57,6 @@
 #include "url/gurl.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/feed/feed_feature_list.h"
-#else  // BUILDFLAG(IS_ANDROID)
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/types/expected_macros.h"
@@ -82,35 +79,17 @@
 #include "media/base/media_switches.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image_skia_rep.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_DEVTOOLS_FRONTEND)
 #include "chrome/browser/devtools/devtools_ui_bindings.h"
 #include "chrome/browser/ui/webui/devtools/devtools_ui.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/url_constants.h"
-#include "ash/constants/webui_url_constants.h"
-#include "ash/webui/camera_app_ui/url_constants.h"
-#include "ash/webui/file_manager/url_constants.h"
-#include "ash/webui/files_internals/url_constants.h"
-#include "ash/webui/growth_internals/constants.h"
-#include "ash/webui/help_app_ui/url_constants.h"
-#include "ash/webui/mall/url_constants.h"
-#include "ash/webui/multidevice_debug/url_constants.h"
-#include "ash/webui/print_preview_cros/url_constants.h"
-#include "ash/webui/recorder_app_ui/url_constants.h"
-#include "ash/webui/vc_background_ui/url_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/webui/app_home/app_home_ui.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/webui/conflicts/conflicts_ui.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -170,7 +149,6 @@ WebUIFactoryFunction GetWebUIFactoryFunction(Profile* profile,
 #endif  // BUILDFLAG(ENABLE_DEVTOOLS_FRONTEND)
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // Reads favicons for the IWA represented by `page_url` in all available sizes
 // from the disk.
 // `callback` is always run asynchronously for consistency with how extensions
@@ -228,7 +206,6 @@ void ReadIsolatedWebAppFaviconsFromDisk(
         return favicon_bitmap_results;
       }).Then(std::move(callback_async)));
 }
-#endif
 
 }  // namespace
 
@@ -358,12 +335,10 @@ ChromeWebUIControllerFactory::~ChromeWebUIControllerFactory() = default;
 base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
     const GURL& page_url,
     ui::ResourceScaleFactor scale_factor) const {
-#if !BUILDFLAG(IS_ANDROID)
   // The extension scheme is handled in GetFaviconForURL.
   if (page_url.SchemeIs(extensions::kExtensionScheme)) {
     NOTREACHED();
   }
-#endif
 
   if (!content::HasWebUIScheme(page_url)) {
     return nullptr;
@@ -373,11 +348,6 @@ base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
     return ComponentsUI::GetFaviconResourceBytes(scale_factor);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (page_url.host() == chrome::kChromeUIConflictsHost) {
-    return ConflictsUI::GetFaviconResourceBytes(scale_factor);
-  }
-#endif
 
   if (page_url.host() == chrome::kChromeUICrashesHost) {
     return CrashesUI::GetFaviconResourceBytes(scale_factor);
@@ -391,13 +361,10 @@ base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
     return VersionUI::GetFaviconResourceBytes(scale_factor);
   }
 
-#if !BUILDFLAG(IS_ANDROID)
-#if !BUILDFLAG(IS_CHROMEOS)
   // The chrome://apps page is not available on Android or ChromeOS.
   if (page_url.host() == chrome::kChromeUIAppLauncherPageHost) {
     return webapps::AppHomeUI::GetFaviconResourceBytes(scale_factor);
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   if (page_url.host() == chrome::kChromeUINewTabPageHost ||
       page_url.host() == chrome::kChromeUINewTabHost) {
@@ -449,7 +416,6 @@ base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
   }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   if (page_url.host() == chrome::kChromeUIExtensionsHost) {
@@ -457,11 +423,6 @@ base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
   }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (page_url.host() == ash::kChromeUIOSSettingsHost) {
-    return settings_utils::GetFaviconResourceBytes(scale_factor);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return nullptr;
 }

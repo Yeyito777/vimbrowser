@@ -30,9 +30,6 @@ namespace {
 // higher-indexed entry will clobber earlier entries.
 constexpr const char* kMIMETypeHandlersAllowlist[] = {
     extension_misc::kPdfExtensionId,
-#if BUILDFLAG(IS_CHROMEOS)
-    extension_misc::kQuickOfficeComponentExtensionId,
-#endif
     extension_misc::kQuickOfficeInternalExtensionId,
     extension_misc::kQuickOfficeExtensionId,
     extension_misc::kMimeHandlerPrivateTestExtensionId};

@@ -1457,10 +1457,6 @@ void WebAppIconManager::Start() {
        provider_->registrar_unsafe().GetAppIds()) {
     ReadFavicon(app_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Notifications use a monochrome icon.
-    ReadMonochromeFavicon(app_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   install_manager_observation_.Observe(&provider_->install_manager());
 }

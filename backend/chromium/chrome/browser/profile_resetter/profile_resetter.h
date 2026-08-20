@@ -52,31 +52,16 @@ class ProfileResetter : public content::BrowsingDataRemover::Observer {
     SHORTCUTS = 1 << 7,
     NTP_CUSTOMIZATIONS = 1 << 8,
     LANGUAGES = 1 << 9,
-#if BUILDFLAG(IS_CHROMEOS)
-    DNS_CONFIGURATIONS = 1 << 10,
-    PROXY_SETTINGS = 1 << 11,
-    KEYBOARD_SETTINGS = 1 << 12,
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     // This flag should be used for ResetProfile function, if you intend to add
     // another reset to the reset profile, please edit this flag.
     PROFILE_RESETS = DEFAULT_SEARCH_ENGINE | HOMEPAGE | CONTENT_SETTINGS |
                      COOKIES_AND_SITE_DATA | EXTENSIONS | STARTUP_PAGES |
                      PINNED_TABS | SHORTCUTS | NTP_CUSTOMIZATIONS | LANGUAGES,
-#if BUILDFLAG(IS_CHROMEOS)
-    // These flags are used in conjunction with
-    // ResetSettingsHandler::SanitizeSettings, as they are not included by
-    // default in a profile reset and DNS configs are not tied to a specific
-    // user.
-    SANITIZE_RESETS = DNS_CONFIGURATIONS | PROXY_SETTINGS | KEYBOARD_SETTINGS,
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     // Update ALL if you add new values and check whether the type of
     // ResettableFlags needs to be enlarged.
     ALL = PROFILE_RESETS
-#if BUILDFLAG(IS_CHROMEOS)
-          | SANITIZE_RESETS
-#endif  // BUILDFLAG(IS_CHROMEOS)
   };
 
   // Bit vector for Resettable enum.
@@ -101,16 +86,6 @@ class ProfileResetter : public content::BrowsingDataRemover::Observer {
       std::unique_ptr<BrandcodedDefaultSettings> master_settings,
       base::OnceClosure callback);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Call to reset a users's DNS settings.
-  virtual void ResetDnsConfigurations();
-  // Call to reset a users's setting, "Allow proxies for shared networks",
-  // which is a network setting that affects all networks.
-  virtual void ResetProxySettings();
-  // Call to reset a user's keyboard input settings to language and spell
-  // checker defaults using the local browser locale.
-  virtual void ResetKeyboardInputSettings();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ~ProfileResetter() override;
 
@@ -183,12 +158,5 @@ typedef std::pair<base::FilePath, std::wstring> ShortcutCommand;
 
 typedef base::RefCountedData<base::AtomicFlag> SharedCancellationFlag;
 
-#if BUILDFLAG(IS_WIN)
-// On Windows returns all the shortcuts which launch Chrome and corresponding
-// arguments. |cancel| can be passed to abort the operation earlier.
-// Call on COM task runner that may block.
-std::vector<ShortcutCommand> GetChromeLaunchShortcuts(
-    const scoped_refptr<SharedCancellationFlag>& cancel);
-#endif
 
 #endif  // CHROME_BROWSER_PROFILE_RESETTER_PROFILE_RESETTER_H_

@@ -104,19 +104,6 @@
 #include "extensions/common/extension_set.h"
 #include "ui/base/mojom/window_show_state.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "ash/metrics/login_unlock_throughput_recorder.h"
-#include "ash/shell.h"
-#include "chrome/browser/ash/boot_times_recorder/boot_times_recorder.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/web_applications/web_app_helpers.h"
-#include "chrome/browser/web_applications/web_app_registrar.h"
-#include "components/app_restore/window_properties.h"
-#include "ui/aura/window_occlusion_tracker.h"
-#include "ui/compositor/layer.h"
-#include "ui/wm/core/scoped_animation_disabler.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "chrome/browser/ui/webui/whats_new/whats_new_fetcher.h"
@@ -146,90 +133,6 @@ std::set<SessionRestoreImpl*>* active_session_restorers = nullptr;
 // lifetime.
 static bool g_is_any_session_restored = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Helper to pause occlusion tracking while it is alive and updates occlusion
-// states of restored tabs when it goes out of scope.
-class RestoredTabOcclusionPauserAndUpdater {
- public:
-  explicit RestoredTabOcclusionPauserAndUpdater(
-      std::vector<RestoredTab>& restored_tabs)
-      : restored_tabs_(&restored_tabs) {
-    pause_occlusion_tracking_.emplace();
-    window_animation_disablers_.emplace();
-  }
-
-  ~RestoredTabOcclusionPauserAndUpdater() {
-    // Triggers occlusion state calculation.
-    window_animation_disablers_.reset();
-    pause_occlusion_tracking_.reset();
-
-    // Occlusion state should be calculated synchronously on ash after dropping
-    // `pause_occlusion_tracking_`. Explicitly updating the contents visibility
-    // based on HIDDEN/OCCLUDED state so that relevant restored tabs are marked
-    // as backgrounded. This is needed because
-    // `WebContentsImpl::UpdateWebContentsVisibility` ignores HIDDEN/OCCLUDED
-    // state before contents are made visible for the first time.
-    for (const auto& tab : *restored_tabs_) {
-      content::WebContents* contents = tab.contents();
-      aura::Window* contents_view = contents->GetNativeView();
-      if (contents_view->GetOcclusionState() ==
-          aura::Window::OcclusionState::HIDDEN) {
-        contents->WasHidden();
-      } else if (contents_view->GetOcclusionState() ==
-                 aura::Window::OcclusionState::OCCLUDED) {
-        contents->WasOccluded();
-      }
-    }
-  }
-
-  void DisableWindowAnimation(aura::Window* window) {
-    (*window_animation_disablers_)[window].emplace(window);
-  }
-
- private:
-  // The restored tabs from session restore, updated externally.
-  const raw_ptr<std::vector<RestoredTab>> restored_tabs_;
-
-  // Pause occlusion tracking until all browser windows are created so that
-  // their final occlusion state is used to trigger tab loading.
-  // This is ash only because the final occlusion state is calculated
-  // synchronously on ash.
-  std::optional<aura::WindowOcclusionTracker::ScopedPause>
-      pause_occlusion_tracking_;
-
-  // Disables window animations for created browser windows. Otherwise,
-  // because occlusion states are not calculated for animating windows, all
-  // restored browser windows are considered visible and triggers tab load.
-  std::optional<
-      std::map<aura::Window*, std::optional<wm::ScopedAnimationDisabler>>>
-      window_animation_disablers_;
-};
-
-void ReportRestoredWindowCreated(aura::Window* window) {
-  // Ash is not always initialized in unit tests.
-  if (!ash::Shell::HasInstance()) {
-    return;
-  }
-
-  const int32_t restore_window_id =
-      window->GetProperty(app_restore::kRestoreWindowIdKey);
-
-  // Restored window IDs are always non-zero.
-  if (restore_window_id == 0) {
-    return;
-  }
-
-  ash::LoginUnlockThroughputRecorder* throughput_recorder =
-      ash::Shell::Get()->login_unlock_throughput_recorder();
-  throughput_recorder->OnRestoredWindowCreated(restore_window_id);
-  aura::Window* root_window = window->GetRootWindow();
-  if (root_window) {
-    ui::Compositor* compositor = root_window->layer()->GetCompositor();
-    throughput_recorder->OnBeforeRestoredWindowShown(restore_window_id,
-                                                     compositor);
-  }
-}
-#endif
 
 }  // namespace
 
@@ -512,10 +415,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
       browser_collection_observation_.Reset();
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    ash::BootTimesRecorder::Get()->AddLoginTimeMarker("SessionRestore-End",
-                                                      false);
-#endif
     return browser;
   }
 
@@ -533,10 +432,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
       std::vector<std::unique_ptr<sessions::SessionWindow>> windows,
       SessionID active_window_id,
       bool read_error) {
-#if BUILDFLAG(IS_CHROMEOS)
-    ash::BootTimesRecorder::Get()->AddLoginTimeMarker(
-        "SessionRestore-GotSession", false);
-#endif
 
     // This function could be called twice from both SessionService and
     // AppSessionService. If one of them returns error, then |read_error_| is
@@ -647,27 +542,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
 
   void PruneWindows(
       std::vector<std::unique_ptr<sessions::SessionWindow>>* windows) {
-#if BUILDFLAG(IS_CHROMEOS)
-    web_app::WebAppProvider* provider =
-        web_app::WebAppProvider::GetForWebApps(profile_);
-    if (!provider) {
-      return;
-    }
-
-    auto to_remove = std::ranges::remove_if(
-        *windows,
-        [provider](
-            const std::unique_ptr<sessions::SessionWindow>& window) -> bool {
-          // Windows that are auto-started and prevented from closing are
-          // exempted from session restore.
-          webapps::AppId app_id =
-              web_app::GetAppIdFromApplicationName(window->app_name);
-          // Checking for close prevention does not require an `AppLock`
-          // and therefore `registrar_unsafe()` is safe to use.
-          return provider->registrar_unsafe().IsPreventCloseEnabled(app_id);
-        });
-    windows->erase(to_remove.begin(), to_remove.end());
-#endif  // BUIDLFLAG(IS_CHROMEOS)
   }
 
   // Creates browsers for `windows` and returns the last tabbed browser or the
@@ -691,10 +565,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
       return FinishedTabCreation(false, false, restored_tabs);
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    ash::BootTimesRecorder::Get()->AddLoginTimeMarker(
-        "SessionRestore-CreatingTabs-Start", false);
-#endif
 
     // After the for loop this contains the last TYPE_NORMAL browser, or nullptr
     // if no TYPE_NORMAL browser exists.
@@ -721,14 +591,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
       }
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    std::optional<RestoredTabOcclusionPauserAndUpdater> occlusion_helper;
-
-    if (base::FeatureList::IsEnabled(
-            ash::features::kAshSessionRestoreDeferOccludedActiveTabLoad)) {
-      occlusion_helper.emplace(restored_tabs);
-    }
-#endif  //  BUILDFLAG(IS_CHROMEOS)
 
     for (const std::unique_ptr<sessions::SessionWindow>& window : *windows) {
       ++(*window_count);
@@ -744,10 +606,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
         // The first set of tabs is added to the existing browser.
         browser = browser_;
       } else {
-#if BUILDFLAG(IS_CHROMEOS)
-        ash::BootTimesRecorder::Get()->AddLoginTimeMarker(
-            "SessionRestore-CreateRestoredBrowser-Start", false);
-#endif
         // Change the initial show state of the created browser to
         // WindowShowState::kNormal if there are no visible browsers.
         ui::mojom::WindowShowState show_state = window->show_state;
@@ -761,16 +619,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
             window->app_name, window->user_title, window->extra_data,
             window->window_id.id());
 
-#if BUILDFLAG(IS_CHROMEOS)
-        aura::Window* browser_window = browser->window()->GetNativeWindow();
-        if (occlusion_helper) {
-          occlusion_helper->DisableWindowAnimation(browser_window);
-        }
-
-        ash::BootTimesRecorder::Get()->AddLoginTimeMarker(
-            "SessionRestore-CreateRestoredBrowser-End", false);
-        ReportRestoredWindowCreated(browser_window);
-#endif
       }
 
       // 2. Track TYPE_NORMAL browsers.
@@ -856,10 +704,6 @@ class SessionRestoreImpl : public BrowserCollectionObserver {
       browser_to_activate = OpenStartupUrls(last_normal_browser, startup_tabs_);
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    ash::BootTimesRecorder::Get()->AddLoginTimeMarker(
-        "SessionRestore-CreatingTabs-End", false);
-#endif
     if (browser_to_activate) {
       browser_to_activate->window()->Activate();
     }
@@ -1394,10 +1238,6 @@ Browser* SessionRestore::RestoreSession(
     DCHECK(!entry || !entry->IsSigninRequired());
   }
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::BootTimesRecorder::Get()->AddLoginTimeMarker("SessionRestore-Start",
-                                                    false);
-#endif
   DCHECK(profile);
   DCHECK(SessionServiceFactory::GetForProfile(profile));
   profile->set_restored_last_session(true);
@@ -1419,15 +1259,6 @@ Browser* SessionRestore::RestoreSession(
 void SessionRestore::RestoreSessionAfterCrash(Browser* browser) {
   auto* profile = browser->profile();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Desks restore a window to the right desk, so we should not reuse any
-  // browser window. Otherwise, the conflict of the parent desk arises because
-  // tabs created in this |browser| should remain in the current active desk,
-  // but the first restored window should be restored to its saved parent desk
-  // before a crash. This also avoids users' confusion of the current window
-  // disappearing from the current desk after pressing a restore button.
-  browser = nullptr;
-#endif
 
   SessionRestore::BehaviorBitmask behavior =
       SessionRestore::RESTORE_BROWSER |
@@ -1435,13 +1266,11 @@ void SessionRestore::RestoreSessionAfterCrash(Browser* browser) {
            ? SessionRestore::CLOBBER_CURRENT_TAB
            : 0);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Apps should always be restored on crash restore except on Chrome OS. In
   // Chrome OS, apps are restored by full restore only. This function is called
   // when the chrome browser is launched after crash, so only browser restored,
   // apps are not restored in Chrome OS.
   behavior |= SessionRestore::RESTORE_APPS;
-#endif
   SessionRestore::RestoreSession(profile, browser, behavior, StartupTabs());
 }
 

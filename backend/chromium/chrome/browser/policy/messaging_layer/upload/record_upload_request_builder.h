@@ -163,9 +163,6 @@ class SequenceInformationDictionaryBuilder {
   static std::string_view GetSequencingIdPath();
   static std::string_view GetGenerationIdPath();
   static std::string_view GetPriorityPath();
-#if BUILDFLAG(IS_CHROMEOS)
-  static std::string_view GetGenerationGuidPath();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   std::optional<base::DictValue> result_;

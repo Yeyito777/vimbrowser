@@ -65,9 +65,6 @@ class COMPONENT_EXPORT(DEVICE_VR_BASE) VRDeviceBase : public mojom::XRRuntime {
   void SetSupportedFeatures(
       const std::vector<mojom::XRSessionFeature>& features);
   void SetDeviceData(device::mojom::XRDeviceData&& device_data);
-#if BUILDFLAG(IS_WIN)
-  void SetLuid(const CHROME_LUID& luid);
-#endif
 
  private:
   mojo::AssociatedRemote<mojom::XRRuntimeEventListener> listener_;

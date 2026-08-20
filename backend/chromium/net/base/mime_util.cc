@@ -279,11 +279,7 @@ static std::optional<std::string_view> FindMimeType(
 
 static base::FilePath::StringType StringToFilePathStringType(
     std::string_view string_piece) {
-#if BUILDFLAG(IS_WIN)
-  return base::UTF8ToWide(string_piece);
-#else
   return std::string(string_piece);
-#endif
 }
 
 // Helper used in MimeUtil::GetPreferredExtensionForMimeType() to search

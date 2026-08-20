@@ -51,11 +51,6 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chromeos/strings/grit/chromeos_strings.h"
-#include "ui/chromeos/devicetype_utils.h"
-#endif
 
 using content::BrowserThread;
 
@@ -63,19 +58,11 @@ namespace {
 
 // The URL for the the Learn More page shown on incognito new tab.
 const char kLearnMoreIncognitoUrl[] =
-#if BUILDFLAG(IS_CHROMEOS)
-    "https://support.google.com/chromebook/?p=incognito";
-#else
     "https://support.google.com/chrome/?p=incognito";
-#endif
 
 // The URL for the Learn More page shown on guest session new tab.
 const char kLearnMoreGuestSessionUrl[] =
-#if BUILDFLAG(IS_CHROMEOS)
-    "https://support.google.com/chromebook/?p=chromebook_guest";
-#else
     "https://support.google.com/chrome/?p=ui_guest";
-#endif
 
 std::string ReplaceTemplateExpressions(
     const scoped_refptr<base::RefCountedMemory>& bytes,
@@ -291,41 +278,6 @@ void NTPResourceCache::CreateNewTabGuestHTML() {
   int guest_tab_heading_ids = IDS_NEW_TAB_GUEST_SESSION_HEADING;
   int guest_tab_link_ids = IDS_LEARN_MORE;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  guest_tab_idr = IDR_GUEST_SESSION_TAB_HTML;
-
-  policy::BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-
-  if (connector->IsDeviceEnterpriseManaged()) {
-    localized_strings.Set("enterpriseInfoVisible", "true");
-    localized_strings.Set("enterpriseLearnMore",
-                          l10n_util::GetStringUTF16(IDS_LEARN_MORE));
-    localized_strings.Set("enterpriseInfoHintLink",
-                          chrome::kLearnMoreEnterpriseURL);
-    localized_strings.Set(
-        "enterpriseLearnMoreA11yLabel",
-        l10n_util::GetStringUTF16(
-            IDS_NEW_TAB_ENTERPRISE_GUEST_SESSION_LEARN_MORE_ACCESSIBILITY_TEXT));
-    std::u16string enterprise_info;
-    if (connector->IsCloudManaged()) {
-      const std::string enterprise_domain_manager =
-          connector->GetEnterpriseDomainManager();
-      enterprise_info = l10n_util::GetStringFUTF16(
-          IDS_ASH_ENTERPRISE_DEVICE_MANAGED_BY, ui::GetChromeOSDeviceName(),
-          base::UTF8ToUTF16(enterprise_domain_manager));
-    } else {
-      NOTREACHED() << "Unknown management type";
-    }
-    localized_strings.Set("enterpriseInfoMessage", enterprise_info);
-  } else {
-    localized_strings.Set("enterpriseInfoVisible", "false");
-    localized_strings.Set("enterpriseInfoMessage", "");
-    localized_strings.Set("enterpriseLearnMore", "");
-    localized_strings.Set("enterpriseInfoHintLink", "");
-    localized_strings.Set("enterpriseLearnMoreA11yLabel", "");
-  }
-#endif
 
   localized_strings.Set("guestTabDescription",
                         l10n_util::GetStringUTF16(guest_tab_description_ids));

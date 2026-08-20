@@ -60,11 +60,7 @@ void RunRouteResponseCallbacks(
 Profile* GetDefaultProfileForMediaRouteStarter() {
 // Use the main profile on ChromeOS. Desktop platforms don't have the concept
 // of a "main" profile, so pick the "last used" profile instead.
-#if BUILDFLAG(IS_CHROMEOS)
-  return ProfileManager::GetActiveUserProfile();
-#else
   return ProfileManager::GetLastUsedProfile();
-#endif
 }
 
 }  // namespace

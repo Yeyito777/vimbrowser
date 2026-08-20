@@ -316,11 +316,6 @@ gfx::Size CursorManager::GetSystemCursorSize() const {
   return current_state_->system_cursor_size();
 }
 
-#if BUILDFLAG(IS_WIN)
-void CursorManager::UpdateSystemCursorVisibilityForTest(bool visible) {
-  UpdateSystemCursorVisibility(visible);
-}
-#endif
 
 void CursorManager::CommitSystemCursorVisibility(bool visible) {
   DCHECK(features::ShouldUseCursorEventHook());

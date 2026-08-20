@@ -58,9 +58,6 @@
 #include "ui/base/data_transfer_policy/data_transfer_policy_controller.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "content/public/common/url_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 
@@ -146,14 +143,6 @@ void ClipboardHostImpl::ReadAvailableTypes(
       ui::ClipboardFormatType::FilenamesType(), clipboard_buffer,
       base::OptionalToPtr(data_endpoint));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS FilesApp must include the custom 'fs/sources', etc data for
-  // paste that it put on the clipboard during copy (crbug.com/271078230).
-  if (render_frame_host().GetMainFrame()->GetLastCommittedURL().SchemeIs(
-          kChromeUIScheme)) {
-    file_type_only = false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (file_type_only) {
     std::move(callback).Run({ui::kMimeTypeUriList16});
@@ -185,11 +174,6 @@ void ClipboardHostImpl::IsFormatAvailable(blink::mojom::ClipboardFormat format,
       result = clipboard->IsFormatAvailable(
           ui::ClipboardFormatType::PlainTextType(), clipboard_buffer,
           base::OptionalToPtr(data_endpoint));
-#if BUILDFLAG(IS_WIN)
-      result |= clipboard->IsFormatAvailable(
-          ui::ClipboardFormatType::PlainTextAType(), clipboard_buffer,
-          base::OptionalToPtr(data_endpoint));
-#endif
       break;
     case blink::mojom::ClipboardFormat::kHtml:
       result = clipboard->IsFormatAvailable(ui::ClipboardFormatType::HtmlType(),
@@ -960,21 +944,6 @@ void ClipboardHostImpl::ExtractText(
     clipboard->ReadText(clipboard_buffer, data_dst, std::move(callback));
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
-                                   clipboard_buffer,
-                                   base::OptionalToPtr(data_dst))) {
-    clipboard->ReadAsciiText(
-        clipboard_buffer, data_dst,
-        base::BindOnce(
-            [](base::OnceCallback<void(std::u16string)> callback,
-               std::string ascii) {
-              std::move(callback).Run(base::ASCIIToUTF16(ascii));
-            },
-            std::move(callback)));
-    return;
-  }
-#endif
   std::move(callback).Run(std::u16string());
 }
 

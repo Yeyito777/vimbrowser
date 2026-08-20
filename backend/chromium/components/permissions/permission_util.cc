@@ -73,10 +73,6 @@ PermissionDelegationMode GetPermissionDelegationMode(
   return PermissionDelegationMode::kDelegated;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-constexpr const char* kIsFileURLHistogram =
-    "Permissions.GetLastCommittedOriginAsURL.IsFileURL";
-#endif
 
 RequestTypeForUma GetUmaValueForRequests(const RequestType first_request) {
   if (
@@ -191,10 +187,6 @@ RequestTypeForUma PermissionUtil::GetUmaValueForRequestType(
     case RequestType::kRegisterProtocolHandler:
       return RequestTypeForUma::REGISTER_PROTOCOL_HANDLER;
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
-#if BUILDFLAG(IS_CHROMEOS)
-    case RequestType::kSmartCard:
-      return RequestTypeForUma::PERMISSION_SMART_CARD;
-#endif
     case RequestType::kStorageAccess:
       return RequestTypeForUma::PERMISSION_STORAGE_ACCESS;
     case RequestType::kVrSession:
@@ -444,20 +436,6 @@ GURL PermissionUtil::GetLastCommittedOriginAsURL(
 
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-#if BUILDFLAG(IS_ANDROID)
-  // If `allow_universal_access_from_file_urls` flag is enabled, a file:/// can
-  // change its url via history.pushState/replaceState to any other url,
-  // including about:blank. To avoid user confusion we should always use a
-  // visible url, in other words `GetLastCommittedURL`.
-  if (web_contents->GetOrCreateWebPreferences()
-          .allow_universal_access_from_file_urls &&
-      render_frame_host->GetLastCommittedOrigin().GetURL().SchemeIsFile()) {
-    base::UmaHistogramBoolean(kIsFileURLHistogram, true);
-    return render_frame_host->GetLastCommittedURL().DeprecatedGetOriginAsURL();
-  } else {
-    base::UmaHistogramBoolean(kIsFileURLHistogram, false);
-  }
-#endif
 
   if (render_frame_host->GetLastCommittedOrigin().GetURL().is_empty()) {
     if (!web_contents->GetVisibleURL().is_empty()) {

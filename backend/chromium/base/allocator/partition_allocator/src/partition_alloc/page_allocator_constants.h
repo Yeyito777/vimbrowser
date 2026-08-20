@@ -180,11 +180,7 @@ SystemPageShift() {
   // On Windows allocation granularity is higher than the page size. This comes
   // into play when reserving address space range (allocation granularity),
   // compared to committing pages into memory (system page granularity).
-#if PA_BUILDFLAG(IS_WIN)
-  return 12;  // 4096=1<<12
-#else
   return PageAllocationGranularityShift();
-#endif
 }
 
 PA_ALWAYS_INLINE PAGE_ALLOCATOR_CONSTANTS_DECLARE_CONSTEXPR size_t

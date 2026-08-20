@@ -107,14 +107,7 @@ uint64_t PackBytes(base::span<const uint8_t, N> bytes) {
 // If a form name was set by Chrome, we should ignore it when calculating
 // the form signature.
 std::string GetDOMFormName(const std::string& form_name) {
-#if BUILDFLAG(IS_IOS)
-  // In case of an empty form name, the synthetic name is created. Ignore it.
-  return (StartsWith(form_name, "gChrome~form~", base::CompareCase::SENSITIVE)
-              ? std::string()
-              : form_name);
-#else
   return form_name;
-#endif
 }
 
 FormSignature CalculateFormSignature(const FormData& form_data) {

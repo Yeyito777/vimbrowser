@@ -47,18 +47,8 @@ mojom_component("base") {
     "work_in_progress.mojom",
   ]
 
-  if (is_win) {
-    sources += [
-      "logfont_win.mojom",
-      "wstring.mojom",
-    ]
-  }
   enabled_features = []
-  if (is_win) {
-    enabled_features += [ "file_path_is_string16" ]
-  } else {
-    enabled_features += [ "file_path_is_string" ]
-  }
+  enabled_features += [ "file_path_is_string" ]
 
   webui_module_path = "chrome://resources/mojo/mojo/public/mojom/base"
 
@@ -600,41 +590,6 @@ mojom_component("base") {
       ]
     },
   ]
-
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "mojo_base.mojom.LOGFONT"
-            cpp = "::LOGFONT"
-          },
-        ]
-        traits_headers = [
-          "//base/win/windows_full.h",
-          "//mojo/public/cpp/base/logfont_win_mojom_traits.h",
-        ]
-        traits_public_deps = [
-          "//base",
-          "//mojo/public/cpp/base:typemap_traits",
-        ]
-      },
-      {
-        types = [
-          {
-            mojom = "mojo_base.mojom.WString"
-            cpp = "::std::wstring"
-          },
-        ]
-        traits_headers = [ "//mojo/public/cpp/base/wstring_mojom_traits.h" ]
-        traits_public_deps = [
-          "//base",
-          "//mojo/public/cpp/base",
-          "//mojo/public/cpp/base:typemap_traits",
-        ]
-      },
-    ]
-  }
 
   blink_cpp_typemaps = common_typemaps
   blink_cpp_typemaps += [

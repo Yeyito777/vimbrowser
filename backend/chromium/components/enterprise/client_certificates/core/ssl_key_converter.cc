@@ -11,9 +11,7 @@
 #include "net/ssl/ssl_private_key.h"
 #include "third_party/boringssl/src/include/openssl/evp.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "net/ssl/ssl_platform_key_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "net/ssl/ssl_platform_key_mac.h"
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -36,9 +34,7 @@ scoped_refptr<net::SSLPrivateKey> SSLPrivateKeyFromUnexportableSigningKeySlowly(
   if (!GetConvertKeyCallback()->is_null()) {
     return GetConvertKeyCallback()->Run(key);
   }
-#if BUILDFLAG(IS_WIN)
-  return net::WrapUnexportableKeySlowly(key);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return net::WrapUnexportableKey(key);
 #else
   return nullptr;

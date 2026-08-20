@@ -81,10 +81,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/smart_card/smart_card_permission_context.h"
-#include "chrome/browser/smart_card/smart_card_permission_context_factory.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_VR)
 #include "device/vr/public/cpp/features.h"
@@ -484,24 +480,12 @@ permissions::ObjectPermissionContextBase* GetBluetoothChooserContext(
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-permissions::ObjectPermissionContextBase* GetSmartCardChooserContext(
-    Profile* profile) {
-  if (base::FeatureList::IsEnabled(blink::features::kSmartCard)) {
-    return &SmartCardPermissionContextFactory::GetForProfile(*profile);
-  }
-  return nullptr;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 const ChooserTypeNameEntry kChooserTypeGroupNames[] = {
     {&GetUsbChooserContext, kUsbChooserDataGroupType},
     {&GetSerialChooserContext, kSerialChooserDataGroupType},
     {&GetHidChooserContext, kHidChooserDataGroupType},
     {&GetBluetoothChooserContext, kBluetoothChooserDataGroupType},
-#if BUILDFLAG(IS_CHROMEOS)
-    {&GetSmartCardChooserContext, kSmartCardChooserDataGroupType}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // These variables represent different formatting options for default (i.e. not
@@ -597,9 +581,6 @@ std::vector<ContentSettingsType> GetVisiblePermissionCategories(
 #endif
       ContentSettingsType::SENSORS,
       ContentSettingsType::SERIAL_GUARD,
-#if BUILDFLAG(IS_CHROMEOS)
-      ContentSettingsType::SMART_CARD_GUARD,
-#endif
       ContentSettingsType::SOUND,
       ContentSettingsType::STORAGE_ACCESS,
       ContentSettingsType::TOP_LEVEL_STORAGE_ACCESS,
@@ -679,13 +660,6 @@ std::vector<ContentSettingsType> GetVisiblePermissionCategories(
     types_for_origin.push_back(ContentSettingsType::AUTOMATIC_FULLSCREEN);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(blink::features::kWebPrinting) &&
-      ShouldShowIwaContentSettingForOrigin(profile, origin,
-                                           ContentSettingsType::WEB_PRINTING)) {
-    types_for_origin.push_back(ContentSettingsType::WEB_PRINTING);
-  }
-#endif
 
   return types_for_origin;
 }

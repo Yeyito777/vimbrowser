@@ -119,10 +119,8 @@ class ChromeSigninClient : public SigninClient {
   void OnTokenFetchComplete(bool token_is_valid);
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
   void RecordOpenTabCount(signin_metrics::AccessPoint access_point,
                           signin::ConsentLevel consent_level);
-#endif
 
   // Adds the user to a synthetic field trial based on the pref that it is
   // associated with. The pref is then read on startup to ensure stickiness on

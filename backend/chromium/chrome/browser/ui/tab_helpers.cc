@@ -176,17 +176,6 @@
 #include "components/web_modal/web_contents_modal_dialog_manager.h"
 #include "components/zoom/zoom_controller.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/boot_times_recorder/boot_times_recorder_tab_helper.h"
-#include "chrome/browser/ash/child_accounts/time_limits/web_time_navigation_observer.h"
-#include "chrome/browser/ash/growth/campaigns_manager_session_tab_helper.h"
-#include "chrome/browser/ash/mahi/web_contents/mahi_tab_helper.h"
-#include "chrome/browser/chromeos/cros_apps/cros_apps_tab_helper.h"
-#include "chrome/browser/chromeos/gemini_app/gemini_app_tab_helper.h"
-#include "chrome/browser/chromeos/policy/dlp/dlp_content_tab_helper.h"
-#include "chrome/browser/chromeos/printing/print_preview/printing_init_cros.h"
-#include "chrome/browser/ui/ash/google_one/google_one_offer_iph_tab_helper.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -196,9 +185,6 @@
 #include "chrome/browser/ui/shared_highlighting/shared_highlighting_promo.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/font_prewarmer_tab_helper.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CAPTIVE_PORTAL_DETECTION)
 #include "chrome/browser/captive_portal/captive_portal_service_factory.h"
@@ -475,17 +461,10 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   StorageAccessAPITabHelper::CreateForWebContents(
       web_contents, StorageAccessAPIServiceFactory::GetForBrowserContext(
                         web_contents->GetBrowserContext()));
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not create for Incognito mode.
-  if (!profile->IsIncognitoProfile()) {
-    SupervisedUserNavigationObserver::CreateForWebContents(web_contents);
-  }
-#else
   // Do not create for OTR.
   if (!profile->IsOffTheRecord()) {
     SupervisedUserNavigationObserver::CreateForWebContents(web_contents);
   }
-#endif
   tasks::TaskTabHelper::CreateForWebContents(web_contents);
   tpcd::metadata::TpcdMetadataDevtoolsObserver::CreateForWebContents(
       web_contents);
@@ -548,21 +527,6 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  GoogleOneOfferIphTabHelper::CreateForWebContents(web_contents);
-  // Do not create for Incognito mode.
-  if (!profile->IsOffTheRecord()) {
-    CampaignsManagerSessionTabHelper::CreateForWebContents(web_contents);
-  }
-  ash::BootTimesRecorderTabHelper::MaybeCreateForWebContents(web_contents);
-
-  CrosAppsTabHelper::MaybeCreateForWebContents(web_contents);
-  GeminiAppTabHelper::MaybeCreateForWebContents(web_contents);
-  mahi::MahiTabHelper::MaybeCreateForWebContents(web_contents);
-  policy::DlpContentTabHelper::MaybeCreateForWebContents(web_contents);
-  ash::app_time::WebTimeNavigationObserver::MaybeCreateForWebContents(
-      web_contents);
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   webapps::PreRedirectionURLObserver::CreateForWebContents(web_contents);
@@ -584,9 +548,6 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   SharedHighlightingPromo::CreateForWebContents(web_contents);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  FontPrewarmerTabHelper::CreateForWebContents(web_contents);
-#endif
 
   // --- Section 3: Feature tab helpers behind BUILDFLAGs ---
   // NOT for "if enabled"; put those in section 1.

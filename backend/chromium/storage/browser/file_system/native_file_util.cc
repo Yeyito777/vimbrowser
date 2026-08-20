@@ -19,13 +19,7 @@
 #include "storage/common/file_system/file_system_mount_option.h"
 
 
-#if BUILDFLAG(IS_WIN)
-#include "windows.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <grp.h>
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace storage {
 namespace {
@@ -273,13 +267,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
   if (error == base::File::FILE_OK) {
     if (info.is_directory != src_is_directory)
       return base::File::FILE_ERROR_INVALID_OPERATION;
-#if BUILDFLAG(IS_WIN)
-    // Overwriting an empty directory with another directory isn't supported
-    // natively on Windows, so treat this an unsupported. A higher layer is
-    // responsible for handling it.
-    if (info.is_directory)
-      return base::File::FILE_ERROR_NOT_A_FILE;
-#endif
   }
   if (error == base::File::FILE_ERROR_NOT_FOUND) {
     error = NativeFileUtil::GetFileInfo(dest_path.DirName(), &info);
@@ -291,7 +278,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
 
   // Cache permissions of dest file before copy/move overwrites the file.
   bool should_retain_file_permissions = false;
-#if BUILDFLAG(IS_POSIX)
   int dest_mode;
   if (options.Has(FileSystemOperation::CopyOrMoveOption::
                       kPreserveDestinationPermissions)) {
@@ -299,14 +285,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
     should_retain_file_permissions =
         base::GetPosixFilePermissions(dest_path, &dest_mode);
   }
-#elif BUILDFLAG(IS_WIN)
-  DWORD dest_attributes;
-  if (options.Has(FileSystemOperation::CopyOrMoveOption::
-                      kPreserveDestinationPermissions)) {
-    dest_attributes = ::GetFileAttributes(dest_path.value().c_str());
-    should_retain_file_permissions = dest_attributes != INVALID_FILE_ATTRIBUTES;
-  }
-#endif  // BUILDFLAG(IS_POSIX)
 
   switch (mode) {
     case COPY_NOSYNC:
@@ -331,11 +309,7 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
   }
 
   if (should_retain_file_permissions) {
-#if BUILDFLAG(IS_POSIX)
     base::SetPosixFilePermissions(dest_path, dest_mode);
-#elif BUILDFLAG(IS_WIN)
-    ::SetFileAttributes(dest_path.value().c_str(), dest_attributes);
-#endif  // BUILDFLAG(IS_POSIX)
   }
 
   return base::File::FILE_OK;

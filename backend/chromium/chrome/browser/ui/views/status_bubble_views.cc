@@ -57,9 +57,6 @@
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/window_properties.h"
-#endif
 
 namespace {
 
@@ -757,23 +754,12 @@ void StatusBubbleViews::InitPopup() {
         views::Widget::InitParams::TYPE_POPUP);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-    // On Windows use the software compositor to ensure that we don't block
-    // the UI thread blocking issue during command buffer creation. We can
-    // revert this change once http://crbug.com/125248 is fixed.
-    params.force_software_compositing = true;
-#endif
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
     params.accept_events = false;
     views::Widget* widget = base_view_->GetWidget();
     params.parent = widget->GetNativeView();
     params.context = widget->GetNativeWindow();
     params.name = "StatusBubble";
-#if BUILDFLAG(IS_CHROMEOS)
-    params.init_properties_container.SetProperty(ash::kHideInOverviewKey, true);
-    params.init_properties_container.SetProperty(ash::kHideInDeskMiniViewKey,
-                                                 true);
-#endif  // BUILDFLAG(IS_CHROMEOS)
     popup_->Init(std::move(params));
     // We do our own animation and don't want any from the system.
     popup_->SetVisibilityChangedAnimationsEnabled(false);

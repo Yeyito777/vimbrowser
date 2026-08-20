@@ -23,11 +23,6 @@ void AvatarFetcher::Fetch(const GURL& avatar_url,
                           int size,
                           ImageCallback callback,
                           image_fetcher::ImageFetcher* image_fetcher) {
-#if BUILDFLAG(IS_IOS)
-  if (!image_fetcher) {
-    return;
-  }
-#endif
   CHECK(image_fetcher);
   image_fetcher::ImageFetcherParams params(kAvatarFetcherTrafficAnnotation,
                                            kUmaClientName);

@@ -86,19 +86,10 @@ SeedType SafeSeedManager::GetSeedType() const {
       local_state_->GetInteger(prefs::kVariationsFailedToFetchSeedStreak);
   if (num_crashes >= kCrashStreakNullSeedThreshold ||
       num_failed_fetches >= kFetchFailureStreakNullSeedThreshold) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Logging is useful in listnr reports for ChromeOS (http://b/277650823).
-    LOG(ERROR) << "Using finch safe mode null seed: num_crashes=" << num_crashes
-               << ", num_failed_fetches=" << num_failed_fetches;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     return SeedType::kNullSeed;
   }
   if (num_crashes >= kCrashStreakSafeSeedThreshold ||
       num_failed_fetches >= kFetchFailureStreakSafeSeedThreshold) {
-#if BUILDFLAG(IS_CHROMEOS)
-    LOG(ERROR) << "Using finch safe mode safe seed: num_crashes=" << num_crashes
-               << ", num_failed_fetches=" << num_failed_fetches;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     return SeedType::kSafeSeed;
   }
   return SeedType::kRegularSeed;

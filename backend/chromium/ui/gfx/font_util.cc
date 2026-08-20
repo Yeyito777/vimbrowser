@@ -12,9 +12,6 @@
 #include "ui/gfx/linux/fontconfig_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/direct_write.h"
-#endif
 
 namespace gfx {
 
@@ -30,9 +27,6 @@ void InitializeFonts() {
   InitializeGlobalFontConfigAsync();
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-  gfx::win::InitializeDirectWrite();
-#endif  // BUILDFLAG(IS_WIN)
   skia::InitializeFontRendering();
 }
 

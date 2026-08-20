@@ -16,16 +16,8 @@
 #include "components/send_tab_to_self/send_tab_to_self_model.h"
 #include "components/send_tab_to_self/send_tab_to_self_sync_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/android/send_tab_to_self/android_notification_handler.h"
-#else
 #include "chrome/browser/ui/send_tab_to_self/send_tab_to_self_toolbar_icon_controller.h"
-#endif
 
 namespace send_tab_to_self {
 // static
@@ -69,31 +61,10 @@ SendTabToSelfClientServiceFactory::BuildServiceInstanceForBrowserContext(
   SendTabToSelfSyncService* sync_service =
       SendTabToSelfSyncServiceFactory::GetForProfile(profile);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Create SendTabToSelfClientService only for profiles of Gaia users.
-  // ChromeOS has system level profiles, such as the sign-in profile, or
-  // users that are not Gaia users, such as public account users. Do not
-  // create the service for them.
-  user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  // Ensure that the profile is a user profile.
-  if (!user) {
-    return nullptr;
-  }
-  // Ensure that the user is a Gaia user, since other types of user should not
-  // have access to the service.
-  if (!user->HasGaiaAccount()) {
-    return nullptr;
-  }
-#endif
 
   SendTabToSelfModel* model = sync_service->GetSendTabToSelfModel();
   return std::make_unique<SendTabToSelfClientService>(
-#if BUILDFLAG(IS_ANDROID)
-      std::make_unique<AndroidNotificationHandler>(model)
-#else
       std::make_unique<SendTabToSelfToolbarIconController>(profile)
-#endif
           ,
       model);
 }

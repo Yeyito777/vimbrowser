@@ -32,16 +32,14 @@ source_set("unittests") {
   sources = []
   deps = []
 
-  if (!is_ios) {
-    sources += [ "cursor_unittest.cc" ]
-    deps += [
-      ":cursor",
-      "//skia",
-      "//testing/gtest",
-      "//ui/base/cursor/mojom:cursor_type_shared",
-      "//ui/gfx:gfx_skia",
-      "//ui/gfx:test_support",
-      "//ui/gfx/geometry",
-    ]
-  }
+  sources += [ "cursor_unittest.cc" ]
+  deps += [
+    ":cursor",
+    "//skia",
+    "//testing/gtest",
+    "//ui/base/cursor/mojom:cursor_type_shared",
+    "//ui/gfx:gfx_skia",
+    "//ui/gfx:test_support",
+    "//ui/gfx/geometry",
+  ]
 }

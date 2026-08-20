@@ -46,9 +46,6 @@
 #include "net/socket/socket_tag.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "net/android/network_library.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_MAC)
 #include "net/socket/ephemeral_port_randomizer_mac.h"
@@ -202,12 +199,8 @@ int TCPSocketPosix::Open(AddressFamily family) {
 int TCPSocketPosix::BindToNetwork(handles::NetworkHandle network) {
   DCHECK(IsValid());
   DCHECK(!IsConnected());
-#if BUILDFLAG(IS_ANDROID)
-  return net::android::BindToNetwork(socket_->socket_fd(), network);
-#else
   NOTIMPLEMENTED();
   return ERR_NOT_IMPLEMENTED;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 int TCPSocketPosix::AdoptConnectedSocket(SocketDescriptor socket,

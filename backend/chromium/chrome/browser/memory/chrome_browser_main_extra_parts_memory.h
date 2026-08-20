@@ -10,13 +10,6 @@
 #include "build/build_config.h"
 #include "chrome/browser/chrome_browser_main_extra_parts.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash {
-namespace memory {
-class SystemMemoryPressureEvaluator;
-}
-}  // namespace ash
-#endif
 
 // Wrapper that owns and initialize the browser memory-related extra parts.
 class ChromeBrowserMainExtraPartsMemory : public ChromeBrowserMainExtraParts {
@@ -36,9 +29,6 @@ class ChromeBrowserMainExtraPartsMemory : public ChromeBrowserMainExtraParts {
   void PostBrowserStart() override;
   void PostMainMessageLoopRun() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ash::memory::SystemMemoryPressureEvaluator> cros_evaluator_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_MEMORY_CHROME_BROWSER_MAIN_EXTRA_PARTS_MEMORY_H_

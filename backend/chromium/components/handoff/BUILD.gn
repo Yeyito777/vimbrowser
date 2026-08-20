@@ -16,8 +16,4 @@ source_set("handoff") {
       "//url",
     ]
   }
-  if (is_ios) {
-    sources += [ "pref_names_ios.h" ]
-    deps += [ "//components/pref_registry" ]
-  }
 }

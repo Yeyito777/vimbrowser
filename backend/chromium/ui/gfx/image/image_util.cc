@@ -39,7 +39,6 @@ bool ColumnHasVisiblePixels(const SkBitmap& bitmap, int x) {
 namespace gfx {
 
 // The iOS implementations of the JPEG functions are in image_util_ios.mm.
-#if !BUILDFLAG(IS_IOS)
 
 Image ImageFrom1xJPEGEncodedData(base::span<const uint8_t> input) {
   SkBitmap bitmap = gfx::JPEGCodec::Decode(input);
@@ -126,7 +125,6 @@ Image ResizedImage(const Image& image, const gfx::Size& size) {
       size.width(), size.height());
   return Image(ImageSkia(ImageSkiaRep(new_bitmap, 0.0f)));
 }
-#endif  // !BUILDFLAG(IS_IOS)
 
 VisibleMargins GetVisibleMargins(const ImageSkia& image) {
   VisibleMargins margins;

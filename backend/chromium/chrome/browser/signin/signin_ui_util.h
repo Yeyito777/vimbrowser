@@ -119,12 +119,10 @@ std::vector<AccountInfo> GetOrderedAccountsForDisplay(
     const signin::IdentityManager* identity_manager,
     bool restrict_to_accounts_eligible_for_sync);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Returns single account to use in promos.
 AccountInfo GetSingleAccountForPromos(
     const signin::IdentityManager* identity_manager);
 
-#endif
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 // Returns an existing re-usable Dice signin tab with the given access point.

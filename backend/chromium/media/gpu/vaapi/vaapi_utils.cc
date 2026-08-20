@@ -384,11 +384,6 @@ void FillVP8DataStructures(const Vp8FrameHeader& frame_header,
 
 bool IsValidVABufferType(VABufferType type) {
   return type < VABufferTypeMax ||
-#if BUILDFLAG(IS_CHROMEOS)
-         // TODO(jkardatzke): Remove this once we update to libva 2.0.10 in
-         // ChromeOS.
-         type == VAEncryptionParameterBufferType ||
-#endif  // BUILDFLAG(IS_CHROMEOS)
          type == VACencStatusParameterBufferType;
 }
 

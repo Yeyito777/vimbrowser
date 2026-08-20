@@ -21,10 +21,7 @@
 #include "ui/gfx/image/image_png_rep.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/apple/foundation_util.h"
-#include "ui/gfx/image/image_skia_util_ios.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/apple/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "ui/gfx/image/image_skia_util_mac.h"
@@ -36,14 +33,7 @@ class ImageRep;
 class ImageRepCocoa;
 class ImageRepCocoaTouch;
 
-#if BUILDFLAG(IS_IOS)
-scoped_refptr<base::RefCountedMemory> Get1xPNGBytesFromUIImage(
-    UIImage* uiimage);
-UIImage* UIImageFromPNG(const std::vector<ImagePNGRep>& image_png_reps);
-
-UIImage* UIImageOfImageRepCocoaTouch(const ImageRepCocoaTouch* image_rep);
-std::unique_ptr<ImageRep> MakeImageRepCocoaTouch(UIImage* image);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 scoped_refptr<base::RefCountedMemory> Get1xPNGBytesFromNSImage(
     NSImage* nsimage);
 

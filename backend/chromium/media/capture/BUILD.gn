@@ -221,17 +221,6 @@ component("capture_lib") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "video/ios/pixel_buffer_rotator.cc",
-      "video/ios/pixel_buffer_rotator.h",
-    ]
-  }
-
-  if (is_win) {
-    public_deps += [ "video/win" ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "video/linux/scoped_v4l2_device_fd.cc",
@@ -265,118 +254,6 @@ component("capture_lib") {
       "video/linux/v4l2_capture_delegate_gpu_helper.h",
       "video/linux/v4l2_gpu_memory_buffer_tracker.cc",
       "video/linux/v4l2_gpu_memory_buffer_tracker.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "video/chromeos/camera_3a_controller.cc",
-      "video/chromeos/camera_3a_controller.h",
-      "video/chromeos/camera_app_device_bridge_impl.cc",
-      "video/chromeos/camera_app_device_bridge_impl.h",
-      "video/chromeos/camera_app_device_impl.cc",
-      "video/chromeos/camera_app_device_impl.h",
-      "video/chromeos/camera_app_device_provider_impl.cc",
-      "video/chromeos/camera_app_device_provider_impl.h",
-      "video/chromeos/camera_auto_framing_state_observer.cc",
-      "video/chromeos/camera_auto_framing_state_observer.h",
-      "video/chromeos/camera_buffer_factory.cc",
-      "video/chromeos/camera_buffer_factory.h",
-      "video/chromeos/camera_device_context.cc",
-      "video/chromeos/camera_device_context.h",
-      "video/chromeos/camera_device_delegate.cc",
-      "video/chromeos/camera_device_delegate.h",
-      "video/chromeos/camera_effects_observer.cc",
-      "video/chromeos/camera_effects_observer.h",
-      "video/chromeos/camera_hal_delegate.cc",
-      "video/chromeos/camera_hal_delegate.h",
-      "video/chromeos/camera_hal_dispatcher_impl.cc",
-      "video/chromeos/camera_hal_dispatcher_impl.h",
-      "video/chromeos/camera_metadata_utils.cc",
-      "video/chromeos/camera_metadata_utils.h",
-      "video/chromeos/camera_sw_privacy_switch_state_observer.cc",
-      "video/chromeos/camera_sw_privacy_switch_state_observer.h",
-      "video/chromeos/camera_trace_utils.cc",
-      "video/chromeos/camera_trace_utils.h",
-      "video/chromeos/capture_metadata_dispatcher.h",
-      "video/chromeos/display_rotation_observer.cc",
-      "video/chromeos/display_rotation_observer.h",
-      "video/chromeos/gpu_memory_buffer_tracker_cros.cc",
-      "video/chromeos/gpu_memory_buffer_tracker_cros.h",
-      "video/chromeos/jpeg_accelerator_provider.cc",
-      "video/chromeos/jpeg_accelerator_provider.h",
-      "video/chromeos/mojo_service_manager_observer.cc",
-      "video/chromeos/mojo_service_manager_observer.h",
-      "video/chromeos/pixel_format_utils.cc",
-      "video/chromeos/pixel_format_utils.h",
-      "video/chromeos/request_builder.cc",
-      "video/chromeos/request_builder.h",
-      "video/chromeos/request_manager.cc",
-      "video/chromeos/request_manager.h",
-      "video/chromeos/scoped_video_capture_jpeg_decoder.cc",
-      "video/chromeos/scoped_video_capture_jpeg_decoder.h",
-      "video/chromeos/stream_buffer_manager.cc",
-      "video/chromeos/stream_buffer_manager.h",
-      "video/chromeos/system_event_monitor_impl.cc",
-      "video/chromeos/system_event_monitor_impl.h",
-      "video/chromeos/token_manager.cc",
-      "video/chromeos/token_manager.h",
-      "video/chromeos/vendor_tag_ops_delegate.cc",
-      "video/chromeos/vendor_tag_ops_delegate.h",
-      "video/chromeos/video_capture_device_chromeos_delegate.cc",
-      "video/chromeos/video_capture_device_chromeos_delegate.h",
-      "video/chromeos/video_capture_device_chromeos_halv3.cc",
-      "video/chromeos/video_capture_device_chromeos_halv3.h",
-      "video/chromeos/video_capture_device_factory_chromeos.cc",
-      "video/chromeos/video_capture_device_factory_chromeos.h",
-      "video/chromeos/video_capture_features_chromeos.cc",
-      "video/chromeos/video_capture_features_chromeos.h",
-      "video/chromeos/video_capture_jpeg_decoder.h",
-      "video/chromeos/video_capture_jpeg_decoder_impl.cc",
-      "video/chromeos/video_capture_jpeg_decoder_impl.h",
-    ]
-    public_deps += [
-      "//ash/webui/camera_app_ui:document_scanning",
-      "//media/capture/video/chromeos/public",
-    ]
-    deps += [
-      "//ash/constants",
-      "//build/config/linux/libdrm",
-      "//chromeos/ash/components/mojo_service_manager",
-      "//chromeos/dbus/power",
-      "//components/chromeos_camera:mojo_mjpeg_decode_accelerator",
-      "//components/chromeos_camera/common",
-      "//components/device_event_log",
-      "//gpu/ipc/client",
-      "//gpu/ipc/common",
-      "//media/capture/video/chromeos/mojom:cros_camera",
-      "//media/capture/video/chromeos/mojom:document_scanner",
-      "//media/capture/video/chromeos/mojom:jpeg_accelerator",
-      "//media/capture/video/chromeos/mojom:system_event_monitor",
-      "//media/capture/video/chromeos/mojom:video_capture_device_info_monitor",
-      "//third_party/libsync",
-    ]
-    data_deps = [
-      ":camera_hal_dispatcher_mojo_policy",
-      ":document_scanner_mojo_policy",
-      ":jpeg_accelerator_mojo_policy",
-      ":system_event_monitor_mojo_policy",
-      ":video_capture_device_info_monitor_mojo_policy",
-    ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "video/fuchsia/video_capture_device_factory_fuchsia.cc",
-      "video/fuchsia/video_capture_device_factory_fuchsia.h",
-      "video/fuchsia/video_capture_device_fuchsia.cc",
-      "video/fuchsia/video_capture_device_fuchsia.h",
-    ]
-    deps += [
-      "//media/fuchsia/common",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.camera3:fuchsia.camera3_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-      "//third_party/libyuv",
     ]
   }
 
@@ -448,21 +325,6 @@ source_set("test_support") {
     weak_frameworks = [ "ScreenCaptureKit.framework" ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "video/chromeos/mock_camera_module.cc",
-      "video/chromeos/mock_camera_module.h",
-      "video/chromeos/mock_vendor_tag_ops.cc",
-      "video/chromeos/mock_vendor_tag_ops.h",
-      "video/chromeos/mock_video_capture_client.cc",
-      "video/chromeos/mock_video_capture_client.h",
-    ]
-    deps += [
-      "//media/capture/video/chromeos/mojom:cros_camera",
-      "//media/capture/video/chromeos/public",
-    ]
-  }
-
   testonly = true
 }
 
@@ -518,21 +380,6 @@ test("capture_unittests") {
     data += [ "//media/test/data/one_frame_1280x720.mjpeg" ]
   }
 
-  if (is_fuchsia) {
-    deps += [
-      "//media/fuchsia/camera:test_support",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.camera3:fuchsia.camera3_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.sysmem:fuchsia.sysmem_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
-    sources += [
-      "video/fuchsia/video_capture_device_factory_fuchsia_test.cc",
-      "video/fuchsia/video_capture_device_fuchsia_test.cc",
-    ]
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/sysmem.shard.test-cml" ]
-  }
-
   if (is_apple) {
     sources += [
       "video/apple/pixel_buffer_pool_unittest.mm",
@@ -563,42 +410,7 @@ test("capture_unittests") {
     deps += [ "//third_party/ocmock" ]
   }
 
-  if (is_ios) {
-    deps += [ "//media:unit_tests_bundle_data" ]
-  }
-
-  if (is_win) {
-    deps += [ "video/win:win_unittests" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/dbus/power" ]
-  }
-
   # TODO(crbug.com/40115082): use is_linux.
-  if (is_chromeos) {
-    deps += [ "//media/gpu/test:local_gpu_memory_buffer_manager" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "video/chromeos/camera_3a_controller_unittest.cc",
-      "video/chromeos/camera_device_delegate_unittest.cc",
-      "video/chromeos/camera_hal_delegate_unittest.cc",
-      "video/chromeos/camera_hal_dispatcher_impl_unittest.cc",
-      "video/chromeos/request_manager_unittest.cc",
-      "video/chromeos/token_manager_unittest.cc",
-    ]
-    deps += [
-      "//build/config/linux/libdrm",
-      "//chromeos/ash/components/mojo_service_manager",
-      "//media/capture/video/chromeos/mojom:cros_camera",
-      "//media/capture/video/chromeos/public",
-      "//mojo/core/embedder",
-      "//third_party/libsync",
-      "//third_party/minigbm",
-    ]
-  }
 }
 
 # TODO(crbug.com/40932597): Move platform-specific files/targets into subdirectories.

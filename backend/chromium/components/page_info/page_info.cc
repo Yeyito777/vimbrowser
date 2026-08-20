@@ -142,9 +142,6 @@ ContentSettingsType kPermissionType[] = {
     ContentSettingsType::KEYBOARD_LOCK,
     ContentSettingsType::POINTER_LOCK,
     ContentSettingsType::WEB_APP_INSTALLATION,
-#if BUILDFLAG(IS_CHROMEOS)
-    ContentSettingsType::WEB_PRINTING,
-#endif  // BUILDFLAG(IS_CHROMEOS)
     ContentSettingsType::LOCAL_NETWORK_ACCESS,
     ContentSettingsType::LOCAL_NETWORK,
     ContentSettingsType::LOOPBACK_NETWORK,
@@ -220,12 +217,6 @@ const PageInfo::ChooserUIInfo kChooserUIInfo[] = {
      IDS_PAGE_INFO_HID_DEVICE_SECONDARY_LABEL,
      IDS_PAGE_INFO_HID_DEVICE_ALLOWED_BY_POLICY_LABEL,
      IDS_PAGE_INFO_DELETE_HID_DEVICE_WITH_NAME},
-#if BUILDFLAG(IS_CHROMEOS)
-    {ContentSettingsType::SMART_CARD_DATA,
-     IDS_PAGE_INFO_SMART_CARD_READER_SECONDARY_LABEL,
-     IDS_PAGE_INFO_SMART_CARD_READER_ALLOWED_BY_POLICY_LABEL,
-     IDS_PAGE_INFO_DELETE_SMART_CARD_READER_WITH_NAME},
-#endif
     {ContentSettingsType::SERIAL_CHOOSER_DATA,
      IDS_PAGE_INFO_SERIAL_PORT_SECONDARY_LABEL,
      IDS_PAGE_INFO_SERIAL_PORT_ALLOWED_BY_POLICY_LABEL,
@@ -1298,12 +1289,6 @@ bool PageInfo::ShouldShowPermission(
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (info.type == ContentSettingsType::WEB_PRINTING &&
-      !base::FeatureList::IsEnabled(blink::features::kWebPrinting)) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const bool is_incognito =
       web_contents_->GetBrowserContext()->IsOffTheRecord();
@@ -1705,9 +1690,3 @@ int PageInfo::GetSitesWithAllowedCookiesAccessCount() {
 bool PageInfo::IsIsolatedWebApp() const {
   return delegate_->IsIsolatedWebApp();
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-bool PageInfo::ShouldSyncCookiesForCurrentUrl() {
-  return delegate_->ShouldSyncCookiesForUrl(site_url_);
-}
-#endif

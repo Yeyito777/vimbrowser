@@ -66,13 +66,6 @@ static_library("public") {
     "//extensions/buildflags",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-
-  if (is_ios) {
-    sources += [
-      "ios_promo_feature_configuration.cc",
-      "ios_promo_feature_configuration.h",
-    ]
-  }
 }
 
 source_set("unit_tests") {

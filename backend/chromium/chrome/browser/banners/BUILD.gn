@@ -40,12 +40,6 @@ source_set("impl") {
     "//extensions/browser",
     "//extensions/common:common_constants",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/arc:arc_util",
-    ]
-  }
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }

@@ -44,21 +44,19 @@ if (toolchain_has_rust) {
     "unwind",
   ]
 
-  if (!is_win) {
-    # These are no longer present in the Windows toolchain.
-    stdlib_files += [
-      "addr2line",
-      "gimli",
-      "libc",
-      "memchr",
-      "miniz_oxide",
-      "object",
-    ]
-    if (rustc_nightly_capability) {
-      stdlib_files += [ "adler2" ]
-    } else {
-      stdlib_files += [ "adler" ]
-    }
+  # These are no longer present in the Windows toolchain.
+  stdlib_files += [
+    "addr2line",
+    "gimli",
+    "libc",
+    "memchr",
+    "miniz_oxide",
+    "object",
+  ]
+  if (rustc_nightly_capability) {
+    stdlib_files += [ "adler2" ]
+  } else {
+    stdlib_files += [ "adler" ]
   }
 
   if (toolchain_for_rust_host_build_tools) {
@@ -92,16 +90,6 @@ if (toolchain_has_rust) {
     #
     # Omitting the `.lib` suffix breaks linking as well, when clang drives
     # the linking step of a C++ EXE that depends on Rust.
-    if (is_win) {
-      # The libc crate tries to link in the Windows CRT, but we specify the CRT
-      # library ourselves in //build/config/win:dynamic_crt and
-      # //build/config/win:static_crt because Rustc does not allow us to specify
-      # using the debug CRT: https://github.com/rust-lang/rust/issues/39016
-      #
-      # As such, we have disabled all #[link] directives from the libc crate,
-      # and we need to add any non-CRT libs here.
-      ldflags = [ "legacy_stdio_definitions.lib" ]
-    }
   }
   config("stdlib_public_dependent_libs") {
     # TODO(crbug.com/40264561): These should really be `libs`, however that
@@ -111,22 +99,6 @@ if (toolchain_has_rust) {
     #
     # Omitting the `.lib` suffix breaks linking as well, when clang drives
     # the linking step of a C++ EXE that depends on Rust.
-    if (is_win) {
-      # These libs provide functions that are used by the stdlib. Rust crates
-      # will try to link them in with #[link] directives. However these don't
-      # get propagated to the linker if Rust isn't driving the linking (a C++
-      # target that depends on a Rust rlib). So these need to be specified
-      # explicitly.
-      ldflags = [
-        "advapi32.lib",
-        "bcrypt.lib",
-        "kernel32.lib",
-        "ntdll.lib",
-        "synchronization.lib",
-        "userenv.lib",
-        "ws2_32.lib",
-      ]
-    }
 
     # From rust/library/std/src/sys/unix/mod.rs.
     #
@@ -148,17 +120,6 @@ if (toolchain_has_rust) {
       libs = [
         "rt",
         "pthread",
-      ]
-    } else if (is_ios) {
-      libs = [ "objc" ]
-      frameworks = [
-        "Security.framework",
-        "Foundation.framework",
-      ]
-    } else if (is_fuchsia) {
-      libs = [
-        "zircon",
-        "fdio",
       ]
     }
   }

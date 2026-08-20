@@ -17,14 +17,7 @@
 #include "content/public/browser/web_ui_data_source.h"
 #include "services/network/public/mojom/content_security_policy.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/webui/sandbox/sandbox_handler.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/common/sandbox_status_extension_android.mojom.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/public/browser/zygote_host/zygote_host_linux.h"
@@ -87,21 +80,11 @@ void CreateAndAddDataSource(Profile* profile) {
 
 SandboxInternalsUI::SandboxInternalsUI(content::WebUI* web_ui)
     : content::WebUIController(web_ui) {
-#if BUILDFLAG(IS_WIN)
-  web_ui->AddMessageHandler(
-      std::make_unique<sandbox_handler::SandboxHandler>());
-#endif
   CreateAndAddDataSource(Profile::FromWebUI(web_ui));
 }
 
 void SandboxInternalsUI::WebUIRenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
-#if BUILDFLAG(IS_ANDROID)
-  mojo::AssociatedRemote<chrome::mojom::SandboxStatusExtension> sandbox_status;
-  render_frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      &sandbox_status);
-  sandbox_status->AddSandboxStatusExtension();
-#endif
 }
 
 SandboxInternalsUI::~SandboxInternalsUI() = default;

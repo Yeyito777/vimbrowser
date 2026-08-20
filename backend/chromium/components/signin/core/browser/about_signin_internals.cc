@@ -148,7 +148,6 @@ std::string TokenServiceLoadCredentialsStateToLabel(
   NOTREACHED();
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 std::string SigninStatusFieldToLabel(
     signin_internals_util::TimedSigninStatusField field) {
   switch (field) {
@@ -165,7 +164,6 @@ std::string SigninStatusFieldToLabel(
   }
   NOTREACHED();
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // It's quite unfortunate that |time| is saved in prefs as a string instead of
 // base::Time because any change of the format would create inconsistency.
@@ -732,7 +730,6 @@ base::DictValue AboutSigninInternals::SigninStatus::ToValue(
     AddSectionEntry(basic_info, "Network calls delayed",
                     signin_client->AreNetworkCallsDelayed() ? "True" : "False");
 
-#if !BUILDFLAG(IS_CHROMEOS)
     const auto& last_signout_value =
         timed_signin_fields[signin_internals_util::LAST_SIGNOUT_SOURCE -
                             signin_internals_util::TIMED_FIELDS_BEGIN];
@@ -740,12 +737,10 @@ base::DictValue AboutSigninInternals::SigninStatus::ToValue(
         basic_info,
         SigninStatusFieldToLabel(signin_internals_util::LAST_SIGNOUT_SOURCE),
         last_signout_value.first, last_signout_value.second);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
     AddSection(signin_info, std::move(basic_info), "Basic Information");
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Time and status information of the possible sign in types.
   {
     base::ListValue detailed_info;
@@ -790,7 +785,6 @@ base::DictValue AboutSigninInternals::SigninStatus::ToValue(
 
     AddSection(signin_info, std::move(detailed_info), "Last Signin Details");
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   base::DictValue signin_status;
   signin_status.Set("signin_info", std::move(signin_info));

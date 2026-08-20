@@ -55,7 +55,6 @@ class MockChromeJsErrorReportProcessor : public ChromeJsErrorReportProcessor {
   // return the given (other) JsErrorReportProcessor.
   static void SetDefaultTo(scoped_refptr<JsErrorReportProcessor> new_default);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // By default, a MockChromeJsErrorReportProcessor will suppress the updating
   // of the crash database (a.k.a. uploads.log) to avoid contaminating the real
   // database with test uploads. Set |update_report_database| to true to have
@@ -64,21 +63,16 @@ class MockChromeJsErrorReportProcessor : public ChromeJsErrorReportProcessor {
   void set_update_report_database(bool update_report_database) {
     update_report_database_ = update_report_database;
   }
-#endif
 
  protected:
   variations::ExperimentListInfo GetExperimentListInfo() const override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::vector<std::string> GetCrashReporterArgvStart() override;
-#else
   // Always returns "7.20.1" (arbitrary).
   std::string GetOsVersion() override;
   std::string GetCrashEndpoint() override;
   std::string GetCrashEndpointStaging() override;
   void UpdateReportDatabase(std::string remote_report_id,
                             base::Time report_time) override;
-#endif
 
  private:
   ~MockChromeJsErrorReportProcessor() override;
@@ -88,9 +82,7 @@ class MockChromeJsErrorReportProcessor : public ChromeJsErrorReportProcessor {
   std::string crash_endpoint_;
   std::string crash_endpoint_staging_;
   bool use_real_experiment_list_ = false;
-#if !BUILDFLAG(IS_CHROMEOS)
   bool update_report_database_ = false;
-#endif
 };
 
 // Wrapper for MockChromeJsErrorReportProcessor. Will automatically create, set

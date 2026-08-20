@@ -66,9 +66,6 @@
 #include "storage/common/file_system/file_system_util.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/shortcut.h"
-#endif
 
 namespace content {
 namespace {
@@ -276,9 +273,7 @@ class FileURLDirectoryLoader
     base::FilePath filename = data.info.GetName();
     if (filename.value() != base::FilePath::kCurrentDirectory &&
         filename.value() != base::FilePath::kParentDirectory) {
-#if BUILDFLAG(IS_WIN)
-      std::string raw_bytes;  // Empty on Windows means UTF-8 encoded name.
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
       const std::string& raw_bytes = filename.value();
 #endif
       pending_data_.append(net::GetDirectoryListingEntry(
@@ -547,48 +542,6 @@ class FileURLLoader : public network::mojom::URLLoader {
       return;
     }
 
-#if BUILDFLAG(IS_WIN)
-    base::FilePath shortcut_target;
-    if (link_following_policy == LinkFollowingPolicy::kFollow &&
-        base::EqualsCaseInsensitiveASCII(path.Extension(), ".lnk") &&
-        base::win::ResolveShortcut(path, &shortcut_target, nullptr)) {
-      // Follow Windows shortcuts
-      redirect_data_ = std::make_unique<RedirectData>();
-      if (!base::GetFileInfo(shortcut_target, &info)) {
-        OnClientComplete(net::ERR_FILE_NOT_FOUND, std::move(observer));
-        return;
-      }
-
-      GURL new_url = net::FilePathToFileURL(shortcut_target);
-      if (info.is_directory && !path.EndsWithSeparator()) {
-        new_url = AppendUrlSeparator(new_url);
-      }
-
-      net::RedirectInfo redirect_info;
-      redirect_info.new_method = "GET";
-      redirect_info.status_code = 301;
-      redirect_info.new_url = new_url;
-      head->encoded_data_length = 0;
-
-      redirect_data_->is_directory = info.is_directory;
-      redirect_data_->profile_path = std::move(profile_path);
-      redirect_data_->request = request;
-      redirect_data_->response_type = response_type;
-      redirect_data_->directory_loading_policy = directory_loading_policy;
-      redirect_data_->file_access_policy = file_access_policy;
-      redirect_data_->link_following_policy = link_following_policy;
-      redirect_data_->request.url = redirect_info.new_url;
-      redirect_data_->observer = std::move(observer);
-      redirect_data_->extra_response_headers =
-          std::move(extra_response_headers);
-      redirect_data_->file_access =
-          std::make_unique<file_access::ScopedFileAccess>(
-              std::move(file_access));
-
-      client_->OnReceiveRedirect(redirect_info, std::move(head));
-      return;
-    }
-#endif  // BUILDFLAG(IS_WIN)
 
     mojo::ScopedDataPipeProducerHandle producer_handle;
     mojo::ScopedDataPipeConsumerHandle consumer_handle;

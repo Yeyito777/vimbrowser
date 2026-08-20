@@ -434,14 +434,6 @@ if (is_ios && !build_with_chromium) {
 }
 
 config("suppress_warning_4373") {
-  if (is_win) {
-    cflags = [
-      # MSVC has a bug which generates this warning when using mocks; see the
-      # section on warning 4373 in he googlemock FAQ. This warning isn't the
-      # least relevant for us, anyway.
-      "/wd4373",
-    ]
-  }
 }
 
 config("test_main_direct_config") {
@@ -507,12 +499,8 @@ rtc_library("video_frame_writer") {
     "../rtc_base:logging",
   ]
 
-  if (!is_ios) {
-    deps += [ "//third_party:jpeg" ]
-    sources += [ "testsupport/jpeg_frame_writer.cc" ]
-  } else {
-    sources += [ "testsupport/jpeg_frame_writer_ios.cc" ]
-  }
+  deps += [ "//third_party:jpeg" ]
+  sources += [ "testsupport/jpeg_frame_writer.cc" ]
 }
 
 rtc_library("video_test_support") {
@@ -609,12 +597,6 @@ if (rtc_include_tests) {
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
 
-      if (is_ios) {
-        deps += [ ":test_support_objc" ]
-      }
-      if (is_win) {
-        deps += [ "../rtc_base:win32_socket_init" ]
-      }
       if (rtc_use_perfetto) {
         deps += [
           "//third_party/perfetto/include/perfetto/tracing",
@@ -661,14 +643,6 @@ if (rtc_include_tests) {
       "../resources/video_coding/ssrcs-2.pcap",
       "../resources/video_coding/ssrcs-3.pcap",
     ]
-
-    if (is_ios) {
-      bundle_data("test_support_unittests_bundle_data") {
-        testonly = true
-        sources = test_support_unittests_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
 
     rtc_library("fixed_fps_video_frame_writer_adapter_test") {
       testonly = true
@@ -819,32 +793,10 @@ if (rtc_include_tests) {
 
       data = test_support_unittests_resources
 
-      if (is_ios) {
-        deps += [ ":test_support_unittests_bundle_data" ]
-      }
-
       # This is needed in order to avoid:
       # undefined symbol: webrtc::videocapturemodule::VideoCaptureImpl::Create
       deps += [ "../modules/video_capture:video_capture_internal_impl" ]
     }
-  }
-}
-
-if (is_ios) {
-  rtc_library("fileutils_ios_objc") {
-    visibility = [
-      ":fileutils",
-      ":fileutils_override_impl",
-    ]
-    sources = [
-      "testsupport/ios_file_utils.h",
-      "testsupport/ios_file_utils.mm",
-    ]
-    deps = [
-      "../rtc_base:checks",
-      "../sdk:helpers_objc",
-      "//third_party/abseil-cpp/absl/strings:string_view",
-    ]
   }
 }
 
@@ -878,14 +830,8 @@ rtc_library("fileutils") {
     "//third_party/abseil-cpp/absl/base:core_headers",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_ios) {
-    deps += [ ":fileutils_ios_objc" ]
-  }
   if (is_mac) {
     deps += [ ":fileutils_mac_objc" ]
-  }
-  if (is_win) {
-    deps += [ "../rtc_base:win32" ]
   }
 }
 
@@ -907,14 +853,8 @@ rtc_library("fileutils_override_impl") {
     "../rtc_base:stringutils",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_ios) {
-    deps += [ ":fileutils_ios_objc" ]
-  }
   if (is_mac) {
     deps += [ ":fileutils_mac_objc" ]
-  }
-  if (is_win) {
-    deps += [ "../rtc_base:win32" ]
   }
 }
 
@@ -1183,13 +1123,6 @@ rtc_library("test_renderer_generic") {
     "../common_video",
     "../rtc_base:checks",
   ]
-  if (is_win) {
-    sources += [
-      "win/d3d_renderer.cc",
-      "win/d3d_renderer.h",
-    ]
-    deps += [ "../api:scoped_refptr" ]
-  }
   if (!((is_linux || is_chromeos) && rtc_use_x11) && !is_mac && !is_win) {
     sources += [ "null_platform_renderer.cc" ]
   }

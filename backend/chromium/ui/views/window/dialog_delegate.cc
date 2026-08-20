@@ -74,11 +74,7 @@ bool HasCallback(
 
 #if !BUILDFLAG(IS_APPLE)
 bool UseDesktopWidgetOverride(WidgetDelegate* delegate) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   return delegate->use_desktop_widget_override();
-#endif
 }
 
 #endif  // !BUILDFLAG(IS_APPLE)

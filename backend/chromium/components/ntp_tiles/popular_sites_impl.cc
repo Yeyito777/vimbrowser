@@ -48,9 +48,6 @@
 #include "ui/base/resource/resource_bundle.h"
 #endif
 
-#if BUILDFLAG(IS_IOS)
-#include "components/ntp_tiles/country_code_ios.h"
-#endif
 
 using variations::VariationsService;
 
@@ -65,22 +62,12 @@ const char kPopularSitesDefaultCountryCode[] = "DEFAULT";
 const char kPopularSitesDefaultVersion[] = "5";
 const int kSitesExplorationStartVersion = 6;
 const int kPopularSitesRedownloadIntervalHours = 24;
-#if BUILDFLAG(IS_IOS)
-const char kIOSDefaultPopularSitesLocaleUS[] =
-    "https://www.gstatic.com/chrome/ntp/ios/"
-    "suggested_sites_US_2023q1_mvt_experiment_with_popular_sites.json";
-#endif
 
 GURL GetPopularSitesURL(const std::string& directory,
                         const std::string& country,
                         const std::string& version) {
   // US-based Chrome iOS users have a curated set of default Most Visited Tiles,
   // based on Chrome iOS history in the US.
-#if BUILDFLAG(IS_IOS)
-  if (country == "US") {
-    return GURL(kIOSDefaultPopularSitesLocaleUS);
-  }
-#endif
 
   return GURL(base::StringPrintf(kPopularSitesURLFormat, directory.c_str(),
                                  country.c_str(), version.c_str()));
@@ -260,11 +247,6 @@ base::ListValue DefaultPopularSites(std::optional<std::string> country) {
 
   int popular_sites_json = IDR_DEFAULT_POPULAR_SITES_JSON;
 
-#if BUILDFLAG(IS_IOS)
-  if (country.has_value() && *country == "US") {
-    popular_sites_json = IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_JSON;
-  }
-#endif
 
   std::optional<base::Value> sites = base::JSONReader::Read(
       ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
@@ -283,23 +265,6 @@ base::ListValue DefaultPopularSites(std::optional<std::string> country) {
       IDR_DEFAULT_POPULAR_SITES_ICON6, IDR_DEFAULT_POPULAR_SITES_ICON7};
   base::span<const int> icon_list = default_popular_sites_icons;
 
-#if BUILDFLAG(IS_IOS)
-  // US-based Chrome iOS users have a curated set of default Most Visited Tiles,
-  // based on Chrome iOS history in the US.
-  if (country.has_value() && *country == "US") {
-    static constexpr int popular_sites_icons_with_popular_ios_apps[] = {
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON0,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON1,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON2,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON3,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON4,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON5,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON6,
-        IDR_DEFAULT_POPULAR_SITES_WITH_POPULAR_APPS_ICON7};
-
-    icon_list = popular_sites_icons_with_popular_ios_apps;
-  }
-#endif
 
   size_t index = 0;
   for (int icon_resource : icon_list) {
@@ -438,11 +403,6 @@ std::string PopularSitesImpl::GetCountryToFetch() {
     country_code = variations_->GetStoredPermanentCountry();
   }
 
-#if BUILDFLAG(IS_IOS)
-  if (country_code.empty()) {
-    country_code = GetDeviceCountryCode();
-  }
-#endif
 
   if (country_code.empty()) {
     country_code = kPopularSitesDefaultCountryCode;
@@ -488,23 +448,8 @@ void PopularSitesImpl::RegisterProfilePrefs(
   user_prefs->RegisterInt64Pref(prefs::kPopularSitesLastDownloadPref, 0);
   user_prefs->RegisterStringPref(prefs::kPopularSitesURLPref, std::string());
 
-#if BUILDFLAG(IS_IOS)
-  // Estimate the country code; `GetVariationCountry()` cannot be called because
-  // `RegisterProfilePrefs()` is static.
-  std::string country_code_estimate = GetVariationCountry();
-
-  if (country_code_estimate.empty()) {
-    country_code_estimate = GetDeviceCountryCode();
-  }
-
-  std::optional<std::string> country(country_code_estimate);
-
-  user_prefs->RegisterListPref(prefs::kPopularSitesJsonPref,
-                               DefaultPopularSites(country));
-#else
   user_prefs->RegisterListPref(prefs::kPopularSitesJsonPref,
                                DefaultPopularSites(std::nullopt));
-#endif
   int version;
   base::StringToInt(kPopularSitesDefaultVersion, &version);
   user_prefs->RegisterIntegerPref(prefs::kPopularSitesVersionPref, version);

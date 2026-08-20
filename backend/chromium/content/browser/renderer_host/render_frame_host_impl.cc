@@ -330,9 +330,6 @@
 #include "content/browser/hid/hid_service.h"
 #include "content/browser/host_zoom_map_impl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "content/browser/smart_card/smart_card_service.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "content/browser/renderer_host/popup_menu_helper_mac.h"
@@ -6074,19 +6071,6 @@ void RenderFrameHostImpl::DidFocusFrame() {
   DCHECK(owner_);  // See `owner_` invariants about `IsActive()`.
   owner_->SetFocusedFrame(GetSiteInstance()->group());
 
-#if BUILDFLAG(IS_WIN)
-  // If the frame has a url, notify the view to allow it to supply the Url to
-  // any interested IME (e.g. Windows 11's TSF uses this information).
-  if (!last_committed_url_.is_empty()) {
-    RenderWidgetHostView* view = render_view_host_->GetWidget()->GetView();
-    if (view) {
-      ui::TextInputClient* input_client = view->GetTextInputClient();
-      if (input_client) {
-        input_client->NotifyOnFrameFocusChanged();
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // The lost focus tracker is cleared out after a focus call.
   GetOutermostMainFrameOrEmbedder()->GetRenderWidgetHost()->ResetLostFocus();
@@ -8336,7 +8320,6 @@ void RenderFrameHostImpl::FullscreenStateChanged(
   delegate_->FullscreenStateChanged(this, is_fullscreen, std::move(options));
 }
 
-#if !BUILDFLAG(IS_IOS)
 bool RenderFrameHostImpl::CanUseWindowingControls(
     std::string_view js_api_name) {
   if (!base::FeatureList::IsEnabled(
@@ -8397,7 +8380,6 @@ void RenderFrameHostImpl::SetResizable(bool resizable) {
 
   delegate_->SetResizable(resizable);
 }
-#endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
 void RenderFrameHostImpl::DraggableRegionsChanged(
     std::vector<blink::mojom::DraggableRegionPtr> regions) {
@@ -14706,12 +14688,6 @@ void RenderFrameHostImpl::GetHidService(
   HidService::Create(this, std::move(receiver));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void RenderFrameHostImpl::GetSmartCardService(
-    mojo::PendingReceiver<blink::mojom::SmartCardService> receiver) {
-  SmartCardService::Create(this, std::move(receiver));
-}
-#endif
 
 IdleManagerImpl* RenderFrameHostImpl::GetIdleManager() {
   return idle_manager_.get();
@@ -16516,9 +16492,6 @@ void RenderFrameHostImpl::MaybeGenerateCrashReport(
       break;
     case base::TERMINATION_STATUS_OOM:
     case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-#endif
       reason = "oom";
       break;
     default:
@@ -19282,12 +19255,10 @@ RenderFrameHostImpl::GetCachedPermissionStatuses() {
       std::to_array<std::pair<PermissionName, PermissionType>>(
           {{PermissionName::VIDEO_CAPTURE, PermissionType::VIDEO_CAPTURE},
            {PermissionName::AUDIO_CAPTURE, PermissionType::AUDIO_CAPTURE},
-#if !BUILDFLAG(IS_IOS)
            // `WEB_APP_INSTALLATION` is only registered for desktop platforms
            // via `WebsiteSettingsRegistry::DESKTOP`.
            {PermissionName::WEB_APP_INSTALLATION,
             PermissionType::WEB_APP_INSTALLATION},
-#endif
            {PermissionName::GEOLOCATION, PermissionType::GEOLOCATION}});
 
   base::flat_map<PermissionName, PermissionStatus> permission_map;

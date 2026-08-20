@@ -34,11 +34,6 @@
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "services/network/test/test_url_loader_factory.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/fake_webauthn_api.h"
-#include "device/fido/win/util.h"
-#include "device/fido/win/webauthn_api.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/webauthn/chrome_authenticator_request_delegate_mac.h"
@@ -130,13 +125,7 @@ class EnclaveAuthenticatorTestBase : public SyncTest {
   const std::pair<base::Process, uint16_t> process_and_port_;
   const device::enclave::ScopedEnclaveOverride enclave_override_;
   std::unique_ptr<FakeSecurityDomainService> security_domain_service_;
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<device::FakeWinWebAuthnApi> fake_webauthn_dll_;
-  std::unique_ptr<device::WinWebAuthnApi::ScopedOverride>
-      webauthn_dll_override_;
-  std::unique_ptr<device::fido::win::ScopedBiometricsOverride>
-      biometrics_override_;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   std::unique_ptr<device::fido::mac::ScopedBiometricsOverride>
       biometrics_override_;
   std::unique_ptr<device::fido::icloud_keychain::Fake> fake_icloud_keychain_;

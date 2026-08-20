@@ -63,11 +63,6 @@
 #include "gpu/command_buffer/service/dawn_context_provider.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <dxgi1_3.h>
-
-#include "ui/gl/gl_angle_util_win.h"
-#endif
 
 #if BUILDFLAG(ENABLE_VULKAN)
 #include "gpu/vulkan/vulkan_device_queue.h"
@@ -77,47 +72,6 @@
 namespace gpu {
 
 namespace {
-#if BUILDFLAG(IS_ANDROID)
-// Amount of time we expect the GPU to stay powered up without being used.
-const int kMaxGpuIdleTimeMs = 40;
-// Maximum amount of time we keep pinging the GPU waiting for the client to
-// draw.
-const int kMaxKeepAliveTimeMs = 200;
-#endif
-#if BUILDFLAG(IS_WIN)
-void TrimD3DResources(const scoped_refptr<SharedContextState>& context_state) {
-  // Graphics drivers periodically allocate internal memory buffers in
-  // order to speed up subsequent rendering requests. These memory allocations
-  // in general lead to increased memory usage by the overall system.
-  // Calling Trim discards internal memory buffers allocated for the app,
-  // reducing its memory footprint.
-  // Calling Trim method does not change the rendering state of the
-  // graphics device and has no effect on rendering operations.
-  // There is a brief performance hit when internal buffers are reallocated
-  // during the first rendering operations after the Trim call, therefore
-  // apps should only call Trim when going idle for a period of time or during
-  // low memory conditions.
-  Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device;
-  if (context_state) {
-    d3d11_device = context_state->GetD3D11Device();
-  }
-  if (d3d11_device) {
-    Microsoft::WRL::ComPtr<IDXGIDevice3> dxgi_device;
-    HRESULT hr = d3d11_device.As(&dxgi_device);
-    CHECK_EQ(hr, S_OK);
-    dxgi_device->Trim();
-  }
-
-  Microsoft::WRL::ComPtr<ID3D11Device> angle_d3d11_device =
-      gl::QueryD3D11DeviceObjectFromANGLE();
-  if (angle_d3d11_device && angle_d3d11_device != d3d11_device) {
-    Microsoft::WRL::ComPtr<IDXGIDevice3> dxgi_device;
-    HRESULT hr = angle_d3d11_device.As(&dxgi_device);
-    CHECK_EQ(hr, S_OK);
-    dxgi_device->Trim();
-  }
-}
-#endif
 
 void GL_APIENTRY CrashReportOnGLErrorDebugCallback(GLenum source,
                                                    GLenum type,
@@ -691,92 +645,6 @@ GpuChannelManager::GetPeakMemoryUsage(uint32_t sequence_num,
   return allocation_per_source;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void GpuChannelManager::DidAccessGpu() {
-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-
-  last_gpu_access_time_ = base::TimeTicks::Now();
-}
-
-void GpuChannelManager::WakeUpGpu() {
-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-
-  begin_wake_up_time_ = base::TimeTicks::Now();
-  ScheduleWakeUpGpu();
-}
-
-void GpuChannelManager::ScheduleWakeUpGpu() {
-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-
-  base::TimeTicks now = base::TimeTicks::Now();
-  TRACE_EVENT2("gpu", "GpuChannelManager::ScheduleWakeUp", "idle_time",
-               (now - last_gpu_access_time_).InMilliseconds(),
-               "keep_awake_time", (now - begin_wake_up_time_).InMilliseconds());
-  if (now - last_gpu_access_time_ < base::Milliseconds(kMaxGpuIdleTimeMs))
-    return;
-  if (now - begin_wake_up_time_ > base::Milliseconds(kMaxKeepAliveTimeMs))
-    return;
-
-  DoWakeUpGpu();
-
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
-      FROM_HERE,
-      base::BindOnce(&GpuChannelManager::ScheduleWakeUpGpu,
-                     weak_factory_.GetWeakPtr()),
-      base::Milliseconds(kMaxGpuIdleTimeMs));
-}
-
-void GpuChannelManager::DoWakeUpGpu() {
-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-
-  const CommandBufferStub* stub = nullptr;
-  for (const auto& kv : gpu_channels_) {
-    const GpuChannel* channel = kv.second.get();
-    const CommandBufferStub* stub_candidate = channel->GetOneStub();
-    if (stub_candidate) {
-      DCHECK(stub_candidate->decoder_context());
-      // With Vulkan, Dawn, etc, RasterDecoders don't use GL.
-      if (stub_candidate->decoder_context()->GetGLContext()) {
-        stub = stub_candidate;
-        break;
-      }
-    }
-  }
-  if (!stub || !stub->decoder_context()->MakeCurrent())
-    return;
-  glFinish();
-  DidAccessGpu();
-}
-
-void GpuChannelManager::OnBackgroundCleanup() {
-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-
-  // Delete all the GL contexts when the channel does not use WebGL and Chrome
-  // goes to background on low-end devices.
-  std::vector<int> channels_to_clear;
-  for (auto& kv : gpu_channels_) {
-    // Stateful contexts (e.g. WebGL and WebGPU) support context lost
-    // notifications, but for now, skip those.
-    if (kv.second->HasActiveStatefulContext()) {
-      continue;
-    }
-    channels_to_clear.push_back(kv.first);
-    kv.second->MarkAllContextsLost();
-  }
-  for (int channel : channels_to_clear)
-    RemoveChannel(channel);
-
-  if (program_cache_)
-    program_cache_->Trim(0u);
-
-  if (shared_context_state_) {
-    shared_context_state_->MarkContextLost();
-    shared_context_state_.reset();
-  }
-
-  SkGraphics::PurgeAllCaches();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void GpuChannelManager::OnApplicationBackgrounded() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
@@ -849,9 +717,6 @@ void GpuChannelManager::OnMemoryPressure(
     persistent_caches_->PurgeMemory(memory_pressure_level);
   }
 
-#if BUILDFLAG(IS_WIN)
-  TrimD3DResources(shared_context_state_);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 scoped_refptr<SharedContextState> GpuChannelManager::GetSharedContextState(

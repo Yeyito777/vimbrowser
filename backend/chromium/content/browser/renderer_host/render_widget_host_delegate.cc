@@ -182,10 +182,5 @@ bool RenderWidgetHostDelegate::ShouldDoLearning() {
   return true;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-gfx::PointF RenderWidgetHostDelegate::GetCurrentTouchSequenceOffset() {
-  return gfx::PointF();
-}
-#endif
 
 }  // namespace content

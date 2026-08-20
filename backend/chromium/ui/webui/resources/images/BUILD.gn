@@ -47,52 +47,43 @@ generate_grd("build_grdp") {
     "2x/select.png",
   ]
 
-  if (!is_ios) {
-    input_files += [
-      "arrow_down.svg",
-      "chrome_logo_dark.svg",
-      "dark/arrow_down.svg",
-      "icon_arrow_back.svg",
-      "icon_delete_gray.svg",
-      "icon_edit.svg",
-      "icon_more_vert.svg",
-    ]
-  }
+  input_files += [
+    "arrow_down.svg",
+    "chrome_logo_dark.svg",
+    "dark/arrow_down.svg",
+    "icon_arrow_back.svg",
+    "icon_delete_gray.svg",
+    "icon_edit.svg",
+    "icon_more_vert.svg",
+  ]
 
-  if (!is_ios) {
-    input_files += [
-      "arrow_right.svg",
-      "business.svg",
-      "colorize.svg",
-      "chevron_down.svg",
-      "dark/chevron_down.svg",
-      "icon_arrow_drop_down_cr23.svg",
-      "icon_arrow_drop_up_cr23.svg",
-      "icon_arrow_upward.svg",
-      "icon_arrow_forward.svg",
-      "icon_bookmark.svg",
-      "icon_clear.svg",
-      "icon_clock.svg",
-      "icon_filetype_generic.svg",
-      "icon_folder_open.svg",
-      "icon_history.svg",
-      "icon_journeys.svg",
-      "icon_picture_delete.svg",
-      "icon_settings.svg",
-      "icon_visibility_off.svg",
-      "icon_visibility_off_refresh.svg",
-      "icon_visibility.svg",
-      "icon_visibility_refresh.svg",
-      "promotion_banner_light.svg",
-      "dark/promotion_banner_dark.svg",
-      "promotion_policy_banner_close.svg",
-    ]
-  }
-
-  if (is_chromeos) {
-    input_files += [ "os_flags_app_icon.svg" ]
-    input_files += [ "os_system_app_icon.svg" ]
-  }
+  input_files += [
+    "arrow_right.svg",
+    "business.svg",
+    "colorize.svg",
+    "chevron_down.svg",
+    "dark/chevron_down.svg",
+    "icon_arrow_drop_down_cr23.svg",
+    "icon_arrow_drop_up_cr23.svg",
+    "icon_arrow_upward.svg",
+    "icon_arrow_forward.svg",
+    "icon_bookmark.svg",
+    "icon_clear.svg",
+    "icon_clock.svg",
+    "icon_filetype_generic.svg",
+    "icon_folder_open.svg",
+    "icon_history.svg",
+    "icon_journeys.svg",
+    "icon_picture_delete.svg",
+    "icon_settings.svg",
+    "icon_visibility_off.svg",
+    "icon_visibility_off_refresh.svg",
+    "icon_visibility.svg",
+    "icon_visibility_refresh.svg",
+    "promotion_banner_light.svg",
+    "dark/promotion_banner_dark.svg",
+    "promotion_policy_banner_close.svg",
+  ]
 
   resource_path_prefix = "images"
 }

@@ -86,7 +86,6 @@ void PaintCenterImage(SkCanvas* canvas,
                       const SkBitmap& image);
 
 // `gfx::CreateVectorIcon` is not available on iOS.
-#if !BUILDFLAG(IS_IOS)
 void DrawPasskeyIcon(SkCanvas* canvas,
                      const SkRect& canvas_bounds,
                      const SkPaint& paint_foreground,
@@ -110,7 +109,6 @@ void DrawProductIcon(SkCanvas* canvas,
   PaintCenterImage(canvas, canvas_bounds, kSizePx, kSizePx, kBorderPx,
                    paint_background, icon.GetRepresentation(1.0f).GetBitmap());
 }
-#endif
 
 void DrawDino(SkCanvas* canvas,
               const SkRect& canvas_bounds,
@@ -290,14 +288,12 @@ SkBitmap RenderBitmap(base::span<const uint8_t> data,
       DrawDino(&canvas, bitmap_bounds, kDinoTileSizePixels, 2, paint_black,
                paint_white);
       break;
-#if !BUILDFLAG(IS_IOS)
     case CenterImage::kPasskey:
       DrawPasskeyIcon(&canvas, bitmap_bounds, paint_black, paint_white);
       break;
     case CenterImage::kProductLogo:
       DrawProductIcon(&canvas, bitmap_bounds, paint_black, paint_white);
       break;
-#endif
   }
 
   return bitmap;

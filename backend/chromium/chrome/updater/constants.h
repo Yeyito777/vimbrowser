@@ -18,11 +18,7 @@ namespace updater {
 inline constexpr char kInstallerVersion[] = "installer_version";
 
 // The name of the updater program image.
-#if BUILDFLAG(IS_WIN)
-inline constexpr char kExecutableName[] = "updater.exe";
-#else
 inline constexpr char kExecutableName[] = "updater";
-#endif
 
 // Uninstall switch for the enterprise companion app.
 inline constexpr char kUninstallCompanionAppSwitch[] = "uninstall";
@@ -182,9 +178,6 @@ inline constexpr char kEnableLoggingSwitch[] = "enable-logging";
 // may still use different values for the logging module filter.
 inline constexpr char kLoggingModuleSwitch[] = "vmodule";
 inline constexpr char kLoggingModuleSwitchValue[] =
-#if BUILDFLAG(IS_WIN)
-    "*/components/winhttp/*=1,"
-#endif
     "*/components/update_client/*=2,"
     "*/chrome/enterprise_companion/*=2,"
     "*/chrome/updater/*=2";
@@ -375,11 +368,7 @@ inline constexpr int kErrorAppCommandTimedOut = kCustomInstallErrorBase + 6;
 // Specific error codes for the updater are reported in such a way that their
 // range does not conflict with the range of generic errors defined by the
 // metainstaller, the `update_client` module, or Windows.
-#if BUILDFLAG(IS_WIN)
-inline constexpr int kUpdaterErrorBase = 75000;
-#else
 inline constexpr int kUpdaterErrorBase = 0;
-#endif
 
 // Error codes.
 //
@@ -598,14 +587,7 @@ inline constexpr bool kUpdatePolicyDefault = kPolicyEnabled;
 inline constexpr char kSourceDMPolicyManager[] = "Device Management";
 inline constexpr char kSourceDefaultValuesPolicyManager[] = "Default";
 inline constexpr char kSourceDictValuesPolicyManager[] = "DictValuePolicy";
-#if BUILDFLAG(IS_WIN)
-inline constexpr bool kPlatformPolicyManagerDefined = true;
-inline constexpr char kSourcePlatformPolicyManager[] = "Group Policy";
-
-// On Windows, by default, Group Policy has a higher priority than the
-// clould policy.
-inline constexpr bool kCloudPolicyOverridesPlatformPolicyDefaultValue = false;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 inline constexpr bool kPlatformPolicyManagerDefined = true;
 inline constexpr char kSourcePlatformPolicyManager[] = "Managed Preferences";
 

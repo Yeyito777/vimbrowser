@@ -38,24 +38,19 @@
 #include "ui/resources/grit/ui_resources.h"
 #include "url/gurl.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"  // nogncheck
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/web_applications/web_app_browser_controller.h"
-#endif
 
 namespace {
 
 bool IsNTP(const GURL& url) {
   return url.SchemeIs(content::kChromeUIScheme) &&
          (url.GetHost() == chrome::kChromeUINewTabHost ||
-#if !BUILDFLAG(IS_ANDROID)
           url.GetHost() == chrome::kChromeUITabSearchHost ||
-#endif  // !BUILDFLAG(IS_ANDROID)
           url.GetHost() == chrome::kChromeUINewTabPageHost);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 web_app::WebAppBrowserController* GetWebAppBrowserController(
     tabs::TabInterface* tab_interface) {
   // The browser window interface can be null during unit tests.
@@ -79,7 +74,6 @@ bool ShouldShowAppIcon(web_app::WebAppBrowserController* app_controller,
       tab_interface);
   return app_controller->ShouldShowAppIconOnTab(index);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }  // namespace
 
 DEFINE_USER_DATA(TabUIHelper);
@@ -143,7 +137,6 @@ bool TabUIHelper::ShouldThemifyFavicon() {
   return entry && favicon::ShouldThemifyFaviconForEntry(entry);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool TabUIHelper::ShouldDisplayFavicon() {
   // BrowserWindowInterface can be null during unit tests
   BrowserWindowInterface* const browser_window_interface =
@@ -180,7 +173,6 @@ bool TabUIHelper::IsMonochromeFavicon() {
   return ShouldShowAppIcon(web_app_browser_controller, &tab()) &&
          !web_app_browser_controller->GetHomeTabIcon().isNull();
 }
-#endif
 
 ui::ImageModel TabUIHelper::GetFavicon() {
   const tab_groups::SavedTabGroupWebContentsListener* wc_listener =
@@ -192,7 +184,6 @@ ui::ImageModel TabUIHelper::GetFavicon() {
     }
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   web_app::WebAppBrowserController* const web_app_browser_controller =
       GetWebAppBrowserController(&tab());
   if (ShouldShowAppIcon(web_app_browser_controller, &tab())) {
@@ -208,7 +199,6 @@ ui::ImageModel TabUIHelper::GetFavicon() {
       }
     }
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   return ui::ImageModel::FromImage(
       favicon::TabFaviconFromWebContents(web_contents()));
@@ -233,10 +223,6 @@ bool TabUIHelper::IsCrashed() {
   const base::TerminationStatus crashed_status =
       web_contents()->GetCrashedStatus();
   return (crashed_status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED ||
-#if BUILDFLAG(IS_CHROMEOS)
-          crashed_status ==
-              base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM ||
-#endif
           crashed_status == base::TERMINATION_STATUS_PROCESS_CRASHED ||
           crashed_status == base::TERMINATION_STATUS_ABNORMAL_TERMINATION ||
           crashed_status == base::TERMINATION_STATUS_LAUNCH_FAILED);
@@ -312,7 +298,6 @@ void TabUIHelper::PrimaryMainFrameRenderProcessGone(
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void TabUIHelper::PrimaryPageChanged(content::Page& page) {
   if (tab().IsSplit()) {
     split_tabs::LogSplitViewUpdatedUKM(
@@ -320,7 +305,6 @@ void TabUIHelper::PrimaryPageChanged(content::Page& page) {
         tab().GetSplit().value());
   }
 }
-#endif
 
 void TabUIHelper::SetCreatedBySessionRestore(bool created_by_session_restore) {
   const bool was_hiding_throbber = ShouldHideThrobber();
@@ -372,13 +356,11 @@ TabNetworkState TabUIHelper::GetTabNetworkState() {
   return TabNetworkStateForWebContents(tab().GetContents());
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void TabUIHelper::NotifyTabUIChanged(base::PassKey<Browser> pass_key) {
   // Notify subscribers because data might have updated since the browser is
   // batching updates.
   tab_ui_change_callbacks_.Notify();
 }
-#endif
 
 void TabUIHelper::OnTabPinnedStatusChange(tabs::TabInterface* tab_interface,
                                           bool new_pinned_state) {

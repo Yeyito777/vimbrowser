@@ -13,11 +13,7 @@
 
 namespace aura {
 
-#if BUILDFLAG(IS_WIN)
-constexpr uint8_t kDefaultThrottleFps = 1;
-#else
 constexpr uint8_t kDefaultThrottleFps = 20;
-#endif
 
 HostFrameRateThrottler& HostFrameRateThrottler::GetInstance() {
   static base::NoDestructor<HostFrameRateThrottler> instance;

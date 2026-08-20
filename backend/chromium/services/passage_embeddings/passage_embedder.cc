@@ -144,13 +144,8 @@ bool PassageEmbedder::BuildExecutionTask() {
       std::make_unique<PassageEmbeddingsOpResolver>(allow_gpu_execution_));
 
   base::ElapsedTimer embeddings_timer;
-#if BUILDFLAG(IS_WIN)
-  absl::Status model_load_status = tflite_engine->BuildModelFromFileHandle(
-      embeddings_model_file_.GetPlatformFile());
-#else
   absl::Status model_load_status = tflite_engine->BuildModelFromFileDescriptor(
       embeddings_model_file_.GetPlatformFile());
-#endif
   base::UmaHistogramBoolean(
       "History.Embeddings.Embedder.EmbeddingsModelLoadSucceeded",
       model_load_status.ok());

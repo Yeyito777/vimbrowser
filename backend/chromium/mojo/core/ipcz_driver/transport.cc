@@ -35,62 +35,11 @@
 #include "third_party/abseil-cpp/absl/container/inlined_vector.h"
 #include "third_party/ipcz/include/ipcz/ipcz.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
-#endif
 
 namespace mojo::core::ipcz_driver {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// Objects encode their Windows handles as 64-bit HANDLE values within messages.
-//
-// Windows does not provide any out-of-band mechanism for transmitting objects
-// between processes (such as sendmsg() ancillary data on POSIX). Instead there
-// is only the DuplicateHandle() API which allows processes to clone object
-// handles to or from each others' processes. Therefore every handle
-// transmission requires at least one end of the Transport to have sufficient
-// access rights and resources to use DuplicateHandle() in reference to handles
-// in the other endpoint's process. Handles may be transmitted either as valid
-// values from the sender's own process; or as valid values in the recipient's
-// process, already duplicated there by the sender.
-//
-// In general senders always send handles owned by the recipient if capable of
-// doing so. If sent handles are owned by the sender, they can only be decoded
-// if the recipient itself is sufficiently privileged and capable to duplicate
-// handles from the sending process.
-//
-// This enumeration indicates whether handle values encoded by a serialized
-// object belong to the sender or the recipient.
-enum HandleOwner : uint8_t {
-  // Encoded HANDLEs belong to the sending process. For the recipient to use
-  // these, they must have a handle to the sending process with access rights to
-  // duplicate handles from there.
-  kSender,
-
-  // Encoded HANDLEs belong to the recipient's process. The recipient can use
-  // these handles as-is. Only brokers should be trusted to send handles that
-  // already belong to the recipient.
-  kRecipient,
-
-  // For ValidateEnum().
-  kMinValue = kSender,
-  kMaxValue = kRecipient,
-};
-
-// HANDLE value size varies by architecture. We always encode them with 64 bits.
-using HandleData = uint64_t;
-
-HandleData HandleToData(HANDLE handle) {
-  return static_cast<HandleData>(reinterpret_cast<uintptr_t>(handle));
-}
-
-HANDLE DataToHandle(HandleData data) {
-  return reinterpret_cast<HANDLE>(static_cast<uintptr_t>(data));
-}
-#endif
 
 // Header serialized at the beginning of all mojo-ipcz driver objects.
 struct IPCZ_ALIGN(8) ObjectHeader {
@@ -100,18 +49,6 @@ struct IPCZ_ALIGN(8) ObjectHeader {
   // Identifies the type of object serialized.
   ObjectBase::Type type;
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows only, platform handles are serialized as part of object data.
-  // This identifies how many packed HANDLE values immediately follow this
-  // header and precede the actual object data.
-  uint32_t num_handles;
-
-  // Indicates how the handles are encoded for this object.
-  HandleOwner handle_owner;
-
-  // Padding for 8-byte size alignment.
-  uint8_t reserved[3];
-#endif
 };
 
 // Header for a serialized Transport object.
@@ -134,106 +71,6 @@ struct IPCZ_ALIGN(8) TransportHeader {
   uint8_t reserved[1];
 };
 
-#if BUILDFLAG(IS_WIN)
-// Encodes a Windows HANDLE value for transmission within a serialized driver
-// object payload. See documentation on HandleOwner above for general notes
-// about how handles are communicated over IPC on Windows. Returns true on
-// success, with the encoded handle value in `out_handle_data`. Returns false if
-// handle duplication failed.
-bool EncodeHandle(PlatformHandle& handle,
-                  const base::Process& remote_process,
-                  HandleOwner handle_owner,
-                  HandleData& out_handle_data,
-                  Transport::ProcessTrust remote_process_trust) {
-  CHECK(handle.is_valid());
-  // Duplicating INVALID_HANDLE_VALUE passes a process handle. If you intend to
-  // do this, you must open a valid process handle, not pass the result of
-  // GetCurrentProcess() or GetCurrentThread(). e.g. https://crbug.com/243339.
-  CHECK(!handle.is_pseudo_handle());
-
-  if (handle_owner == HandleOwner::kSender) {
-    // Nothing to do when sending handles that belong to us. The recipient must
-    // be sufficiently privileged and equipped to duplicate such handles to
-    // itself.
-    out_handle_data = HandleToData(handle.ReleaseHandle());
-    return true;
-  }
-
-  // To encode a handle that already belongs to the recipient, we must first
-  // duplicate the handle to the recipient's process. Note that it is invalid to
-  // call EncodeHandle() to encode kRecipient handles without providing a valid
-  // handle to the remote process.
-  DCHECK_EQ(handle_owner, HandleOwner::kRecipient);
-  DCHECK(remote_process.IsValid());
-#if BUILDFLAG(IS_WIN)
-  if (remote_process_trust == Transport::ProcessTrust::kUntrusted) {
-    MaybeCheckIfHandleIsUnsafe(handle.GetHandle().get());
-  }
-#endif
-
-  HANDLE new_handle;
-  if (!::DuplicateHandle(::GetCurrentProcess(), handle.ReleaseHandle(),
-                         remote_process.Handle(), &new_handle, 0, FALSE,
-                         DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)) {
-    return false;
-  }
-
-  out_handle_data = HandleToData(new_handle);
-  return true;
-}
-
-// Decodes a Windows HANDLE value from a transmission containing a serialized
-// driver object. See documentation on HandleOwner above for general notes about
-// how handles are communicated over IPC on Windows. This function returns
-// nullopt if a non-transmissable handle value is encoded in `data`, and a
-// valid handle value in this process otherwise. This specific helper returns
-// std::optional<> for failure rather than PlatformHandle.is_valid() as
-// INVALID_HANDLE_VALUE is one of the problematic handle values that a caller
-// might misinterpret.
-std::optional<PlatformHandle> DecodeHandle(HandleData data,
-                                           const base::Process& remote_process,
-                                           HandleOwner handle_owner,
-                                           Transport& from_transport) {
-  const HANDLE handle = DataToHandle(data);
-  if (handle == nullptr) {
-    return std::nullopt;
-  }
-  // Do not decode sentinel values used by Windows (INVALID_HANDLE_VALUE &
-  // GetCurrentThread()).
-  if (base::win::IsPseudoHandle(handle)) {
-    return std::nullopt;
-  }
-
-  if (handle_owner == HandleOwner::kRecipient) {
-    if (from_transport.destination_type() != Transport::kBroker &&
-        !from_transport.is_peer_trusted() && !remote_process.is_current()) {
-      // Do not trust non-broker endpoints to send handles which already belong
-      // to us, unless the transport is explicitly marked as trustworthy (e.g.
-      // is connected to a known elevated process.)
-      return std::nullopt;
-    }
-    // Verify that this is a handle to a valid object. We do not yet know the
-    // expected type of the handle (region, file, etc.) so cannot validate that.
-    DWORD dummy;
-    if (!::GetHandleInformation(handle, &dummy)) {
-      return std::nullopt;
-    }
-    return PlatformHandle(base::win::ScopedHandle(handle));
-  }
-
-  if (!remote_process.IsValid()) {
-    return std::nullopt;
-  }
-
-  HANDLE local_dupe = INVALID_HANDLE_VALUE;
-  if (!::DuplicateHandle(remote_process.Handle(), handle, ::GetCurrentProcess(),
-                         &local_dupe, 0, FALSE,
-                         DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)) {
-    return std::nullopt;
-  }
-  return PlatformHandle(base::win::ScopedHandle(local_dupe));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 scoped_refptr<base::SingleThreadTaskRunner>& GetIOTaskRunnerStorage() {
   static base::NoDestructor<scoped_refptr<base::SingleThreadTaskRunner>> runner;
@@ -393,12 +230,6 @@ bool Transport::Deactivate() {
 
 bool Transport::Transmit(base::span<const uint8_t> data,
                          base::span<const IpczDriverHandle> handles) {
-#if BUILDFLAG(IS_WIN)
-  // All Windows handles must be inlined as message data as part of object
-  // serialization, so the driver should never attempt to transmit handles
-  // out-of-band there.
-  DCHECK(handles.empty());
-#endif
 
   std::vector<PlatformHandle> platform_handles;
   platform_handles.reserve(handles.size());
@@ -448,14 +279,8 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
     return IPCZ_RESULT_PERMISSION_DENIED;
   }
 
-#if BUILDFLAG(IS_WIN)
-  const size_t required_num_bytes = sizeof(ObjectHeader) + object_num_bytes +
-                                    sizeof(HandleData) * object_num_handles;
-  const size_t required_num_handles = 0;
-#else
   const size_t required_num_bytes = sizeof(ObjectHeader) + object_num_bytes;
   const size_t required_num_handles = object_num_handles;
-#endif
   const size_t data_capacity = num_bytes ? *num_bytes : 0;
   const size_t handle_capacity = num_handles ? *num_handles : 0;
   if (num_bytes) {
@@ -472,28 +297,8 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
   auto& header = *static_cast<ObjectHeader*>(data);
   header.size = sizeof(header);
   header.type = object.type();
-#if BUILDFLAG(IS_WIN)
-  header.num_handles = object_num_handles;
-  header.reserved[0] = 0;
-  header.reserved[1] = 0;
-  header.reserved[2] = 0;
-
-  const HandleOwner handle_owner =
-      remote_process_.IsValid() &&
-              (source_type() == kBroker || is_trusted_by_peer())
-          ? HandleOwner::kRecipient
-          : HandleOwner::kSender;
-  header.handle_owner = handle_owner;
-
-  auto handle_data = base::span(reinterpret_cast<HandleData*>(&header + 1),
-                                object_num_handles);
-  auto object_data = base::span(reinterpret_cast<uint8_t*>(&header + 1) +
-                                    object_num_handles * sizeof(HandleData),
-                                object_num_bytes);
-#else
   auto object_data =
       base::span(reinterpret_cast<uint8_t*>(&header + 1), object_num_bytes);
-#endif
 
   // A small amount of stack storage is reserved to avoid heap allocation in the
   // most common cases.
@@ -505,14 +310,9 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
 
   bool ok = true;
   for (size_t i = 0; i < object_num_handles; ++i) {
-#if BUILDFLAG(IS_WIN)
-    ok &= EncodeHandle(platform_handles[i], remote_process_, handle_owner,
-                       handle_data[i], remote_process_trust());
-#else
     handles[i] = TransmissiblePlatformHandle::ReleaseAsHandle(
         base::MakeRefCounted<TransmissiblePlatformHandle>(
             std::move(platform_handles[i])));
-#endif
   }
   return ok ? IPCZ_RESULT_OK : IPCZ_RESULT_INVALID_ARGUMENT;
 }
@@ -531,12 +331,6 @@ IpczResult Transport::DeserializeObject(
   if (header_size < sizeof(ObjectHeader) || header_size > bytes.size()) {
     return IPCZ_RESULT_INVALID_ARGUMENT;
   }
-#if BUILDFLAG(IS_WIN)
-  const HandleOwner handle_owner = header.handle_owner;
-  if (!ValidateEnum(handle_owner)) {
-    return IPCZ_RESULT_INVALID_ARGUMENT;
-  }
-#endif
   if (!ValidateEnum(header.type)) {
     return IPCZ_RESULT_INVALID_ARGUMENT;
   }
@@ -549,40 +343,16 @@ IpczResult Transport::DeserializeObject(
     return IPCZ_RESULT_UNIMPLEMENTED;
   }
 
-#if BUILDFLAG(IS_WIN)
-  CHECK(handles.empty());
-  const size_t num_handles = header.num_handles;
-  const size_t available_bytes = bytes.size() - header_size;
-  const size_t max_handles = available_bytes / sizeof(HandleData);
-  if (num_handles > max_handles) {
-    return IPCZ_RESULT_INVALID_ARGUMENT;
-  }
-
-  const size_t handle_data_size = num_handles * sizeof(HandleData);
-  auto handle_data = base::span(
-      reinterpret_cast<const HandleData*>(bytes.data() + header_size),
-      num_handles);
-  auto object_data = bytes.subspan(header_size + handle_data_size);
-#else
   auto object_data = bytes.subspan(header_size);
   const size_t num_handles = handles.size();
-#endif
 
   // A small amount of stack storage is reserved to avoid heap allocation in the
   // most common cases.
   absl::InlinedVector<PlatformHandle, 2> platform_handles;
   platform_handles.resize(num_handles);
   for (size_t i = 0; i < num_handles; ++i) {
-#if BUILDFLAG(IS_WIN)
-    auto h = DecodeHandle(handle_data[i], remote_process_, handle_owner, *this);
-    if (!h.has_value()) {
-      return IPCZ_RESULT_INVALID_ARGUMENT;
-    }
-    platform_handles[i] = std::move(*h);
-#else
     platform_handles[i] =
         TransmissiblePlatformHandle::TakeFromHandle(handles[i])->TakeHandle();
-#endif
     if (!platform_handles[i].is_valid()) {
       return IPCZ_RESULT_INVALID_ARGUMENT;
     }
@@ -651,10 +421,6 @@ bool Transport::Serialize(Transport& transmitter,
     DCHECK_EQ(handles.size(), 2u);
     DCHECK(remote_process_.IsValid());
     DCHECK(!remote_process_.is_current());
-#if BUILDFLAG(IS_WIN)
-    handles[1] = PlatformHandle(
-        base::win::ScopedHandle(remote_process_.Duplicate().Release()));
-#endif
   } else {
     DCHECK_EQ(handles.size(), 1u);
   }
@@ -675,11 +441,6 @@ scoped_refptr<Transport> Transport::Deserialize(
 
   base::Process process;
   const auto& header = *reinterpret_cast<const TransportHeader*>(data.data());
-#if BUILDFLAG(IS_WIN)
-  if (handles.size() >= 2) {
-    process = base::Process(handles[1].ReleaseHandle());
-  }
-#endif
   // Reject transports with out of range enum value in destination_type.
   if (!ValidateEnum(header.destination_type)) {
     return nullptr;
@@ -766,27 +527,12 @@ void Transport::OnChannelDestroyed() {
 }
 
 bool Transport::CanTransmitHandles() const {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, we can transmit handles only if at least one endpoint is a
-  // broker, or if we have a handle to the remote process, or if the both ends
-  // of the transport are held by the same process.
-  return destination_type() == kBroker || source_type() == kBroker ||
-         (remote_process_.IsValid() && is_trusted_by_peer()) ||
-         remote_process_.is_current();
-#else
   return true;
-#endif
 }
 
 bool Transport::ShouldSerializeProcessHandle(Transport& transmitter) const {
-#if BUILDFLAG(IS_WIN)
-  return remote_process_.IsValid() && !remote_process_.is_current() &&
-         (transmitter.destination_type() == kBroker ||
-          transmitter.is_peer_trusted());
-#else
   // We have no need for the process handle on other platforms.
   return false;
-#endif
 }
 
 Transport::PendingTransmission::PendingTransmission() = default;

@@ -13,13 +13,8 @@
 #include "components/upload_list/text_log_upload_list.h"
 
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "components/crash/core/browser/crash_upload_list_crashpad.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/crash_upload_list/crash_upload_list_chromeos.h"
-#endif
 
 scoped_refptr<UploadList> CreateCrashUploadList() {
   base::FilePath crash_dir_path;
@@ -27,9 +22,6 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::MakeRefCounted<CrashUploadListChromeOS>(upload_log_path);
-#else
   // Crashpad keeps the records of C++ crashes (segfaults, etc) in its
   // internal database. The JavaScript error reporter writes JS error upload
   // records to the older text format. Combine the two to present a complete
@@ -38,5 +30,4 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
       base::MakeRefCounted<CrashUploadListCrashpad>(),
       base::MakeRefCounted<TextLogUploadList>(upload_log_path)};
   return base::MakeRefCounted<CombiningUploadList>(std::move(uploaders));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }

@@ -193,7 +193,6 @@ PermissionPromptBubbleOneOriginView::~PermissionPromptBubbleOneOriginView() =
     default;
 
 void PermissionPromptBubbleOneOriginView::RunButtonCallback(int button_id) {
-#if !BUILDFLAG(IS_CHROMEOS)
   auto button = GetPermissionDialogButton(button_id);
   if (button == PermissionDialogButton::kAccept ||
       button == PermissionDialogButton::kAcceptOnce) {
@@ -201,7 +200,6 @@ void PermissionPromptBubbleOneOriginView::RunButtonCallback(int button_id) {
       media_previews_->UpdateDevicePreferenceRanking();
     }
   }
-#endif
   PermissionPromptBubbleBaseView::RunButtonCallback(button_id);
 }
 
@@ -230,7 +228,6 @@ void PermissionPromptBubbleOneOriginView::AddRequestLine(
   label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
   label->SetMultiLine(true);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (request->request_type() == permissions::RequestType::kMicStream) {
     mic_permission_label_ = label;
   } else if (request->request_type() ==
@@ -240,7 +237,6 @@ void PermissionPromptBubbleOneOriginView::AddRequestLine(
              permissions::RequestType::kCameraPanTiltZoom) {
     ptz_camera_permission_label_ = label;
   }
-#endif
 
   label->SetTextStyle(views::style::STYLE_BODY_3);
   label->SetEnabledColor(kColorPermissionPromptRequestText);
@@ -256,7 +252,6 @@ void PermissionPromptBubbleOneOriginView::MaybeAddMediaPreview(
     std::vector<std::string> requested_audio_capture_device_ids,
     std::vector<std::string> requested_video_capture_device_ids,
     size_t index) {
-#if !BUILDFLAG(IS_CHROMEOS)
   // Unit tests call this without initializing `browser_`, but this should not
   // happen in production code.
   if (!browser()) {
@@ -287,10 +282,8 @@ void PermissionPromptBubbleOneOriginView::MaybeAddMediaPreview(
   media_previews_.emplace(browser(), this, index,
                           requested_audio_capture_device_ids,
                           requested_video_capture_device_ids);
-#endif
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void PermissionPromptBubbleOneOriginView::OnAudioDevicesChanged(
     const std::optional<std::vector<media::AudioDeviceDescription>>&
         device_infos) {
@@ -333,4 +326,3 @@ void PermissionPromptBubbleOneOriginView::OnVideoDevicesChanged(
   camera_label->SetCustomTooltipText(
       base::UTF8ToUTF16(base::JoinString(real_device_names, "\n")));
 }
-#endif

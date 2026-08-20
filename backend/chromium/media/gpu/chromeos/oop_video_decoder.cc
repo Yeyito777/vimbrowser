@@ -547,37 +547,8 @@ void OOPVideoDecoder::Initialize(const VideoDecoderConfig& config,
   mojo::PendingRemote<mojom::CdmContextForOOPVD>
       pending_remote_cdm_context_for_oopvd;
   if (config.is_encrypted()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // There's logic in MojoVideoDecoderService::Initialize() to ensure that the
-    // CDM doesn't change across Initialize() calls. We rely on this assumption
-    // to ensure that creating a single CdmContextForOOPVDImpl that survives
-    // re-initializations is correct: the remote decoder requires a bound
-    // |pending_remote_stable_cdm_context| only for the first Initialize() call
-    // that sets up encryption.
-    DCHECK(!cdm_context_for_oopvd_ ||
-           cdm_context == cdm_context_for_oopvd_->cdm_context());
-    if (!cdm_context_for_oopvd_) {
-      if (!cdm_context || !cdm_context->GetChromeOsCdmContext()) {
-        std::move(init_cb).Run(
-            DecoderStatus::Codes::kUnsupportedEncryptionMode);
-        return;
-      }
-      cdm_context_for_oopvd_ =
-          std::make_unique<chromeos::CdmContextForOOPVDImpl>(cdm_context);
-      cdm_context_for_oopvd_receiver_ =
-          std::make_unique<mojo::Receiver<mojom::CdmContextForOOPVD>>(
-              cdm_context_for_oopvd_.get(),
-              pending_remote_cdm_context_for_oopvd
-                  .InitWithNewPipeAndPassReceiver());
-
-      // base::Unretained() is safe because |this| owns the mojo::Receiver.
-      cdm_context_for_oopvd_receiver_->set_disconnect_handler(
-          base::BindOnce(&OOPVideoDecoder::Stop, base::Unretained(this)));
-    }
-#else
     std::move(init_cb).Run(DecoderStatus::Codes::kUnsupportedEncryptionMode);
     return;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   initialized_for_protected_content_ = config.is_encrypted();
@@ -853,10 +824,6 @@ void OOPVideoDecoder::Stop() {
   }
   fake_timestamp_to_real_timestamp_cache_.Clear();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  cdm_context_for_oopvd_receiver_.reset();
-  cdm_context_for_oopvd_.reset();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (init_cb_)
     std::move(init_cb_).Run(DecoderStatus::Codes::kFailed);

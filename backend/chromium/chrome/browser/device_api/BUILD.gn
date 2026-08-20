@@ -55,17 +55,6 @@ source_set("impl") {
     "//third_party/blink/public:runtime_features_for_public",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/app_mode/isolated_web_app",
-      "//chrome/browser/ash/app_mode/web_app",
-      "//chrome/browser/ash/policy/core",
-      "//chrome/browser/ash/policy/handlers",
-      "//chromeos/ash/components/system",
-      "//chromeos/components/kiosk",
-    ]
-  }
-
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 
@@ -92,10 +81,6 @@ source_set("unit_tests") {
     "//mojo/public/cpp/test_support:test_utils",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/app_mode/web_app" ]
-  }
 }
 
 source_set("browser_tests") {
@@ -112,13 +97,4 @@ source_set("browser_tests") {
     "//net:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    sources += [ "device_attribute_api_browsertest.cc" ]
-    deps += [
-      "//chrome/browser/ash/login/test:test_support",
-      "//chrome/browser/ash/policy/core:test_support",
-      "//chromeos/ash/components/system",
-    ]
-  }
 }

@@ -71,15 +71,6 @@ source_set("metrics") {
   ]
 }
 
-if (is_ios) {
-  bundle_data("skills_metrics_test_bundle_data") {
-    testonly = true
-    sources = [ "//tools/metrics/histograms/metadata/skills/histograms.xml" ]
-
-    outputs = [ "{{bundle_resources_dir}}/{{source_root_relative_dir}}/{{source_file_part}}" ]
-  }
-}
-
 source_set("unit_tests") {
   testonly = true
 
@@ -94,10 +85,6 @@ source_set("unit_tests") {
   ]
 
   data = [ "//tools/metrics/histograms/metadata/skills/histograms.xml" ]
-
-  if (is_ios) {
-    deps += [ ":skills_metrics_test_bundle_data" ]
-  }
 
   visibility = [ "//components/skills:unit_tests" ]
 }

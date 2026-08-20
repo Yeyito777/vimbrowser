@@ -30,36 +30,8 @@ source_set("impl") {
   # satisfy GN include checking without nogncheck.
   deps += [ "//chrome/browser/device_identity" ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/policy/core",
-      "//chromeos/ash/components/browser_context_helper",
-      "//components/user_manager",
-    ]
-  }
-
   # Standard for impl targets; on ChromeOS also provides access to browser
   # headers (e.g. browser_process_platform_part_ash.h) via
   # allow_circular_includes_from set in chrome/browser/BUILD.gn.
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
-}
-
-if (is_chromeos) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "profile_invalidation_provider_factory_browsertest.cc" ]
-    deps = [
-      ":invalidation",
-      "//ash/constants",
-      "//base",
-      "//chrome/browser/ash/profiles",
-      "//chrome/common",
-      "//chrome/test:test_support",
-      "//components/account_id",
-      "//components/invalidation",
-      "//components/user_manager",
-      "//testing/gtest",
-    ]
-  }
 }

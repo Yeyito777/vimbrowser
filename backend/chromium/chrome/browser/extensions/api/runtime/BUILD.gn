@@ -34,8 +34,4 @@ source_set("runtime") {
     "//extensions/common/api",
     "//net",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/components/kiosk" ]
-  }
 }

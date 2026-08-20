@@ -135,27 +135,10 @@ static std::string TerminationStatusToString(base::TerminationStatus status) {
       return "crashed";
     case base::TERMINATION_STATUS_STILL_RUNNING:
       return "still running";
-#if BUILDFLAG(IS_CHROMEOS)
-    // Used for the case when oom-killer kills a process on ChromeOS.
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-      return "oom killed";
-#endif
-#if BUILDFLAG(IS_ANDROID)
-    // On Android processes are spawned from the system Zygote and we do not get
-    // the termination status.  We can't know if the termination was a crash or
-    // an oom kill for sure: but we can use status of the strong process
-    // bindings as a hint.
-    case base::TERMINATION_STATUS_OOM_PROTECTED:
-      return "oom protected";
-#endif
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
       return "failed to launch";
     case base::TERMINATION_STATUS_OOM:
       return "oom";
-#if BUILDFLAG(IS_WIN)
-    case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-      return "integrity failure";
-#endif
     case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
       return "evicted for memory";
     case base::TERMINATION_STATUS_MAX_ENUM:
@@ -1383,14 +1366,12 @@ Response TargetHandler::GetTargets(
   *target_infos = std::make_unique<protocol::Array<Target::TargetInfo>>();
   for (const auto& host : DevToolsAgentHost::GetOrCreateAll()) {
     if (effective_filter->Match(*host)) {
-#if !BUILDFLAG(IS_ANDROID)
       // Do not return initial WebUI as the DevTools targets.
       // TODO(crbug.com/444358999): consider adding this into the `filter` when
       // we really need to get the initial WebUI target.
       if (GetContentClient()->browser()->IsInitialWebUIURL(host->GetURL())) {
         continue;
       }
-#endif  //  !BUILDFLAG(IS_ANDROID)
       (*target_infos)->emplace_back(BuildTargetInfo(host.get()));
     }
   }

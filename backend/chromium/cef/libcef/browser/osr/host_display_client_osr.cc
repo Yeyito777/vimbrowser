@@ -18,9 +18,6 @@
 #include "third_party/skia/src/core/SkDevice.h"
 #include "ui/gfx/skia_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "skia/ext/skia_utils_win.h"
-#endif
 
 class CefLayeredWindowUpdaterOSR : public viz::mojom::LayeredWindowUpdater {
  public:

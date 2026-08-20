@@ -11,9 +11,6 @@
 #include "components/device_signals/core/browser/signals_types.h"
 #include "components/policy/proto/device_management_backend.pb.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/device_signals/core/common/win/win_types.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace enterprise_reporting {
 
@@ -44,10 +41,6 @@ TranslateRealtimeUrlCheckMode(
 enterprise_management::ProfileSignalsReport::SafeBrowsingLevel
 TranslateSafeBrowsingLevel(safe_browsing::SafeBrowsingState level);
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<enterprise_management::AntiVirusProduct> TranslateAvProduct(
-    device_signals::AvProduct av_product);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Utility function to convert report proto to readable, JSON format that
 // contains security signals-related fields only. Only

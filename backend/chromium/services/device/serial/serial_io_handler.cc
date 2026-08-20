@@ -18,13 +18,7 @@
 #include "build/build_config.h"
 #include "components/device_event_log/device_event_log.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "services/device/serial/serial_device_enumerator_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace device {
 
@@ -60,29 +54,11 @@ void SerialIoHandler::Open(const mojom::SerialConnectionOptions& options,
 
 void SerialIoHandler::OpenImpl() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if BUILDFLAG(IS_CHROMEOS)
-  // Note: dbus clients are destroyed in PostDestroyThreads so passing |client|
-  // as unretained is safe.
-  auto* client = chromeos::PermissionBrokerClient::Get();
-  DCHECK(client) << "Could not get permission_broker client.";
-  // PermissionBrokerClient should be called on the UI thread.
-  scoped_refptr<base::SingleThreadTaskRunner> task_runner =
-      base::SingleThreadTaskRunner::GetCurrentDefault();
-  ui_thread_task_runner_->PostTask(
-      FROM_HERE,
-      base::BindOnce(&chromeos::PermissionBrokerClient::OpenPath,
-                     base::Unretained(client), port_.value(),
-                     base::BindRepeating(&SerialIoHandler::OnPathOpened, this,
-                                         task_runner),
-                     base::BindRepeating(&SerialIoHandler::OnPathOpenError,
-                                         this, task_runner)));
-#else
   base::ThreadPool::PostTask(
       FROM_HERE,
       {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
       base::BindOnce(&SerialIoHandler::StartOpen, this,
                      base::SingleThreadTaskRunner::GetCurrentDefault()));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)

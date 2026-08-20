@@ -15,20 +15,10 @@
 #include "build/build_config.h"
 #include "ui/gfx/switches.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <unistd.h>
 #include "base/posix/eintr_wrapper.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/process/process_handle.h"
-#endif
 
 namespace {
 std::atomic<uint32_t> g_num_clones_counter{0};
@@ -42,32 +32,7 @@ bool IsEnabledUseSmartRefForGPUFenceHandle() {
 gfx::GpuFenceHandle::ScopedPlatformFence PlatformDuplicate(
     const gfx::GpuFenceHandle::ScopedPlatformFence& scoped_fence) {
   g_num_clones_counter++;
-#if BUILDFLAG(IS_POSIX)
   return base::ScopedFD(HANDLE_EINTR(dup(scoped_fence.get())));
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::event temp_event;
-  zx_status_t status =
-      scoped_fence.duplicate(ZX_RIGHT_SAME_RIGHTS, &temp_event);
-  if (status != ZX_OK) {
-    ZX_DLOG(ERROR, status) << "zx_handle_duplicate";
-    return gfx::GpuFenceHandle::ScopedPlatformFence();
-  }
-  return temp_event;
-#elif BUILDFLAG(IS_WIN)
-  const base::ProcessHandle process = ::GetCurrentProcess();
-  HANDLE duplicated_handle = INVALID_HANDLE_VALUE;
-  const BOOL result =
-      ::DuplicateHandle(process, scoped_fence.Get(), process,
-                        &duplicated_handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
-  if (!result) {
-    const DWORD last_error = ::GetLastError();
-    base::debug::Alias(&last_error);
-    NOTREACHED();
-  }
-  return base::win::ScopedHandle(duplicated_handle);
-#else
-  NOTREACHED();
-#endif
 }
 
 }  // namespace
@@ -99,8 +64,6 @@ bool GpuFenceHandle::is_null() const {
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return !smart_fence_.get()->scoped_fence_.is_valid();
-#elif BUILDFLAG(IS_WIN)
-  return !smart_fence_.get()->scoped_fence_.is_valid();
 #else
   return true;
 #endif
@@ -112,17 +75,10 @@ GpuFenceHandle::RefCountedScopedFence::RefCountedScopedFence(
 
 GpuFenceHandle::RefCountedScopedFence::~RefCountedScopedFence() = default;
 
-#if BUILDFLAG(IS_POSIX)
 int GpuFenceHandle::Peek() const {
   return is_null() ? base::ScopedFD().get()
                    : smart_fence_.get()->scoped_fence_.get();
 }
-#elif BUILDFLAG(IS_WIN)
-HANDLE GpuFenceHandle::Peek() const {
-  return is_null() ? INVALID_HANDLE_VALUE
-                   : smart_fence_.get()->scoped_fence_.Get();
-}
-#endif
 
 void GpuFenceHandle::Adopt(ScopedPlatformFence scoped_fence) {
   if (scoped_fence.is_valid()) {

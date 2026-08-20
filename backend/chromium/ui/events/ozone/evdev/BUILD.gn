@@ -146,26 +146,6 @@ component("evdev") {
     "//ui/ozone:ozone_base",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "fake_keyboard_heuristic_metrics.cc",
-      "fake_keyboard_heuristic_metrics.h",
-      "microphone_mute_key_metrics.cc",
-      "microphone_mute_key_metrics.h",
-      "numberpad_metrics.cc",
-      "numberpad_metrics.h",
-    ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/feature_usage",
-    ]
-    visibility += [
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/ash/main_extra_parts",
-      "//chromeos/ash/components/heatmap/*",
-    ]
-  }
-
   public_configs = [ ":evdev_config" ]
 
   if (use_evdev_gestures) {
@@ -343,18 +323,6 @@ source_set("unittests") {
     "//ui/events/ozone/layout",
     "//ui/gfx/geometry",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "input_device_factory_evdev_unittest.cc",
-      "mouse_button_map_evdev_unittest.cc",
-      "numberpad_metrics_unittest.cc",
-    ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/feature_usage",
-    ]
-  }
 
   visibility += [ "//ui/events/ozone:unittests" ]
 }

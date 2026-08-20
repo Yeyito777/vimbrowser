@@ -23,8 +23,5 @@ source_set("impl") {
     "//components/search_engines",
     "//content/public/browser",
   ]
-  if (is_chromeos) {
-    deps += [ "//chromeos/components/kiosk" ]
-  }
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }

@@ -6,10 +6,5 @@
 
 namespace content {
 
-#if BUILDFLAG(IS_CHROMEOS)
-mojo::GenericPendingReceiver ContentUtilityClient::InitMojoServiceManager() {
-  return mojo::GenericPendingReceiver();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace content

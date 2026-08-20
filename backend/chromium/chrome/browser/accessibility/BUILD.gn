@@ -21,21 +21,6 @@ source_set("test_support") {
     "//components/sync_preferences",
     "//ui/accessibility",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
-
-  if (is_win) {
-    public += [ "browser_test_with_ax_client.h" ]
-    sources += [ "browser_test_with_ax_client.cc" ]
-    public_deps += [
-      "//chrome/test/accessibility/ax_client:launcher",
-      "//chrome/test/accessibility/ax_client:mojom",
-      "//mojo/public/cpp/bindings",
-      "//ui/accessibility",
-    ]
-  }
 }
 
 source_set("utils") {
@@ -48,8 +33,4 @@ source_set("utils") {
     "//base",
     "//ui/accessibility/platform",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/accessibility" ]
-  }
 }

@@ -8,13 +8,7 @@
 #include "base/notreached.h"
 #include "third_party/blink/renderer/platform/wtf/threading.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <intrin.h>
-#include <stddef.h>
-#include <winnt.h>
-#elif defined(__GLIBC__)
+#if defined(__GLIBC__)
 extern "C" void* __libc_stack_end;  // NOLINT
 #endif
 
@@ -77,19 +71,9 @@ size_t GetUnderestimatedStackSize() {
   // https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Multithreading/CreatingThreads/CreatingThreads.html
   // on why hardcoding sizes is reasonable.)
   if (pthread_main_np()) {
-#if BUILDFLAG(IS_IOS)
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    size_t guardSize = 0;
-    pthread_attr_getguardsize(&attr, &guardSize);
-    // Stack size for the main thread is 1MB on iOS including the guard page
-    // size.
-    return (1 * 1024 * 1024 - guardSize);
-#else
     // Stack size for the main thread is 8MB on OSX excluding the guard page
     // size.
     return (8 * 1024 * 1024);
-#endif
   }
   return pthread_get_stacksize_np(pthread_self());
 #elif BUILDFLAG(IS_WIN) && defined(COMPILER_MSVC)

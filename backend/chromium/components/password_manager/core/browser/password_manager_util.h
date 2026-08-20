@@ -159,16 +159,6 @@ GURL ConstructGURLWithScheme(const std::string& url);
 // origin |url|.
 std::string GetSignonRealm(const GURL& url);
 
-#if BUILDFLAG(IS_IOS)
-// Returns a boolean indicating whether the user had enabled the credential
-// provider in their iOS settings at startup.
-bool IsCredentialProviderEnabledOnStartup(const PrefService* local_state);
-
-// Sets the boolean indicating whether the user had enabled the credential
-// provider in their iOS settings at startup.
-void SetCredentialProviderEnabledOnStartup(PrefService* local_state,
-                                           bool enabled);
-#endif
 
 // Contains all special symbols considered for password-generation.
 inline constexpr std::u16string_view kSpecialSymbols =
@@ -195,10 +185,8 @@ bool IsSingleUsernameType(autofill::FieldType type);
 // Returns the prettified version of |signon_realm| to be displayed on the UI.
 std::u16string GetHumanReadableRealm(const std::string& signon_realm);
 
-#if !BUILDFLAG(IS_IOS)
 // Returns true if Actor Login MQLS logs should be uploaded.
 bool ShouldUploadActorLoginMqls();
-#endif  // !BUILDFLAG(IS_IOS)
 
 }  // namespace password_manager_util
 

@@ -8,11 +8,6 @@
 #include "media/base/cdm_context.h"
 #include "media/cdm/cdm_helpers.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <optional>
-
-#include "media/cdm/media_foundation_cdm_data.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace media {
 
@@ -61,17 +56,5 @@ void CdmAuxiliaryHelper::GetStorageId(uint32_t version, StorageIdCB callback) {
   std::move(callback).Run(version, std::vector<uint8_t>());
 }
 
-#if BUILDFLAG(IS_WIN)
-void CdmAuxiliaryHelper::GetMediaFoundationCdmData(
-    GetMediaFoundationCdmDataCB callback) {
-  std::move(callback).Run(std::make_unique<MediaFoundationCdmData>(
-      base::UnguessableToken::Null(), std::nullopt, base::FilePath()));
-}
-
-void CdmAuxiliaryHelper::SetCdmClientToken(
-    const std::vector<uint8_t>& client_token) {}
-
-void CdmAuxiliaryHelper::OnCdmEvent(CdmEvent event, HRESULT hresult) {}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace media

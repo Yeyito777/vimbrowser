@@ -32,10 +32,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/overlay_transform.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(b/181974042):  Remove when color space is plumbed.
-#include "ui/gfx/color_space.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace viz {
 
@@ -148,10 +144,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
   // which do not use an overlay for the primary plane.
   virtual bool ShouldCreatePrimaryPlane() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(b/181974042):  Remove when color space is plumbed.
-  gfx::ColorSpace primary_plane_color_space_;
-#endif
 
  private:
   // Keeps track of overlay information needed to update damage correctly.

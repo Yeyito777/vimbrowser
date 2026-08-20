@@ -20,18 +20,6 @@ namespace media {
 // chrome/app/generated_resources.grd.
 enum MessageId {
   DEFAULT_AUDIO_DEVICE_NAME,
-#if BUILDFLAG(IS_WIN)
-  COMMUNICATIONS_AUDIO_DEVICE_NAME,
-#endif
-#if BUILDFLAG(IS_ANDROID)
-  GENERIC_AUDIO_DEVICE_NAME,
-  INTERNAL_SPEAKER_AUDIO_DEVICE_NAME,
-  INTERNAL_MIC_AUDIO_DEVICE_NAME,
-  WIRED_HEADPHONES_AUDIO_DEVICE_NAME,
-  BLUETOOTH_AUDIO_DEVICE_NAME,
-  USB_AUDIO_DEVICE_NAME,
-  HDMI_AUDIO_DEVICE_NAME,
-#endif
 };
 
 // Implementations are expected to convert MessageIds to generated_resources.grd

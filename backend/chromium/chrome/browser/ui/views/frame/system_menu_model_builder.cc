@@ -29,23 +29,6 @@
 #include "ui/base/models/menu_model.h"
 #include "ui/menus/simple_menu_model.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/multi_user/multi_user_window_manager.h"
-#include "ash/shell.h"
-#include "chrome/browser/ash/boca/on_task/on_task_locked_controller.h"
-#include "chrome/browser/ui/ash/multi_user/multi_user_util.h"
-#include "chrome/browser/ui/browser_window.h"
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#include "chromeos/strings/grit/chromeos_strings.h"
-#include "chromeos/ui/frame/desks/move_to_desks_menu_delegate.h"
-#include "chromeos/ui/frame/desks/move_to_desks_menu_model.h"
-#include "components/account_id/account_id.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#include "ui/base/l10n/l10n_util.h"
-#include "ui/gfx/native_ui_types.h"
-#include "ui/views/widget/widget.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE) && !BUILDFLAG(IS_CHROMEOS)
 #include "ui/ozone/public/ozone_platform.h"
@@ -65,11 +48,6 @@ void SystemMenuModelBuilder::Init() {
   ui::SimpleMenuModel* model = new ui::SimpleMenuModel(&menu_delegate_);
   menu_model_.reset(model);
   BuildMenu(model);
-#if BUILDFLAG(IS_WIN)
-  // On Windows we put the menu items in the system menu (not at the end). Doing
-  // this necessitates adding a trailing separator.
-  model->AddSeparator(ui::NORMAL_SEPARATOR);
-#endif
 }
 
 void SystemMenuModelBuilder::BuildMenu(ui::SimpleMenuModel* model) {
@@ -100,16 +78,8 @@ void SystemMenuModelBuilder::BuildSystemMenuForBrowserWindow(
 
   model->AddItemWithStringId(IDC_BOOKMARK_ALL_TABS, IDS_BOOKMARK_ALL_TABS);
   model->AddItemWithStringId(IDC_NAME_WINDOW, IDS_NAME_WINDOW);
-#if BUILDFLAG(IS_WIN)
-  // On Windows we can not remove an item when showing the menu. So only add
-  // the glic toggle option if glic is enabled when building the menu.
-  if (glic::GlicEnabling::IsEnabledForProfile(browser()->profile())) {
-#endif  // BUILDFLAG(IS_WIN)
     model->AddSeparator(ui::NORMAL_SEPARATOR);
     model->AddItemWithStringId(IDC_GLIC_TOGGLE_PIN, IDS_GLIC_PIN);
-#if BUILDFLAG(IS_WIN)
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (auto* controller =
           tabs::VerticalTabStripStateController::From(browser())) {
@@ -166,9 +136,6 @@ void SystemMenuModelBuilder::BuildSystemMenuForBrowserWindow(
   model->AddSeparator(ui::NORMAL_SEPARATOR);
   model->AddItemWithStringId(IDC_CLOSE_WINDOW, IDS_CLOSE_WINDOW_MENU);
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  AppendMoveToDesksMenu(model);
-#endif
   AppendTeleportMenu(model);
   // If it's a regular browser window with tabs, we don't add any more items,
   // since it already has menus (Page, Chrome).
@@ -181,11 +148,6 @@ void SystemMenuModelBuilder::BuildSystemMenuForAppOrPopupWindow(
   model->AddItemWithStringId(IDC_RELOAD, IDS_APP_MENU_RELOAD);
   if (!web_app::AppBrowserController::IsWebApp(browser())) {
     bool is_captive_portal_signin = false;
-#if BUILDFLAG(IS_CHROMEOS)
-    is_captive_portal_signin =
-        browser()->profile()->IsOffTheRecord() &&
-        browser()->profile()->GetOTRProfileID().IsCaptivePortal();
-#endif
     if (!is_captive_portal_signin) {
       model->AddSeparator(ui::NORMAL_SEPARATOR);
       if (browser()->is_type_app() || browser()->is_type_app_popup()) {
@@ -213,14 +175,6 @@ void SystemMenuModelBuilder::BuildSystemMenuForAppOrPopupWindow(
   bool should_show_task_manager =
       (browser()->is_type_app() || browser()->is_type_app_popup()) &&
       chrome::CanOpenTaskManager();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Hide TaskManager option for the app if it is locked for OnTask. Only
-  // relevant for non-web browser scenarios.
-  if (ash::boca::OnTaskLockedController::From(browser())
-          ->is_locked_for_on_task()) {
-    should_show_task_manager = false;
-  }
-#endif
   if (should_show_task_manager) {
     model->AddSeparator(ui::NORMAL_SEPARATOR);
     model->AddItemWithStringId(IDC_TASK_MANAGER, IDS_TASK_MANAGER);
@@ -229,86 +183,9 @@ void SystemMenuModelBuilder::BuildSystemMenuForAppOrPopupWindow(
   model->AddSeparator(ui::NORMAL_SEPARATOR);
   model->AddItemWithStringId(IDC_CLOSE_WINDOW, IDS_CLOSE);
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  AppendMoveToDesksMenu(model);
-#endif
   AppendTeleportMenu(model);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SystemMenuModelBuilder::AppendMoveToDesksMenu(ui::SimpleMenuModel* model) {
-  auto* const browser = menu_delegate_.browser();
-  // Do not show the move to desks menu if the app is locked for OnTask. Only
-  // relevant for non-web browser scenarios.
-  if (ash::boca::OnTaskLockedController::From(browser)
-          ->is_locked_for_on_task() ||
-      !chromeos::MoveToDesksMenuDelegate::ShouldShowMoveToDesksMenu()) {
-    return;
-  }
-
-  model->AddSeparator(ui::NORMAL_SEPARATOR);
-  move_to_desks_model_ = std::make_unique<chromeos::MoveToDesksMenuModel>(
-      std::make_unique<chromeos::MoveToDesksMenuDelegate>(
-          views::Widget::GetWidgetForNativeWindow(
-              browser->window()->GetNativeWindow())));
-  model->AddSubMenuWithStringId(chromeos::MoveToDesksMenuModel::kMenuCommandId,
-                                IDS_MOVE_TO_DESKS_MENU,
-                                move_to_desks_model_.get());
-}
-#endif
 
 void SystemMenuModelBuilder::AppendTeleportMenu(ui::SimpleMenuModel* model) {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(browser()->window());
-
-  // Avoid appending the teleport menu for the settings window.  This window's
-  // presentation is unique: it's a normal browser window with an app-like
-  // frame, which doesn't have a user icon badge.  Thus if teleported it's not
-  // clear what user it applies to. Rather than bother to implement badging just
-  // for this rare case, simply prevent the user from teleporting the window.
-  if (chrome::SettingsWindowManager::GetInstance()->IsSettingsBrowser(
-          browser())) {
-    return;
-  }
-
-  // Don't show the menu for incognito windows.
-  if (browser()->profile()->IsOffTheRecord()) {
-    return;
-  }
-
-  // To show the menu we need at least two logged in users.
-  user_manager::UserManager* user_manager = user_manager::UserManager::Get();
-  const user_manager::UserList logged_in_users =
-      user_manager->GetLRULoggedInUsers();
-  if (logged_in_users.size() <= 1u) {
-    return;
-  }
-
-  // If this does not belong to a profile or there is no window, or the window
-  // is not owned by anyone, we don't show the menu addition.
-  auto* window_manager = ash::Shell::Get()->multi_user_window_manager();
-  const AccountId account_id =
-      multi_user_util::GetAccountIdFromProfile(browser()->profile());
-  aura::Window* window = browser()->window()->GetNativeWindow();
-  if (!account_id.is_valid() || !window ||
-      !window_manager->GetWindowOwner(window).is_valid()) {
-    return;
-  }
-
-  model->AddSeparator(ui::NORMAL_SEPARATOR);
-  int command_id = IDC_VISIT_DESKTOP_OF_LRU_USER_NEXT;
-  for (size_t user_index = 1; user_index < logged_in_users.size();
-       ++user_index) {
-    if (command_id > IDC_VISIT_DESKTOP_OF_LRU_USER_LAST) {
-      break;
-    }
-    const user_manager::User* user_info = logged_in_users[user_index];
-    model->AddItem(
-        command_id,
-        l10n_util::GetStringFUTF16(
-            IDS_VISIT_DESKTOP_OF_LRU_USER, user_info->GetDisplayName(),
-            base::ASCIIToUTF16(user_info->GetDisplayEmail())));
-    ++command_id;
-  }
-#endif
 }

@@ -25,11 +25,6 @@
 #include "components/webui/flags/flags_ui_switches.h"
 #include "content/public/common/content_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/crash/core/app/crash_switches.h"
-#include "gpu/command_buffer/service/gpu_switches.h"
-#include "ui/gl/gl_switches.h"
-#endif
 
 namespace crash_keys {
 namespace {
@@ -128,35 +123,9 @@ bool IsBoringChromeSwitch(const std::string& flag) {
       switches::kDisableFeatures,
 #if BUILDFLAG(IS_MAC)
       switches::kMetricsClientID,
-#elif BUILDFLAG(IS_CHROMEOS)
-      // --crash-loop-before is a "boring" switch because it is redundant;
-      // crash_reporter separately informs the crash server if it is doing
-      // crash-loop handling.
-      crash_reporter::switches::kCrashLoopBefore,
-      switches::kUseGL,
-      switches::kUserDataDir,
-      // Cros/CC flags are specified as raw strings to avoid dependency.
-      "child-wallpaper-large",
-      "child-wallpaper-small",
-      "default-wallpaper-large",
-      "default-wallpaper-small",
-      "guest-wallpaper-large",
-      "guest-wallpaper-small",
-      "enterprise-enable-forced-re-enrollment",
-      "enterprise-enable-forced-re-enrollment-on-flex",
-      "enterprise-enrollment-initial-modulus",
-      "enterprise-enrollment-modulus-limit",
-      "login-profile",
-      "login-user",
-      "use-cras",
 #endif
   });
 
-#if BUILDFLAG(IS_WIN)
-  // Just about everything has this, don't bother.
-  if (base::StartsWith(flag, "/prefetch:", base::CompareCase::SENSITIVE))
-    return true;
-#endif
 
   if (!base::StartsWith(flag, "--", base::CompareCase::SENSITIVE))
     return false;

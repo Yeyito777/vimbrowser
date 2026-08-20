@@ -40,32 +40,6 @@ ComputeGpuFeatureInfo(const GPUInfo& gpu_info,
 
 GPU_CONFIG_EXPORT void SetKeysForCrashLogging(const GPUInfo& gpu_info);
 
-#if BUILDFLAG(IS_ANDROID)
-// Cache GPUInfo so it can be accessed later.
-GPU_CONFIG_EXPORT void CacheGPUInfo(const GPUInfo& gpu_info);
-
-// If GPUInfo is cached, write into |gpu_info|, clear cache, and return true;
-// otherwise, return false;
-GPU_CONFIG_EXPORT bool PopGPUInfoCache(GPUInfo* gpu_info);
-
-// Cache GpuFeatureInfo so it can be accessed later.
-GPU_CONFIG_EXPORT void CacheGpuFeatureInfo(
-    const GpuFeatureInfo& gpu_feature_info);
-
-// If GpuFeatureInfo is cached, write into |gpu_feature_info|, clear cache, and
-// return true; otherwise, return false;
-GPU_CONFIG_EXPORT bool PopGpuFeatureInfoCache(GpuFeatureInfo* gpu_feature_info);
-
-// Check if GL bindings are initialized. If not, initializes GL
-// bindings, create a GL context, collects GPUInfo, make blocklist and
-// GPU driver bug workaround decisions. This is intended to be called
-// by Android WebView render thread and in-process GPU thread.
-GPU_CONFIG_EXPORT gl::GLDisplay* InitializeGLThreadSafe(
-    base::CommandLine* command_line,
-    const GpuPreferences& gpu_preferences,
-    GPUInfo* out_gpu_info,
-    GpuFeatureInfo* out_gpu_feature_info);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Returns whether SwiftShader should be enabled. If true, the proper command
 // line switch to enable SwiftShader will be appended to 'command_line'.
@@ -100,15 +74,6 @@ GPU_CONFIG_EXPORT void RecordDiscreteGpuHistograms(const GPUInfo& gpu_info);
 // Currently only record for Intel NPUs.
 GPU_CONFIG_EXPORT void RecordNpuHistograms(const GPUInfo& gpu_info);
 
-#if BUILDFLAG(IS_WIN)
-GPU_CONFIG_EXPORT std::string DirectMLFeatureLevelToString(
-    uint32_t directml_feature_level);
-GPU_CONFIG_EXPORT std::string D3DFeatureLevelToString(
-    uint32_t d3d_feature_level);
-GPU_CONFIG_EXPORT std::string D3DFeatureLevelToNumberString(
-    uint32_t d3d_feature_level);
-GPU_CONFIG_EXPORT std::string VulkanVersionToString(uint32_t vulkan_version);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 GPU_CONFIG_EXPORT void TrySetNonSoftwareDevicePreferenceForTesting(

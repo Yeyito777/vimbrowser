@@ -19,9 +19,6 @@
 #include "components/webapps/common/web_app_id.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#endif
 
 namespace web_app {
 
@@ -210,10 +207,6 @@ struct ExternalInstallOptions {
   // as the app's installation metadata.
   WebAppInstallInfoFactory app_info_factory;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The type of SystemWebApp, if this app is a System Web App.
-  std::optional<ash::SystemWebAppType> system_app_type = std::nullopt;
-#endif
 
   // Whether the app was installed by an OEM and should be placed in a special
   // OEM folder in the app launcher. Only used on Chrome OS.

@@ -9,12 +9,6 @@
 #include "base/feature_list.h"
 
 namespace speech {
-#if BUILDFLAG(IS_CHROMEOS)
-COMPONENT_EXPORT(SODA_INSTALLER)
-BASE_DECLARE_FEATURE(kFeatureManagementCrosSodaConchLanguages);
-COMPONENT_EXPORT(SODA_INSTALLER)
-BASE_DECLARE_FEATURE(kCrosSodaConchLanguages);
-#endif
 }  // namespace speech
 
 #endif  // COMPONENTS_SODA_SODA_FEATURES_H_

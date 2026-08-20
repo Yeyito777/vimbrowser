@@ -7,7 +7,6 @@
 
 #include "build/build_config.h"
 
-#if !BUILDFLAG(IS_WIN)
 
 #include <memory>
 
@@ -22,12 +21,6 @@ class ChromeCrashReporterClient : public crash_reporter::CrashReporterClient {
   ChromeCrashReporterClient& operator=(const ChromeCrashReporterClient&) =
       delete;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If true, processes of this type should pass crash-loop-before down to the
-  // crash reporter and to their children (if the children's type is a process
-  // type that wants crash-loop-before).
-  static bool ShouldPassCrashLoopBefore(const std::string& process_type);
-#endif
 
   // crash_reporter::CrashReporterClient implementation.
 #if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_ANDROID)
@@ -69,6 +62,5 @@ class ChromeCrashReporterClient : public crash_reporter::CrashReporterClient {
   ~ChromeCrashReporterClient() override;
 };
 
-#endif  // BUILDFLAG(IS_WIN)
 
 #endif  // CHROME_APP_CHROME_CRASH_REPORTER_CLIENT_H_

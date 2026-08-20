@@ -22,9 +22,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/functional/callback_forward.h"
-#endif
 
 #if defined(USE_AURA) || BUILDFLAG(IS_APPLE)
 #include "ui/gfx/geometry/vector2d.h"
@@ -100,24 +97,6 @@ class COMPONENT_EXPORT(UI_BASE_DATA_EXCHANGE) OSExchangeDataProvider {
   };
   virtual std::optional<FileContentsInfo> GetFileContents() const = 0;
   virtual bool HasFileContents() const = 0;
-#if BUILDFLAG(IS_WIN)
-  virtual bool HasVirtualFilenames() const = 0;
-  virtual std::optional<std::vector<FileInfo>> GetVirtualFilenames() const = 0;
-  virtual void GetVirtualFilesAsTempFiles(
-      base::OnceCallback<
-          void(const std::vector<std::pair</*temp path*/ base::FilePath,
-                                           /*display name*/ base::FilePath>>&)>
-          callback) const = 0;
-  // Test only method for adding virtual file content to the data store.
-  // If |show_cfhdrop_without_data| is true, CF_HDROP will be advertised via
-  // QueryGetData but GetData will fail - simulating ZIP Shell Folder behavior.
-  virtual void SetVirtualFileContentsForTesting(
-      const std::vector<std::pair<base::FilePath, std::string>>&
-          filenames_and_contents,
-      DWORD tymed,
-      bool show_cfhdrop_without_data = false) = 0;
-  virtual void SetDownloadFileInfo(DownloadFileInfo* download) = 0;
-#endif
 
 #if defined(USE_AURA)
   virtual void SetHtml(const std::u16string& html, const GURL& base_url) = 0;

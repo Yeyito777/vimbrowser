@@ -104,14 +104,6 @@ scoped_refptr<SingleThreadTaskRunner> ThreadPool::CreateSingleThreadTaskRunner(
   return GetThreadPoolImpl()->CreateSingleThreadTaskRunner(traits, thread_mode);
 }
 
-#if BUILDFLAG(IS_WIN)
-// static
-scoped_refptr<SingleThreadTaskRunner> ThreadPool::CreateCOMSTATaskRunner(
-    const TaskTraits& traits,
-    SingleThreadTaskRunnerThreadMode thread_mode) {
-  return GetThreadPoolImpl()->CreateCOMSTATaskRunner(traits, thread_mode);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // static
 scoped_refptr<SequencedTaskRunner>

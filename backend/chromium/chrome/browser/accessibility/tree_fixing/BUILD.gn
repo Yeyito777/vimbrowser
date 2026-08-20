@@ -23,10 +23,6 @@ source_set("service") {
     "//components/sync_preferences",
     "//content/public/browser",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/accessibility" ]
-  }
 }
 
 source_set("prefs") {

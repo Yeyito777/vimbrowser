@@ -114,10 +114,6 @@ source_set("browser_tests") {
     "//ui/shell_dialogs",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/apps/app_service" ]
-  }
 }
 
 source_set("unit_tests") {

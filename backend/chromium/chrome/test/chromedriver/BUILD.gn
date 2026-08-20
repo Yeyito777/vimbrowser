@@ -9,9 +9,6 @@ if (is_linux) {
   import("//build/linux/strip_binary.gni")
 }
 import("//build/util/lastchange.gni")
-if (is_win) {
-  import("//build/util/process_version.gni")
-}
 import("//testing/test.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//ui/webui/resources/tools/minify_js.gni")
@@ -258,13 +255,6 @@ source_set("automation_client_lib") {
     sources += [ "chrome/chrome_finder_mac.mm" ]
   }
 
-  if (is_win) {
-    sources += [
-      "net/pipe_connection_win.cc",
-      "net/pipe_connection_win.h",
-    ]
-  }
-
   # Also compile the generated files.
   sources += get_target_outputs(":embed_js_in_cpp")
   sources += get_target_outputs(":embed_mobile_devices_in_cpp")
@@ -355,10 +345,6 @@ source_set("lib") {
 
   if (is_mac) {
     sources += [ "keycode_text_conversion_mac.mm" ]
-  }
-
-  if (is_win) {
-    sources += [ "keycode_text_conversion_win.cc" ]
   }
 
   deps = [
@@ -460,10 +446,6 @@ if (is_linux) {
     if (is_mac && is_component_ffmpeg) {
       ldflags = [ "-Wl,-rpath,@executable_path/." ]
     }
-
-    if (is_win) {
-      deps += [ ":chromedriver_server_version" ]
-    }
   }
 }
 
@@ -471,19 +453,6 @@ if (is_mac) {
   buildflag_header("buildflags") {
     header = "buildflags.h"
     flags = [ "CHROMEDRIVER_DISCLAIM_RESPONSIBILITY=$chromedriver_disclaim_responsibility" ]
-  }
-}
-
-if (is_win) {
-  process_version("chromedriver_server_version") {
-    output = "$target_gen_dir/chromedriver_server_version.rc"
-    sources = [
-      "//chrome/VERSION",
-      "chromedriver_server_exe.ver",
-      "constants/BRANDING",
-      lastchange_file,
-    ]
-    template_file = "//chrome/app/chrome_version.rc.version"
   }
 }
 
@@ -507,11 +476,6 @@ python_library("chromedriver_py_tests") {
   ]
   if (is_component_build && is_mac) {
     data_deps += [ "//chrome:chrome_framework" ]
-  }
-
-  if (is_win) {
-    # On Windows, the following target produces the final chrome.exe
-    data_deps += [ "//chrome:reorder_imports" ]
   }
 }
 
@@ -591,10 +555,6 @@ test("chromedriver_unittests") {
       "net/pipe_reader_posix_unittest.cc",
       "net/pipe_writer_posix_unittest.cc",
     ]
-  }
-
-  if (is_win) {
-    sources += [ "net/pipe_connection_unittest.cc" ]
   }
 
   data = [

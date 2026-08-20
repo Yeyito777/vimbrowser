@@ -19,6 +19,4 @@ declare_args() {
 
 # Always assert that ios_deployment_target is used on non-iOS platforms to
 # prevent unused args warnings.
-if (!is_ios) {
-  not_needed([ "ios_deployment_target" ])
-}
+not_needed([ "ios_deployment_target" ])

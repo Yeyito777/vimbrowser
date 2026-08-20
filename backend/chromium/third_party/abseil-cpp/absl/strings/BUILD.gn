@@ -235,12 +235,7 @@ absl_test("str_format_checker_test") {
 }
 
 absl_test("str_format_convert_test") {
-  if (is_fuchsia) {
-    # This test fails to compile on fuchsia x64 bot
-    sources = []
-  } else {
-    sources = [ "internal/str_format/convert_test.cc" ]
-  }
+  sources = [ "internal/str_format/convert_test.cc" ]
   deps = [
     ":str_format",
     ":str_format_internal",

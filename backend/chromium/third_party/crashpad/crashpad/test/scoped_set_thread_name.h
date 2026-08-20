@@ -38,11 +38,7 @@ class ScopedSetThreadName final {
 #endif
 
  private:
-#if BUILDFLAG(IS_WIN)
-  std::wstring original_name_;
-#else
   const std::string original_name_;
-#endif
 };
 
 }  // namespace test

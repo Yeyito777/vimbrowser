@@ -270,12 +270,10 @@ std::string ChromeEnterpriseRealTimeUrlLookupService::GetBrowserDMTokenString()
 
 std::string ChromeEnterpriseRealTimeUrlLookupService::GetProfileDMTokenString()
     const {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (!connectors_service_->GetBrowserDmToken().has_value() ||
       is_profile_affiliated_callback_.Run()) {
     return connectors_service_->GetProfileDmToken().value_or("");
   }
-#endif
   return "";
 }
 

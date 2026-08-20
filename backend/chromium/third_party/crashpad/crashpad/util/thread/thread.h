@@ -17,12 +17,8 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <pthread.h>
 #include <stdint.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_POSIX)
 
 #include "build/build_config.h"
 
@@ -57,18 +53,10 @@ class Thread {
   virtual void ThreadMain() = 0;
 
   static
-#if BUILDFLAG(IS_POSIX)
       void*
-#elif BUILDFLAG(IS_WIN)
-      DWORD WINAPI
-#endif  // BUILDFLAG(IS_POSIX)
       ThreadEntryThunk(void* argument);
 
-#if BUILDFLAG(IS_POSIX)
   pthread_t platform_thread_;
-#elif BUILDFLAG(IS_WIN)
-  HANDLE platform_thread_;
-#endif
 };
 
 }  // namespace crashpad

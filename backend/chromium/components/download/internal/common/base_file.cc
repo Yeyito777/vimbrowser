@@ -584,12 +584,7 @@ void BaseFile::OnFileQuarantined(
 
 void BaseFile::OnQuarantineServiceError(const GURL& source_url,
                                         const GURL& referrer_url) {
-#if BUILDFLAG(IS_WIN)
-  OnFileQuarantined(quarantine::SetInternetZoneIdentifierDirectly(
-      full_path_, source_url, referrer_url));
-#else   // !BUILDFLAG(IS_WIN)
   NOTREACHED() << "In-process quarantine service should not have failed.";
-#endif  // !BUILDFLAG(IS_WIN)
 }
 
 void BaseFile::AnnotateWithSourceInformation(
@@ -601,14 +596,8 @@ void BaseFile::AnnotateWithSourceInformation(
     OnAnnotationDoneCallback on_annotation_done_callback) {
   GURL authority_url = GetEffectiveAuthorityURL(source_url, referrer_url);
   if (!remote_quarantine) {
-#if BUILDFLAG(IS_WIN)
-    quarantine::mojom::QuarantineFileResult result =
-        quarantine::SetInternetZoneIdentifierDirectly(full_path_, authority_url,
-                                                      referrer_url);
-#else
     quarantine::mojom::QuarantineFileResult result =
         quarantine::mojom::QuarantineFileResult::ANNOTATION_FAILED;
-#endif
     std::move(on_annotation_done_callback)
         .Run(QuarantineFileResultToReason(result));
   } else {

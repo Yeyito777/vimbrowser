@@ -73,34 +73,6 @@ void Settings::ScopedLockedFileHandle::Destroy() {
 
 #else  // !CRASHPAD_FLOCK_ALWAYS_SUPPORTED
 
-#if BUILDFLAG(IS_IOS)
-
-Settings::ScopedLockedFileHandle::ScopedLockedFileHandle(
-    const FileHandle& value)
-    : ScopedGeneric(value) {
-  ios_background_task_ = std::make_unique<internal::ScopedBackgroundTask>(
-      "ScopedLockedFileHandle");
-}
-
-Settings::ScopedLockedFileHandle::ScopedLockedFileHandle(
-    Settings::ScopedLockedFileHandle&& rvalue) {
-  ios_background_task_.reset(rvalue.ios_background_task_.release());
-  reset(rvalue.release());
-}
-
-Settings::ScopedLockedFileHandle& Settings::ScopedLockedFileHandle::operator=(
-    Settings::ScopedLockedFileHandle&& rvalue) {
-  ios_background_task_.reset(rvalue.ios_background_task_.release());
-  reset(rvalue.release());
-  return *this;
-}
-
-Settings::ScopedLockedFileHandle::~ScopedLockedFileHandle() {
-  // Call reset() to ensure the lock is released before the ios_background_task.
-  reset();
-}
-
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace internal {
 

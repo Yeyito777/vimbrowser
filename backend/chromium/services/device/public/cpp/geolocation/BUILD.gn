@@ -43,12 +43,6 @@ component("geolocation") {
       frameworks += [ "CoreWLAN.framework" ]
     }
   }
-  if (is_win) {
-    sources += [
-      "system_geolocation_source_win.cc",
-      "system_geolocation_source_win.h",
-    ]
-  }
 
   public_deps = [
     ":buildflags",

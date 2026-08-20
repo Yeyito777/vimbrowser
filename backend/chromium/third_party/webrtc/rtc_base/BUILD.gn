@@ -608,10 +608,6 @@ rtc_library("timeutils") {
   }
 
   libs = []
-  if (is_win) {
-    libs += [ "winmm.lib" ]
-    deps += [ ":win32" ]
-  }
 }
 
 rtc_library("stringutils") {
@@ -691,30 +687,6 @@ if (is_mac || is_ios) {
       "../api/units:time_delta",
       "synchronization:mutex",
       "system:gcd_helpers",
-      "//third_party/abseil-cpp/absl/functional:any_invocable",
-      "//third_party/abseil-cpp/absl/strings:string_view",
-    ]
-  }
-}
-
-if (is_win) {
-  rtc_library("rtc_task_queue_win") {
-    visibility = [ "../api/task_queue:default_task_queue_factory" ]
-    sources = [
-      "task_queue_win.cc",
-      "task_queue_win.h",
-    ]
-    deps = [
-      ":checks",
-      ":logging",
-      ":platform_thread",
-      ":rtc_event",
-      ":safe_conversions",
-      ":timeutils",
-      "../api/task_queue",
-      "../api/units:time_delta",
-      "../api/units:timestamp",
-      "synchronization:mutex",
       "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
@@ -866,13 +838,6 @@ rtc_library("net_helpers") {
     "system:rtc_export",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-
-  if (is_win) {
-    deps += [
-      ":win32",
-      "win:windows_version",
-    ]
-  }
 }
 
 rtc_library("net_test_helpers") {
@@ -887,13 +852,6 @@ rtc_library("net_test_helpers") {
     ":net_helpers",
     "system:rtc_export",
   ]
-
-  if (is_win) {
-    deps += [
-      ":win32",
-      "win:windows_version",
-    ]
-  }
 }
 
 rtc_library("async_dns_resolver") {
@@ -953,9 +911,6 @@ rtc_library("ip_address") {
     "system:rtc_export",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
 }
 
 rtc_library("socket_address") {
@@ -975,9 +930,6 @@ rtc_library("socket_address") {
     "system:rtc_export",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
 }
 
 rtc_library("null_socket_server") {
@@ -1062,9 +1014,6 @@ rtc_library("threading") {
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
   if (is_mac || is_ios) {
     deps += [ "system:cocoa_threading" ]
   }
@@ -1112,9 +1061,6 @@ rtc_library("socket") {
     "system:rtc_export",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
   ]
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
 }
 
 if (rtc_include_tests) {
@@ -1136,29 +1082,6 @@ rtc_library("network_constants") {
     "network_constants.h",
   ]
   deps = [ ":checks" ]
-}
-
-if (is_win) {
-  rtc_library("win32") {
-    sources = [
-      "win32.cc",
-      "win32.h",
-    ]
-
-    deps = [
-      ":byte_order",
-      ":checks",
-      ":stringutils",
-    ]
-
-    libs = [
-      "crypt32.lib",
-      "iphlpapi.lib",
-      "secur32.lib",
-    ]
-
-    defines = [ "_CRT_NONSTDC_NO_DEPRECATE" ]
-  }
 }
 
 rtc_library("ifaddrs_converter") {
@@ -1188,13 +1111,6 @@ rtc_library("rolling_accumulator") {
     ":checks",
     ":rtc_numerics",
   ]
-}
-
-if (is_win) {
-  rtc_library("win32_socket_init") {
-    sources = [ "win32_socket_init.h" ]
-    deps = [ ":win32" ]
-  }
 }
 
 if (!build_with_chromium) {
@@ -1251,10 +1167,6 @@ rtc_library("network") {
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
 }
 
 rtc_library("socket_address_pair") {
@@ -1540,9 +1452,6 @@ rtc_source_set("ssl_header") {
   visibility = [ "*" ]
   sources = [ "openssl.h" ]
   deps = []
-  if (is_win) {
-    deps += [ ":win32" ]
-  }
 }
 
 rtc_library("digest") {
@@ -1657,10 +1566,6 @@ rtc_library("ssl") {
     include_dirs = [ "../../boringssl/src/include" ]
   } else {
     sources += [ "ssl_roots.h" ]
-  }
-
-  if (is_win) {
-    deps += [ ":win32" ]
   }
 }
 
@@ -1853,9 +1758,6 @@ rtc_library("rtc_base_tests_utils") {
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
-  if (is_fuchsia) {
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/zx" ]
-  }
 }
 
 rtc_library("rtp_to_ntp_estimator") {
@@ -2172,10 +2074,6 @@ if (rtc_include_tests) {
         "//third_party/abseil-cpp/absl/numeric:bits",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
-
-      if (is_win) {
-        deps += [ "win:windows_version_unittest" ]
-      }
     }
 
     rtc_library("rtc_task_queue_unittests") {
@@ -2353,10 +2251,6 @@ if (rtc_include_tests) {
       ]
       if (rtc_enable_google_benchmarks) {
         deps += [ "synchronization:synchronization_unittests" ]
-      }
-      if (is_win) {
-        sources += [ "win32_unittest.cc" ]
-        deps += [ ":win32" ]
       }
       if (is_posix || is_fuchsia || is_win) {
         sources += [

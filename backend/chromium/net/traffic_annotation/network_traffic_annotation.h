@@ -12,9 +12,6 @@
 #include "base/notreached.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 namespace net::internal {
 
@@ -75,12 +72,6 @@ struct NetworkTrafficAnnotationTag {
       const PartialNetworkTrafficAnnotationTag& partial_annotation,
       const char* proto);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Allows C++ methods to receive a Java NetworkTrafficAnnotationTag via JNI,
-  // and convert it to the C++ version.
-  static NetworkTrafficAnnotationTag FromJavaAnnotation(
-      int32_t unique_id_hash_code);
-#endif
 
   friend struct MutableNetworkTrafficAnnotationTag;
 

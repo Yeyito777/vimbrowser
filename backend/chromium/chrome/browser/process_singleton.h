@@ -8,9 +8,6 @@
 #include "base/sequence_checker.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #include "base/check.h"
 #include "base/command_line.h"
@@ -23,9 +20,6 @@
 #include "base/files/scoped_temp_dir.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/message_window.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace base {
 class CommandLine;
@@ -46,14 +40,9 @@ class ProcessSingleton {
  public:
   // Used to send the reason of remote hang process termination as histogram.
   enum RemoteHungProcessTerminateReason {
-#if BUILDFLAG(IS_WIN)
-    USER_ACCEPTED_TERMINATION = 1,
-    NO_VISIBLE_WINDOW_FOUND = 2,
-#elif BUILDFLAG(IS_POSIX)
     NOTIFY_ATTEMPTS_EXCEEDED = 3,
     SOCKET_WRITE_FAILED = 4,
     SOCKET_READ_FAILED = 5,
-#endif
     REMOTE_HUNG_PROCESS_TERMINATE_REASON_COUNT
   };
 
@@ -63,10 +52,6 @@ class ProcessSingleton {
     TERMINATE_SUCCEEDED = 0,
     TERMINATE_FAILED = 1,
     REMOTE_PROCESS_NOT_FOUND = 2,
-#if BUILDFLAG(IS_WIN)
-    TERMINATE_WAIT_TIMEOUT = 3,
-    RUNNING_PROCESS_NOTIFY_ERROR = 4,
-#elif BUILDFLAG(IS_POSIX)
     TERMINATE_NOT_ENOUGH_PERMISSIONS = 5,
     REMOTE_PROCESS_SHUTTING_DOWN = 6,
     PROFILE_UNLOCKED = 7,
@@ -76,7 +61,6 @@ class ProcessSingleton {
     FAILED_TO_EXTRACT_PID = 11,
     INVALID_LOCK_FILE = 12,
     ORPHANED_LOCK_FILE = 13,
-#endif
     USER_REFUSED_TERMINATION = 14,
     REMOTE_PROCESS_INTERACTION_RESULT_COUNT
   };
@@ -137,13 +121,6 @@ class ProcessSingleton {
   static void SkipIsChromeProcessCheckForTesting(bool skip);
   static void SetUserOptedUnlockInUseProfileForTesting(bool set_unlock);
 #endif
-#if BUILDFLAG(IS_WIN)
-  // Called to query whether to kill a hung browser process that has visible
-  // windows. Return true to allow killing the hung process.
-  using ShouldKillRemoteProcessCallback = base::RepeatingCallback<bool()>;
-  void OverrideShouldKillRemoteProcessCallbackForTesting(
-      const ShouldKillRemoteProcessCallback& display_dialog_callback);
-#endif
 
  protected:
   // Notify another process, if available.
@@ -172,16 +149,7 @@ class ProcessSingleton {
  private:
   NotificationCallback notification_callback_;  // Handler for notifications.
 
-#if BUILDFLAG(IS_WIN)
-  bool EscapeVirtualization(const base::FilePath& user_data_dir);
-
-  HWND remote_window_;  // The HWND_MESSAGE of another browser.
-  base::win::MessageWindow window_;  // The message-only window.
-  bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
-  HANDLE lock_file_;
-  base::FilePath user_data_dir_;
-  ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
-#elif BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
   // Return true if the given pid is one of our child processes.
   // Assumes that the current pid is the root of all pids of the current
   // instance.

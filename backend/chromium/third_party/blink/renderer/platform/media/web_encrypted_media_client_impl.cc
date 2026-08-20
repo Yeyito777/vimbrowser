@@ -62,37 +62,6 @@ std::string ConvertCreateCdmStatusToString(media::CreateCdmStatus status) {
       return "Disconnection error.";
     case media::CreateCdmStatus::kNotAllowedOnUniqueOrigin:
       return "EME use is not allowed on unique origins.";
-#if BUILDFLAG(IS_ANDROID)
-    case media::CreateCdmStatus::kMediaCryptoNotAvailable:
-      return "MediaCrypto not available.";
-    case media::CreateCdmStatus::kAndroidMediaDrmIllegalArgument:
-      return "Illegal argument passed to MediaDrm.";
-    case media::CreateCdmStatus::kAndroidMediaDrmIllegalState:
-      return "MediaDrm not initialized properly.";
-    case media::CreateCdmStatus::kAndroidFailedL1SecurityLevel:
-      return "Unable to set L1 security level.";
-    case media::CreateCdmStatus::kAndroidFailedL3SecurityLevel:
-      return "Unable to set L3 security level.";
-    case media::CreateCdmStatus::kAndroidFailedSecurityOrigin:
-      return "Unable to set origin.";
-    case media::CreateCdmStatus::kAndroidFailedMediaCryptoSession:
-      return "Unable to create MediaCrypto session.";
-    case media::CreateCdmStatus::kAndroidFailedToStartProvisioning:
-      return "Unable to create MediaCrypto session.";
-    case media::CreateCdmStatus::kAndroidFailedMediaCryptoCreate:
-      return "Unable to create MediaCrypto object.";
-    case media::CreateCdmStatus::kAndroidUnsupportedMediaCryptoScheme:
-      return "Crypto scheme not supported.";
-#elif BUILDFLAG(IS_CHROMEOS)
-    case media::CreateCdmStatus::kNoMoreInstances:
-      return "Only one instance allowed.";
-    case media::CreateCdmStatus::kInsufficientGpuResources:
-      return "Insufficient GPU memory available.";
-    case media::CreateCdmStatus::kCrOsVerifiedAccessDisabled:
-      return "Verified Access is disabled.";
-    case media::CreateCdmStatus::kCrOsRemoteFactoryCreationFailed:
-      return "Remote factory creation failed.";
-#endif  // BUILDFLAG(IS_ANDROID)
     default:
       return base::ToString(status);
   }

@@ -38,12 +38,6 @@
 #include "ui/base/ui_base_features.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/strings/grit/chromeos_strings.h"
-#include "chromeos/ui/frame/desks/move_to_desks_menu_delegate.h"
-#include "chromeos/ui/frame/desks/move_to_desks_menu_model.h"
-#include "ui/views/widget/widget.h"
-#endif
 
 namespace {
 
@@ -86,9 +80,6 @@ bool WebAppMenuModel::IsCommandIdEnabled(int command_id) const {
     case kExtensionsMenuCommandId:
     case IDC_OPEN_IN_CHROME:
     case IDC_WEB_APP_UPGRADE_DIALOG:
-#if BUILDFLAG(IS_CHROMEOS)
-    case chromeos::MoveToDesksMenuModel::kMenuCommandId:
-#endif
       // These commands only exist in the menu model if they should be visible
       // and enabled.
       return true;
@@ -214,22 +205,9 @@ void WebAppMenuModel::Build() {
                                      IDS_OPEN_IN_CHROME, kBrowserLogoIcon);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::MoveToDesksMenuDelegate::ShouldShowMoveToDesksMenu()) {
-    AddSeparator(ui::NORMAL_SEPARATOR);
-    move_to_desks_submenu_ = std::make_unique<chromeos::MoveToDesksMenuModel>(
-        std::make_unique<chromeos::MoveToDesksMenuDelegate>(
-            views::Widget::GetWidgetForNativeWindow(
-                browser()->window()->GetNativeWindow())));
-    AddSubMenuWithStringId(chromeos::MoveToDesksMenuModel::kMenuCommandId,
-                           IDS_MOVE_TO_DESKS_MENU,
-                           move_to_desks_submenu_.get());
-  }
-#endif
 
 // Chrome OS's app list is prominent enough to not need a separate uninstall
 // option in the app menu.
-#if !BUILDFLAG(IS_CHROMEOS)
   DCHECK(browser()->app_controller());
   if (browser()->app_controller()->IsInstalled()) {
     AddSeparator(ui::NORMAL_SEPARATOR);
@@ -240,7 +218,6 @@ void WebAppMenuModel::Build() {
                             browser()->app_controller()->GetAppShortName())),
                     ui::ImageModel::FromVectorIcon(kTrashCanRefreshIcon));
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   AddSeparator(ui::NORMAL_SEPARATOR);
   CreateZoomMenu();
   AddSeparator(ui::NORMAL_SEPARATOR);

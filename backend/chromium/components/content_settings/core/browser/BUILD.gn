@@ -99,12 +99,10 @@ source_set("cookie_settings") {
     "cookie_settings.h",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "cookie_settings_policy_handler.cc",
-      "cookie_settings_policy_handler.h",
-    ]
-  }
+  sources += [
+    "cookie_settings_policy_handler.cc",
+    "cookie_settings_policy_handler.h",
+  ]
   public_deps = [ "//base" ]
 
   deps = [
@@ -162,9 +160,7 @@ source_set("unit_tests") {
   if (use_blink) {
     # Policies haven't been updated for iOS yet since blink
     # support is only a prototype.
-    if (!is_ios) {
-      sources += [ "cookie_settings_policy_handler_unittest.cc" ]
-    }
+    sources += [ "cookie_settings_policy_handler_unittest.cc" ]
 
     deps += [
       "//components/policy:generated",

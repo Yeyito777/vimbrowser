@@ -39,9 +39,6 @@ class CPDF_DeviceBuffer {
 
  private:
   UnownedPtr<CFX_RenderDevice> const device_;
-#if BUILDFLAG(IS_WIN)
-  UnownedPtr<CPDF_RenderContext> const context_;
-#endif
   UnownedPtr<const CPDF_PageObject> const object_;
   RetainPtr<CFX_DIBitmap> const bitmap_;
   const FX_RECT rect_;

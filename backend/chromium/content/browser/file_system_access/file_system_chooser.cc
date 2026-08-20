@@ -30,9 +30,6 @@
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <set>
-#endif
 
 namespace content {
 
@@ -70,29 +67,6 @@ bool IsInvalidExtension(base::FilePath::StringType& extension) {
          FileSystemChooser::IsShellIntegratedExtension(extension);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// Gets the list of all mime_types in all options from accepts and extensions.
-std::vector<std::u16string> ConvertAcceptsToMimeTypesList(
-    const blink::mojom::AcceptsTypesInfoPtr& accepts_types_info) {
-  std::set<std::u16string> mime_types;
-  for (const auto& option : accepts_types_info->accepts) {
-    // Add listed mime types.
-    for (const std::string& mime_type : option->mime_types) {
-      mime_types.insert(base::UTF8ToUTF16(mime_type));
-    }
-
-    // Lookup mime types from extensions.
-    for (const std::string& ext : option->extensions) {
-      std::string mime_type;
-      if (net::GetWellKnownMimeTypeFromExtension(ext, &mime_type)) {
-        mime_types.insert(base::UTF8ToUTF16(mime_type));
-      }
-    }
-  }
-
-  return std::vector<std::u16string>(mime_types.begin(), mime_types.end());
-}
-#endif
 
 // Converts the accepted mime types and extensions from `option` into a list
 // of just extensions to be passed to the file dialog implementation.
@@ -109,11 +83,7 @@ bool GetFileTypesFromAcceptsOption(
 
   for (const std::string& extension_string : option.extensions) {
     base::FilePath::StringType extension;
-#if BUILDFLAG(IS_WIN)
-    extension = base::UTF8ToWide(extension_string);
-#else
     extension = extension_string;
-#endif
     if (extension_set.insert(extension).second &&
         !IsInvalidExtension(extension)) {
       extensions->push_back(std::move(extension));
@@ -229,9 +199,6 @@ FileSystemChooser::Options::Options(
       // This value will be updated if the extension of `suggested_name`
       // matches an extension in `accepts_types_info->accepts`.
       default_file_type_index_(file_types_.extensions.empty() ? 0 : 1),
-#if BUILDFLAG(IS_ANDROID)
-      mime_types_(ConvertAcceptsToMimeTypesList(accepts_types_info)),
-#endif
       title_(std::move(title)),
       default_path_(default_directory.Append(
           ResolveSuggestedNameExtension(std::move(suggested_name),
@@ -347,10 +314,6 @@ void FileSystemChooser::CreateAndShow(
   }
 
   VLOG(1) << "Showing chooser";
-#if BUILDFLAG(IS_ANDROID)
-  listener->dialog_->SetAcceptTypes(options.mime_types());
-  listener->dialog_->SetOpenWritable(true);
-#endif
   listener->dialog_->SelectFile(
       options.type(), options.title(), options.default_path(),
       &options.file_type_info(), options.default_file_type_index(),

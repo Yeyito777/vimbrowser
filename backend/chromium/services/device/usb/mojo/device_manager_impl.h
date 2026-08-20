@@ -64,30 +64,7 @@ class DeviceManagerImpl : public mojom::UsbDeviceManager,
       mojo::PendingReceiver<mojom::UsbDevice> device_receiver,
       mojo::PendingRemote<mojom::UsbDeviceClient> device_client) override;
 
-#if BUILDFLAG(IS_ANDROID)
-  void RefreshDeviceInfo(const std::string& guid,
-                         RefreshDeviceInfoCallback callback) override;
-  void OnPermissionGrantedToRefresh(scoped_refptr<UsbDevice> device,
-                                    RefreshDeviceInfoCallback callback,
-                                    bool granted);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void CheckAccess(const std::string& guid,
-                   CheckAccessCallback callback) override;
-
-  void OpenFileDescriptor(const std::string& guid,
-                          uint32_t drop_privileges_mask,
-                          mojo::PlatformHandle lifeline_fd,
-                          OpenFileDescriptorCallback callback) override;
-
-  void OnOpenFileDescriptor(OpenFileDescriptorCallback callback,
-                            base::ScopedFD fd);
-
-  void OnOpenFileDescriptorError(OpenFileDescriptorCallback callback,
-                                 const std::string& error_name,
-                                 const std::string& message);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void SetClient(mojo::PendingAssociatedRemote<mojom::UsbDeviceManagerClient>
                      client) override;

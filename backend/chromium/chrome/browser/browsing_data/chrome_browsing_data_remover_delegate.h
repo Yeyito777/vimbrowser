@@ -77,10 +77,6 @@ class ChromeBrowsingDataRemoverDelegate
   void OnStartRemoving() override;
   void OnDoneRemoving() override;
 
-#if BUILDFLAG(IS_ANDROID)
-  void OverrideWebappRegistryForTesting(
-      std::unique_ptr<WebappRegistry> webapp_registry);
-#endif
 
   using DomainReliabilityClearer = base::RepeatingCallback<void(
       content::BrowsingDataFilterBuilder* filter_builder,
@@ -186,9 +182,6 @@ class ChromeBrowsingDataRemoverDelegate
   // A helper method that checks if time period is for "all time".
   bool IsForAllTime() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnClearPlatformKeys(base::OnceClosure done, bool);
-#endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
   // Called when plugin data has been cleared. Invokes NotifyIfDone.
@@ -233,11 +226,6 @@ class ChromeBrowsingDataRemoverDelegate
   // Used if we need to clear history.
   base::CancelableTaskTracker history_task_tracker_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // WebappRegistry makes calls across the JNI. In unit tests, the Java side is
-  // not initialised, so the registry must be mocked out.
-  std::unique_ptr<WebappRegistry> webapp_registry_;
-#endif
 
   // PasswordStore::DisableAutoSignInForOrigins() is required when wiping
   // DATA_TYPE_COOKIES, but that must be deferred until any password deletions

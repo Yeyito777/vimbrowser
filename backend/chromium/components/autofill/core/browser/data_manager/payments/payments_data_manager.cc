@@ -264,12 +264,10 @@ PaymentsDataManager::PaymentsDataManager(
       autofill_metrics::LogAutofillPaymentMethodsDisabledReasonAtStartup(
           *pref_service_);
     }
-#if !BUILDFLAG(IS_IOS)
     // Clean up for crbug.com/411681430.
     if (!IsPaymentCvcStorageEnabled()) {
       ClearLocalCvcsUpToMay2025();
     }
-#endif
   }
   if (sync_service_) {
     sync_observer_.Observe(sync_service_);
@@ -1584,18 +1582,6 @@ void PaymentsDataManager::ClearLocalCvcsUpToMay2025() {
   Refresh();
 }
 
-#if BUILDFLAG(IS_IOS)
-void PaymentsDataManager::CleanupForCrbug445879524() {
-  if (!GetLocalDatabase()) {
-    return;
-  }
-
-  GetLocalDatabase()->CleanupForCrbug445879524();
-
-  // Refresh our local cache and send notifications to observers.
-  Refresh();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 void PaymentsDataManager::ClearAllServerDataForTesting() {
   // This could theoretically be called before we get the data back from the

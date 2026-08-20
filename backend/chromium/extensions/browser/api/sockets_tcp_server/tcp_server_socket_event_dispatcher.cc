@@ -205,14 +205,6 @@ void TCPServerSocketEventDispatcher::DispatchEvent(
   DCHECK(ExtensionsBrowserClient::Get()->IsValidContext(browser_context.get()));
   EventRouter* router = EventRouter::Get(browser_context.get());
   if (router) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Terminal app is the only non-extension to use sockets
-    // (crbug.com/1350479).
-    if (extension_id == kCrOSTerminal) {
-      router->DispatchEventToURL(GURL(extension_id), std::move(event));
-      return;
-    }
-#endif
     router->DispatchEventToExtension(extension_id, std::move(event));
   }
 }

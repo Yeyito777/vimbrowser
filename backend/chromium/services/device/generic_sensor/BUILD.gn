@@ -64,21 +64,7 @@ source_set("generic_sensor") {
     ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/components/sensors",
-      "//chromeos/components/sensors/mojom",
-    ]
-
-    sources += [
-      "platform_sensor_chromeos.cc",
-      "platform_sensor_chromeos.h",
-      "platform_sensor_provider_chromeos.cc",
-      "platform_sensor_provider_chromeos.h",
-      "platform_sensor_provider_linux_base.cc",
-      "platform_sensor_provider_linux_base.h",
-    ]
-  } else if (is_linux && use_udev) {
+  if (is_linux && use_udev) {
     deps += [
       "//device/base",
       "//device/udev_linux",
@@ -97,27 +83,6 @@ source_set("generic_sensor") {
       "platform_sensor_provider_linux_base.h",
       "platform_sensor_reader_linux.cc",
       "platform_sensor_reader_linux.h",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "platform_sensor_provider_win.cc",
-      "platform_sensor_provider_win.h",
-      "platform_sensor_provider_winrt.cc",
-      "platform_sensor_provider_winrt.h",
-      "platform_sensor_reader_win.cc",
-      "platform_sensor_reader_win.h",
-      "platform_sensor_reader_win_base.h",
-      "platform_sensor_reader_winrt.cc",
-      "platform_sensor_reader_winrt.h",
-      "platform_sensor_win.cc",
-      "platform_sensor_win.h",
-    ]
-
-    libs = [
-      "portabledeviceguids.lib",
-      "sensorsapi.lib",
     ]
   }
 }

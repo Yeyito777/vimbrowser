@@ -37,12 +37,6 @@ ManagementService* ManagementServiceFactory::GetForPlatform() {
   // This has to be done here since `DeviceManagementStatusProvider` cannot be
   // defined in `components/policy/`, also we need we need the
   // `g_browser_process->platform_part()`.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!instance->has_cros_status_provider()) {
-    instance->AddChromeOsStatusProvider(
-        std::make_unique<DeviceManagementStatusProvider>());
-  }
-#endif
   return instance;
 }
 

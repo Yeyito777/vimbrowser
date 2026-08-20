@@ -17,9 +17,6 @@ assert(use_ozone)
 generate_stubs("libva_stubs") {
   extra_header = "va_stub_header.fragment"
   sigs = [ "va.sigs" ]
-  if (is_chromeos) {
-    sigs += [ "va_prot.sigs" ]
-  }
   sigs += [ "va_drm.sigs" ]
 
   output_name = "va_stubs"
@@ -100,21 +97,6 @@ source_set("vaapi") {
     "//media",
     "//skia",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "vaapi_jpeg_encode_accelerator.cc",
-      "vaapi_jpeg_encode_accelerator.h",
-      "vaapi_mjpeg_decode_accelerator.cc",
-      "vaapi_mjpeg_decode_accelerator.h",
-    ]
-
-    deps += [
-      "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu",
-      "//components/chromeos_camera:jpeg_encode_accelerator",
-      "//components/chromeos_camera:mjpeg_decode_accelerator",
-    ]
-  }
 }
 
 # The vaapi status functionality is in its own source set so that it can be
@@ -174,9 +156,6 @@ source_set("vaapi_test_utils") {
     "//testing/gtest",
     "//third_party/libyuv",
   ]
-  if (is_chromeos) {
-    deps += [ "//media/gpu/test:local_gpu_memory_buffer_manager" ]
-  }
   public_deps = [ "//ui/gfx/geometry" ]
 }
 
@@ -205,11 +184,6 @@ source_set("unit_test") {
     "//ui/gfx:test_support",
     "//ui/gfx/geometry",
   ]
-  if (is_chromeos) {
-    sources += [ "vaapi_video_decoder_unittest.cc" ]
-    deps +=
-        [ "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu" ]
-  }
 }
 
 source_set("vaapi_image_decoder_test_common") {
@@ -228,26 +202,6 @@ source_set("vaapi_image_decoder_test_common") {
 }
 
 # TODO(crbug.com/40115082): remove is_chromeos.
-if (is_chromeos) {
-  source_set("jpeg_decoder_unit_test") {
-    testonly = true
-    sources = [ "vaapi_jpeg_decoder_unittest.cc" ]
-    deps = [
-      ":common",
-      ":vaapi",
-      ":vaapi_image_decoder_test_common",
-      ":vaapi_test_utils",
-      "//base",
-      "//components/viz/common/resources:shared_image_format",
-      "//media/gpu/test:local_gpu_memory_buffer_manager",
-      "//testing/gtest",
-      "//third_party/libyuv",
-      "//ui/gfx:memory_buffer",
-      "//ui/gfx/codec",
-      "//ui/gfx/geometry",
-    ]
-  }
-}
 
 source_set("vaapi_utils_unittest") {
   testonly = true
@@ -281,9 +235,6 @@ test("vaapi_unittest") {
   data_deps = [ "//media/gpu/vaapi/test/fake_libva_driver:fake_drv_video" ]
 
   # TODO(crbug.com/40115082): remove is_chromeos.
-  if (is_chromeos) {
-    deps += [ ":jpeg_decoder_unit_test" ]
-  }
 }
 
 group("vaapi_fuzzers") {

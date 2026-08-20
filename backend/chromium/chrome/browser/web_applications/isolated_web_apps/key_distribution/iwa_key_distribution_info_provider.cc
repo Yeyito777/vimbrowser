@@ -90,11 +90,7 @@ base::OneShotEvent& AlreadySignalled() {
 }
 
 base::TaskPriority GetLoadTaskPriority() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::TaskPriority::USER_VISIBLE;
-#else
   return base::TaskPriority::BEST_EFFORT;
-#endif
 }
 }  // namespace
 

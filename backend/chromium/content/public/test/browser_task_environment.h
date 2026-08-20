@@ -13,11 +13,6 @@
 #include "build/build_config.h"
 
 namespace base {
-#if BUILDFLAG(IS_WIN)
-namespace win {
-class ScopedCOMInitializer;
-}  // namespace win
-#endif
 }  // namespace base
 
 namespace content {
@@ -198,9 +193,6 @@ class BrowserTaskEnvironment : public base::test::TaskEnvironment {
   std::unique_ptr<TestBrowserThread> ui_thread_;
   std::unique_ptr<TestBrowserThread> io_thread_;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<base::win::ScopedCOMInitializer> com_initializer_;
-#endif
 };
 
 }  // namespace content

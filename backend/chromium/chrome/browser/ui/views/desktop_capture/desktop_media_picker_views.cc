@@ -123,11 +123,7 @@ enum class SelectedTabDiscardStatus {
 #if !BUILDFLAG(IS_CHROMEOS) && defined(USE_AURA)
 DesktopMediaID::Id AcceleratedWidgetToDesktopMediaId(
     gfx::AcceleratedWidget accelerated_widget) {
-#if BUILDFLAG(IS_WIN)
-  return reinterpret_cast<DesktopMediaID::Id>(accelerated_widget);
-#else
   return static_cast<DesktopMediaID::Id>(accelerated_widget);
-#endif
 }
 #endif
 
@@ -336,16 +332,7 @@ int GetLabelForShareSystemAudioToggle(bool suppress_local_audio_playback,
   if (suppress_local_audio_playback) {
     return IDS_DESKTOP_MEDIA_PICKER_AUDIO_SHARE_SCREEN_WITH_MUTE_WARNING;
   }
-#if BUILDFLAG(IS_WIN)
-  // Due to an API limitation on Windows we must share all output audio
-  // devices when restrict_own_audio is used. We use another string for that
-  // scenario.
-  return restrict_own_audio
-             ? IDS_DESKTOP_MEDIA_PICKER_ALSO_SHARE_ALL_AUDIO_OUTPUT
-             : IDS_DESKTOP_MEDIA_PICKER_ALSO_SHARE_SYSTEM_AUDIO;
-#else
   return IDS_DESKTOP_MEDIA_PICKER_ALSO_SHARE_SYSTEM_AUDIO;
-#endif
 }
 
 // Returns the audio type for the window capture by taking into consideration

@@ -50,22 +50,13 @@ base::DictValue NetLogParameterChannelBindings(
 // Uses |negotiate_auth_system_factory| to create the auth system, otherwise
 // creates the default auth system for each platform.
 std::unique_ptr<HttpAuthMechanism> CreateAuthSystem(
-#if !BUILDFLAG(IS_ANDROID)
     HttpAuthHandlerNegotiate::AuthLibrary* auth_library,
-#endif
     const HttpAuthPreferences* prefs,
     HttpAuthMechanismFactory negotiate_auth_system_factory) {
   if (negotiate_auth_system_factory)
     return negotiate_auth_system_factory.Run(prefs);
-#if BUILDFLAG(IS_ANDROID)
-  return std::make_unique<android::HttpAuthNegotiateAndroid>(prefs);
-#elif BUILDFLAG(IS_WIN)
-  return std::make_unique<HttpAuthSSPI>(auth_library,
-                                        HttpAuth::AUTH_SCHEME_NEGOTIATE);
-#elif BUILDFLAG(IS_POSIX)
   return std::make_unique<HttpAuthGSSAPI>(auth_library,
                                           CHROME_GSS_SPNEGO_MECH_OID_DESC);
-#endif
 }
 
 }  // namespace
@@ -94,29 +85,6 @@ int HttpAuthHandlerNegotiate::Factory::CreateAuthHandler(
     const NetLogWithSource& net_log,
     HostResolver* host_resolver,
     std::unique_ptr<HttpAuthHandler>* handler) {
-#if BUILDFLAG(IS_WIN)
-  if (is_unsupported_ || reason == CREATE_PREEMPTIVE)
-    return ERR_UNSUPPORTED_AUTH_SCHEME;
-  // TODO(cbentzel): Move towards model of parsing in the factory
-  //                 method and only constructing when valid.
-  std::unique_ptr<HttpAuthHandler> tmp_handler(
-      std::make_unique<HttpAuthHandlerNegotiate>(
-          CreateAuthSystem(auth_library_.get(), http_auth_preferences(),
-                           negotiate_auth_system_factory_),
-          http_auth_preferences(), host_resolver));
-#elif BUILDFLAG(IS_ANDROID)
-  if (is_unsupported_ || !http_auth_preferences() ||
-      http_auth_preferences()->AuthAndroidNegotiateAccountType().empty() ||
-      reason == CREATE_PREEMPTIVE)
-    return ERR_UNSUPPORTED_AUTH_SCHEME;
-  // TODO(cbentzel): Move towards model of parsing in the factory
-  //                 method and only constructing when valid.
-  std::unique_ptr<HttpAuthHandler> tmp_handler(
-      std::make_unique<HttpAuthHandlerNegotiate>(
-          CreateAuthSystem(http_auth_preferences(),
-                           negotiate_auth_system_factory_),
-          http_auth_preferences(), host_resolver));
-#elif BUILDFLAG(IS_POSIX)
   if (is_unsupported_)
     return ERR_UNSUPPORTED_AUTH_SCHEME;
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
@@ -138,7 +106,6 @@ int HttpAuthHandlerNegotiate::Factory::CreateAuthHandler(
           CreateAuthSystem(auth_library_.get(), http_auth_preferences(),
                            negotiate_auth_system_factory_),
           http_auth_preferences(), host_resolver));
-#endif
   if (!tmp_handler->InitFromChallenge(challenge, target, ssl_info,
                                       network_anonymization_key,
                                       scheme_host_port, net_log)) {
@@ -182,7 +149,6 @@ bool HttpAuthHandlerNegotiate::Init(
     const SSLInfo& ssl_info,
     const NetworkAnonymizationKey& network_anonymization_key) {
   network_anonymization_key_ = network_anonymization_key;
-#if BUILDFLAG(IS_POSIX)
   if (!auth_system_->Init(net_log())) {
     VLOG(1) << "can't initialize GSSAPI library";
     return false;
@@ -195,7 +161,6 @@ bool HttpAuthHandlerNegotiate::Init(
   if (!AllowsDefaultCredentials()) {
     return false;
   }
-#endif
   auth_system_->SetDelegation(GetDelegationType());
   auth_scheme_ = HttpAuth::AUTH_SCHEME_NEGOTIATE;
   score_ = 4;
@@ -284,11 +249,7 @@ std::string HttpAuthHandlerNegotiate::CreateSPN(
   // and IE. Users can override the behavior so aliases are allowed and
   // non-standard ports are included.
   int port = scheme_host_port.port();
-#if BUILDFLAG(IS_WIN)
-  static const char kSpnSeparator = '/';
-#elif BUILDFLAG(IS_POSIX)
   static const char kSpnSeparator = '@';
-#endif
   if (port != 80 && port != 443 &&
       (http_auth_preferences_ &&
        http_auth_preferences_->NegotiateEnablePort())) {

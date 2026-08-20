@@ -16,10 +16,6 @@
 #include "build/build_config.h"
 #include "printing/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_handle_types.h"
-#include "ui/gfx/geometry/rect.h"
-#endif
 
 namespace gfx {
 class Size;
@@ -59,32 +55,6 @@ bool SizesEqualWithinEpsilon(const gfx::Size& lhs,
                              int epsilon);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Get page content rect adjusted based on
-// http://dev.w3.org/csswg/css3-page/#positioning-page-box
-COMPONENT_EXPORT(PRINTING_BASE)
-gfx::Rect GetCenteredPageContentRect(const gfx::Size& paper_size,
-                                     const gfx::Size& page_size,
-                                     const gfx::Rect& page_content_rect);
-
-// Returns the printable area in device units for `hdc`.
-COMPONENT_EXPORT(PRINTING_BASE)
-gfx::Rect GetPrintableAreaDeviceUnits(HDC hdc);
-
-// Identifies the type of data generated in a print document.
-enum class DocumentDataType { kUnknown, kPdf, kXps };
-
-// Helper for tests and CHECKs to determine the type of data that was generated
-// for the document to be printed.  This includes checking a minimal size and
-// magic bytes for known signatures.
-COMPONENT_EXPORT(PRINTING_BASE)
-DocumentDataType DetermineDocumentDataType(base::span<const uint8_t> data);
-
-// Helper for tests and CHECKs to validate that `maybe_xps_data` suggests an
-// XPS document. This includes checking a minimal size and magic bytes.
-COMPONENT_EXPORT(PRINTING_BASE)
-bool LooksLikeXps(base::span<const uint8_t> maybe_xps_data);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Helper for tests and DCHECKs to validate that `maybe_pdf_data` suggests a PDF
 // document. This includes checking a minimal size and magic bytes.

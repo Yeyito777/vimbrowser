@@ -61,13 +61,6 @@ source_set("impl") {
     "//ui/base",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/profiles",
-      "//chromeos/constants",
-    ]
-  }
 }
 
 source_set("browser_tests") {

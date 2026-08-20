@@ -32,19 +32,6 @@ if (rtc_include_tests && !build_with_chromium) {
   ]
   scenario_unittest_resources = [ "../../resources/foreman_cif.yuv" ]
 
-  if (is_ios) {
-    bundle_data("scenario_resources_bundle_data") {
-      testonly = true
-      sources = scenario_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-    bundle_data("scenario_unittest_resources_bundle_data") {
-      testonly = true
-      sources = scenario_unittest_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
   rtc_library("scenario") {
     testonly = true
     sources = [
@@ -188,9 +175,6 @@ if (rtc_include_tests && !build_with_chromium) {
       deps += [ "../../modules/audio_coding:ana_config_proto" ]
     }
     data = scenario_resources
-    if (is_ios) {
-      deps += [ ":scenario_resources_bundle_data" ]
-    }
   }
   rtc_library("scenario_unittests") {
     testonly = true
@@ -223,8 +207,5 @@ if (rtc_include_tests && !build_with_chromium) {
       "//testing/gmock",
     ]
     data = scenario_unittest_resources
-    if (is_ios) {
-      deps += [ ":scenario_unittest_resources_bundle_data" ]
-    }
   }
 }

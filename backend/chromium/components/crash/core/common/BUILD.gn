@@ -20,10 +20,6 @@ group("common") {
   if (is_apple) {
     public_deps += [ ":zombies" ]
   }
-
-  if (is_ios) {
-    public_deps += [ ":reporter_running_ios" ]
-  }
 }
 
 use_crashpad_annotation = (is_mac || is_ios || is_win || is_chromeos ||
@@ -146,15 +142,6 @@ if (is_apple) {
   }
 }
 
-if (is_ios) {
-  source_set("reporter_running_ios") {
-    sources = [
-      "reporter_running_ios.cc",
-      "reporter_running_ios.h",
-    ]
-  }
-}
-
 source_set("unit_tests") {
   testonly = true
   sources = [
@@ -177,16 +164,5 @@ source_set("unit_tests") {
     configs -= [ "//build/config/compiler:enable_arc" ]
   }
 
-  if (is_castos) {
-    include_dirs = [ "//third_party/breakpad/breakpad/src/" ]
-    sources += [ "crash_key_breakpad_unittest.cc" ]
-  }
-
   # TODO(crbug.com/40172607): Enable when crash keys are supported on Fuchsia.
-  if (is_fuchsia) {
-    sources -= [
-      "crash_key_unittest.cc",
-      "crash_keys_unittest.cc",
-    ]
-  }
 }

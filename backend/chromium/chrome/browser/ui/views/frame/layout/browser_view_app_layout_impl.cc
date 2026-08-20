@@ -120,10 +120,6 @@ gfx::Size BrowserViewAppLayoutImpl::GetMinimumSize(
   // For full PWAs, there is a minimum content width.
   bool is_web_app = browser() && browser()->is_type_app() &&
                     web_app::AppBrowserController::IsWebApp(browser());
-#if BUILDFLAG(IS_CHROMEOS)
-  is_web_app = is_web_app &&
-               !web_app::AppBrowserController::From(browser())->system_app();
-#endif
   if (is_web_app) {
     contents_size.SetToMax(gfx::Size(kMainBrowserContentsMinimumWidth, 1));
   }
@@ -401,9 +397,6 @@ void BrowserViewAppLayoutImpl::DoPostLayoutVisualAdjustments(
     // DCHECK in Label. As such, disable the DCHECK.
     label.SetSkipSubpixelRenderingOpacityCheck(
         delegate().GetImmersiveModeController()->IsEnabled());
-#elif BUILDFLAG(IS_WIN)
-    label.SetSubpixelRenderingEnabled(false);
-    label.SetAutoColorReadabilityEnabled(false);
 #elif BUILDFLAG(IS_LINUX)
     label.SetSubpixelRenderingEnabled(false);
 #endif

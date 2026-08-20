@@ -105,15 +105,7 @@
 #include "ui/views/widget/widget.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/webauthn/local_credential_management_win.h"
-#include "device/fido/win/authenticator.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/webauthn/webauthn_request_registrar.h"
-#include "ui/aura/window.h"
-#endif
 
 using PasswordCredentials = PasswordCredentialFetcher::PasswordCredentials;
 using UIPresentation = ChromeAuthenticatorRequestDelegate::UIPresentation;
@@ -223,9 +215,6 @@ void ChromeAuthenticatorRequestDelegate::RegisterProfilePrefs(
       webauthn::pref_names::kEnclaveDeclinedGPMCredentialCreationCount, 0);
   registry->RegisterIntegerPref(
       webauthn::pref_names::kEnclaveDeclinedGPMBootstrappingCount, 0);
-#if BUILDFLAG(IS_WIN)
-  LocalCredentialManagementWin::RegisterProfilePrefs(registry);
-#endif
 #if BUILDFLAG(IS_MAC)
   registry->RegisterStringPref(
       webauthn::pref_names::kWebAuthnTouchIdMetadataSecretPrefName,
@@ -397,10 +386,6 @@ void ChromeAuthenticatorRequestDelegate::OnTransactionSuccessful(
 
   dialog_controller_->RecordMacOsSuccessHistogram(request_type,
                                                   authenticator_type);
-#elif BUILDFLAG(IS_WIN)
-  if (authenticator_type == device::AuthenticatorType::kWinNative) {
-    webauthn::user_actions::RecordWindowsHelloSuccess();
-  }
 #endif  // BUILDFLAG(IS_MAC)
   if (authenticator_type == device::AuthenticatorType::kEnclave) {
     if (dialog_model_->in_onboarding_flow) {

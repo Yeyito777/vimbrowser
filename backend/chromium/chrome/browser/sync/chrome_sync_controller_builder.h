@@ -47,39 +47,6 @@ class WebAppProvider;
 class SpellcheckService;
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace app_list {
-class AppListSyncableService;
-}  // namespace app_list
-
-namespace ash {
-class SyncedPrintersManager;
-
-namespace floating_sso {
-class FloatingSsoService;
-}  // namespace floating_sso
-
-namespace printing::oauth2 {
-class AuthorizationZonesManager;
-}  // namespace printing::oauth2
-
-namespace sync_wifi {
-class WifiConfigurationSyncService;
-}  // namespace sync_wifi
-}  // namespace ash
-
-namespace arc {
-class ArcPackageSyncableService;
-}  // namespace arc
-
-namespace desks_storage {
-class DeskSyncService;
-}  // namespace desks_storage
-
-namespace sync_preferences {
-class PrefServiceSyncable;
-}  // namespace sync_preferences
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Class responsible for instantiating sync controllers (DataTypeController)
 // for datatypes / features under chrome/.
@@ -115,31 +82,7 @@ class ChromeSyncControllerBuilder {
   void SetSpellcheckService(SpellcheckService* spellcheck_service);
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
-#if BUILDFLAG(IS_ANDROID)
-  void SetWebApkSyncService(webapk::WebApkSyncService* web_apk_sync_service);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetAppListSyncableService(
-      app_list::AppListSyncableService* app_list_syncable_service);
-  void SetAuthorizationZonesManager(
-      ash::printing::oauth2::AuthorizationZonesManager*
-          authorization_zones_manager);
-  void SetArcPackageSyncableService(
-      arc::ArcPackageSyncableService* arc_package_syncable_service,
-      Profile* arc_package_profile);
-  void SetDeskSyncService(desks_storage::DeskSyncService* desk_sync_service);
-  void SetFloatingSsoService(
-      ash::floating_sso::FloatingSsoService* floating_sso_service);
-  void SetOsPrefServiceSyncable(
-      sync_preferences::PrefServiceSyncable* os_pref_service_syncable);
-  void SetPrefService(PrefService* pref_service);
-  void SetSyncedPrintersManager(
-      ash::SyncedPrintersManager* synced_printer_manager);
-  void SetWifiConfigurationSyncService(
-      ash::sync_wifi::WifiConfigurationSyncService*
-          wifi_configuration_sync_service);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Actually builds the controllers. All setters above must have been called
   // beforehand (null may or may not be allowed).
@@ -192,31 +135,7 @@ class ChromeSyncControllerBuilder {
   SafeOptional<raw_ptr<SpellcheckService>> spellcheck_service_;
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
-#if BUILDFLAG(IS_ANDROID)
-  SafeOptional<raw_ptr<webapk::WebApkSyncService>> web_apk_sync_service_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  SafeOptional<raw_ptr<app_list::AppListSyncableService>>
-      app_list_syncable_service_;
-  SafeOptional<raw_ptr<ash::printing::oauth2::AuthorizationZonesManager>>
-      authorization_zones_manager_;
-  SafeOptional<raw_ptr<arc::ArcPackageSyncableService>>
-      arc_package_syncable_service_;
-  // This Profile instance has nothing special and is just the profile being
-  // exercised by the factory. A more tailored name is used simply to limit its
-  // usage beyond ARC.
-  SafeOptional<raw_ptr<Profile>> arc_package_profile_;
-  SafeOptional<raw_ptr<desks_storage::DeskSyncService>> desk_sync_service_;
-  SafeOptional<raw_ptr<ash::floating_sso::FloatingSsoService>>
-      floating_sso_service_;
-  SafeOptional<raw_ptr<sync_preferences::PrefServiceSyncable>>
-      os_pref_service_syncable_;
-  SafeOptional<raw_ptr<PrefService>> pref_service_;
-  SafeOptional<raw_ptr<ash::SyncedPrintersManager>> synced_printer_manager_;
-  SafeOptional<raw_ptr<ash::sync_wifi::WifiConfigurationSyncService>>
-      wifi_configuration_sync_service_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 #endif  // CHROME_BROWSER_SYNC_CHROME_SYNC_CONTROLLER_BUILDER_H_

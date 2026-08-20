@@ -138,9 +138,6 @@ class CFX_Face final : public Retainable, public Observable {
   std::optional<std::array<uint32_t, 4>> GetOs2UnicodeRange();
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  bool CanEmbed();
-#endif
 
   bool HasFaceRec() const { return !!GetRec(); }
 

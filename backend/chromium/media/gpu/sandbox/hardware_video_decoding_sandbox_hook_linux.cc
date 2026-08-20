@@ -58,33 +58,6 @@ void AllowAccessToRenderNodes(std::vector<BrokerFilePermission>& permissions,
 bool HardwareVideoDecodingPreSandboxHookForVaapiOnIntel(
     sandbox::syscall_broker::BrokerCommandSet& command_set,
     std::vector<BrokerFilePermission>& permissions) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // This should only be needed in order for GbmDeviceWrapper in
-  // platform_video_frame_utils.cc to be able to initialize minigbm after
-  // entering the sandbox. Since minigbm is only needed for buffer allocation on
-  // ash-chrome, we restrict this to that platform.
-  //
-  // TODO(b/210759684): we should open the render nodes for both libva and
-  // minigbm before entering the sandbox so that we can remove this permission.
-  command_set.set(sandbox::syscall_broker::COMMAND_OPEN);
-
-  // This is added because libdrm does a stat() on a sysfs path on behalf of
-  // libva to determine if a particular FD refers to a DRM device (more details
-  // in b/271788848#comment2).
-  //
-  // TODO(b/210759684): we probably will need to do this for Linux as well.
-  command_set.set(sandbox::syscall_broker::COMMAND_STAT);
-
-  // This is added because libdrm calls access() from drmGetMinorType() that is
-  // called from drmGetNodeTypeFromFd(). libva calls drmGetNodeTypeFromFd()
-  // during initialization.
-  //
-  // TODO(b/210759684): we probably will need to do this for Linux as well.
-  command_set.set(sandbox::syscall_broker::COMMAND_ACCESS);
-
-  AllowAccessToRenderNodes(permissions, /*include_sys_dev_char=*/true,
-                           /*read_write=*/false);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return true;
 }
@@ -96,14 +69,6 @@ bool HardwareVideoDecodingPreSandboxHookForVaapiOnAMD(
   command_set.set(sandbox::syscall_broker::COMMAND_STAT);
   command_set.set(sandbox::syscall_broker::COMMAND_READLINK);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // This is added because libdrm calls access() from drmGetMinorType() that is
-  // called from drmGetNodeTypeFromFd(). libva calls drmGetNodeTypeFromFd()
-  // during initialization.
-  //
-  // TODO(b/210759684): we probably will need to do this for Linux as well.
-  command_set.set(sandbox::syscall_broker::COMMAND_ACCESS);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   AllowAccessToRenderNodes(permissions, /*include_sys_dev_char=*/true,
                            /*read_write=*/true);

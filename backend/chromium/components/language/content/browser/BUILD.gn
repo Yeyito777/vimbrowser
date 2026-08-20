@@ -54,8 +54,4 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_ios) {
-    deps += [ "//components/test:language_test_bundle_data" ]
-  }
 }

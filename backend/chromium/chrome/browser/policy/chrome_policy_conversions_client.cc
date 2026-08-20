@@ -36,50 +36,11 @@
 #include "extensions/common/manifest_constants.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/policy/core/device_cloud_policy_manager_ash.h"
-#include "chrome/browser/ash/policy/core/device_cloud_policy_store_ash.h"
-#include "chrome/browser/ash/policy/core/device_local_account.h"
-#include "chrome/browser/ash/policy/core/device_local_account_policy_service.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chromeos/ash/components/settings/cros_settings.h"
-#include "components/policy/proto/device_management_backend.pb.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace policy {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-base::DictValue GetIdentityFieldsFromPolicy(
-    const enterprise_management::PolicyData* policy) {
-  base::DictValue identity_fields;
-  if (!policy) {
-    return identity_fields;
-  }
-
-  if (policy->has_device_id())
-    identity_fields.Set("client_id", policy->device_id());
-
-  if (policy->has_annotated_location()) {
-    identity_fields.Set("device_location", policy->annotated_location());
-  }
-
-  if (policy->has_annotated_asset_id())
-    identity_fields.Set("asset_id", policy->annotated_asset_id());
-
-  if (policy->has_display_domain())
-    identity_fields.Set("display_domain", policy->display_domain());
-
-  if (policy->has_machine_name())
-    identity_fields.Set("machine_name", policy->machine_name());
-
-  return identity_fields;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -121,13 +82,7 @@ base::ListValue ChromePolicyConversionsClient::GetExtensionPolicies(
 
   const bool for_signin_screen =
       policy_domain == POLICY_DOMAIN_SIGNIN_EXTENSIONS;
-#if BUILDFLAG(IS_CHROMEOS)
-  Profile* extension_profile = for_signin_screen
-                                   ? ash::ProfileHelper::GetSigninProfile()
-                                   : profile_.get();
-#else   // BUILDFLAG(IS_CHROMEOS)
   Profile* extension_profile = profile_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const extensions::ExtensionRegistry* registry =
       extensions::ExtensionRegistry::Get(extension_profile);
@@ -176,112 +131,5 @@ base::ListValue ChromePolicyConversionsClient::GetExtensionPolicies(
   return policies;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-base::ListValue ChromePolicyConversionsClient::GetDeviceLocalAccountPolicies() {
-  base::ListValue policies;
-  // DeviceLocalAccount policies are only available for affiliated users and for
-  // system logs.
-  if (!GetDeviceLocalAccountPoliciesEnabled() &&
-      (!user_manager::UserManager::IsInitialized() ||
-       !user_manager::UserManager::Get()->GetPrimaryUser() ||
-       !user_manager::UserManager::Get()->GetPrimaryUser()->IsAffiliated())) {
-    return policies;
-  }
-
-  // Always includes user policies for device local account policies.
-  bool current_user_policies_enabled = GetUserPoliciesEnabled();
-  EnableUserPolicies(true);
-
-  BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  DCHECK(connector);  // always not-null.
-
-  auto* device_local_account_policy_service =
-      connector->GetDeviceLocalAccountPolicyService();
-  DCHECK(device_local_account_policy_service);  // always non null for
-                                                // affiliated users.
-  std::vector<DeviceLocalAccount> device_local_accounts =
-      GetDeviceLocalAccounts(ash::CrosSettings::Get());
-  for (const auto& account : device_local_accounts) {
-    const std::string user_id = account.user_id;
-
-    auto* device_local_account_policy_broker =
-        device_local_account_policy_service->GetBrokerForUser(user_id);
-    if (!device_local_account_policy_broker) {
-      LOG(ERROR)
-          << "Cannot get policy broker for device local account with user id: "
-          << user_id;
-      continue;
-    }
-
-    auto* cloud_policy_core = device_local_account_policy_broker->core();
-    DCHECK(cloud_policy_core);
-    auto* cloud_policy_store = cloud_policy_core->store();
-    DCHECK(cloud_policy_store);
-
-    const scoped_refptr<SchemaMap> schema_map =
-        device_local_account_policy_broker->schema_registry()->schema_map();
-
-    PolicyNamespace policy_namespace =
-        PolicyNamespace(POLICY_DOMAIN_CHROME, std::string());
-
-    // Make a copy that can be modified, since some policy values are modified
-    // before being displayed.
-    PolicyMap map = cloud_policy_store->policy_map().Clone();
-
-    // Get a list of all the errors in the policy values.
-    const ConfigurationPolicyHandlerList* handler_list =
-        connector->GetHandlerList();
-    PolicyErrorMap errors;
-    PoliciesSet deprecated_policies;
-    PoliciesSet future_policies;
-    handler_list->ApplyPolicySettings(map, nullptr, &errors,
-                                      &deprecated_policies, &future_policies);
-
-    // Convert dictionary values to strings for display.
-    handler_list->PrepareForDisplaying(&map);
-
-    base::DictValue current_account_policies =
-        GetPolicyValues(map, &errors, deprecated_policies, future_policies,
-                        GetKnownPolicies(schema_map, policy_namespace));
-    base::DictValue current_account_policies_data;
-    current_account_policies_data.Set(policy::kIdKey, user_id);
-    current_account_policies_data.Set("user_id", user_id);
-    current_account_policies_data.Set(policy::kNameKey, user_id);
-    current_account_policies_data.Set(policy::kPoliciesKey,
-                                      std::move(current_account_policies));
-    policies.Append(std::move(current_account_policies_data));
-  }
-
-  // Reset user_policies_enabled setup.
-  EnableUserPolicies(current_user_policies_enabled);
-
-  return policies;
-}
-
-base::DictValue ChromePolicyConversionsClient::GetIdentityFields() {
-  base::DictValue identity_fields;
-  if (!GetDeviceInfoEnabled())
-    return base::DictValue();
-  BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  if (!connector) {
-    LOG_POLICY(ERROR, POLICY_PROCESSING)
-        << "Cannot dump identity fields, no policy connector";
-    return base::DictValue();
-  }
-  if (connector->IsDeviceEnterpriseManaged()) {
-    identity_fields.Set("enrollment_domain",
-                        connector->GetEnterpriseEnrollmentDomain());
-
-    if (connector->IsCloudManaged()) {
-      base::DictValue cloud_info = GetIdentityFieldsFromPolicy(
-          connector->GetDeviceCloudPolicyManager()->device_store()->policy());
-      identity_fields.Merge(std::move(cloud_info));
-    }
-  }
-  return identity_fields;
-}
-#endif
 
 }  // namespace policy

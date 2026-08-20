@@ -71,9 +71,7 @@ static_library("lens") {
     "lens_bitmap_processing.h",
   ]
   deps += [ "//ui/gfx" ]
-  if (!is_ios) {
-    deps += [ "//skia" ]
-  }
+  deps += [ "//skia" ]
 
   deps += [ "//third_party/zstd:compress" ]
 
@@ -156,13 +154,11 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_ios) {
-    sources += [ "lens_bitmap_processing_unittest.cc" ]
-    deps += [
-      "//skia",
-      "//ui/gfx",
-    ]
-  }
+  sources += [ "lens_bitmap_processing_unittest.cc" ]
+  deps += [
+    "//skia",
+    "//ui/gfx",
+  ]
 }
 
 source_set("enterprise_policy") {

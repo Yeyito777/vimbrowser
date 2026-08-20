@@ -583,22 +583,12 @@ void ToolbarButton::ShowMenuForModel(ui::mojom::MenuSourceType source_type,
                                      ui::MenuModel* menu_model) {
   gfx::Rect menu_anchor_bounds = GetAnchorBoundsInScreen();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // A window won't overlap between displays on ChromeOS.
-  // Use the left bound of the display on which
-  // the menu button exists.
-  gfx::NativeView view = GetWidget()->GetNativeView();
-  display::Display display =
-      display::Screen::Get()->GetDisplayNearestView(view);
-  int left_bound = display.bounds().x();
-#else
   // The window might be positioned over the edge between two screens. We'll
   // want to position the dropdown on the screen the mouse cursor is on.
   display::Screen* screen = display::Screen::Get();
   display::Display display =
       screen->GetDisplayNearestPoint(screen->GetCursorScreenPoint());
   int left_bound = display.bounds().x();
-#endif
   if (menu_anchor_bounds.x() < left_bound) {
     menu_anchor_bounds.set_x(left_bound);
   }

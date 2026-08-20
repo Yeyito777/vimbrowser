@@ -45,28 +45,6 @@ VkDeviceSize GetPreferredVMALargeHeapBlockSize() {
   return kVulkanVMALargeHeapBlockSize;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-class VulkanMetric final
-    : public base::android::PreFreezeBackgroundMemoryTrimmer::PreFreezeMetric {
- public:
-  explicit VulkanMetric(VmaAllocator vma_allocator)
-      : PreFreezeMetric("Vulkan"), vma_allocator_(vma_allocator) {
-    base::android::PreFreezeBackgroundMemoryTrimmer::RegisterMemoryMetric(this);
-  }
-
-  ~VulkanMetric() override {
-    base::android::PreFreezeBackgroundMemoryTrimmer::UnregisterMemoryMetric(
-        this);
-  }
-
- private:
-  std::optional<base::ByteSize> Measure() const override {
-    auto allocated_used = vma::GetTotalAllocatedAndUsedMemory(vma_allocator_);
-    return base::ByteSize(allocated_used.first);
-  }
-  VmaAllocator vma_allocator_;
-};
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // anonymous namespace
 
@@ -224,11 +202,9 @@ bool VulkanDeviceQueue::Initialize(
       // On Fuchsia, some device extensions are provided by layers.
       // TODO(penghuang): checking extensions against layer device extensions
       // too.
-#if !BUILDFLAG(IS_FUCHSIA)
       DLOG(ERROR) << "Required Vulkan extension " << extension
                   << " is not supported.";
       return false;
-#endif
     }
     enabled_extensions.push_back(extension);
   }
@@ -392,11 +368,6 @@ bool VulkanDeviceQueue::Initialize(
 
   allow_protected_memory_ = allow_protected_memory;
 
-#if BUILDFLAG(IS_ANDROID)
-  if (!metric_) {
-    metric_ = std::make_unique<VulkanMetric>(vma_allocator());
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (base::SingleThreadTaskRunner::HasCurrentDefault()) {
     base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
@@ -430,11 +401,6 @@ bool VulkanDeviceQueue::InitCommon(VkPhysicalDevice vk_physical_device,
                          /*heap_size_limit=*/nullptr,
                          /*is_thread_safe =*/false, &owned_vma_allocator_);
     vma_allocator_ = owned_vma_allocator_;
-#if BUILDFLAG(IS_ANDROID)
-    if (!metric_) {
-      metric_ = std::make_unique<VulkanMetric>(vma_allocator());
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   skia_vk_memory_allocator_ =
@@ -539,9 +505,6 @@ bool VulkanDeviceQueue::InitializeForCompositorGpuThread(
 void VulkanDeviceQueue::Destroy() {
   base::trace_event::MemoryDumpManager::GetInstance()->UnregisterDumpProvider(
       this);
-#if BUILDFLAG(IS_ANDROID)
-  metric_ = nullptr;
-#endif
 
   if (cleanup_helper_) {
     cleanup_helper_->Destroy();

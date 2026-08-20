@@ -18,12 +18,6 @@ class StatusIconObserver {
   // This will only be fired for this platform if no context menu is present.
   virtual void OnStatusIconClicked() = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Called when the user clicks on a balloon generated for a system tray icon.
-  // TODO(dewittj): Implement on platforms other than Windows.  Currently this
-  // event will never fire on non-Windows platforms.
-  virtual void OnBalloonClicked() {}
-#endif
 
  protected:
   virtual ~StatusIconObserver() = default;

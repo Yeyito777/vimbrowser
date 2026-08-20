@@ -21,17 +21,7 @@ source_set("sharing_hub") {
     "//content/public/browser",
   ]
 
-  if (is_chromeos) {
-    sources += [ "sharing_hub_bubble_controller_chromeos_impl.h" ]
-    public_deps += [
-      "//chrome/browser/sharesheet",
-      "//chromeos/components/sharesheet:constants",
-      "//ui/native_window_tracker",
-      "//ui/views",
-    ]
-  } else {
-    sources += [ "sharing_hub_bubble_controller_desktop_impl.h" ]
-  }
+  sources += [ "sharing_hub_bubble_controller_desktop_impl.h" ]
 }
 
 source_set("impl") {
@@ -42,28 +32,19 @@ source_set("impl") {
     "//chrome/browser/profiles:profile",
   ]
 
-  if (is_chromeos) {
-    sources += [ "sharing_hub_bubble_controller_chromeos_impl.cc" ]
-    deps += [
-      "//chrome/browser/ui/views/interaction",
-      "//components/services/app_service/",
-      "//ui/views",
-    ]
-  } else {
-    sources += [ "sharing_hub_bubble_controller_desktop_impl.cc" ]
-    deps += [
-      "//chrome/app:command_ids",
-      "//chrome/app:generated_resources",
-      "//chrome/browser/favicon",
-      "//chrome/browser/ui/color:color_headers",
-      "//chrome/browser/ui/qrcode_generator",
-      "//chrome/browser/ui/send_tab_to_self",
-      "//components/media_router/browser",
-      "//ui/base",
-      "//ui/color:color_headers",
-      "//ui/native_theme",
-    ]
-  }
+  sources += [ "sharing_hub_bubble_controller_desktop_impl.cc" ]
+  deps += [
+    "//chrome/app:command_ids",
+    "//chrome/app:generated_resources",
+    "//chrome/browser/favicon",
+    "//chrome/browser/ui/color:color_headers",
+    "//chrome/browser/ui/qrcode_generator",
+    "//chrome/browser/ui/send_tab_to_self",
+    "//components/media_router/browser",
+    "//ui/base",
+    "//ui/color:color_headers",
+    "//ui/native_theme",
+  ]
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 

@@ -151,30 +151,6 @@ class PasswordManager : public PasswordManagerInterface {
 
   void OnResourceLoadingFailed(PasswordManagerDriver* driver, const GURL& url);
   PasswordManagerClient* GetClient() override;
-#if BUILDFLAG(IS_IOS)
-  void OnSubframeFormSubmission(PasswordManagerDriver* driver,
-                                const autofill::FormData& form_data) override;
-  void UpdateStateOnUserInput(
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager,
-      std::optional<autofill::FormRendererId> form_id,
-      autofill::FieldRendererId field_id,
-      const std::u16string& field_value) override;
-  void OnPasswordNoLongerGenerated() override;
-  void OnPasswordFormsRemoved(
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager,
-      const std::set<autofill::FormRendererId>& removed_forms,
-      const std::set<autofill::FieldRendererId>& removed_unowned_fields)
-      override;
-  void OnIframeDetach(
-      const std::string& frame_id,
-      PasswordManagerDriver* driver,
-      const autofill::FieldDataManager& field_data_manager) override;
-  void PropagateFieldDataManagerInfo(
-      const autofill::FieldDataManager& field_data_manager,
-      const PasswordManagerDriver* driver) override;
-#endif
   bool IsFormManagerPendingPasswordUpdate() const override;
 
   // Notifies the renderer to start the generation flow or pops up additional UI
@@ -429,28 +405,6 @@ class PasswordManager : public PasswordManagerInterface {
   void MaybeTriggerHatsSurvey(PasswordFormManager& form_manager);
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
-#if BUILDFLAG(IS_IOS)
-  // Even though the formal submission might not happen, the manager
-  // could still be provisionally saved on user input or have autofilled data,
-  // in this case submission might be considered successful and a save prompt
-  // might be shown.
-  bool DetectPotentialSubmission(
-      PasswordFormManager* form_manager,
-      const autofill::FieldDataManager& field_data_manager,
-      PasswordManagerDriver* driver);
-
-  // Checks `form_manager` for submission after the corresponding form or
-  // formless fields were removed from the page.
-  // - removed_unowned_fields: Formless fields removed in the removal event.
-  // These are only analyzed for the formless form manager, which requires that
-  // all removed password fields have user input when deciding if the form was
-  // submitted.
-  bool DetectPotentialSubmissionAfterFormRemoval(
-      PasswordFormManager* form_manager,
-      const autofill::FieldDataManager& field_data_manager,
-      PasswordManagerDriver* driver,
-      const std::set<autofill::FieldRendererId>& removed_unowned_fields);
-#endif
 
   // PasswordFormManager transition schemes:
   // 1. HTML submission with navigation afterwads.

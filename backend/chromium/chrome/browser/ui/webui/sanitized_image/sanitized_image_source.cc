@@ -315,14 +315,6 @@ void SanitizedImageSource::OnAnimationDecoded(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (mojo_frames.size() > 1) {
-    // The image is animated, re-encode as WebP animated image and send to
-    // requester.
-    EncodeAndReplyAnimatedImage(std::move(callback), std::move(mojo_frames));
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Re-encode as static image and send to requester.
   EncodeAndReplyStaticImage(std::move(request_attributes), std::move(callback),

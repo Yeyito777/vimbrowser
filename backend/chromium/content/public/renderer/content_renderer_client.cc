@@ -26,10 +26,7 @@ namespace content {
 
 void ContentRendererClient::SetUpWebAssemblyTrapHandler() {
   constexpr bool use_v8_trap_handler =
-#if BUILDFLAG(IS_WIN)
-      // On Windows we use the default trap handler provided by V8.
-      true
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       // On macOS, Crashpad uses exception ports to handle signals in a
       // different process. As we cannot just pass a callback to this other
       // process, we ask V8 to install its own signal handler to deal with
@@ -137,17 +134,6 @@ ContentRendererClient::GetProtocolHandlerSecurityLevel(
   return blink::ProtocolHandlerSecurityLevel::kStrict;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool ContentRendererClient::HandleNavigation(
-    RenderFrame* render_frame,
-    blink::WebFrame* frame,
-    const blink::WebURLRequest& request,
-    blink::WebNavigationType type,
-    blink::WebNavigationPolicy default_policy,
-    bool is_redirect) {
-  return false;
-}
-#endif
 
 void ContentRendererClient::WillSendRequest(
     blink::WebLocalFrame* frame,
@@ -251,13 +237,11 @@ ContentRendererClient::CreateWorkerContentSettingsClient(
   return nullptr;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 std::unique_ptr<media::SpeechRecognitionClient>
 ContentRendererClient::CreateSpeechRecognitionClient(
     RenderFrame* render_frame) {
   return nullptr;
 }
-#endif
 
 bool ContentRendererClient::AllowScriptExtensionForServiceWorker(
     const url::Origin& script_origin) {

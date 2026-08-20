@@ -10,7 +10,6 @@
 
 namespace web_app {
 
-#if !BUILDFLAG(IS_WIN)
 bool ShouldRegisterShortcutsMenuWithOs() {
   return false;
 }
@@ -36,6 +35,5 @@ bool UnregisterShortcutsMenuWithOs(const webapps::AppId& app_id,
   std::move(callback).Run(Result::kOk);
   return true;
 }
-#endif  // !BUILDFLAG(IS_WIN)
 
 }  // namespace web_app

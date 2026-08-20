@@ -20,9 +20,6 @@
 #include "services/media_session/public/mojom/media_session.mojom.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/idle/idle.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -32,11 +29,6 @@ using PlaybackStatus =
 const int kMinImageSize = 71;
 const int kDesiredImageSize = 150;
 
-#if BUILDFLAG(IS_WIN)
-constexpr base::TimeDelta kScreenLockPollInterval = base::Seconds(1);
-constexpr int kHideSmtcDelaySeconds = 5;
-constexpr base::TimeDelta kHideSmtcDelay = base::Seconds(kHideSmtcDelaySeconds);
-#endif  // BUILDFLAG(IS_WIN)
 
 constexpr base::TimeDelta kDebounceDelay = base::Milliseconds(10);
 
@@ -46,12 +38,6 @@ SystemMediaControlsNotifier::SystemMediaControlsNotifier(
     : system_media_controls_(system_media_controls) {
   DCHECK(system_media_controls_);
 
-#if BUILDFLAG(IS_WIN)
-  lock_polling_timer_.Start(
-      FROM_HERE, kScreenLockPollInterval,
-      base::BindRepeating(&SystemMediaControlsNotifier::CheckLockState,
-                          base::Unretained(this)));
-#endif  // BUILDFLAG(IS_WIN)
 
   mojo::Remote<media_session::mojom::MediaControllerManager>
       controller_manager_remote;
@@ -108,15 +94,6 @@ void SystemMediaControlsNotifier::MediaSessionInfoChanged(
     ClearAllMetadata();
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (screen_locked_) {
-    if (is_playing) {
-      StopHideSmtcTimer();
-    } else if (!hide_smtc_timer_.IsRunning()) {
-      StartHideSmtcTimer();
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void SystemMediaControlsNotifier::MediaSessionMetadataChanged(
@@ -348,64 +325,5 @@ void SystemMediaControlsNotifier::ClearAllMetadata() {
   system_media_controls_->ClearMetadata();
 }
 
-#if BUILDFLAG(IS_WIN)
-void SystemMediaControlsNotifier::CheckLockState() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  bool new_state = ui::CheckIdleStateIsLocked();
-  if (screen_locked_ == new_state) {
-    return;
-  }
-
-  screen_locked_ = new_state;
-  if (screen_locked_) {
-    OnScreenLocked();
-  } else {
-    OnScreenUnlocked();
-  }
-}
-
-void SystemMediaControlsNotifier::OnScreenLocked() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  // If media is currently playing, don't hide the SMTC.
-  if (session_info_ptr_ &&
-      session_info_ptr_->playback_state ==
-          media_session::mojom::MediaPlaybackState::kPlaying) {
-    return;
-  }
-
-  // Otherwise, hide them.
-  system_media_controls_->SetEnabled(false);
-}
-
-void SystemMediaControlsNotifier::OnScreenUnlocked() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  StopHideSmtcTimer();
-  system_media_controls_->SetEnabled(true);
-}
-
-void SystemMediaControlsNotifier::StartHideSmtcTimer() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  hide_smtc_timer_.Start(
-      FROM_HERE, kHideSmtcDelay,
-      base::BindOnce(&SystemMediaControlsNotifier::HideSmtcTimerFired,
-                     base::Unretained(this)));
-}
-
-void SystemMediaControlsNotifier::StopHideSmtcTimer() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  hide_smtc_timer_.Stop();
-}
-
-void SystemMediaControlsNotifier::HideSmtcTimerFired() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  system_media_controls_->SetEnabled(false);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace content

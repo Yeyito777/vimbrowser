@@ -12,9 +12,6 @@ namespace {
 // The enum used to register importer use.
 enum ImporterTypeMetrics {
   IMPORTER_METRICS_UNKNOWN = 0,
-#if BUILDFLAG(IS_WIN)
-  IMPORTER_METRICS_IE = 1,
-#endif
   IMPORTER_METRICS_FIREFOX2 = 2,  // obsolete
   IMPORTER_METRICS_FIREFOX3 = 3,
 #if BUILDFLAG(IS_MAC)
@@ -22,9 +19,6 @@ enum ImporterTypeMetrics {
 #endif
   IMPORTER_METRICS_GOOGLE_TOOLBAR5 = 5,  // obsolete
   IMPORTER_METRICS_BOOKMARKS_FILE = 6,
-#if BUILDFLAG(IS_WIN)
-  IMPORTER_METRICS_EDGE = 7,
-#endif
 
   // Insert new values here. Never remove any existing values, as this enum is
   // used to bucket a UMA histogram, and removing values breaks that.
@@ -40,14 +34,6 @@ void LogImporterUseToMetrics(const std::string& metric_postfix,
     case user_data_importer::TYPE_UNKNOWN:
       metrics_type = IMPORTER_METRICS_UNKNOWN;
       break;
-#if BUILDFLAG(IS_WIN)
-    case user_data_importer::TYPE_IE:
-      metrics_type = IMPORTER_METRICS_IE;
-      break;
-    case user_data_importer::TYPE_EDGE:
-      metrics_type = IMPORTER_METRICS_EDGE;
-      break;
-#endif
     case user_data_importer::TYPE_FIREFOX:
       metrics_type = IMPORTER_METRICS_FIREFOX3;
       break;

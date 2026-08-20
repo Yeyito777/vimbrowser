@@ -18,9 +18,6 @@
 #include "components/performance_manager/public/graph/node_data_describer_registry.h"
 #include "components/performance_manager/public/graph/process_node.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/performance_manager/policies/working_set_trimmer_policy_chromeos.h"
-#endif
 
 namespace performance_manager {
 namespace policies {
@@ -112,22 +109,14 @@ base::DictValue WorkingSetTrimmerPolicy::DescribeProcessNodeData(
 
 // static
 bool WorkingSetTrimmerPolicy::PlatformSupportsWorkingSetTrim() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return WorkingSetTrimmerPolicyChromeOS::PlatformSupportsWorkingSetTrim();
-#else
   return false;
-#endif
 }
 
 // static
 std::unique_ptr<WorkingSetTrimmerPolicy>
 WorkingSetTrimmerPolicy::CreatePolicyForPlatform() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<WorkingSetTrimmerPolicyChromeOS>();
-#else
   NOTIMPLEMENTED() << "Platform does not support WorkingSetTrim.";
   return nullptr;
-#endif
 }
 
 }  // namespace policies

@@ -43,24 +43,12 @@ class VulkanImplementation;
 }  // namespace gpu
 #endif  // BUILDFLAG(ENABLE_VULKAN)
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11.h>
-#include <d3d12.h>
-#include <wrl/client.h>
-
-#include "ui/gl/dc_layer_overlay_image.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_APPLE)
 #include "ui/gfx/mac/io_surface.h"
 #include "ui/gfx/mac/mtl_shared_event_fence.h"
 #endif  // BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_fence_sync.h"
-
-extern "C" typedef struct AHardwareBuffer AHardwareBuffer;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 typedef unsigned int GLenum;
 namespace skgpu {
@@ -922,30 +910,18 @@ class GPU_GLES2_EXPORT WebNNTensorRepresentation
                  AccessMode access_mode);
     ~ScopedAccess();
 
-#if BUILDFLAG(IS_WIN)
-    scoped_refptr<gfx::D3DSharedFence> GetAcquireFence() const;
-    void SetReleaseFence(scoped_refptr<gfx::D3DSharedFence> release_fence);
-#endif
   };
 
   bool is_thread_safe() const;
 
   std::unique_ptr<ScopedAccess> BeginScopedAccess();
 
-#if BUILDFLAG(IS_WIN)
-  virtual Microsoft::WRL::ComPtr<ID3D12Resource> GetD3D12Buffer() const;
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
   virtual IOSurfaceRef GetIOSurface() const;
 #endif  // BUILDFLAG(IS_APPLE)
  protected:
   friend class WrappedWebNNTensorCompoundImageRepresentation;
 
-#if BUILDFLAG(IS_WIN)
-  virtual scoped_refptr<gfx::D3DSharedFence> GetAcquireFence() const = 0;
-  virtual void SetReleaseFence(
-      scoped_refptr<gfx::D3DSharedFence> release_fence) = 0;
-#endif  // BUILDFLAG(IS_WIN)
   virtual bool BeginAccess() = 0;
   virtual void EndAccess() = 0;
 };
@@ -969,24 +945,9 @@ class GPU_GLES2_EXPORT OverlayImageRepresentation
                      gfx::GpuFenceHandle acquire_fence);
     ~ScopedReadAccess();
 
-#if BUILDFLAG(IS_ANDROID)
-    AHardwareBuffer* GetAHardwareBuffer() {
-      return representation()->GetAHardwareBuffer();
-    }
-    // Deprecated. All code should use GetAHardwareBuffer() above, this function
-    // will be deleted when GLSurfaceEGLSurface control will be able to deliver
-    // fences via EndAccess.
-    std::unique_ptr<base::android::ScopedHardwareBufferFenceSync>
-    GetAHardwareBufferFenceSync() {
-      return representation()->GetAHardwareBufferFenceSync();
-    }
-#elif BUILDFLAG(IS_OZONE)
+#if BUILDFLAG(IS_OZONE)
     scoped_refptr<gfx::NativePixmap> GetNativePixmap() {
       return representation()->GetNativePixmap();
-    }
-#elif BUILDFLAG(IS_WIN)
-    std::optional<gl::DCLayerOverlayImage> GetDCLayerOverlayImage() {
-      return representation()->GetDCLayerOverlayImage();
     }
 #elif BUILDFLAG(IS_APPLE)
     gfx::ScopedIOSurface GetIOSurface() const {
@@ -1032,14 +993,8 @@ class GPU_GLES2_EXPORT OverlayImageRepresentation
   // |release_fence| will be null in that case.
   virtual void EndReadAccess(gfx::GpuFenceHandle release_fence) = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual AHardwareBuffer* GetAHardwareBuffer();
-  virtual std::unique_ptr<base::android::ScopedHardwareBufferFenceSync>
-  GetAHardwareBufferFenceSync();
-#elif BUILDFLAG(IS_OZONE)
+#if BUILDFLAG(IS_OZONE)
   scoped_refptr<gfx::NativePixmap> GetNativePixmap();
-#elif BUILDFLAG(IS_WIN)
-  virtual std::optional<gl::DCLayerOverlayImage> GetDCLayerOverlayImage();
 #elif BUILDFLAG(IS_APPLE)
   virtual gfx::ScopedIOSurface GetIOSurface() const;
   virtual std::vector<gfx::MTLSharedEventFence> GetBackpressureFences() const;
@@ -1052,24 +1007,6 @@ class GPU_GLES2_EXPORT OverlayImageRepresentation
 ///////////////////////////////////////////////////////////////////////////////
 // LegacyOverlayImageRepresentation
 
-#if BUILDFLAG(IS_ANDROID)
-class GPU_GLES2_EXPORT LegacyOverlayImageRepresentation
-    : public SharedImageRepresentation {
- public:
-  LegacyOverlayImageRepresentation(SharedImageManager* manager,
-                                   SharedImageBacking* backing,
-                                   MemoryTypeTracker* tracker)
-      : SharedImageRepresentation(manager, backing, tracker) {}
-
-  // Renders shared image to SurfaceView/Dialog overlay. Should only be called
-  // if the image already promoted to overlay.
-  virtual void RenderToOverlay() = 0;
-
-  // Notifies legacy overlay system about overlay promotion.
-  virtual void NotifyOverlayPromotion(bool promotion,
-                                      const gfx::Rect& bounds) = 0;
-};
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // MemoryImageRepresentation
@@ -1186,20 +1123,6 @@ class GPU_GLES2_EXPORT RasterImageRepresentation
 ///////////////////////////////////////////////////////////////////////////////
 // VideoImageRepresentation
 
-#if BUILDFLAG(IS_WIN)
-// Holds a D3D11 texture array, and index into it.
-struct GPU_GLES2_EXPORT D3D11TextureAndArrayIndex {
-  D3D11TextureAndArrayIndex(Microsoft::WRL::ComPtr<ID3D11Texture2D> texture,
-                            size_t array_index);
-  D3D11TextureAndArrayIndex(const D3D11TextureAndArrayIndex& other);
-  D3D11TextureAndArrayIndex(D3D11TextureAndArrayIndex&& other);
-
-  ~D3D11TextureAndArrayIndex();
-
-  Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
-  size_t array_index = 0;
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 class GPU_GLES2_EXPORT VideoImageRepresentation
     : public SharedImageRepresentation {
@@ -1211,11 +1134,6 @@ class GPU_GLES2_EXPORT VideoImageRepresentation
                       VideoImageRepresentation* representation);
     ~ScopedWriteAccess();
 
-#if BUILDFLAG(IS_WIN)
-    D3D11TextureAndArrayIndex GetD3D11Texture() const {
-      return representation()->GetD3D11Texture();
-    }
-#endif  // BUILDFLAG(IS_WIN)
   };
 
   class GPU_GLES2_EXPORT ScopedReadAccess
@@ -1225,17 +1143,7 @@ class GPU_GLES2_EXPORT VideoImageRepresentation
                      VideoImageRepresentation* representation);
     ~ScopedReadAccess();
 
-#if BUILDFLAG(IS_WIN)
-    D3D11TextureAndArrayIndex GetD3D11Texture() const {
-      return representation()->GetD3D11Texture();
-    }
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-    AHardwareBuffer* GetAHardwareBuffer() const {
-      return representation()->GetAHardwareBuffer();
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
   };
 
   VideoImageRepresentation(SharedImageManager* manager,
@@ -1249,13 +1157,7 @@ class GPU_GLES2_EXPORT VideoImageRepresentation
  protected:
   friend class WrappedVideoCompoundImageRepresentation;
 
-#if BUILDFLAG(IS_WIN)
-  virtual D3D11TextureAndArrayIndex GetD3D11Texture() const = 0;
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual AHardwareBuffer* GetAHardwareBuffer() const = 0;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   virtual bool BeginWriteAccess() = 0;
   virtual void EndWriteAccess() = 0;

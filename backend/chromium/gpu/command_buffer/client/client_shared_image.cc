@@ -42,13 +42,7 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/client/internal/mappable_buffer_dxgi.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "gpu/command_buffer/client/internal/mappable_buffer_ahb.h"
-#endif
 
 namespace gpu {
 
@@ -110,11 +104,7 @@ uint32_t ComputeTextureTargetForSharedImage(
   // have provided a native buffer to back that SI.
   CHECK(GMBIsNative(client_gmb_type));
   // See the note at the top of this function wrt Fuchsia.
-#if BUILDFLAG(IS_FUCHSIA)
-  return 0;
-#else
   return GL_TEXTURE_EXTERNAL_OES;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 #endif  // !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_OZONE) && !BUILDFLAG(IS_ANDROID)
 }
 
@@ -240,36 +230,6 @@ ClientSharedImage::CreateMappableBufferFromHandle(
           usage);
     }
 #endif
-#if BUILDFLAG(IS_WIN)
-    case gfx::DXGI_SHARED_HANDLE: {
-      // DXGI handles require GPU roundtrip for mapping, so they will wait
-      // for event to trigger in async callback.
-      // So the copy callback must execute in internal thread otherwise there
-      // will be a deadlock: the waiting thread would be used to process the
-      // callback reply.
-      auto wrapped_callback = base::BindRepeating(
-          &ClientSharedImage::RunOnTaskRunner, base::Unretained(this),
-          copy_native_buffer_to_shmem_callback);
-      return MappableBufferDXGI::CreateFromHandle(
-          std::move(handle), size, format, std::move(wrapped_callback),
-          std::move(pool));
-    }
-#endif
-#if BUILDFLAG(IS_ANDROID)
-    case gfx::ANDROID_HARDWARE_BUFFER: {
-      // ANDROID_HARDWARE_BUFFER handles require GPU roundtrip for mapping, so
-      // they will wait for event to trigger in async callback.
-      // So the copy callback must execute in internal thread otherwise there
-      // will be a deadlock: the waiting thread would be used to process the
-      // callback reply.
-      auto wrapped_callback = base::BindRepeating(
-          &ClientSharedImage::RunOnTaskRunner, base::Unretained(this),
-          copy_native_buffer_to_shmem_callback);
-      return MappableBufferAHB::CreateFromHandle(
-          std::move(handle), size, format, std::move(wrapped_callback),
-          std::move(pool));
-    }
-#endif
     default:
       // TODO(dcheng): Remove default case (https://crbug.com/676224).
       NOTREACHED() << format.ToString() << ", "
@@ -370,9 +330,7 @@ ClientSharedImage::ClientSharedImage(
   // TODO(crbug.com/391788839): Create GpuMemoryBuffer from handle.
   CHECK(!mailbox.IsZero());
   CHECK(sii_holder_);
-#if !BUILDFLAG(IS_FUCHSIA)
   CHECK(texture_target);
-#endif
 }
 
 ClientSharedImage::ClientSharedImage(
@@ -393,9 +351,7 @@ ClientSharedImage::ClientSharedImage(
   }
   CHECK(!mailbox_.IsZero());
   CHECK(sii_holder_);
-#if !BUILDFLAG(IS_FUCHSIA)
   CHECK(texture_target_);
-#endif
 }
 
 ClientSharedImage::ClientSharedImage(ExportedSharedImage exported_si)
@@ -412,9 +368,7 @@ ClientSharedImage::ClientSharedImage(ExportedSharedImage exported_si)
         metadata_.format, exported_si.buffer_usage_.value(), metadata_.usage);
   }
   CHECK(!mailbox_.IsZero());
-#if !BUILDFLAG(IS_FUCHSIA)
   CHECK(texture_target_);
-#endif
 }
 
 ClientSharedImage::ClientSharedImage(
@@ -542,7 +496,6 @@ gfx::GpuMemoryBufferHandle ClientSharedImage::CloneGpuMemoryBufferHandle()
 }
 
 uint32_t ClientSharedImage::GetTextureTarget() {
-#if !BUILDFLAG(IS_FUCHSIA)
   // Check that `texture_target_` has been initialized (note that on Fuchsia it
   // is possible for `texture_target_` to be initialized to 0: Fuchsia does not
   // support import of external images to GL for usage with external sampling.
@@ -551,7 +504,6 @@ uint32_t ClientSharedImage::GetTextureTarget() {
   // which detects the lack of support *based on* on the texture target being
   // 0).
   CHECK(texture_target_);
-#endif
   return texture_target_;
 }
 
@@ -661,12 +613,6 @@ ClientSharedImage::BeginGLAccessForCopySharedImage(InterfaceBase* gl_interface,
   return BeginRasterAccess(gl_interface, sync_token, readonly);
 }
 
-#if BUILDFLAG(IS_WIN)
-void ClientSharedImage::SetUsePreMappedMemory(bool use_premapped_memory) {
-  CHECK(mappable_buffer_);
-  mappable_buffer_->SetUsePreMappedMemory(use_premapped_memory);
-}
-#endif
 
 // static
 scoped_refptr<ClientSharedImage> ClientSharedImage::CreateForTesting() {

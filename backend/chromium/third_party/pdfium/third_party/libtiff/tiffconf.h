@@ -35,11 +35,6 @@
 #define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the <search.h> header file. */
-#if BUILDFLAG(IS_WIN)
-// search.h is always available in VS 2015 and above, and may be
-// available in earlier versions.
-#define HAVE_SEARCH_H 1
-#endif
 
 /* The size of a `int'. */
 /* According typedef int  int32_t; in the fx_system.h*/

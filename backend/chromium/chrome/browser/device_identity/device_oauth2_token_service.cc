@@ -131,12 +131,10 @@ OAuth2AccessTokenManager* DeviceOAuth2TokenService::GetAccessTokenManager() {
   return token_manager_.get();
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void DeviceOAuth2TokenService::SetServiceAccountEmail(
     const std::string& account_email) {
   store_->SetAccountEmail(account_email);
 }
-#endif
 
 void DeviceOAuth2TokenService::OnRefreshTokenResponse(
     const std::string& access_token,

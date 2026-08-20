@@ -66,23 +66,6 @@ bool TopContainerView::IsPositionInWindowCaption(
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the order of frame hit-testing is different, so if the area
-  // with the caption buttons is not excluded here, it will override the actual
-  // caption buttons with "frame", which in turn will prevent the buttons from
-  // being used.
-  const auto params =
-      browser_view_->browser_widget()->GetFrameView()->GetBrowserLayoutParams();
-  const gfx::Point in_browser =
-      views::View::ConvertPointToTarget(this, browser_view_, test_point);
-  const gfx::Rect caption_rect(
-      browser_view_->width() - params.trailing_exclusion.content.width(), 0,
-      params.trailing_exclusion.content.width(),
-      params.trailing_exclusion.content.height());
-  if (caption_rect.Contains(in_browser)) {
-    return false;
-  }
-#endif
 
   return true;
 }
@@ -93,7 +76,6 @@ void TopContainerView::PaintChildren(const views::PaintInfo& paint_info) {
 // BrowserRootView::PaintChildren() on immersive revealed.
 // TODO (b/287068468): Verify if it's needed on MacOS, once it's verified, we
 // can decide whether keep or remove this function.
-#if !BUILDFLAG(IS_CHROMEOS)
   if (ImmersiveModeController::From(browser_view_->browser())->IsRevealed()) {
     // Top-views depend on parts of the frame (themes, window title, window
     // controls) being painted underneath them. Clip rect has already been set
@@ -112,7 +94,6 @@ void TopContainerView::PaintChildren(const views::PaintInfo& paint_info) {
         views::PaintInfo::CreateRootPaintInfo(
             context, browser_view_->browser_widget()->GetFrameView()->size()));
   }
-#endif
   View::PaintChildren(paint_info);
 }
 

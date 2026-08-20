@@ -268,22 +268,8 @@ void RemoveConfirmedEventsFromCache(UploadState* state) {
 
 // Posts upload records count UMA.
 void LogNumRecordsInUpload(uint64_t num_records) {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (policy::ManagementServiceFactory::GetForPlatform()
-          ->HasManagementAuthority(
-              policy::EnterpriseManagementAuthority::CLOUD_DOMAIN)) {
-    // This is a managed device, so log the upload as such.
-    base::UmaHistogramCounts1000(
-        "Browser.ERP.RecordsPerUploadFromManagedDevice", num_records);
-  } else {
-    base::UmaHistogramCounts1000(
-        "Browser.ERP.RecordsPerUploadFromUnmanagedDevice", num_records);
-  }
-#else
   base::UmaHistogramCounts1000(
       "Browser.ERP.RecordsPerUploadFromNonChromeosDevice", num_records);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // Builds uploading payload - prepare builder synchronously, then build payload
@@ -469,19 +455,8 @@ EncryptedReportingClient::Delegate::device_management_service() const {
 // Returns false otherwise.
 // static
 bool EncryptedReportingClient::GenerationGuidIsRequired() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns true if this is an unmanaged ChromeOS device.
-  // Generation guid is only required for unmanaged ChromeOS devices. Enterprise
-  // managed ChromeOS devices or device with managed browser are not required to
-  // use the version of `Storage` that produces generation guids.
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  return !policy::ManagementServiceFactory::GetForPlatform()
-              ->HasManagementAuthority(
-                  policy::EnterpriseManagementAuthority::CLOUD_DOMAIN);
-#else
   // For non-ChromeOS returns false.
   return false;
-#endif
 }
 
 void EncryptedReportingClient::PresetUploads(base::DictValue context,

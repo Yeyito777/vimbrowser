@@ -171,7 +171,6 @@ class FamilyLinkSettingsState {
   // child.
   bool Check(const Services& services) const;
 
-#if !BUILDFLAG(IS_IOS)
   // Seeds the `target_state_` by issuing a RPC.
   // `caller_identity_manager` and `caller_url_loader_factory` are associated
   // with the browser making the rpc call. They might origin from the parent's
@@ -183,17 +182,7 @@ class FamilyLinkSettingsState {
       signin::IdentityManager& caller_identity_manager,
       scoped_refptr<network::SharedURLLoaderFactory> caller_url_loader_factory,
       std::string_view subject_account_id) const;
-#endif
 
-#if BUILDFLAG(IS_IOS)
-  // Seeds the `target_state_` by issuing a RPC, similar to `Seed()`.
-  // This method returns immediately, but fetching continues as long as the
-  // FamilyLinkSettingsState is alive.
-  void StartSeeding(
-      signin::IdentityManager& caller_identity_manager,
-      scoped_refptr<network::SharedURLLoaderFactory> caller_url_loader_factory,
-      std::string_view subject_account_id);
-#endif  // BUILDFLAG(IS_IOS)
 
   // Textual representation of this instance (for logging).
   std::string ToString() const;
@@ -201,10 +190,6 @@ class FamilyLinkSettingsState {
  private:
   std::unique_ptr<const Intent> intent_;
 
-#if BUILDFLAG(IS_IOS)
-  // ProtoFetcher used for StartSeeding().
-  std::unique_ptr<ProtoFetcher<std::string>> fetcher_;
-#endif  // BUILDFLAG(IS_IOS)
 };
 
 }  // namespace supervised_user

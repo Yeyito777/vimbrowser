@@ -95,9 +95,6 @@
 #include "ui/gfx/text_elider.h"
 #include "url/scheme_host_port.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/webauthn_api.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -190,13 +187,7 @@ password_manager::PasskeyCredential::Source ToPasswordManagerSource(
 }
 
 bool WebAuthnApiSupportsHybrid() {
-#if BUILDFLAG(IS_WIN)
-  device::WinWebAuthnApi* const webauthn_api =
-      device::WinWebAuthnApi::GetDefault();
-  return webauthn_api && webauthn_api->SupportsHybrid();
-#else
   return false;
-#endif
 }
 
 const gfx::VectorIcon& GetCredentialIcon(AuthenticatorType type) {
@@ -992,13 +983,7 @@ void AuthenticatorRequestDialogController::
 
   std::vector<AuthenticatorReference>& authenticators =
       ephemeral_state_.saved_authenticators_.authenticator_list();
-#if BUILDFLAG(IS_WIN)
-  // The Windows-native UI already handles retrying so we do not offer a second
-  // level of retry in that case.
-  if (type && *type != AuthenticatorType::kEnclave) {
-    model_->offer_try_again_in_ui = false;
-  }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // If there are multiple platform authenticators, one of them is the default.
   if (!type.has_value()) {
     if (std::ranges::any_of(
@@ -1319,42 +1304,6 @@ void AuthenticatorRequestDialogController::OnUserConsentDenied() {
 }
 
 bool AuthenticatorRequestDialogController::OnWinUserCancelled() {
-#if BUILDFLAG(IS_WIN)
-  if (ui_presentation() == UIPresentation::kAutofill) {
-    // Do not show a page-modal retry error sheet if the user cancelled out of
-    // their platform authenticator during a conditional UI request.
-    // Instead, retry silently.
-    CancelAuthenticatorRequest();
-    return true;
-  }
-
-  if (ephemeral_state_.dispatched_platform_authenticator_type_ ==
-      AuthenticatorType::kWinNative) {
-    webauthn::user_actions::RecordWindowsHelloCancelled();
-  }
-  // If the native Windows API was triggered immediately (i.e. before any Chrome
-  // dialog) then start the request over (once) if the user cancels the Windows
-  // UI and there are other options in Chrome's UI.
-  bool enclave_is_option =
-      std::ranges::any_of(model_->mechanisms, [](const Mechanism& m) {
-        return std::holds_alternative<Mechanism::Enclave>(m.type);
-      });
-  bool phone_is_option =
-      !WebAuthnApiSupportsHybrid() &&
-      std::ranges::any_of(model_->mechanisms, [](const Mechanism& m) -> bool {
-        return std::holds_alternative<Mechanism::Hybrid>(m.type);
-      });
-  bool have_other_option = enclave_is_option || phone_is_option;
-  bool windows_was_priority =
-      ephemeral_state_.did_invoke_platform_despite_no_priority_mechanism_ ||
-      (model_->priority_mechanism_index &&
-       std::holds_alternative<Mechanism::WindowsAPI>(
-           model_->mechanisms[*model_->priority_mechanism_index].type));
-  if (have_other_option && windows_was_priority) {
-    StartOver();
-    return true;
-  }
-#endif
 
   return false;
 }

@@ -97,11 +97,7 @@ typedef double GLclampd;
 
 #define GL_GLEXT_PROTOTYPES 1
 
-#if BUILDFLAG(IS_WIN)
-#define GL_BINDING_CALL WINAPI
-#else
 #define GL_BINDING_CALL
-#endif
 
 #if defined(NDEBUG) && !defined(GPU_ENABLE_SERVICE_LOGGING)
 #define GL_SERVICE_LOG(args) DLOG(INFO) << args;
@@ -127,13 +123,8 @@ typedef uint64_t EGLuint64CHROMIUM;
 #include "gl_bindings_autogen_egl.h"
 
 using GLFunctionPointerType = void (*)();
-#if BUILDFLAG(IS_WIN)
-typedef GLFunctionPointerType(WINAPI* GLGetProcAddressProc)(const char* name);
-#define STDCALL __stdcall
-#else
 typedef GLFunctionPointerType (*GLGetProcAddressProc)(const char* name);
 #define STDCALL
-#endif
 
 namespace gl {
 

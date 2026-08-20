@@ -128,7 +128,6 @@ void SetInitializedModalHeight(Browser* browser,
                                content::WebUI* web_ui,
                                const base::ListValue& args);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Helps clear Profile info, mainly for managed accounts.
 // Idealy this function should not be used much, consider deleting the profile
 // if possible instead.
@@ -137,7 +136,6 @@ void SetInitializedModalHeight(Browser* browser,
 // TODO(crbug.com/40067597): Remove this function when the FRE is
 // adapted.
 void ClearProfileWithManagedAccounts(Profile* profile);
-#endif
 
 // Gets the account picture in the `account_info` as a data:// URL or the
 // default placeholder if it doesn't exist.

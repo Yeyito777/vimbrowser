@@ -60,14 +60,12 @@ if (use_assembler) {
         "X86_32",
         "X86_32_PICASM",
       ]
-    } else {  # x64
+    } else {
       if (is_mac) {
         defines += [
           "PREFIX",
           "UNIX64",
         ]
-      } else if (is_win) {
-        defines += [ "WIN64" ]
       } else if (is_linux || is_chromeos) {
         defines += [ "UNIX64" ]
       }
@@ -85,14 +83,12 @@ if (use_assembler) {
         "X86_32",
         "X86_32_PICASM",
       ]
-    } else {  # x64
+    } else {
       if (is_mac) {
         defines += [
           "PREFIX",
           "UNIX64",
         ]
-      } else if (is_win) {
-        defines += [ "WIN64" ]
       } else if (is_linux || is_chromeos) {
         defines += [ "UNIX64" ]
       }
@@ -110,14 +106,12 @@ if (use_assembler) {
         "X86_32",
         "X86_32_PICASM",
       ]
-    } else {  # x64
+    } else {
       if (is_mac) {
         defines += [
           "PREFIX",
           "UNIX64",
         ]
-      } else if (is_win) {
-        defines += [ "WIN64" ]
       } else if (is_linux || is_chromeos) {
         defines += [ "UNIX64" ]
       }

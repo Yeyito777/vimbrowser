@@ -51,24 +51,8 @@ static_library("sync_device_info") {
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (is_chromeos) {
-    sources += [ "local_device_info_util_chromeos.cc" ]
-    deps += [
-      "//chromeos/ash/components/system",
-      "//chromeos/constants",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [ "local_device_info_util_ios.mm" ]
-  }
-
   if (is_linux) {
     sources += [ "local_device_info_util_linux.cc" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "local_device_info_util_fuchsia.cc" ]
   }
 
   if (is_mac) {
@@ -77,10 +61,6 @@ static_library("sync_device_info") {
       "CoreFoundation.framework",
       "SystemConfiguration.framework",  # For local_device_info_util_mac.mm.
     ]
-  }
-
-  if (is_win) {
-    sources += [ "local_device_info_util_win.cc" ]
   }
 }
 
@@ -125,8 +105,4 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/system" ]
-  }
 }

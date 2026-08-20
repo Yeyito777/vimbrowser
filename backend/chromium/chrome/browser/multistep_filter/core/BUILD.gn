@@ -26,9 +26,7 @@ source_set("unit_tests") {
   testonly = true
   sources = []
 
-  if (!is_ios) {
-    sources += [ "multistep_filter_service_factory_unittest.cc" ]
-  }
+  sources += [ "multistep_filter_service_factory_unittest.cc" ]
 
   deps = [
     ":core",

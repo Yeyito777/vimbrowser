@@ -53,9 +53,6 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
   bool allow_cross_origin_auth_prompt{false};
   bool enable_do_not_track{false};
   bool enable_encrypted_media{true};
-#if BUILDFLAG(IS_CHROMEOS)
-  bool use_overlay_scrollbar{false};
-#endif
   blink::mojom::WebRtcIpHandlingPolicy webrtc_ip_handling_policy =
       blink::mojom::WebRtcIpHandlingPolicy::kDefault;
   std::vector<WebRtcIpHandlingUrlEntry> webrtc_ip_handling_urls;
@@ -68,22 +65,6 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
   bool send_subresource_notification{false};
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   std::string system_font_family_name;
-#endif
-#if BUILDFLAG(IS_WIN)
-  std::u16string caption_font_family_name;
-  int32_t caption_font_height{0};
-  std::u16string small_caption_font_family_name;
-  int32_t small_caption_font_height{0};
-  std::u16string menu_font_family_name;
-  int32_t menu_font_height{0};
-  std::u16string status_font_family_name;
-  int32_t status_font_height{0};
-  std::u16string message_font_family_name;
-  int32_t message_font_height{0};
-  int32_t vertical_scroll_bar_width_in_dips{0};
-  int32_t horizontal_scroll_bar_height_in_dips{0};
-  int32_t arrow_bitmap_height_vertical_scroll_bar_in_dips{0};
-  int32_t arrow_bitmap_width_horizontal_scroll_bar_in_dips{0};
 #endif
 #if BUILDFLAG(IS_OZONE)
   bool selection_clipboard_buffer_available{false};

@@ -126,13 +126,6 @@ class IntentHandlingMetrics {
   static void RecordLinkCapturingEvent(PickerEntryType app_type,
                                        LinkCapturingEvent event);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static void RecordExternalProtocolUserInteractionMetrics(
-      content::BrowserContext* context,
-      PickerEntryType entry_type,
-      IntentPickerCloseReason close_reason,
-      bool should_persist);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace apps

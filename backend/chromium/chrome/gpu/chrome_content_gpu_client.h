@@ -11,11 +11,6 @@
 #include "base/task/single_thread_task_runner.h"
 #include "content/public/gpu/content_gpu_client.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace arc {
-class ProtectedBufferManager;
-}  // namespace arc
-#endif
 
 namespace sampling_profiler {
 class ThreadProfiler;
@@ -43,17 +38,11 @@ class ChromeContentGpuClient : public content::ContentGpuClient {
   void PostCompositorThreadCreated(
       base::SingleThreadTaskRunner* task_runner) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  scoped_refptr<arc::ProtectedBufferManager> GetProtectedBufferManager();
-#endif
 
  private:
   // Used to profile main thread startup.
   std::unique_ptr<sampling_profiler::ThreadProfiler> main_thread_profiler_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  scoped_refptr<arc::ProtectedBufferManager> protected_buffer_manager_;
-#endif
 };
 
 #endif  // CHROME_GPU_CHROME_CONTENT_GPU_CLIENT_H_

@@ -77,13 +77,6 @@ bool ScreenAIPreSandboxHook(base::FilePath binary_path,
       BrokerFilePermission::ReadOnly("/proc/meminfo"),
       BrokerFilePermission::ReadOnly("/sys/devices/system/cpu/possible")};
 
-#if BUILDFLAG(IS_CHROMEOS)
-  permissions.push_back(BrokerFilePermission::ReadOnly("/proc/self/status"));
-  permissions.push_back(
-      BrokerFilePermission::ReadOnly("/sys/devices/system/cpu/kernel_max"));
-  permissions.push_back(
-      BrokerFilePermission::ReadOnly("/sys/devices/system/cpu/present"));
-#endif
 
   instance->StartBrokerProcess(
       MakeBrokerCommandSet({sandbox::syscall_broker::COMMAND_ACCESS,

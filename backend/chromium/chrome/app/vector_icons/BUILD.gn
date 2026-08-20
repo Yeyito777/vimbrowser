@@ -276,60 +276,10 @@ aggregate_vector_icons("chrome_vector_icons") {
     sources += [ "new_tab_mac_touchbar.icon" ]
   }
 
-  if (is_win) {
-    sources += [
-      "open_in_phone.icon",
-      "payments/secure_payment_confirmation_face.icon",
-      "payments/secure_payment_confirmation_face_dark.icon",
-    ]
-  } else {
-    sources += [
-      "payments/secure_payment_confirmation_fingerprint.icon",
-      "payments/secure_payment_confirmation_fingerprint_dark.icon",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "autocorrect_undo.icon",
-      "crostini_mascot.icon",
-      "floating_workspace_notification.icon",
-      "game_controls_add.icon",
-      "game_controls_delete.icon",
-      "game_controls_done.icon",
-      "game_controls_dpad_keyboard.icon",
-      "game_controls_edit_pen.icon",
-      "game_controls_single_button.icon",
-      "mouse_left_click_edit.icon",
-      "mouse_left_click_view.icon",
-      "mouse_right_click_edit.icon",
-      "mouse_right_click_view.icon",
-      "notification_battery.icon",
-      "notification_captive_portal.icon",
-      "notification_cellular_alert.icon",
-      "notification_end_of_support.icon",
-      "notification_family_link.icon",
-      "notification_google.icon",
-      "notification_image.icon",
-      "notification_installed.icon",
-      "notification_messages.icon",
-      "notification_mobile_data.icon",
-      "notification_mobile_data_off.icon",
-      "notification_plugin_vm.icon",
-      "notification_printing.icon",
-      "notification_printing_done.icon",
-      "notification_printing_warning.icon",
-      "notification_storage_full.icon",
-      "notification_vpn.icon",
-      "notification_wifi.icon",
-      "notification_wifi_off.icon",
-      "person_add.icon",
-      "sharesheet_share_with_others.icon",
-      "shutdown_guest_os.icon",
-      "terminal_ssh.icon",
-      "tip.icon",
-    ]
-  }
+  sources += [
+    "payments/secure_payment_confirmation_fingerprint.icon",
+    "payments/secure_payment_confirmation_fingerprint_dark.icon",
+  ]
 
   sources += [ "nearby_share.icon" ]
 

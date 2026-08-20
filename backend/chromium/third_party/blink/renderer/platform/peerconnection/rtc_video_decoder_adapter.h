@@ -47,12 +47,7 @@ class PLATFORM_EXPORT RTCVideoDecoderAdapter : public webrtc::VideoDecoder {
  public:
   // Minimum resolution that we'll consider "not low resolution" for the purpose
   // of falling back to software.
-#if BUILDFLAG(IS_CHROMEOS)
-  // Effectively opt-out CrOS, since it may cause tests to fail (b/179724180).
-  static constexpr gfx::Size kMinResolution{2, 2};
-#else
   static constexpr gfx::Size kMinResolution{320, 240};
-#endif
 
   // Maximum number of decoder instances we'll allow before fallback to software
   // if the resolution is too low.  We'll allow more than this for high

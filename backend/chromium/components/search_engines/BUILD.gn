@@ -113,9 +113,7 @@ static_library("search_engines") {
     "//url",
   ]
 
-  if (!is_fuchsia) {
-    deps += [ "//components/variations/service" ]
-  }
+  deps += [ "//components/variations/service" ]
 
   deps += [
     "//components/resources:components_scaled_resources_grit",
@@ -259,14 +257,12 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_ios) {
-    sources += [ "enterprise/default_search_policy_handler_unittest.cc" ]
+  sources += [ "enterprise/default_search_policy_handler_unittest.cc" ]
 
-    deps += [
-      "//components/policy:generated",
-      "//components/policy/core/browser:test_support",
-    ]
-  }
+  deps += [
+    "//components/policy:generated",
+    "//components/policy/core/browser:test_support",
+  ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

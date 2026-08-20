@@ -124,10 +124,6 @@ bool EscapeForJS(const std::string& in_string,
 bool HasUnexpectedPlaceholder(const std::string& key,
                               const std::string& replacement) {
   // TODO(crbug.com/41472975): Fix display aria labels.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (key == "displayResolutionText")
-    return false;
-#endif
   static const base::NoDestructor<re2::RE2> placeholder_regex(R"(\$\d)");
   return re2::RE2::PartialMatch(replacement, *placeholder_regex.get());
 }

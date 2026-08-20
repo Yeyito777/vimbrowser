@@ -208,11 +208,6 @@ SupervisedUserGoogleAuthNavigationThrottle::ShouldProceed() {
   return content::NavigationThrottle::ThrottleCheckResult(
       content::NavigationThrottle::CANCEL, net::ERR_BLOCKED_BY_CLIENT,
       std::move(interstitial_html));
-#elif BUILDFLAG(IS_CHROMEOS)
-  // A credentials re-mint is already underway when we reach here (Mirror
-  // account reconciliation). Nothing to do here except block the navigation
-  // while re-minting is underway.
-  return content::NavigationThrottle::DEFER;
 #else
 #error Unsupported platform
 #endif

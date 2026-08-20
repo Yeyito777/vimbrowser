@@ -12,13 +12,6 @@
 
 namespace content_settings {
 
-#if BUILDFLAG(IS_ANDROID)
-// Enables auto dark feature in theme settings.
-COMPONENT_EXPORT(CONTENT_SETTINGS_FEATURES)
-BASE_DECLARE_FEATURE(kDarkenWebsitesCheckboxInThemesSetting);
-COMPONENT_EXPORT(CONTENT_SETTINGS_FEATURES)
-extern const base::FeatureParam<bool> kDarkenWebsitesCheckboxOptOut;
-#endif
 
 namespace features {
 
@@ -100,11 +93,6 @@ extern const base::FeatureParam<base::TimeDelta>
 COMPONENT_EXPORT(CONTENT_SETTINGS_FEATURES)
 BASE_DECLARE_FEATURE(kLeftHandSideActivityIndicators);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Shows warnings if camera, microphone or geolocation is blocked in the OS.
-COMPONENT_EXPORT(CONTENT_SETTINGS_FEATURES)
-BASE_DECLARE_FEATURE(kCrosSystemLevelPermissionBlockedWarnings);
-#endif
 
 // Feature to enable redesigned tracking protection UX + prefs for 3PCD.
 COMPONENT_EXPORT(CONTENT_SETTINGS_FEATURES)

@@ -22,16 +22,11 @@
 #include "base/files/file_util.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "sql/vfs_wrapper_fuchsia.h"
-#endif
 
 namespace sql {
 namespace {
 
-#if !BUILDFLAG(IS_FUCHSIA)
 int Unlock(sqlite3_file* sqlite_file, int file_lock);
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 // https://www.sqlite.org/vfs.html - documents the overall VFS system.
 //
@@ -112,7 +107,6 @@ int FileSize(sqlite3_file* sqlite_file, sqlite3_int64* size)
   return wrapped_file->pMethods->xFileSize(wrapped_file, size);
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 
 int Lock(sqlite3_file* sqlite_file, int file_lock)
 {
@@ -132,7 +126,6 @@ int CheckReservedLock(sqlite3_file* sqlite_file, int* result)
   return wrapped_file->pMethods->xCheckReservedLock(wrapped_file, result);
 }
 
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 // Else these functions are imported via vfs_wrapper_fuchsia.h.
 
 int FileControl(sqlite3_file* sqlite_file, int op, void* arg)
@@ -248,9 +241,6 @@ int Open(sqlite3_vfs* vfs, const char* file_name, sqlite3_file* wrapper_file,
 
   file->wrapped_file = wrapped_file;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  file->file_name = file_name;
-#endif
 
   if (wrapped_file->pMethods->iVersion == 1) {
     static const sqlite3_io_methods io_methods = {
@@ -366,11 +356,7 @@ void EnsureVfsWrapper() {
 
   // Get the default VFS on all platforms except Fuchsia.
   static constexpr const char* kBaseVfsName =
-#if BUILDFLAG(IS_FUCHSIA)
-      "unix-none";
-#else
       nullptr;
-#endif
   sqlite3_vfs* wrapped_vfs = sqlite3_vfs_find(kBaseVfsName);
   CHECK(wrapped_vfs);
 

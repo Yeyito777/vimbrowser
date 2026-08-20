@@ -142,9 +142,6 @@ class MemoryDetails : public base::RefCountedThreadSafe<MemoryDetails> {
   // Returns a pointer to the ProcessData structure for Chrome.
   ProcessData* ChromeBrowser();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const base::SwapInfo& swap_info() const { return swap_info_; }
-#endif
 
  private:
   // Collect current process information from the OS and store it
@@ -168,9 +165,6 @@ class MemoryDetails : public base::RefCountedThreadSafe<MemoryDetails> {
 
   std::vector<ProcessData> process_data_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::SwapInfo swap_info_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_MEMORY_DETAILS_H_

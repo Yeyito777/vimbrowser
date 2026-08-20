@@ -70,13 +70,7 @@ if (angle_has_build) {
   import("//build_overrides/build.gni")
   import("//testing/test.gni")
 
-  if (is_win) {
-    import("//build/config/win/visual_studio_version.gni")
-  }
-
-  if (is_chromeos) {
-    angle_vulkan_display_mode = "offscreen"
-  } else if (is_castos || ozone_platform_headless) {
+  if (is_castos || ozone_platform_headless) {
     angle_vulkan_display_mode = "headless"
   }
 
@@ -427,10 +421,6 @@ template("angle_executable") {
     if (angle_has_build && is_win) {
       data_deps += [ "//build/win:runtime_libs" ]
     }
-
-    if (is_ios) {
-      check_includes = false
-    }
   }
 }
 
@@ -440,10 +430,6 @@ template("angle_shared_library") {
   # a group that links and bundles the framework as well.
   target_type = "shared_library"
   internal_target_name = target_name
-  if (is_ios) {
-    target_type = "ios_framework_bundle"
-    internal_target_name = target_name + "_framework"
-  }
   target(target_type, internal_target_name) {
     forward_variables_from(invoker,
                            "*",
@@ -468,27 +454,6 @@ template("angle_shared_library") {
     }
 
     public_configs += [ angle_root + ":shared_library_public_config" ]
-
-    if (is_ios) {
-      info_plist = "$angle_root/util/ios/Info.plist"
-
-      # shared libraries are hidden inside ios_framework_bundle, but we include headers from them
-      # Specifically, libGLESv1_CM includes headers from libGLESv2
-      check_includes = false
-    }
-  }
-  if (is_ios) {
-    group(target_name) {
-      forward_variables_from(invoker,
-                             [
-                               "testonly",
-                               "visibility",
-                             ])
-      public_deps = [
-        ":${internal_target_name}+bundle",
-        ":${internal_target_name}+link",
-      ]
-    }
   }
 }
 
@@ -567,11 +532,6 @@ if (angle_standalone || build_with_chromium ||
         }
       }
 
-      if (is_ios) {
-        # shared libraries are hidden inside ios_framework_bundle, but we include headers from them
-        check_includes = false
-      }
-
       public_deps = invoker.public_deps + [
                       "$angle_root:angle_common",
                       "$angle_root:includes",
@@ -629,15 +589,6 @@ if (angle_standalone || build_with_chromium ||
       if ((is_linux || is_chromeos) && !is_component_build) {
         # Set rpath to find shared libs in a non-component build.
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
-      }
-
-      if (is_ios) {
-        # We use a special main function on iOS to initialize UIKit before the normal main runs.
-        ldflags = [
-          "-e",
-          "_ios_main",
-        ]
-        sources += [ "$angle_root/util/ios/ios_main.mm" ]
       }
 
       if (angle_has_build && is_win) {

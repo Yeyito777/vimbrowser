@@ -90,18 +90,8 @@
 #include "media/mojo/services/video_decode_perf_history.h"
 #include "net/http/transport_security_state.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/prefs/scoped_user_pref_update.h"
-#else
 #include "chrome/browser/accessibility/tree_fixing/pref_names.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/preferences/preferences.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chromeos/constants/chromeos_features.h"
-#include "chromeos/constants/pref_names.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "chrome/browser/extensions/extension_special_storage_policy.h"
@@ -225,11 +215,9 @@ void OffTheRecordProfileImpl::Init() {
   // AccessibilityLabelsService has a default prefs behavior in incognito.
   AccessibilityLabelsService::InitOffTheRecordPrefs(this);
 
-#if !BUILDFLAG(IS_ANDROID)
   // To avoid using any server-side tree fixing service, it is disabled in
   // Incognito profiles.
   tree_fixing::InitOffTheRecordPrefs(this);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // The ad service might not be available for some irregular profiles, like the
   // System Profile.
@@ -244,14 +232,6 @@ void OffTheRecordProfileImpl::Init() {
   if (IsIncognitoProfile())
     base::RecordAction(base::UserMetricsAction("IncognitoMode_Started"));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (otr_profile_id_->IsCaptivePortal()) {
-    // Set a pref to indicate that the Profile's PrefService is associated
-    // with a captive portal signin window. We use a pref for this because
-    // proxy configuration is associated with the PrefService, not a Profile.
-    GetPrefs()->SetBoolean(chromeos::prefs::kCaptivePortalSignin, true);
-  }
-#endif
 }
 
 OffTheRecordProfileImpl::~OffTheRecordProfileImpl() {
@@ -282,12 +262,6 @@ OffTheRecordProfileImpl::~OffTheRecordProfileImpl() {
   // other profile-related destroy notifications are dispatched.
   ShutdownStoragePartitions();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Bypass profile lifetime recording for ChromeOS helper profiles (sign-in,
-  // lockscreen, etc).
-  if (!ash::ProfileHelper::IsUserProfile(profile_))
-    return;
-#endif
   // Store incognito lifetime and navigations count histogram.
   if (IsIncognitoProfile()) {
     auto duration = base::Time::Now() - start_time_;
@@ -418,12 +392,6 @@ OffTheRecordProfileImpl::GetPolicySchemaRegistryService() {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-policy::UserCloudPolicyManagerAsh*
-OffTheRecordProfileImpl::GetUserCloudPolicyManagerAsh() {
-  return GetOriginalProfile()->GetUserCloudPolicyManagerAsh();
-}
-#else
 policy::UserCloudPolicyManager*
 OffTheRecordProfileImpl::GetUserCloudPolicyManager() {
   return GetOriginalProfile()->GetUserCloudPolicyManager();
@@ -432,7 +400,6 @@ policy::ProfileCloudPolicyManager*
 OffTheRecordProfileImpl::GetProfileCloudPolicyManager() {
   return GetOriginalProfile()->GetProfileCloudPolicyManager();
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 policy::CloudPolicyManager* OffTheRecordProfileImpl::GetCloudPolicyManager() {
   return GetOriginalProfile()->GetCloudPolicyManager();
 }
@@ -577,18 +544,6 @@ bool OffTheRecordProfileImpl::WasCreatedByVersionOrLater(
   return profile_->WasCreatedByVersionOrLater(version);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void OffTheRecordProfileImpl::ChangeAppLocale(const std::string& locale,
-                                              AppLocaleChangedVia) {}
-
-void OffTheRecordProfileImpl::OnLogin() {}
-
-void OffTheRecordProfileImpl::InitChromeOSPreferences() {
-  // The incognito profile shouldn't have Chrome OS's preferences.
-  // The preferences are associated with the regular user profile.
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool OffTheRecordProfileImpl::IsNewProfile() const {
   return profile_->IsNewProfile();
@@ -603,43 +558,12 @@ void OffTheRecordProfileImpl::SetCreationTimeForTesting(
   start_time_ = creation_time;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Special case of the OffTheRecordProfileImpl which is used while Guest
-// session in CrOS.
-class GuestSessionProfile : public OffTheRecordProfileImpl {
- public:
-  explicit GuestSessionProfile(Profile* real_profile)
-      : OffTheRecordProfileImpl(real_profile, OTRProfileID::PrimaryID()) {
-    if (new_guest_profile_impl_) {
-      CHECK_EQ(profile_metrics::BrowserProfileType::kGuest,
-               profile_metrics::GetBrowserProfileType(this));
-    } else {
-      profile_metrics::SetBrowserProfileType(
-          this, profile_metrics::BrowserProfileType::kGuest);
-    }
-  }
-
-  void InitChromeOSPreferences() override {
-    chromeos_preferences_ = std::make_unique<ash::Preferences>();
-    chromeos_preferences_->Init(
-        this, user_manager::UserManager::Get()->GetActiveUser());
-  }
-
- private:
-  // The guest user should be able to customize Chrome OS preferences.
-  std::unique_ptr<ash::Preferences> chromeos_preferences_;
-};
-#endif
 
 // static
 std::unique_ptr<Profile> Profile::CreateOffTheRecordProfile(
     Profile* parent,
     const OTRProfileID& otr_profile_id) {
   std::unique_ptr<OffTheRecordProfileImpl> profile;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (parent->IsGuestSession() && otr_profile_id == OTRProfileID::PrimaryID())
-    profile = std::make_unique<GuestSessionProfile>(parent);
-#endif
   if (!profile)
     profile = std::make_unique<OffTheRecordProfileImpl>(parent, otr_profile_id);
   // With CEF we want to delay initialization.

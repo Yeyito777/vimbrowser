@@ -71,20 +71,6 @@ class InterfaceFactoryImpl final
       const base::UnguessableToken& overlay_plane_id,
       mojo::PendingReceiver<mojom::Renderer> receiver) final;
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  void CreateFlingingRenderer(
-      const std::string& presentation_id,
-      mojo::PendingRemote<mojom::FlingingRendererClientExtension>
-          client_extension,
-      mojo::PendingReceiver<mojom::Renderer> receiver) final;
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-  void CreateMediaFoundationRenderer(
-      mojo::PendingRemote<mojom::MediaLog> media_log_remote,
-      mojo::PendingReceiver<mojom::Renderer> receiver,
-      mojo::PendingReceiver<mojom::MediaFoundationRendererExtension>
-          renderer_extension_receiver) final;
-#endif  // BUILDFLAG(IS_WIN)
 
   void CreateCdm(const CdmConfig& cdm_config, CreateCdmCallback callback) final;
 

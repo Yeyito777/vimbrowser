@@ -16,11 +16,7 @@ template("service_executable") {
       configs += invoker.configs
     }
 
-    if (is_win) {
-      output_extension = "service.exe"
-    } else {
-      output_extension = "service"
-    }
+    output_extension = "service"
 
     if (!defined(deps)) {
       deps = []

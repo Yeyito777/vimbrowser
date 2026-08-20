@@ -46,15 +46,4 @@ source_set("socket") {
   ]
 
   deps = [ "//url" ]
-
-  if (is_chromeos) {
-    sources += [
-      "app_firewall_hole_manager.cc",
-      "app_firewall_hole_manager.h",
-    ]
-
-    public_deps += [ "//chromeos/components/firewall_hole" ]
-
-    deps += [ "//components/keyed_service/content" ]
-  }
 }

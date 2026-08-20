@@ -922,13 +922,9 @@ bool AutofillCrowdsourcingManager::StartRequest(FormRequestData request_data) {
   // NavigationRequest. Not setting an IsolationInfo is safe because no
   // information about the response is passed to the renderer, or is otherwise
   // visible to a page. See crbug/1176635#c22.
-#if BUILDFLAG(IS_IOS)
-  DCHECK(!request_data.isolation_info);
-#else
   DCHECK(
       (request_data.request_type == CrowdsourcingRequestType::kRequestUpload) ==
       !request_data.isolation_info);
-#endif
   // Get the URL and method to use for this request.
   auto [request_url, method] = GetRequestURLAndMethod(request_data);
 

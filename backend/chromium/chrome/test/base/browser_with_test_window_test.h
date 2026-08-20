@@ -28,27 +28,9 @@
 #if defined(TOOLKIT_VIEWS)
 #include "chrome/test/views/chrome_test_views_delegate.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/test/ash_test_helper.h"
-#include "ash/test/ash_test_views_delegate.h"
-#include "base/scoped_observation.h"
-#include "chrome/browser/ash/app_mode/kiosk_chrome_app_manager.h"
-#include "chrome/browser/ash/app_mode/kiosk_cryptohome_remover.h"
-#include "chrome/browser/ash/settings/scoped_cros_settings_test_helper.h"
-#include "chromeos/ash/components/install_attributes/stub_install_attributes.h"
-#include "components/session_manager/core/fake_session_manager_delegate.h"
-#include "components/session_manager/core/session_manager.h"
-#include "components/user_manager/fake_user_manager.h"
-#include "components/user_manager/scoped_user_manager.h"
-#include "services/network/public/cpp/shared_url_loader_factory.h"
-#else
 #include "ui/views/test/scoped_views_test_helper.h"
 #endif
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/scoped_ole_initializer.h"
-#endif
 
 class GURL;
 class GaiaId;
@@ -57,15 +39,6 @@ namespace content {
 class NavigationController;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace crosapi {
-class CrosapiManager;
-}  // namespace crosapi
-
-namespace session_manager {
-class SessionManager;
-}  // namespace session_manager
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class TestingProfileManager;
 
@@ -171,16 +144,6 @@ class BrowserWithTestWindowTest : public testing::Test, public ProfileObserver {
     return &test_url_loader_factory_;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::AshTestHelper* ash_test_helper() { return &ash_test_helper_.value(); }
-  user_manager::FakeUserManager* user_manager() { return user_manager_.Get(); }
-  // NOTE: `KioskCryptohomeRemover` is owned by `KioskControllerImpl` in
-  // production.
-  ash::KioskCryptohomeRemover* kiosk_cryptohome_remover() {
-    return kiosk_cryptohome_remover_.get();
-  }
-  virtual void OnAshTestHelperCreated();
-#endif
 
   // The context to help determine desktop type when creating new Widgets.
   gfx::NativeWindow GetContext();
@@ -253,31 +216,10 @@ class BrowserWithTestWindowTest : public testing::Test, public ProfileObserver {
 
 #if defined(TOOLKIT_VIEWS)
   views::TestViewsDelegate* test_views_delegate() {
-#if BUILDFLAG(IS_CHROMEOS)
-    return test_views_delegate_.get();
-#else
     return views_test_helper_->test_views_delegate();
-#endif
   }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Logs in an User as `email`.
-  virtual void LogIn(std::string_view email, const GaiaId& gaia_id);
-
-  // Handles the post-process for the newly created Profile.
-  // Expected to be called on customizing CreateProfile for ash.
-  virtual void OnUserProfileCreated(const std::string& email, Profile* profile);
-
-  // Switches the active user to the one specified by the email.
-  virtual void SwitchActiveUser(const std::string& email);
-
-  // ProfileObserver:
-  void OnProfileWillBeDestroyed(Profile* profile) override;
-
-  ash::ScopedCrosSettingsTestHelper* GetCrosSettingsHelper();
-  ash::StubInstallAttributes* GetInstallAttributes();
-#endif
 
  private:
   // The template constructor has to be in the header but it delegates to this
@@ -290,28 +232,6 @@ class BrowserWithTestWindowTest : public testing::Test, public ProfileObserver {
   // We need to create a MessageLoop, otherwise a bunch of things fails.
   std::unique_ptr<content::BrowserTaskEnvironment> task_environment_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::TestSessionControllerClient* GetSessionControllerClient();
-
-  // A template method (in Design Pattern) that execute post profile creation
-  // steps.
-  void PostUserProfileCreation(const std::string& email, Profile* profile);
-
-  ash::ScopedCrosSettingsTestHelper cros_settings_test_helper_;
-
-  std::unique_ptr<session_manager::SessionManager> session_manager_ =
-      std::make_unique<session_manager::SessionManager>(
-          std::make_unique<session_manager::FakeSessionManagerDelegate>());
-
-  user_manager::TypedScopedUserManager<user_manager::FakeUserManager>
-      user_manager_;
-  std::vector<
-      std::unique_ptr<base::ScopedObservation<Profile, ProfileObserver>>>
-      profile_observations_;
-  std::unique_ptr<crosapi::CrosapiManager> manager_;
-  std::unique_ptr<ash::KioskCryptohomeRemover> kiosk_cryptohome_remover_;
-  std::unique_ptr<ash::KioskChromeAppManager> kiosk_chrome_app_manager_;
-#endif
 
   base::WeakPtr<TestingProfile> profile_ = nullptr;
 
@@ -324,11 +244,7 @@ class BrowserWithTestWindowTest : public testing::Test, public ProfileObserver {
   raw_ptr<BrowserWindow> window_;
   std::unique_ptr<Browser> browser_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<ash::AshTestHelper> ash_test_helper_;
-  std::unique_ptr<views::TestViewsDelegate> test_views_delegate_ =
-      std::make_unique<ChromeTestViewsDelegate<ash::AshTestViewsDelegate>>();
-#elif defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS)
   std::unique_ptr<views::ScopedViewsTestHelper> views_test_helper_ =
       std::make_unique<views::ScopedViewsTestHelper>(
           std::make_unique<ChromeTestViewsDelegate<>>());
@@ -337,9 +253,6 @@ class BrowserWithTestWindowTest : public testing::Test, public ProfileObserver {
   // The existence of this object enables tests via RenderViewHostTester.
   std::unique_ptr<content::RenderViewHostTestEnabler> rvh_test_enabler_;
 
-#if BUILDFLAG(IS_WIN)
-  ui::ScopedOleInitializer ole_initializer_;
-#endif
 
   // The type of browser to create (tabbed or popup).
   const Browser::Type browser_type_;

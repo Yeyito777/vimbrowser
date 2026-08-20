@@ -96,11 +96,6 @@ VizMainImpl::VizMainImpl(Delegate* delegate,
   if (!dependencies_.io_thread_task_runner)
     io_thread_ = CreateAndStartIOThread();
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, the compositor thread runner may be created externally and
-  // passed in (in particular, for WebView).
-  viz_compositor_thread_runner_ = dependencies_.viz_compositor_thread_runner;
-#endif
   if (!viz_compositor_thread_runner_) {
     viz_compositor_thread_runner_impl_ =
         std::make_unique<VizCompositorThreadRunnerImpl>();
@@ -211,21 +206,11 @@ void VizMainImpl::CreateGpuService(
         std::move(pending_gpu_logging), io_task_runner());
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  gpu_service_->InitializeWithHost(
-      gpu_host.Unbind(),
-      gpu::GpuProcessShmCount(std::move(use_shader_cache_shm_region)),
-      gpu_init_->TakeDefaultOffscreenSurface(), std::move(params),
-      dependencies_.sync_point_manager, dependencies_.shared_image_manager,
-      dependencies_.scheduler, dependencies_.shutdown_event,
-      dependencies_.gr_context_options_provider);
-#else
   gpu_service_->InitializeWithHost(
       gpu_host.Unbind(),
       gpu::GpuProcessShmCount(std::move(use_shader_cache_shm_region)),
       gpu_init_->TakeDefaultOffscreenSurface(), std::move(params),
       dependencies_.shutdown_event);
-#endif
 
   gpu_service_->Bind(std::move(pending_receiver));
 
@@ -238,9 +223,6 @@ void VizMainImpl::CreateGpuService(
     // thread IDs.
     base::PlatformThreadId main_thread_id = base::PlatformThread::CurrentId();
     gpu_process_thread_ids.insert(main_thread_id);
-#if BUILDFLAG(IS_ANDROID)
-    viz_compositor_thread_runner_->SetGpuMainThreadId(main_thread_id);
-#endif
 
     CompositorGpuThread* compositor_gpu_thread =
         gpu_service_->compositor_gpu_thread();
@@ -290,30 +272,7 @@ void VizMainImpl::SetRenderParams(
       text_contrast, text_gamma);
 }
 
-#if BUILDFLAG(IS_WIN)
-void VizMainImpl::CreateInfoCollectionGpuService(
-    mojo::PendingReceiver<mojom::InfoCollectionGpuService> pending_receiver) {
-  DCHECK(gpu_thread_task_runner_->BelongsToCurrentThread());
-  DCHECK(!info_collection_gpu_service_);
-  DCHECK(gpu_init_->device_perf_info().has_value());
 
-  info_collection_gpu_service_ = std::make_unique<InfoCollectionGpuServiceImpl>(
-      gpu_thread_task_runner_, io_task_runner(),
-      gpu_init_->device_perf_info().value(), gpu_init_->gpu_info().active_gpu(),
-      std::move(pending_receiver));
-}
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-void VizMainImpl::SetHostProcessId(int32_t pid) {
-  if (gpu_service_)
-    gpu_service_->SetHostProcessId(pid);
-}
-
-void VizMainImpl::NotifyWorkloadIncrease() {
-  viz_compositor_thread_runner_->NotifyWorkloadIncrease();
-}
-#endif
 
 void VizMainImpl::CreateFrameSinkManager(
     mojom::FrameSinkManagerParamsPtr params) {

@@ -21,11 +21,7 @@
 #include "partition_alloc/page_allocator.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#else
 #include <unistd.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace base::internal {
 bool ReleaseAddressSpaceReservation() {

@@ -333,13 +333,6 @@ class TestNetworkContext : public mojom::NetworkContext {
       const net::AuthCredentials& credentials,
       AddAuthCacheEntryCallback callback) override {}
   void SetCorsNonWildcardRequestHeadersSupport(bool value) override {}
-#if BUILDFLAG(IS_CHROMEOS)
-  void LookupProxyAuthCredentials(
-      const net::ProxyServer& proxy_server,
-      const std::string& auth_scheme,
-      const std::string& realm,
-      LookupProxyAuthCredentialsCallback callback) override {}
-#endif
   void SetSharedDictionaryCacheMaxSize(uint64_t cache_max_size) override {}
   void ClearSharedDictionaryCache(
       base::Time start_time,

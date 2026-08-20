@@ -18,12 +18,7 @@ Clipboard* Clipboard::Create() {
   // On Linux builds of ash-chrome, use platform-backed implementation iff
   // use-system-clipboard command line switch is passed.
   const bool use_ozone_impl =
-#if !BUILDFLAG(IS_CHROMEOS)
       true;
-#else
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kUseSystemClipboard);
-#endif
 
   if (use_ozone_impl && OzonePlatform::GetInstance()->GetPlatformClipboard())
     return new ClipboardOzone;

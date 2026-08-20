@@ -37,18 +37,6 @@
 
 namespace settings {
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-// Generates a Google Help URL which includes a "board type" parameter. Some
-// help pages need to be adjusted depending on the type of CrOS device that is
-// accessing the page.
-std::u16string GetHelpUrlWithBoard(const std::u16string& original_url) {
-  return base::StrCat(
-      {original_url, u"&b=",
-       base::ASCIIToUTF16(base::SysInfo::GetLsbReleaseBoard())});
-}
-}  // namespace
-#endif
 
 void AddAxAnnotationsSectionStrings(content::WebUIDataSource* html_source) {
   static constexpr webui::LocalizedString kLocalizedStrings[] = {
@@ -136,18 +124,6 @@ void AddLiveCaptionSectionStrings(content::WebUIDataSource* html_source) {
 
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void AddPasswordPromptDialogStrings(content::WebUIDataSource* html_source) {
-  static constexpr webui::LocalizedString kLocalizedStrings[] = {
-      {"passwordPromptTitle", IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_TITLE},
-      {"passwordPromptInvalidPassword",
-       IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_INVALID_PASSWORD},
-      {"passwordPromptPasswordLabel",
-       IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_PASSWORD_LABEL},
-  };
-  html_source->AddLocalizedStrings(kLocalizedStrings);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
   static constexpr webui::LocalizedString kLocalizedStrings[] = {
@@ -191,11 +167,7 @@ void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
   html_source->AddString("syncErrorsHelpUrl", chrome::kSyncErrorsHelpURL);
 
   const bool updateAccountSettingsStrings =
-#if BUILDFLAG(IS_CHROMEOS)
-      false;
-#else
       base::FeatureList::IsEnabled(syncer::kReplaceSyncPromosWithSignInPromos);
-#endif
 
   html_source->AddLocalizedString(
       "encryptWithGoogleCredentialsLabel",
@@ -241,11 +213,7 @@ void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
                 plus_addresses::features::kPlusAddressesEnabled)
               ? IDS_SETTINGS_ENCRYPT_WITH_SYNC_PASSPHRASE_INCLUDING_PLUS_ADDRESS_LABEL
               : IDS_SETTINGS_ENCRYPT_WITH_SYNC_PASSPHRASE_LABEL,
-#if BUILDFLAG(IS_CHROMEOS)
-          GetHelpUrlWithBoard(chrome::kSyncEncryptionHelpURL)));
-#else
           chrome::kSyncEncryptionHelpURL));
-#endif
 }
 
 void AddSecureDnsStrings(content::WebUIDataSource* html_source) {

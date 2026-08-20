@@ -28,11 +28,6 @@
 #include "device/bluetooth/floss/floss_socket_manager.h"
 #include "device/bluetooth/public/cpp/bluetooth_address.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/devicetype.h"
-#include "device/bluetooth/chromeos/bluetooth_connection_logger.h"
-#include "device/bluetooth/chromeos/bluetooth_utils.h"
-#endif
 
 namespace floss {
 
@@ -184,9 +179,6 @@ void BluetoothAdapterFloss::AddAdapterObservers() {
   FlossDBusManager::Get()->GetAdapterClient()->AddObserver(this);
   FlossDBusManager::Get()->GetLEScanClient()->AddObserver(this);
   FlossDBusManager::Get()->GetBatteryManagerClient()->AddObserver(this);
-#if BUILDFLAG(IS_CHROMEOS)
-  FlossDBusManager::Get()->GetAdminClient()->AddObserver(this);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterFloss::RemoveAdapterObservers() {
@@ -194,9 +186,6 @@ void BluetoothAdapterFloss::RemoveAdapterObservers() {
   FlossDBusManager::Get()->GetAdapterClient()->RemoveObserver(this);
   FlossDBusManager::Get()->GetLEScanClient()->RemoveObserver(this);
   FlossDBusManager::Get()->GetBatteryManagerClient()->RemoveObserver(this);
-#if BUILDFLAG(IS_CHROMEOS)
-  FlossDBusManager::Get()->GetAdminClient()->RemoveObserver(this);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterFloss::RemoveAdapter() {
@@ -621,25 +610,6 @@ void BluetoothAdapterFloss::NotifyDeviceConnectedStateChanged(
     bool is_now_connected) {
   DCHECK_EQ(device->IsConnected(), is_now_connected);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_now_connected) {
-    device::BluetoothConnectionLogger::RecordDeviceConnected(
-        device->GetIdentifier(), device->GetDeviceType());
-  } else {
-    device::RecordDeviceDisconnect(device->GetDeviceType());
-  }
-
-  // Also log the total number of connected devices. This uses a sampled
-  // histogram rather than a enumeration.
-  int count = 0;
-  for (auto& [unused_address, current_device] : devices_) {
-    if (current_device->IsPaired() && current_device->IsConnected()) {
-      count++;
-    }
-  }
-
-  UMA_HISTOGRAM_COUNTS_100("Bluetooth.ConnectedDeviceCount", count);
-#endif
 
   BluetoothAdapter::NotifyDeviceConnectedStateChanged(device, is_now_connected);
 }
@@ -702,13 +672,6 @@ void BluetoothAdapterFloss::AdapterEnabledChanged(int adapter, bool enabled) {
 void BluetoothAdapterFloss::OnAdapterClientsReady(bool is_newly_present) {
   AddAdapterObservers();
   PopulateInitialDevices();
-#if BUILDFLAG(IS_CHROMEOS)
-  SetStandardChromeOSAdapterName();
-  if (base::FeatureList::IsEnabled(
-          chromeos::bluetooth::features::kBluetoothFlossTelephony)) {
-    ConfigureBluetoothTelephony(true);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (is_newly_present) {
     PresentChanged(true);
@@ -821,9 +784,6 @@ void BluetoothAdapterFloss::AdapterClearedDevice(
 void BluetoothAdapterFloss::AdapterKeyMissingDevice(
     const FlossDeviceId& device) {
   BLUETOOTH_LOG(EVENT) << __func__ << ": " << device;
-#if BUILDFLAG(IS_CHROMEOS)
-  device::RecordDeviceKeyMissing();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterFloss::AdapterDevicePropertyChanged(
@@ -1222,36 +1182,6 @@ BluetoothAdapterFloss::RetrieveGattConnectedDevicesWithDiscoveryFilter(
   return {};
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapterFloss::DevicePolicyEffectChanged(
-    const FlossDeviceId& device_id,
-    const std::optional<PolicyEffect>& effect) {
-  BLUETOOTH_LOG(EVENT) << __func__ << ": " << device_id;
-
-  BluetoothDeviceFloss* device =
-      static_cast<BluetoothDeviceFloss*>(GetDevice(device_id.address));
-  if (!device) {
-    LOG(WARNING) << "Device disconnected for an unknown device "
-                 << device_id.address;
-    return;
-  }
-
-  device->SetIsBlockedByPolicy(effect.has_value() ? effect.value().affected
-                                                  : false);
-}
-
-void BluetoothAdapterFloss::ServiceAllowlistChanged(
-    const std::vector<device::BluetoothUUID>& allowlist) {
-  std::vector<std::string> uuid_str(allowlist.size());
-
-  std::ranges::transform(
-      allowlist, uuid_str.begin(),
-      [](device::BluetoothUUID dev) { return dev.canonical_value(); });
-
-  BLUETOOTH_LOG(EVENT) << __func__ << ": " << base::JoinString(uuid_str, ",");
-  // TODO(b/257877673): Notify observers
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothAdapterFloss::CreateRfcommService(
     const device::BluetoothUUID& uuid,
@@ -1308,15 +1238,6 @@ void BluetoothAdapterFloss::RegisterAdvertisement(
   advertisements_.emplace_back(advertisement);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool BluetoothAdapterFloss::IsExtendedAdvertisementsAvailable() const {
-  if (!IsPresent()) {
-    return false;
-  }
-
-  return FlossDBusManager::Get()->GetAdapterClient()->IsExtAdvSupported();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothAdapterFloss::SetAdvertisingInterval(
     const base::TimeDelta& min,
@@ -1474,105 +1395,6 @@ bool BluetoothAdapterFloss::SendValueChanged(
   return true;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapterFloss::SetServiceAllowList(const UUIDList& uuids,
-                                                base::OnceClosure callback,
-                                                ErrorCallback error_callback) {
-  FlossDBusManager::Get()->GetAdminClient()->SetAllowedServices(
-      base::BindOnce(&BluetoothAdapterFloss::OnMethodResponse,
-                     weak_ptr_factory_.GetWeakPtr(), std::move(callback),
-                     std::move(error_callback)),
-      uuids);
-}
-
-void BluetoothAdapterFloss::SetSimpleSecurePairingEnabled(
-    bool enabled,
-    base::OnceClosure callback,
-    ErrorCallback error_callback) {
-  FlossDBusManager::Get()->GetAdminClient()->SetSimpleSecurePairingEnabled(
-      base::BindOnce(&BluetoothAdapterFloss::OnMethodResponse,
-                     weak_ptr_factory_.GetWeakPtr(), std::move(callback),
-                     std::move(error_callback)),
-      enabled);
-}
-
-std::unique_ptr<device::BluetoothLowEnergyScanSession>
-BluetoothAdapterFloss::StartLowEnergyScanSession(
-    std::unique_ptr<device::BluetoothLowEnergyScanFilter> filter,
-    base::WeakPtr<device::BluetoothLowEnergyScanSession::Delegate> delegate) {
-  auto scan_session = std::make_unique<BluetoothLowEnergyScanSessionFloss>(
-      std::move(filter), delegate,
-      base::BindOnce(&BluetoothAdapterFloss::OnLowEnergyScanSessionDestroyed,
-                     weak_ptr_factory_.GetWeakPtr()));
-  FlossDBusManager::Get()->GetLEScanClient()->RegisterScanner(base::BindOnce(
-      &BluetoothAdapterFloss::OnRegisterScanner, weak_ptr_factory_.GetWeakPtr(),
-      scan_session->GetWeakPtr()));
-  return scan_session;
-}
-
-device::BluetoothAdapter::LowEnergyScanSessionHardwareOffloadingStatus
-BluetoothAdapterFloss::GetLowEnergyScanSessionHardwareOffloadingStatus() {
-  if (!IsPowered()) {
-    BLUETOOTH_LOG(ERROR)
-        << "GetLowEnergyScanSessionHardwareOffloadingStatus called when "
-        << "adapter is not powered.";
-    return device::BluetoothAdapter::
-        LowEnergyScanSessionHardwareOffloadingStatus::kUndetermined;
-  }
-  return FlossDBusManager::Get()->GetGattManagerClient()->GetMsftSupported()
-             ? device::BluetoothAdapter::
-                   LowEnergyScanSessionHardwareOffloadingStatus::kSupported
-             : device::BluetoothAdapter::
-                   LowEnergyScanSessionHardwareOffloadingStatus::kNotSupported;
-}
-
-std::vector<device::BluetoothAdapter::BluetoothRole>
-BluetoothAdapterFloss::GetSupportedRoles() {
-  std::vector<BluetoothAdapter::BluetoothRole> roles;
-
-  if (!IsPresent()) {
-    return roles;
-  }
-
-  for (auto role :
-       FlossDBusManager::Get()->GetAdapterClient()->GetSupportedRoles()) {
-    switch (role) {
-      case FlossAdapterClient::BtAdapterRole::kCentral:
-        roles.push_back(BluetoothAdapter::BluetoothRole::kCentral);
-        break;
-      case FlossAdapterClient::BtAdapterRole::kPeripheral:
-        roles.push_back(BluetoothAdapter::BluetoothRole::kPeripheral);
-        break;
-      case FlossAdapterClient::BtAdapterRole::kCentralPeripheral:
-        roles.push_back(BluetoothAdapter::BluetoothRole::kCentralPeripheral);
-        break;
-      default:
-        BLUETOOTH_LOG(EVENT)
-            << __func__ << ": Unknown role: " << static_cast<uint32_t>(role);
-    }
-  }
-
-  return roles;
-}
-
-void BluetoothAdapterFloss::SetStandardChromeOSAdapterName() {
-  if (!IsPresent()) {
-    BLUETOOTH_LOG(ERROR)
-        << "SetStandardChromeOSAdapterName called when adapter is not present.";
-    return;
-  }
-
-  std::string alias = ash::GetDeviceBluetoothName(GetAddress());
-  FlossDBusManager::Get()->GetAdapterClient()->SetName(base::DoNothing(),
-                                                       alias);
-}
-
-void BluetoothAdapterFloss::ConfigureBluetoothTelephony(bool enabled) {
-  FlossDBusManager::Get()->GetBluetoothTelephonyClient()->SetPhoneOpsEnabled(
-      base::DoNothing(), enabled);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothAdapterFloss::ScannerRegistered(device::BluetoothUUID uuid,
                                               uint8_t scanner_id,
@@ -1725,15 +1547,6 @@ void BluetoothAdapterFloss::StartScanWithFilter(
 
   BLUETOOTH_LOG(EVENT) << __func__;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // First start LE scan before discovery
-  if (!le_discovery_session_) {
-    le_discovery_session_ = StartLowEnergyScanSession(
-        nullptr, static_cast<BleDelegateForDiscovery*>(
-                     le_discovery_session_delegate_.get())
-                     ->GetWeakPtr());
-  }
-#endif
 
   // TODO(b/192251662) - Support scan filtering. For now, start scanning with no
   // filters in place.

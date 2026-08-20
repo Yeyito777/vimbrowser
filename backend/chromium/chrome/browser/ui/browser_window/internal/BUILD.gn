@@ -111,13 +111,6 @@ source_set("internal") {
     deps += [ "//chrome/browser/ui/views/session_restore_infobar" ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/boca/on_task",
-      "//components/session_manager/core",
-    ]
-  }
-
   if (use_aura) {
     deps += [ "//chrome/browser/ui:overscroll_pref_manager" ]
   }

@@ -225,8 +225,6 @@ void SaveUpdateBubbleController::ShouldRevealPasswords(
 #if BUILDFLAG(IS_MAC)
   message = l10n_util::GetStringUTF16(
       IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT);
 #endif
   // Bind OnUserAuthenticationCompleted() using a weak_ptr such that if the
   // bubble is closed (and controller is destructed) while the reauth flow is

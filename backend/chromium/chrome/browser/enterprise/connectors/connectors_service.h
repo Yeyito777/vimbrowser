@@ -42,12 +42,6 @@ class ConnectorsService : public ConnectorsServiceBase, public KeyedService {
   // Accessors that call the corresponding method in ConnectorsManager.
   std::optional<ReportingSettings> GetReportingSettings() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<AnalysisSettings> GetAnalysisSettings(
-      const storage::FileSystemURL& source_url,
-      const storage::FileSystemURL& destination_url,
-      AnalysisConnector connector);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns the profile email if real-time URL check is set for the profile,
   // the device ID if it is set for the device, or an empty string if it is

@@ -79,12 +79,7 @@ if (is_ios || is_watchos) {
   # Check that target_platform and target_environment are set to supported
   # values.
   _target_platforms = []
-  if (is_ios) {
-    _target_platforms += [
-      "iphoneos",
-      "tvos",
-    ]
-  } else if (is_watchos) {
+  if (is_watchos) {
     _target_platforms += [
       "iphoneos",
       "watchos",

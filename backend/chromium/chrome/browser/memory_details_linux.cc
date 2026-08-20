@@ -136,9 +136,6 @@ void MemoryDetails::CollectProcessData(
 
   process_data_.push_back(current_browser);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::GetSwapInfo(&swap_info_);
-#endif
 
   // Finally return to the browser thread.
   content::GetUIThreadTaskRunner({})->PostTask(

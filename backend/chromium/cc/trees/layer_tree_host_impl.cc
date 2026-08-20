@@ -607,11 +607,6 @@ LayerTreeHostImpl::LayerTreeHostImpl(
   if (is_ui) {
     compositor_frame_reporting_controller_->set_event_latency_tracker(this);
 
-#if BUILDFLAG(IS_CHROMEOS)
-    frame_sorter_.EnableReportForUI();
-    frame_trackers_.UpdateSmoothThreadHistory(
-        FrameInfo::SmoothEffectDrivingThread::kMain, /*modifier-*/ 1);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   frame_trackers_.set_custom_tracker_results_added_callback(base::BindRepeating(
@@ -2753,71 +2748,8 @@ viz::CompositorFrameMetadata LayerTreeHostImpl::MakeCompositorFrameMetadata() {
         browser_controls_offset_manager_->TopControlsShownRatio();
     metadata.top_controls_visible_height.emplace(visible_height);
 
-#if BUILDFLAG(IS_ANDROID)
-    const viz::OffsetTag& top_controls_offset_tag =
-        browser_controls_offset_manager_->TopControlsOffsetTag();
-    const viz::OffsetTag& content_offset_tag =
-        browser_controls_offset_manager_->ContentOffsetTag();
-
-    if (top_controls_offset_tag) {
-      CHECK(!content_offset_tag.IsEmpty());
-
-      float offset = browser_controls_offset_manager_->TopControlsHeight() -
-                     visible_height;
-      if (visible_height == 0) {
-        // The toolbar hairline is still shown after the top controls are
-        // completely scrolled off screen. Shift the top controls a bit more
-        // so that the hairline disappears.
-        offset +=
-            browser_controls_offset_manager_->TopControlsAdditionalHeight();
-      }
-
-      // ViewAndroid::OnTopControlsChanged() also rounds the offset before
-      // handing it off to Android.
-      gfx::Vector2dF offset2d(0.0f, -std::round(offset));
-      metadata.offset_tag_values.emplace_back(top_controls_offset_tag,
-                                              offset2d);
-    }
-
-    if (content_offset_tag) {
-      float offset = browser_controls_offset_manager_->TopControlsHeight() -
-                     visible_height;
-
-      // ViewAndroid::OnTopControlsChanged() also rounds the offset before
-      // handing it off to Android.
-      gfx::Vector2dF offset2d(0.0f, -std::round(offset));
-      metadata.offset_tag_values.emplace_back(content_offset_tag, offset2d);
-    }
-#endif
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (browser_controls_offset_manager_->BottomControlsHeight() > 0) {
-    const viz::OffsetTag& bottom_controls_offset_tag =
-        browser_controls_offset_manager_->BottomControlsOffsetTag();
-    if (bottom_controls_offset_tag) {
-      float bottom_controls_visible_height =
-          browser_controls_offset_manager_->BottomControlsHeight() *
-          browser_controls_offset_manager_->BottomControlsShownRatio();
-      float offset = browser_controls_offset_manager_->BottomControlsHeight() -
-                     bottom_controls_visible_height;
-      if (bottom_controls_visible_height == 0) {
-        // Similar to the top toolbar hairline, there are visual effects
-        // on the top most bottom controls that are still shown after being
-        // completely scrolled off screen. Shift the bottom controls a bit
-        // more so that these visual effects disappear.
-        offset +=
-            browser_controls_offset_manager_->BottomControlsAdditionalHeight();
-      }
-
-      // ViewAndroid::OnTopControlsChanged() also rounds the offset before
-      // handing it off to Android.
-      gfx::Vector2dF offset2d(0.0f, std::round(offset));
-      metadata.offset_tag_values.emplace_back(bottom_controls_offset_tag,
-                                              offset2d);
-    }
-  }
-#endif
 
   if (InnerViewportScrollNode()) {
     // TODO(miletus) : Change the metadata to hold ScrollOffset.
@@ -2942,37 +2874,6 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
             metadata.top_controls_shown_ratio ||
         last_draw_render_frame_metadata_->tracked_element_bounds !=
             metadata.tracked_element_bounds;
-#elif BUILDFLAG(IS_ANDROID)
-        last_draw_render_frame_metadata_->top_controls_height !=
-            metadata.top_controls_height ||
-        last_draw_render_frame_metadata_->bottom_controls_height !=
-            metadata.bottom_controls_height ||
-        last_draw_render_frame_metadata_->selection != metadata.selection ||
-        last_draw_render_frame_metadata_->has_transparent_background !=
-            metadata.has_transparent_background;
-
-    // When the browser controls become locked, the browser will update the
-    // offset tags, and also update the controls' offsets if they don't match
-    // the current renderer scroll position. These updates result in a new
-    // renderer frame, but sometimes it gets drawn before the browser frame
-    // with the updated offsets arrives, which causes the controls to jump, so
-    // we need a new surface id here to sync the updates.
-    allocate_new_local_surface_id |=
-        (last_draw_render_frame_metadata_->has_offset_tag &&
-         !metadata.has_offset_tag);
-
-    // If BCIV is enabled but there's no offset tags, it means the controls
-    // aren't scrollable, and any movement of the controls is the result of
-    // the browser updating their offsets and submitting a new browser frame.
-    // We need a new surface id in this case, as this is identical to the
-    // situation without BCIV.
-    if (!browser_controls_offset_manager_->HasOffsetTag()) {
-      allocate_new_local_surface_id |=
-          last_draw_render_frame_metadata_->top_controls_shown_ratio !=
-              metadata.top_controls_shown_ratio ||
-          last_draw_render_frame_metadata_->bottom_controls_shown_ratio !=
-              metadata.bottom_controls_shown_ratio;
-    }
 #else
         last_draw_render_frame_metadata_->top_controls_height !=
             metadata.top_controls_height ||
@@ -4713,11 +4614,6 @@ void LayerTreeHostImpl::ReleaseLayerTreeFrameSink() {
 
   bool should_finish = !base::FeatureList::IsEnabled(
       features::kSkipFinishDuringReleaseLayerTreeFrameSink);
-#if BUILDFLAG(IS_WIN)
-  // Windows does not have stability issues that require calling Finish.
-  // To minimize risk, only avoid waiting for the UI layer tree.
-  should_finish &= !settings_.is_layer_tree_for_ui;
-#endif
 
   if (should_finish && layer_tree_frame_sink_->context_provider()) {
     // TODO(kylechar): Exactly where this finish call is still required is not

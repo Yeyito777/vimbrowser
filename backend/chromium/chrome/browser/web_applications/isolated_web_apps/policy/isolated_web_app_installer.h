@@ -20,11 +20,6 @@
 #include "components/webapps/isolated_web_apps/download/bundle_downloader.h"
 #include "components/webapps/isolated_web_apps/types/iwa_version.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/isolated_web_apps/commands/copy_bundle_to_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/commands/get_bundle_cache_path_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/policy/isolated_web_app_cache_client.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace network {
 class SharedURLLoaderFactory;
@@ -125,20 +120,6 @@ class IwaInstaller {
   IwaInstaller& operator=(const IwaInstaller&) = delete;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnBundleCachePathReceived(GetBundleCachePathResult result);
-
-  // Installing of the IWA using the cached bundle.
-  void InstallFromCache(const base::FilePath& cache_file,
-                        const IwaVersion& version);
-  void OnIwaInstalledFromCache(
-      base::expected<InstallIsolatedWebAppCommandSuccess,
-                     InstallIsolatedWebAppCommandError> result);
-
-  // Bundle should be copied to cache after the successful installation from the
-  // Internet.
-  void OnBundleCopiedToCache(CopyBundleToCacheResult result);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void CreateTempFile(base::OnceClosure next_step_callback);
   void OnTempFileCreated(base::OnceClosure next_step_callback,
@@ -186,10 +167,6 @@ class IwaInstaller {
   std::unique_ptr<UpdateManifestFetcher> update_manifest_fetcher_;
   std::unique_ptr<IsolatedWebAppDownloader> bundle_downloader_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Should be used only when `IsIwaBundleCacheEnabled()` is true.
-  std::unique_ptr<IwaCacheClient> cache_client_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::WeakPtrFactory<IwaInstaller> weak_factory_{this};
 };

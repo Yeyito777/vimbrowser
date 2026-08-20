@@ -67,26 +67,6 @@ bool FileURLToFilePath(const GURL& url, base::FilePath* file_path) {
   if (!url.SchemeIsFile())
     return false;
 
-#if BUILDFLAG(IS_WIN)
-  std::string path;
-  std::string host = url.GetHost();
-  if (host.empty()) {
-    // URL contains no host, the path is the filename. In this case, the path
-    // will probably be preceded with a slash, as in "/C:/foo.txt", so we
-    // trim out that here.
-    path = url.GetPath();
-    size_t first_non_slash = path.find_first_not_of("/\\");
-    if (first_non_slash != std::string::npos && first_non_slash > 0)
-      path.erase(0, first_non_slash);
-  } else {
-    // URL contains a host: this means it's UNC. We keep the preceding slash
-    // on the path.
-    path = "\\\\";
-    path.append(host);
-    path.append(url.GetPath());
-  }
-  std::replace(path.begin(), path.end(), '/', '\\');
-#else   // BUILDFLAG(IS_WIN)
   // On POSIX, there's no obvious interpretation of file:// URLs with a host.
   // Usually, remote mounts are still mounted onto the local filesystem.
   // Therefore, we discard all URLs that are not obviously local to prevent
@@ -95,7 +75,6 @@ bool FileURLToFilePath(const GURL& url, base::FilePath* file_path) {
     return false;
   }
   std::string path = url.GetPath();
-#endif  // !BUILDFLAG(IS_WIN)
 
   if (path.empty())
     return false;
@@ -113,11 +92,6 @@ bool FileURLToFilePath(const GURL& url, base::FilePath* file_path) {
   // results in failure.
   std::set<unsigned char> illegal_encoded_bytes{'/', '\0'};
 
-#if BUILDFLAG(IS_WIN)
-  // "%5C" ('\\') on Windows results in failure, for the same reason as '/'
-  // above. On POSIX, "%5C" simply decodes as '\\', a valid filename character.
-  illegal_encoded_bytes.insert('\\');
-#endif
 
   if (base::ContainsEncodedBytes(path, illegal_encoded_bytes))
     return false;
@@ -127,23 +101,6 @@ bool FileURLToFilePath(const GURL& url, base::FilePath* file_path) {
   // Percent-encoded bytes are not meaningful in a file system.
   path = base::UnescapeBinaryURLComponent(path);
 
-#if BUILDFLAG(IS_WIN)
-  if (base::IsStringUTF8(path)) {
-    file_path_str.assign(base::UTF8ToWide(path));
-    // We used to try too hard and see if |path| made up entirely of
-    // the 1st 256 characters in the Unicode was a zero-extended UTF-16.
-    // If so, we converted it to 'Latin-1' and checked if the result was UTF-8.
-    // If the check passed, we converted the result to UTF-8.
-    // Otherwise, we treated the result as the native OS encoding.
-    // However, that led to http://crbug.com/4619 and http://crbug.com/14153
-  } else {
-    // Not UTF-8, assume encoding is native codepage and we're done. We know we
-    // are giving the conversion function a nonempty string, and it may fail if
-    // the given string is not in the current encoding and give us an empty
-    // string back. We detect this and report failure.
-    file_path_str = base::SysNativeMBToWide(path);
-  }
-#else   // BUILDFLAG(IS_WIN)
   // Collapse multiple path slashes into a single path slash.
   std::string new_path;
   do {
@@ -153,7 +110,6 @@ bool FileURLToFilePath(const GURL& url, base::FilePath* file_path) {
   } while (new_path != path);
 
   file_path_str.assign(path);
-#endif  // !BUILDFLAG(IS_WIN)
 
   return !file_path_str.empty();
 }
@@ -164,20 +120,6 @@ void GenerateSafeFileName(const std::string& mime_type,
   // Make sure we get the right file extension
   EnsureSafeExtension(mime_type, ignore_extension, file_path);
 
-#if BUILDFLAG(IS_WIN)
-  // Prepend "_" to the file name if it's a reserved name
-  base::FilePath::StringType leaf_name = file_path->BaseName().value();
-  DCHECK(!leaf_name.empty());
-  if (IsReservedNameOnWindows(leaf_name)) {
-    leaf_name = base::FilePath::StringType(FILE_PATH_LITERAL("_")) + leaf_name;
-    *file_path = file_path->DirName();
-    if (file_path->value() == base::FilePath::kCurrentDirectory) {
-      *file_path = base::FilePath(leaf_name);
-    } else {
-      *file_path = file_path->Append(leaf_name);
-    }
-  }
-#endif
 }
 
 bool IsReservedNameOnWindows(const base::FilePath::StringType& filename) {
@@ -189,9 +131,7 @@ bool IsReservedNameOnWindows(const base::FilePath::StringType& filename) {
       "con",  "prn",  "aux",  "nul",  "com1", "com2", "com3",  "com4",
       "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2",  "lpt3",
       "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9", "clock$"};
-#if BUILDFLAG(IS_WIN)
-  std::string filename_lower = base::ToLowerASCII(base::WideToUTF8(filename));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::string filename_lower = base::ToLowerASCII(filename);
 #endif
 

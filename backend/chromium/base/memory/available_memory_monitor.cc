@@ -7,9 +7,6 @@
 #include "base/process/process_metrics.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace base {
 
@@ -93,12 +90,6 @@ AvailableMemoryMonitor::ComputeAvailableMemory() {
   MemorySample sample;
   sample.available_physical_bytes = info.GetAvailablePhysicalMemory();
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, GetSystemMemoryInfo maps ullAvailPageFile to swap_free
-  // and ullTotalPageFile to swap_total.
-  sample.available_commit_bytes = info.swap_free;
-  sample.total_commit_bytes = info.swap_total;
-#endif
 
   sample.timestamp = base::TimeTicks::Now();
   return sample;

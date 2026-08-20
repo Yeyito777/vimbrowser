@@ -23,9 +23,6 @@
 #include "chrome/browser/supervised_user/linux_mac_windows/supervised_user_extensions_metrics_delegate_impl.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/supervised_user/core/browser/android/android_parental_controls.h"
-#endif
 
 // static
 supervised_user::SupervisedUserMetricsService*

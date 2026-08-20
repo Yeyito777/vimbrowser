@@ -12,11 +12,6 @@
 #include "build/config/linux/dbus/buildflags.h"
 #include "chrome/browser/chrome_browser_main_posix.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace metrics {
-class StackSamplingRecorder;
-}
-#endif
 
 class ChromeBrowserMainPartsLinux : public ChromeBrowserMainPartsPosix {
  public:
@@ -43,11 +38,6 @@ class ChromeBrowserMainPartsLinux : public ChromeBrowserMainPartsPosix {
   void PostDestroyThreads() override;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  // Used by ChromeOS tast tests. This is in ChromeBrowserMainPartsLinux for
-  // historical reasons and should be moved to ChromeBrowserMainPartsAsh.
-  scoped_refptr<metrics::StackSamplingRecorder> stack_sampling_recorder_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_CHROME_BROWSER_MAIN_LINUX_H_

@@ -803,69 +803,7 @@ std::string RedactionTool::RedactAndroidAppStoragePaths(
   // We only use this on Chrome OS and there's differences in the API for
   // FilePath on Windows which prevents this from compiling, so only enable this
   // code for Chrome OS.
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string result;
-  result.reserve(input.size());
-
-  // This is for redacting Android data paths included in 'android_app_storage'
-  // and 'audit_log' output. <app_specific_path> in the following data paths
-  // will be redacted.
-  // - /data/data/<package_name>/<app_specific_path>
-  // - /data/app/<package_name>/<app_specific_path>
-  // - /data/user_de/<number>/<package_name>/<app_specific_path>
-  // These data paths are preceded by "/home/root/<user_hash>/android-data" in
-  // 'android_app_storage' output, and preceded by "path=" or "exe=" in
-  // 'audit_log' output.
-  RE2* path_re =
-      GetRegExp(R"((?m)((path=|exe=|/home/root/[\da-f]+/android-data))"
-                R"(/data/(data|app|user_de/\d+)/[^/\n]+)(/[^\n\s]+))");
-
-  // Keep consuming, building up a result string as we go.
-  std::string_view text(input);
-  std::string_view skipped;
-  std::string_view path_prefix;   // path before app_specific;
-  std::string_view pre_data;      // (path=|exe=|/home/root/<hash>/android-data)
-  std::string_view post_data;     // (data|app|user_de/\d+)
-  std::string_view app_specific;  // (/[^\n\s]+)
-  while (FindAndConsumeAndGetSkipped(&text, *path_re, &skipped, &path_prefix,
-                                     &pre_data, &post_data, &app_specific)) {
-    // We can record these parts as-is.
-    result.append(skipped);
-    result.append(path_prefix);
-
-    // |app_specific| has to be redacted. First, convert it into components,
-    // and then redact each component as follows:
-    // - If the component has a non-ASCII character, change it to '*'.
-    // - Otherwise, remove all the characters in the component but the first
-    //   one.
-    // - If the original component has 2 or more bytes, add '_'.
-    const base::FilePath path(app_specific);
-    std::vector<std::string> components = path.GetComponents();
-    DCHECK(!components.empty());
-
-    auto it = components.begin() + 1;  // ignore the leading slash
-    for (; it != components.end(); ++it) {
-      const auto& component = *it;
-      DCHECK(!component.empty());
-      result += '/';
-      result += (base::IsStringASCII(component) ? component[0] : '*');
-      if (component.length() > 1) {
-        result += '_';
-      }
-    }
-    if (detected != nullptr) {
-      (*detected)[PIIType::kAndroidAppStoragePath].emplace(app_specific);
-    }
-    metrics_recorder_->RecordPIIRedactedHistogram(
-        PIIType::kAndroidAppStoragePath);
-  }
-
-  result.append(text);
-
-  return result;
-#else
   return input;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 std::string RedactionTool::RedactCreditCardNumbers(

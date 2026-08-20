@@ -45,9 +45,6 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
           &out->network_quality_estimator_web_holdback) ||
       !data.ReadWebAppScope(&out->web_app_scope) ||
       !data.ReadRootScrollbarThemeColor(&out->root_scrollbar_theme_color)
-#if BUILDFLAG(IS_ANDROID)
-      || !data.ReadDefaultVideoPosterUrl(&out->default_video_poster_url)
-#endif
   )
     return false;
 
@@ -160,47 +157,6 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
   out->double_tap_to_zoom_enabled = data.double_tap_to_zoom_enabled();
   out->fullscreen_supported = data.fullscreen_supported();
   out->text_autosizing_enabled = data.text_autosizing_enabled();
-#if BUILDFLAG(IS_ANDROID)
-  out->font_scale_factor = data.font_scale_factor();
-  out->font_weight_adjustment = data.font_weight_adjustment();
-  out->text_size_contrast_factor = data.text_size_contrast_factor();
-  out->device_scale_adjustment = data.device_scale_adjustment();
-  out->force_enable_zoom = data.force_enable_zoom();
-  out->support_deprecated_target_density_dpi =
-      data.support_deprecated_target_density_dpi();
-  out->wide_viewport_quirk = data.wide_viewport_quirk();
-  out->use_wide_viewport = data.use_wide_viewport();
-  out->force_zero_layout_height = data.force_zero_layout_height();
-  out->viewport_meta_merge_content_quirk =
-      data.viewport_meta_merge_content_quirk();
-  out->viewport_meta_non_user_scalable_quirk =
-      data.viewport_meta_non_user_scalable_quirk();
-  out->viewport_meta_zero_values_quirk = data.viewport_meta_zero_values_quirk();
-  out->clobber_user_agent_initial_scale_quirk =
-      data.clobber_user_agent_initial_scale_quirk();
-  out->ignore_main_frame_overflow_hidden_quirk =
-      data.ignore_main_frame_overflow_hidden_quirk();
-  out->report_screen_size_in_physical_pixels_quirk =
-      data.report_screen_size_in_physical_pixels_quirk();
-  out->reuse_global_for_unowned_main_frame =
-      data.reuse_global_for_unowned_main_frame();
-  out->spellcheck_enabled_by_default = data.spellcheck_enabled_by_default();
-  out->video_fullscreen_orientation_lock_enabled =
-      data.video_fullscreen_orientation_lock_enabled();
-  out->video_rotate_to_fullscreen_enabled =
-      data.video_rotate_to_fullscreen_enabled();
-  out->embedded_media_experience_enabled =
-      data.embedded_media_experience_enabled();
-  out->css_hex_alpha_color_enabled = data.css_hex_alpha_color_enabled();
-  out->scroll_top_left_interop_enabled = data.scroll_top_left_interop_enabled();
-  out->disable_accelerated_small_canvases =
-      data.disable_accelerated_small_canvases();
-  out->long_press_link_select_text = data.long_press_link_select_text();
-  out->scale_all_fonts_if_no_meta_text_scale_tag =
-      data.scale_all_fonts_if_no_meta_text_scale_tag();
-  out->dynamic_safe_area_insets_enabled =
-      data.dynamic_safe_area_insets_enabled();
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA)
   out->disable_webauthn = data.disable_webauthn();
@@ -248,10 +204,6 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
   out->should_disable_external_popups = data.should_disable_external_popups();
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_ANDROID)
-  out->should_screenshot_on_mainframe_same_doc_navigation =
-      data.should_screenshot_on_mainframe_same_doc_navigation();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   return true;
 }

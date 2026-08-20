@@ -41,18 +41,10 @@ namespace {
 
 const char kThreadName[] = "VizCompositorThread";
 
-#if BUILDFLAG(IS_ANDROID)
-class VizCompositorThread : public base::android::JavaHandlerThread {
- public:
-  using ParentType = base::android::JavaHandlerThread;
-  explicit VizCompositorThread(base::ThreadType thread_type)
-      : ParentType(kThreadName, thread_type) {}
-#else   // BUILDFLAG(IS_ANDROID)
 class VizCompositorThread : public base::Thread {
  public:
   using ParentType = base::Thread;
   VizCompositorThread() : ParentType(kThreadName) {}
-#endif  // BUILDFLAG(IS_ANDROID)
 
  private:
   void Init() override {
@@ -72,18 +64,6 @@ class VizCompositorThread : public base::Thread {
 
 std::unique_ptr<VizCompositorThreadType> CreateAndStartCompositorThread() {
   const base::ThreadType thread_type = base::ThreadType::kPresentation;
-#if BUILDFLAG(IS_ANDROID)
-  auto thread = std::make_unique<VizCompositorThread>(thread_type);
-  thread->Start();
-  thread->task_runner()->PostTask(
-      FROM_HERE, base::BindOnce([]() {
-        mojo::InterfaceEndpointClient::SetThreadNameSuffixForMetrics(
-            "VizCompositor");
-        base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(
-            "VizCompositor");
-      }));
-  return thread;
-#else  // !BUILDFLAG(IS_ANDROID)
 
   std::unique_ptr<base::Thread> thread;
   base::Thread::Options thread_options;
@@ -106,10 +86,7 @@ std::unique_ptr<VizCompositorThreadType> CreateAndStartCompositorThread() {
   if (!thread)
     thread = std::make_unique<VizCompositorThread>();
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // An IO message pump is needed to use FIDL.
-  thread_options.message_pump_type = base::MessagePumpType::IO;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // The feature kCADisplayLink needs the thread type NS_RUNLOOP to run on the
   // current thread' runloop.
   // See [ca_display_link addToRunLoop:NSRunLoop.currentRunLoop].
@@ -127,7 +104,6 @@ std::unique_ptr<VizCompositorThreadType> CreateAndStartCompositorThread() {
       }));
 
   return thread;
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 }  // namespace
 

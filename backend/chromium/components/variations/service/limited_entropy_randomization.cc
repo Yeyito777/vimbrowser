@@ -178,9 +178,7 @@ bool AppliesToClientFormFactor(const Study& study,
 }  // namespace
 
 double GetGoogleWebEntropyLimitInBits() {
-#if BUILDFLAG(IS_ANDROID)
-  return 21.0;
-#elif BUILDFLAG(IS_IOS) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_WIN)
   return 18.0;
 #elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
   return 16.0;

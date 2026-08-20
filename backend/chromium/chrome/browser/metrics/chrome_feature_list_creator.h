@@ -94,14 +94,6 @@ class ChromeFeatureListCreator {
     return browser_field_trials_.get();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Get the FeatureList::Accessor, clearing immediately -- this must only be
-  // used by ChromeBrowserMainPartsAsh.
-  std::unique_ptr<base::FeatureList::Accessor> GetAndClearFeatureListAccessor(
-      base::PassKey<ash::ChromeBrowserMainPartsAsh> key) {
-    return std::move(cros_feature_list_accessor_);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   friend class base::NoDestructor<ChromeFeatureListCreator>;
@@ -154,11 +146,6 @@ class ChromeFeatureListCreator {
   std::unique_ptr<installer::InitialPreferences> installer_initial_prefs_;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the platform needs to be able to access the
-  // FeatureList::Accessor. On other platforms, this API should not be used.
-  std::unique_ptr<base::FeatureList::Accessor> cros_feature_list_accessor_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 #endif  // CHROME_BROWSER_METRICS_CHROME_FEATURE_LIST_CREATOR_H_

@@ -28,9 +28,6 @@
 #include "content/public/common/zygote/zygote_handle.h"
 #endif  // BUILDFLAG(USE_ZYGOTE)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/synchronization/waitable_event.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace base {
 class Thread;
@@ -116,11 +113,6 @@ class CONTENT_EXPORT UtilityProcessHost final
     // Provides extra switches to append to the process's command line.
     Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
 
-#if BUILDFLAG(IS_WIN)
-    // Specifies libraries to preload before the sandbox is locked down. Paths
-    // should be absolute.
-    Options& WithPreloadLibraries(const std::vector<base::FilePath>& preloads);
-#endif  // BUILDFLAG(IS_WIN)
 
     // Allows the child process to bind viz.mojom.Gpu.
     Options& WithGpuClientAllowed();
@@ -133,9 +125,7 @@ class CONTENT_EXPORT UtilityProcessHost final
         std::variant<base::FilePath, base::ScopedFD> file);
 #endif
 
-#if BUILDFLAG(IS_POSIX)
     Options& WithEnvironment(const base::EnvironmentMap& env);
-#endif
 
 #if BUILDFLAG(USE_ZYGOTE)
     Options& WithZygoteForTesting(ZygoteCommunication* handle);
@@ -175,10 +165,6 @@ class CONTENT_EXPORT UtilityProcessHost final
     // Extra command line switches to append.
     std::vector<std::string> extra_switches_;
 
-#if BUILDFLAG(IS_WIN)
-    // Libraries to load before sandbox lockdown. Only used on Windows.
-    std::vector<base::FilePath> preload_libraries_;
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
     std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
@@ -252,12 +238,6 @@ class CONTENT_EXPORT UtilityProcessHost final
 
   std::unique_ptr<Client> client_;
 
-#if BUILDFLAG(IS_WIN)
-  // An event that is passed to the utility process. Only set for sandboxed
-  // processes. The utility process uses this to signal that it has reached
-  // UtilityMain.
-  std::optional<base::WaitableEvent> bootstrap_signal_event_;
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace content

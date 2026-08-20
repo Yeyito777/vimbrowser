@@ -45,9 +45,6 @@
 #include "gpu/command_buffer/service/shared_image/skia_graphite_dawn_image_representation.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/service/shared_image/d3d_image_representation.h"
-#endif
 
 namespace gpu {
 
@@ -487,16 +484,7 @@ std::unique_ptr<VideoImageRepresentation> GLTextureImageBacking::ProduceVideo(
     SharedImageManager* manager,
     MemoryTypeTracker* tracker,
     VideoDevice device) {
-#if BUILDFLAG(IS_WIN)
-  DCHECK_EQ(textures_.size(), 1u);
-  DCHECK(device);
-
-  return D3D11VideoImageCopyRepresentation::CreateFromGL(
-      textures_[0].GetServiceId(), debug_label(), device.Get(), manager, this,
-      tracker);
-#else
   return nullptr;
-#endif
 }
 
 void GLTextureImageBacking::InitializeGLTexture(

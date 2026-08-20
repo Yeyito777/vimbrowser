@@ -11,18 +11,12 @@
 #include "build/build_config.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#endif
 
 namespace features {
 namespace {
@@ -73,27 +67,8 @@ constexpr base::FeatureParam<base::TimeDelta> kGLCompileShaderDelay = {
 // Controls whether the GPU process falls back to software if GLES3 is not
 // supported.
 BASE_FEATURE(kFallbackToSWIfGLES3NotSupported,
-#if BUILDFLAG(IS_WIN)
-             // TODO(https://crbug.com/444049511): Currently disabled on
-             // Windows for D3D9 users that are still on ES 2. Enable once
-             // crbug.com/40874754 is fixed, deprecating D3D9 usage.
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_WIN)
-// If true, VsyncThreadWin will use the compositor clock
-// to determine the vsync interval.
-BASE_FEATURE(kUseCompositorClockVSyncInterval,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-bool UseCompositorClockVSyncInterval() {
-  return base::win::GetVersion() >= base::win::Version::WIN11_24H2 &&
-         base::FeatureList::IsEnabled(
-             features::kUseCompositorClockVSyncInterval);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool UseGpuVsync() {
   return !base::CommandLine::ForCurrentProcess()->HasSwitch(
@@ -160,24 +135,10 @@ void GetANGLEFeaturesFromCommandLineAndFinch(
 }
 
 bool ShouldFallbackToSWIfGLES3NotSupported() {
-#if BUILDFLAG(IS_CHROMEOS)
-  static bool is_enabled =
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ash::switches::kRevenBranding) &&
-      base::FeatureList::IsEnabled(kFallbackToSWIfGLES3NotSupported);
-  return is_enabled;
-#else   // !BUILDFLAG(IS_CHROMEOS)
   return base::FeatureList::IsEnabled(kFallbackToSWIfGLES3NotSupported);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 #if BUILDFLAG(ENABLE_SWIFTSHADER)
-#if BUILDFLAG(IS_FUCHSIA)
-// SwiftShader is always used on Fuchsia, sometimes at the system level.
-bool IsSwiftShaderAllowedByCommandLine(const base::CommandLine* command_line) {
-  return true;
-}
-#else
 bool IsSwiftShaderAllowedByCommandLine(const base::CommandLine* command_line) {
   // If the switch to opt-into unsafe SwiftShader is present, always allow
   // SwiftShader.
@@ -195,7 +156,6 @@ bool IsSwiftShaderAllowedByCommandLine(const base::CommandLine* command_line) {
 
   return false;
 }
-#endif
 
 // Allow fallback to SwfitShader without command line flags during the
 // deprecation period.
@@ -219,20 +179,9 @@ bool IsSwiftShaderAllowed(const base::CommandLine* command_line) {
          IsSwiftShaderAllowedByFeature();
 }
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kAllowD3D11WarpFallback, base::FEATURE_ENABLED_BY_DEFAULT);
-
-bool IsWARPAllowed(const base::CommandLine* command_line) {
-  if (command_line->HasSwitch(switches::kDisableD3D11Warp)) {
-    return false;
-  }
-  return base::FeatureList::IsEnabled(kAllowD3D11WarpFallback);
-}
-#else
 bool IsWARPAllowed(const base::CommandLine*) {
   return false;
 }
-#endif
 
 bool IsAnySoftwareGLAllowed(const base::CommandLine* command_line) {
   return IsWARPAllowed(command_line) || IsSwiftShaderAllowed(command_line);

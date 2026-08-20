@@ -92,13 +92,6 @@ class PrefServiceSyncable : public PrefService,
   // priority preferences.
   bool IsPrioritySyncing();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // As above, but for OS preferences.
-  bool AreOsPrefsSyncing();
-
-  // As above, but for OS priority preferences.
-  bool AreOsPriorityPrefsSyncing();
-#endif
 
   void AddObserver(PrefServiceSyncableObserver* observer);
   void RemoveObserver(PrefServiceSyncableObserver* observer);
@@ -136,11 +129,6 @@ class PrefServiceSyncable : public PrefService,
   PrefModelAssociator pref_sync_associator_;
   PrefModelAssociator priority_pref_sync_associator_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Associators for Chrome OS system preferences.
-  PrefModelAssociator os_pref_sync_associator_;
-  PrefModelAssociator os_priority_pref_sync_associator_;
-#endif
 
   const scoped_refptr<user_prefs::PrefRegistrySyncable> pref_registry_;
 

@@ -380,11 +380,7 @@ void DownloadOfflineContentProvider::RenameItem(const ContentId& id,
           &DownloadOfflineContentProvider::OnRenameDownloadCallbackDone,
           weak_ptr_factory_.GetWeakPtr(), std::move(callback), item);
   base::FilePath::StringType filename;
-#if BUILDFLAG(IS_WIN)
-  filename = base::UTF8ToWide(name);
-#else
   filename = name;
-#endif
   item->Rename(base::FilePath(filename), std::move(download_callback));
 }
 

@@ -40,10 +40,6 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/aura/window.h"
@@ -108,31 +104,6 @@ class NativeFrameViewEx : public views::NativeFrameView {
     }
 
     return window_bounds;
-#elif BUILDFLAG(IS_WIN)
-    HWND window = views::HWNDForWidget(widget_);
-    CHECK(window);
-
-    const DWORD style = GetWindowLong(window, GWL_STYLE);
-    const DWORD ex_style = GetWindowLong(window, GWL_EXSTYLE);
-    const bool has_menu = !(style & WS_CHILD) && (GetMenu(window) != nullptr);
-
-    // Convert from DIP to pixel coordinates using a method that can handle
-    // multiple displays with different DPI.
-    const auto screen_rect =
-        display::win::GetScreenWin()->DIPToScreenRect(window, client_bounds);
-
-    RECT rect = {screen_rect.x(), screen_rect.y(),
-                 screen_rect.x() + screen_rect.width(),
-                 screen_rect.y() + screen_rect.height()};
-    AdjustWindowRectEx(&rect, style, has_menu, ex_style);
-
-    // Keep the original origin while potentially increasing the size to include
-    // the frame non-client area.
-    gfx::Rect pixel_rect(screen_rect.x(), screen_rect.y(),
-                         rect.right - rect.left, rect.bottom - rect.top);
-
-    // Convert back to DIP.
-    return display::win::GetScreenWin()->ScreenToDIPRect(window, pixel_rect);
 #else
     // Use the default implementation.
     return views::NativeFrameView::GetWindowBoundsForClientBounds(
@@ -313,13 +284,9 @@ END_METADATA
 bool IsWindowBorderHit(int code) {
 // On Windows HTLEFT = 10 and HTBORDER = 18. Values are not ordered the same
 // in base/hit_test.h for non-Windows platforms.
-#if BUILDFLAG(IS_WIN)
-  return code >= HTLEFT && code <= HTBORDER;
-#else
   return code == HTLEFT || code == HTRIGHT || code == HTTOP ||
          code == HTTOPLEFT || code == HTTOPRIGHT || code == HTBOTTOM ||
          code == HTBOTTOMLEFT || code == HTBOTTOMRIGHT || code == HTBORDER;
-#endif
 }
 
 // Based on UpdateModalDialogPosition() from
@@ -654,13 +621,6 @@ void CefWindowView::CreateWidget(gfx::AcceleratedWidget parent_widget) {
 
   params.delegate->SetCanResize(can_resize);
 
-#if BUILDFLAG(IS_WIN)
-  if (is_frameless_) {
-    // Don't show the native window caption. Setting this value on Linux will
-    // result in window resize artifacts.
-    params.remove_standard_frame = true;
-  }
-#endif
 
   widget->Init(std::move(params));
   widget->AddObserver(this);

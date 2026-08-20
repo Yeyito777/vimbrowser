@@ -88,26 +88,12 @@
 #include "chrome/browser/web_applications/sub_apps_service_impl.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/android/dom_distiller/distiller_ui_handle_android.h"
-#include "chrome/browser/facilitated_payments/payment_link_handler_binder.h"
-#include "chrome/browser/offline_pages/android/offline_page_auto_fetcher.h"
-#include "chrome/common/offline_page_auto_fetcher.mojom.h"
-#include "services/service_manager/public/cpp/interface_provider.h"
-#include "third_party/blink/public/mojom/digital_goods/digital_goods.mojom.h"
-#include "third_party/blink/public/mojom/installedapp/installed_app_provider.mojom.h"
-#else
 #include "chrome/browser/badging/badge_manager.h"
 #include "chrome/browser/payments/payment_request_factory.h"
 #include "chrome/browser/prefs/persistent_renderer_prefs_manager.h"
 #include "chrome/browser/ui/views/side_panel/customize_chrome/customize_chrome_utils.h"
 #include "chrome/browser/web_applications/web_install_service_impl.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/digital_goods/digital_goods_factory_impl.h"
-#include "chrome/browser/speech/cros_speech_recognition_service_factory.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || \
     BUILDFLAG(IS_ANDROID)
@@ -128,12 +114,6 @@
 #include "media/mojo/mojom/speech_recognition.mojom.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/media/media_foundation_service_monitor.h"
-#include "content/public/browser/site_instance.h"
-#include "media/mojo/mojom/media_foundation_preferences.mojom.h"
-#include "media/mojo/services/media_foundation_preferences.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_BROWSER_SPEECH_SERVICE)
 #include "chrome/browser/speech/speech_recognition_service_factory.h"
@@ -224,11 +204,6 @@ void BindDistillerJavaScriptService(
   dom_distiller::DomDistillerService* dom_distiller_service =
       dom_distiller::DomDistillerServiceFactory::GetForBrowserContext(
           web_contents->GetBrowserContext());
-#if BUILDFLAG(IS_ANDROID)
-  static_cast<dom_distiller::android::DistillerUIHandleAndroid*>(
-      dom_distiller_service->GetDistillerUIHandle())
-      ->set_render_frame_host(frame_host);
-#endif
   CreateDistillerJavaScriptService(dom_distiller_service->GetWeakPtr(),
                                    std::move(receiver));
 }
@@ -260,23 +235,6 @@ void BindNoStatePrefetchProcessor(
           prerender::ChromeNoStatePrefetchProcessorImplDelegate>());
 }
 
-#if BUILDFLAG(IS_ANDROID)
-template <typename Interface>
-void ForwardToJavaWebContents(content::RenderFrameHost* frame_host,
-                              mojo::PendingReceiver<Interface> receiver) {
-  content::WebContents* contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
-  if (contents) {
-    contents->GetJavaInterfaces()->GetInterface(std::move(receiver));
-  }
-}
-
-template <typename Interface>
-void ForwardToJavaFrame(content::RenderFrameHost* render_frame_host,
-                        mojo::PendingReceiver<Interface> receiver) {
-  render_frame_host->GetJavaInterfaces()->GetInterface(std::move(receiver));
-}
-#endif
 
 void BindNetworkHintsHandler(
     content::RenderFrameHost* frame_host,
@@ -297,8 +255,6 @@ void BindSpeechRecognitionContextHandler(
       frame_host->GetProcess()->GetBrowserContext());
 #if BUILDFLAG(ENABLE_BROWSER_SPEECH_SERVICE)
   auto* factory = SpeechRecognitionServiceFactory::GetForProfile(profile);
-#elif BUILDFLAG(IS_CHROMEOS)
-  auto* factory = CrosSpeechRecognitionServiceFactory::GetForProfile(profile);
 #else
 #error "No speech recognition service factory on this platform."
 #endif
@@ -333,17 +289,6 @@ void BindSpeechRecognitionRecognizerClientHandler(
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-void BindMediaFoundationRendererNotifierHandler(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingReceiver<media::mojom::MediaFoundationRendererNotifier>
-        receiver) {
-  if (captions::IsLiveCaptionFeatureSupported()) {
-    captions::LiveCaptionUnavailabilityNotifier::Create(frame_host,
-                                                        std::move(receiver));
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
 
 void BindOnDeviceSpeechRecognitionHandler(
@@ -354,17 +299,6 @@ void BindOnDeviceSpeechRecognitionHandler(
       ->Bind(std::move(receiver));
 }
 
-#if BUILDFLAG(IS_WIN)
-void BindMediaFoundationPreferences(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingReceiver<media::mojom::MediaFoundationPreferences> receiver) {
-  MediaFoundationPreferencesImpl::Create(
-      frame_host->GetSiteInstance()->GetSiteURL(),
-      base::BindRepeating(&MediaFoundationServiceMonitor::
-                              IsHardwareSecureDecryptionAllowedForSite),
-      std::move(receiver));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || \
     BUILDFLAG(IS_WIN)
@@ -468,28 +402,6 @@ void PopulateChromeFrameBinders(
       base::BindRepeating(
           &SearchEngineTabHelper::BindOpenSearchDescriptionDocumentHandler));
 
-#if BUILDFLAG(IS_ANDROID)
-  map->Add<blink::mojom::InstalledAppProvider>(
-      &ForwardToJavaFrame<blink::mojom::InstalledAppProvider>);
-  map->Add<payments::mojom::DigitalGoodsFactory>(
-      &ForwardToJavaFrame<payments::mojom::DigitalGoodsFactory>);
-#if defined(BROWSER_MEDIA_CONTROLS_MENU)
-  map->Add<blink::mojom::MediaControlsMenuHost>(
-      &ForwardToJavaFrame<blink::mojom::MediaControlsMenuHost>);
-#endif
-  map->Add<chrome::mojom::OfflinePageAutoFetcher>(
-      &offline_pages::OfflinePageAutoFetcher::Create);
-  if (base::FeatureList::IsEnabled(features::kWebPayments)) {
-    map->Add<payments::mojom::PaymentRequest>(
-        &ForwardToJavaFrame<payments::mojom::PaymentRequest>);
-  }
-
-#if BUILDFLAG(ENABLE_UNHANDLED_TAP)
-  map->Add<blink::mojom::UnhandledTapNotifier>(
-      &BindUnhandledTapWebContentsObserver);
-#endif  // BUILDFLAG(ENABLE_UNHANDLED_TAP)
-
-#else
   map->Add<blink::mojom::BadgeService>(
       &badging::BadgeManager::BindFrameReceiverIfAllowed);
   map->Add<blink::mojom::PersistentRendererPrefsService>(
@@ -503,19 +415,10 @@ void PopulateChromeFrameBinders(
     map->Add<blink::mojom::WebInstallService>(
         &web_app::WebInstallServiceImpl::CreateIfAllowed);
   }
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  map->Add<payments::mojom::DigitalGoodsFactory>(
-      &apps::DigitalGoodsFactoryImpl::BindDigitalGoodsFactory);
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC)
   map->Add<blink::mojom::ShareService>(&ShareServiceImpl::Create);
-#endif
-#if BUILDFLAG(IS_ANDROID)
-  map->Add<blink::mojom::ShareService>(
-      &ForwardToJavaWebContents<blink::mojom::ShareService>);
 #endif
 
   map->Add<network_hints::mojom::NetworkHintsHandler>(&BindNetworkHintsHandler);
@@ -529,10 +432,6 @@ void PopulateChromeFrameBinders(
       &BindSpeechRecognitionClientBrowserInterfaceHandler);
   map->Add<media::mojom::SpeechRecognitionRecognizerClient>(
       &BindSpeechRecognitionRecognizerClientHandler);
-#if BUILDFLAG(IS_WIN)
-  map->Add<media::mojom::MediaFoundationRendererNotifier>(
-      &BindMediaFoundationRendererNotifierHandler);
-#endif
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
@@ -552,10 +451,6 @@ void PopulateChromeFrameBinders(
       &BindScreen2xMainContentExtractor);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  map->Add<media::mojom::MediaFoundationPreferences>(
-      &BindMediaFoundationPreferences);
-#endif
 
 #if BUILDFLAG(ENABLE_PDF)
   map->Add<help_bubble::mojom::PdfHelpBubbleHandlerFactory>(
@@ -567,12 +462,6 @@ void PopulateChromeFrameBinders(
       &printing::CreateWebPrintingServiceForFrame);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(blink::features::kPaymentLinkDetection)) {
-    map->Add<payments::facilitated::mojom::PaymentLinkHandler>(
-        &BindPaymentLinkHandler);
-  }
-#endif
 
 #if BUILDFLAG(ENABLE_SPELLCHECK)
   map->Add<spellcheck::mojom::SpellCheckHost>(

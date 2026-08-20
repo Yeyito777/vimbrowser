@@ -18,9 +18,7 @@
 #include "components/prefs/pref_service.h"
 #include "components/url_formatter/url_fixer.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/startup/startup_tab.h"
-#endif
 
 namespace {
 
@@ -54,11 +52,7 @@ void URLListToPref(const base::ListValue& url_list, SessionStartupPref* pref) {
 // static
 void SessionStartupPref::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
-#if BUILDFLAG(IS_ANDROID)
-  uint32_t flags = PrefRegistry::NO_REGISTRATION_FLAGS;
-#else
   uint32_t flags = user_prefs::PrefRegistrySyncable::SYNCABLE_PREF;
-#endif
   registry->RegisterIntegerPref(prefs::kRestoreOnStartup,
                                 TypeToPrefValue(GetDefaultStartupType()),
                                 flags);
@@ -67,16 +61,12 @@ void SessionStartupPref::RegisterProfilePrefs(
 
 // static
 SessionStartupPref::Type SessionStartupPref::GetDefaultStartupType() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return SessionStartupPref::LAST;
-#else
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
   if (features::kSetDefaultToContinueSession.Get()) {
     return SessionStartupPref::LAST;
   }
 #endif
   return SessionStartupPref::DEFAULT;
-#endif
 }
 
 // static
@@ -198,7 +188,6 @@ bool SessionStartupPref::ShouldOpenUrls() const {
   return type == URLS || type == LAST_AND_URLS;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 StartupTabs SessionStartupPref::ToStartupTabs() const {
   StartupTabs startup_tabs;
   for (const GURL& url : urls) {
@@ -209,4 +198,3 @@ StartupTabs SessionStartupPref::ToStartupTabs() const {
   }
   return startup_tabs;
 }
-#endif

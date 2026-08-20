@@ -48,10 +48,6 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kNetworkServiceDedicatedThread);
 CONTENT_EXPORT network::mojom::NetworkService* GetNetworkService();
 
 // Only on ChromeOS since it's only used there.
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns the global NetworkChangeNotifier instance.
-CONTENT_EXPORT net::NetworkChangeNotifier* GetNetworkChangeNotifier();
-#endif
 
 // Call |FlushForTesting()| on cached |mojo::Remote<NetworkService>|. For
 // testing only. Must only be called on the UI thread.

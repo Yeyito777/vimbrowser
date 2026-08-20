@@ -115,11 +115,9 @@ namespace permissions {
 class PermissionIndicatorsTabData;
 }  // namespace permissions
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace skills {
 class SkillsUpdateObserver;
 }  // namespace skills
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace sync_sessions {
 class SyncSessionsRouterTabHelper;
@@ -138,11 +136,9 @@ namespace tab_groups {
 class CollaborationMessagingTabData;
 }  // namespace tab_groups
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace record_replay {
 class RecordReplayClient;
 }  // namespace record_replay
-#endif
 
 namespace lens {
 class TabContextualizationController;
@@ -155,11 +151,6 @@ class ChromeWalletablePassClient;
 }  // namespace wallet
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace web_app {
-class ProtocolHandlerPickerCoordinator;
-}  // namespace web_app
-#endif
 
 namespace indigo {
 class IndigoPageActionController;
@@ -291,11 +282,9 @@ class TabFeatures {
   LensOverlayController* lens_overlay_controller();
   const LensOverlayController* lens_overlay_controller() const;
 
-#if !BUILDFLAG(IS_ANDROID)
   record_replay::RecordReplayClient* record_replay_client() {
     return record_replay_client_.get();
   }
-#endif
 
   lens::TabContextualizationController* tab_contextualization_controller() {
     return tab_contextualization_controller_.get();
@@ -410,12 +399,6 @@ class TabFeatures {
   std::unique_ptr<tab_groups::SavedTabGroupOnCloseHelper>
       saved_tab_group_on_close_helper_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Manages the protocol handler picker dialog on ChromeOS. Must be destroyed
-  // after the `tab_dialog_manager_`.
-  std::unique_ptr<web_app::ProtocolHandlerPickerCoordinator>
-      protocol_handler_picker_coordinator_;
-#endif
 
   // Manages various tab modal dialogs.
   std::unique_ptr<TabDialogManager> tab_dialog_manager_;
@@ -534,9 +517,7 @@ class TabFeatures {
 
   std::unique_ptr<actor::ActorTabData> actor_tab_data_;
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<record_replay::RecordReplayClient> record_replay_client_;
-#endif
 
   std::unique_ptr<lens::TabContextualizationController>
       tab_contextualization_controller_;
@@ -564,19 +545,15 @@ class TabFeatures {
   std::unique_ptr<contextual_tasks::ContextualTasksTabVisitTracker>
       contextual_tasks_tab_visit_tracker_;
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<skills::SkillsUpdateObserver> skills_update_observer_;
-#endif  //  !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   std::unique_ptr<enterprise_reporting::SaasUsageNavigationObserver>
       saas_usage_navigation_observer_;
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<indigo::IndigoPageActionController>
       indigo_page_action_controller_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   std::unique_ptr<multistep_filter::FilterUiController> filter_ui_controller_;
   std::unique_ptr<multistep_filter::ChromeFilterNavigationObserver>

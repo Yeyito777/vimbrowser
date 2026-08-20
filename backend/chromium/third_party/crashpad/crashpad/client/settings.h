@@ -24,9 +24,6 @@
 #include "util/misc/initialization_state.h"
 #include "util/misc/uuid.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "util/ios/scoped_background_task.h"
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace crashpad {
 
@@ -50,12 +47,7 @@ struct MakeScopedLockedFileHandleOptions {
 };
 
 // TODO(mark): The timeout should be configurable by the client.
-#if BUILDFLAG(IS_IOS)
-// iOS background assertions only last 30 seconds, keep the timeout shorter.
-constexpr double kUploadReportTimeoutSeconds = 20;
-#else
 constexpr double kUploadReportTimeoutSeconds = 60;
-#endif
 
 }  // namespace internal
 
@@ -235,25 +227,6 @@ class Settings final : public SettingsReader {
 
     FileHandle handle_;
     base::FilePath lockfile_path_;
-  };
-#elif BUILDFLAG(IS_IOS)
-  // iOS needs to use ScopedBackgroundTask anytime a file lock is used.
-  class ScopedLockedFileHandle
-      : public base::ScopedGeneric<FileHandle,
-                                   internal::ScopedLockedFileHandleTraits> {
-   public:
-    using base::ScopedGeneric<
-        FileHandle,
-        internal::ScopedLockedFileHandleTraits>::ScopedGeneric;
-
-    ScopedLockedFileHandle(const FileHandle& value);
-    ScopedLockedFileHandle(ScopedLockedFileHandle&& rvalue);
-    ScopedLockedFileHandle& operator=(ScopedLockedFileHandle&& rvalue);
-
-    ~ScopedLockedFileHandle();
-
-   private:
-    std::unique_ptr<internal::ScopedBackgroundTask> ios_background_task_;
   };
 #else
   using ScopedLockedFileHandle =

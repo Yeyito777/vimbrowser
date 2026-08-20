@@ -27,9 +27,6 @@
 #include "gpu/ipc/common/memory_stats.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/task_manager/sampling/arc_shared_sampler.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace task_manager {
 
@@ -107,9 +104,6 @@ class TaskManagerImpl : public TaskManagerInterface,
   void TaskAdded(Task* task) override;
   void TaskRemoved(Task* task) override;
   void TaskUnresponsive(Task* task) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void TaskIdsListToBeInvalidated() override;
-#endif
 
   void UpdateAccumulatedStatsNetworkForRoute(
       content::GlobalRenderFrameHostId render_frame_host_id,
@@ -186,11 +180,6 @@ class TaskManagerImpl : public TaskManagerInterface,
   // subset of resources for all processes at once.
   scoped_refptr<SharedSampler> shared_sampler_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // A sampler shared with all instances of TaskGroup that hold ARC tasks and
-  // calculates memory footprint for all processes at once.
-  std::unique_ptr<ArcSharedSampler> arc_shared_sampler_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // This will be set to true while there are observers and the task manager is
   // running.

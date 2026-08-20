@@ -79,9 +79,7 @@
 #include "ui/views/view.h"
 #include "ui/views/view_class_properties.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/views/profiles/badged_profile_photo.h"
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 

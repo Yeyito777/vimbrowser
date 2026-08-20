@@ -78,10 +78,8 @@ class CertVerifierServiceFactoryImpl
   // version of Chrome.
   void GetChromeRootStoreInfo(GetChromeRootStoreInfoCallback callback) override;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   void GetPlatformRootStoreInfo(
       GetPlatformRootStoreInfoCallback callback) override;
-#endif
 #endif
 #if BUILDFLAG(CHROME_ROOT_STORE_OPTIONAL)
   void SetUseChromeRootStore(bool use_crs,

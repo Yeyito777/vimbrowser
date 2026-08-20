@@ -6,11 +6,6 @@ import("//build/config/pch.gni")
 import("//build/config/rust.gni")
 import("clang.gni")
 
-if (is_ios) {
-  # For `target_environment` and `target_platform`.
-  import("//build/config/apple/mobile_config.gni")
-}
-
 # Helper function for adding cflags to use a clang plugin.
 # - `plugin` is the name of the plugin.
 # - `plugin_arguments` is a list of arguments to pass to the plugin.
@@ -149,11 +144,7 @@ config("extra_warnings") {
 }
 
 group("llvm-symbolizer_data") {
-  if (is_win) {
-    data = [ "$clang_base_path/bin/llvm-symbolizer.exe" ]
-  } else {
-    data = [ "$clang_base_path/bin/llvm-symbolizer" ]
-  }
+  data = [ "$clang_base_path/bin/llvm-symbolizer" ]
 }
 
 template("clang_lib") {
@@ -169,20 +160,7 @@ template("clang_lib") {
       _suffix = ""
       _ext = "a"
 
-      if (is_win) {
-        _dir = "windows"
-        _prefix = ""
-        _ext = "lib"
-        if (current_cpu == "x64") {
-          _suffix = "-x86_64"
-        } else if (current_cpu == "x86") {
-          _suffix = "-i386"
-        } else if (current_cpu == "arm64") {
-          _suffix = "-aarch64"
-        } else {
-          assert(false)  # Unhandled cpu type
-        }
-      } else if (is_apple) {
+      if (is_apple) {
         _dir = "darwin"
       } else if (is_linux || is_chromeos) {
         if (current_cpu == "x64") {
@@ -204,29 +182,6 @@ template("clang_lib") {
         } else {
           assert(false)  # Unhandled cpu type
         }
-      } else if (is_fuchsia) {
-        if (current_cpu == "x64") {
-          _dir = "x86_64-unknown-fuchsia"
-        } else if (current_cpu == "arm64") {
-          _dir = "aarch64-unknown-fuchsia"
-        } else {
-          assert(false)  # Unhandled cpu type
-        }
-      } else if (is_android) {
-        _dir = "linux"
-        if (current_cpu == "x64") {
-          _suffix = "-x86_64-android"
-        } else if (current_cpu == "x86") {
-          _suffix = "-i686-android"
-        } else if (current_cpu == "arm") {
-          _suffix = "-arm-android"
-        } else if (current_cpu == "arm64") {
-          _suffix = "-aarch64-android"
-        } else if (current_cpu == "riscv64") {
-          _suffix = "-riscv64-android"
-        } else {
-          assert(false)  # Unhandled cpu type
-        }
       } else {
         assert(false)  # Unhandled target platform
       }
@@ -242,28 +197,6 @@ template("clang_lib") {
 clang_lib("compiler_builtins") {
   if (is_mac) {
     libname = "osx"
-  } else if (is_ios) {
-    if (target_platform == "iphoneos") {
-      if (target_environment == "simulator") {
-        libname = "iossim"
-      } else if (target_environment == "device") {
-        libname = "ios"
-      } else if (target_environment == "catalyst") {
-        libname = "osx"
-      } else {
-        assert(false, "unsupported target_environment=$target_environment")
-      }
-    } else if (target_platform == "tvos") {
-      if (target_environment == "simulator") {
-        libname = "tvossim"
-      } else if (target_environment == "device") {
-        libname = "tvos"
-      } else {
-        assert(false, "unsupported target_environment=$target_environment")
-      }
-    } else {
-      assert(false, "unsupported target_platform=$target_platform")
-    }
   } else if (current_cpu != "ppc64" && current_cpu != "s390x") {
     libname = "builtins"
   }
@@ -277,20 +210,6 @@ clang_lib("compiler_profile") {
     # Don't define libname which makes this target do nothing.
   } else if (is_mac) {
     libname = "profile_osx"
-  } else if (is_ios) {
-    if (target_environment == "simulator") {
-      libname = "profile_iossim"
-    } else if (target_environment == "catalyst") {
-      # We don't enable clang coverage on iOS device builds, and the library is
-      # not part of the Clang package tarball as a result.
-      #
-      # Don't define libname which makes this target do nothing.
-    } else {
-      # We don't enable clang coverage on iOS device builds, and the library is
-      # not part of the Clang package tarball as a result.
-      #
-      # Don't define libname which makes this target do nothing.
-    }
   } else {
     libname = "profile"
   }

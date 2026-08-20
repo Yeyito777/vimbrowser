@@ -313,14 +313,6 @@ class AddressDataManager : public AutofillWebDataServiceObserverOnUISequence {
   virtual const AddressOnTypingSuggestionStrikeDatabase*
   GetAddressOnTypingSuggestionStrikeDatabase() const;
 
-#if BUILDFLAG(IS_IOS)
-  // Calls `account_name_email_store_` in order to create or update the
-  // kAccountNameEmail profile using current primary account info.
-  // TODO(crbug.com/449708427): Remove once `AccountInfo` supports full_name on
-  // IOS.
-  void MaybeCreateAccountNameEmailProfile(std::string account_name,
-                                          std::string email);
-#endif
 
  protected:
   friend class AddressDataManagerTestApi;

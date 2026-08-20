@@ -1077,33 +1077,7 @@
   E_CPONLY(kColorWindowControlButtonBackgroundActive) \
   E_CPONLY(kColorWindowControlButtonBackgroundInactive) \
 
-#if BUILDFLAG(IS_CHROMEOS)
-#define CHROME_PLATFORM_SPECIFIC_COLOR_IDS \
-    /* Borealis colors. */ \
-    E_CPONLY(kColorBorealisSplashScreenBackground) \
-    E_CPONLY(kColorBorealisSplashScreenForeground) \
-    /* Caption colors. */ \
-    E_CPONLY(kColorCaptionForeground) \
-    /* Sharesheet colors. */ \
-    E_CPONLY(kColorSharesheetTargetButtonIconShadow)
-#elif BUILDFLAG(IS_WIN)
-#define CHROME_PLATFORM_SPECIFIC_COLOR_IDS \
-    /* The colors of the 1px border around the window on Windows 10. */ \
-    E_CPONLY(kColorAccentBorderActive) \
-    E_CPONLY(kColorAccentBorderInactive) \
-    /* Caption colors. */ \
-    E_CPONLY(kColorCaptionButtonForegroundActive) \
-    E_CPONLY(kColorCaptionButtonForegroundInactive) \
-    E_CPONLY(kColorCaptionButtonOnToolbar) \
-    E_CPONLY(kColorCaptionCloseButtonBackgroundHovered) \
-    E_CPONLY(kColorCaptionCloseButtonForegroundHovered) \
-    E_CPONLY(kColorCaptionForegroundActive) \
-    E_CPONLY(kColorCaptionForegroundInactive) \
-    /* Tab search caption button colors. */ \
-    E_CPONLY(kColorTabSearchCaptionButtonFocusRing)
-#else
 #define CHROME_PLATFORM_SPECIFIC_COLOR_IDS
-#endif  // BUILDFLAG(IS_WIN)
 
 #define CHROME_COLOR_IDS \
     COMMON_CHROME_COLOR_IDS CHROME_PLATFORM_SPECIFIC_COLOR_IDS

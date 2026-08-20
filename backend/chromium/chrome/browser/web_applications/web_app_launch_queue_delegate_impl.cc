@@ -53,15 +53,6 @@ bool LaunchQueueDelegateImpl::IsInScope(
 // Access implementation.
 content::PathInfo LaunchQueueDelegateImpl::GetPathInfo(
     const base::FilePath& entry_path) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  base::FilePath virtual_path;
-  auto* external_mount_points =
-      storage::ExternalMountPoints::GetSystemInstance();
-  if (external_mount_points->GetVirtualPath(entry_path, &virtual_path)) {
-    return content::PathInfo(content::PathType::kExternal,
-                             std::move(virtual_path));
-  }
-#endif
   return content::PathInfo(entry_path);
 }
 

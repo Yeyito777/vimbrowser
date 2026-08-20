@@ -19,10 +19,8 @@
 #include "media/media_buildflags.h"
 #include "media/video/gpu_video_accelerator_factories.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "media/filters/decrypting_audio_decoder.h"
 #include "media/filters/decrypting_video_decoder.h"
-#endif
 
 #if BUILDFLAG(ENABLE_DAV1D_DECODER)
 #include "media/filters/dav1d_video_decoder.h"
@@ -64,14 +62,12 @@ void DefaultDecoderFactory::CreateAudioDecoders(
   if (is_shutdown_)
     return;
 
-#if !BUILDFLAG(IS_ANDROID)
   // DecryptingAudioDecoder is only needed in External Clear Key testing to
   // cover the audio decrypt-and-decode path.
   if (base::FeatureList::IsEnabled(kExternalClearKeyForTesting)) {
     audio_decoders->push_back(
         std::make_unique<DecryptingAudioDecoder>(task_runner, media_log));
   }
-#endif
 
 #if BUILDFLAG(ENABLE_PLATFORM_DTS_AUDIO) && BUILDFLAG(IS_WIN)
   audio_decoders->push_back(
@@ -109,10 +105,8 @@ void DefaultDecoderFactory::CreateVideoDecoders(
     return;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   video_decoders->push_back(
       std::make_unique<DecryptingVideoDecoder>(task_runner, media_log));
-#endif
 
   // Prefer an external decoder since one will only exist if it is hardware
   // accelerated.

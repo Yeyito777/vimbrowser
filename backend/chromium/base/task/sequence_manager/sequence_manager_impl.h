@@ -145,9 +145,6 @@ class BASE_EXPORT SequenceManagerImpl
   using internal::SequencedTaskSource::GetPendingWakeUp;
   std::optional<WakeUp> GetPendingWakeUp(LazyNow* lazy_now,
                                          SelectTaskOption option) override;
-#if BUILDFLAG(IS_WIN)
-  bool NextWakeUpNeedsHighRes() override;
-#endif
   void OnBeginWork() override;
   bool OnIdle() override;
   void MaybeEmitTaskDetails(
@@ -171,9 +168,6 @@ class BASE_EXPORT SequenceManagerImpl
   void SetAddQueueTimeToTasks(bool enable);
   void SetTaskExecutionAllowedInNativeNestedLoop(bool allowed);
   bool IsTaskExecutionAllowedInNativeNestedLoop() const;
-#if BUILDFLAG(IS_IOS)
-  void AttachToMessagePump();
-#endif
   bool IsIdleForTesting() override;
   void EnableMessagePumpTimeKeeperMetrics(
       const char* thread_name,

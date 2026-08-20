@@ -38,9 +38,6 @@
 #include "ui/base/resource/resource_scale_factor.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/web_applications/os_integration/web_app_shortcut_win.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/common/chrome_switches.h"
@@ -301,16 +298,6 @@ void UpdateShortcutsForAllApps(Profile* profile, base::OnceClosure callback) {
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-void UpdateRelaunchDetailsForApp(Profile* profile,
-                                 const extensions::Extension* extension,
-                                 HWND hwnd) {
-  GetShortcutInfoForApp(
-      extension, profile,
-      base::BindOnce(&internals::OnShortcutInfoLoadedForSetRelaunchDetails,
-                     hwnd));
-}
-#endif
 
 SynchronizeOsOptions ConvertShortcutLocationsToSynchronizeOptions(
     const ShortcutLocations& locations,

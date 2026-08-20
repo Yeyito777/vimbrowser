@@ -8,11 +8,6 @@ import("//build/config/ui.gni")
 import("//testing/test.gni")
 import("//ui/base/ui_features.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-  import("//ios/build/config.gni")
-}
-
 static_library("dom_keycode_converter") {
   public = [
     "keycodes/dom/dom_code.h",
@@ -29,9 +24,7 @@ static_library("dom_keycode_converter") {
 
   deps = [ "//base" ]
 
-  if (!is_ios) {
-    deps += [ "//ipc:param_traits" ]
-  }
+  deps += [ "//ipc:param_traits" ]
 }
 
 static_library("dom_keyboard_layout") {
@@ -63,16 +56,12 @@ static_library("dom_keyboard_layout") {
   # Make sure we don't compile two versions of dom_keyboard_layout_map*
   if (is_mac) {
     sources += [ "keycodes/dom/dom_keyboard_layout_map_mac.mm" ]
-  } else if (is_win) {
-    sources += [ "keycodes/dom/dom_keyboard_layout_map_win.cc" ]
   } else if (use_ozone) {
     sources += [ "keycodes/dom/dom_keyboard_layout_map_ozone.cc" ]
     deps += [ "//ui/events/ozone/layout" ]
   }
 
-  if (!is_ios) {
-    deps += [ "//ipc:param_traits" ]
-  }
+  deps += [ "//ipc:param_traits" ]
 
   # Expose the internals of this target to other packages in this BUILD file
   # so the unit tests can access the private header files.
@@ -120,15 +109,6 @@ component("events_base") {
     "pointer_details.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "keycodes/keyboard_code_conversion_win.cc",
-      "keycodes/keyboard_code_conversion_win.h",
-      "keycodes/keyboard_codes_win.h",
-      "keycodes/keyboard_defines_win.h",
-    ]
-  }
-
   defines = [ "EVENTS_BASE_IMPLEMENTATION" ]
 
   deps = [ ":dom_keycode_converter" ]
@@ -157,15 +137,6 @@ component("events_base") {
     ]
   }
 
-  if (is_fuchsia) {
-    sources += [
-      "keycodes/keyboard_code_conversion_fuchsia.cc",
-      "keycodes/keyboard_code_conversion_fuchsia.h",
-    ]
-
-    deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.input3:fuchsia.ui.input3_cpp" ]
-  }
-
   if (ozone_platform_x11) {
     public_deps += [ "//ui/events/keycodes:x11" ]
 
@@ -177,9 +148,7 @@ component("events_base") {
     deps += [ "//ui/gfx/x" ]
   }
 
-  if (!is_ios) {
-    deps += [ "//ipc:param_traits" ]
-  }
+  deps += [ "//ipc:param_traits" ]
 
   if (is_mac) {
     frameworks = [
@@ -232,23 +201,6 @@ component("events") {
     "scoped_target_handler.cc",
   ]
 
-  if (is_win) {
-    public += [
-      "win/events_win_utils.h",
-      "win/stylus_handwriting_properties_win.h",
-      "win/system_event_state_lookup.h",
-    ]
-
-    sources += [
-      "keycodes/platform_key_map_win.cc",
-      "keycodes/platform_key_map_win.h",
-      "win/events_win.cc",
-      "win/events_win_utils.cc",
-      "win/stylus_handwriting_properties_win.cc",
-      "win/system_event_state_lookup.cc",
-    ]
-  }
-
   if (is_mac) {
     public += [ "gestures/gesture_recognizer_impl_mac.h" ]
 
@@ -257,11 +209,6 @@ component("events") {
       "cocoa/events_mac.mm",
       "gestures/gesture_recognizer_impl_mac.cc",
     ]
-  }
-
-  if (is_ios) {
-    sources += [ "ios/events_ios.mm" ]
-    frameworks = [ "UIKit.framework" ]
   }
 
   if (is_linux || is_chromeos || is_win) {
@@ -317,9 +264,6 @@ component("events") {
 
   # Used for the feature flag check. Should be deleted once the feature is
   # enabled by default.
-  if (is_win) {
-    deps += [ "//components/stylus_handwriting/win" ]
-  }
 
   if (use_ozone) {
     public += [ "ozone/events_ozone.h" ]
@@ -351,18 +295,6 @@ component("events") {
     frameworks = [ "AppKit.framework" ]
   }
 
-  if (is_fuchsia) {
-    public += [
-      "fuchsia/input_event_sink.h",
-      "fuchsia/pointer_events_handler.h",
-    ]
-    sources += [ "fuchsia/pointer_events_handler.cc" ]
-    public_deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.input:fuchsia.ui.input_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.pointer:fuchsia.ui.pointer_cpp",
-    ]
-  }
-
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -388,22 +320,6 @@ component("keyboard_hook") {
   # Expose the internals of this target to other packages in this BUILD file
   # so the unit tests can access the private header files.
   friend = [ ":*" ]
-
-  if (is_win) {
-    public += [
-      "win/keyboard_hook_monitor.h",
-      "win/keyboard_hook_observer.h",
-    ]
-
-    sources += [
-      "win/keyboard_hook_monitor_impl.cc",
-      "win/keyboard_hook_monitor_impl.h",
-      "win/keyboard_hook_win_base.cc",
-      "win/keyboard_hook_win_base.h",
-      "win/media_keyboard_hook_win.cc",
-      "win/modifier_keyboard_hook_win.cc",
-    ]
-  }
 
   if (is_mac) {
     sources += [ "mac/keyboard_hook_mac.mm" ]
@@ -463,11 +379,7 @@ component("gesture_detection") {
 
   defines = [ "GESTURE_DETECTION_IMPLEMENTATION" ]
 
-  if (is_ios) {
-    sources += [ "gesture_detection/gesture_configuration_ios.cc" ]
-  } else if (is_castos) {
-    sources += [ "gesture_detection/gesture_configuration_cast.cc" ]
-  } else if (use_aura) {
+  if (use_aura) {
     sources += [ "gesture_detection/gesture_configuration_aura.cc" ]
   } else {
     sources += [ "gesture_detection/gesture_configuration_default.cc" ]
@@ -549,15 +461,6 @@ static_library("test_support") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_win) {
-    sources += [
-      "test/keyboard_hook_monitor_utils.cc",
-      "test/keyboard_hook_monitor_utils.h",
-      "test/keyboard_layout_win.cc",
-    ]
-    deps += [ "//ui/events:keyboard_hook" ]
-  }
-
   if (is_mac) {
     frameworks = [ "Carbon.framework" ]
   }
@@ -583,15 +486,6 @@ static_library("test_support") {
       "//ui/base:features",
       "//ui/events/ozone/layout",
     ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia/util/pointer_event_utility.cc",
-      "fuchsia/util/pointer_event_utility.h",
-    ]
-
-    deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.pointer:fuchsia.ui.pointer_cpp" ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
@@ -693,37 +587,6 @@ if (use_blink) {
       ]
     }
 
-    if (is_win) {
-      sources += [
-        "blink/web_input_event_builders_win_unittest.cc",
-        "keycodes/platform_key_map_win_unittest.cc",
-        "win/event_utils_win_unittest.cc",
-        "win/media_keyboard_hook_win_unittest.cc",
-        "win/modifier_keyboard_hook_win_unittest.cc",
-        "win/stylus_handwriting_properties_win_unittest.cc",
-      ]
-      deps += [ "//ui/events:keyboard_hook" ]
-    }
-
-    if (is_castos) {
-      sources += [ "chromecast/scroller_unittest.cc" ]
-    }
-
-    if (is_fuchsia) {
-      sources += [
-        "fuchsia/pointer_events_handler_unittest.cc",
-        "keycodes/keyboard_code_conversion_fuchsia_unittest.cc",
-      ]
-
-      deps += [
-        "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.input:fuchsia.ui.input_hlcpp",
-        "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.input3:fuchsia.ui.input3_cpp",
-        "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.pointer:fuchsia.ui.pointer_cpp",
-        "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.pointer:fuchsia.ui.pointer_cpp_hlcpp_conversion",
-        "//third_party/fuchsia-sdk/sdk/pkg/scenic_cpp_testing",
-      ]
-    }
-
     if (is_win || is_mac || use_ozone) {
       sources += [ "keycodes/dom/dom_keyboard_layout_map_unittest.cc" ]
       deps += [ ":dom_keyboard_layout" ]
@@ -739,15 +602,4 @@ if (use_blink) {
 # be source_set, otherwise the linker will drop the tests as dead code.
 source_set("events_interactive_ui_tests") {
   testonly = true
-  if (is_win) {
-    sources = [ "win/media_keyboard_hook_win_interactive_test.cc" ]
-
-    deps = [
-      ":events",
-      ":keyboard_hook",
-      ":test_support",
-      "//base/test:test_support",
-      "//testing/gtest",
-    ]
-  }
 }

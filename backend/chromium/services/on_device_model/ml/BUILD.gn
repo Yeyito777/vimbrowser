@@ -112,9 +112,6 @@ if (use_blink || (is_ios && build_with_internal_optimization_guide)) {
       data_deps = [
         "//components/optimization_guide/internal:optimization_guide_internal",
       ]
-      if (is_ios) {
-        deps = [ "//components/optimization_guide/internal:optimization_guide_internal+bundle" ]
-      }
     }
   }
 }

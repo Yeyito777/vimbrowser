@@ -194,13 +194,6 @@ void NetworkServiceClient::OnIPAddressChanged(
 }
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-mojo::PendingRemote<network::mojom::SocketBroker>
-NetworkServiceClient::BindSocketBroker() {
-  EnsureNetworkServiceListenerStarted();
-  return socket_broker_.BindNewRemote();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
 NetworkServiceClient::BindURLLoaderNetworkServiceObserver() {

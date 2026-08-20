@@ -12,9 +12,6 @@
 #include "components/viz/service/display/overlay_candidate.h"
 #include "components/viz/service/viz_service_export.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display/dc_layer_overlay.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "components/viz/service/display/ca_layer_overlay.h"
@@ -47,11 +44,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorOnGpu {
   // presentation later.
   void ScheduleOverlays(CandidateList&& overlay_candidates);
 
-#if BUILDFLAG(IS_ANDROID)
-  void NotifyOverlayPromotions(
-      base::flat_set<gpu::Mailbox> promotion_denied,
-      base::flat_map<gpu::Mailbox, gfx::Rect> possible_promotions);
-#endif
 
  private:
   // TODO(weiliangc): Figure out how to share MemoryTracker with OutputSurface.

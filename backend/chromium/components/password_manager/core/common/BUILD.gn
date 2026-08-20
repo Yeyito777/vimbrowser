@@ -12,13 +12,6 @@ static_library("common") {
     "password_manager_util.h",
   ]
 
-  if (is_ios) {
-    sources += [
-      "passwords_directory_util_ios.cc",
-      "passwords_directory_util_ios.h",
-    ]
-  }
-
   deps = [
     "//base",
     "//components/autofill/core/common",
@@ -67,15 +60,4 @@ source_set("unit_tests") {
     "//components/autofill/core/common:test_support",
     "//testing/gtest",
   ]
-
-  if (is_ios) {
-    sources += [ "passwords_directory_util_ios_unittest.cc" ]
-
-    deps += [
-      "//base",
-      "//base/test:test_support",
-      "//sql",
-      "//url",
-    ]
-  }
 }

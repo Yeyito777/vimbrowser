@@ -20,14 +20,7 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/openxr/src/include/openxr/openxr.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <wrl.h>
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#endif
 
 namespace gfx {
 class Transform;
@@ -119,15 +112,6 @@ class OpenXrTestHelper : public device::ServiceTestHook {
   bool UpdateViews(XrViewConfigurationType view_config_type,
                    XrView views[],
                    uint32_t size);
-#if BUILDFLAG(IS_WIN)
-  void SetD3DDevice(ID3D11Device* d3d_device);
-  const std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>>&
-  GetSwapchainTextures() const;
-#endif
-#if BUILDFLAG(IS_ANDROID)
-  void SetOpenGLESInfo(EGLDisplay display, EGLContext context);
-  const std::vector<uint32_t>& GetSwapchainTextureIDs() const;
-#endif
 
   uint32_t NextSwapchainImageIndex();
   XrTime NextPredictedDisplayTime();
@@ -194,9 +178,6 @@ class OpenXrTestHelper : public device::ServiceTestHook {
       XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
       XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
 
-#if BUILDFLAG(IS_ANDROID)
-  static constexpr int kSwapchainFormat = GL_SRGB8_ALPHA8_EXT;
-#endif
 
  private:
   struct ActionProperties {
@@ -247,13 +228,6 @@ class OpenXrTestHelper : public device::ServiceTestHook {
 
   // TODO(https://crbug.com/381076468): Consider abstractions for platform
   // specific code.
-#if BUILDFLAG(IS_WIN)
-  Microsoft::WRL::ComPtr<ID3D11Device> d3d_device_;
-  std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>> textures_arr_;
-#elif BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<XrTestGl> xr_gl_;
-  std::vector<uint32_t> opengl_es_textures_arr_;
-#endif
 
   // paths_ is used to keep tracked of strings that already has a corresponding
   // path.

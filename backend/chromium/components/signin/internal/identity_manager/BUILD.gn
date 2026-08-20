@@ -94,40 +94,10 @@ source_set("identity_manager") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "profile_oauth2_token_service_delegate_chromeos.cc",
-      "profile_oauth2_token_service_delegate_chromeos.h",
-    ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/account_manager",
-      "//components/account_manager_core",
-    ]
-  }
-
-  if (!is_ios) {
-    sources += [
-      "accounts_mutator_impl.cc",
-      "accounts_mutator_impl.h",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [
-      "profile_oauth2_token_service_delegate_ios.cc",
-      "profile_oauth2_token_service_delegate_ios.h",
-    ]
-
-    deps += [ "//components/signin/public/identity_manager/ios" ]
-  }
-
-  if (is_ios) {
-    sources += [
-      "device_accounts_synchronizer_impl.cc",
-      "device_accounts_synchronizer_impl.h",
-    ]
-  }
+  sources += [
+    "accounts_mutator_impl.cc",
+    "accounts_mutator_impl.h",
+  ]
 }
 
 source_set("capabilities") {
@@ -184,22 +154,6 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_chromeos) {
-    sources += [ "profile_oauth2_token_service_delegate_chromeos_unittest.cc" ]
-
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/account_manager",
-      "//components/account_manager_core:test_support",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [ "profile_oauth2_token_service_delegate_ios_unittest.cc" ]
-
-    deps += [ "//components/signin/public/identity_manager/ios:test_support" ]
-  }
-
   if (enable_dice_support) {
     sources += [
       "mutable_profile_oauth2_token_service_delegate_unittest.cc",
@@ -237,14 +191,6 @@ static_library("test_support") {
     "mock_profile_oauth2_token_service_observer.cc",
     "mock_profile_oauth2_token_service_observer.h",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "test_profile_oauth2_token_service_delegate_chromeos.cc",
-      "test_profile_oauth2_token_service_delegate_chromeos.h",
-    ]
-    deps = [ "//chromeos/crosapi/mojom" ]
-  }
 
   public_deps = [
     ":identity_manager",

@@ -163,38 +163,6 @@ class IntegrationTestCommands
   virtual void DeleteFile(const base::FilePath& path) const = 0;
   virtual void PrintLog() const = 0;
   virtual base::FilePath GetDifferentUserPath() const = 0;
-#if BUILDFLAG(IS_WIN)
-  virtual void ExpectInterfacesRegistered() const = 0;
-  virtual void ExpectMarshalInterfaceSucceeds() const = 0;
-  virtual void ExpectLegacyUpdate3WebSucceeds(
-      const std::string& app_id,
-      AppBundleWebCreateMode app_bundle_web_create_mode,
-      int expected_final_state,
-      int expected_error_code,
-      bool cancel_when_downloading) const = 0;
-  virtual void ExpectLegacyProcessLauncherSucceeds() const = 0;
-  virtual void ExpectProcessLauncherLaunchCmdLineSucceeds() const = 0;
-  virtual void ExpectLegacyAppCommandWebSucceeds(
-      const std::string& app_id,
-      const std::string& command_id,
-      const base::ListValue& parameters,
-      int expected_exit_code) const = 0;
-  virtual void ExpectLegacyPolicyStatusSucceeds(
-      const base::Version& updater_version) const = 0;
-  virtual void LegacyInstallApp(const std::string& app_id,
-                                const base::Version& version) const = 0;
-  virtual void RunUninstallCmdLine() const = 0;
-  virtual void RunHandoff(const std::string& app_id) const = 0;
-  virtual void InstallScheduledTask(bool run_elevated,
-                                    const std::string& task_name,
-                                    bool use_task_subfolders) const = 0;
-  virtual void IsScheduledTaskRegistered(bool run_elevated,
-                                         const std::string& task_name,
-                                         bool use_task_subfolders) const = 0;
-  virtual void DeleteScheduledTask(bool run_elevated,
-                                   const std::string& task_name,
-                                   bool use_task_subfolders) const = 0;
-#endif  // BUILDFLAG(IS_WIN)
   virtual void InstallAppViaService(
       const std::string& app_id,
       const base::DictValue& expected_final_values) const = 0;
@@ -205,9 +173,6 @@ class IntegrationTestCommands
                                      policy_same_version_update) const = 0;
 
   virtual void SetupFakeLegacyUpdater() const = 0;
-#if BUILDFLAG(IS_WIN)
-  virtual void RunFakeLegacyUpdater() const = 0;
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_MAC)
   virtual void PrivilegedHelperInstall() const = 0;
   virtual void DeleteLegacyUpdater() const = 0;

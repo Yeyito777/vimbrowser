@@ -197,22 +197,10 @@ mojom::ResultCode PrintingContext::UpdatePrintSettings(
 #endif
     .show_system_dialog =
         job_settings.FindBool(kSettingShowSystemDialog).value_or(false),
-#if BUILDFLAG(IS_WIN)
-    .page_count = job_settings.FindInt(kSettingPreviewPageCount).value_or(0)
-#endif
   };
   return UpdatePrinterSettings(printer_settings);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-mojom::ResultCode PrintingContext::UpdatePrintSettingsFromPOD(
-    std::unique_ptr<PrintSettings> job_settings) {
-  ResetSettings();
-  settings_ = std::move(job_settings);
-
-  return UpdatePrinterSettings({.show_system_dialog = false});
-}
-#endif
 
 void PrintingContext::SetPrintSettings(const PrintSettings& settings) {
   *settings_ = settings;

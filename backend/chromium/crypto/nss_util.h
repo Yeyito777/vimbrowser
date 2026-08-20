@@ -38,30 +38,6 @@ CRYPTO_EXPORT void EnsureNSSInit();
 // A sample version string is "3.12.3".
 bool CheckNSSVersion(const char* version);
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-// Returns true once the TPM is owned and PKCS#11 initialized with the
-// user and security officer PINs, and Chaps has been successfully loaded into
-// NSS. Returns false if the TPM will never be loaded.
-CRYPTO_EXPORT void IsTPMTokenEnabled(base::OnceCallback<void(bool)> callback);
-
-// Initialize the TPM token and system slot. The |callback| will run on the same
-// thread with true if the token and slot were successfully loaded or were
-// already initialized. |callback| will be passed false if loading failed.
-// Should be called only once.
-CRYPTO_EXPORT void InitializeTPMTokenAndSystemSlot(
-    int system_slot_id,
-    base::OnceCallback<void(bool)> callback);
-
-// Notifies clients that the TPM has finished initialization (i.e. notify
-// the callbacks of `IsTPMTokenEnabled()` or `GetSystemNSSKeySlot()`).
-// If `InitializeTPMTokenAndSystemSlot()` has been called before this method,
-// this signals that the TPM is enabled, and should use the slot configured by
-// those methods. If neither of those methods have been called, this signals
-// that no TPM system slot will be available.
-CRYPTO_EXPORT void FinishInitializingTPMTokenAndSystemSlot();
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Convert a NSS PRTime value into a base::Time object.
 // We use a int64_t instead of PRTime here to avoid depending on NSPR headers.
@@ -71,9 +47,7 @@ CRYPTO_EXPORT base::Time PRTimeToBaseTime(int64_t prtime);
 // We use a int64_t instead of PRTime here to avoid depending on NSPR headers.
 CRYPTO_EXPORT int64_t BaseTimeToPRTime(base::Time time);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 CRYPTO_EXPORT base::FilePath GetDefaultNSSConfigDirectory();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace crypto
 

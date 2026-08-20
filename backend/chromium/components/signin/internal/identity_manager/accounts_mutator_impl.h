@@ -63,10 +63,6 @@ class AccountsMutatorImpl : public AccountsMutator {
                    const CoreAccountId& account_id) override;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  CoreAccountId SeedAccountInfo(const GaiaId& gaia,
-                                const std::string& email) override;
-#endif
 
  private:
   raw_ptr<ProfileOAuth2TokenService> token_service_;

@@ -51,13 +51,7 @@
 #include "ui/base/clipboard/clipboard_metadata.h"
 #include "ui/base/window_open_disposition.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/native_ui_types.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || (BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_IOS_TVOS))
 #include "services/device/public/mojom/nfc.mojom.h"
@@ -370,13 +364,6 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   virtual void SetResizable(bool) {}
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
-#if BUILDFLAG(IS_ANDROID)
-  // Updates information to determine whether a user gesture should carryover to
-  // future navigations. This is needed so navigations within a certain
-  // timeframe of a request initiated by a gesture will be treated as if they
-  // were initiated by a gesture too, otherwise the navigation may be blocked.
-  virtual void UpdateUserGestureCarryoverInfo() {}
-#endif
 
   // The frame called |window.focus()|.
   virtual void DidCallFocus() {}
@@ -467,10 +454,6 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // Opens a new view-source tab for the last committed document in |frame|.
   virtual void ViewSource(RenderFrameHostImpl* frame) {}
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual base::android::ScopedJavaLocalRef<jobject>
-  GetJavaRenderFrameHostDelegate();
-#endif
 
   // Notified that the render finished loading a subresource for the frame
   // associated with |render_frame_host|.

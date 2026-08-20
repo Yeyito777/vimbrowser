@@ -21,9 +21,7 @@
 #include "services/shape_detection/barcode_detection_provider_impl.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "services/shape_detection/face_detection_provider_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "services/shape_detection/face_detection_provider_mac.h"
 #else
 #include "services/shape_detection/face_detection_provider_impl.h"
@@ -53,8 +51,6 @@ void ShapeDetectionService::BindFaceDetectionProvider(
     mojo::PendingReceiver<mojom::FaceDetectionProvider> receiver) {
 #if BUILDFLAG(IS_MAC)
   FaceDetectionProviderMac::Create(std::move(receiver));
-#elif BUILDFLAG(IS_WIN)
-  FaceDetectionProviderWin::Create(std::move(receiver));
 #else
   FaceDetectionProviderImpl::Create(std::move(receiver));
 #endif

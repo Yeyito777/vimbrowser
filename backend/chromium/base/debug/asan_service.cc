@@ -22,10 +22,6 @@
 #include "base/strings/stringprintf.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/logging.h"
-#include "base/win/windows_types.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if defined(COMPONENT_BUILD) && BUILDFLAG(IS_WIN)
 // In component builds on Windows, weak function exported by ASan have the
@@ -146,16 +142,6 @@ AsanService* AsanService::GetInstance() {
 void AsanService::Initialize() {
   AutoLock lock(lock_);
   if (!is_initialized_) {
-#if BUILDFLAG(IS_WIN)
-    if (logging::IsLoggingToFileEnabled()) {
-      // Sandboxed processes cannot open files but are provided a HANDLE.
-      HANDLE log_handle = logging::DuplicateLogFileHandle();
-      if (log_handle) {
-        // Sanitizer APIs need a HANDLE cast to void*.
-        __sanitizer_set_report_fd(reinterpret_cast<void*>(log_handle));
-      }
-    }
-#endif  // BUILDFLAG(IS_WIN)
     __asan_set_error_report_callback(ErrorReportCallback);
     error_callbacks_.push_back(TaskTraceErrorCallback);
 

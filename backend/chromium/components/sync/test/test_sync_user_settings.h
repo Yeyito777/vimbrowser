@@ -29,10 +29,8 @@ class TestSyncUserSettings : public SyncUserSettings {
   // SyncUserSettings implementation.
   bool IsInitialSyncFeatureSetupComplete() const override;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   void SetInitialSyncFeatureSetupComplete(
       SyncFirstSetupCompleteSource source) override;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   bool IsSyncEverythingEnabled() const override;
   UserSelectableTypeSet GetSelectedTypes() const override;
@@ -49,16 +47,6 @@ class TestSyncUserSettings : public SyncUserSettings {
   DataTypeSet GetPreferredDataTypes() const;
   UserSelectableTypeSet GetRegisteredSelectableTypes() const override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool IsSyncFeatureDisabledViaDashboard() const override;
-  void ClearSyncFeatureDisabledViaDashboard() override;
-  bool IsSyncAllOsTypesEnabled() const override;
-  UserSelectableOsTypeSet GetSelectedOsTypes() const override;
-  bool IsOsTypeManagedByPolicy(UserSelectableOsType type) const override;
-  void SetSelectedOsTypes(bool sync_all_os_types,
-                          UserSelectableOsTypeSet types) override;
-  UserSelectableOsTypeSet GetRegisteredSelectableOsTypes() const override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool IsCustomPassphraseAllowed() const override;
   bool IsEncryptEverythingEnabled() const override;
@@ -83,9 +71,6 @@ class TestSyncUserSettings : public SyncUserSettings {
   void ClearInitialSyncFeatureSetupComplete();
   void SetTypeIsManagedByPolicy(UserSelectableType type, bool managed);
   void SetTypeIsManagedByCustodian(UserSelectableType type, bool managed);
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetOsTypeIsManaged(UserSelectableOsType type, bool managed);
-#endif
   void SetCustomPassphraseAllowed(bool allowed);
   void SetPassphraseRequired();
   void SetPassphraseRequired(const std::string& required_passphrase);
@@ -97,9 +82,6 @@ class TestSyncUserSettings : public SyncUserSettings {
 
   void SetDisabledType(UserSelectableType type);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetSyncFeatureDisabledViaDashboard();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const std::string& GetEncryptionPassphrase() const;
 
@@ -110,10 +92,6 @@ class TestSyncUserSettings : public SyncUserSettings {
 
   UserSelectableTypeSet registered_selectable_types_ =
       UserSelectableTypeSet::All();
-#if BUILDFLAG(IS_CHROMEOS)
-  UserSelectableOsTypeSet selected_os_types_ = UserSelectableOsTypeSet::All();
-  UserSelectableOsTypeSet managed_os_types_;
-#endif
   UserSelectableTypeSet selected_types_ = UserSelectableTypeSet::All();
   UserSelectableTypeSet managed_by_policy_types_;
   UserSelectableTypeSet managed_by_custodian_types_;
@@ -124,9 +102,6 @@ class TestSyncUserSettings : public SyncUserSettings {
 
   bool initial_sync_feature_setup_complete_ = true;
   bool sync_everything_enabled_ = true;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool sync_all_os_types_enabled_ = true;
-#endif
 
   bool custom_passphrase_allowed_ = true;
   bool passphrase_required_ = false;
@@ -136,9 +111,6 @@ class TestSyncUserSettings : public SyncUserSettings {
   base::Time explicit_passphrase_time_;
   std::string encryption_passphrase_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool sync_feature_disabled_via_dashboard_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace syncer

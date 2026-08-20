@@ -95,16 +95,6 @@
 #include "chrome/browser/ui/webui/ntp_microsoft_auth/ntp_microsoft_auth_response_capture_navigation_throttle.h"
 #include "chrome/browser/web_applications/isolated_web_apps/isolated_web_app_throttle.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_install/app_install_navigation_throttle.h"
-#include "chrome/browser/apps/intent_helper/chromeos_disabled_apps_throttle.h"
-#include "chrome/browser/apps/link_capturing/chromeos_link_capturing_delegate.h"
-#include "chrome/browser/apps/link_capturing/chromeos_reimpl_navigation_capturing_throttle.h"
-#include "chrome/browser/ash/boca/on_task/on_task_locked_session_navigation_throttle.h"
-#include "chrome/browser/ash/login/signin/merge_session_navigation_throttle.h"
-#include "chrome/browser/ash/login/signin/merge_session_throttling_utils.h"
-#include "chrome/browser/chromeos/app_mode/kiosk_settings_navigation_throttle.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_PLATFORM_APPS)
 #include "chrome/browser/apps/platform_apps/platform_app_navigation_redirector.h"
@@ -280,22 +270,6 @@ void CreateAndAddChromeThrottlesForNavigation(
   PlatformAppNavigationRedirector::MaybeCreateAndAdd(registry);
 #endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Check if we need to add merge session throttle. This throttle will postpone
-  // loading of main frames.
-  if (handle.IsInMainFrame()) {
-    // Add interstitial page while merge session process (cookie reconstruction
-    // from OAuth2 refresh token in ChromeOS login) is still in progress while
-    // we are attempting to load a google property.
-    if (ash::merge_session_throttling_utils::ShouldAttachNavigationThrottle() &&
-        !ash::merge_session_throttling_utils::AreAllSessionMergedAlready() &&
-        registry.IsHTTPOrHTTPS()) {
-      ash::MergeSessionNavigationThrottle::CreateAndAdd(registry);
-    }
-  }
-
-  apps::ChromeOsDisabledAppsThrottle::MaybeCreateAndAdd(registry);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   Profile* profile =
       Profile::FromBrowserContext(handle.GetWebContents()->GetBrowserContext());
@@ -303,26 +277,10 @@ void CreateAndAddChromeThrottlesForNavigation(
   std::unique_ptr<apps::LinkCapturingNavigationThrottle::Delegate>
       link_capturing_delegate;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  link_capturing_delegate =
-      std::make_unique<apps::ChromeOsLinkCapturingDelegate>();
-  bool url_to_apps_throttle_created =
-#else   // BUILDFLAG(IS_CHROMEOS)
   link_capturing_delegate =
       std::make_unique<web_app::WebAppLinkCapturingDelegate>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
       apps::LinkCapturingNavigationThrottle::MaybeCreateAndAdd(
           registry, std::move(link_capturing_delegate));
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/366547977): This currently does nothing and allows all
-  // navigations to proceed if v2 is enabled on ChromeOS. Implement.
-  bool chromeos_reimpl_navigation_throttle_created =
-      apps::ChromeOsReimplNavigationCapturingThrottle::MaybeCreateAndAdd(
-          registry);
-  // Verify the v1 and reimpl throttles have not been created at the same time.
-  CHECK(!chromeos_reimpl_navigation_throttle_created ||
-        !url_to_apps_throttle_created);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   web_app::NavigationCapturingRedirectionThrottle::MaybeCreateAndAdd(registry);
 
@@ -474,11 +432,6 @@ void CreateAndAddChromeThrottlesForNavigation(
       registry);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  chromeos::KioskSettingsNavigationThrottle::MaybeCreateAndAdd(registry);
-
-  ash::OnTaskLockedSessionNavigationThrottle::MaybeCreateAndAdd(registry);
-#endif
 
 #if BUILDFLAG(IS_MAC)
   MaybeCreateAndAddAuthSessionNavigationThrottle(registry);
@@ -540,16 +493,6 @@ void CreateAndAddChromeThrottlesForNavigation(
   }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(b:296844164) Handle captive portal signin properly.
-  if (profile && profile->IsIncognitoProfile() && profile->IsOffTheRecord() &&
-      !profile->GetOTRProfileID().IsCaptivePortal()) {
-    enterprise_incognito::IncognitoNavigationThrottle::MaybeCreateAndAdd(
-        registry);
-  }
-
-  apps::AppInstallNavigationThrottle::MaybeCreateAndAdd(registry);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   if (profile && profile->IsIncognitoProfile() && profile->IsOffTheRecord()) {

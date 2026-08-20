@@ -22,10 +22,6 @@
 #include "build/build_config.h"
 #include "util/misc/address_types.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <basetsd.h>
-typedef SSIZE_T ssize_t;
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace crashpad {
 

@@ -21,23 +21,11 @@ static_library("quarantine") {
     "//url",
   ]
 
-  if (is_win) {
-    sources += [ "quarantine_win.cc" ]
-  }
-
   if (is_mac) {
     sources += [ "quarantine_mac.mm" ]
     frameworks = [
       "Carbon.framework",
       "Foundation.framework",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "quarantine_chromeos.cc" ]
-    deps += [
-      "//chromeos/dbus/dlp",
-      "//chromeos/dbus/dlp:dlp_proto",
     ]
   }
 }
@@ -52,13 +40,6 @@ source_set("common") {
     "//base",
     "//url",
   ]
-
-  if (is_win) {
-    sources += [
-      "common_win.cc",
-      "common_win.h",
-    ]
-  }
 
   if (is_mac) {
     sources += [
@@ -86,10 +67,6 @@ source_set("test_support") {
     "//base",
     "//url",
   ]
-
-  if (is_win) {
-    sources += [ "test_support_win.cc" ]
-  }
 
   if (is_mac) {
     sources += [ "test_support_mac.mm" ]
@@ -128,10 +105,6 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//url",
   ]
-
-  if (is_win) {
-    sources += [ "quarantine_win_unittest.cc" ]
-  }
 
   if (is_mac) {
     sources += [ "quarantine_mac_unittest.mm" ]

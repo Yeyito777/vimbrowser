@@ -21,9 +21,6 @@
 #include "base/trace_event/base_tracing_forward.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 struct stat;
 
@@ -339,43 +336,7 @@ class BASE_EXPORT File {
   static void InitializeFeatures();
 #endif  // BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_WIN)
-  // Sets or clears the DeleteFile disposition on the file. Returns true if
-  // the disposition was set or cleared, as indicated by |delete_on_close|.
-  //
-  // Microsoft Windows deletes a file only when the DeleteFile disposition is
-  // set on a file when the last handle to the last underlying kernel File
-  // object is closed. This disposition is be set by:
-  // - Calling the Win32 DeleteFile function with the path to a file.
-  // - Opening/creating a file with FLAG_DELETE_ON_CLOSE and then closing all
-  //   handles to that File object.
-  // - Opening/creating a file with FLAG_CAN_DELETE_ON_CLOSE and subsequently
-  //   calling DeleteOnClose(true).
-  //
-  // In all cases, all pre-existing handles to the file must have been opened
-  // with FLAG_WIN_SHARE_DELETE. Once the disposition has been set by any of the
-  // above means, no new File objects can be created for the file.
-  //
-  // So:
-  // - Use FLAG_WIN_SHARE_DELETE when creating/opening a file to allow another
-  //   entity on the system to cause it to be deleted when it is closed. (Note:
-  //   another entity can delete the file the moment after it is closed, so not
-  //   using this permission doesn't provide any protections.)
-  // - Use FLAG_DELETE_ON_CLOSE for any file that is to be deleted after use.
-  //   The OS will ensure it is deleted even in the face of process termination.
-  //   Note that it's possible for deletion to be cancelled via another File
-  //   object referencing the same file using DeleteOnClose(false) to clear the
-  //   DeleteFile disposition after the original File is closed.
-  // - Use FLAG_CAN_DELETE_ON_CLOSE in conjunction with DeleteOnClose() to alter
-  //   the DeleteFile disposition on an open handle. This fine-grained control
-  //   allows for marking a file for deletion during processing so that it is
-  //   deleted in the event of untimely process termination, and then clearing
-  //   this state once the file is suitable for persistence.
-  bool DeleteOnClose(bool delete_on_close);
-
-  // Precondition: last_error is not 0, also known as ERROR_SUCCESS.
-  static Error OSErrorToFileError(DWORD last_error);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // Precondition: saved_errno is not 0.
   static Error OSErrorToFileError(int saved_errno);
 #endif
@@ -449,12 +410,6 @@ class BASE_EXPORT File {
 
   ScopedPlatformFile file_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Keeps the Java ParcelFileDescriptor alive when `this` wraps a file from an
-  // Android content provider (i.e. a content URI). Close() is called on the
-  // object when the file is closed.
-  base::android::ScopedJavaGlobalRef<jobject> java_parcel_file_descriptor_;
-#endif
 
   // Platform path to `file_`. Set if `this` wraps a file from an Android
   // content provider (i.e. a content URI) or if tracing is enabled in

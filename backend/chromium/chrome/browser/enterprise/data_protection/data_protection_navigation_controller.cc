@@ -151,10 +151,6 @@ void DataProtectionNavigationController::DidFinishNavigation(
           enterprise_connectors::AnalysisConnector::FILE_ATTACHED) ||
       service->IsConnectorEnabled(
           enterprise_connectors::AnalysisConnector::FILE_DOWNLOADED) ||
-#if BUILDFLAG(IS_CHROMEOS)
-      service->IsConnectorEnabled(
-          enterprise_connectors::AnalysisConnector::FILE_TRANSFER) ||
-#endif
       service->IsConnectorEnabled(
           enterprise_connectors::AnalysisConnector::PRINT) ||
       service->GetReportingSettings().has_value() ||

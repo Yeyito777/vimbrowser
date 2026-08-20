@@ -10,11 +10,7 @@
 #include "build/build_config.h"
 #include "ui/gfx/geometry/size_conversions.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_IOS)
-#include <CoreGraphics/CoreGraphics.h>
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
@@ -32,14 +28,7 @@ void Size::operator-=(const Size& size) {
   Enlarge(-size.width(), -size.height());
 }
 
-#if BUILDFLAG(IS_WIN)
-SIZE Size::ToSIZE() const {
-  SIZE s;
-  s.cx = width();
-  s.cy = height();
-  return s;
-}
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 CGSize Size::ToCGSize() const {
   return CGSizeMake(width(), height());
 }

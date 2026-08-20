@@ -29,21 +29,11 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#include "chrome/browser/shell_integration_win.h"
-#include "chrome/installer/util/shell_util.h"
-#endif
 
-#if !BUILDFLAG(IS_WIN)
 #include "chrome/common/channel_info.h"
 #include "chrome/grit/branded_strings.h"
 #include "ui/base/l10n/l10n_util.h"
-#endif
 
 using content::BrowserThread;
 
@@ -53,16 +43,9 @@ namespace {
 
 // TODO(crbug.com/40544199): Remove |g_sequenced_task_runner| and use an
 // instance field / singleton instead.
-#if BUILDFLAG(IS_WIN)
-base::LazyThreadPoolCOMSTATaskRunner g_sequenced_task_runner =
-    LAZY_COM_STA_TASK_RUNNER_INITIALIZER(
-        base::TaskTraits(base::MayBlock()),
-        base::SingleThreadTaskRunnerThreadMode::SHARED);
-#else
 base::LazyThreadPoolSequencedTaskRunner g_sequenced_task_runner =
     LAZY_THREAD_POOL_SEQUENCED_TASK_RUNNER_INITIALIZER(
         base::TaskTraits(base::MayBlock()));
-#endif
 
 bool IsValidDefaultWebClientState(DefaultWebClientState state) {
   switch (state) {
@@ -183,25 +166,16 @@ void AppendProfileArgs(const base::FilePath& profile_path,
       command_line->AppendSwitchPath(switches::kUserDataDir, user_data_dir);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::FilePath profile =
-      cmd_line.GetSwitchValuePath(ash::switches::kLoginProfile);
-  if (!profile.empty())
-    command_line->AppendSwitchPath(ash::switches::kLoginProfile, profile);
-#else
   if (!profile_path.empty())
     command_line->AppendSwitchPath(switches::kProfileDirectory,
                                    profile_path.BaseName());
-#endif
 }
 
-#if !BUILDFLAG(IS_WIN)
 std::u16string GetAppShortcutsSubdirName() {
   if (chrome::GetChannel() == version_info::Channel::CANARY)
     return l10n_util::GetStringUTF16(IDS_APP_SHORTCUTS_SUBDIR_NAME_CANARY);
   return l10n_util::GetStringUTF16(IDS_APP_SHORTCUTS_SUBDIR_NAME);
 }
-#endif  // !BUILDFLAG(IS_WIN)
 
 ///////////////////////////////////////////////////////////////////////////////
 // DefaultWebClientWorker
@@ -312,15 +286,6 @@ void DefaultBrowserWorker::SetAsDefaultImpl(
         SetAsDefaultBrowser();
         break;
       case SET_DEFAULT_INTERACTIVE:
-#if BUILDFLAG(IS_WIN)
-        if (interactive_permitted_) {
-          win::SetAsDefaultBrowserUsingSystemSettings(
-              std::move(on_finished_callback));
-          // Early return because the function above takes care of calling
-          // `on_finished_callback`.
-          return;
-        }
-#endif  // BUILDFLAG(IS_WIN)
         break;
     }
   }
@@ -348,16 +313,6 @@ void DefaultSchemeClientWorker::StartCheckIsDefaultAndGetDefaultClientName(
           this, std::move(callback)));
 }
 
-#if BUILDFLAG(IS_WIN)
-void DefaultSchemeClientWorker::StartCheckIsDefaultAndGetDefaultClientProgId(
-    DefaultSchemeHandlerWorkerCallback callback) {
-  g_sequenced_task_runner.Get()->PostTask(
-      FROM_HERE,
-      base::BindOnce(
-          &DefaultSchemeClientWorker::CheckIsDefaultAndGetDefaultClientProgId,
-          this, std::move(callback)));
-}
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // DefaultSchemeClientWorker, protected:
@@ -394,22 +349,6 @@ void DefaultSchemeClientWorker::CheckIsDefaultAndGetDefaultClientName(
                      this, state, program_name, std::move(callback)));
 }
 
-#if BUILDFLAG(IS_WIN)
-void DefaultSchemeClientWorker::CheckIsDefaultAndGetDefaultClientProgId(
-    DefaultSchemeHandlerWorkerCallback callback) {
-  DCHECK(!url_.is_empty());
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
-
-  DefaultWebClientState state = CheckIsDefaultImpl();
-  std::u16string program_id = GetDefaultClientProgIdImpl();
-  content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&DefaultSchemeClientWorker::
-                         OnCheckIsDefaultAndGetDefaultClientValueComplete,
-                     this, state, program_id, std::move(callback)));
-}
-#endif
 
 DefaultWebClientState DefaultSchemeClientWorker::CheckIsDefaultImpl() {
   return IsDefaultClientForScheme(scheme_);
@@ -419,11 +358,6 @@ std::u16string DefaultSchemeClientWorker::GetDefaultClientNameImpl() {
   return GetApplicationNameForScheme(url_);
 }
 
-#if BUILDFLAG(IS_WIN)
-std::u16string DefaultSchemeClientWorker::GetDefaultClientProgIdImpl() {
-  return GetProgIdForScheme(url_);
-}
-#endif
 
 void DefaultSchemeClientWorker::SetAsDefaultImpl(
     base::OnceClosure on_finished_callback) {
@@ -435,15 +369,6 @@ void DefaultSchemeClientWorker::SetAsDefaultImpl(
       SetAsDefaultClientForScheme(scheme_);
       break;
     case SET_DEFAULT_INTERACTIVE:
-#if BUILDFLAG(IS_WIN)
-      if (interactive_permitted_) {
-        win::SetAsDefaultClientForSchemeUsingSystemSettings(
-            scheme_, std::move(on_finished_callback));
-        // Early return because the function above takes care of calling
-        // `on_finished_callback`.
-        return;
-      }
-#endif  // BUILDFLAG(IS_WIN)
       break;
   }
   std::move(on_finished_callback).Run();

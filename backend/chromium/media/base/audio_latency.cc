@@ -19,21 +19,12 @@
 #include "media/media_buildflags.h"
 
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/scheduler.h"
-#endif
 
 namespace media {
 
 // static
 bool AudioLatency::IsResamplingPassthroughSupported(Type type) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#elif BUILDFLAG(IS_FUCHSIA)
-  return true;
-#else
   return false;
-#endif
 }
 
 // static
@@ -44,22 +35,6 @@ int AudioLatency::GetHighLatencyBufferSize(int sample_rate,
   const double eighty_ms_size = 8.0 * sample_rate / 100;
   const int high_latency_buffer_size =
       std::bit_ceil(static_cast<uint32_t>(std::round(eighty_ms_size)));
-#elif BUILDFLAG(IS_FUCHSIA)
-  // Use 80ms buffers. Doesn't need to be aligned to power of 2, but it should
-  // be a multiple of the scheduling period used for audio threads.
-  constexpr base::TimeDelta period = base::Milliseconds(80);
-  static_assert(static_cast<int>(period / base::kAudioSchedulingPeriod) ==
-                period / base::kAudioSchedulingPeriod);
-  const int high_latency_buffer_size = period.InMilliseconds() * sample_rate /
-                                       base::Time::kMillisecondsPerSecond;
-#elif BUILDFLAG(IS_WIN)
-  const double twenty_ms_size = 2.0 * sample_rate / 100;
-  preferred_buffer_size = std::max(preferred_buffer_size, 1);
-
-  // Windows doesn't use power of two buffer sizes, so we should always round up
-  // to the nearest multiple of the output buffer size.
-  const int high_latency_buffer_size =
-      std::ceil(twenty_ms_size / preferred_buffer_size) * preferred_buffer_size;
 #else
   // On other platforms use the nearest higher power of two buffer size.  For a
   // given sample rate, this works out to:
@@ -140,15 +115,8 @@ int AudioLatency::GetExactBufferSize(base::TimeDelta duration,
   if (requested_buffer_size <= hardware_buffer_size)
     return hardware_buffer_size;
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows we allow either exactly the minimum buffer size (using
-  // IAudioClient3) or multiples of the default buffer size using the previous
-  // IAudioClient API.
-  const int multiplier = hardware_buffer_size;
-#else
   const int multiplier = min_hardware_buffer_size > 0 ? min_hardware_buffer_size
                                                       : hardware_buffer_size;
-#endif
 
   int buffer_size =
       std::ceil(requested_buffer_size / static_cast<double>(multiplier)) *

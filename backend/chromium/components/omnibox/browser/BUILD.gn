@@ -85,10 +85,6 @@ aggregate_vector_icons("omnibox_vector_icons") {
     sources += [ "share_mac_chrome_refresh.icon" ]
   }
 
-  if (is_win) {
-    sources += [ "share_win_chrome_refresh.icon" ]
-  }
-
   if (is_linux) {
     sources += [ "share_linux_chrome_refresh.icon" ]
   }
@@ -381,13 +377,9 @@ static_library("browser") {
 
   deps += [ "//components/keep_alive_registry" ]
 
-  if (!is_ios) {
-    deps += [ "//ui/base/clipboard" ]
-  }
+  deps += [ "//ui/base/clipboard" ]
 
-  if (!is_ios) {
-    deps += [ ":vector_icons" ]
-  }
+  deps += [ ":vector_icons" ]
 
   if (build_with_tflite_lib) {
     sources += [
@@ -493,13 +485,7 @@ static_library("location_bar") {
     "//ui/gfx",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//chromeos/constants" ]
-  }
-
-  if (!is_ios) {
-    deps += [ ":vector_icons" ]
-  }
+  deps += [ ":vector_icons" ]
 }
 
 static_library("test_support") {
@@ -728,23 +714,15 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_ios) {
-    sources += [ "location_bar_model_util_unittest.cc" ]
-    deps += [
-      ":buildflags",
-      "//components/omnibox/browser:vector_icons",
-      "//components/vector_icons",
-    ]
-  }
+  sources += [ "location_bar_model_util_unittest.cc" ]
+  deps += [
+    ":buildflags",
+    "//components/omnibox/browser:vector_icons",
+    "//components/vector_icons",
+  ]
 
-  if (!is_ios) {
-    sources += [ "history_cluster_provider_unittest.cc" ]
-    deps += [ "//ui/base/clipboard:clipboard_test_support" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/constants" ]
-  }
+  sources += [ "history_cluster_provider_unittest.cc" ]
+  deps += [ "//ui/base/clipboard:clipboard_test_support" ]
 
   if (build_with_tflite_lib) {
     sources += [
@@ -813,7 +791,5 @@ mojom("mojo_bindings") {
     "//url/mojom:url_mojom_gurl",
   ]
 
-  if (!is_ios) {
-    sources += [ "searchbox.mojom" ]
-  }
+  sources += [ "searchbox.mojom" ]
 }

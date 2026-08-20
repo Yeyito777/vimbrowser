@@ -55,26 +55,6 @@ component("app_types") {
 
 # This target is separate from //components/services/app_service because not all
 # clients of App Service are allowed to have a dependency on //content.
-if (is_chromeos) {
-  source_set("instance_update") {
-    sources = [
-      "instance.cc",
-      "instance.h",
-      "instance_registry.cc",
-      "instance_registry.h",
-      "instance_update.cc",
-      "instance_update.h",
-    ]
-    deps = [
-      ":macros",
-      "//ash/public/cpp",
-      "//content/public/browser",
-      "//skia",
-      "//ui/aura",
-      "//ui/compositor",
-    ]
-  }
-}
 
 source_set("test_support") {
   testonly = true
@@ -96,17 +76,6 @@ source_set("test_support") {
   ]
 
   public_deps = []
-
-  if (is_chromeos) {
-    sources += [
-      "app_instance_waiter.cc",
-      "app_instance_waiter.h",
-    ]
-    public_deps += [
-      ":instance_update",
-      "//base",
-    ]
-  }
 }
 
 # The following targets are used for internal code organization, and are not
@@ -346,21 +315,4 @@ source_set("unit_tests") {
     "//content/test:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "icon_types_unittest.cc",
-      "instance_registry_unittest.cc",
-      "instance_unittest.cc",
-      "instance_update_unittest.cc",
-      "permission_unittest.cc",
-      "run_on_os_login_types_unittest.cc",
-    ]
-
-    deps += [
-      ":instance_update",
-      "//chrome/test:test_support",
-      "//components/services/app_service/public/cpp/shortcut:unit_tests",
-    ]
-  }
 }

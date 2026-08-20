@@ -229,27 +229,6 @@ void DirectRenderer::DrawFrame(
   gfx::Size surface_resource_size =
       CalculateSizeForOutputSurface(device_viewport_size);
 
-#if BUILDFLAG(IS_WIN)
-  if (output_surface_->capabilities().clear_drawn_areas_outside_viewport &&
-      device_viewport_size != surface_resource_size) {
-    // On Windows with DirectComposition, we cannot synchronize the swap chain
-    // |Present| and the DComp |Commit| calls to take effect at the same time.
-    // (Both take effect asynchronously.) Hence, presenting a frame and changing
-    // the DComp layer clip rect can happen at different times. This can lead to
-    // ugly visual artifacts while resizing the window because it can reveal
-    // areas of the surface that are outside the viewport (crbug.com/457463689).
-    // To prevent those artifacts, we clear areas outside of the viewport with a
-    // transparent color. Transparency is expensive, so we use it only while
-    // resizing.
-    // This line gives us a transparent image format and triggers the background
-    // to be cleared in |SkiaRenderer::ClearFramebuffer|.
-    root_render_pass->has_transparent_background = true;
-    // Redraw and swap the whole surface.
-    root_render_pass->output_rect = gfx::Rect(surface_resource_size);
-    current_frame()->root_damage_rect = gfx::Rect(surface_resource_size);
-    current_frame()->device_viewport_size = surface_resource_size;
-  }
-#endif
 
   output_surface_->SetNeedsMeasureNextDrawLatency();
   BeginDrawingFrame();
@@ -288,9 +267,6 @@ void DirectRenderer::DrawFrame(
       current_frame()->display_color_spaces.GetOutputFormat(
           current_frame()->root_render_pass->content_color_usage,
           current_frame()->root_render_pass->has_transparent_background);
-#if BUILDFLAG(IS_WIN)
-  bool has_primary_plane = false;
-#endif
   if (overlay_processor_) {
     // Display transform and viewport size are needed for overlay validator on
     // Android SurfaceControl. These need to be called before
@@ -334,11 +310,6 @@ void DirectRenderer::DrawFrame(
         "Compositing.DirectRenderer.OverlayProcessingUs",
         overlay_processing_time, kMinTime, kMaxTime, kTimeBuckets);
 
-#if BUILDFLAG(IS_WIN)
-    has_primary_plane = std::ranges::any_of(
-        current_frame()->overlay_list,
-        [](const auto& candidate) { return candidate.is_root_render_pass; });
-#endif
   }
 
   // Only reshape when we know we are going to draw. Otherwise, the reshape
@@ -368,34 +339,12 @@ void DirectRenderer::DrawFrame(
     // TODO(penghuang): verify this logic with SkiaRenderer.
     if (!output_surface_->capabilities().supports_surfaceless)
       needs_full_frame_redraw = true;
-#elif BUILDFLAG(IS_WIN)
-    // If compositing is delegated, then there will be no output_surface_plane,
-    // and we should not trigger a redraw of the root render pass.
-    // Pixel tests will not be displayed as overlay planes, so they need redraw.
-    if (has_primary_plane ||
-        !output_surface_->capabilities().renderer_allocates_images) {
-      needs_full_frame_redraw = true;
-    }
 #else
     // The entire surface has to be redrawn if reshape is requested.
     needs_full_frame_redraw = true;
 #endif
   }
 
-#if BUILDFLAG(IS_WIN)
-  // For delegated compositing the root pass is preserved, but not rendered.
-  // If a previous frame fell out of delegated compositing we want to make
-  // sure that we deallocate its backing when switching back to delegated
-  // compositing.
-  const bool skip_root_render_pass_allocation =
-      output_surface_->capabilities().renderer_allocates_images &&
-      !has_primary_plane;
-  if (skip_root_render_pass_allocation) {
-    // We expect to be in delegated compositing mode, which means the root
-    // damage rect has been cleared.
-    CHECK(current_frame()->root_damage_rect.IsEmpty());
-  }
-#else
   // TODO(crbug.com/40224327): Consider deallocating the primary plane in this
   // case.
   // Non-Windows platforms use BufferQueue, which are not owned by the render
@@ -403,7 +352,6 @@ void DirectRenderer::DrawFrame(
   // overlay-ability and macOS wants to just discard the underlying surfaces
   // for performance.
   const bool skip_root_render_pass_allocation = false;
-#endif
   DecideRenderPassAllocationsForFrame(*render_passes_in_draw_order,
                                       skip_root_render_pass_allocation);
 
@@ -846,26 +794,9 @@ DirectRenderer::CalculateRenderPassRequirements(
 
   RenderPassRequirements requirements;
 
-#if BUILDFLAG(IS_WIN)
-  // All root render pass backings allocated by the renderer needs to eventually
-  // go into some composition tree. Other things that own/allocate the root pass
-  // backing include the output device and buffer queue.
-  requirements.is_scanout = is_root;
-  if (IsDelegatedCompositingSupportedAndEnabled(
-          output_surface_->capabilities().dc_support_level)) {
-    // Windows also can support scanout backings for non-root passes to optimize
-    // partially delegated compositing iff they will not be read in Viz.
-    requirements.is_scanout |= render_pass->is_from_surface_root_pass &&
-                               !render_pass->will_backing_be_read_by_viz;
-  }
-
-  requirements.scanout_dcomp_surface =
-      requirements.is_scanout && render_pass->needs_synchronous_dcomp_commit;
-#else
   // On macOS the root render pass is handled by |BufferQueue| and
   // RPDQ overlays are handled by |PrepareRenderPassOverlay|.
   requirements.is_scanout = is_root;
-#endif
 
   if (is_root) {
     requirements.size = surface_size_for_swap_buffers();

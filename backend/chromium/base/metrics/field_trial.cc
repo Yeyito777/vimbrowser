@@ -40,16 +40,7 @@
 #include "base/process/launch.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#include <zircon/process.h>
-
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 namespace base {
 

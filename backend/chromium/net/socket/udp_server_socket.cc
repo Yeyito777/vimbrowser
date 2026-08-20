@@ -148,9 +148,6 @@ DscpAndEcn UDPServerSocket::GetLastTos() const {
 }
 
 void UDPServerSocket::UseNonBlockingIO() {
-#if BUILDFLAG(IS_WIN)
-  socket_.UseNonBlockingIO();
-#endif
 }
 
 }  // namespace net

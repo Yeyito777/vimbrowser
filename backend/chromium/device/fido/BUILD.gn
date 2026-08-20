@@ -258,46 +258,6 @@ component("fido") {
 
       deps += [ "//build:branding_buildflags" ]
     }
-
-    if (is_win) {
-      sources += [
-        "win/authenticator.cc",
-        "win/authenticator.h",
-        "win/discovery.cc",
-        "win/discovery.h",
-        "win/fake_webauthn_api.cc",
-        "win/fake_webauthn_api.h",
-        "win/logging.cc",
-        "win/logging.h",
-        "win/type_conversions.cc",
-        "win/type_conversions.h",
-        "win/util.cc",
-        "win/util.h",
-        "win/webauthn_api.cc",
-        "win/webauthn_api.h",
-      ]
-      deps += [ "//third_party/microsoft_webauthn" ]
-      libs = [ "wtsapi32.lib" ]
-    }
-
-    if (is_chromeos) {
-      sources += [
-        "cros/authenticator.cc",
-        "cros/authenticator.h",
-        "cros/credential_store.cc",
-        "cros/credential_store.h",
-        "cros/discovery.cc",
-        "cros/discovery.h",
-      ]
-
-      deps += [
-        "//chromeos/dbus/tpm_manager",
-        "//chromeos/dbus/tpm_manager:tpm_manager_proto",
-        "//chromeos/dbus/u2f",
-        "//chromeos/dbus/u2f:u2f_proto",
-        "//dbus",
-      ]
-    }
   }
 }
 

@@ -114,16 +114,6 @@ SupervisedUserMetricsService::SupervisedUserMetricsService(
   timer_.Start(FROM_HERE, kTimerInterval, this,
                &SupervisedUserMetricsService::CheckForNewDay);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Platforms that support parental controls must also provide a delegate to
-  // register synthetic field trials.
-  CHECK(synthetic_field_trial_delegate_)
-      << "Synthetic field trial delegate must exist on Android";
-  device_parental_controls_subscription_ =
-      device_parental_controls.Subscribe(base::BindRepeating(
-          &SupervisedUserMetricsService::OnDeviceParentalControlsChanged,
-          base::Unretained(this)));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 SupervisedUserMetricsService::~SupervisedUserMetricsService() = default;

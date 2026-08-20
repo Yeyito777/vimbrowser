@@ -50,7 +50,6 @@ UsbChooserContext* GetChooserContext(content::BrowserContext* browser_context) {
   return profile ? UsbChooserContextFactory::GetForProfile(profile) : nullptr;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 UsbConnectionTracker* GetConnectionTracker(
     content::BrowserContext* browser_context,
     bool create) {
@@ -60,7 +59,6 @@ UsbConnectionTracker* GetConnectionTracker(
   return profile ? UsbConnectionTrackerFactory::GetForProfile(profile, create)
                  : nullptr;
 }
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 // These extensions can claim the smart card USB class and automatically gain
@@ -202,52 +200,6 @@ void ChromeUsbDelegate::AdjustProtectedInterfaceClasses(
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // These extensions can claim the protected HID interface class (example: used
-  // as badge readers)
-  static constexpr auto kHidPrivilegedExtensionIds =
-      base::MakeFixedFlatSet<std::string_view>({
-          // Imprivata Extensions, see crbug.com/1065112 and crbug.com/40640984.
-          "baobpecgllpajfeojepgedjdlnlfffde",
-          "bnfoibgpjolimhppjmligmcgklpboloj",
-          "cdgickkdpbekbnalbmpgochbninibkko",
-          "cjakdianfealdjlapagfagpdpemoppba",
-          "cokoeepjbmmnhgdhlkpahohdaiedfjgn",
-          "dahgfgiifpnaoajmloofonkndaaafacp",
-          "dbknmmkopacopifbkgookcdbhfnggjjh",
-          "ddcjglpbfbibgepfffpklmpihphbcdco",
-          "dhodapiemamlmhlhblgcibabhdkohlen",
-          "dlahpllbhpbkfnoiedkgombmegnnjopi",
-          "egfpnfjeaopimgpiioeedbpmojdapaip",
-          "fnbibocngjnefolmcodjkkghijpdlnfm",
-          "jcnflhjcfjkplgkcinikhbgbhfldkadl",
-          "jkfjfbelolphkjckiolfcakgalloegek",
-          "kmhpgpnbglclbaccjjgoioogjlnfgbne",
-          "lpimkpkllnkdlcigdbgmabfplniahkgm",
-          "odehonhhkcjnbeaomlodfkjaecbmhklm",
-          "olnmflhcfkifkgbiegcoabineoknmbjc",
-          "omificdfgpipkkpdhbjmefgfgbppehke",
-          "phjobickjiififdadeoepbdaciefacfj",
-          "pkeacbojooejnjolgjdecbpnloibpafm",
-          "pllbepacblmgialkkpcceohmjakafnbb",
-          "plpogimmgnkkiflhpidbibfmgpkaofec",
-          "pmhiabnkkchjeaehcodceadhdpfejmmd",
-
-          // Hotrod Extensions, see crbug.com/1220165
-          "acdafoiapclbpdkhnighhilgampkglpc",
-          "denipklgekfpcdmbahmbpnmokgajnhma",
-          "hkamnlhnogggfddmjomgbdokdkgfelgg",
-          "ikfcpmgefdpheiiomgmhlmmkihchmdlj",
-          "jlgegmdnodfhciolbdjciihnlaljdbjo",
-          "ldmpofkllgeicjiihkimgeccbhghhmfj",
-          "lkbhffjfgpmpeppncnimiiikojibkhnm",
-          "moklfjoegmpoolceggbebbmgbddlhdgp",
-      });
-
-  if (kHidPrivilegedExtensionIds.contains(origin.host())) {
-    std::erase(classes, device::mojom::kUsbHidClass);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (kSmartCardPrivilegedExtensionIds.contains(origin.host())) {
     std::erase(classes, device::mojom::kUsbSmartCardClass);
@@ -415,7 +367,6 @@ void ChromeUsbDelegate::IncrementConnectionCount(
     const url::Origin& origin) {
 // Don't track connection when the feature isn't enabled or the connection
 // isn't made by an extension origin.
-#if !BUILDFLAG(IS_ANDROID)
   if (origin.scheme() != extensions::kExtensionScheme) {
     return;
   }
@@ -425,7 +376,6 @@ void ChromeUsbDelegate::IncrementConnectionCount(
   if (usb_connection_tracker) {
     usb_connection_tracker->IncrementConnectionCount(origin);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeUsbDelegate::DecrementConnectionCount(
@@ -433,7 +383,6 @@ void ChromeUsbDelegate::DecrementConnectionCount(
     const url::Origin& origin) {
   // Don't track connection when the feature isn't enabled or the connection
   // isn't made by an extension origin.
-#if !BUILDFLAG(IS_ANDROID)
   if (origin.scheme() != extensions::kExtensionScheme) {
     return;
   }
@@ -442,5 +391,4 @@ void ChromeUsbDelegate::DecrementConnectionCount(
   if (usb_connection_tracker) {
     usb_connection_tracker->DecrementConnectionCount(origin);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }

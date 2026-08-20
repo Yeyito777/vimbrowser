@@ -29,9 +29,6 @@
 #include "media/mojo/mojom/audio_logging.mojom.h"
 #include "services/audio/public/cpp/device_factory.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/audio/win/core_audio_util_win.h"
-#endif
 
 using media::AudioBus;
 using media::AudioConverter;
@@ -528,10 +525,6 @@ SpeechRecognizerImpl::StartRecording(const FSMEventArgs&) {
   // TODO(henrika): this code should be moved to platform dependent audio
   // managers.
   bool use_native_audio_params = true;
-#if BUILDFLAG(IS_WIN)
-  use_native_audio_params = media::CoreAudioUtil::IsSupported();
-  DVLOG_IF(1, !use_native_audio_params) << "Reverting to WaveIn for WebSpeech";
-#endif
 
   AudioParameters input_parameters = output_parameters;
 

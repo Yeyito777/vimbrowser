@@ -23,9 +23,6 @@
 #include "google_apis/gaia/oauth2_access_token_manager.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "components/signin/public/identity_manager/access_token_fetcher.h"
-#endif
 
 ProfileOAuth2TokenService::ProfileOAuth2TokenService(
     PrefService* user_prefs,
@@ -148,14 +145,6 @@ ProfileOAuth2TokenService::StartRequest(
   return token_manager_->StartRequest(account_id, scopes, consumer);
 }
 
-#if BUILDFLAG(IS_IOS)
-void ProfileOAuth2TokenService::GetRefreshTokenFromDevice(
-    const CoreAccountId& account_id,
-    const OAuth2AccessTokenManager::ScopeSet& scopes,
-    signin::AccessTokenFetcher::TokenCallback callback) {
-  delegate_->GetRefreshTokenFromDevice(account_id, scopes, std::move(callback));
-}
-#endif
 
 void ProfileOAuth2TokenService::StartRequestForMultilogin(
     signin::OAuthMultiloginTokenRequest& request,
@@ -318,24 +307,12 @@ std::vector<CoreAccountId> ProfileOAuth2TokenService::GetAccounts() const {
   return GetDelegate()->GetAccounts();
 }
 
-#if BUILDFLAG(IS_IOS)
-std::vector<AccountInfo> ProfileOAuth2TokenService::GetAccountsOnDevice()
-    const {
-  return GetDelegate()->GetAccountsOnDevice();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 bool ProfileOAuth2TokenService::RefreshTokenIsAvailable(
     const CoreAccountId& account_id) const {
   return delegate_->RefreshTokenIsAvailable(account_id);
 }
 
-#if BUILDFLAG(IS_IOS)
-bool ProfileOAuth2TokenService::RefreshTokenIsAvailableOnDevice(
-    const CoreAccountId& account_id) const {
-  return delegate_->RefreshTokenIsAvailableOnDevice(account_id);
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 GoogleServiceAuthError ProfileOAuth2TokenService::GetAuthError(
     const CoreAccountId& account_id) const {
@@ -442,10 +419,8 @@ bool ProfileOAuth2TokenService::HasLoadCredentialsFinishedWithNoErrors() {
 
 void ProfileOAuth2TokenService::RecreateDeviceIdIfNeeded() {
 // On ChromeOS the device ID is not managed by the token service.
-#if !BUILDFLAG(IS_CHROMEOS)
   if (AreAllCredentialsLoaded() && HasLoadCredentialsFinishedWithNoErrors() &&
       GetAccounts().empty()) {
     signin::RecreateSigninScopedDeviceId(user_prefs_);
   }
-#endif
 }

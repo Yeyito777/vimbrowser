@@ -23,11 +23,6 @@ mojom("mojom") {
     "//sandbox/policy/mojom",
   ]
 
-  if (is_chromeos) {
-    sources += [ "zip_file_creator.mojom" ]
-    public_deps += [ "//components/services/filesystem/public/mojom" ]
-  }
-
   if (enable_extractors) {
     sources += [
       "constants.mojom",

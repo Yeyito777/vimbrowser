@@ -66,16 +66,14 @@ source_set("impl") {
   if (toolkit_views) {
     deps += [ "//chrome/common" ]
 
-    if (!is_chromeos) {
-      sources += [ "sync_passphrase_dialog.cc" ]
-      deps += [
-        "//chrome/browser:browser_process",
-        "//chrome/browser/ui/dialogs",
-        "//components/strings",
-        "//ui/base",
-        "//url",
-      ]
-    }
+    sources += [ "sync_passphrase_dialog.cc" ]
+    deps += [
+      "//chrome/browser:browser_process",
+      "//chrome/browser/ui/dialogs",
+      "//components/strings",
+      "//ui/base",
+      "//url",
+    ]
   }
 }
 
@@ -105,12 +103,6 @@ source_set("unit_tests") {
     "//components/prefs:test_support",
     "//components/sync_preferences:test_support",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/users",
-      "//chrome/browser/ash/settings:test_support",
-    ]
-  }
 
   if (is_linux || is_mac || is_win) {
     sources += [ "sync_passphrase_dialog_unittest.cc" ]
@@ -118,27 +110,25 @@ source_set("unit_tests") {
   }
 }
 
-if (!is_chromeos_device) {
-  source_set("interactive_ui_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+source_set("interactive_ui_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    if (is_mac || is_linux || is_win) {
-      sources = [ "sync_passphrase_dialog_browsertest.cc" ]
-      deps = [
-        ":sync",
-        "//base",
-        "//base/test:test_support",
-        "//chrome/browser/ui",
-        "//chrome/common",
-        "//chrome/test:test_support_ui",
-        "//content/test:test_support",
-        "//testing/gtest",
-        "//ui/base",
-        "//ui/base:test_support",
-        "//ui/views",
-        "//url",
-      ]
-    }
+  if (is_mac || is_linux || is_win) {
+    sources = [ "sync_passphrase_dialog_browsertest.cc" ]
+    deps = [
+      ":sync",
+      "//base",
+      "//base/test:test_support",
+      "//chrome/browser/ui",
+      "//chrome/common",
+      "//chrome/test:test_support_ui",
+      "//content/test:test_support",
+      "//testing/gtest",
+      "//ui/base",
+      "//ui/base:test_support",
+      "//ui/views",
+      "//url",
+    ]
   }
 }

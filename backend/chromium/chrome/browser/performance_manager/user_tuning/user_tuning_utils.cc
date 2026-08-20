@@ -22,40 +22,27 @@
 #include "components/performance_manager/public/performance_manager.h"
 #include "content/public/common/content_features.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include <algorithm>
 #include <string>
 #include <vector>
 
 #include "chrome/browser/performance_manager/policies/cannot_discard_reason.h"
 #include "chrome/browser/performance_manager/policies/page_discarding_helper.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#endif
 
 namespace performance_manager::user_tuning {
 
 bool IsRefreshRateThrottled() {
-#if BUILDFLAG(IS_ANDROID)
-  return false;
-#else
   // This can be false in unit tests.
   if (!BatterySaverModeManager::HasInstance()) {
     return false;
   }
 
   return BatterySaverModeManager::GetInstance()->IsBatterySaverActive();
-#endif
 }
 
 bool IsBatterySaverModeManagedByOS() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ash::features::IsBatterySaverAvailable();
-#else
   return false;
-#endif
 }
 
 base::ByteSize GetDiscardedMemoryEstimateForPage(const PageNode* node) {
@@ -66,12 +53,6 @@ base::ByteSize GetDiscardedMemoryEstimateForPage(const PageNode* node) {
 
 std::vector<std::string> GetCannotDiscardReasonsForPageNode(
     const PageNode* page_node) {
-#if BUILDFLAG(IS_ANDROID)
-  // Discarding on Android depends on kWebContentsDiscard.
-  if (!base::FeatureList::IsEnabled(::features::kWebContentsDiscard)) {
-    return {"not implemented"};
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   auto* discarding_helper = policies::DiscardEligibilityPolicy::GetFromGraph(
       PerformanceManager::GetGraph());

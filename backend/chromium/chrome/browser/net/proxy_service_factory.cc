@@ -14,9 +14,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/network/proxy/proxy_config_service_impl.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using content::BrowserThread;
 
@@ -32,7 +29,6 @@ ProxyServiceFactory::CreateProxyConfigService(PrefProxyConfigTracker* tracker,
 
   std::unique_ptr<net::ProxyConfigService> base_service;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // On ChromeOS, base service is NULL; ash::ProxyConfigServiceImpl
   // determines the effective proxy config to take effect in the network layer,
   // be it from prefs or system (which is network shill on chromeos).
@@ -43,7 +39,6 @@ ProxyServiceFactory::CreateProxyConfigService(PrefProxyConfigTracker* tracker,
 
   base_service = net::ProxyConfigService::CreateSystemProxyConfigService(
       base::SingleThreadTaskRunner::GetCurrentDefault());
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   return tracker->CreateTrackingProxyConfigService(std::move(base_service));
 }
@@ -53,23 +48,13 @@ std::unique_ptr<PrefProxyConfigTracker>
 ProxyServiceFactory::CreatePrefProxyConfigTrackerOfProfile(
     PrefService* profile_prefs,
     PrefService* local_state_prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<ash::ProxyConfigServiceImpl>(
-      profile_prefs, local_state_prefs, nullptr);
-#else
   return std::make_unique<PrefProxyConfigTrackerImpl>(profile_prefs, nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // static
 std::unique_ptr<PrefProxyConfigTracker>
 ProxyServiceFactory::CreatePrefProxyConfigTrackerOfLocalState(
     PrefService* local_state_prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<ash::ProxyConfigServiceImpl>(
-      nullptr, local_state_prefs, nullptr);
-#else
   return std::make_unique<PrefProxyConfigTrackerImpl>(local_state_prefs,
                                                       nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }

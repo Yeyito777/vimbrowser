@@ -32,10 +32,8 @@ namespace internal {
 
 // Boolean specifying whether the user finished setting up sync at least once.
 // On ChromeOS, the concept of initial-sync-setup doesn't exist.
-#if !BUILDFLAG(IS_CHROMEOS)
 inline constexpr char kSyncInitialSyncFeatureSetupComplete[] =
     "sync.has_setup_completed";
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // Boolean specifying whether to automatically sync all data types (including
 // future ones, as they're added).  If this is true, the following preferences
@@ -53,22 +51,6 @@ inline constexpr char kSelectedTypesPerAccount[] =
 inline constexpr char kSyncTransportDataPerAccount[] =
     "sync.transport_data_per_account";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Boolean specifying whether sync was disabled due to a dashboard reset event.
-inline constexpr char kSyncDisabledViaDashboard[] =
-    "sync.disabled_via_dashboard";
-
-// Boolean specifying whether to automatically sync all Chrome OS specific data
-// types (including future ones). This includes types like printers, OS-only
-// settings, etc. If set, the individual type preferences can be ignored.
-inline constexpr char kSyncAllOsTypes[] = "sync.all_os_types";
-
-// Booleans specifying whether the user has selected to sync the following
-// OS user selectable types.
-inline constexpr char kSyncOsApps[] = "sync.os_apps";
-inline constexpr char kSyncOsPreferences[] = "sync.os_preferences";
-inline constexpr char kSyncWifiConfigurations[] = "sync.wifi_configurations";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Booleans specifying whether the user has selected to sync the following
 // user selectable types. Which are also used as keys within

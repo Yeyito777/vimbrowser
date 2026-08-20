@@ -31,9 +31,6 @@
 #include "ui/gfx/native_pixmap.h"
 #include "ui/gfx/native_pixmap_handle.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "media/gpu/chromeos/decoder_buffer_transcryptor.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 namespace base {
 class SequencedTaskRunner;
 }
@@ -368,11 +365,6 @@ class MEDIA_GPU_EXPORT VideoDecoderPipeline : public VideoDecoder,
   // *|override_status| is kAborted.
   void CallFlushCbIfNeeded(std::optional<DecoderStatus> override_status);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Callback for when transcryption of a buffer completes.
-  void OnBufferTranscrypted(scoped_refptr<DecoderBuffer> transcrypted_buffer,
-                            DecodeCB decode_callback);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Used to determine the decoder's maximum output frame pool size.
   size_t GetDecoderMaxOutputFramePoolSize() const;
@@ -426,21 +418,6 @@ class MEDIA_GPU_EXPORT VideoDecoderPipeline : public VideoDecoder,
 
   const std::unique_ptr<MediaLog> media_log_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The transcryptor for transcrypting DecoderBuffers when needed by the HW
-  // decoder implementation.
-  std::unique_ptr<DecoderBufferTranscryptor> buffer_transcryptor_
-      GUARDED_BY_CONTEXT(decoder_sequence_checker_);
-
-  // While |drop_transcrypted_buffers_| is true, we don't pass transcrypted
-  // buffers to the |decoder_|, and instead, we call the corresponding decode
-  // callback with kAborted. This is the case while a reset is ongoing, and it's
-  // needed because the VideoDecoderMixin interface (by virtue of deriving from
-  // VideoDecoder) requires that no VideoDecoder calls are made until the reset
-  // closure has been executed.
-  bool drop_transcrypted_buffers_
-      GUARDED_BY_CONTEXT(decoder_sequence_checker_) = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // The current video decoder implementation. Valid after initialization is
   // successfully done.

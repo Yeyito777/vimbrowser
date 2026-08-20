@@ -197,16 +197,14 @@ component("gl") {
   }
 
   if (use_ozone) {
-    if (!is_fuchsia) {
-      if (!use_static_angle) {
-        data_deps += [
-          "//third_party/angle:libEGL",
-          "//third_party/angle:libGLESv2",
-        ]
-      }
-      if (angle_shared_libvulkan && !is_chromeos) {
-        data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
-      }
+    if (!use_static_angle) {
+      data_deps += [
+        "//third_party/angle:libEGL",
+        "//third_party/angle:libGLESv2",
+      ]
+    }
+    if (angle_shared_libvulkan && !is_chromeos) {
+      data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
     }
   }
 
@@ -225,79 +223,6 @@ component("gl") {
       "//ui/gfx/linux:gbm_support_x11",
     ]
 
-    if (!use_static_angle) {
-      data_deps += [
-        "//third_party/angle:libEGL",
-        "//third_party/angle:libGLESv2",
-      ]
-    }
-    if (angle_shared_libvulkan && !is_chromeos) {
-      data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "child_window_win.cc",
-      "child_window_win.h",
-      "dc_layer_overlay_image.cc",
-      "dc_layer_overlay_image.h",
-      "dc_layer_overlay_params.cc",
-      "dc_layer_overlay_params.h",
-      "dc_layer_tree.cc",
-      "dc_layer_tree.h",
-      "dcomp_presenter.cc",
-      "dcomp_presenter.h",
-      "dcomp_surface_proxy.h",
-      "dcomp_surface_registry.cc",
-      "dcomp_surface_registry.h",
-      "debug_utils.cc",
-      "debug_utils.h",
-      "delegated_ink_point_renderer_gpu.cc",
-      "delegated_ink_point_renderer_gpu.h",
-      "direct_composition_support.cc",
-      "direct_composition_support.h",
-      "gl_angle_util_win.cc",
-      "gl_angle_util_win.h",
-      "gl_fence_win.cc",
-      "gl_fence_win.h",
-      "hdr_metadata_helper_win.cc",
-      "hdr_metadata_helper_win.h",
-      "os_compositor_tree_base.h",
-      "swap_chain_presenter.cc",
-      "swap_chain_presenter.h",
-      "vsync_provider_win.cc",
-      "vsync_provider_win.h",
-      "vsync_provider_win_dcomp.cc",
-      "vsync_provider_win_dcomp.h",
-      "vsync_thread_win.cc",
-      "vsync_thread_win.h",
-      "vsync_thread_win_dcomp.cc",
-      "vsync_thread_win_dcomp.h",
-      "vsync_thread_win_dxgi.cc",
-      "vsync_thread_win_dxgi.h",
-    ]
-
-    libs = [
-      "dcomp.lib",
-      "dxgi.lib",
-      "dxguid.lib",
-      "dwmapi.lib",
-    ]
-    ldflags = [
-      "/DELAYLOAD:dwmapi.dll",
-      "/DELAYLOAD:dxgi.dll",
-    ]
-    deps += [
-      "//ui/base",
-      "//ui/display",
-      "//ui/gfx/mojom:dxgi_info",
-    ]
-
-    data_deps += [
-      "//third_party/swiftshader/src/Vulkan:icd_file",
-      "//third_party/swiftshader/src/Vulkan:swiftshader_libvulkan",
-    ]
     if (!use_static_angle) {
       data_deps += [
         "//third_party/angle:libEGL",
@@ -368,10 +293,6 @@ component("gl") {
 
   if (is_linux || is_chromeos) {
     deps += [ "//third_party/angle:angle_gpu_info_util" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
   }
 }
 
@@ -512,17 +433,6 @@ test("gl_unittests") {
     sources += [ "gl_surface_egl_unittest.cc" ]
   }
 
-  if (is_win) {
-    sources += [
-      "dcomp_presenter_unittest.cc",
-      "dcomp_surface_registry_unittest.cc",
-      "delegated_ink_point_renderer_gpu_unittest.cc",
-      "gl_fence_win_unittest.cc",
-      "hdr_metadata_helper_win_unittest.cc",
-      "os_compositor_tree_base_unittest.cc",
-    ]
-  }
-
   deps = [
     ":gl",
     ":gl_headers",
@@ -543,14 +453,6 @@ test("gl_unittests") {
   ]
 
   data_deps = [ "//testing/buildbot/filters:gl_unittests_filters" ]
-
-  if (is_win) {
-    deps += [
-      "//media/base/win:test_support",
-      "//ui/base:pixel_diff_test_support",
-    ]
-    libs = [ "dxguid.lib" ]
-  }
 
   if (use_ozone) {
     deps += [ "//ui/ozone" ]

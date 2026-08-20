@@ -126,27 +126,13 @@
 #include "ui/base/window_open_disposition.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/devtools/devtools_policy_dialog.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/ui/browser_commands_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#include "content/public/browser/gpu_data_manager.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/boca/on_task/on_task_locked_controller.h"
-#include "chrome/browser/platform_util.h"
-#include "chrome/browser/ui/ash/multi_user/multi_user_context_menu.h"
-#include "chrome/browser/ui/browser_commands_chromeos.h"
-#include "components/session_manager/core/session_manager.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/base/ime/text_edit_commands.h"
@@ -397,19 +383,6 @@ bool BrowserCommandController::IsReservedCommandOrKey(
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, the top row of keys are mapped to browser actions like
-  // back/forward or refresh. We don't want web pages to be able to change the
-  // behavior of these keys.  Ash handles F4 and up; this leaves us needing to
-  // reserve browser back/forward and refresh here.
-  ui::KeyboardCode key_code =
-      static_cast<ui::KeyboardCode>(event.windows_key_code);
-  if ((key_code == ui::VKEY_BROWSER_BACK && command_id == IDC_BACK) ||
-      (key_code == ui::VKEY_BROWSER_FORWARD && command_id == IDC_FORWARD) ||
-      (key_code == ui::VKEY_BROWSER_REFRESH && command_id == IDC_RELOAD)) {
-    return true;
-  }
-#endif
 
   if (window()->IsFullscreen()) {
     // In fullscreen, all commands except for IDC_FULLSCREEN and IDC_EXIT should
@@ -470,11 +443,6 @@ void BrowserCommandController::FullscreenStateChanged() {
   UpdateCommandsForFullscreenMode();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BrowserCommandController::LockedFullscreenStateChanged() {
-  UpdateCommandsForLockedFullscreenMode();
-}
-#endif
 
 void BrowserCommandController::PrintingStateChanged() {
   UpdatePrintingState();
@@ -500,12 +468,6 @@ void BrowserCommandController::FindBarVisibilityChanged() {
   // TODO(crbug.com/365146870): Remove once we consolidate locked fullscreen
   // with OnTask.
   bool should_block_command_update = is_locked_fullscreen_;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::boca::OnTaskLockedController::From(browser_)
-          ->is_locked_for_on_task()) {
-    should_block_command_update = false;
-  }
-#endif
   if (should_block_command_update) {
     return;
   }
@@ -735,20 +697,6 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       PromptToNameWindow(browser_);
       break;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    case IDC_TAKE_SCREENSHOT:
-      TakeScreenshot();
-      break;
-    case IDC_TOGGLE_MULTITASK_MENU:
-      ToggleMultitaskMenu(browser_);
-      break;
-    case IDC_VISIT_DESKTOP_OF_LRU_USER_2:
-    case IDC_VISIT_DESKTOP_OF_LRU_USER_3:
-    case IDC_VISIT_DESKTOP_OF_LRU_USER_4:
-    case IDC_VISIT_DESKTOP_OF_LRU_USER_5:
-      ExecuteVisitDesktopCommand(id, window()->GetNativeWindow());
-      break;
-#endif
 
 #if BUILDFLAG(IS_LINUX)
     case IDC_MINIMIZE_WINDOW:
@@ -796,9 +744,7 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
           browser_->tab_strip_model()->GetActiveWebContents();
       if (base::FeatureList::IsEnabled(features::kDevToolsShowPolicyDialog) &&
           !DevToolsWindow::AllowDevToolsFor(profile(), web_contents)) {
-#if !BUILDFLAG(IS_ANDROID)
         DevToolsPolicyDialog::Show(web_contents);
-#endif
       } else {
         web_contents->GetPrimaryMainFrame()->ViewSource();
       }
@@ -832,11 +778,9 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
     case IDC_SHOW_SYNC_SETTINGS:
       chrome::ShowSettingsSubPage(browser_, chrome::kSyncSetupSubPage);
       break;
-#if !BUILDFLAG(IS_CHROMEOS)
     case IDC_SHOW_SYNC_PASSPHRASE_DIALOG:
       ShowSyncPassphraseDialogAndDecryptData(*browser_);
       break;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
     case IDC_SHOW_CONTEXTUAL_TASKS_SIDE_PANEL:
       ToggleContextualTasksSidePanel(browser_);
       break;
@@ -1271,11 +1215,9 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       OpenInChrome(browser_);
       break;
     case IDC_WEB_APP_SETTINGS:
-#if !BUILDFLAG(IS_CHROMEOS)
       CHECK(browser_->app_controller());
       ShowWebAppSettings(browser_, browser_->app_controller()->app_id(),
                          web_app::AppSettingsPageEntryPoint::kBrowserCommand);
-#endif
       break;
     case IDC_WEB_APP_MENU_APP_INFO: {
       content::WebContents* const web_contents =
@@ -1335,7 +1277,6 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       break;
     }
 
-#if !BUILDFLAG(IS_CHROMEOS)
     // Profile submenu commands
     // This menu item is not enabled on ChromeOS and certain capabilities such
     // as the profile picker are not available.
@@ -1373,7 +1314,6 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       ProfilePicker::Show(ProfilePicker::Params::FromEntryPoint(
           ProfilePicker::EntryPoint::kAppMenuProfileSubMenuManageProfiles));
       break;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
     case IDC_SET_BROWSER_AS_DEFAULT:
       base::MakeRefCounted<shell_integration::DefaultBrowserWorker>()
@@ -1435,12 +1375,6 @@ bool BrowserCommandController::UpdateCommandEnabled(int id, bool state) {
   // TODO(crbug.com/365146870): Remove once we consolidate locked fullscreen
   // with OnTask.
   bool should_block_command_update = is_locked_fullscreen_;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::boca::OnTaskLockedController::From(browser_)
-          ->is_locked_for_on_task()) {
-    should_block_command_update = false;
-  }
-#endif
   if (should_block_command_update) {
     return false;
   }
@@ -1548,23 +1482,6 @@ void BrowserCommandController::InitCommandState() {
   command_updater_.UpdateCommandEnabled(IDC_ORGANIZE_TABS, true);
   command_updater_.UpdateCommandEnabled(IDC_TOGGLE_VERTICAL_TABS, true);
   command_updater_.UpdateCommandEnabled(IDC_VERTICAL_TABS_SEND_FEEDBACK, true);
-#if BUILDFLAG(IS_CHROMEOS)
-  command_updater_.UpdateCommandEnabled(IDC_TOGGLE_MULTITASK_MENU, true);
-  command_updater_.UpdateCommandEnabled(IDC_MINIMIZE_WINDOW, true);
-  // The VisitDesktop command is only supported for up to 5 logged in users
-  // because that's the max number of user sessions. If that number is increased
-  // the IDC_VISIT_DESKTOP_OF_LRU_USER_ command ids should be updated as well.
-  // crbug.com/940461
-  static_assert(
-      session_manager::kMaximumNumberOfUserSessions <=
-          IDC_VISIT_DESKTOP_OF_LRU_USER_LAST -
-              IDC_VISIT_DESKTOP_OF_LRU_USER_NEXT + 2,
-      "The max number of user sessions exceeds the number of users supported.");
-  command_updater_.UpdateCommandEnabled(IDC_VISIT_DESKTOP_OF_LRU_USER_2, true);
-  command_updater_.UpdateCommandEnabled(IDC_VISIT_DESKTOP_OF_LRU_USER_3, true);
-  command_updater_.UpdateCommandEnabled(IDC_VISIT_DESKTOP_OF_LRU_USER_4, true);
-  command_updater_.UpdateCommandEnabled(IDC_VISIT_DESKTOP_OF_LRU_USER_5, true);
-#endif
 #if BUILDFLAG(IS_LINUX)
   command_updater_.UpdateCommandEnabled(IDC_MINIMIZE_WINDOW, true);
   command_updater_.UpdateCommandEnabled(IDC_MAXIMIZE_WINDOW, true);
@@ -1679,14 +1596,12 @@ void BrowserCommandController::InitCommandState() {
       IDC_RECENT_TABS_SEE_DEVICE_TABS,
       (!guest_session && !profile()->IsSystemProfile() &&
        !profile()->IsIncognitoProfile()));
-#if !BUILDFLAG(IS_CHROMEOS)
   command_updater_.UpdateCommandEnabled(IDC_CUSTOMIZE_CHROME, true);
   command_updater_.UpdateCommandEnabled(IDC_CLOSE_PROFILE, true);
   command_updater_.UpdateCommandEnabled(IDC_MANAGE_GOOGLE_ACCOUNT, true);
   command_updater_.UpdateCommandEnabled(IDC_OPEN_GUEST_PROFILE, true);
   command_updater_.UpdateCommandEnabled(IDC_ADD_NEW_PROFILE, true);
   command_updater_.UpdateCommandEnabled(IDC_MANAGE_CHROME_PROFILES, true);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (profile()->IsIncognitoProfile()) {
     command_updater_.UpdateCommandEnabled(IDC_CLEAR_BROWSING_DATA, true);
@@ -1696,16 +1611,8 @@ void BrowserCommandController::InitCommandState() {
         (!guest_session && !profile()->IsSystemProfile()));
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  command_updater_.UpdateCommandEnabled(IDC_TAKE_SCREENSHOT, true);
-  // Chrome OS uses the system tray menu to handle multi-profiles. Avatar menu
-  // is only required in incognito mode.
-  command_updater_.UpdateCommandEnabled(
-      IDC_SHOW_AVATAR_MENU, /*state=*/profile()->IsIncognitoProfile());
-#else
   command_updater_.UpdateCommandEnabled(IDC_SHOW_AVATAR_MENU,
                                         /*state=*/normal_window);
-#endif
   command_updater_.UpdateCommandEnabled(
       IDC_SHOW_SAVE_LOCAL_CARD_SIGN_IN_PROMO_IF_APPLICABLE, true);
   command_updater_.UpdateCommandEnabled(IDC_CLOSE_SIGN_IN_PROMO, true);
@@ -1889,12 +1796,6 @@ void BrowserCommandController::UpdateCommandsForTabState() {
   // TODO(b/365146870): Remove once we consolidate locked fullscreen with
   // OnTask.
   bool skip_all_command_updates = is_locked_fullscreen_;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::boca::OnTaskLockedController::From(browser_)
-          ->is_locked_for_on_task()) {
-    skip_all_command_updates = false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   if (skip_all_command_updates) {
     return;
   }
@@ -2171,67 +2072,6 @@ void BrowserCommandController::UpdateCommandsForHostedAppAvailability() {
   command_updater_.UpdateCommandEnabled(IDC_SHOW_APP_MENU, has_toolbar);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-
-#if DCHECK_IS_ON()
-// Makes sure that all commands that are not allowlisted are disabled. DCHECKs
-// otherwise. Compiled only in debug mode.
-void NonAllowlistedCommandsAreDisabled(CommandUpdaterImpl* command_updater) {
-  constexpr int kAllowlistedIds[] = {IDC_CUT, IDC_COPY, IDC_PASTE};
-
-  // Go through all the command ids, skip the allowlisted ones.
-  for (int id : command_updater->GetAllIds()) {
-    if (std::ranges::contains(kAllowlistedIds, id)) {
-      continue;
-    }
-    DCHECK(!command_updater->IsCommandEnabled(id));
-  }
-}
-#endif
-
-}  // namespace
-
-void BrowserCommandController::UpdateCommandsForLockedFullscreenMode() {
-  bool is_locked_fullscreen =
-      platform_util::IsBrowserLockedFullscreen(browser_);
-  // Sanity check to make sure this function is called only on state change.
-  DCHECK_NE(is_locked_fullscreen, is_locked_fullscreen_);
-  if (is_locked_fullscreen == is_locked_fullscreen_) {
-    return;
-  }
-  is_locked_fullscreen_ = is_locked_fullscreen;
-
-  if (is_locked_fullscreen_) {
-    command_updater_.DisableAllCommands();
-    // Update the state of allowlisted commands:
-    // IDC_CUT/IDC_COPY/IDC_PASTE,
-    UpdateCommandsForContentRestrictionState();
-    // TODO(crbug.com/41426009): Re-enable Find and Zoom in locked fullscreen.
-    // All other commands will be disabled (there is an early return in their
-    // corresponding UpdateCommandsFor* functions).
-#if DCHECK_IS_ON()
-    NonAllowlistedCommandsAreDisabled(&command_updater_);
-#endif
-    // Enable commands that allow users to switch between tabs and find content
-    // within a webpage if the webapp is locked for OnTask
-    // (only relevant for non-web browser scenarios).
-    if (ash::boca::OnTaskLockedController::From(browser_)
-            ->is_locked_for_on_task()) {
-      bool supports_tabs = browser_->SupportsWindowFeature(
-          Browser::WindowFeature::kFeatureTabStrip);
-      command_updater_.UpdateCommandEnabled(IDC_SELECT_NEXT_TAB, supports_tabs);
-      command_updater_.UpdateCommandEnabled(IDC_SELECT_PREVIOUS_TAB,
-                                            supports_tabs);
-      UpdateCommandsForFind();
-    }
-  } else {
-    // Do an init call to re-initialize command state after the
-    // DisableAllCommands.
-    InitCommandState();
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BrowserCommandController::UpdatePrintingState() {
   if (is_locked_fullscreen_) {
@@ -2272,12 +2112,6 @@ void BrowserCommandController::UpdateReloadStopState(bool is_loading,
   // TODO(crbug.com/365146870): Remove once we consolidate locked fullscreen
   // with OnTask.
   bool should_skip_command_updates = is_locked_fullscreen_;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::boca::OnTaskLockedController::From(browser_)
-          ->is_locked_for_on_task()) {
-    should_skip_command_updates = false;
-  }
-#endif
   if (should_skip_command_updates) {
     return;
   }

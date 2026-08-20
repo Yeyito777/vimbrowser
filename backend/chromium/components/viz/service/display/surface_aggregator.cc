@@ -1790,20 +1790,8 @@ gfx::Rect SurfaceAggregator::PrewalkRenderPass(
         }
       }
 
-#if BUILDFLAG(IS_WIN)
-      // Force the root passes of surfaces referenced by the root pass of the
-      // root surface to be embedded instead of merged. This supports the
-      // feature |kDelegatedCompositingLimitToUi|.
-      if (prevent_merging_surfaces_to_root_pass_ && child_resolved_frame &&
-          resolved_pass.is_root() && IsRootSurface(resolved_frame.surface())) {
-        child_resolved_frame->GetRootRenderPassData()
-            .aggregation()
-            .prevent_merge = true;
-      }
-#else
       // Ignore -Wunused-private-field warning.
       (void)prevent_merging_surfaces_to_root_pass_;
-#endif
     } else if (auto* render_pass_quad =
                    quad->DynamicCast<CompositorRenderPassDrawQuad>()) {
       CompositorRenderPassId child_pass_id = render_pass_quad->render_pass_id;

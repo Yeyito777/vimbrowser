@@ -37,11 +37,7 @@ constexpr char kBrowserRemoteCommandsInvalidatorTypeName[] =
 // If we want support support both commands on the same platform, we need to
 // update the `PolicyInvalidationScope` to be more granular.
 constexpr char kUserRemoteCommandsInvalidatorTypeName[] =
-#if BUILDFLAG(IS_CHROMEOS)
-    "CONSUMER_USER_REMOTE_COMMAND";
-#else
     "PROFILE_REMOTE_COMMAND";
-#endif
 
 const char* GetInvalidationMetricName(PolicyInvalidationScope scope) {
   switch (scope) {

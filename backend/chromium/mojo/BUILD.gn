@@ -36,12 +36,10 @@ group("tests") {
     "//third_party/ipcz/src:ipcz_tests",
   ]
 
-  if (!is_ios) {
-    deps += [
-      "//ipc:ipc_tests",
-      "//services/service_manager/tests",
-    ]
-  }
+  deps += [
+    "//ipc:ipc_tests",
+    "//services/service_manager/tests",
+  ]
 }
 
 test("mojo_unittests") {
@@ -74,15 +72,13 @@ test("mojo_perftests") {
     "//testing/perf",
   ]
 
-  if (!is_ios) {
-    sources += [ "//mojo/core/message_pipe_perftest.cc" ]
+  sources += [ "//mojo/core/message_pipe_perftest.cc" ]
 
-    deps += [
-      "//base",
-      "//base/test:test_support",
-      "//mojo/core:embedder_internal",
-      "//mojo/core/embedder",
-      "//testing/gtest",
-    ]
-  }
+  deps += [
+    "//base",
+    "//base/test:test_support",
+    "//mojo/core:embedder_internal",
+    "//mojo/core/embedder",
+    "//testing/gtest",
+  ]
 }

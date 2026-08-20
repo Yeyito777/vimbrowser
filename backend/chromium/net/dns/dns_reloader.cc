@@ -8,7 +8,6 @@
 
 // If we're not on a POSIX system, it's not even safe to try to include resolv.h
 // - there's not guarantee it exists at all. :(
-#if BUILDFLAG(IS_POSIX)
 
 #include <resolv.h>
 
@@ -36,7 +35,6 @@
 // below - it would be easy for the copies below to get out of sync.
 #define USE_RES_NINIT
 #endif  // defined(_RES) && ...
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if defined(USE_RES_NINIT)
 

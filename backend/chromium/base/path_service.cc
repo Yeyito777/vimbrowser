@@ -16,12 +16,6 @@
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <shellapi.h>
-#include <shlobj.h>
-#endif
 
 #define ENABLE_BEHAVIOUR_OVERRIDE_PROVIDER                                    \
   ((BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)) || \
@@ -34,17 +28,9 @@ bool EnvOverridePathProvider(int key, FilePath* result);
 
 bool PathProvider(int key, FilePath* result);
 
-#if BUILDFLAG(IS_WIN)
-bool PathProviderWin(int key, FilePath* result);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool PathProviderMac(int key, FilePath* result);
-#elif BUILDFLAG(IS_IOS)
-bool PathProviderIOS(int key, FilePath* result);
-#elif BUILDFLAG(IS_ANDROID)
-bool PathProviderAndroid(int key, FilePath* result);
-#elif BUILDFLAG(IS_FUCHSIA)
-bool PathProviderFuchsia(int key, FilePath* result);
-#elif BUILDFLAG(IS_POSIX)
+#else
 // PathProviderPosix is the default path provider on POSIX OSes other than
 // Mac and Android.
 bool PathProviderPosix(int key, FilePath* result);
@@ -77,18 +63,6 @@ Provider base_provider = {PathProvider, nullptr,
 #endif
                           true};
 
-#if BUILDFLAG(IS_WIN)
-Provider win_provider = {PathProviderWin, &base_provider,
-#ifndef NDEBUG
-                         PATH_WIN_START, PATH_WIN_END,
-#endif
-                         true};
-Provider base_provider_win = {EnvOverridePathProvider, &win_provider,
-#ifndef NDEBUG
-                              PATH_START, PATH_END,
-#endif
-                              true};
-#endif
 
 #if BUILDFLAG(IS_MAC)
 Provider base_provider_mac = {PathProviderMac, &base_provider,
@@ -98,29 +72,8 @@ Provider base_provider_mac = {PathProviderMac, &base_provider,
                               true};
 #endif
 
-#if BUILDFLAG(IS_IOS)
-Provider base_provider_ios = {PathProviderIOS, &base_provider,
-#ifndef NDEBUG
-                              PATH_IOS_START, PATH_IOS_END,
-#endif
-                              true};
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-Provider base_provider_android = {PathProviderAndroid, &base_provider,
-#ifndef NDEBUG
-                                  PATH_ANDROID_START, PATH_ANDROID_END,
-#endif
-                                  true};
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-Provider base_provider_fuchsia = {PathProviderFuchsia, &base_provider,
-#ifndef NDEBUG
-                                  0, 0,
-#endif
-                                  true};
-#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)
 Provider posix_provider = {PathProviderPosix, &base_provider,
@@ -143,17 +96,9 @@ struct PathData {
   bool cache_disabled = false;  // Don't use cache if true;
 
   PathData() {
-#if BUILDFLAG(IS_WIN)
-    providers = &base_provider_win;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     providers = &base_provider_mac;
-#elif BUILDFLAG(IS_IOS)
-    providers = &base_provider_ios;
-#elif BUILDFLAG(IS_ANDROID)
-    providers = &base_provider_android;
-#elif BUILDFLAG(IS_FUCHSIA)
-    providers = &base_provider_fuchsia;
-#elif BUILDFLAG(IS_POSIX)
+#else
     providers = &base_provider_posix;
 #endif
   }

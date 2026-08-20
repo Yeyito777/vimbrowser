@@ -370,18 +370,6 @@ default_compiler_configs = [
   "//build/config:feature_flags",
 ]
 
-if (is_win) {
-  default_compiler_configs += [
-    "//build/config/win:default_cfg_compiler",
-    "//build/config/win:default_crt",
-    "//build/config/win:lean_and_mean",
-    "//build/config/win:nominmax",
-    "//build/config/win:unicode",
-    "//build/config/win:winver",
-    "//build/config/win:wincrypt_use_symbol_prefix",
-  ]
-}
-
 if (is_apple) {
   default_compiler_configs += [ "//build/config/compiler:enable_arc" ]
 }
@@ -391,15 +379,6 @@ if (is_posix) {
     default_compiler_configs +=
         [ "//build/config/gcc:symbol_visibility_hidden" ]
   }
-}
-
-if (is_fuchsia) {
-  default_compiler_configs += [ "//build/config/gcc:symbol_visibility_hidden" ]
-}
-
-if (is_android) {
-  default_compiler_configs +=
-      [ "//build/config/android:default_orderfile_instrumentation" ]
 }
 
 if (is_clang) {
@@ -434,22 +413,8 @@ _linker_configs = [
   "//build/config:default_libs",
   "//build/config/compiler:linker",
 ]
-if (is_win) {
-  # Many targets remove these configs, so they are not contained within
-  # //build/config:executable_config for easy removal.
-  _linker_configs += [
-    "//build/config/win:default_incremental_linking",
-
-    # Default to console-mode apps. Most of our targets are tests and such
-    # that shouldn't use the windows subsystem.
-    "//build/config/win:console",
-  ]
-} else if (is_apple) {
+if (is_apple) {
   _linker_configs += [ "//build/config/apple:strip_all" ]
-} else if (is_android) {
-  # Warn whenever linking code that could unintentionally switch off
-  # branch target identification (BTI) on Arm systems.
-  _linker_configs += [ "//build/config/android:lld_branch_target_hardening" ]
 }
 
 # Executable defaults.
@@ -457,20 +422,6 @@ default_executable_configs = default_compiler_configs + _linker_configs + [
                                "//build/config/compiler:export_dynamic",
                                "//build/config:executable_config",
                              ]
-
-if (is_win) {
-  # Turn on linker CFI for executables, and position it so it can be removed
-  # if needed.
-  default_executable_configs += [ "//build/config/win:cfi_linker" ]
-}
-if (is_fuchsia) {
-  # Sometimes executables are linked by rustc passing a command line to
-  # clang++. It includes "-pie" which is pointless on Fuchsia. Suppress the
-  # resulting (fatal) warning. Unfortunately there's no way to do this only
-  # for binaries linked by rustc; gn does not make the distinction.
-  default_executable_configs +=
-      [ "//build/config/fuchsia:rustc_no_pie_warning" ]
-}
 
 set_defaults("executable") {
   configs = default_executable_configs
@@ -480,35 +431,13 @@ set_defaults("executable") {
 # mode).
 default_shared_library_configs = default_compiler_configs + _linker_configs +
                                  [ "//build/config:shared_library_config" ]
-if (is_win) {
-  # Turn on linker CFI for DLLs, and position it so it can be removed if needed.
-  default_shared_library_configs += [ "//build/config/win:cfi_linker" ]
-}
 
-if (is_android) {
-  # Strip native JNI exports from shared libraries by default. Binaries that
-  # want this can remove this config.
-  default_shared_library_configs +=
-      [ "//build/config/android:hide_all_but_jni_onload" ]
-}
-if (is_fuchsia) {
-  # Sometimes shared libraries are linked by rustc passing a command line to
-  # clang++. It includes "-pie" which is pointless on Fuchsia. Suppress the
-  # resulting (fatal) warning. Unfortunately there's no way to do this only
-  # for binaries linked by rustc; gn does not make the distinction.
-  default_shared_library_configs +=
-      [ "//build/config/fuchsia:rustc_no_pie_warning" ]
-}
 set_defaults("shared_library") {
   configs = default_shared_library_configs
 }
 set_defaults("loadable_module") {
   configs = default_shared_library_configs
-
   # loadable_modules are generally used by other libs, not just via JNI.
-  if (is_android) {
-    configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
-  }
 }
 
 default_rust_proc_macro_configs =
@@ -813,15 +742,6 @@ template("component") {
 # to mixed_component.gni
 if (is_component_build) {
   default_component_configs = default_shared_library_configs
-  if (is_android) {
-    default_component_configs -=
-        [ "//build/config/android:hide_all_but_jni_onload" ]
-  }
-  if (is_win) {
-    # We don't want component dlls to statically load OS dlls that aren't
-    # loaded normally.
-    default_component_configs += [ "//build/config/win:delayloads" ]
-  }
 } else {
   default_component_configs = default_compiler_configs
 }

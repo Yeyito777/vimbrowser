@@ -83,39 +83,6 @@ component("display") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "win/audio_edid_scan.cc",
-      "win/audio_edid_scan.h",
-      "win/base_window_finder_win.cc",
-      "win/base_window_finder_win.h",
-      "win/color_profile_reader.cc",
-      "win/color_profile_reader.h",
-      "win/display_config_helper.cc",
-      "win/display_config_helper.h",
-      "win/display_info.cc",
-      "win/display_info.h",
-      "win/dpi.cc",
-      "win/dpi.h",
-      "win/local_process_window_finder_win.cc",
-      "win/local_process_window_finder_win.h",
-      "win/scaling_util.cc",
-      "win/scaling_util.h",
-      "win/screen_win.cc",
-      "win/screen_win.h",
-      "win/screen_win_display.cc",
-      "win/screen_win_display.h",
-      "win/screen_win_headless.cc",
-      "win/screen_win_headless.h",
-      "win/uwp_text_scale_factor.cc",
-      "win/uwp_text_scale_factor.h",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [ "ios/screen_ios.mm" ]
-  }
-
   defines = [ "DISPLAY_IMPLEMENTATION" ]
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
@@ -139,21 +106,6 @@ component("display") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_ios) {
-    deps += [ "//build:ios_buildflags" ]
-  }
-
-  if (is_win) {
-    # Don't conflict with Windows' "display.dll".
-    output_name = "ui_display"
-    deps += [
-      "//components/headless/screen_info",
-      "//ui/gfx/mojom:dxgi_info",
-    ]
-    libs = [ "shcore.lib" ]
-    ldflags = [ "/DELAYLOAD:shcore.dll" ]
-  }
-
   if (use_aura) {
     sources += [ "screen_aura.cc" ]
   }
@@ -166,28 +118,6 @@ component("display") {
       "QuartzCore.framework",
       "IOKit.framework",
       "Metal.framework",
-    ]
-  }
-}
-
-if (is_chromeos) {
-  component("display_manager_test_api") {
-    testonly = true
-    sources = [
-      "test/display_manager_test_api.cc",
-      "test/display_manager_test_api.h",
-    ]
-
-    defines = [ "DISPLAY_IMPLEMENTATION" ]
-
-    public_deps = [ "//ui/display/manager" ]
-
-    deps = [
-      "//base",
-      "//ui/display",
-      "//ui/display:test_support",
-      "//ui/display/types",
-      "//ui/display/util",
     ]
   }
 }
@@ -217,21 +147,6 @@ static_library("test_support") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_win) {
-    sources += [
-      "win/test/scoped_screen_win.cc",
-      "win/test/scoped_screen_win.h",
-      "win/test/screen_util_win.cc",
-      "win/test/screen_util_win.h",
-      "win/test/virtual_display_util_win.cc",
-      "win/test/virtual_display_util_win.h",
-    ]
-    deps += [
-      "//third_party/win_virtual_display/controller",
-      "//third_party/win_virtual_display/driver/public",
-    ]
-  }
-
   if (is_mac) {
     sources += [
       "mac/test/test_screen_mac.h",
@@ -255,30 +170,6 @@ static_library("test_support") {
       "//remoting/host/linux:x11_display_utils",
       "//ui/gfx/x",
     ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "manager/test/action_logger.cc",
-      "manager/test/action_logger.h",
-      "manager/test/action_logger_util.cc",
-      "manager/test/action_logger_util.h",
-      "manager/test/fake_display_delegate.cc",
-      "manager/test/fake_display_delegate.h",
-      "manager/test/fake_display_snapshot.cc",
-      "manager/test/fake_display_snapshot.h",
-      "manager/test/test_display_layout_manager.cc",
-      "manager/test/test_display_layout_manager.h",
-      "manager/test/test_native_display_delegate.cc",
-      "manager/test/test_native_display_delegate.h",
-      "manager/test/touch_device_manager_test_api.cc",
-      "manager/test/touch_device_manager_test_api.h",
-      "manager/test/touch_transform_controller_test_api.cc",
-      "manager/test/touch_transform_controller_test_api.h",
-      "test/display_test_util.cc",
-    ]
-    configs += [ "//build/config/compiler:wexit_time_destructors" ]
-    public_deps += [ "//ui/display/manager" ]
   }
 
   if (!is_mac && !is_win && !is_chromeos &&
@@ -306,14 +197,6 @@ test("display_unittests") {
     "util/edid_parser_unittest.cc",
   ]
 
-  if (is_win) {
-    sources += [
-      "win/scaling_util_unittest.cc",
-      "win/screen_win_headless_unittest.cc",
-      "win/screen_win_unittest.cc",
-    ]
-  }
-
   deps = [
     ":display",
     ":test_support",
@@ -338,45 +221,7 @@ test("display_unittests") {
   # does not compile display_observer.cc
   sources += [ "display_change_notifier_unittest.cc" ]
 
-  if (is_win) {
-    deps += [ "//components/headless/screen_info" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "manager/apply_content_protection_task_unittest.cc",
-      "manager/configure_displays_task_unittest.cc",
-      "manager/content_protection_key_manager_unittest.cc",
-      "manager/content_protection_manager_unittest.cc",
-      "manager/display_change_observer_unittest.cc",
-      "manager/display_configurator_unittest.cc",
-      "manager/display_port_observer_unittest.cc",
-      "manager/display_properties_parser_unittest.cc",
-      "manager/json_converter_unittest.cc",
-      "manager/managed_display_info_unittest.cc",
-      "manager/query_content_protection_task_unittest.cc",
-      "manager/test/fake_display_snapshot_unittest.cc",
-      "manager/touch_device_manager_unittest.cc",
-      "manager/touch_transform_controller_unittest.cc",
-      "manager/update_display_configuration_task_unittest.cc",
-      "manager/util/display_manager_test_util_unittest.cc",
-      "manager/util/display_manager_util_unittest.cc",
-    ]
-
-    deps += [
-      ":display_manager_test_api",
-      "//ui/base:run_all_unittests",
-      "//ui/display/manager",
-      "//ui/ozone:ozone_switches",
-    ]
-
-    data_deps = [
-      "//ui/base:ui_base_test_resources_pak",
-      "//ui/resources:ui_test_pak_data",
-    ]
-  } else {
-    deps += [ "//mojo/core/test:run_all_unittests" ]
-  }
+  deps += [ "//mojo/core/test:run_all_unittests" ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

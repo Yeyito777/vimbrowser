@@ -205,7 +205,4 @@ source_set("unit_tests") {
     "//ui/gfx:test_support",
     "//url",
   ]
-  if (is_ios) {
-    deps += [ "//components/test:history_test_bundle_data" ]
-  }
 }

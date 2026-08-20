@@ -44,13 +44,6 @@ static_library("apps") {
     "//extensions/common",
     "//extensions/common/api",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//components/app_restore",
-      "//components/user_manager",
-    ]
-  }
 }
 
 static_library("test_support") {

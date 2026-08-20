@@ -41,11 +41,7 @@ GoogleGroupsManager::GoogleGroupsManager(
   // Register for preference changes.
   pref_change_registrar_.Init(&source_prefs_.get());
   pref_change_registrar_.Add(
-#if BUILDFLAG(IS_CHROMEOS)
-      variations::kOsDogfoodGroupsSyncPrefName,
-#else
       variations::kDogfoodGroupsSyncPrefName,
-#endif
       base::BindRepeating(&GoogleGroupsManager::UpdateGoogleGroups,
                           base::Unretained(this)));
 
@@ -59,13 +55,8 @@ GoogleGroupsManager::~GoogleGroupsManager() = default;
 void GoogleGroupsManager::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterListPref(
-#if BUILDFLAG(IS_CHROMEOS)
-      variations::kOsDogfoodGroupsSyncPrefName,
-      user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PRIORITY_PREF
-#else
       variations::kDogfoodGroupsSyncPrefName,
       user_prefs::PrefRegistrySyncable::SYNCABLE_PRIORITY_PREF
-#endif
   );
 }
 
@@ -129,11 +120,7 @@ void GoogleGroupsManager::OnSyncShutdown(syncer::SyncService* sync) {
 
 void GoogleGroupsManager::ClearSigninScopedState() {
   source_prefs_->ClearPref(
-#if BUILDFLAG(IS_CHROMEOS)
-      variations::kOsDogfoodGroupsSyncPrefName
-#else
       variations::kDogfoodGroupsSyncPrefName
-#endif
   );
 
   // UpdateGoogleGroups() will be called via the PrefChangeRegistrar, and will
@@ -147,11 +134,7 @@ void GoogleGroupsManager::UpdateGoogleGroups() {
   base::DictValue& target_prefs_dict = target_prefs_update.Get();
 
   const base::ListValue& source_list = source_prefs_->GetList(
-#if BUILDFLAG(IS_CHROMEOS)
-      variations::kOsDogfoodGroupsSyncPrefName
-#else
       variations::kDogfoodGroupsSyncPrefName
-#endif
   );
 
   base::ListValue groups;

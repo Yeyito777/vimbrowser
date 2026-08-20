@@ -89,14 +89,8 @@ void DisableSyncForProfileDeletion(Profile* profile) {
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, profile deletion uses a different codepath but some
-  // browser tests do exercise this code.
-  CHECK_IS_TEST();
-#else
   identity_manager->GetPrimaryAccountMutator()->ClearPrimaryAccount(
       signin_metrics::ProfileSignout::kSignoutDuringProfileDeletion);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace

@@ -123,21 +123,7 @@ source_set("flac") {
     "HAVE_LROUND",
   ]
 
-  if (is_win) {
-    sources += [
-      "include/share/win_utf8_io.h",
-      "src/share/win_utf8_io/win_utf8_io.c",
-    ]
-
-    # win_utf8_io.c defines this itself.
-    configs -= [ "//build/config/win:lean_and_mean" ]
-    cflags = [
-      "/wd4334",  # 32-bit shift converted to 64 bits.
-      "/wd4267",  # Converting from size_t to unsigned on 64-bit.
-    ]
-  } else {
-    defines += [ "HAVE_INTTYPES_H" ]
-  }
+  defines += [ "HAVE_INTTYPES_H" ]
 
   if (use_fuzzing_engine) {
     sources += [

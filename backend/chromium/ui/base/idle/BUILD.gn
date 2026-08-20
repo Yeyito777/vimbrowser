@@ -39,30 +39,8 @@ component("idle") {
     "idle_time_provider.h",
   ]
 
-  if (is_chromeos) {
-    sources += [ "idle_chromeos.cc" ]
-    deps += [ "//chromeos/ash/components/dbus/session_manager" ]
-  }
-
   if (is_mac) {
     sources += [ "idle_mac.mm" ]
-  }
-
-  if (is_ios) {
-    sources += [ "idle_ios.mm" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "idle_win.cc",
-      "screensaver_state_observer.cc",
-      "screensaver_state_observer.h",
-    ]
-    deps += [ "//ui/gfx" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "idle_fuchsia.cc" ]
   }
 
   if (is_linux) {
@@ -93,13 +71,6 @@ static_library("test_support") {
     "scoped_set_idle_state.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "scoped_set_screensaver_state.cc",
-      "scoped_set_screensaver_state.h",
-    ]
-  }
-
   deps = [
     ":idle",
     "//base",
@@ -110,10 +81,6 @@ source_set("unit_tests") {
   testonly = true
 
   sources = []
-
-  if (is_win) {
-    sources += [ "screensaver_state_observer_unittest.cc" ]
-  }
 
   deps = [
     ":idle",

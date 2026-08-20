@@ -88,9 +88,7 @@ build_webui_tests("build") {
       ]
     }
 
-    if (!is_chromeos) {
-      files += [ "ink2_disabled_test.ts" ]
-    }
+    files += [ "ink2_disabled_test.ts" ]
   }
 
   if (enable_pdf_save_to_drive) {

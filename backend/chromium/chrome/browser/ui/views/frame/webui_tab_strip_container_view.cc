@@ -222,9 +222,6 @@ class WebUITabStripContainerView::AutoCloser : public ui::EventHandler,
 
     view_observations_.AddObservation(content_area_.get());
     view_observations_.AddObservation(omnibox_.get());
-#if BUILDFLAG(IS_WIN)
-    view_observations_.AddObservation(top_container_.get());
-#endif  // BUILDFLAG(IS_WIN)
 
     content_area_->GetWidget()->GetNativeView()->AddPreTargetHandler(this);
     pretarget_handler_added_ = true;
@@ -844,17 +841,6 @@ gfx::Size WebUITabStripContainerView::FlexRule(
 }
 
 void WebUITabStripContainerView::OnViewBoundsChanged(View* observed_view) {
-#if BUILDFLAG(IS_WIN)
-  if (observed_view == top_container_) {
-    if (old_top_container_width_ != top_container_->width()) {
-      old_top_container_width_ = top_container_->width();
-      // If somehow we're in the middle of a drag, abort.
-      drag_to_open_handler_->CancelDrag();
-      CloseContainer();
-    }
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (observed_view == tab_contents_container_) {
     // TODO(pbos): PreferredSizeChanged seems to cause infinite recursion with

@@ -41,9 +41,6 @@ template("rust_unit_tests_group") {
   # the script *must* be in output_dir/bin/run_$target (or
   # output_dir\bin\run_$target.bat on Windows).
   bat = ""
-  if (is_win) {
-    bat = ".bat"
-  }
   _script_filepath = "$root_out_dir/bin/run_${target_name}${bat}"
 
   # Gathering metadata provided by the rust_unit_test gni template from all of
@@ -86,8 +83,5 @@ template("rust_unit_tests_group") {
       "--script-path",
       rebase_path(_script_filepath, root_build_dir),
     ]
-    if (is_win) {
-      args += [ "--make-bat" ]
-    }
   }
 }

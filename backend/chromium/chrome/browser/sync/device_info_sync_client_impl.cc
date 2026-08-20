@@ -19,9 +19,6 @@
 #include "components/sync/service/sync_prefs.h"
 #include "device/fido/public/features.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/webauthn/android/cable_module_android.h"
-#endif
 
 namespace browser_sync {
 
@@ -79,22 +76,11 @@ DeviceInfoSyncClientImpl::GetInterestedDataTypes() const {
 
 syncer::DeviceInfo::PhoneAsASecurityKeyInfo::StatusOrInfo
 DeviceInfoSyncClientImpl::GetPhoneAsASecurityKeyInfo() const {
-#if BUILDFLAG(IS_ANDROID)
-  if (!base::FeatureList::IsEnabled(device::kWebAuthnPublishPrelinkingInfo)) {
-    return syncer::DeviceInfo::PhoneAsASecurityKeyInfo::NoSupport();
-  }
-  return webauthn::authenticator::GetSyncDataIfRegistered();
-#else
   return syncer::DeviceInfo::PhoneAsASecurityKeyInfo::NoSupport();
-#endif
 }
 
 bool DeviceInfoSyncClientImpl::IsUmaEnabledOnCrOSDevice() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ChromeMetricsServiceAccessor::IsMetricsAndCrashReportingEnabled();
-#else
   return false;
-#endif
 }
 
 }  // namespace browser_sync

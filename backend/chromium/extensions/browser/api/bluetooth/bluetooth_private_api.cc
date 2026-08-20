@@ -26,9 +26,6 @@
 #include "extensions/browser/api/bluetooth/bluetooth_event_router.h"
 #include "extensions/common/api/bluetooth.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/chromeos/bluetooth_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace bt = extensions::api::bluetooth;
 namespace bt_private = extensions::api::bluetooth_private;
@@ -41,89 +38,6 @@ static base::LazyInstance<BrowserContextKeyedAPIFactory<BluetoothPrivateAPI>>::
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-device::BluetoothTransport GetBluetoothTransport(bt::Transport transport) {
-  switch (transport) {
-    case bt::Transport::kClassic:
-      return device::BLUETOOTH_TRANSPORT_CLASSIC;
-    case bt::Transport::kLe:
-      return device::BLUETOOTH_TRANSPORT_LE;
-    case bt::Transport::kDual:
-      return device::BLUETOOTH_TRANSPORT_DUAL;
-    default:
-      return device::BLUETOOTH_TRANSPORT_INVALID;
-  }
-}
-
-bool IsActualConnectionFailure(bt_private::ConnectResultType result) {
-  DCHECK(result != bt_private::ConnectResultType::kSuccess);
-
-  switch (result) {
-    case bt_private::ConnectResultType::kInProgress:
-    case bt_private::ConnectResultType::kAuthCanceled:
-    case bt_private::ConnectResultType::kAuthRejected:
-      // The connection is not a failure if it's still in progress, the user
-      // canceled auth, or the user entered incorrect auth details.
-      return false;
-    default:
-      return true;
-  }
-}
-
-std::optional<device::ConnectionFailureReason> GetConnectionFailureReason(
-    bt_private::ConnectResultType result) {
-  DCHECK(IsActualConnectionFailure(result));
-
-  switch (result) {
-    case bt_private::ConnectResultType::kNone:
-      return device::ConnectionFailureReason::kSystemError;
-    case bt_private::ConnectResultType::kAuthFailed:
-      return device::ConnectionFailureReason::kAuthFailed;
-    case bt_private::ConnectResultType::kAuthTimeout:
-      return device::ConnectionFailureReason::kAuthTimeout;
-    case bt_private::ConnectResultType::kFailed:
-      return device::ConnectionFailureReason::kFailed;
-    case bt_private::ConnectResultType::kUnknownError:
-      return device::ConnectionFailureReason::kUnknownConnectionError;
-    case bt_private::ConnectResultType::kUnsupportedDevice:
-      return device::ConnectionFailureReason::kUnsupportedDevice;
-    case bt_private::ConnectResultType::kNotReady:
-      return device::ConnectionFailureReason::kDeviceNotReady;
-    case bt_private::ConnectResultType::kAlreadyExists:
-      return device::ConnectionFailureReason::kDeviceAlreadyExists;
-    case bt_private::ConnectResultType::kNotConnected:
-      return device::ConnectionFailureReason::kNotConnectable;
-    case bt_private::ConnectResultType::kDoesNotExist:
-      return device::ConnectionFailureReason::kNotFound;
-    case bt_private::ConnectResultType::kInvalidArgs:
-      return device::ConnectionFailureReason::kInvalidArgs;
-    case bt_private::ConnectResultType::kNonAuthTimeout:
-      return device::ConnectionFailureReason::kNonAuthTimeout;
-    case bt_private::ConnectResultType::kNoMemory:
-      return device::ConnectionFailureReason::kNoMemory;
-    case bt_private::ConnectResultType::kJniEnvironment:
-      return device::ConnectionFailureReason::kJniEnvironment;
-    case bt_private::ConnectResultType::kJniThreadAttach:
-      return device::ConnectionFailureReason::kJniThreadAttach;
-    case bt_private::ConnectResultType::kWakelock:
-      return device::ConnectionFailureReason::kWakelock;
-    case bt_private::ConnectResultType::kAlreadyConnected:
-      return device::ConnectionFailureReason::kAlreadyConnected;
-    case bt_private::ConnectResultType::kUnexpectedState:
-      return device::ConnectionFailureReason::kUnexpectedState;
-    case bt_private::ConnectResultType::kSocketError:
-      return device::ConnectionFailureReason::kSocketError;
-    case bt_private::ConnectResultType::kInProgress:
-      [[fallthrough]];
-    case bt_private::ConnectResultType::kAuthRejected:
-      [[fallthrough]];
-    case bt_private::ConnectResultType::kAuthCanceled:
-      [[fallthrough]];
-    case bt_private::ConnectResultType::kSuccess:
-      NOTREACHED();
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::string GetListenerId(const EventListenerInfo& details) {
   return !details.extension_id.empty() ? details.extension_id
@@ -726,18 +640,6 @@ bool BluetoothPrivateRecordPairingFunction::CreateParams() {
 
 void BluetoothPrivateRecordPairingFunction::DoWork(
     scoped_refptr<device::BluetoothAdapter> adapter) {
-#if BUILDFLAG(IS_CHROMEOS)
-  bt_private::ConnectResultType result = params_->result;
-  bool success = (result == bt_private::ConnectResultType::kSuccess);
-
-  // Only emit metrics if this is a success or a true connection failure.
-  if (success || IsActualConnectionFailure(result)) {
-    device::RecordPairingResult(
-        success ? std::nullopt : GetConnectionFailureReason(result),
-        GetBluetoothTransport(params_->transport),
-        base::Milliseconds(params_->pairing_duration_ms));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   Respond(NoArguments());
 }
@@ -757,17 +659,6 @@ bool BluetoothPrivateRecordReconnectionFunction::CreateParams() {
 
 void BluetoothPrivateRecordReconnectionFunction::DoWork(
     scoped_refptr<device::BluetoothAdapter> adapter) {
-#if BUILDFLAG(IS_CHROMEOS)
-  bt_private::ConnectResultType result = params_->result;
-  bool success = (result == bt_private::ConnectResultType::kSuccess);
-
-  // Only emit metrics if this is a success or a true connection failure.
-  if (success || IsActualConnectionFailure(result)) {
-    device::RecordUserInitiatedReconnectionAttemptResult(
-        success ? std::nullopt : GetConnectionFailureReason(result),
-        device::UserInitiatedReconnectionUISurfaces::kSettings);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   Respond(NoArguments());
 }
@@ -787,12 +678,6 @@ bool BluetoothPrivateRecordDeviceSelectionFunction::CreateParams() {
 
 void BluetoothPrivateRecordDeviceSelectionFunction::DoWork(
     scoped_refptr<device::BluetoothAdapter> adapter) {
-#if BUILDFLAG(IS_CHROMEOS)
-  device::RecordDeviceSelectionDuration(
-      base::Milliseconds(params_->selection_duration_ms),
-      device::DeviceSelectionUISurfaces::kSettings, params_->was_paired,
-      GetBluetoothTransport(params_->transport));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   Respond(NoArguments());
 }

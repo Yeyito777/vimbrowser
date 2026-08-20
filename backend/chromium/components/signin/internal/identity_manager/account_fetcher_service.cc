@@ -33,9 +33,6 @@
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#endif
 namespace {
 
 const base::TimeDelta kRefreshFromTokenServiceDelay = base::Hours(24);
@@ -145,13 +142,6 @@ void AccountFetcherService::RefreshAllAccountInfo(bool only_fetch_if_invalid) {
 // dependency on PrimaryAccountManager which we get around by only allowing a
 // single account. This is possible since we only support a single account to be
 // a child anyway.
-#if BUILDFLAG(IS_ANDROID)
-void AccountFetcherService::RefreshAccountInfoIfStale(
-    const CoreAccountId& account_id) {
-  DCHECK(network_fetches_enabled_);
-  RefreshAccountInfo(account_id, /*only_fetch_if_invalid=*/true);
-}
-#endif
 
 void AccountFetcherService::MaybeEnableNetworkFetches() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);

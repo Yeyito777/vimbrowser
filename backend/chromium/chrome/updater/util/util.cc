@@ -12,12 +12,6 @@
 #include <utility>
 #include <vector>
 
-#if BUILDFLAG(IS_WIN)
-#include <initguid.h>
-#include <windows.h>
-
-#include "base/logging_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #include <algorithm>
 
@@ -59,11 +53,9 @@
 #import "chrome/updater/util/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 #include <pwd.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#endif
 
 namespace updater {
 namespace {
@@ -219,25 +211,12 @@ void InitLogging(UpdaterScope updater_scope) {
   logging::LoggingSettings settings;
   settings.log_file_path = log_file->value().c_str();
   settings.logging_dest = logging::LOG_TO_ALL;
-#if BUILDFLAG(IS_WIN)
-  settings.logging_dest &= ~logging::LOG_TO_SYSTEM_DEBUG_LOG;
-#endif  // BUILDFLAG(IS_WIN)
   logging::InitLogging(settings);
   logging::SetLogItems(/*enable_process_id=*/true,
                        /*enable_thread_id=*/true,
                        /*enable_timestamp=*/true,
                        /*enable_tickcount=*/false);
 
-#if BUILDFLAG(IS_WIN)
-  // Enable Event Tracing for Windows.
-  // {4D7D9607-78B6-4583-A188-2136AB85F5F1}
-  static constexpr GUID kUpdaterETWProviderName = {
-      0x4d7d9607,
-      0x78b6,
-      0x4583,
-      {0xa1, 0x88, 0x21, 0x36, 0xab, 0x85, 0xf5, 0xf1}};
-  logging::LogEventProvider::Initialize(kUpdaterETWProviderName);
-#endif
 }
 
 std::string GetUpdaterUserAgent(const base::Version& updater_version) {
@@ -263,30 +242,6 @@ GURL AppendQueryParameter(const GURL& url,
   return url.ReplaceComponents(replacements);
 }
 
-#if BUILDFLAG(IS_WIN)
-
-std::wstring GetTaskNamePrefix(UpdaterScope scope,
-                               const base::Version& version) {
-  std::wstring task_name = GetTaskDisplayName(scope, version);
-  std::erase_if(task_name, base::IsAsciiWhitespace<wchar_t>);
-  return task_name;
-}
-
-std::wstring GetTaskDisplayName(UpdaterScope scope,
-                                const base::Version& version) {
-  return base::StrCat({base::UTF8ToWide(PRODUCT_FULLNAME_STRING), L" Task ",
-                       IsSystemInstall(scope) ? L"System " : L"User ",
-                       base::UTF8ToWide(version.GetString())});
-}
-
-base::CommandLine GetCommandLineLegacyCompatible() {
-  const std::wstring cmd_string = ::GetCommandLine();
-  std::optional<base::CommandLine> cmd_line =
-      CommandLineForLegacyFormat(cmd_string);
-  return cmd_line ? *cmd_line : base::CommandLine::FromString(cmd_string);
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 std::optional<base::FilePath> WriteInstallerDataToTempFile(
     const base::FilePath& directory,
@@ -323,10 +278,6 @@ void InitializeThreadPool(const char* name) {
   const size_t max_num_foreground_threads =
       static_cast<size_t>(std::max(3, base::SysInfo::NumberOfProcessors() - 1));
   base::ThreadPoolInstance::InitParams init_params(max_num_foreground_threads);
-#if BUILDFLAG(IS_WIN)
-  init_params.common_thread_pool_environment = base::ThreadPoolInstance::
-      InitParams::CommonThreadPoolEnvironment::COM_MTA;
-#endif
   base::ThreadPoolInstance::Get()->Start(init_params);
 }
 
@@ -379,15 +330,9 @@ void EnumerateUpdateClientTempDirectories(
     base::FunctionRef<void(const base::FilePath& dir)> callback) {
   base::FilePath temp_dir;
 
-#if BUILDFLAG(IS_WIN)
-  if (!base::GetSecureTempDirectory(&temp_dir)) {
-    return;
-  }
-#else   // BUILDFLAG(IS_WIN)
   if (!base::GetTempDir(&temp_dir)) {
     return;
   }
-#endif  // BUILDFLAG(IS_WIN)
 
   for (const auto& matcher :
        {"_chrome_url_fetcher_", "_chrome_Unpacker_BeginUnzipping",

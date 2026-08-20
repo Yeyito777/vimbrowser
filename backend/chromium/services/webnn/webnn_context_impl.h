@@ -262,10 +262,6 @@ class COMPONENT_EXPORT(WEBNN_SERVICE) WebNNContextImpl
       mojom::TensorInfoPtr tensor_info,
       WebNNTensorImpl::RepresentationPtr representation) = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Kill the GPU process to destroy all contexts.
-  void DestroyAllContextsAndKillGpuProcess();
-#endif  // BUILDFLAG(IS_WIN)
 
   void CreateWeightsFile(base::OnceCallback<void(base::File)> callback);
 

@@ -105,13 +105,6 @@ if (enable_vr) {
       "vr_ui_export.h",
     ]
 
-    if (is_win) {
-      sources += [
-        "elements/spinner.cc",
-        "elements/spinner.h",
-      ]
-    }
-
     deps = [
       ":vr_base",
       "//base",
@@ -175,15 +168,6 @@ if (enable_vr) {
     configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
     defines = [ "VR_IMPLEMENTATION" ]
-
-    if (is_win) {
-      sources += [
-        "graphics_delegate_win.cc",
-        "graphics_delegate_win.h",
-      ]
-
-      deps += [ "//services/viz/public/cpp/gpu" ]
-    }
   }
 
   # vr_base contains common dependencies of vr_common and vr_ui. It exists because
@@ -255,10 +239,6 @@ if (enable_vr) {
       "ui_scene_unittest.cc",
       "ui_unittest.cc",
     ]
-
-    if (is_win) {
-      sources += [ "elements/spinner_unittest.cc" ]
-    }
 
     deps = [
       ":vr_test_support",
@@ -410,40 +390,5 @@ if (enable_vr) {
     data_deps = []
 
     # Windows-only tests and dependencies.
-    if (is_win) {
-      # Infrastructure.
-      sources += [
-        "test/ui_utils.cc",
-        "test/ui_utils.h",
-      ]
-
-      # Tests.
-      sources += [
-        "webxr_vr_frame_loop_browser_test.cc",
-        "webxr_vr_frame_pose_browser_test.cc",
-        "webxr_vr_indicators_browser_test.cc",
-        "webxr_vr_input_browser_test.cc",
-        "webxr_vr_isolated_device_service_test.cc",
-        "webxr_vr_permission_browser_test.cc",
-        "webxr_vr_permission_request_browser_test.cc",
-        "webxr_vr_pixel_browser_test.cc",
-        "webxr_vr_secondary_views_browser_test.cc",
-        "webxr_vr_tab_browser_test.cc",
-        "webxr_vr_transition_browser_test.cc",
-      ]
-
-      deps += [
-        ":vr_common",
-        "//chrome/browser/content_settings:content_settings_factory",
-        "//components/content_settings/core/browser",
-        "//device/vr:directx_helpers",
-        "//device/vr:openxr_data",
-      ]
-
-      if (enable_openxr) {
-        deps += [ "//third_party/openxr" ]
-        data_deps += [ "//device/vr:openxr_mock" ]
-      }
-    }
   }
 }

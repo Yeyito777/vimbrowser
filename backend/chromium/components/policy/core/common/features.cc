@@ -25,10 +25,6 @@ BASE_FEATURE(kEnhancedSecurityEventFields,
 
 BASE_FEATURE(kUseCECFlagInPolicyData, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kInitializePoliciesForSignedInUserInNewEntryPoints,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Enables a configurable delay for policy registration.
 BASE_FEATURE(kCustomPolicyRegistrationDelay, base::FEATURE_DISABLED_BY_DEFAULT);

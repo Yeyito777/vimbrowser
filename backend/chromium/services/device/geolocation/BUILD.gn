@@ -75,22 +75,8 @@ source_set("geolocation") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "win/location_provider_winrt.cc",
-      "win/location_provider_winrt.h",
-    ]
-    deps += [ "//services/device/public/cpp:device_features" ]
-  }
-
   # Platform-specific WifiDataProvider implementations.
-  if (is_chromeos) {
-    sources += [
-      "wifi_data_provider_chromeos.cc",
-      "wifi_data_provider_chromeos.h",
-    ]
-    deps += [ "//chromeos/ash/components/network" ]
-  } else if (is_linux && use_dbus) {
+  if (is_linux && use_dbus) {
     sources += [
       "wifi_data_provider_linux.cc",
       "wifi_data_provider_linux.h",
@@ -107,13 +93,6 @@ source_set("geolocation") {
     sources += [
       "wifi_data_provider_mac.h",
       "wifi_data_provider_mac.mm",
-    ]
-  } else if (is_win) {
-    sources += [
-      "wifi_data_provider_common_win.cc",
-      "wifi_data_provider_common_win.h",
-      "wifi_data_provider_win.cc",
-      "wifi_data_provider_win.h",
     ]
   } else {
     # WifiDataProviderHandle declares a static factory method that is defined
@@ -146,8 +125,4 @@ source_set("test_support") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/dbus/shill" ]
-  }
 }

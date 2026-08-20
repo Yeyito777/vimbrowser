@@ -47,9 +47,6 @@
 #include "net/ssl/client_cert_store_nss.h"
 #endif  // BUILDFLAG(USE_NSS_CERTS)
 
-#if BUILDFLAG(IS_WIN)
-#include "net/ssl/client_cert_store_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
@@ -65,20 +62,6 @@
 #include "components/enterprise/client_certificates/core/features.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ash/certificate_provider/certificate_provider_service.h"
-#include "chrome/browser/ash/certificate_provider/certificate_provider_service_factory.h"
-#include "chrome/browser/ash/kcer/kcer_factory_ash.h"
-#include "chrome/browser/ash/net/client_cert_store_kcer.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chromeos/ash/components/kcer/kcer.h"
-#include "chromeos/ash/components/kcer/kcer_histograms.h"
-#include "chromeos/components/certificate_provider/certificate_provider.h"
-#include "chromeos/constants/chromeos_features.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace {
 
@@ -139,13 +122,6 @@ class ClientCertStoreFactoryNSS : public ClientCertStoreFactory {
                             kCryptoModulePasswordClientAuth));
   }
 };
-#elif BUILDFLAG(IS_WIN)
-class ClientCertStoreFactoryWin : public ClientCertStoreFactory {
- public:
-  std::unique_ptr<net::ClientCertStore> CreateClientCertStore() override {
-    return std::make_unique<net::ClientCertStoreWin>();
-  }
-};
 #elif BUILDFLAG(IS_MAC)
 class ClientCertStoreFactoryMac : public ClientCertStoreFactory {
  public:
@@ -158,10 +134,7 @@ class ClientCertStoreFactoryMac : public ClientCertStoreFactory {
 #if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_LINUX)
 std::unique_ptr<ClientCertStoreLoader> CreatePlatformClientCertLoader(
     Profile* profile) {
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<ClientCertStoreLoader>(
-      std::make_unique<ClientCertStoreFactoryWin>());
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return std::make_unique<ClientCertStoreLoader>(
       std::make_unique<ClientCertStoreFactoryMac>());
 #else
@@ -410,100 +383,6 @@ class WritableCertLoader : public CertificateManagerPageHandler::CertSource {
   base::WeakPtrFactory<WritableCertLoader> weak_ptr_factory_{this};
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-class KcerLoader : public WritableCertLoader {
- public:
-  explicit KcerLoader(
-      Profile* profile,
-      mojo::Remote<certificate_manager::mojom::CertificateManagerPage>*
-          remote_client)
-      : profile_(profile),
-        remote_client_(remote_client),
-        kcer_(kcer::KcerFactoryAsh::GetKcer(profile)) {
-    if (kcer_) {
-      observer_callback_ = kcer_->AddObserver(base::BindRepeating(
-          &KcerLoader::OnCertDbChanged, weak_ptr_factory_.GetWeakPtr()));
-    }
-  }
-  ~KcerLoader() override = default;
-
-  void RefreshCachedCertificateList(base::OnceClosure callback) override {
-    if (!kcer_) {
-      std::move(callback).Run();
-      return;
-    }
-
-    kcer_->GetAvailableTokens(base::BindOnce(&KcerLoader::GotKcerTokens,
-                                             weak_ptr_factory_.GetWeakPtr(),
-                                             std::move(callback)));
-  }
-
-  void OnCertDbChanged() {
-    RefreshCachedCertificateList(base::BindOnce(
-        &KcerLoader::TriggerReload, weak_ptr_factory_.GetWeakPtr()));
-  }
-
- private:
-  void TriggerReload() {
-    (*remote_client_)
-        ->TriggerReload({certificate_manager::mojom::CertificateSource::
-                             kPlatformClientCert});
-  }
-
-  void GotKcerTokens(base::OnceClosure callback,
-                     base::flat_set<kcer::Token> tokens) {
-    if (!kcer_) {
-      std::move(callback).Run();
-      return;
-    }
-
-    kcer_->ListCerts(
-        std::move(tokens),
-        base::BindOnce(&KcerLoader::GotKcerCerts,
-                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
-  }
-
-  void GotKcerCerts(base::OnceClosure callback,
-                    std::vector<scoped_refptr<const kcer::Cert>> kcer_certs,
-                    base::flat_map<kcer::Token, kcer::Error> kcer_errors) {
-    ClientCertManagementAccessControls policy(profile_);
-    certs_ = std::vector<CertInfo>();
-    certs_->reserve(kcer_certs.size());
-    for (scoped_refptr<const kcer::Cert>& cert : kcer_certs) {
-      if (!cert || !cert->GetX509Cert()) {
-        // Probably shouldn't happen, but double check just in case.
-        continue;
-      }
-
-      // TODO(crbug.com/40928765): This should be checking each cert for if it
-      // is software or hardware backed, however that information isn't in
-      // kcer::Cert and requires doing an async GetKeyInfo call for each cert.
-      // The only time the difference matters is in guest mode where deleting
-      // hardware backed certs isn't allowed, however guest mode doesn't let
-      // you import hardware backed certs in the first place. In any case the
-      // correct behavior is still enforced if such a cert somehow existed and
-      // the user tried to delete it. So while this is theoretically incorrect
-      // it's probably not worth bothering to fix.
-      bool is_deletable = policy.IsChangeAllowed(
-          ClientCertManagementAccessControls::kSoftwareBacked,
-          cert->GetToken() == kcer::Token::kDevice
-              ? ClientCertManagementAccessControls::kDeviceWide
-              : ClientCertManagementAccessControls::kUser);
-      certs_->emplace_back(cert->GetX509Cert(), is_deletable);
-    }
-
-    std::move(callback).Run();
-  }
-
-  raw_ptr<Profile> profile_;
-  raw_ptr<mojo::Remote<certificate_manager::mojom::CertificateManagerPage>>
-      remote_client_;
-  base::WeakPtr<kcer::Kcer> kcer_;
-  base::CallbackListSubscription observer_callback_;
-  base::WeakPtrFactory<KcerLoader> weak_ptr_factory_{this};
-};
-
-#else   // BUILDFLAG(IS_CHROMEOS)
 
 class NSSLoader : public WritableCertLoader {
  public:
@@ -550,7 +429,6 @@ class NSSLoader : public WritableCertLoader {
   std::unique_ptr<ClientCertStoreLoader> loader_;
   base::WeakPtrFactory<NSSLoader> weak_ptr_factory_{this};
 };
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Subclass of ClientCertSource that also allows importing client certificates
 // to the ChromeOS or Linux client cert store.
@@ -563,11 +441,7 @@ class WritableClientCertSource
           remote_client,
       Profile* profile)
       : remote_client_(remote_client), profile_(profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-    cert_loader_ = std::make_unique<KcerLoader>(profile, remote_client);
-#else
     cert_loader_ = std::make_unique<NSSLoader>(profile);
-#endif
   }
 
   ~WritableClientCertSource() override {
@@ -777,62 +651,10 @@ class WritableClientCertSource
                          int nss_import_result) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (nss_import_result == net::OK) {
-      kcer::RecordPkcs12MigrationUmaEvent(
-          kcer::Pkcs12MigrationUmaEvent::kPkcs12ImportNssSuccess);
-      // `import_hardware_backed_` == false indicates that the cert came from
-      // the "Import" button. By default it's imported into the software NSS
-      // database (aka public slot). With the experiment enabled it should also
-      // be imported into Chaps. `import_hardware_backed_` == true means that
-      // the cert came from the "Import and Bind" button and it's import into
-      // Chaps by default.
-      if (!import_hardware_backed_) {
-        // Record the dual-write event. Even if the import fails, it's
-        // theoretically possible that some related objects are still created
-        // and would need to be deleted in case of a rollback.
-        base::WeakPtr<kcer::Kcer> kcer =
-            kcer::KcerFactoryAsh::GetKcer(profile_);
-        if (kcer) {
-          kcer::KcerFactoryAsh::RecordPkcs12CertDualWritten();
-          return kcer->ImportPkcs12Cert(
-              kcer::Token::kUser, kcer::Pkcs12Blob(std::move(file_bytes)),
-              std::move(password),
-              /*hardware_backed=*/import_hardware_backed_,
-              /*mark_as_migrated=*/true,
-              base::BindOnce(&WritableClientCertSource::FinishedKcerImport,
-                             weak_ptr_factory_.GetWeakPtr(),
-                             nss_import_result));
-        }
-      }
-    } else {
-      kcer::RecordPkcs12MigrationUmaEvent(
-          kcer::Pkcs12MigrationUmaEvent::kPkcs12ImportNssFailed);
-    }
-#endif
 
     ReplyToImportCallback(nss_import_result);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void FinishedKcerImport(
-      int nss_import_result,
-      base::expected<void, kcer::Error> kcer_import_result) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-    if (kcer_import_result.has_value()) {
-      kcer::RecordPkcs12MigrationUmaEvent(
-          kcer::Pkcs12MigrationUmaEvent::kPkcs12ImportKcerSuccess);
-    } else {
-      kcer::RecordPkcs12MigrationUmaEvent(
-          kcer::Pkcs12MigrationUmaEvent::kPkcs12ImportKcerFailed);
-    }
-
-    // Just return the nss_import_result. Kcer will attempt to import only if
-    // NSS succeeds and even if Kcer fails, the cert should be usable.
-    ReplyToImportCallback(nss_import_result);
-  }
-#endif
 
   void ReplyToImportCallback(int nss_import_result) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -928,14 +750,7 @@ class WritableClientCertSource
             ? ClientCertManagementAccessControls::kHardwareBacked
             : ClientCertManagementAccessControls::kSoftwareBacked;
     const auto device_wide =
-#if BUILDFLAG(IS_CHROMEOS)
-        cert_db->IsCertificateOnSlot(nss_cert.get(),
-                                     cert_db->GetSystemSlot().get())
-            ? ClientCertManagementAccessControls::kDeviceWide
-            : ClientCertManagementAccessControls::kUser
-#else
         ClientCertManagementAccessControls::kUser
-#endif
         ;
     if (!client_cert_policy.IsChangeAllowed(hardware_backed, device_wide)) {
       content::GetUIThreadTaskRunner({})->PostTask(
@@ -983,63 +798,6 @@ class WritableClientCertSource
 };
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ExtensionsClientCertSource
-    : public CertificateManagerPageHandler::CertSource {
- public:
-  explicit ExtensionsClientCertSource(
-      std::unique_ptr<chromeos::certificate_provider::CertificateProvider>
-          provider)
-      : provider_(std::move(provider)) {}
-  ~ExtensionsClientCertSource() override = default;
-
-  void GetCertificateInfos(
-      CertificateManagerPageHandler::GetCertificatesCallback callback)
-      override {
-    if (!provider_) {
-      std::move(callback).Run({});
-      return;
-    }
-    if (certs_) {
-      PopulateCertInfosFromCertificateList(std::move(callback), *certs_,
-                                           /*is_deletable=*/false);
-      return;
-    }
-
-    provider_->GetCertificates(
-        base::BindOnce(&ExtensionsClientCertSource::SaveCertsAndRespond,
-                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
-  }
-
-  void ViewCertificate(
-      const std::string& sha256_hex_hash,
-      base::WeakPtr<content::WebContents> web_contents) override {
-    if (!provider_ || !certs_) {
-      return;
-    }
-    ViewCertificateFromCertificateList(sha256_hex_hash, *certs_,
-                                       std::move(web_contents));
-  }
-
- private:
-  void SaveCertsAndRespond(
-      CertificateManagerPageHandler::GetCertificatesCallback callback,
-      net::ClientCertIdentityList cert_identities) {
-    certs_ = net::CertificateList();
-    certs_->reserve(cert_identities.size());
-    for (const auto& identity : cert_identities) {
-      certs_->push_back(identity->certificate());
-    }
-    PopulateCertInfosFromCertificateList(std::move(callback), *certs_,
-                                         /*is_deletable=*/false);
-  }
-
-  std::unique_ptr<chromeos::certificate_provider::CertificateProvider>
-      provider_;
-  std::optional<net::CertificateList> certs_;
-  base::WeakPtrFactory<ExtensionsClientCertSource> weak_ptr_factory_{this};
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -1064,49 +822,7 @@ CreateProvisionedClientCertSource(Profile* profile) {
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<CertificateManagerPageHandler::CertSource>
-CreateExtensionsClientCertSource(Profile* profile) {
-  chromeos::CertificateProviderService* certificate_provider_service =
-      chromeos::CertificateProviderServiceFactory::GetForBrowserContext(
-          profile);
-  return std::make_unique<ExtensionsClientCertSource>(
-      certificate_provider_service->CreateCertificateProvider());
-}
-
-ClientCertManagementAccessControls::ClientCertManagementAccessControls(
-    Profile* profile)
-    : is_guest_(
-          user_manager::UserManager::Get()->IsLoggedInAsGuest() ||
-          user_manager::UserManager::Get()->IsLoggedInAsManagedGuestSession()),
-      client_cert_policy_(static_cast<ClientCertificateManagementPermission>(
-          profile->GetPrefs()->GetInteger(
-              prefs::kClientCertificateManagementAllowed))) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-}
-
-bool ClientCertManagementAccessControls::IsManagementAllowed(
-    KeyStorage key_storage) const {
-  // Kiosks should allow client cert management, as per customer issue.
-  // See b/409500766.
-  return !(key_storage == kHardwareBacked && is_guest_) &&
-         client_cert_policy_ != ClientCertificateManagementPermission::kNone;
-}
-
-bool ClientCertManagementAccessControls::IsChangeAllowed(
-    KeyStorage key_storage,
-    CertLocation cert_location) const {
-  if (!IsManagementAllowed(key_storage)) {
-    return false;
-  }
-
-  if (cert_location == kUser) {
-    return client_cert_policy_ != ClientCertificateManagementPermission::kNone;
-  }
-
-  return client_cert_policy_ == ClientCertificateManagementPermission::kAll;
-}
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 ClientCertManagementAccessControls::ClientCertManagementAccessControls(
     Profile* profile) {}
 

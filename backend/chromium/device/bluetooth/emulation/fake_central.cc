@@ -23,9 +23,6 @@
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "device/bluetooth/public/mojom/emulation/fake_bluetooth.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/bluetooth_low_energy_scan_filter.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace bluetooth {
 
@@ -705,40 +702,6 @@ device::BluetoothLocalGattService* FakeCentral::GetGattService(
   NOTREACHED();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FakeCentral::SetServiceAllowList(const UUIDList& uuids,
-                                      base::OnceClosure callback,
-                                      ErrorCallback error_callback) {
-  NOTREACHED();
-}
-
-void FakeCentral::SetSimpleSecurePairingEnabled(bool enabled,
-                                                base::OnceClosure callback,
-                                                ErrorCallback error_callback) {
-  NOTREACHED();
-}
-
-std::unique_ptr<device::BluetoothLowEnergyScanSession>
-FakeCentral::StartLowEnergyScanSession(
-    std::unique_ptr<device::BluetoothLowEnergyScanFilter> filter,
-    base::WeakPtr<device::BluetoothLowEnergyScanSession::Delegate> delegate) {
-  NOTREACHED();
-}
-
-device::BluetoothAdapter::LowEnergyScanSessionHardwareOffloadingStatus
-FakeCentral::GetLowEnergyScanSessionHardwareOffloadingStatus() {
-  return LowEnergyScanSessionHardwareOffloadingStatus::kNotSupported;
-}
-
-std::vector<device::BluetoothAdapter::BluetoothRole>
-FakeCentral::GetSupportedRoles() {
-  NOTREACHED();
-}
-
-void FakeCentral::SetStandardChromeOSAdapterName() {
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 base::WeakPtr<device::BluetoothAdapter> FakeCentral::GetWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();

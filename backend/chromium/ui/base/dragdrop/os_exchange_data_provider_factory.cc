@@ -12,8 +12,6 @@
 #include "ui/base/dragdrop/os_exchange_data_provider_non_backed.h"
 #elif BUILDFLAG(IS_APPLE)
 #include "ui/base/dragdrop/os_exchange_data_provider_builder_mac.h"
-#elif BUILDFLAG(IS_WIN)
-#include "ui/base/dragdrop/os_exchange_data_provider_win.h"
 #endif
 
 namespace ui {
@@ -33,12 +31,6 @@ OSExchangeDataProviderFactory::CreateProvider() {
   return std::make_unique<OSExchangeDataProviderNonBacked>();
 #elif BUILDFLAG(IS_APPLE)
   return BuildOSExchangeDataProviderMac();
-#elif BUILDFLAG(IS_WIN)
-  return std::make_unique<OSExchangeDataProviderWin>();
-#elif BUILDFLAG(IS_FUCHSIA)
-  // Fuchsia uses OSExchangeDataProviderNonBacked since a platform-specific
-  // implementation is not planned. See crbug.com/42050646 for context.
-  return std::make_unique<OSExchangeDataProviderNonBacked>();
 #else
 #error "Unknown operating system"
 #endif

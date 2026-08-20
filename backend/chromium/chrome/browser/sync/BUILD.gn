@@ -202,42 +202,6 @@ source_set("sync") {
       "//chrome/browser/web_applications",
     ]
   }
-  if (is_chromeos) {
-    sources += [
-      "desk_sync_service_factory.cc",
-      "desk_sync_service_factory.h",
-      "wifi_configuration_sync_service_factory.cc",
-      "wifi_configuration_sync_service_factory.h",
-    ]
-    deps += [
-      "//ash/constants",
-      "//ash/public/cpp",
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/arc",
-      "//chrome/browser/ash/arc:arc_util",
-      "//chrome/browser/ash/arc/tracing",
-      "//chrome/browser/ash/floating_sso",
-      "//chrome/browser/ash/floating_workspace:utils",
-      "//chrome/browser/ash/guest_os",
-      "//chrome/browser/ash/login/session",
-      "//chrome/browser/ash/printing",
-      "//chrome/browser/ash/printing/oauth2",
-      "//chrome/browser/ash/profiles",
-      "//chrome/browser/ui/ash/multi_user",
-      "//chromeos/ash/components/network",
-      "//chromeos/ash/components/sync_wifi",
-      "//chromeos/ash/components/tether",
-      "//chromeos/ash/experiences/arc:arc_base_utils",
-      "//components/desks_storage",
-      "//ui/events/ash",
-    ]
-    allow_circular_includes_from += [
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/login/session",
-    ]
-  }
 
   allow_circular_includes_from += [ "//chrome/browser/consent_auditor" ]
 }

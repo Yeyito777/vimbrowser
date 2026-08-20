@@ -29,21 +29,11 @@ std::atomic<bool>
 namespace {
 
 constexpr double kProduceCompileHintsNoiseLevel = 0.5;
-#if BUILDFLAG(IS_WIN)
-constexpr float kProduceCompileHintsDataProductionLevel = 0.005;
-#endif  // BUILDFLAG(IS_WIN)
 
 bool RandomlySelectedToGenerateData() {
   // Data collection is only enabled on Windows. TODO(chromium:1406506): enable
   // on more platforms.
-#if BUILDFLAG(IS_WIN)
-  // Decide whether we collect the data based on client-side randomization.
-  // This is further subject to UKM restrictions: whether the user has enabled
-  // the data collection + downsampling. See crbug.com/1483975.
-  return base::RandDouble() < kProduceCompileHintsDataProductionLevel;
-#else   //  BUILDFLAG(IS_WIN)
   return false;
-#endif  //  BUILDFLAG(IS_WIN)
 }
 
 bool ShouldThisProcessGenerateData() {

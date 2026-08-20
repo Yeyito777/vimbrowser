@@ -39,22 +39,6 @@
 #include "ui/webui/resources/grit/webui_resources.h"
 #include "ui/webui/webui_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "base/command_line.h"
-#include "base/system/sys_info.h"
-#include "chrome/browser/ash/login/session/user_session_manager.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/infobars/simple_alert_infobar_creator.h"
-#include "chrome/grit/generated_resources.h"
-#include "chromeos/ash/components/settings/cros_settings.h"
-#include "components/account_id/account_id.h"
-#include "components/infobars/content/content_infobar_manager.h"
-#include "components/infobars/core/simple_alert_infobar_delegate.h"
-#include "components/pref_registry/pref_registry_syncable.h"
-#include "components/user_manager/user_manager.h"
-#include "components/vector_icons/vector_icons.h"
-#endif
 
 using content::WebContents;
 using content::WebUIMessageHandler;
@@ -66,19 +50,6 @@ content::WebUIDataSource* CreateAndAddFlagsUIHTMLSource(Profile* profile) {
       profile, chrome::kChromeUIFlagsHost);
   source->AddString(flags_ui::kVersion, version_info::GetVersionNumber());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!user_manager::UserManager::Get()->IsCurrentUserOwner() &&
-      base::SysInfo::IsRunningOnChromeOS()) {
-    // Set the string to show which user can actually change the flags.
-    std::string owner;
-    ash::CrosSettings::Get()->GetString(ash::kDeviceOwner, &owner);
-    source->AddString("owner-warning",
-                      l10n_util::GetStringFUTF16(IDS_FLAGS_UI_OWNER_WARNING,
-                                                 base::UTF8ToUTF16(owner)));
-  } else {
-    source->AddString("owner-warning", std::u16string());
-  }
-#endif
 
   webui::SetupWebUIDataSource(source, kFlagsUiResources,
                               IDR_FLAGS_UI_FLAGS_HTML);
@@ -112,34 +83,6 @@ void FinishInitialization(base::WeakPtr<FlagsUI> flags_ui,
   // it is still alive if |flags_ui| is.
   dom_handler->Init(std::move(storage), access);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Show a warning info bar when kSafeMode switch is present.
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ash::switches::kSafeMode)) {
-    CreateSimpleAlertInfoBar(
-        infobars::ContentInfoBarManager::FromWebContents(
-            flags_ui->web_ui()->GetWebContents()),
-        infobars::InfoBarDelegate::BAD_FLAGS_INFOBAR_DELEGATE,
-        &vector_icons::kWarningIcon,
-        l10n_util::GetStringUTF16(IDS_FLAGS_IGNORED_DUE_TO_CRASHY_CHROME),
-        /*auto_expire=*/false, /*should_animate=*/true, /*closeable=*/true,
-        /*infobar_priority=*/
-        infobars::InfoBarDelegate::InfobarPriority::kDefault);
-  }
-
-  // Show a warning info bar for secondary users.
-  if (!ash::ProfileHelper::IsPrimaryProfile(profile)) {
-    CreateSimpleAlertInfoBar(
-        infobars::ContentInfoBarManager::FromWebContents(
-            flags_ui->web_ui()->GetWebContents()),
-        infobars::InfoBarDelegate::BAD_FLAGS_INFOBAR_DELEGATE,
-        &vector_icons::kWarningIcon,
-        l10n_util::GetStringUTF16(IDS_FLAGS_IGNORED_SECONDARY_USERS),
-        /*auto_expire=*/false, /*should_animate=*/true, /*closeable=*/true,
-        /*infobar_priority=*/
-        infobars::InfoBarDelegate::InfobarPriority::kDefault);
-  }
-#endif
 }
 
 }  // namespace

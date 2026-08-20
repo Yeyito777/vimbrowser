@@ -211,74 +211,6 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
-  for (base::FilePath::CharType c : hostname) {
-    if (!((c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
-          (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-') ||
-          (c == L'_'))) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool MaybeIsLocalUNCPath(const base::FilePath& path) {
-  if (!path.IsNetwork()) {
-    return false;
-  }
-
-  const std::vector<base::FilePath::StringType> components =
-      path.GetComponents();
-
-  // Check for server name that could represent a local system. We only
-  // check for a very short list, as it is impossible to cover all different
-  // variants on Windows.
-  if (components.size() >= 2 &&
-      (base::FilePath::CompareEqualIgnoreCase(components[1],
-                                              FILE_PATH_LITERAL("localhost")) ||
-       components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
-       components[1] == FILE_PATH_LITERAL(".") ||
-       components[1] == FILE_PATH_LITERAL("?") ||
-       ContainsInvalidDNSCharacter(components[1]))) {
-    return true;
-  }
-
-  // Check *admin* shares only (drive admin like "C$" and named admin).
-  // Note: the share component is typically components[2], but we scan all
-  // components defensively in case the structure changes.
-  for (size_t i = 2; i < components.size(); ++i) {
-    const auto& component = components[i];
-
-    // component ends with "$"
-    if (!component.empty() && component.back() == L'$') {
-
-      // Drive admin share: "C$".."Z$" (case-insensitive on the letter).
-      if (component.size() == 2 &&
-          ((component[0] >= L'A' && component[0] <= L'Z') ||
-           (component[0] >= L'a' && component[0] <= L'z'))) {
-        return true;
-      }
-
-      // Named admin shares: "ADMIN$", "IPC$", "PRINT$", and "FAX$"
-      if (base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("ADMIN$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("IPC$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("PRINT$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("FAX$"))) {
-        return true;
-      }
-
-      // Otherwise, it is just a hidden share (e.g. "Share$")—do not block.
-    }
-  }
-
-  return false;
-}
-#endif
 
 // Sentinel used to indicate that no PathService key is specified for a path in
 // the struct below.
@@ -341,24 +273,6 @@ GenerateBlockPaths(bool should_normalize_file_path) {
           // And limit access to ~/.gnupg as well.
           {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
            BlockType::kBlockAllChildren},
-#if BUILDFLAG(IS_WIN)
-          // Some Windows specific directories to block, basically all apps, the
-          // operating system itself, as well as configuration data for apps.
-          {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          // Opening a file from an MTP device, such as a smartphone or a
-          // camera, is
-          // implemented by Windows as opening a file in the temporary internet
-          // files directory. To support that, allow opening files in that
-          // directory, but not whole directories.
-          {base::DIR_IE_INTERNET_CACHE, nullptr,
-           BlockType::kBlockNestedDirectories},
-#endif
 #if BUILDFLAG(IS_MAC)
           // Similar Mac specific blocks.
           {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
@@ -487,13 +401,6 @@ bool ShouldBlockAccessToPath(
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, local UNC paths are rejected, as UNC path can be written in a
-  // way that can bypass the blocklist.
-  if (MaybeIsLocalUNCPath(path)) {
-    return true;
-  }
-#endif
 
   base::FilePath nearest_ancestor;
   BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;

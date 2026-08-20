@@ -16,10 +16,6 @@ namespace gfx {
 enum class ShadowStyle {
   // The MD style is mainly used for view's shadow.
   kMaterialDesign,
-#if BUILDFLAG(IS_CHROMEOS)
-  // The system style is mainly used for Chrome OS UI components.
-  kChromeOSSystemUI,
-#endif
 };
 
 // A struct that describes a vector of shadows and their depiction as an image

@@ -59,15 +59,9 @@ GpuFence::FenceStatus GpuFence::GetStatusChangeTime(int fd,
                                                     base::TimeTicks* time) {
   DCHECK_NE(fd, -1);
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS_DEVICE)
-  auto info =
-      std::unique_ptr<sync_fence_info_data, void (*)(sync_fence_info_data*)>{
-          sync_fence_info(fd), sync_fence_info_free};
-#else   // !BUILDFLAG(IS_CHROMEOS_DEVICE)
   auto info =
       std::unique_ptr<struct sync_file_info, void (*)(struct sync_file_info*)>{
           sync_file_info(fd), sync_file_info_free};
-#endif  // BUILDFLAG(IS_CHROMEOS_DEVICE)
   if (!info) {
     LOG(ERROR) << "sync_(file|fence)_info returned null for fd : " << fd;
     return FenceStatus::kInvalid;
@@ -84,12 +78,6 @@ GpuFence::FenceStatus GpuFence::GetStatusChangeTime(int fd,
   }
 
   uint64_t timestamp_ns = 0u;
-#if BUILDFLAG(IS_CHROMEOS_DEVICE)
-  struct sync_pt_info* pt_info = nullptr;
-  while ((pt_info = sync_pt_info(info.get(), pt_info))) {
-    timestamp_ns = std::max(timestamp_ns, pt_info->timestamp_ns);
-  }
-#else   // !BUILDFLAG(IS_CHROMEOS_DEVICE)
   struct sync_fence_info* f_infos = sync_get_fence_info(info.get());
   for (size_t i = 0; i < info->num_fences; i++) {
     // SAFETY: Linux kernel guarantees size of sync_get_fence_info() is the same
@@ -98,7 +86,6 @@ GpuFence::FenceStatus GpuFence::GetStatusChangeTime(int fd,
     timestamp_ns =
         std::max(timestamp_ns, static_cast<uint64_t>(f_info.timestamp_ns));
   }
-#endif  // BUILDFLAG(IS_CHROMEOS_DEVICE)
 
   if (timestamp_ns == 0u) {
     LOG(ERROR) << "No timestamp provided from sync_(pt|fence)_info for fd : "

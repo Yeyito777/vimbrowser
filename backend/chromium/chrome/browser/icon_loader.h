@@ -76,15 +76,8 @@ class IconLoader {
   // The TaskRunner that ReadIcon() must be called on.
   static scoped_refptr<base::TaskRunner> GetReadIconTaskRunner();
 
-#if !BUILDFLAG(IS_CHROMEOS)
   void ReadGroup();
   void ReadIcon();
-#endif
-#if BUILDFLAG(IS_WIN)
-  // Reads an icon in a sandboxed service. Use this when the file itself must
-  // be parsed.
-  void ReadIconInSandbox();
-#endif
 
   // The traits of the tasks posted to base::ThreadPool by this class. These
   // operations may block, because they are fetching icons from the disk, yet
@@ -102,9 +95,7 @@ class IconLoader {
 
   IconGroup group_;
 
-#if !BUILDFLAG(IS_ANDROID)
   IconSize icon_size_;
-#endif  // !BUILDFLAG(IS_ANDROID)
   const float scale_;
   IconLoadedCallback callback_;
 };

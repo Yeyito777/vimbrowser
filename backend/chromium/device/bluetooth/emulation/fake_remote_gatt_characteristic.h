@@ -112,27 +112,13 @@ class FakeRemoteGattCharacteristic
       base::span<const uint8_t> value,
       base::OnceClosure callback,
       ErrorCallback error_callback) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void PrepareWriteRemoteCharacteristic(base::span<const uint8_t> value,
-                                        base::OnceClosure callback,
-                                        ErrorCallback error_callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  protected:
-#if BUILDFLAG(IS_CHROMEOS)
-  // device::BluetoothRemoteGattCharacteristic overrides:
-  void SubscribeToNotifications(
-      device::BluetoothRemoteGattDescriptor* ccc_descriptor,
-      NotificationType notification_type,
-      base::OnceClosure callback,
-      ErrorCallback error_callback) override;
-#else
   // device::BluetoothRemoteGattCharacteristic overrides:
   void SubscribeToNotifications(
       device::BluetoothRemoteGattDescriptor* ccc_descriptor,
       base::OnceClosure callback,
       ErrorCallback error_callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void UnsubscribeFromNotifications(
       device::BluetoothRemoteGattDescriptor* ccc_descriptor,
       base::OnceClosure callback,

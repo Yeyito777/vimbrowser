@@ -14,9 +14,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#endif
 
 #include "base/base64.h"
 #include "base/base_switches.h"
@@ -105,16 +102,6 @@
 
 #include "components/metrics/stability_metrics_helper.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/access_token.h"
-#include "base/win/security_descriptor.h"
-#include "base/win/win_util.h"
-#include "components/app_launch_prefetch/app_launch_prefetch.h"
-#include "sandbox/policy/win/sandbox_win.h"
-#include "sandbox/win/src/sandbox_policy.h"
-#include "sandbox/win/src/window.h"
-#include "ui/gfx/win/rendering_window_manager.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/gpu_platform_support_host.h"
@@ -213,17 +200,9 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
       return GpuTerminationStatus::PROCESS_WAS_KILLED;
     case base::TERMINATION_STATUS_PROCESS_CRASHED:
-#if BUILDFLAG(IS_WIN)
-    // Treat integrity failure as a crash on Windows.
-    case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-#endif
       return GpuTerminationStatus::PROCESS_CRASHED;
     case base::TERMINATION_STATUS_STILL_RUNNING:
       return GpuTerminationStatus::STILL_RUNNING;
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-      return GpuTerminationStatus::PROCESS_WAS_KILLED_BY_OOM;
-#endif
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
       return GpuTerminationStatus::LAUNCH_FAILED;
     case base::TERMINATION_STATUS_OOM:
@@ -245,17 +224,9 @@ static const char* const kSwitchNames[] = {
     sandbox::policy::switches::kDisableGpuSandbox,
     sandbox::policy::switches::kDisableLandlockSandbox,
     sandbox::policy::switches::kNoSandbox,
-#if BUILDFLAG(IS_WIN)
-    sandbox::policy::switches::kAllowThirdPartyModules,
-#endif
 #if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
     switches::kDisableDevShmUsage,
 #endif
-#if BUILDFLAG(IS_WIN)
-    switches::kDisableHighResTimer,
-    switches::kRaiseTimerFrequency,
-    switches::kUseRedistributableDirectML,
-#endif  // BUILDFLAG(IS_WIN)
     switches::kBackgroundThreadPoolFieldTrial,
     switches::kEnableANGLEFeatures,
     switches::kDelegatedInkRenderer,
@@ -313,11 +284,6 @@ static const char* const kSwitchNames[] = {
     switches::kUseCmdDecoder,
     switches::kForceVideoOverlays,
     switches::kSkiaGraphiteDawnBackend,
-#if BUILDFLAG(IS_CHROMEOS)
-    // TODO(crbug.com/371609830): Remove reven switch on experiment end.
-    ash::switches::kRevenBranding,
-    switches::kSchedulerBoostUrgent,
-#endif
 #if BUILDFLAG(USE_V4L2_CODEC)
     switches::kHardwareVideoDecodeFrameRate,
 #endif
@@ -379,63 +345,6 @@ class GpuSandboxedProcessLauncherDelegate
 
   ~GpuSandboxedProcessLauncherDelegate() override = default;
 
-#if BUILDFLAG(IS_WIN)
-  bool DisableDefaultPolicy() override { return true; }
-
-  std::string GetSandboxTag() override {
-    return sandbox::policy::SandboxWin::GetSandboxTagForDelegate(
-        "gpu", GetSandboxType());
-  }
-
-  // For the GPU process we gotten as far as USER_LIMITED. The next level
-  // which is USER_RESTRICTED breaks both the DirectX backend and the OpenGL
-  // backend. Note that the GPU process is connected to the interactive
-  // desktop.
-  bool InitializeConfig(sandbox::TargetConfig* config) override {
-    DCHECK(!config->IsConfigured());
-
-    sandbox::ResultCode result = config->SetTokenLevel(
-        sandbox::USER_RESTRICTED_SAME_ACCESS, sandbox::USER_LIMITED);
-    if (result != sandbox::SBOX_ALL_OK) {
-      return false;
-    }
-
-    // UI restrictions break when we access Windows from outside our job.
-    // However, we don't want a proxy window in this process because it can
-    // introduce deadlocks where the renderer blocks on the gpu, which in
-    // turn blocks on the browser UI thread. So, instead we forgo a window
-    // message pump entirely and just add job restrictions to prevent child
-    // processes.
-    result = sandbox::policy::SandboxWin::SetJobLevel(
-        sandbox::mojom::Sandbox::kGpu, sandbox::JobLevel::kLimitedUser,
-        JOB_OBJECT_UILIMIT_SYSTEMPARAMETERS | JOB_OBJECT_UILIMIT_DESKTOP |
-            JOB_OBJECT_UILIMIT_EXITWINDOWS | JOB_OBJECT_UILIMIT_DISPLAYSETTINGS,
-        config);
-    if (result != sandbox::SBOX_ALL_OK) {
-      return false;
-    }
-
-    // Check if we are running on the winlogon desktop and set a delayed
-    // integrity in this case. This is needed because a low integrity gpu
-    // process will not be allowed to access the winlogon desktop (gpu process
-    // integrity has to be at least medium in order to be able to access the
-    // winlogon desktop normally). So instead, let the gpu process start with
-    // the normal integrity and delay the switch to low integrity until after
-    // the gpu process has started and has access to the desktop.
-    if (ShouldSetDelayedIntegrity()) {
-      config->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
-    } else {
-      result = config->SetIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
-      if (result != sandbox::SBOX_ALL_OK)
-        return false;
-    }
-
-    // Block this DLL even if it is not loaded by the browser process.
-    config->AddDllToUnload(L"cmsetac.dll");
-
-    return true;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
   ZygoteCommunication* GetZygote() override {
@@ -457,57 +366,6 @@ class GpuSandboxedProcessLauncherDelegate
   }
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // These values are persisted to logs. Entries should not be renumbered and
-  // numeric values should never be reused.
-  enum class ProcessIntegrityResult{
-      kLowIl = 0,
-      kOpenGlMediumIl = 1,
-      kDesktopAccessMediumIl = 2,
-      kMaxValue = kDesktopAccessMediumIl,
-  };
-
-  bool CanLowIntegrityAccessDesktop() {
-    // Access required for UI thread to initialize (when user32.dll loads
-    // without win32k lockdown).
-    DWORD desired_access = DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS;
-
-    // Desktop is inherited by child process unless overridden, e.g. by sandbox.
-    HDESK hdesk = ::GetThreadDesktop(GetCurrentThreadId());
-    std::optional<base::win::SecurityDescriptor> sd =
-        base::win::SecurityDescriptor::FromHandle(
-            hdesk, base::win::SecurityObjectType::kDesktop,
-            OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
-                DACL_SECURITY_INFORMATION | LABEL_SECURITY_INFORMATION);
-    if (!sd) {
-      return false;
-    }
-
-    std::optional<base::win::AccessToken> token =
-        base::win::AccessToken::FromCurrentProcess(/*impersonation=*/true,
-                                                   TOKEN_ADJUST_DEFAULT);
-    if (!token) {
-      return false;
-    }
-
-    if (!token->SetIntegrityLevel(SECURITY_MANDATORY_LOW_RID)) {
-      return false;
-    }
-
-    std::optional<base::win::AccessCheckResult> result = sd->AccessCheck(
-        *token, desired_access, base::win::SecurityObjectType::kDesktop);
-    return result && result->access_status;
-  }
-
-  bool ShouldSetDelayedIntegrity() {
-    // Desktop access is needed to load user32.dll, we can lower token in child
-    // process after that's done.
-    if (CanLowIntegrityAccessDesktop()) {
-      return false;
-    }
-    return true;
-  }
-#endif
 
   base::CommandLine cmd_line_;
 };
@@ -644,9 +502,7 @@ void GpuProcessHost::CallOnUI(
     GpuProcessKind kind,
     bool force_create,
     base::OnceCallback<void(GpuProcessHost*)> callback) {
-#if !BUILDFLAG(IS_WIN)
   DCHECK_NE(kind, GPU_PROCESS_KIND_INFO_COLLECTION);
-#endif
   GetUIThreadTaskRunner({})->PostTask(
       location, base::BindOnce(&RunCallbackOnUI, kind, force_create,
                                std::move(callback)));
@@ -847,12 +703,6 @@ GpuProcessHost::~GpuProcessHost() {
       case base::TERMINATION_STATUS_STILL_RUNNING:
         message += "hasn't exited yet.";
         break;
-#if BUILDFLAG(IS_CHROMEOS)
-      case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-        message += "was killed due to out of memory.";
-        unexpected_exit = true;
-        break;
-#endif  // BUILDFLAG(IS_CHROMEOS)
       case base::TERMINATION_STATUS_LAUNCH_FAILED:
         message += "failed to start!";
         unexpected_exit = true;
@@ -861,12 +711,6 @@ GpuProcessHost::~GpuProcessHost() {
         message += "died due to out of memory.";
         unexpected_exit = true;
         break;
-#if BUILDFLAG(IS_WIN)
-      case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-        message += "failed integrity checks.";
-        unexpected_exit = true;
-        break;
-#endif
       case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
         message += "evicted for memory.";
         unexpected_exit = true;
@@ -1042,16 +886,6 @@ void GpuProcessHost::DidUpdateGPUInfo(const gpu::GPUInfo& gpu_info) {
   GpuDataManagerImpl::GetInstance()->UpdateGpuInfo(gpu_info, std::nullopt);
 }
 
-#if BUILDFLAG(IS_WIN)
-void GpuProcessHost::DidUpdateOverlayInfo(
-    const gpu::OverlayInfo& overlay_info) {
-  GpuDataManagerImpl::GetInstance()->UpdateOverlayInfo(overlay_info);
-}
-
-void GpuProcessHost::DidUpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) {
-  GpuDataManagerImpl::GetInstance()->UpdateDXGIInfo(std::move(dxgi_info));
-}
-#endif
 
 std::string GpuProcessHost::GetIsolationKey(
     int32_t process_id,
@@ -1173,9 +1007,6 @@ bool GpuProcessHost::GpuAccessAllowed() const {
 }
 
 void GpuProcessHost::DisableGpuCompositing() {
-#if BUILDFLAG(IS_CHROMEOS)
-  DLOG(ERROR) << "Can't disable GPU compositing";
-#else
   // TODO(crbug.com/40565996): The switch from GPU to software compositing
   // should be handled here instead of by ImageTransportFactory.
   GetUIThreadTaskRunner({})->PostTask(
@@ -1183,7 +1014,6 @@ void GpuProcessHost::DisableGpuCompositing() {
         if (auto* factory = ImageTransportFactory::GetInstance())
           factory->DisableGpuCompositing();
       }));
-#endif
 }
 
 gpu::GpuDiskCacheFactory* GpuProcessHost::GetGpuDiskCacheFactory() {
@@ -1253,15 +1083,6 @@ bool GpuProcessHost::LaunchGpuProcess() {
 
   cmd_line->AppendSwitchASCII(switches::kProcessType, switches::kGpuProcess);
 
-#if BUILDFLAG(IS_WIN)
-  if (kind_ == GPU_PROCESS_KIND_INFO_COLLECTION) {
-    cmd_line->AppendArgNative(app_launch_prefetch::GetPrefetchSwitch(
-        app_launch_prefetch::SubprocessType::kGPUInfo));
-  } else {
-    cmd_line->AppendArgNative(app_launch_prefetch::GetPrefetchSwitch(
-        app_launch_prefetch::SubprocessType::kGPU));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (kind_ == GPU_PROCESS_KIND_INFO_COLLECTION) {
     cmd_line->AppendSwitch(sandbox::policy::switches::kDisableGpuSandbox);
@@ -1277,13 +1098,6 @@ bool GpuProcessHost::LaunchGpuProcess() {
     cmd_line->AppendSwitchASCII(
         switches::kGpuDeviceId,
         base::StringPrintf("%u", device_info.device_id));
-#if BUILDFLAG(IS_WIN)
-    cmd_line->AppendSwitchASCII(
-        switches::kGpuSubSystemId,
-        base::StringPrintf("%u", device_info.sub_sys_id));
-    cmd_line->AppendSwitchASCII(switches::kGpuRevision,
-                                base::StringPrintf("%u", device_info.revision));
-#endif
     if (device_info.driver_version.length()) {
       cmd_line->AppendSwitchASCII(switches::kGpuDriverVersion,
                                   device_info.driver_version);
@@ -1360,15 +1174,9 @@ void GpuProcessHost::SendOutstandingReplies() {
 }
 
 int GpuProcessHost::GetFallbackCrashLimit() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS does not use software compositing and fallback crashes the
-  // browser process. So use larger maximum crash count limit.
-  return 6;
-#else
   // Maximum number of times the GPU process can crash before we try something
   // different, like disabling hardware acceleration or all GL.
   return 3;
-#endif
 }
 
 void GpuProcessHost::RecordProcessCrash() {
@@ -1413,13 +1221,6 @@ viz::mojom::GpuService* GpuProcessHost::gpu_service() {
   return gpu_host_->gpu_service();
 }
 
-#if BUILDFLAG(IS_WIN)
-viz::mojom::InfoCollectionGpuService*
-GpuProcessHost::info_collection_gpu_service() {
-  DCHECK(gpu_host_);
-  return gpu_host_->info_collection_gpu_service();
-}
-#endif
 
 int GpuProcessHost::GetIDForTesting() const {
   return process_->GetData().id;

@@ -310,9 +310,7 @@ content::WebUIDataSource* CreateAndAddPasswordsUIHTMLSource(
       {"localPasswordManager",
        IDS_PASSWORD_BUBBLES_PASSWORD_MANAGER_LINK_TEXT_SAVING_ON_DEVICE},
       {"manage", IDS_SETTINGS_MANAGE},
-#if BUILDFLAG(IS_WIN)
-      {"managePasskeysLabel", IDS_PASSWORD_MANAGER_UI_MANAGE_PASSKEYS_LABEL},
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       {"managePasskeysLabel",
        IDS_PASSWORD_MANAGER_UI_MANAGE_PASSKEYS_FROM_PROFILE_LABEL},
 #endif
@@ -508,16 +506,6 @@ content::WebUIDataSource* CreateAndAddPasswordsUIHTMLSource(
        IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_LABEL_MAC},
       {"biometricAuthenticationForFillingSubLabel",
        IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_SUBLABEL_MAC},
-#elif BUILDFLAG(IS_WIN)
-      {"biometricAuthenticationForFillingLabel",
-       IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_LABEL_WIN},
-      {"biometricAuthenticationForFillingSubLabel",
-       IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_SUBLABEL_WIN},
-#elif BUILDFLAG(IS_CHROMEOS)
-      {"biometricAuthenticationForFillingLabel",
-       IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_LABEL_CHROMEOS},
-      {"biometricAuthenticationForFillingSubLabel",
-       IDS_PASSWORD_MANAGER_UI_BIOMETRIC_AUTHENTICATION_FOR_FILLING_TOGGLE_SUBLABEL_CHROMEOS},
 #endif
   };
   for (const auto& str : kStrings) {
@@ -682,10 +670,8 @@ content::WebUIDataSource* CreateAndAddPasswordsUIHTMLSource(
                          password_manager::features::kPasswordCheckup));
 
   bool passwordUploadUiUpdateEnabled = false;
-#if !BUILDFLAG(IS_CHROMEOS)
   passwordUploadUiUpdateEnabled =
       base::FeatureList::IsEnabled(switches::kPasswordUploadUiUpdate);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   source->AddBoolean("passwordUploadUiUpdate", passwordUploadUiUpdateEnabled);
 
   content::URLDataSource::Add(

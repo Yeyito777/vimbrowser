@@ -25,14 +25,12 @@
 #include "content/public/browser/storage_partition.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/gcm/gcm_product_util.h"
 #include "chrome/common/channel_info.h"
 #include "components/gcm_driver/gcm_client_factory.h"
 #include "content/public/browser/browser_context.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
-#endif
 
 #if BUILDFLAG(ENABLE_OFFLINE_PAGES)
 #include "chrome/browser/image_fetcher/image_fetcher_service_factory.h"
@@ -42,7 +40,6 @@ namespace gcm {
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 // When enabled, GCM will use a dedicated thread for network operations instead
 // of the IO thread.
 BASE_FEATURE(kGCMUseDedicatedNetworkThread, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -85,7 +82,6 @@ scoped_refptr<base::SequencedTaskRunner> GetNetworkThreadTaskRunner() {
   return content::GetIOThreadTaskRunner({});
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 GCMProfileServiceFactory::GlobalTestingFactory& GetTestingFactory() {
   static base::NoDestructor<GCMProfileServiceFactory::GlobalTestingFactory>
@@ -167,10 +163,6 @@ GCMProfileServiceFactory::BuildServiceInstanceForBrowserContext(
           {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
            base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}));
   std::unique_ptr<GCMProfileService> service;
-#if BUILDFLAG(IS_ANDROID)
-  service = std::make_unique<GCMProfileService>(profile->GetPath(),
-                                                blocking_task_runner);
-#else
   service = std::make_unique<GCMProfileService>(
       profile->GetPrefs(), profile->GetPath(),
       base::BindRepeating(&RequestProxyResolvingSocketFactory,
@@ -183,7 +175,6 @@ GCMProfileServiceFactory::BuildServiceInstanceForBrowserContext(
       std::make_unique<GCMClientFactory>(), content::GetUIThreadTaskRunner({}),
       GetNetworkThreadTaskRunner(), blocking_task_runner,
       g_browser_process->os_crypt_async());
-#endif
 #if BUILDFLAG(ENABLE_OFFLINE_PAGES)
   // TODO(crbug.com/40260641): Removing image fetcher references here breaks
   // tests: org.chromium.chrome.browser.ImageFetcherIntegrationTest Users of

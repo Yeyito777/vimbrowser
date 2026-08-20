@@ -101,9 +101,6 @@ class FakeGaiaMixin : public InProcessBrowserTestMixin {
                                  const std::string& refresh_token,
                                  bool issue_any_scope_token);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetupFakeGaiaForLoginManager();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool initialize_configuration() { return initialize_configuration_; }
   void set_initialize_configuration(bool value) {

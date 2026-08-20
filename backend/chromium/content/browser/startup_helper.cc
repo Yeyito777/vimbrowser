@@ -49,19 +49,11 @@ std::unique_ptr<base::FieldTrialList> SetUpFieldTrialsAndFeatureList() {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-// Mobile config, for iOS see ios/web/app/web_main_loop.cc.
-constexpr size_t kThreadPoolDefaultMin = 6;
-constexpr size_t kThreadPoolMax = 8;
-constexpr double kThreadPoolCoresMultiplier = 0.6;
-constexpr int kThreadPoolOffset = 0;
-#else
 // Desktop config.
 constexpr size_t kThreadPoolDefaultMin = 16;
 constexpr size_t kThreadPoolMax = 32;
 constexpr double kThreadPoolCoresMultiplier = 0.6;
 constexpr int kThreadPoolOffset = 0;
-#endif
 
 BASE_FEATURE(kBrowserThreadPoolAdjustment, base::FEATURE_DISABLED_BY_DEFAULT);
 
@@ -81,10 +73,6 @@ void StartBrowserThreadPool() {
       base::RecommendedMaxNumberOfThreadsInThreadGroup(
           min, kThreadPoolMax, kThreadPoolCoresMultiplier, kThreadPoolOffset)};
 
-#if BUILDFLAG(IS_WIN)
-  thread_pool_init_params.common_thread_pool_environment = base::
-      ThreadPoolInstance::InitParams::CommonThreadPoolEnvironment::COM_MTA;
-#endif
 
   // If a renderer lives in the browser process, adjust the number of
   // threads in the foreground pool.

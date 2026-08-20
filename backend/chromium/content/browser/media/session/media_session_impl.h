@@ -35,9 +35,6 @@
 #include "third_party/blink/public/mojom/favicon/favicon_url.mojom.h"
 #include "third_party/blink/public/mojom/mediasession/media_session.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace media_session {
 struct MediaMetadata;
@@ -55,9 +52,6 @@ class MediaSessionServiceImpl;
 class MediaSessionServiceImplBrowserTest;
 class VideoPictureInPictureWindowControllerImpl;
 
-#if BUILDFLAG(IS_ANDROID)
-class MediaSessionAndroid;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // MediaSessionImpl is the implementation of MediaSession. It manages the media
 // session and audio focus for a given WebContents. It is requesting the audio
@@ -93,10 +87,6 @@ class MediaSessionImpl : public MediaSession,
   CONTENT_EXPORT void SetDelegateForTests(
       std::unique_ptr<AudioFocusDelegate> delegate);
 
-#if BUILDFLAG(IS_ANDROID)
-  void ClearMediaSessionAndroid();
-  MediaSessionAndroid* GetMediaSessionAndroid();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   void NotifyMediaSessionMetadataChange();
 
@@ -490,11 +480,6 @@ class MediaSessionImpl : public MediaSession,
   // changed.
   void RebuildAndNotifyMetadataChanged();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void BuildPlaceholderMetadata(
-      media_session::MediaMetadata& metadata,
-      std::vector<media_session::MediaImage>& artwork);
-#endif
 
   void BuildMetadata(media_session::MediaMetadata& metadata,
                      std::vector<media_session::MediaImage>& artwork);
@@ -679,9 +664,6 @@ class MediaSessionImpl : public MediaSession,
   // Returns the PageData for the specified |page|.
   PageData& GetPageData(content::Page& page) const;
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<MediaSessionAndroid> session_android_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // MediaSessionService-related fields
   using ServicesMap =

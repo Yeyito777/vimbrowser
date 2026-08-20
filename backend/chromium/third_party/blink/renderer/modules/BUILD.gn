@@ -11,10 +11,6 @@ import("//third_party/blink/renderer/bindings/bindings.gni")
 import("//third_party/blink/renderer/build/scripts/scripts.gni")
 import("//third_party/blink/renderer/modules/modules.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 visibility = [ "//third_party/blink/renderer/*" ]
 
 config("modules_implementation") {
@@ -172,15 +168,11 @@ component("modules") {
     "//third_party/blink/renderer/modules/smart_card",
   ]
 
-  if (!is_ios) {
-    sub_modules += [ "//third_party/blink/renderer/modules/awc" ]
-  }
+  sub_modules += [ "//third_party/blink/renderer/modules/awc" ]
 
   # Installed App (getInstalledRelatedApps) is excluded on iOS because the
   # webapp infrastructure required for this API is not yet implemented.
-  if (!is_ios) {
-    sub_modules += [ "//third_party/blink/renderer/modules/installedapp" ]
-  }
+  sub_modules += [ "//third_party/blink/renderer/modules/installedapp" ]
 
   if (enable_compute_pressure) {
     sub_modules += [ "//third_party/blink/renderer/modules/compute_pressure" ]
@@ -202,11 +194,6 @@ component("modules") {
 
   public_deps = sub_modules
   allow_circular_includes_from = sub_modules
-
-  if (is_win) {
-    cflags =
-        [ "/wd4334" ]  # Result of 32-bit shift implicitly converted to 64 bits.
-  }
 
   configs -= [ "//build/config/compiler:default_symbols" ]
   configs += blink_symbols_config
@@ -659,19 +646,15 @@ source_set("unit_tests") {
     "accessibility/ax_inline_text_box_test.cc",
   ]
 
-  if (!is_ios) {
-    sources += [
-      # CaptureController is not Web-exposed on Android and iOS,
-      # so most of the logic is compile-guarded away on Android and iOS,
-      # preventing meaningful testing.
-      "mediastream/capture_controller_test.cc",
-    ]
-  }
+  sources += [
+    # CaptureController is not Web-exposed on Android and iOS,
+    # so most of the logic is compile-guarded away on Android and iOS,
+    # preventing meaningful testing.
+    "mediastream/capture_controller_test.cc",
+  ]
 
   # Installed App is excluded on iOS (see sub_modules above).
-  if (!is_ios) {
-    sources += [ "installedapp/installed_app_controller_test.cc" ]
-  }
+  sources += [ "installedapp/installed_app_controller_test.cc" ]
 
   configs += [
     "//third_party/blink/renderer:config",
@@ -762,13 +745,6 @@ source_set("unit_tests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("accessibility_selection_test_bundle_data") {
-    testonly = true
-    filelist_name = "accessibility/testing/data/selection/accessibility_selection_test_bundle_data.filelist"
-  }
 }
 
 group("accessibility_unittests_data") {

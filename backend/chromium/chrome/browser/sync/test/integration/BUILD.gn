@@ -181,16 +181,8 @@ source_set("sync_integration_tests_impl") {
   if (is_mac) {
     sources += [ "web_apps/two_client_web_apps_integration_test_mac.cc" ]
   }
-  if (is_win) {
-    sources += [ "web_apps/two_client_web_apps_integration_test_win.cc" ]
-  }
-  if (is_chromeos) {
-    sources += [ "web_apps/two_client_web_apps_integration_test_cros.cc" ]
-  }
-  if (!is_chromeos) {
-    sources +=
-        [ "select_type_and_migrate_local_data_items_when_active_sync_test.cc" ]
-  }
+  sources +=
+      [ "select_type_and_migrate_local_data_items_when_active_sync_test.cc" ]
 
   # TODO(crbug.com/478187672): Fix flakiness and enable on ASan.
   if (is_linux && is_asan) {
@@ -270,49 +262,6 @@ source_set("sync_integration_tests_impl") {
     data_deps += [
       "//chrome",
       "//chrome:chrome_framework",
-    ]
-  }
-  if (is_win) {
-    deps += [
-      "//chrome:other_version",
-      "//third_party/wtl",
-      "//ui/resources",
-    ]
-  }
-  if (is_chromeos) {
-    sources += [
-      "single_client_app_list_sync_test.cc",
-      "single_client_arc_package_sync_test.cc",
-      "single_client_cookies_sync_test.cc",
-      "single_client_os_preferences_sync_test.cc",
-      "single_client_printers_sync_test.cc",
-      "single_client_wifi_configuration_sync_test.cc",
-      "single_client_workspace_desk_sync_test.cc",
-      "two_client_app_list_sync_test.cc",
-      "two_client_arc_package_sync_test.cc",
-      "two_client_os_preferences_sync_test.cc",
-      "two_client_printers_sync_test.cc",
-      "two_client_workspace_desk_sync_test.cc",
-    ]
-    deps += [
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/app_list/test:test_support",
-      "//chrome/browser/ash/crosapi",
-      "//chrome/browser/ash/floating_sso",
-      "//chrome/browser/ash/floating_sso:test_support",
-      "//chrome/browser/ash/printing",
-      "//chrome/browser/ash/sync",
-      "//chrome/browser/ash/system_web_apps/test_support",
-      "//chrome/browser/ui/ash/multi_user",
-      "//chromeos/ash/components/browser_context_helper",
-      "//chromeos/ash/components/dbus/shill",
-      "//chromeos/ash/components/sync_wifi",
-      "//chromeos/ash/components/sync_wifi:test_support",
-      "//chromeos/constants",
-      "//chromeos/printing",
-      "//chromeos/services/network_config/public/cpp",
-      "//components/desks_storage",
     ]
   }
 
@@ -508,39 +457,6 @@ source_set("sync_integration_test_support") {
 
   if (!is_mac) {
     sources += []
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "printers_helper.cc",
-      "printers_helper.h",
-      "sync_app_list_helper.cc",
-      "sync_app_list_helper.h",
-      "sync_arc_package_helper.cc",
-      "sync_arc_package_helper.h",
-      "workspace_desk_helper.cc",
-      "workspace_desk_helper.h",
-    ]
-
-    public_deps += [ "//chrome/browser/ash/app_list" ]
-
-    deps += [
-      "//ash/app_list:test_support",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/app_list/test:test_support",
-      "//chrome/browser/ash/arc",
-      "//chrome/browser/ash/arc:arc_util",
-      "//chrome/browser/ash/arc/session",
-      "//chrome/browser/ash/net",
-      "//chrome/browser/ash/printing",
-      "//chrome/browser/ash/system_web_apps/test_support",
-      "//chromeos/ash/components/browser_context_helper",
-      "//chromeos/ash/experiences/arc:arc_test_support",
-      "//chromeos/ash/experiences/arc/mojom",
-      "//chromeos/printing",
-      "//components/desks_storage",
-      "//components/user_manager:test_support",
-    ]
   }
 
   if (enable_extensions_core) {

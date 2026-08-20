@@ -38,22 +38,12 @@ CefRefPtr<CefCommandLine> CefCommandLineImpl::Copy() {
 }
 
 void CefCommandLineImpl::InitFromArgv(int argc, const char* const* argv) {
-#if !BUILDFLAG(IS_WIN)
   CEF_VALUE_VERIFY_RETURN_VOID(true);
   mutable_value()->InitFromArgv(argc, argv);
-#else
-  DCHECK(false) << "method not supported on this platform";
-#endif
 }
 
 void CefCommandLineImpl::InitFromString(const CefString& command_line) {
-#if BUILDFLAG(IS_WIN)
-  CEF_VALUE_VERIFY_RETURN_VOID(true);
-  const std::wstring& str16 = command_line;
-  mutable_value()->ParseFromString(str16);
-#else
   DCHECK(false) << "method not supported on this platform";
-#endif
 }
 
 void CefCommandLineImpl::Reset() {
@@ -119,11 +109,7 @@ void CefCommandLineImpl::AppendSwitch(const CefString& name) {
 void CefCommandLineImpl::AppendSwitchWithValue(const CefString& name,
                                                const CefString& value) {
   CEF_VALUE_VERIFY_RETURN_VOID(true);
-#if BUILDFLAG(IS_WIN)
-  mutable_value()->AppendSwitchNative(name.ToString(), value.ToWString());
-#else
   mutable_value()->AppendSwitchNative(name.ToString(), value.ToString());
-#endif
 }
 
 void CefCommandLineImpl::RemoveSwitch(const CefString& name) {
@@ -145,20 +131,12 @@ void CefCommandLineImpl::GetArguments(ArgumentList& arguments) {
 
 void CefCommandLineImpl::AppendArgument(const CefString& argument) {
   CEF_VALUE_VERIFY_RETURN_VOID(true);
-#if BUILDFLAG(IS_WIN)
-  mutable_value()->AppendArgNative(argument.ToWString());
-#else
   mutable_value()->AppendArgNative(argument.ToString());
-#endif
 }
 
 void CefCommandLineImpl::PrependWrapper(const CefString& wrapper) {
   CEF_VALUE_VERIFY_RETURN_VOID(true);
-#if BUILDFLAG(IS_WIN)
-  mutable_value()->PrependWrapper(wrapper.ToWString());
-#else
   mutable_value()->PrependWrapper(wrapper.ToString());
-#endif
 }
 
 // CefCommandLine implementation.

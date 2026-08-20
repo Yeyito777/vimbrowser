@@ -472,12 +472,10 @@ void VerticalTabGroupHeaderView::UpdateAccessibleName(
 
   // Windows screen readers reads out the collapsed state based on the
   // accessibility node data information.
-#if !BUILDFLAG(IS_WIN)
   const bool is_collapsed = tab_group_visual_data->is_collapsed();
   group_status = is_collapsed
                      ? l10n_util::GetStringUTF16(IDS_GROUP_AX_LABEL_COLLAPSED)
                      : l10n_util::GetStringUTF16(IDS_GROUP_AX_LABEL_EXPANDED);
-#endif
 
   std::u16string shared_state = u"";
   if (is_shared) {

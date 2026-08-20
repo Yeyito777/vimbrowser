@@ -70,11 +70,7 @@ const base::FeatureParam<base::TimeDelta> kReleaseVideoSourceProviderTimeout{
 #endif
 
 BASE_FEATURE(kEnumerateDevicesRelaxedCache,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 namespace {
@@ -894,16 +890,6 @@ void MediaDevicesManager::StartMonitoring(
 #if BUILDFLAG(IS_MAC)
     RegisterVideoCaptureDevicesChangedObserver();
 #endif
-#if BUILDFLAG(IS_WIN)
-    if ((base::FeatureList::IsEnabled(
-             video_capture::features::
-                 kWinCameraMonitoringInVideoCaptureService) ||
-         switches::IsMediaFoundationCameraUsageMonitoringEnabled()) &&
-        !base::FeatureList::IsEnabled(
-            features::kRunVideoCaptureServiceInBrowserProcess)) {
-      RegisterVideoCaptureDevicesChangedObserver();
-    }
-#endif
   }
 
   monitoring_started_for_video_ |= start_video_device_monitoring_mode;
@@ -1689,7 +1675,6 @@ void MediaDevicesManager::MaybeStopRemovedInputDevices(
   // matching either "default" or "communications".
   // NOTE: ChromeOS is able to seamlessly redirect streams to the new default
   // device, hence the event should not be triggered.
-#if !BUILDFLAG(IS_CHROMEOS)
   for (const auto& removed_audio_device : removed_audio_devices) {
     for (const auto& old_device_info :
          current_snapshot_[static_cast<size_t>(type)]) {
@@ -1702,7 +1687,6 @@ void MediaDevicesManager::MaybeStopRemovedInputDevices(
       }
     }
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void MediaDevicesManager::OnSaltAndOriginForSubscription(

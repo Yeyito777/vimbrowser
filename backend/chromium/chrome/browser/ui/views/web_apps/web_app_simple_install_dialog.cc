@@ -38,13 +38,6 @@
 #include "ui/views/view_utils.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/web_app_helpers.h"
-// TODO(crbug.com/40147906): Enable gn check once it learns about conditional
-// includes.
-#include "components/metrics/structured/structured_events.h"  // nogncheck
-#include "components/metrics/structured/structured_metrics_client.h"  // nogncheck
-#endif
 
 namespace web_app {
 
@@ -53,9 +46,6 @@ bool g_auto_accept_pwa_for_testing = false;
 bool g_auto_decline_pwa_for_testing = false;
 bool g_dont_close_on_deactivate = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace cros_events = metrics::structured::events::v2::cr_os_events;
-#endif
 
 }  // namespace
 
@@ -83,13 +73,6 @@ void ShowSimpleInstallDialogForWebApps(
   auto* browser_context = web_contents->GetBrowserContext();
   PrefService* prefs = Profile::FromBrowserContext(browser_context)->GetPrefs();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  webapps::AppId app_id =
-      web_app::GenerateAppIdFromManifestId(web_app_info->manifest_id());
-  metrics::structured::StructuredMetricsClient::Record(
-      cros_events::AppDiscovery_Browser_AppInstallDialogShown().SetAppId(
-          app_id));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   feature_engagement::Tracker* tracker =
       feature_engagement::TrackerFactory::GetForBrowserContext(browser_context);

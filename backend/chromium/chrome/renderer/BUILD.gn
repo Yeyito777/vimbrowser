@@ -41,16 +41,6 @@ grit("resources") {
     "//url/mojom:url_mojom_gurl_js",
     "//url/mojom:url_mojom_origin_js",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ui/webui/ash/lobster:lobster_mojom_js",
-      "//chromeos/ash/components/enhanced_network_tts/mojom:mojom_js",
-      "//chromeos/ash/services/ime/public/mojom:mojom_js",
-      "//chromeos/ash/services/orca/public/mojom:mojom_js",
-      "//chromeos/components/remote_apps/mojom:mojom_js",
-      "//chromeos/services/tts/public/mojom:mojom_js",
-    ]
-  }
 }
 
 static_library("process_state") {
@@ -317,16 +307,6 @@ static_library("renderer") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//third_party/wtl" ]
-    sources += [
-      "font_prewarmer.cc",
-      "font_prewarmer.h",
-      "render_frame_font_family_accessor.cc",
-      "render_frame_font_family_accessor.h",
-    ]
-  }
-
   sources += [
     "accessibility/ax_tree_distiller.cc",
     "accessibility/ax_tree_distiller.h",
@@ -389,20 +369,6 @@ static_library("renderer") {
       "//third_party/tflite:tflite_public_headers",
       "//third_party/tflite_support",
       "//third_party/tflite_support:tflite_support_proto",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "ash_merge_session_loader_throttle.cc",
-      "ash_merge_session_loader_throttle.h",
-      "chromeos_delayed_callback_group.cc",
-      "chromeos_delayed_callback_group.h",
-    ]
-
-    deps += [
-      "//ash/constants",
-      "//ash/webui/file_manager:constants",
     ]
   }
 }

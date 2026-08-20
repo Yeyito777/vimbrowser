@@ -21,9 +21,7 @@
 #include "services/device/public/mojom/mtp_file_entry.mojom.h"
 #include "services/device/public/mojom/mtp_storage_info.mojom.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #error "Only used on ChromeOS"
-#endif
 
 namespace dbus {
 class Bus;

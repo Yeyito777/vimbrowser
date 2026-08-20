@@ -41,17 +41,10 @@ constexpr FeaturePair<SearchUserModel::Feature> kFeatures[] = {
                        kOnlySearch)},
 };
 
-#if BUILDFLAG(IS_IOS)
-constexpr UkmEventHash kPageLoadHash = UkmEventHash::FromUnsafeValue(
-    ukm::builders::MainFrameNavigation::kEntryNameHash);
-constexpr UkmMetricHash kNavMetricHash = UkmMetricHash::FromUnsafeValue(
-    ukm::builders::MainFrameNavigation::kDidCommitNameHash);
-#elif !BUILDFLAG(IS_CHROMEOS)
 constexpr UkmEventHash kPageLoadHash =
     UkmEventHash::FromUnsafeValue(ukm::builders::PageLoad::kEntryNameHash);
 constexpr UkmMetricHash kNavMetricHash = UkmMetricHash::FromUnsafeValue(
     ukm::builders::PageLoad::kPaintTiming_NavigationToFirstPaintNameHash);
-#endif
 
 std::unique_ptr<DefaultModelProvider> GetSearchUserDefaultModel() {
   if (!base::GetFieldTrialParamByFeatureAsBool(
@@ -94,7 +87,6 @@ SearchUserModel::GetModelConfig() {
   writer.AddFeatures<Feature>(kFeatures);
 
 // Segmentation Ukm Engine is disabled on CrOS.
-#if !BUILDFLAG(IS_CHROMEOS)
 
   std::string query =
       "SELECT COUNT(id) FROM metrics WHERE metric_hash = '64BD7CCE5A95BF00'";
@@ -110,7 +102,6 @@ SearchUserModel::GetModelConfig() {
                                          .events_size = kPageLoadEvent.size()};
   writer.AddSqlFeature(sql_feature);
 
-#endif  //! BUILDFLAG(IS_CHROMEOS)
 
   // Set OutputConfig.
   writer.AddOutputConfigForBinnedClassifier(

@@ -10,11 +10,9 @@
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include <optional>
 #include <string_view>
 #include <vector>
-#endif
 
 struct AccountInfo;
 struct CoreAccountInfo;
@@ -53,7 +51,6 @@ void SetLastUsedProfile(const base::FilePath& profile_dir);
 // profiles should use `Profile::IsRegularProfile()` instead.
 bool IsRegularUserProfile(Profile* profile);
 
-#if !BUILDFLAG(IS_ANDROID)
 // Returns the display name of the specified on-the-record profile (or guest),
 // specified by |profile_path|, used in the avatar button or user manager. If
 // |profile_path| is the guest path, it will return IDS_GUEST_PROFILE_NAME. If
@@ -62,7 +59,6 @@ bool IsRegularUserProfile(Profile* profile);
 // custom name.
 std::u16string GetAvatarNameForProfile(const base::FilePath& profile_path);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Update the name of |profile| to |new_profile_name|. This updates the profile
 // preferences, which triggers an update in the ProfileAttributesStorage. This
 // method should be called when the user is explicitely changing the profile
@@ -70,7 +66,6 @@ std::u16string GetAvatarNameForProfile(const base::FilePath& profile_path);
 void UpdateProfileName(Profile* profile,
                        const std::u16string& new_profile_name);
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // Returns whether the |browser|'s profile is not incognito (a regular profile
 // or a guest session).
@@ -102,11 +97,9 @@ bool IsGuestModeEnabled(const Profile& profile);
 // ProfileAttributesStorage::IsSigninRequired to call here instead.
 bool IsProfileLocked(const base::FilePath& profile_path);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Starts an update for a new version of the Gaia profile picture and other
 // profile info.
 void UpdateGaiaProfileInfoIfNeeded(Profile* profile);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // If the profile given by |profile_path| is loaded in the ProfileManager, use
 // a BrowsingDataRemover to delete all the Profile's data.
@@ -118,7 +111,6 @@ bool IsDemoSession();
 // Returns true if the current session is a Chrome App Kiosk session.
 bool IsChromeAppKioskSession();
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Returns the default name for a new enterprise profile. Never returns an empty
 // string.
 // The type of `hosted_domain` matches `AccountInfo::GetHostedDomain()`:
@@ -136,9 +128,7 @@ std::u16string GetDefaultNameForNewSignedInProfile(
 // valid. Never returns an empty string.
 std::u16string GetDefaultNameForNewSignedInProfileWithIncompleteInfo(
     const CoreAccountInfo& account_info);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace profiles
 

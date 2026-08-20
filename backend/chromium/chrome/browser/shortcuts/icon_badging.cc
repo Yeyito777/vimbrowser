@@ -61,10 +61,6 @@ constexpr ShortcutSize kSizesNeededForShortcutCreation[] = {
 #elif BUILDFLAG(IS_LINUX)
 constexpr ShortcutSize kSizesNeededForShortcutCreation[] = {ShortcutSize::k32,
                                                             ShortcutSize::k128};
-#elif BUILDFLAG(IS_WIN)
-constexpr ShortcutSize kSizesNeededForShortcutCreation[] = {
-    ShortcutSize::k16, ShortcutSize::k32, ShortcutSize::k48,
-    ShortcutSize::k256};
 #endif
 
 int ToInt(ShortcutSize size) {

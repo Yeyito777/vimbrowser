@@ -190,26 +190,16 @@
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/renderer/sandbox_status_extension_android.h"
-#include "chrome/renderer/wallet/boarding_pass_extractor.h"
-#include "components/feed/content/renderer/rss_link_reader.h"
-#include "components/feed/feed_feature_list.h"
-#else
 #include "chrome/common/record_replay/record_replay_features.h"
 #include "chrome/renderer/record_replay/record_replay_agent.h"
 #include "chrome/renderer/searchbox/searchbox.h"
 #include "chrome/renderer/searchbox/searchbox_extension.h"
 #include "components/search/ntp_features.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(ENABLE_SPEECH_SERVICE)
 #include "chrome/renderer/media/chrome_speech_recognition_client.h"
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/renderer/render_frame_font_family_accessor.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "chrome/common/initialize_extensions_client.h"
@@ -338,9 +328,6 @@ std::unique_ptr<base::Unwinder> CreateV8Unwinder(v8::Isolate* isolate) {
 }  // namespace
 
 ChromeContentRendererClient::ChromeContentRendererClient()
-#if BUILDFLAG(IS_WIN)
-    : remote_module_watcher_(nullptr, base::OnTaskRunnerDeleter(nullptr))
-#endif
 {
   base::ThreadGroupProfiler::SetClient(
       std::make_unique<ChromeThreadGroupProfilerClient>());
@@ -350,10 +337,8 @@ ChromeContentRendererClient::ChromeContentRendererClient()
   // The profiler can't start before the sandbox is initialized on
   // ChromeOS due to ChromeOS's sandbox initialization code's use of
   // AssertSingleThreaded().
-#if !BUILDFLAG(IS_CHROMEOS)
   main_thread_profiler_ =
       sampling_profiler::ThreadProfiler::CreateAndStartOnMainThread();
-#endif
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   EnsureExtensionsClientInitialized();
   ChromeExtensionsRendererClient::Create();
@@ -382,12 +367,6 @@ void ChromeContentRendererClient::RenderThreadStarted() {
         base::CurrentProcessType::PROCESS_RENDERER_EXTENSION);
   }
 
-#if BUILDFLAG(IS_WIN)
-  mojo::PendingRemote<mojom::ModuleEventSink> module_event_sink;
-  thread->BindHostReceiver(module_event_sink.InitWithNewPipeAndPassReceiver());
-  remote_module_watcher_ = RemoteModuleWatcher::Create(
-      thread->GetIOTaskRunner(), std::move(module_event_sink));
-#endif
 
   browser_interface_broker_ =
       blink::Platform::Current()->GetBrowserInterfaceBroker();
@@ -515,7 +494,6 @@ void ChromeContentRendererClient::RenderThreadStarted() {
   bool should_restrict_chrome_search_scheme =
       !command_line->HasSwitch(switches::kInstantProcess);
 
-#if !BUILDFLAG(IS_ANDROID)
   // If the feature is enabled, the `kInstantProcess` command line switch is
   // replaced by the `is_instant_process` flag, which is set later. As a result,
   // we cannot perform chrome-search scheme registration at this stage. This
@@ -525,7 +503,6 @@ void ChromeContentRendererClient::RenderThreadStarted() {
   if (base::FeatureList::IsEnabled(features::kInstantUsesSpareRenderer)) {
     should_restrict_chrome_search_scheme = false;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   if (should_restrict_chrome_search_scheme) {
     WebSecurityPolicy::RegisterURLSchemeAsDisplayIsolated(chrome_search_scheme);
   }
@@ -535,10 +512,6 @@ void ChromeContentRendererClient::RenderThreadStarted() {
   // TODO(nyquist): Add test to ensure this happens when the flag is set.
   WebSecurityPolicy::RegisterURLSchemeAsDisplayIsolated(dom_distiller_scheme);
 
-#if BUILDFLAG(IS_ANDROID)
-  WebSecurityPolicy::RegisterURLSchemeAsAllowedForReferrer(
-      WebString::FromUTF8(content::kAndroidAppScheme));
-#endif
 
   // chrome-search: pages should not be accessible by bookmarklets
   // or javascript: URLs typed in the omnibox.
@@ -624,9 +597,6 @@ void ChromeContentRendererClient::RenderFrameCreated(
   new paint_preview::PaintPreviewRecorderImpl(render_frame);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  SandboxStatusExtension::Create(render_frame);
-#endif
 
   TrustedVaultEncryptionKeysExtension::Create(render_frame);
   GoogleAccountsPrivateApiExtension::Create(render_frame);
@@ -685,12 +655,10 @@ void ChromeContentRendererClient::RenderFrameCreated(
                       associated_interfaces);
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(
           record_replay::features::kRecordReplayBase)) {
     new record_replay::RecordReplayAgent(render_frame, associated_interfaces);
   }
-#endif
 
   if (content_capture::features::IsContentCaptureEnabled()) {
     new content_capture::ContentCaptureSender(render_frame,
@@ -716,11 +684,9 @@ void ChromeContentRendererClient::RenderFrameCreated(
     subresource_filter_agent->Initialize();
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (process_state::IsInstantProcess() && render_frame->IsMainFrame()) {
     new SearchBox(render_frame);
   }
-#endif
 
 #if BUILDFLAG(ENABLE_SPELLCHECK)
   new SpellCheckProvider(render_frame, spellcheck_.get());
@@ -729,33 +695,12 @@ void ChromeContentRendererClient::RenderFrameCreated(
   new SpellCheckPanel(render_frame, registry, this);
 #endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(feed::switches::kEnableRssLinkReader) &&
-      render_frame->IsMainFrame()) {
-    new feed::RssLinkReader(render_frame, registry);
-  }
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  if (render_frame->IsMainFrame()) {
-    associated_interfaces
-        ->AddInterface<chrome::mojom::RenderFrameFontFamilyAccessor>(
-            base::BindRepeating(&RenderFrameFontFamilyAccessor::Bind,
-                                render_frame));
-  }
-#endif
 
   if (render_frame->IsMainFrame()) {
     new commerce::CommerceWebExtractor(render_frame, registry);
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(features::kBoardingPassDetector) &&
-      render_frame->IsMainFrame()) {
-    new wallet::BoardingPassExtractor(render_frame, registry);
-  }
-#endif
 
   if (base::FeatureList::IsEnabled(
           wallet::features::kWalletablePassDetection) &&
@@ -763,11 +708,9 @@ void ChromeContentRendererClient::RenderFrameCreated(
     wallet::ImageExtractor::Create(render_frame, registry);
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(features::kWebium)) {
     WebUIBrowserRendererExtension::Create(render_frame);
   }
-#endif
 }
 
 void ChromeContentRendererClient::WebViewCreated(
@@ -1155,11 +1098,6 @@ void ChromeContentRendererClient::PrepareErrorPageForHttpStatusError(
 }
 
 void ChromeContentRendererClient::PostSandboxInitialized() {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(!main_thread_profiler_);
-  main_thread_profiler_ =
-      sampling_profiler::ThreadProfiler::CreateAndStartOnMainThread();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ChromeContentRendererClient::PostIOThreadCreated(
@@ -1243,7 +1181,6 @@ void ChromeContentRendererClient::WillSendRequest(
     return;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   SearchBox* search_box =
       SearchBox::Get(content::RenderFrame::FromWebFrame(frame->LocalRoot()));
   if (search_box) {
@@ -1253,7 +1190,6 @@ void ChromeContentRendererClient::WillSendRequest(
       search_box->GenerateImageURLFromTransientURL(target_url, new_url);
     }
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 bool ChromeContentRendererClient::IsPrefetchOnly(
@@ -1428,9 +1364,7 @@ void ChromeContentRendererClient::
   if (IsStandaloneContentExtensionProcess()) {
     // These Web API features are exposed in extensions.
     blink::WebRuntimeFeatures::EnableWebUSBOnServiceWorkers(true);
-#if !BUILDFLAG(IS_ANDROID)
     blink::WebRuntimeFeatures::EnableWebHIDOnServiceWorkers(true);
-#endif  // !BUILDFLAG(IS_ANDROID)
     if (blink::WebRuntimeFeatures::IsAIPromptAPIForExtensionEnabled() &&
         base::FeatureList::IsEnabled(
             blink::features::kAIPromptAPIForExtension)) {

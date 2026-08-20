@@ -27,9 +27,6 @@
 #include "services/screen_ai/public/cpp/utilities.h"
 #include "ui/accessibility/accessibility_features.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif
 
 namespace {
 // The name of the file that contains the list of files that are downloaded with

@@ -35,9 +35,6 @@
 #include "ui/aura/window_targeter.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/widget/native_widget_aura.h"
-#endif
 
 namespace {
 
@@ -272,16 +269,6 @@ RoundedOmniboxResultsFrame::~RoundedOmniboxResultsFrame() = default;
 void RoundedOmniboxResultsFrame::OnBeforeWidgetInit(
     views::Widget::InitParams* params,
     views::Widget* widget) {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, use an Aura window instead of a native window, because the
-  // native window does not support clicking through translucent shadows to the
-  // underyling content. Linux and ChromeOS do not need this because they
-  // already use Aura for the suggestions dropdown.
-  //
-  // TODO(sdy): Mac does not support Aura at the moment, and needs a different
-  // platform-specific solution.
-  params->native_widget = new views::NativeWidgetAura(widget);
-#endif
   params->name = "RoundedOmniboxResultsFrameWindow";
 
   // Since we are drawing the shadow in Views via the BubbleBorder, we never

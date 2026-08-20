@@ -33,15 +33,6 @@ void OomMemoryDetails::OnDetailsAvailable() {
   // These logs are collected by user feedback reports.  We want them to help
   // diagnose user-reported problems with frequently discarded tabs.
   std::string log_string = ToLogString(/*include_tab_title=*/false);
-#if BUILDFLAG(IS_CHROMEOS)
-  base::GraphicsMemoryInfoKB gpu_meminfo;
-  if (base::GetGraphicsMemoryInfo(&gpu_meminfo)) {
-    log_string +=
-        "Graphics " +
-        base::UTF16ToASCII(ui::FormatBytes(base::ByteSize(
-            base::checked_cast<uint64_t>((gpu_meminfo.gpu_memory_size)))));
-  }
-#endif
   LOG(WARNING) << title_ << " (" << delta.InMilliseconds() << " ms):\n"
                << log_string;
   // Delete ourselves so we don't have to worry about OomPriorityManager

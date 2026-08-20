@@ -18,9 +18,6 @@
 #include "ui/base/ui_base_types.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/files/safe_base_name.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -159,14 +156,6 @@ void ShowExtensionInstallBlockedByParentDialog(
     content::WebContents* web_contents,
     base::OnceClosure done_callback);
 
-#if BUILDFLAG(IS_ANDROID)
-// Shows a dialog to notify the user that they need to ask their parent for
-// approval to install an extension. This is the first of a set of dialogs for
-// supervised user accounts on Android.
-void ShowExtensionInstallAskParentDialog(content::WebContents* web_contents,
-                                         base::OnceClosure cancel_callback,
-                                         base::OnceClosure approve_callback);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Shows a dialog when the user tries to upload an extension to their account.
 void ShowUploadExtensionToAccountDialog(Profile* profile,
@@ -175,7 +164,6 @@ void ShowUploadExtensionToAccountDialog(Profile* profile,
                                         base::OnceClosure accept_callback,
                                         base::OnceClosure cancel_callback);
 
-#if !BUILDFLAG(IS_ANDROID)
 // Shows a dialog when the user tries to perform a navigation and the target url
 // has a protocol handler registered by an extension to handle the url's scheme.
 void ShowConfirmProtocolHandlerDialog(
@@ -184,52 +172,7 @@ void ShowConfirmProtocolHandlerDialog(
     const std::optional<url::Origin>& initiating_origin,
     base::OnceCallback<void(bool)> granted_callback,
     base::OnceCallback<void()> denied_callback);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-// Shows a scanner discovery confirmation dialog bubble anchored to the toolbar
-// icon for the extension.  If there's no toolbar icon or parent, it will
-// display a browser-modal dialog instead.
-void ShowDocumentScannerDiscoveryConfirmationDialog(
-    gfx::NativeWindow parent,
-    const ExtensionId& extension_id,
-    const std::u16string& extension_name,
-    const gfx::ImageSkia& extension_icon,
-    base::OnceCallback<void(bool)> callback);
-
-// Shows a start scan confirmation dialog bubble anchored to the toolbar icon
-// for the extension.  If there's no toolbar icon or parent, it will display a
-// browser-modal dialog instead.
-void ShowDocumentScannerStartScanConfirmationDialog(
-    gfx::NativeWindow parent,
-    const ExtensionId& extension_id,
-    const std::u16string& extension_name,
-    const std::u16string& scanner_name,
-    const gfx::ImageSkia& extension_icon,
-    base::OnceCallback<void(bool)> callback);
-
-// Shows a dialog requesting the user to grant the extension access to a file
-// system.
-void ShowRequestFileSystemDialog(
-    content::WebContents* web_contents,
-    const std::string& extension_name,
-    const std::string& volume_label,
-    bool writable,
-    base::OnceCallback<void(ui::mojom::DialogButton)> callback);
-
-// Shows the print job confirmation dialog bubble anchored to the toolbar icon
-// for the extension.  If there's no toolbar icon or parent, it will display a
-// browser-modal dialog instead.
-void ShowPrintJobConfirmationDialog(gfx::NativeWindow parent,
-                                    const ExtensionId& extension_id,
-                                    const std::u16string& extension_name,
-                                    const gfx::ImageSkia& extension_icon,
-                                    const std::u16string& print_job_title,
-                                    const std::u16string& printer_name,
-                                    base::OnceCallback<void(bool)> callback);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace extensions
 

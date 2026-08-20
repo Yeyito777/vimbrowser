@@ -62,11 +62,4 @@ source_set("impl") {
       "//chrome/browser/ui/views/session_restore_infobar",
     ]
   }
-
-  if (is_win) {
-    deps += [
-      "//chrome/browser/startup",
-      "//chrome/browser/ui/startup",
-    ]
-  }
 }

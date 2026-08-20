@@ -102,18 +102,6 @@
 #include "chrome/browser/web_applications/web_app_utils.h"
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ash/app_list/app_list_syncable_service_factory.h"
-#include "chrome/browser/ash/app_list/arc/arc_package_syncable_service.h"
-#include "chrome/browser/ash/arc/arc_util.h"
-#include "chrome/browser/ash/floating_sso/floating_sso_service_factory.h"
-#include "chrome/browser/ash/printing/oauth2/authorization_zones_manager_factory.h"
-#include "chrome/browser/ash/printing/synced_printers_manager_factory.h"
-#include "chrome/browser/sync/desk_sync_service_factory.h"
-#include "chrome/browser/sync/wifi_configuration_sync_service_factory.h"
-#include "chromeos/ash/experiences/arc/arc_util.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #include "chrome/browser/contextual_tasks/contextual_tasks_service_factory.h"
 #include "chrome/browser/skills/skills_service_factory.h"
@@ -278,35 +266,6 @@ syncer::DataTypeController::TypeVector CreateChromeControllers(
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool arc_enabled =
-      arc::IsArcAllowedForProfile(profile) && !arc::IsArcAppSyncFlowDisabled();
-
-  builder.SetAppListSyncableService(
-      app_list::AppListSyncableServiceFactory::GetForProfile(profile));
-  builder.SetAuthorizationZonesManager(
-      ash::features::IsOAuthIppEnabled()
-          ? ash::printing::oauth2::AuthorizationZonesManagerFactory::
-                GetForBrowserContext(profile)
-          : nullptr);
-  builder.SetArcPackageSyncableService(
-      arc_enabled ? arc::ArcPackageSyncableService::Get(profile) : nullptr,
-      arc_enabled ? profile : nullptr);
-  builder.SetDeskSyncService(DeskSyncServiceFactory::GetForProfile(profile));
-  builder.SetFloatingSsoService(
-      ash::features::IsFloatingSsoAllowed()
-          ? ash::floating_sso::FloatingSsoServiceFactory::GetForProfile(profile)
-          : nullptr);
-  builder.SetOsPrefServiceSyncable(PrefServiceSyncableFromProfile(profile));
-  builder.SetPrefService(profile->GetPrefs());
-  builder.SetSyncedPrintersManager(
-      ash::SyncedPrintersManagerFactory::GetForBrowserContext(profile));
-  builder.SetWifiConfigurationSyncService(
-      WifiConfigurationSyncServiceFactory::ShouldRunInProfile(profile)
-          ? WifiConfigurationSyncServiceFactory::GetForProfile(profile,
-                                                               /*create=*/true)
-          : nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return builder.Build(sync_service);
 }
@@ -535,17 +494,6 @@ SyncServiceFactory::SyncServiceFactory()
   DependsOn(web_app::WebAppProviderFactory::GetInstance());
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  DependsOn(app_list::AppListSyncableServiceFactory::GetInstance());
-  DependsOn(
-      ash::printing::oauth2::AuthorizationZonesManagerFactory::GetInstance());
-  DependsOn(DeskSyncServiceFactory::GetInstance());
-  if (ash::features::IsFloatingSsoAllowed()) {
-    DependsOn(ash::floating_sso::FloatingSsoServiceFactory::GetInstance());
-  }
-  DependsOn(ash::SyncedPrintersManagerFactory::GetInstance());
-  DependsOn(WifiConfigurationSyncServiceFactory::GetInstance());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 SyncServiceFactory::~SyncServiceFactory() = default;

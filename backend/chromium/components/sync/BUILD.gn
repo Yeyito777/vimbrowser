@@ -322,17 +322,11 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (is_ios) {
-    sources -= [ "engine/net/http_bridge_unittest.cc" ]
-  }
-
-  if (!is_ios) {
-    sources += [ "service/sync_policy_handler_unittest.cc" ]
-    deps += [
-      "//components/policy:generated",
-      "//components/policy/core/browser",
-    ]
-  }
+  sources += [ "service/sync_policy_handler_unittest.cc" ]
+  deps += [
+    "//components/policy:generated",
+    "//components/policy/core/browser",
+  ]
 }
 
 if (!is_ios && !is_fuchsia) {

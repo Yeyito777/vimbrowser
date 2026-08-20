@@ -54,15 +54,8 @@ CAPTURE_EXPORT BASE_DECLARE_FEATURE(kFallbackToSharedMemoryIfNotNv12OnMac);
 class CAPTURE_EXPORT VideoCaptureDeviceClient
     : public VideoCaptureDevice::Client {
  public:
-#if BUILDFLAG(IS_CHROMEOS)
-  VideoCaptureDeviceClient(
-      std::unique_ptr<VideoFrameReceiver> receiver,
-      scoped_refptr<VideoCaptureBufferPool> buffer_pool,
-      VideoCaptureJpegDecoderFactoryCB jpeg_decoder_factory_callback);
-#else
   VideoCaptureDeviceClient(std::unique_ptr<VideoFrameReceiver> receiver,
                            scoped_refptr<VideoCaptureBufferPool> buffer_pool);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   VideoCaptureDeviceClient(const VideoCaptureDeviceClient&) = delete;
   VideoCaptureDeviceClient& operator=(const VideoCaptureDeviceClient&) = delete;
@@ -169,11 +162,6 @@ class CAPTURE_EXPORT VideoCaptureDeviceClient
   const std::unique_ptr<VideoFrameReceiver> receiver_;
   std::vector<int> buffer_ids_known_by_receiver_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  VideoCaptureJpegDecoderFactoryCB optional_jpeg_decoder_factory_callback_;
-  std::unique_ptr<VideoCaptureJpegDecoder> external_jpeg_decoder_;
-  base::OnceClosure on_started_using_gpu_cb_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // The pool of shared-memory buffers used for capturing.
   const scoped_refptr<VideoCaptureBufferPool> buffer_pool_;

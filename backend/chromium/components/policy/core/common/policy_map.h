@@ -361,10 +361,8 @@ class POLICY_EXPORT PolicyMap {
   // Helper function for Equals().
   static bool MapEntryEquals(const_reference& a, const_reference& b);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Updates the stored state of computed metapolicies.
   void UpdateStoredComputedMetapolicies();
-#endif
 
   // Updates the stored state of user affiliation.
   void UpdateStoredUserAffiliation();

@@ -52,18 +52,6 @@ CoreAccountId CoreAccountId::FromRobotEmail(const std::string& robot_email) {
   return CoreAccountId::FromString(robot_email);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-CoreAccountId CoreAccountId::FromEmail(const std::string& email) {
-  if (email.empty()) {
-    return CoreAccountId();
-  }
-
-  DCHECK(IsEmailString(email))
-      << "Expected an email [actual = " << email << "]";
-  return CoreAccountId::FromString(email);
-}
-#endif
 
 // static
 CoreAccountId CoreAccountId::FromString(const std::string& value) {

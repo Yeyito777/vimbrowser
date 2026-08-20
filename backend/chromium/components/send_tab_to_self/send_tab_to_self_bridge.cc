@@ -591,12 +591,6 @@ void SendTabToSelfBridge::NotifyRemoteSendTabToSelfEntryAdded(
     observer.EntriesAddedRemotely(new_local_entries);
   }
 
-#if BUILDFLAG(IS_IOS)
-  if (!new_local_entries.empty()) {
-    pref_service_->SetString(prefs::kIOSSendTabToSelfLastReceivedTabURLPref,
-                             new_local_entries.back()->GetURL().spec());
-  }
-#endif
 }
 
 void SendTabToSelfBridge::NotifyRemoteSendTabToSelfEntryDeleted(

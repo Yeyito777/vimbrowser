@@ -13,13 +13,7 @@
 #include "components/safe_browsing/content/common/file_type_policies.h"
 #include "components/safe_browsing/core/common/features.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/winbase_shim.h"
-#elif BUILDFLAG(IS_POSIX)
 #include <sys/mman.h>
-#endif
 
 namespace safe_browsing {
 

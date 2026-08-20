@@ -22,11 +22,6 @@
 #include "partition_alloc/partition_alloc_base/debug/alias.h"
 #include "partition_alloc/partition_alloc_base/immediate_crash.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <io.h>
-#endif
 
 #if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 #include <unistd.h>
@@ -45,7 +40,6 @@ namespace {
 
 int g_min_log_level = 0;
 
-#if !PA_BUILDFLAG(IS_WIN)
 void WriteToStderr(const char* data, size_t length) {
   size_t bytes_written = 0;
   int rv;
@@ -59,22 +53,6 @@ void WriteToStderr(const char* data, size_t length) {
     bytes_written += rv;
   }
 }
-#else   // !PA_BUILDFLAG(IS_WIN)
-void WriteToStderr(const char* data, size_t length) {
-  HANDLE handle = ::GetStdHandle(STD_ERROR_HANDLE);
-  const char* ptr = data;
-  const char* ptr_end = PA_UNSAFE_TODO(data + length);
-  while (ptr < ptr_end) {
-    DWORD bytes_written = 0;
-    if (!::WriteFile(handle, ptr, ptr_end - ptr, &bytes_written, nullptr) ||
-        bytes_written == 0) {
-      // Give up, nothing we can do now.
-      break;
-    }
-    PA_UNSAFE_TODO(ptr += bytes_written);
-  }
-}
-#endif  // !PA_BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -101,11 +79,7 @@ int GetVlogVerbosity() {
 
 void RawLog(int level, const char* message) {
   if (level >= g_min_log_level && message) {
-#if !PA_BUILDFLAG(IS_WIN)
     const size_t message_len = strlen(message);
-#else   // !PA_BUILDFLAG(IS_WIN)
-    const size_t message_len = ::lstrlenA(message);
-#endif  // !PA_BUILDFLAG(IS_WIN)
     WriteToStderr(message, message_len);
 
     if (message_len > 0 && PA_UNSAFE_TODO(message[message_len - 1]) != '\n') {

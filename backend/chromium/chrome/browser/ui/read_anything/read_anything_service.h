@@ -23,9 +23,7 @@ class ReadAnythingService : public KeyedService,
   ~ReadAnythingService() override;
 
   static ReadAnythingService* Get(Profile* profile);
-#if !BUILDFLAG(IS_CHROMEOS)
   static void InstallComponent(const base::FilePath& new_dir);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // Called by the per-tab ReadAnythingSidePanelController and in
   // ReadAnythingController.
@@ -38,9 +36,7 @@ class ReadAnythingService : public KeyedService,
   void RemoveTtsDownloadExtension();
   void OnLocalReadingModeSwitchDelayTimeout();
   static void RecordEngineVersion(const base::FilePath& engine_version);
-#if !BUILDFLAG(IS_CHROMEOS)
   void SetupDesktopEngine();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // BrowserCollectionObserver:
   void OnBrowserActivated(BrowserWindowInterface* browser) override;

@@ -20,10 +20,6 @@
 #include "components/enterprise/connectors/core/service_provider_config.h"
 #include "components/url_matcher/url_matcher.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/enterprise/connectors/analysis/source_destination_matcher_ash.h"
-#include "content/public/browser/browser_context.h"
-#endif
 
 namespace storage {
 class FileSystemURL;
@@ -49,13 +45,6 @@ class AnalysisServiceSettings : public AnalysisServiceSettingsBase {
       const GURL& url,
       DataRegion data_region) const override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<AnalysisSettings> GetAnalysisSettings(
-      content::BrowserContext* context,
-      const storage::FileSystemURL& source_url,
-      const storage::FileSystemURL& destination_url,
-      DataRegion data_region) const;
-#endif
 
  private:
   LocalAnalysisSettings GetLocalAnalysisSettings() const;
@@ -65,23 +54,6 @@ class AnalysisServiceSettings : public AnalysisServiceSettingsBase {
   void ParseVerificationSignatures(const base::DictValue& settings_dict);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void ParseSourceDestinationPatternSettings(
-      const base::ListValue* pattern_settings_list,
-      bool is_enabled_pattern);
-
-  // Updates the states of `source_destination_matcher_`,
-  // `enabled_patterns_settings_` and/or `disabled_patterns_settings_` from a
-  // policy value.
-  void AddSourceDestinationSettings(
-      const base::DictValue& source_destination_settings_value,
-      bool enabled);
-
-  // A matcher to identify matching pairs of sources and destinations.
-  // Set for ChromeOS' OnFileTransferEnterpriseConnector.
-  std::unique_ptr<SourceDestinationMatcherAsh> source_destination_matcher_ =
-      std::make_unique<SourceDestinationMatcherAsh>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Arrays of base64 encoded signing key signatures used to verify the
   // authenticity of the service provider.

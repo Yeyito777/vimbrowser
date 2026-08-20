@@ -13,32 +13,5 @@ namespace web_app {
 // This block defines stub implementations of OS specific methods for
 // FileHandling. Currently, Windows, MacOSX and Desktop Linux (but not Chrome
 // OS) have their own implementations.
-#if BUILDFLAG(IS_CHROMEOS)
-bool ShouldRegisterFileHandlersWithOs() {
-  return false;
-}
-
-bool FileHandlingIconsSupportedByOs() {
-  return false;
-}
-
-void RegisterFileHandlersWithOs(const webapps::AppId& app_id,
-                                const std::string& app_name,
-                                const base::FilePath& profile_path,
-                                const apps::FileHandlers& file_handlers,
-                                ResultCallback callback) {
-  DCHECK(ShouldRegisterFileHandlersWithOs());
-  // Stub function for OS's which don't register file handlers with the OS.
-  std::move(callback).Run(Result::kOk);
-}
-
-void UnregisterFileHandlersWithOs(const webapps::AppId& app_id,
-                                  const base::FilePath& profile_path,
-                                  ResultCallback callback) {
-  DCHECK(ShouldRegisterFileHandlersWithOs());
-  // Stub function for OS's which don't register file handlers with the OS.
-  std::move(callback).Run(Result::kOk);
-}
-#endif
 
 }  // namespace web_app

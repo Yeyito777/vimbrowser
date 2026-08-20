@@ -171,11 +171,9 @@
 #include "components/variations/entropy_provider.h"
 #include "third_party/metrics_proto/chrome_user_metrics_extension.pb.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "components/keep_alive_registry/keep_alive_registry.h"
 #include "components/keep_alive_registry/keep_alive_types.h"
 #include "components/keep_alive_registry/scoped_keep_alive.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace metrics {
 namespace {
@@ -301,19 +299,6 @@ const int kInitializationDelaySeconds = 30;
 // The browser last live timestamp is updated every 15 minutes.
 const int kUpdateAliveTimestampSeconds = 15 * 60;
 
-#if BUILDFLAG(IS_CHROMEOS)
-enum UserLogStoreState {
-  kSetPostSendLogsState = 0,
-  kSetPreSendLogsState = 1,
-  kUnsetPostSendLogsState = 2,
-  kUnsetPreSendLogsState = 3,
-  kMaxValue = kUnsetPreSendLogsState,
-};
-
-void RecordUserLogStoreState(UserLogStoreState state) {
-  base::UmaHistogramEnumeration("UMA.CrosPerUser.UserLogStoreState", state);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -645,9 +630,6 @@ void MetricsService::OnAppEnterBackground(bool keep_recording_in_background) {
     base::UmaHistogramBoolean(
         "UMA.MetricsService.PendingOngoingLogOnBackgrounded",
         pending_ongoing_log_);
-#if BUILDFLAG(IS_ANDROID)
-    client_->MergeSubprocessHistograms();
-#endif  // BUILDFLAG(IS_ANDROID)
     {
       ScopedTerminationChecker scoped_termination_checker(
           "UMA.MetricsService.OnBackgroundedScopedTerminationChecker");
@@ -685,9 +667,6 @@ void MetricsService::OnAppEnterForeground(bool force_open_new_log) {
     base::UmaHistogramBoolean(
         "UMA.MetricsService.PendingOngoingLogOnForegrounded",
         pending_ongoing_log_);
-#if BUILDFLAG(IS_ANDROID)
-    client_->MergeSubprocessHistograms();
-#endif  // BUILDFLAG(IS_ANDROID)
     // Because state_ >= SENDING_LOGS, PushPendingLogsToPersistentStorage()
     // will close the log, allowing a new log to be opened.
     PushPendingLogsToPersistentStorage(
@@ -713,9 +692,6 @@ void MetricsService::OnAppEnterForeground(bool force_open_new_log) {
 
 void MetricsService::Flush() {
   if (recording_active() && !IsTooEarlyToCloseLog()) {
-#if BUILDFLAG(IS_ANDROID)
-    client_->MergeSubprocessHistograms();
-#endif  // BUILDFLAG(IS_ANDROID)
     {
       ScopedTerminationChecker scoped_termination_checker(
           "UMA.MetricsService.OnFlushScopedTerminationChecker");
@@ -755,102 +731,6 @@ void MetricsService::MarkCurrentHistogramsAsReported() {
       &snapshot_manager);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void MetricsService::SetUserLogStore(
-    std::unique_ptr<UnsentLogStore> user_log_store) {
-  if (log_store()->has_alternate_ongoing_log_store()) {
-    return;
-  }
-
-  if (state_ >= SENDING_LOGS) {
-    // Closes the current log so that a new log can be opened in the user log
-    // store.
-    PushPendingLogsToPersistentStorage(
-        MetricsLogsEventManager::CreateReason::kAlternateOngoingLogStoreSet);
-    log_store()->SetAlternateOngoingLogStore(std::move(user_log_store));
-    OpenNewLog();
-    RecordUserLogStoreState(kSetPostSendLogsState);
-  } else {
-    // Initial log has not yet been created and flushing now would result in
-    // incomplete information in the current log.
-    //
-    // Logs recorded before a user login will be appended to user logs. This
-    // should not happen frequently.
-    //
-    // TODO(crbug.com/40203458): Look for a way to "pause" pre-login logs and
-    // flush when INIT_TASK is done.
-    log_store()->SetAlternateOngoingLogStore(std::move(user_log_store));
-    RecordUserLogStoreState(kSetPreSendLogsState);
-  }
-}
-
-void MetricsService::UnsetUserLogStore() {
-  if (!log_store()->has_alternate_ongoing_log_store()) {
-    return;
-  }
-
-  if (state_ >= SENDING_LOGS) {
-    PushPendingLogsToPersistentStorage(
-        MetricsLogsEventManager::CreateReason::kAlternateOngoingLogStoreUnset);
-    log_store()->UnsetAlternateOngoingLogStore();
-    OpenNewLog();
-    RecordUserLogStoreState(kUnsetPostSendLogsState);
-    return;
-  }
-
-  // Fast startup and logout case. We flush all histograms and discard the
-  // current log. This is to prevent histograms captured during the user
-  // session from leaking into local state logs.
-  // TODO(crbug.com/40245274): Consider not flushing histograms here.
-
-  // Discard histograms.
-  DiscardingHistogramSnapshotManager histogram_snapshot_manager;
-  delegating_provider_.RecordHistogramSnapshots(&histogram_snapshot_manager);
-  base::StatisticsRecorder::PrepareDeltas(
-      /*include_persistent=*/true, /*flags_to_set=*/base::Histogram::kNoFlags,
-      /*required_flags=*/base::Histogram::kUmaTargetedHistogramFlag,
-      &histogram_snapshot_manager);
-
-  // Discard the current log, don't store it and stop recording.
-  CHECK(current_log_);
-  current_log_.reset();
-  DisableRecording();
-
-  log_store()->UnsetAlternateOngoingLogStore();
-  RecordUserLogStoreState(kUnsetPreSendLogsState);
-}
-
-bool MetricsService::HasUserLogStore() {
-  return log_store()->has_alternate_ongoing_log_store();
-}
-
-void MetricsService::InitPerUserMetrics() {
-  client_->InitPerUserMetrics();
-}
-
-std::optional<bool> MetricsService::GetCurrentUserMetricsConsent() const {
-  return client_->GetCurrentUserMetricsConsent();
-}
-
-std::optional<std::string> MetricsService::GetCurrentUserId() const {
-  return client_->GetCurrentUserId();
-}
-
-void MetricsService::UpdateCurrentUserMetricsConsent(
-    bool user_metrics_consent) {
-  client_->UpdateCurrentUserMetricsConsent(user_metrics_consent);
-}
-
-void MetricsService::ResetClientId() {
-  // Pref must be cleared in order for ForceClientIdCreation to generate a new
-  // client ID.
-  local_state_->ClearPref(prefs::kMetricsClientID);
-  local_state_->ClearPref(prefs::kMetricsLogFinalizedRecordId);
-  local_state_->ClearPref(prefs::kMetricsLogRecordId);
-  state_manager_->ForceClientIdCreation();
-  client_->SetMetricsClientId(state_manager_->client_id());
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 variations::SyntheticTrialRegistry*
 MetricsService::GetSyntheticTrialRegistry() {
@@ -909,23 +789,6 @@ void MetricsService::InitializeMetricsState() {
   if (!was_last_shutdown_clean) {
     provider.LogCrash(
         state_manager_->clean_exit_beacon()->browser_last_live_timestamp());
-#if BUILDFLAG(IS_ANDROID)
-    if (!state_manager_->is_foreground_session()) {
-      // Android can have background sessions in which the app may not come to
-      // the foreground, so signal that Chrome should stop watching for crashes
-      // here. This ensures that the termination of such sessions is not
-      // considered a crash. If and when the app enters the foreground, Chrome
-      // starts watching for crashes via MetricsService::OnAppEnterForeground().
-      //
-      // TODO(crbug.com/40190949): Such sessions do not yet exist on iOS. When
-      // they do, it may not be possible to know at this point whether a session
-      // is a background session.
-      //
-      // TODO(crbug.com/40196247): On WebView, it is not possible to know
-      // whether it's a background session at this point.
-      state_manager_->clean_exit_beacon()->WriteBeaconValue(true);
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   // HasPreviousSessionData is called first to ensure it is never bypassed.
@@ -1154,7 +1017,6 @@ void MetricsService::CloseCurrentLog(
   std::string signing_key = log_store()->GetSigningKeyForLogType(log_type);
   std::string current_app_version = client_->GetVersionString();
 
-#if !BUILDFLAG(IS_ANDROID)
   // If this is an async periodic log, and the browser is about to be shut
   // down (determined by KeepAliveRegistry::IsShuttingDown(), indicating that
   // there is nothing else to keep the browser alive), then do the work
@@ -1167,7 +1029,6 @@ void MetricsService::CloseCurrentLog(
   if (async && KeepAliveRegistry::GetInstance()->IsShuttingDown()) {
     async = false;
   }
-#endif
 
   if (async) {
     auto background_task =
@@ -1179,7 +1040,6 @@ void MetricsService::CloseCurrentLog(
                                      self_ptr_factory_.GetWeakPtr(), log_type,
                                      reason, std::move(log_stored_callback));
 
-#if !BUILDFLAG(IS_ANDROID)
     // Prevent the browser from shutting down while creating the log in the
     // background. This is done by creating a ScopedKeepAlive that is only
     // destroyed after the log has been stored. Not used on Android because it
@@ -1194,7 +1054,6 @@ void MetricsService::CloseCurrentLog(
                          std::make_unique<ScopedKeepAlive>(
                              KeepAliveOrigin::UMA_LOG,
                              KeepAliveRestartOption::DISABLED)));
-#endif  // !BUILDFLAG(IS_ANDROID)
 
     base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE,
@@ -1458,11 +1317,6 @@ std::unique_ptr<MetricsLog> MetricsService::CreateLog(
       state_manager_->client_id(), session_id_, log_type, client_);
   new_metrics_log->AssignRecordId(local_state_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<std::string> user_id = GetCurrentUserId();
-  if (user_id.has_value())
-    new_metrics_log->SetUserId(user_id.value());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return new_metrics_log;
 }

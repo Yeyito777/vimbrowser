@@ -230,9 +230,6 @@ v8_cluster_source_set("cctest_sources") {
       "test-js-arm64-variables.cc",
       "test-sync-primitives-arm64.cc",
     ]
-    if (is_win) {
-      sources += [ "test-stack-unwinding-win64.cc" ]
-    }
   } else if (v8_current_cpu == "x86") {
     sources += [
       ### gcmole(ia32) ###
@@ -243,9 +240,6 @@ v8_cluster_source_set("cctest_sources") {
       ### gcmole(x64) ###
       "test-log-stack-tracer.cc",
     ]
-    if (is_win) {
-      sources += [ "test-stack-unwinding-win64.cc" ]
-    }
   }
 
   if (v8_use_perfetto) {
@@ -341,24 +335,7 @@ v8_cluster_source_set("cctest_sources") {
       v8_current_cpu == "riscv32") {
     # Disable fmadd/fmsub so that expected results match generated code in
     # RunFloat64MulAndFloat64Add1 and friends.
-    if (!is_win) {
-      cflags += [ "-ffp-contract=off" ]
-    }
-  }
-
-  if (is_win) {
-    # This warning is benignly triggered by the U16 and U32 macros in
-    # bytecode-utils.h.
-    # C4309: 'static_cast': truncation of constant value
-    cflags += [ "/wd4309" ]
-
-    # MSVS wants this for gay-{precision,shortest}.cc.
-    cflags += [ "/bigobj" ]
-
-    if (symbol_level == 2) {
-      sources += [ "test-v8windbg.cc" ]
-      deps += [ "../../tools/v8windbg:v8windbg_test" ]
-    }
+    cflags += [ "-ffp-contract=off" ]
   }
 
   if (v8_use_perfetto) {

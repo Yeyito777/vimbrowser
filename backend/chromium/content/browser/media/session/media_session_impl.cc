@@ -48,13 +48,7 @@
 #include "ui/gfx/favicon_size.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/media/session/media_session_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-#include "content/public/common/content_features.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -249,15 +243,6 @@ MediaSessionImpl::~MediaSessionImpl() {
   DCHECK(audio_focus_state_ == State::INACTIVE);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void MediaSessionImpl::ClearMediaSessionAndroid() {
-  session_android_.reset();
-}
-
-MediaSessionAndroid* MediaSessionImpl::GetMediaSessionAndroid() {
-  return session_android_.get();
-}
-#endif
 
 void MediaSessionImpl::WebContentsDestroyed() {
   delegate_->ReleaseRequestId();
@@ -797,12 +782,10 @@ bool MediaSessionImpl::IsControllable() const {
     return false;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (routed_service_ && routed_service_->playback_state() !=
                              blink::mojom::MediaSessionPlaybackState::NONE) {
     return true;
   }
-#endif
 
   return desired_audio_focus_type_ == AudioFocusType::kGain;
 }
@@ -991,16 +974,11 @@ MediaSessionImpl::MediaSessionImpl(WebContents* web_contents)
       is_ducking_(false),
       ducking_volume_multiplier_(kDefaultDuckingVolumeMultiplier),
       routed_service_(nullptr) {
-#if BUILDFLAG(IS_ANDROID)
-  session_android_ = std::make_unique<MediaSessionAndroid>(this);
-  should_throttle_duration_update_ = true;
-#else
   if (base::FeatureList::IsEnabled(media::kAudioDucking)) {
     ducking_volume_multiplier_ =
         1.0 -
         (std::clamp(media::kAudioDuckingAttenuation.Get(), 0, 100) / 100.0);
   }
-#endif  // BUILDFLAG(IS_ANDROID)
   if (web_contents && web_contents->GetPrimaryMainFrame() &&
       web_contents->GetPrimaryMainFrame()->GetView()) {
     focused_ = web_contents->GetPrimaryMainFrame()->GetView()->HasFocus();
@@ -1381,14 +1359,6 @@ void MediaSessionImpl::GetMediaImageBitmap(
     int desired_size_px,
     GetMediaImageBitmapCallback callback) {
 // We want to hide the media image from ChromeOS' media controls.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (session_info_ && session_info_->hide_metadata) {
-    MediaSessionClient* media_session_client = MediaSessionClient::Get();
-    CHECK(media_session_client);
-    std::move(callback).Run(media_session_client->GetThumbnailPlaceholder());
-    return;
-  }
-#endif
 
   // We should make sure `image` is in `images_`.
   bool found = false;
@@ -1521,14 +1491,6 @@ void MediaSessionImpl::RebuildAndNotifyMediaSessionInfoChanged() {
 
   session_info_ = std::move(current_info);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If we need to hide the metadata, then we need to notify the metadata
-  // observers with the hidden metadata. They might have received the metadata
-  // before the info has been updated.
-  if (session_info_->hide_metadata) {
-    RebuildAndNotifyMetadataChanged();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool MediaSessionImpl::AddOneShotPlayer(MediaSessionPlayerObserver* observer,
@@ -1554,10 +1516,6 @@ bool MediaSessionImpl::AddOneShotPlayer(MediaSessionPlayerObserver* observer,
 
 bool MediaSessionImpl::AddAmbientPlayer(MediaSessionPlayerObserver* observer,
                                         int player_id) {
-#if BUILDFLAG(IS_ANDROID)
-  // Ambient players are completely ignored for Android audio focus.
-  return true;
-#else
   // If we're currently ducking, ensure the new player is also ducked.
   observer->OnSetVolumeMultiplier(player_id, GetVolumeMultiplier());
 
@@ -1575,7 +1533,6 @@ bool MediaSessionImpl::AddAmbientPlayer(MediaSessionPlayerObserver* observer,
   // ambient players.
   ambient_players_.insert(PlayerIdentifier(observer, player_id));
   return true;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 // MediaSessionService-related methods
@@ -1926,28 +1883,6 @@ void MediaSessionImpl::RebuildAndNotifyMetadataChanged() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void MediaSessionImpl::BuildPlaceholderMetadata(
-    media_session::MediaMetadata& metadata,
-    std::vector<media_session::MediaImage>& artwork) {
-  if ((routed_service_ && routed_service_->metadata()) ||
-      !metadata_.IsEmpty()) {
-    MediaSessionClient* media_session_client = MediaSessionClient::Get();
-    CHECK(media_session_client);
-
-    metadata.title = media_session_client->GetTitlePlaceholder();
-    metadata.artist = media_session_client->GetArtistPlaceholder();
-    metadata.album = media_session_client->GetAlbumPlaceholder();
-    metadata.source_title = media_session_client->GetSourceTitlePlaceholder();
-
-    // Always make sure the metadata replacement is accompanied by the thumbnail
-    // replacement.
-    // An empty `MediaImage` so `GetMediaImageBitmap` is eventually triggered.
-    // That is where we replace the artwork with the placeholder `Bitmap`.
-    artwork.push_back(media_session::MediaImage());
-  }
-}
-#endif
 
 void MediaSessionImpl::BuildMetadata(
     media_session::MediaMetadata& metadata,
@@ -1956,12 +1891,6 @@ void MediaSessionImpl::BuildMetadata(
   // `MediaNotificationItem` lives in //components which cannot depend on
   // //content. For other platforms, metadata is hidden in the
   // `SystemMediaControlsNotifier`.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (session_info_ && session_info_->hide_metadata) {
-    BuildPlaceholderMetadata(metadata, artwork);
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (routed_service_ && routed_service_->metadata()) {
     metadata.title = routed_service_->metadata()->title;

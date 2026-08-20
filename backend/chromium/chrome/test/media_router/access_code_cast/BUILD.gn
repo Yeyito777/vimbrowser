@@ -44,8 +44,4 @@ static_library("access_code_cast_integration_base") {
     "//components/user_manager",
     "//content/test:test_support",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ui/ash/cast_config" ]
-  }
 }

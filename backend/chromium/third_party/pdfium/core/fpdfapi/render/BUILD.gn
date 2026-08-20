@@ -48,14 +48,6 @@ source_set("render") {
     "../parser",
   ]
   visibility = [ "../../../*" ]
-  if (is_win) {
-    sources += [
-      "cpdf_scaledrenderbuffer.cpp",
-      "cpdf_scaledrenderbuffer.h",
-      "cpdf_windowsrenderdevice.cpp",
-      "cpdf_windowsrenderdevice.h",
-    ]
-  }
 }
 
 pdfium_unittest_source_set("unittests") {

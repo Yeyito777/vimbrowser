@@ -24,19 +24,6 @@
 #include "extensions/common/extension.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/launch_utils.h"
-#include "chrome/browser/apps/app_service/metrics/app_platform_metrics.h"
-#include "chrome/browser/ash/app_list/arc/arc_app_utils.h"
-#include "chromeos/ash/experiences/arc/app/arc_app_constants.h"
-#include "components/app_restore/app_launch_info.h"
-#include "components/app_restore/full_restore_save_handler.h"
-#include "components/app_restore/full_restore_utils.h"
-#include "components/services/app_service/public/cpp/app_launch_util.h"
-#include "components/services/app_service/public/cpp/app_types.h"
-#include "components/services/app_service/public/cpp/intent.h"
-#include "components/sessions/core/session_id.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -48,36 +35,6 @@ void OnLaunchCompleteReportRestoreMetrics(
     base::WeakPtr<Browser> browser,
     base::WeakPtr<content::WebContents> web_contents,
     apps::LaunchContainer launch_container) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!SessionID::IsValidValue(restore_id)) {
-    RecordAppLaunchMetrics(
-        profile, apps::AppType::kWeb, params_for_restore.app_id,
-        params_for_restore.launch_source, params_for_restore.container);
-    std::move(callback).Run(web_contents.get());
-    return;
-  }
-
-  RecordAppLaunchMetrics(
-      profile, apps::AppType::kWeb, params_for_restore.app_id,
-      apps::LaunchSource::kFromFullRestore, params_for_restore.container);
-
-  int session_id =
-      apps::GetSessionIdForRestoreFromWebContents(web_contents.get());
-  if (!SessionID::IsValidValue(session_id)) {
-    std::move(callback).Run(web_contents.get());
-    return;
-  }
-
-  // If the restore id is available, save the launch parameters to the full
-  // restore file for the system web apps.
-  auto launch_info = std::make_unique<app_restore::AppLaunchInfo>(
-      params_for_restore.app_id, session_id, params_for_restore.container,
-      params_for_restore.disposition, params_for_restore.display_id,
-      std::move(params_for_restore.launch_files),
-      std::move(params_for_restore.intent));
-  full_restore::SaveAppLaunchInfo(profile->GetPath(), std::move(launch_info));
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
   std::move(callback).Run(web_contents.get());
 }
 
@@ -98,11 +55,6 @@ void LaunchAppWithParamsImpl(
   if (!extension) {
     web_app::WebAppProvider* provider =
         web_app::WebAppProvider::GetForLocalAppsUnchecked(profile);
-#if BUILDFLAG(IS_CHROMEOS)
-    // Create the FullRestoreSaveHandler instance before launching the app to
-    // observe the browser window.
-    full_restore::FullRestoreSaveHandler::GetInstance();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     provider->scheduler().LaunchAppWithCustomParams(
         std::move(params),
         base::BindOnce(OnLaunchCompleteReportRestoreMetrics,
@@ -111,25 +63,6 @@ void LaunchAppWithParamsImpl(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If the restore id is available, save the launch parameters to the full
-  // restore file.
-  if (SessionID::IsValidValue(restore_id)) {
-    RecordAppLaunchMetrics(profile, apps::AppType::kChromeApp, app_id,
-                           apps::LaunchSource::kFromFullRestore,
-                           params.container);
-
-    auto launch_info = std::make_unique<app_restore::AppLaunchInfo>(
-        params_for_restore.app_id, params_for_restore.container,
-        params_for_restore.disposition, params_for_restore.display_id,
-        std::move(params_for_restore.launch_files),
-        std::move(params_for_restore.intent));
-    full_restore::SaveAppLaunchInfo(profile->GetPath(), std::move(launch_info));
-  } else {
-    RecordAppLaunchMetrics(profile, apps::AppType::kChromeApp, params.app_id,
-                           params.launch_source, params.container);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   std::move(on_complete).Run(::OpenApplication(profile, std::move(params)));
 }
 }  // namespace

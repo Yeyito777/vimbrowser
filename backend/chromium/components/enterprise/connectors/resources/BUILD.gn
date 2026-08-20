@@ -15,13 +15,9 @@ build_webui("build") {
     "managed_client_certificate.ts",
   ]
 
-  if (!is_ios) {
-    web_component_files += [ "signals_reporting.ts" ]
-  }
+  web_component_files += [ "signals_reporting.ts" ]
 
-  if (!is_ios) {
-    web_component_files += [ "device_trust_connector.ts" ]
-  }
+  web_component_files += [ "device_trust_connector.ts" ]
 
   ts_files = [
     "browser_proxy.ts",

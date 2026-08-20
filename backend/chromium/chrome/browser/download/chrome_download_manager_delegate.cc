@@ -127,9 +127,6 @@
 #include "components/enterprise/obfuscation/core/download_obfuscator.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/skyvault/skyvault_rename_handler.h"
-#endif
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 #include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
@@ -182,11 +179,7 @@ constexpr base::TimeDelta kEphemeralWarningLifetimeBeforeCancel =
     base::Hours(1);
 
 bool IsEphemeralWarningCancellationEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 
@@ -1811,11 +1804,7 @@ ChromeDownloadManagerDelegate::GetQuarantineConnectionCallback() {
 std::unique_ptr<download::DownloadItemRenameHandler>
 ChromeDownloadManagerDelegate::GetRenameHandlerForDownload(
     download::DownloadItem* download_item) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return policy::SkyvaultRenameHandler::CreateIfNeeded(download_item);
-#else
   return nullptr;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ChromeDownloadManagerDelegate::CheckSavePackageAllowed(
@@ -1900,15 +1889,8 @@ ChromeDownloadManagerDelegate::GetWeakPtr() {
 // static
 void ChromeDownloadManagerDelegate::ConnectToQuarantineService(
     mojo::PendingReceiver<quarantine::mojom::Quarantine> receiver) {
-#if BUILDFLAG(IS_WIN)
-  content::ServiceProcessHost::Launch(std::move(receiver),
-                                      content::ServiceProcessHost::Options()
-                                          .WithDisplayName("Quarantine Service")
-                                          .Pass());
-#else   // !BUILDFLAG(IS_WIN)
   mojo::MakeSelfOwnedReceiver(std::make_unique<quarantine::QuarantineImpl>(),
                               std::move(receiver));
-#endif  // !BUILDFLAG(IS_WIN)
 }
 
 void ChromeDownloadManagerDelegate::OnManagerInitialized() {

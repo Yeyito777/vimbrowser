@@ -31,12 +31,7 @@ static_library("error_reporting") {
     "//services/network:network_service",
     "//services/network/public/cpp",
   ]
-  if (is_chromeos) {
-    sources += [ "chrome_js_error_report_processor_chromeos.cc" ]
-    deps += [ ":constants" ]
-  } else {
-    sources += [ "chrome_js_error_report_processor_nonchromeos.cc" ]
-  }
+  sources += [ "chrome_js_error_report_processor_nonchromeos.cc" ]
 }
 
 source_set("test_support") {
@@ -56,9 +51,6 @@ source_set("test_support") {
   public_deps = [
     "//components/crash/content/browser/error_reporting:mock_crash_endpoint",
   ]
-  if (is_chromeos) {
-    data_deps = [ ":mock_chromeos_crash_reporter" ]
-  }
 }
 
 source_set("unit_test") {
@@ -78,18 +70,4 @@ source_set("unit_test") {
     "//net:test_support",
     "//testing/gtest",
   ]
-}
-
-if (is_chromeos) {
-  executable("mock_chromeos_crash_reporter") {
-    testonly = true
-    sources = [ "mock_chromeos_crash_reporter.cc" ]
-
-    deps = [
-      ":constants",
-      "//base",
-      "//net",
-      "//third_party/crashpad/crashpad/third_party/cpp-httplib",
-    ]
-  }
 }

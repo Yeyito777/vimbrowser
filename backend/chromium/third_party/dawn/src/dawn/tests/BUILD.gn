@@ -480,10 +480,6 @@ dawn_test("dawn_unittests") {
     sources += [ "unittests/RawPtrTests.cpp" ]
   }
 
-  if (is_win) {
-    sources += [ "unittests/WindowsUtilsTests.cpp" ]
-  }
-
   if (dawn_enable_d3d12) {
     sources += [ "unittests/d3d12/CopySplitTests.cpp" ]
   }
@@ -771,9 +767,6 @@ source_set("end2end_tests_sources") {
 
   if (is_mac || is_ios || is_linux) {
     sources += [ "end2end/BufferHostMappedPointerTests_posix.cpp" ]
-  }
-  if (is_win) {
-    sources += [ "end2end/BufferHostMappedPointerTests_win.cpp" ]
   }
 
   if (dawn_supports_glfw_for_windowing) {

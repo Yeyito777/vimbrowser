@@ -53,9 +53,6 @@
 #include "ui/gfx/switches.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace aura {
 
@@ -125,11 +122,6 @@ WindowTreeHost::~WindowTreeHost() {
 // static
 WindowTreeHost* WindowTreeHost::GetForAcceleratedWidget(
     gfx::AcceleratedWidget widget) {
-#if BUILDFLAG(IS_WIN)
-  if (ui::ViewProp::GetValue(widget, kWindowTreeHostUsesParent)) {
-    widget = ::GetParent(widget);
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return reinterpret_cast<WindowTreeHost*>(
       ui::ViewProp::GetValue(widget, kWindowTreeHostForAcceleratedWidget));
 }
@@ -472,13 +464,6 @@ WindowTreeHost::WindowTreeHost(std::unique_ptr<Window> window)
   device_scale_factor_ = display::Screen::Get()
                              ->GetPreferredScaleFactorForWindow(window_)
                              .value_or(1.f);
-#if BUILDFLAG(IS_WIN)
-  // The feature state is necessary but not sufficient for checking if
-  // occlusion is enabled. It may be disabled by other means (e.g., policy).
-  native_window_occlusion_enabled_ =
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kHeadless) &&
-      base::FeatureList::IsEnabled(features::kCalculateNativeWinOcclusion);
-#endif
 }
 
 void WindowTreeHost::UpdateCompositorVisibility(bool visible) {
@@ -655,11 +640,9 @@ void WindowTreeHost::OnDisplayMetricsChanged(const display::Display& display,
 // Chrome OS is handled in WindowTreeHostManager::OnDisplayMetricsChanged.
 // Chrome OS requires additional handling for the bounds that we do not need to
 // do for other OSes.
-#if !BUILDFLAG(IS_CHROMEOS)
   if (metrics & DISPLAY_METRIC_DEVICE_SCALE_FACTOR &&
       display.id() == GetDisplayId())
     OnHostResizedInPixels(GetBoundsInPixels().size());
-#endif
 }
 
 void WindowTreeHost::OnDisplayColorSpacesChanged(
@@ -746,39 +729,11 @@ bool WindowTreeHost::CalculateCompositorVisibilityFromOcclusionState() const {
 }
 
 bool WindowTreeHost::NativeOcclusionAffectsThrottle() const {
-#if BUILDFLAG(IS_WIN)
-  if (!base::FeatureList::IsEnabled(
-          features::kApplyNativeOcclusionToCompositor) ||
-      !IsNativeWindowOcclusionEnabled()) {
-    return false;
-  }
-
-  const std::string type =
-      features::kApplyNativeOcclusionToCompositorType.Get();
-  return type == features::kApplyNativeOcclusionToCompositorTypeThrottle ||
-         type ==
-             features::kApplyNativeOcclusionToCompositorTypeThrottleAndRelease;
-#else
   return false;
-#endif
 }
 
 bool WindowTreeHost::NativeOcclusionAffectsVisibility() const {
-#if BUILDFLAG(IS_WIN)
-  if (!base::FeatureList::IsEnabled(
-          features::kApplyNativeOcclusionToCompositor) ||
-      !IsNativeWindowOcclusionEnabled()) {
-    return false;
-  }
-
-  const std::string type =
-      features::kApplyNativeOcclusionToCompositorType.Get();
-  return type == features::kApplyNativeOcclusionToCompositorTypeRelease ||
-         type ==
-             features::kApplyNativeOcclusionToCompositorTypeThrottleAndRelease;
-#else
   return false;
-#endif
 }
 
 bool WindowTreeHost::ShouldThrottle() const {
@@ -811,24 +766,11 @@ void WindowTreeHost::MoveCursorToInternal(const gfx::Point& root_location,
 void WindowTreeHost::OnCompositingAckDeprecated(ui::Compositor* compositor) {
   // Currently, input is only throttled on ash and is not well supported on
   // other platforms. See crbug.com/41359082.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!holding_pointer_moves_)
-    return;
-
-  dispatcher_->ReleasePointerMoves();
-  holding_pointer_moves_ = false;
-#endif
 }
 
 void WindowTreeHost::OnCompositingChildResizing(ui::Compositor* compositor) {
   // Currently, input is only throttled on ash and is not well supported on
   // other platforms. See crbug.com/41359082.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!Env::GetInstance()->throttle_input_on_resize() || holding_pointer_moves_)
-    return;
-  dispatcher_->HoldPointerMoves();
-  holding_pointer_moves_ = true;
-#endif
 }
 
 void WindowTreeHost::OnFrameSinksToThrottleUpdated(

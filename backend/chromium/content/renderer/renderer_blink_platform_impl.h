@@ -123,11 +123,6 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
   bool IsLockedToSite() const override;
   bool IsThreadedAnimationEnabled() override;
   bool IsGpuCompositingDisabled() const override;
-#if BUILDFLAG(IS_ANDROID)
-  bool IsSynchronousCompositingEnabledForAndroidWebView() override;
-  bool IsZeroCopySynchronousSwDrawEnabledForAndroidWebView() override;
-  SkCanvas* SynchronousCompositorGetSkCanvasForAndroidWebView() override;
-#endif
   bool IsLcdTextEnabled() override;
   bool IsElasticOverscrollEnabledOnRoot() override;
   bool IsElasticOverscrollSupported() override;
@@ -259,11 +254,6 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
   base::PlatformThreadId GetIOThreadId() const override;
   scoped_refptr<base::SingleThreadTaskRunner> VideoFrameCompositorTaskRunner()
       override;
-#if BUILDFLAG(IS_ANDROID)
-  void SetPrivateMemoryFootprint(
-      uint64_t private_memory_footprint_bytes) override;
-  bool IsUserLevelMemoryPressureSignalEnabled() override;
-#endif  // BUILDFLAG(IS_ANDROID)
   void OnV8HeapLastResortGC() override;
 
   void DevToolsAgentAttached() override;

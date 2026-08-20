@@ -62,9 +62,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/permissions/android/android_permission_util.h"
-#endif
 
 namespace permissions {
 
@@ -241,26 +238,6 @@ void PermissionRequestManager::AddRequest(
     return;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (!base::FeatureList::IsEnabled(
-          features::kReturnDeniedForNotificationsWhenNoAppLevelSettings) &&
-      request->GetContentSettingsType() == ContentSettingsType::NOTIFICATIONS) {
-    bool app_level_settings_allow_site_notifications =
-        enabled_app_level_notification_permission_for_testing_.has_value()
-            ? enabled_app_level_notification_permission_for_testing_.value()
-            : DoesAppLevelSettingsAllowSiteNotifications();
-    base::UmaHistogramBoolean(
-        "Permissions.Prompt.Notifications.EnabledAppLevel",
-        app_level_settings_allow_site_notifications);
-
-    if (!app_level_settings_allow_site_notifications) {
-      // Automatically cancel site Notification requests when Chrome is not
-      // able to send notifications in an app level.
-      request->Cancelled();
-      return;
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (is_notification_prompt_cooldown_active_ &&
       request->GetContentSettingsType() == ContentSettingsType::NOTIFICATIONS) {
@@ -959,11 +936,7 @@ PermissionRequestManager::PermissionRequestManager(
               web_contents->GetBrowserContext())) {
   // Only register TabInterface observers on desktop to support Split View.
   tabs::TabInterface* tab_interface =
-#if BUILDFLAG(IS_ANDROID)
-      nullptr;
-#else
       tabs::TabInterface::MaybeGetFromContents(web_contents);
-#endif  // BUILDFLAG(IS_ANDROID)
   if (tab_interface) {
     tab_is_active_ = tab_interface->IsActivated();
     // Tab helpers are attached before a tab is attached to the tab strip.
@@ -1288,13 +1261,11 @@ void PermissionRequestManager::CurrentRequestsDecided(
 
   std::optional<permissions::PermissionIgnoredReason> ignore_reason =
       std::nullopt;
-#if !BUILDFLAG(IS_ANDROID)
   // ignore reason metric currently not supported on android
   if (permission_action == PermissionAction::IGNORED) {
     ignore_reason = std::make_optional(
         PermissionsClient::Get()->DetermineIgnoreReason(web_contents()));
   }
-#endif
 
   content::BrowserContext* browser_context =
       web_contents()->GetBrowserContext();
@@ -1557,12 +1528,8 @@ bool PermissionRequestManager::IsRequestInProgress() const {
 }
 
 bool PermissionRequestManager::CanRestorePrompt() {
-#if BUILDFLAG(IS_ANDROID)
-  return false;
-#else
   return IsRequestInProgress() &&
          current_request_prompt_disposition_.has_value() && !view_;
-#endif
 }
 
 void PermissionRequestManager::RestorePrompt() {

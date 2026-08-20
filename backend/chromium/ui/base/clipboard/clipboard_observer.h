@@ -16,10 +16,6 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardObserver {
   // Override notified when clipboard data is changed.
   virtual void OnClipboardDataChanged();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Override notified when clipboard data is read.
-  virtual void OnClipboardDataRead();
-#endif
 
  protected:
   virtual ~ClipboardObserver();

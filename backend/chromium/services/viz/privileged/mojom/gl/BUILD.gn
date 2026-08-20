@@ -28,17 +28,6 @@ mojom("gl") {
     "//ui/gl/mojom",
     "//url/mojom:url_mojom_gurl",
   ]
-  if (is_chromeos) {
-    public_deps += [
-      "//chromeos/ash/experiences/arc/mojom:media",
-      "//components/chromeos_camera/common",
-    ]
-  }
-
-  if (is_win) {
-    sources += [ "info_collection_gpu_service.mojom" ]
-    public_deps += [ "//ui/gfx/mojom:dxgi_info" ]
-  }
 
   enabled_features = []
   if (use_clang_profiling_inside_sandbox) {

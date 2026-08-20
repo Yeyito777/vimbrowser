@@ -1313,18 +1313,16 @@ static_idl_files_in_modules += [
 # generating the snapshot for android, blink is compiled with
 # current_os="linux" and target_os="android". Using target_os is necessary as
 # we need to compile in the same way as would happen when current_os="android".
-if (!is_ios) {
-  static_idl_files_in_modules += [ "//third_party/blink/renderer/modules/awc/additional_windowing_controls.idl" ]
-}
+static_idl_files_in_modules += [
+  "//third_party/blink/renderer/modules/awc/additional_windowing_controls.idl",
+]
 
 # Installed App (getInstalledRelatedApps) is excluded on iOS because the
 # webapp infrastructure required for this API is not yet implemented.
-if (!is_ios) {
-  static_idl_files_in_modules += [
-    "//third_party/blink/renderer/modules/installedapp/navigator_installed_app.idl",
-    "//third_party/blink/renderer/modules/installedapp/related_application.idl",
-  ]
-}
+static_idl_files_in_modules += [
+  "//third_party/blink/renderer/modules/installedapp/navigator_installed_app.idl",
+  "//third_party/blink/renderer/modules/installedapp/related_application.idl",
+]
 
 # Compute Pressure
 if (enable_compute_pressure) {

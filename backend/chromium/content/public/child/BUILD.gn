@@ -22,10 +22,6 @@ source_set("child_sources") {
     "image_decoder_utils.h",
   ]
 
-  if (is_win) {
-    sources += [ "dwrite_font_proxy_init_win.h" ]
-  }
-
   if (is_win || is_linux) {
     sources += [ "font_integration_init.h" ]
   }

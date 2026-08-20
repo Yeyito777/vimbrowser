@@ -63,10 +63,6 @@ bool ExternalInstallOptions::operator==(
         options.user_type_allowlist,
         options.gate_on_feature,
         options.gate_on_feature_or_installed,
-#if BUILDFLAG(IS_CHROMEOS)
-        options.disable_if_arc_supported,
-        options.disable_if_tablet_form_factor,
-#endif  // BUILDFLAG(IS_CHROMEOS)
         options.require_manifest,
         options.install_as_diy,
         options.is_preferred_app_for_supported_links,
@@ -81,9 +77,6 @@ bool ExternalInstallOptions::operator==(
         options.uninstall_and_replace,
         options.additional_search_terms,
         options.only_use_app_info_factory,
-#if BUILDFLAG(IS_CHROMEOS)
-        options.system_app_type,
-#endif
         options.oem_installed,
         options.disable_if_touchscreen_with_stylus_not_supported,
         options.handles_file_open_intents,
@@ -120,10 +113,6 @@ base::Value ExternalInstallOptions::AsDebugValue() const {
   root.Set("additional_search_terms",
            ConvertStringList(additional_search_terms));
   root.Set("app_info_factory", static_cast<bool>(app_info_factory));
-#if BUILDFLAG(IS_CHROMEOS)
-  root.Set("disable_if_arc_supported", disable_if_arc_supported);
-  root.Set("disable_if_tablet_form_factor", disable_if_tablet_form_factor);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   root.Set("disable_if_touchscreen_with_stylus_not_supported",
            disable_if_touchscreen_with_stylus_not_supported);
   root.Set("expected_app_id", ConvertOptional(expected_app_id));
@@ -157,11 +146,6 @@ base::Value ExternalInstallOptions::AsDebugValue() const {
                : base::Value());
   root.Set("service_worker_registration_timeout_in_seconds",
            service_worker_registration_timeout.InSecondsF());
-#if BUILDFLAG(IS_CHROMEOS)
-  root.Set("system_app_type",
-           system_app_type ? base::Value(static_cast<int>(*system_app_type))
-                           : base::Value());
-#endif
   root.Set("uninstall_and_replace", ConvertStringList(uninstall_and_replace));
   root.Set("user_display_mode", user_display_mode.has_value()
                                     ? base::ToString(*user_display_mode)
@@ -206,9 +190,6 @@ WebAppInstallParams ConvertExternalInstallOptionsToParams(
 
   params.launch_query_params = install_options.launch_query_params;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  params.system_app_type = install_options.system_app_type;
-#endif
 
   params.oem_installed = install_options.oem_installed;
 

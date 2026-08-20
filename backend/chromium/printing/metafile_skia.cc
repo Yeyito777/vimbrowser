@@ -37,13 +37,8 @@
 #include "printing/pdf_metafile_cg_mac.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/file_descriptor_posix.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/files/file_util.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 
@@ -209,11 +204,6 @@ bool MetafileSkia::FinishDocument() {
       doc = MakePdfDocument(printing::GetAgent(), title_, accessibility_tree_,
                             generate_document_outline_, &stream);
       break;
-#if BUILDFLAG(IS_WIN)
-    case mojom::SkiaDocumentType::kXPS:
-      doc = MakeXpsDocument(&stream);
-      break;
-#endif
     case mojom::SkiaDocumentType::kMSKP:
       SkSerialProcs procs = SerializationProcs(&data_->subframe_content_info,
                                                data_->typeface_content_info,
@@ -299,17 +289,7 @@ printing::NativeDrawingContext MetafileSkia::context() const {
   NOTREACHED();
 }
 
-#if BUILDFLAG(IS_WIN)
-bool MetafileSkia::Playback(printing::NativeDrawingContext hdc,
-                            const RECT* rect) const {
-  NOTREACHED();
-}
-
-bool MetafileSkia::SafePlayback(printing::NativeDrawingContext hdc) const {
-  NOTREACHED();
-}
-
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 /* TODO(caryclark): The set up of PluginInstance::PrintPDFOutput may result in
    rasterized output.  Even if that flow uses PdfMetafileCg::RenderPage,
    the drawing of the PDF into the canvas may result in a rasterized output.
@@ -337,33 +317,6 @@ bool MetafileSkia::RenderPage(unsigned int page_number,
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-bool MetafileSkia::SaveToFileDescriptor(int fd) const {
-  if (GetDataSize() == 0u)
-    return false;
-
-  std::unique_ptr<SkStreamAsset> asset(data_->data_stream->duplicate());
-
-  static constexpr size_t kMaximumBufferSize = 1024 * 1024;
-  std::vector<uint8_t> buffer(std::min(kMaximumBufferSize, asset->getLength()));
-  do {
-    size_t read_size = asset->read(&buffer[0], buffer.size());
-    bool is_at_end = read_size < buffer.size();
-    if (read_size == 0u) {
-      break;
-    }
-    DCHECK_GE(buffer.size(), read_size);
-    buffer.resize(read_size);
-    if (!base::WriteFileDescriptor(fd, buffer)) {
-      return false;
-    } else if (is_at_end) {
-      break;
-    }
-  } while (true);
-
-  return true;
-}
-#else
 bool MetafileSkia::SaveTo(base::File* file) const {
   if (GetDataSize() == 0U)
     return false;
@@ -392,7 +345,6 @@ bool MetafileSkia::SaveTo(base::File* file) const {
 
   return true;
 }
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::unique_ptr<MetafileSkia> MetafileSkia::GetMetafileForCurrentPage(
     mojom::SkiaDocumentType type) {

@@ -59,10 +59,6 @@ if (rtc_include_tests && !build_with_chromium) {
     }
 
     data_deps = [ "../resources:modules_tests_data" ]
-
-    if (is_ios) {
-      deps += [ "../resources:modules_tests_bundle_data" ]
-    }
   }
   rtc_test("modules_unittests") {
     testonly = true
@@ -95,12 +91,5 @@ if (rtc_include_tests && !build_with_chromium) {
     }
 
     data_deps = [ "../resources:modules_unittests_data" ]
-
-    if (is_ios) {
-      info_plist = "../test/ios/Info.plist"
-      deps += [ "../resources:modules_unittests_bundle_data" ]
-      configs += [ "..:common_objc" ]
-      ldflags = [ "-ObjC" ]
-    }
   }
 }

@@ -53,11 +53,5 @@ void TaskProvider::UpdateTaskProcessInfoAndNotifyObserver(
                                    observer_);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void TaskProvider::NotifyObserverTaskIdsListToBeInvalidated() const {
-  DCHECK(observer_);
-  observer_->TaskIdsListToBeInvalidated();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace task_manager

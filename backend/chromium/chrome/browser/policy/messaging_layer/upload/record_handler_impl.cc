@@ -306,18 +306,6 @@ void RecordHandlerImpl::ReportUploader::OnUploadComplete(
   // The server attaches the configuration file if it was requested
   // by the client. Adding a check to make sure to only process it if the
   // feature is enabled on the client side.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(kShouldRequestConfigurationFile)) {
-    auto config_file_result = response_parser.config_file();
-    if (config_file_result.has_value()) {
-      config_file_attached_cb_.Run(std::move(config_file_result.value()));
-    } else {
-      base::UmaHistogramEnumeration("Browser.ERP.ConfigFileParsingError",
-                                    config_file_result.error().code(),
-                                    error::Code::MAX_VALUE);
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Check if a record was unprocessable on the server.
   StatusOr<EncryptedRecord> failed_uploaded_record =

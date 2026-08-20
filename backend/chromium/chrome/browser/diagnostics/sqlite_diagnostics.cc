@@ -28,9 +28,6 @@
 #include "sql/sqlite_result_code_values.h"
 #include "sql/statement.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace diagnostics {
 
@@ -224,25 +221,6 @@ std::unique_ptr<DiagnosticsTest> MakeSqliteHistoryDbTest() {
       base::FilePath(history::kHistoryFilename));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<DiagnosticsTest> MakeSqliteNssCertDbTest() {
-  base::FilePath home_dir;
-  base::PathService::Get(base::DIR_HOME, &home_dir);
-  return std::make_unique<SqliteIntegrityTest>(
-      SqliteIntegrityTest::REMOVE_IF_CORRUPT,
-      DIAGNOSTICS_SQLITE_INTEGRITY_NSS_CERT_TEST,
-      home_dir.Append(ash::kNssCertDbPath));
-}
-
-std::unique_ptr<DiagnosticsTest> MakeSqliteNssKeyDbTest() {
-  base::FilePath home_dir;
-  base::PathService::Get(base::DIR_HOME, &home_dir);
-  return std::make_unique<SqliteIntegrityTest>(
-      SqliteIntegrityTest::REMOVE_IF_CORRUPT,
-      DIAGNOSTICS_SQLITE_INTEGRITY_NSS_KEY_TEST,
-      home_dir.Append(ash::kNssKeyDbPath));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<DiagnosticsTest> MakeSqliteFaviconsDbTest() {
   return std::make_unique<SqliteIntegrityTest>(

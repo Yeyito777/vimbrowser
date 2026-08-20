@@ -155,15 +155,7 @@ config("internal_config") {
 
   defines = []
 
-  if (is_win) {
-    defines += [ "ANGLE_IS_WIN" ]
-    if (angle_is_winuwp) {
-      defines += [ "ANGLE_IS_WINUWP" ]
-    }
-    if (angle_is_winappsdk) {
-      defines += [ "ANGLE_IS_WINAPPSDK" ]
-    }
-  } else if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos) {
     defines += [ "ANGLE_IS_LINUX" ]
   }
 
@@ -224,10 +216,6 @@ config("internal_config") {
 
   # Checks that unwind backtrace support for Android is enabled only for debug mode.
   assert(is_debug || !angle_enable_unwind_backtrace_support)
-
-  if (is_chromeos) {
-    defines += [ "ANGLE_PLATFORM_CHROMEOS" ]
-  }
 
   if (angle_use_vulkan_null_display) {
     defines += [ "ANGLE_USE_VULKAN_NULL_DISPLAY" ]
@@ -320,17 +308,6 @@ config("extra_warnings") {
   }
 
   # Enable more default warnings on Windows.
-  if (is_win) {
-    cflags += [
-      "/we4244",  # Conversion: possible loss of data.
-      "/we4312",  # Conversion: greater size.
-      "/we4456",  # Variable shadowing.
-      "/we4458",  # declaration hides class member.
-      "/we4715",  # not all control paths return a value
-      "/we4800",  # forcing value to bool.
-      "/we4838",  # narrowing conversion.
-    ]
-  }
   if (is_clang) {
     cflags += [
       "-Wbad-function-cast",
@@ -603,17 +580,10 @@ angle_static_library("angle_image_util") {
 }
 
 config("angle_gl_visibility_config") {
-  if (is_win) {
-    defines = [
-      "GL_APICALL=",
-      "GL_API=",
-    ]
-  } else {
-    defines = [
-      "GL_APICALL=__attribute__((visibility(\"default\")))",
-      "GL_API=__attribute__((visibility(\"default\")))",
-    ]
-  }
+  defines = [
+    "GL_APICALL=__attribute__((visibility(\"default\")))",
+    "GL_API=__attribute__((visibility(\"default\")))",
+  ]
 }
 
 config("angle_gpu_info_util_config") {
@@ -645,19 +615,6 @@ angle_static_library("angle_gpu_info_util") {
     if (angle_enable_vulkan_system_info) {
       defines += [ "ANGLE_USE_VULKAN_SYSTEM_INFO" ]
     }
-  }
-
-  if (is_fuchsia) {
-    sources += libangle_gpu_info_util_fuchsia_sources
-    deps += [ "$angle_root/src/common/vulkan:angle_vulkan_entry_points" ]
-  }
-
-  if (is_win) {
-    sources += libangle_gpu_info_util_win_sources
-    if (!angle_is_winuwp) {
-      libs += [ "setupapi.lib" ]
-    }
-    libs += [ "dxgi.lib" ]
   }
 
   if (is_linux || is_chromeos) {
@@ -801,12 +758,6 @@ angle_static_library("translator") {
     ":angle_translator_headers",
     ":angle_version_info",
   ]
-
-  if (is_win) {
-    # Necessary to suppress some system header xtree warnings in Release.
-    # For some reason this warning doesn't get triggered in Chromium
-    cflags = [ "/wd4718" ]
-  }
 }
 
 angle_source_set("translator_fuzzer") {
@@ -878,21 +829,6 @@ angle_source_set("angle_version") {
   visibility = [ ":angle_version_info" ]
 
   # The version headers are used directly in Windows .RC files.
-  if (is_win) {
-    visibility += [
-      ":libEGL",
-      ":libGL",
-      ":libGLESv1_CM",
-      ":libGLESv2",
-      ":libGLESv2_capture_complement",
-    ]
-    if (angle_enable_vulkan) {
-      visibility += [
-        ":libEGL_vulkan_secondaries",
-        ":libGLESv2_vulkan_secondaries",
-      ]
-    }
-  }
 }
 
 angle_source_set("angle_version_info") {
@@ -962,11 +898,6 @@ config("libANGLE_config") {
   libs = []
   ldflags = []
   defines += [ "LIBANGLE_IMPLEMENTATION" ]
-
-  if (is_win) {
-    cflags += [ "/wd4530" ]  # C++ exception handler used, but unwind semantics
-                             # are not enabled.
-  }
 
   if (angle_use_x11) {
     defines += [ "ANGLE_USE_X11" ]
@@ -1095,10 +1026,6 @@ angle_source_set("libANGLE_no_vulkan") {
 
   if (is_apple) {
     sources += libangle_mac_sources
-  }
-
-  if (is_ios) {
-    sources += [ "src/libANGLE/renderer/driver_utils_ios.mm" ]
   }
 
   if (is_debug) {
@@ -1353,12 +1280,6 @@ template("angle_libGLESv2") {
     if (angle_enable_cl) {
       sources += libglesv2_cl_sources
     }
-
-    if (is_win) {
-      sources += [ "src/libGLESv2/${invoker.output_name}_autogen.def" ]
-      sources += [ "src/libGLESv2/libGLESv2.rc" ]
-      deps += [ ":angle_version" ]
-    }
   }
 }
 
@@ -1427,11 +1348,6 @@ angle_shared_library("libGLESv1_CM") {
     ":includes",
     ":libGLESv2",
   ]
-
-  if (is_win) {
-    sources += [ "src/libGLESv1_CM/libGLESv1_CM.def" ]
-    deps += [ ":angle_version" ]
-  }
 }
 
 config("libEGL_egl_loader_config") {
@@ -1479,11 +1395,7 @@ template("libEGL_shared_template") {
     }
 
     defines = invoker.defines + [ "LIBEGL_IMPLEMENTATION" ]
-    if (is_win) {
-      defines += [ "EGLAPI=" ]
-    } else {
-      defines += [ "EGLAPI=__attribute__((visibility(\"default\")))" ]
-    }
+    defines += [ "EGLAPI=__attribute__((visibility(\"default\")))" ]
 
     deps = [
       ":angle_common",
@@ -1491,11 +1403,6 @@ template("libEGL_shared_template") {
     ]
 
     sources += invoker.sources
-
-    if (is_win) {
-      sources += [ "src/libEGL/libEGL.rc" ]
-      deps += [ ":angle_version" ]
-    }
 
     data_deps = [ ":${invoker.gles_library}" ]
   }
@@ -1506,9 +1413,6 @@ libEGL_shared_template("libEGL") {
   output_name = "libEGL"
   gles_library = "libGLESv2"
   sources = []
-  if (is_win) {
-    sources += [ "src/libEGL/libEGL_autogen.def" ]
-  }
 }
 
 if (angle_enable_vulkan) {
@@ -1517,9 +1421,6 @@ if (angle_enable_vulkan) {
     output_name = "libEGL_vulkan_secondaries"
     gles_library = "libGLESv2_vulkan_secondaries"
     sources = []
-    if (is_win) {
-      sources += [ "src/libEGL/libEGL_vulkan_secondaries_autogen.def" ]
-    }
   }
 }
 
@@ -1670,10 +1571,6 @@ group("angle") {
       ":libEGL_vulkan_secondaries",
       ":libGLESv2_vulkan_secondaries",
     ]
-  }
-  if (is_ios) {
-    # Need to bundle the libraries inside the .app.
-    deps = data_deps
   }
 }
 

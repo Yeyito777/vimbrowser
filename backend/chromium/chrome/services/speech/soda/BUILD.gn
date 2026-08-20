@@ -25,17 +25,6 @@ source_set("soda") {
     "//base",
     "//media/mojo/mojom",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "cros_soda_client.cc",
-      "cros_soda_client.h",
-    ]
-    deps += [
-      "//chromeos/services/machine_learning/public/cpp",
-      "//chromeos/services/machine_learning/public/mojom",
-    ]
-  }
 }
 
 # TODO(robsc): add unit test for cros_soda_client.

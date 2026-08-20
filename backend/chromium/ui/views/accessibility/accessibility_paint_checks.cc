@@ -47,7 +47,6 @@ void RunAccessibilityPaintChecks(View* view) {
 // property or introduce a cascading property specifically for the current
 // misbehavior in SearchResultPageView to be able to suppress that and enable
 // the DCHECK elsewhere.
-#if !BUILDFLAG(IS_CHROMEOS)
   DCHECK(!node_data.HasState(ax::mojom::State::kIgnored))
       << "View is focusable and should not be ignored.\n"
       << GetViewDebugInfo(view);
@@ -55,7 +54,6 @@ void RunAccessibilityPaintChecks(View* view) {
   DCHECK(!node_data.IsInvisible())
       << "View is focusable and should not be invisible.\n"
       << GetViewDebugInfo(view);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // ViewAccessibility::GetAccessibleNodeData currently returns early, after
   // setting the role to kUnknown, the NameFrom to kAttributeExplicitlyEmpty,

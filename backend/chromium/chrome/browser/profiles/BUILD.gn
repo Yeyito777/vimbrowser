@@ -83,13 +83,6 @@ source_set("profile") {
   if (enable_extensions) {
     deps += [ "//extensions/browser" ]
   }
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/browser_context_helper",
-      "//chromeos/constants",
-    ]
-  }
 }
 
 source_set("profile_io_data") {
@@ -228,14 +221,6 @@ source_set("profile_util_impl") {
     "//chrome/browser/ui:browser_list",
     "//chrome/browser/ui/browser_window",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/users",
-      "//chrome/browser/ash/policy/core",
-      "//chrome/browser/ash/profiles",
-    ]
-  }
 }
 
 source_set("profiles_extra_parts") {
@@ -413,33 +398,7 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/user_education",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/apps/almanac_api_client",
-      "//chrome/browser/apps/app_preload_service",
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/certificate_provider",
-      "//chrome/browser/ash/file_manager",
-      "//chrome/browser/ash/floating_sso",
-      "//chrome/browser/ash/input_method",
-      "//chrome/browser/ash/keyed_service",
-      "//chrome/browser/ash/language_packs",
-      "//chrome/browser/ash/lobster",
-      "//chrome/browser/ash/policy/dlp",
-      "//chrome/browser/ash/policy/skyvault",
-      "//chrome/browser/ash/scanner",
-      "//chrome/browser/chromeos/cros_apps",
-      "//chrome/browser/chromeos/enterprise/cloud_storage",
-      "//chrome/browser/chromeos/extensions/telemetry/api:keyed_service_factory",
-      "//chrome/browser/chromeos/policy/dlp",
-      "//chrome/browser/policy:onc",
-      "//chrome/browser/smart_card",
-    ]
-  }
-
-  if (!is_chromeos) {
-    deps += [ ":profile_util" ]
-  }
+  deps += [ ":profile_util" ]
 
   if (is_win || is_mac || is_linux || is_chromeos) {
     deps += [ "//chrome/browser/multistep_filter" ]
@@ -542,14 +501,6 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_chromeos) {
-    sources += [ "profile_os_sync_unittest.cc" ]
-    deps += [
-      "//ash/constants",
-      "//components/live_caption:constants",
-    ]
-  }
-
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -567,8 +518,4 @@ source_set("test_support") {
     "//content/test:test_support",
   ]
   deps = [ "//testing/gtest" ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/browser_context_helper" ]
-  }
 }

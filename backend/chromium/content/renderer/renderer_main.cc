@@ -60,9 +60,6 @@
 #include "third_party/webrtc_overrides/init_webrtc.h"  // nogncheck
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/startup_metric_utils/renderer/startup_metric_utils.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 
 #if BUILDFLAG(IS_MAC)
@@ -75,9 +72,6 @@
 #include "third_party/blink/public/web/web_view.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/system/core_scheduling.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/sandboxed_process_thread_type_handler.h"
@@ -102,20 +96,12 @@ void HandleRendererErrorTestParameters(const base::CommandLine& command_line) {
 
 std::unique_ptr<base::MessagePump> CreateMainThreadMessagePump() {
   std::unique_ptr<base::MessagePump> message_pump;
-#if BUILDFLAG(IS_FUCHSIA)
-  // Allow FIDL APIs on renderer main thread.
-  message_pump = base::MessagePump::Create(base::MessagePumpType::IO);
-#else
   message_pump = base::MessagePump::Create(base::MessagePumpType::DEFAULT);
-#endif
   return message_pump;
 }
 
 void LogTimeToStartRunLoop(const base::CommandLine& command_line,
                            base::TimeTicks run_loop_start_time) {
-#if BUILDFLAG(IS_WIN)
-  startup_metric_utils::GetRenderer().RecordRunLoopStart(run_loop_start_time);
-#endif
 
   if (!command_line.HasSwitch(switches::kRendererProcessLaunchTimeTicks)) {
     return;
@@ -159,21 +145,6 @@ int RendererMain(MainFunctionParams parameters) {
   base::apple::ScopedNSAutoreleasePool* pool = parameters.autorelease_pool;
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // As the Zygote process starts up earlier than the browser process, it gets
-  // its own locale (at login time for Chrome OS). So we have to set the ICU
-  // default locale for the renderer process here.
-  // ICU locale will be used for fallback font selection, etc.
-  if (command_line.HasSwitch(switches::kLang)) {
-    const std::string locale =
-        command_line.GetSwitchValueASCII(switches::kLang);
-    base::i18n::SetICUDefaultLocale(locale);
-  }
-
-  // When we start the renderer on ChromeOS if the system has core scheduling
-  // available we want to turn it on.
-  chromeos::system::EnableCoreSchedulingIfAvailable();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   InitializeSkia();
 
@@ -270,15 +241,6 @@ int RendererMain(MainFunctionParams parameters) {
     new RenderThreadImpl(run_loop.QuitClosure(),
                          std::move(main_thread_scheduler));
 
-#if BUILDFLAG(IS_WIN)
-    // Now that Mojo is initialized, but before the sandbox is enabled, set up
-    // DirectReceiver.
-    if (base::FeatureList::IsEnabled(
-            blink::features::kDirectCompositorThreadIpc)) {
-      // Pre-initialize a transport since a feature that will use it is enabled.
-      mojo::CreateDirectReceiverTransportBeforeSandbox();
-    }
-#endif  // BUILDFLAG(IS_WIN)
 
     if (need_sandbox) {
       should_run_loop = platform.EnableSandbox();

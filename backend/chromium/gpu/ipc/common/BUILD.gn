@@ -6,10 +6,6 @@ import("//build/config/ui.gni")
 import("//gpu/vulkan/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 group("common") {
   if (is_component_build) {
     public_deps = [ "//gpu" ]
@@ -57,17 +53,6 @@ source_set("ipc_common_sources") {
     "gpu_watchdog_timeout.h",
     "result_codes.h",
   ]
-
-  if (is_win) {
-    sources += [
-      "dxgi_helpers.cc",
-      "dxgi_helpers.h",
-    ]
-    libs = [
-      "d3d11.lib",
-      "dxguid.lib",
-    ]
-  }
 
   configs += [
     "//gpu:gpu_implementation",
@@ -239,10 +224,6 @@ mojom("interfaces") {
     "sync_token.mojom",
     "vulkan_ycbcr_info.mojom",
   ]
-
-  if (is_win) {
-    sources += [ "luid.mojom" ]
-  }
 
   public_deps = [
     ":gpu_preferences_interface",
@@ -522,23 +503,6 @@ mojom("interfaces") {
     },
   ]
 
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.OverlayInfo"
-            cpp = "::gpu::OverlayInfo"
-          },
-          {
-            mojom = "gpu.mojom.Direct3DFeatureLevel"
-            cpp = "::D3D_FEATURE_LEVEL"
-          },
-        ]
-      },
-    ]
-  }
-
   blink_cpp_typemaps = [
     {
       types = [
@@ -585,37 +549,6 @@ mojom("interfaces") {
       traits_headers = [ "sync_token_mojom_traits.h" ]
     },
   ]
-
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.Luid"
-            cpp = "::CHROME_LUID"
-          },
-        ]
-        traits_headers = [ "luid_mojom_traits.h" ]
-        traits_sources = [ "luid_mojom_traits.cc" ]
-        traits_public_deps = [
-          ":mojom_traits",
-          "//gpu/config",
-        ]
-      },
-    ]
-    blink_cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.Luid"
-            cpp = "::CHROME_LUID"
-          },
-        ]
-        traits_headers = [ "luid_mojom_traits.h" ]
-        traits_public_deps = []
-      },
-    ]
-  }
 
   cpp_proxy_target = ":common"
   export_class_attribute = "GPU_EXPORT"

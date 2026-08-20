@@ -29,9 +29,6 @@ class BASE_EXPORT ScopedLoggingSettings {
   ScopedLoggingSettings(const ScopedLoggingSettings&) = delete;
   ScopedLoggingSettings& operator=(const ScopedLoggingSettings&) = delete;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetLogFormat(LogFormat) const;
-#endif
 
  private:
   // Please keep the following fields in the same order as the corresponding
@@ -40,9 +37,6 @@ class BASE_EXPORT ScopedLoggingSettings {
   const int min_log_level_;
   const uint32_t logging_destination_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const LogFormat log_format_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::FilePath::StringType log_file_name_;
 

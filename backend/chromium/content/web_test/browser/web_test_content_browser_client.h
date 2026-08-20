@@ -119,11 +119,6 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
       bool first_auth_attempt,
       GuestPageHolder* guest,
       LoginDelegate::LoginAuthRequiredCallback auth_required_callback) override;
-#if BUILDFLAG(IS_WIN)
-  bool PreSpawnChild(sandbox::TargetConfig* config,
-                     sandbox::mojom::Sandbox sandbox_type,
-                     ChildSpawnFlags flags) override;
-#endif
   std::string GetAcceptLangs(BrowserContext* context) override;
   bool IsInterestGroupAPIAllowed(content::BrowserContext* browser_context,
                                  content::RenderFrameHost* render_frame_host,

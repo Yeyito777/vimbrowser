@@ -15,11 +15,9 @@ mojom("mojom") {
   ]
   public_deps = [ "//sandbox/policy/mojom" ]
 
-  if (!is_ios) {
-    export_class_attribute_blink = "BLINK_PLATFORM_EXPORT"
-    export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
-    export_header_blink = "third_party/blink/public/platform/web_common.h"
-  }
+  export_class_attribute_blink = "BLINK_PLATFORM_EXPORT"
+  export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
+  export_header_blink = "third_party/blink/public/platform/web_common.h"
 
   cpp_typemaps = [
     {
@@ -43,21 +41,6 @@ mojom("mojom") {
       ]
     },
   ]
-
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "proxy_resolver.mojom.WinHttpStatus"
-            cpp = "::net::WinHttpStatus"
-          },
-        ]
-        traits_headers = [ "//services/proxy_resolver_win/public/cpp/proxy_resolver_win_mojom_traits.h" ]
-        traits_sources = [ "//services/proxy_resolver_win/public/cpp/proxy_resolver_win_mojom_traits.cc" ]
-      },
-    ]
-  }
 
   if (is_mac) {
     cpp_typemaps += [

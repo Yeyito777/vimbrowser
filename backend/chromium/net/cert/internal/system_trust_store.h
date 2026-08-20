@@ -87,11 +87,6 @@ class SystemTrustStore {
 #endif
 };
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Creates an instance of SystemTrustStore that wraps the current platform's SSL
-// trust store. This cannot return nullptr.
-NET_EXPORT std::unique_ptr<SystemTrustStore> CreateSslSystemTrustStore();
-#endif
 
 #if BUILDFLAG(CHROME_ROOT_STORE_SUPPORTED)
 // Creates an instance of SystemTrustStore that wraps the current platform's SSL
@@ -119,17 +114,7 @@ CreateSystemTrustStoreChromeForTesting(
 NET_EXPORT void InitializeTrustStoreMacCache();
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Initializes windows system trust store on a worker thread, if the builtin
-// verifier is enabled.
-NET_EXPORT void InitializeTrustStoreWinSystem();
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-// Initializes Android system trust store on a worker thread, if the builtin
-// verifier is enabled.
-NET_EXPORT void InitializeTrustStoreAndroid();
-#endif
 
 }  // namespace net
 

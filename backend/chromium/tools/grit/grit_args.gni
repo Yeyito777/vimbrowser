@@ -74,23 +74,11 @@ foreach(i, _grit_environment_vars) {
 
 _target_platform = ""
 
-if (is_fuchsia) {
-  _target_platform = "fuchsia"
-}
-if (is_ios) {
-  _target_platform = "ios"
-}
 if (is_linux) {
   _target_platform = "linux"
 }
-if (is_chromeos) {
-  _target_platform = "chromeos"
-}
 if (is_mac) {
   _target_platform = "darwin"
-}
-if (is_win) {
-  _target_platform = "win32"
 }
 
 if (_target_platform != "") {

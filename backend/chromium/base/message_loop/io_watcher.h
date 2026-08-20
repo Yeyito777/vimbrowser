@@ -36,12 +36,6 @@ class BASE_EXPORT IOWatcher {
   // Returns null otherwise.
   static IOWatcher* Get();
 
-#if BUILDFLAG(IS_WIN)
-  // Please see MessagePumpWin for definitions of these methods.
-  [[nodiscard]] bool RegisterIOHandler(HANDLE file,
-                                       MessagePumpForIO::IOHandler* handler);
-  bool RegisterJobObject(HANDLE job, MessagePumpForIO::IOHandler* handler);
-#elif BUILDFLAG(IS_POSIX)
   class FdWatcher {
    public:
     virtual void OnFdReadable(int fd) = 0;
@@ -84,7 +78,6 @@ class BASE_EXPORT IOWatcher {
       FdWatchMode mode,
       FdWatcher& fd_watcher,
       const Location& location = Location::Current());
-#endif
 
 #if BUILDFLAG(IS_MAC) || \
     (BUILDFLAG(IS_IOS) && !BUILDFLAG(CRONET_BUILD) && !BUILDFLAG(IS_IOS_TVOS))
@@ -92,13 +85,6 @@ class BASE_EXPORT IOWatcher {
       mach_port_t port,
       MessagePumpForIO::MachPortWatchController* controller,
       MessagePumpForIO::MachPortWatcher* delegate);
-#elif BUILDFLAG(IS_FUCHSIA)
-  // Additional watch API for native platform resources.
-  bool WatchZxHandle(zx_handle_t handle,
-                     bool persistent,
-                     zx_signals_t signals,
-                     MessagePumpForIO::ZxHandleWatchController* controller,
-                     MessagePumpForIO::ZxHandleWatcher* delegate);
 #endif  // BUILDFLAG(IS_FUCHSIA)
 
  protected:
@@ -106,32 +92,18 @@ class BASE_EXPORT IOWatcher {
 
   // IOWatcher implementations must implement these methods for any applicable
   // platform(s).
-#if BUILDFLAG(IS_WIN)
-  virtual bool RegisterIOHandlerImpl(HANDLE file,
-                                     MessagePumpForIO::IOHandler* handler) = 0;
-  virtual bool RegisterJobObjectImpl(HANDLE job,
-                                     MessagePumpForIO::IOHandler* handler) = 0;
-#elif BUILDFLAG(IS_POSIX)
   virtual std::unique_ptr<FdWatch> WatchFileDescriptorImpl(
       int fd,
       FdWatchDuration duration,
       FdWatchMode mode,
       FdWatcher& fd_watcher,
       const Location& location) = 0;
-#endif
 #if BUILDFLAG(IS_MAC) || \
     (BUILDFLAG(IS_IOS) && !BUILDFLAG(CRONET_BUILD) && !BUILDFLAG(IS_IOS_TVOS))
   virtual bool WatchMachReceivePortImpl(
       mach_port_t port,
       MessagePumpForIO::MachPortWatchController* controller,
       MessagePumpForIO::MachPortWatcher* delegate) = 0;
-#elif BUILDFLAG(IS_FUCHSIA)
-  virtual bool WatchZxHandleImpl(
-      zx_handle_t handle,
-      bool persistent,
-      zx_signals_t signals,
-      MessagePumpForIO::ZxHandleWatchController* controller,
-      MessagePumpForIO::ZxHandleWatcher* delegate) = 0;
 #endif  // BUILDFLAG(IS_FUCHSIA)
 };
 

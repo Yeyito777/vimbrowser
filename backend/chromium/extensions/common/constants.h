@@ -273,22 +273,12 @@ inline constexpr ExtensionIcons EXTENSION_ICON_INVALID = 0;
 
 // The extension id of the ChromeVox extension.
 inline constexpr char kChromeVoxExtensionId[] =
-#if BUILDFLAG(IS_CHROMEOS)
-    // The extension id for the built-in component extension.
-    "mndnfokpggljbaajbnioimlmbfngpief";
-#else
     // The extension id for the web store extension.
     "kgejglhpjiefppelpmljglcjbhoiplfn";
-#endif
 
 // The extension id of the PDF extension.
 inline constexpr char kPdfExtensionId[] = "mhjfbmdgcfjbbpaeojofohoefgiehjai";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// The extension id of the Office Viewer component extension.
-inline constexpr char kQuickOfficeComponentExtensionId[] =
-    "bpmcpldpdmajfigpchkicefoigmkfalc";
-#endif
 
 // The extension id of the Office Viewer extension on the internal webstore.
 inline constexpr char kQuickOfficeInternalExtensionId[] =
@@ -396,88 +386,6 @@ inline constexpr char kGoogleSheetsAppId[] = "felcaaldnbdncclmgdcncolpebgiejap";
 // The extension id of the Google Slides application.
 inline constexpr char kGoogleSlidesAppId[] = "aapocclcgogkmnckokdopfmhonfmgoek";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// The id of the testing extension allowed in the signin profile.
-inline constexpr char kSigninProfileTestExtensionId[] =
-    "mecfefiddjlmabpeilblgegnbioikfmp";
-
-// The id of the testing extension allowed in guest mode.
-inline constexpr char kGuestModeTestExtensionId[] =
-    "behllobkkfkfnphdnhnkndlbkcpglgmj";
-
-// The extension id of the Amazon Luna .ca Canada PWA.
-inline constexpr char kAmazonLunaAppIdCA[] = "agmpcdnpkedhhjldepagpgebdindblfd";
-
-// The extension id of the Amazon Luna .de Germany PWA.
-inline constexpr char kAmazonLunaAppIdDE[] = "lhedecbjcehgjijkmihhhfmdicbkkgkm";
-
-// The extension id of the Amazon Luna .es Spain PWA.
-inline constexpr char kAmazonLunaAppIdES[] = "befdkfemegjbohkncpbchjcgndhgajfg";
-
-// The extension id of the Amazon Luna .fr France PWA.
-inline constexpr char kAmazonLunaAppIdFR[] = "khklcoifabacgdieoekhmfcilgfmdmbh";
-
-// The extension id of the Amazon Luna .it Italy PWA.
-inline constexpr char kAmazonLunaAppIdIT[] = "agcdabkknemgfgbjdpckaehhncgkfcdi";
-
-// The extension id of the Amazon Luna .nl Netherlands PWA.
-inline constexpr char kAmazonLunaAppIdNL[] = "opkohmiamoeiojmgmhgelaaieecjifod";
-
-// The extension id of the Amazon Luna .pl Poland PWA.
-inline constexpr char kAmazonLunaAppIdPL[] = "alddamigfjonblpigkpieckmhbjdgadd";
-
-// The extension id of the Amazon Luna .co.uk UK PWA.
-inline constexpr char kAmazonLunaAppIdUK[] = "aolalpmkbpdlpjhmhhmcobipjkhlimkj";
-
-// The extension id of the Amazon Luna .com US PWA.
-inline constexpr char kAmazonLunaAppIdUS[] = "mdjpfbokiopdhidmalnpnmekjbajopld";
-
-// The extension id of the Boosteroid PWA.
-inline constexpr char kBoosteroidAppId[] = "ncjnbebeamfkkddkofiijnlpkcnobgin";
-
-// The extension id of the Cool Math Games PWA.
-inline constexpr char kCoolMathGamesAppId[] =
-    "moflhbhdponafajiefoaamnkbhpigdoc";
-
-// The extension id of the Now.gg UK PWA.
-inline constexpr char kNowGGAppIdUK[] = "nphngfagcmpkdicidafibmfcijfighif";
-
-// The extension id of the Now.gg US PWA.
-inline constexpr char kNowGGAppIdUS[] = "dgfmnbibgdaghllenpkjalbnljbffabj";
-
-// The extension id of the Poki PWA.
-inline constexpr char kPokiAppId[] = "nccldcgjjeeglpgcgebibmhmkakanigi";
-
-// The extension id of the Xbox Cloud Gaming PWA.
-inline constexpr char kXboxCloudGamingAppId[] =
-    "chcecgcbjkilfgeccdhoeaillkophnhg";
-
-// Returns true if this app is part of the "system UI". Generally this is UI
-// that that on other operating systems would be considered part of the OS,
-// for example the file manager.
-EXTENSIONS_EXPORT bool IsSystemUIApp(std::string_view extension_id);
-
-// The extension id of the default Demo Mode Highlights app.
-inline constexpr char kHighlightsAppId[] = "lpmakjfjcconjeehbidjclhdlpjmfjjj";
-
-// The extension id of the default Demo Mode screensaver app.
-inline constexpr char kScreensaverAppId[] = "mnoijifedipmbjaoekhadjcijipaijjc";
-
-// The extension id of 2022 Demo Mode Highlights app.
-inline constexpr char kNewAttractLoopAppId[] =
-    "igilkdghcdehjdcpndaodgnjgdggiemm";
-
-// The extension id of 2022 Demo Mode screensaver app.
-inline constexpr char kNewHighlightsAppId[] =
-    "enchmnkoajljphdmahljlebfmpkkbnkj";
-
-// The extension id of 2024 Demo Mode App.
-inline constexpr char kDemoModeSWA[] = "bmpphkbpdoljalglilnffmikoggpdolg";
-
-// Returns true if this app is one of Demo Mode Chrome Apps, including
-// attract loop and highlights apps.
-EXTENSIONS_EXPORT bool IsDemoModeChromeApp(std::string_view extension_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // True if the id matches any of the QuickOffice extension ids.
 EXTENSIONS_EXPORT bool IsQuickOfficeExtension(std::string_view extension_id);

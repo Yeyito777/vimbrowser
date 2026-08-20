@@ -37,10 +37,6 @@ source_set("flatbuffers") {
     "src/include/flatbuffers/util.h",
   ]
 
-  if (is_win) {
-    data_deps = [ "//build/win:runtime_libs" ]
-  }
-
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]
 
@@ -260,9 +256,6 @@ test("flatbuffers_unittests") {
     "FLATBUFFERS_TEST_PATH_PREFIX=" +
         rebase_path("//third_party/flatbuffers/src/", root_build_dir),
   ]
-  if (is_win) {
-    defines += [ "DEBUG_NEW=new" ]
-  }
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]
 }

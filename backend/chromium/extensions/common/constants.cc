@@ -52,50 +52,9 @@ const base::span<const uint8_t> kWebstoreSignaturesPublicKey(
 
 namespace extension_misc {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(michaelpg): Deprecate old app IDs before adding new ones to avoid bloat.
-constexpr char kStagingAttractLoopAppId[] = "aefaeciooibphdopnjjmgjdlckdcfbae";
-constexpr char kStagingHighlightsAppId[] = "glochkamldfopmdlegmcnjmgkopfiplb";
-
-// Specialized demo apps for blazey devices
-constexpr char kBlazeyAttractLoopAppId[] = "lceekekmpiieklnpocjfahfakahjkhha";
-constexpr char kBlazeyHighlightsAppId[] = "jbpnmbcpgemgfblnjfhnmlffhkofekmf";
-
-bool IsDemoModeChromeApp(std::string_view extension_id) {
-  constexpr auto kDemoModeApps = base::MakeFixedFlatSet<std::string_view>({
-      // clang-format off
-      kHighlightsAppId,
-      kScreensaverAppId,
-      kStagingAttractLoopAppId,
-      kStagingHighlightsAppId,
-      kNewAttractLoopAppId,
-      kNewHighlightsAppId,
-      kBlazeyAttractLoopAppId,
-      kBlazeyHighlightsAppId
-      // clang-format on
-  });
-  return kDemoModeApps.contains(extension_id);
-}
-
-bool IsSystemUIApp(std::string_view extension_id) {
-  constexpr auto kApps = base::MakeFixedFlatSet<std::string_view>({
-      // clang-format off
-      kChromeVoxExtensionId,
-      kFilesManagerAppId,
-      kHighlightsAppId,
-      kScreensaverAppId,
-      // clang-format on
-  });
-  return kApps.contains(extension_id);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool IsQuickOfficeExtension(std::string_view extension_id) {
   constexpr auto kQuickOfficeIds = base::MakeFixedFlatSet<std::string_view>({
-#if BUILDFLAG(IS_CHROMEOS)
-      kQuickOfficeComponentExtensionId,
-#endif
       kQuickOfficeInternalExtensionId,
       kQuickOfficeExtensionId,
   });

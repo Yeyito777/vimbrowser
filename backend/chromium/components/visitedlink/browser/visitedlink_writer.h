@@ -29,9 +29,6 @@
 #include "build/build_config.h"
 #include "components/visitedlink/common/visitedlink_common.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #if defined(UNIT_TEST) || defined(PERF_TEST) || !defined(NDEBUG)
 #include "base/check_op.h"

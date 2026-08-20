@@ -53,45 +53,6 @@ source_set("api") {
 
   visibility = []
 
-  if (is_chromeos) {
-    # For transition period of crosapi removal.
-    visibility += [ "//chrome/browser/ash/crosapi" ]
-
-    sources += [
-      "arc_apps_private/arc_apps_private_api.cc",
-      "arc_apps_private/arc_apps_private_api.h",
-      "browser/browser_api.cc",
-      "browser/browser_api.h",
-      "browser_context_keyed_service_factories.cc",
-      "browser_context_keyed_service_factories.h",
-      "enterprise_remote_apps/enterprise_remote_apps_api.cc",
-      "enterprise_remote_apps/enterprise_remote_apps_api.h",
-      "media_galleries/blob_data_source_factory.cc",
-      "media_galleries/blob_data_source_factory.h",
-      "media_galleries/media_galleries_api.cc",
-      "media_galleries/media_galleries_api.h",
-      "media_galleries/media_galleries_api_util.cc",
-      "media_galleries/media_galleries_api_util.h",
-    ]
-
-    deps += [
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ash/remote_apps",
-      "//chrome/services/media_gallery_util/public/cpp",
-      "//chromeos/components/remote_apps/mojom",
-      "//components/storage_monitor",
-      "//ui/events:event_constants",
-    ]
-
-    # TODO(crbug.com/40251081): Remove these deps. Needed only to allow circular includes.
-    deps += [ "//chrome/browser/ash/extensions/file_manager" ]
-
-    # TODO(crbug.com/40251079): Remove circular dependencies.
-    allow_circular_includes_from =
-        [ "//chrome/browser/ash/extensions/file_manager" ]
-  }
-
   if (use_lld) {
     visibility += [
       "//chrome/browser",

@@ -20,9 +20,6 @@
 #include "base/linux_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/app_icon.h"
-#endif
 
 ChromeBrowserMainExtraPartsCef::ChromeBrowserMainExtraPartsCef() = default;
 
@@ -76,12 +73,6 @@ void ChromeBrowserMainExtraPartsCef::PreMainMessageLoopRun() {
   file_dialog_runner::RegisterFactory();
   permission_prompt::RegisterCreateCallback();
 
-#if BUILDFLAG(IS_WIN)
-  const auto& settings = CefContext::Get()->settings();
-  if (settings.chrome_app_icon_id > 0) {
-    SetExeAppIconResourceId(settings.chrome_app_icon_id);
-  }
-#endif
 }
 
 void ChromeBrowserMainExtraPartsCef::ToolkitInitialized() {

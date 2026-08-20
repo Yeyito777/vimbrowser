@@ -16,21 +16,8 @@
 #include "partition_alloc/partition_alloc_check.h"
 #include "partition_alloc/partition_lock.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include "partition_alloc/partition_alloc_base/win/windows_handle_util.h"
-#endif
-
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/page_allocator_internals_win.h"
-#elif PA_BUILDFLAG(IS_POSIX)
 #include "partition_alloc/page_allocator_internals_posix.h"
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-#include "partition_alloc/page_allocator_internals_fuchsia.h"
-#else
-#error Platform not supported.
-#endif
 
 namespace partition_alloc {
 
@@ -43,16 +30,6 @@ internal::Lock& GetReserveLock() {
   return g_reserve_lock;
 }
 
-#if PA_BUILDFLAG(IS_WIN)
-// Handle to a process to terminate on commit failure and lock protecting it.
-//
-// Using `nullptr` to represent the unset state, instead of
-// `INVALID_HANDLE_VALUE` which has the same value as the pseudo handle
-// representing the current process (returned by ::GetCurrentProcess).
-internal::Lock g_process_to_terminate_on_commit_failure_lock;
-HANDLE g_process_to_terminate_on_commit_failure
-    PA_GUARDED_BY(g_process_to_terminate_on_commit_failure_lock) = nullptr;
-#endif
 
 std::atomic<size_t> g_total_mapped_address_space;
 
@@ -431,48 +408,5 @@ size_t GetTotalMappedSize() {
   return g_total_mapped_address_space;
 }
 
-#if PA_BUILDFLAG(IS_WIN)
-namespace {
-bool g_retry_on_commit_failure = false;
-}
-
-void SetRetryOnCommitFailure(bool retry_on_commit_failure) {
-  g_retry_on_commit_failure = retry_on_commit_failure;
-}
-
-bool GetRetryOnCommitFailure() {
-  return g_retry_on_commit_failure;
-}
-
-void SetProcessToTerminateOnCommitFailure(HANDLE handle) {
-  PA_CHECK(!internal::base::IsPseudoHandle(handle));
-
-  internal::ScopedGuard guard(g_process_to_terminate_on_commit_failure_lock);
-  if (g_process_to_terminate_on_commit_failure != nullptr) {
-    ::CloseHandle(g_process_to_terminate_on_commit_failure);
-  }
-  g_process_to_terminate_on_commit_failure = handle;
-}
-
-void TerminateAnotherProcessOnCommitFailure() {
-  // TODO(crbug.com/40880528): If hangs are observed in which a high priority
-  // thread is waiting for the lock while a low priority thread holds it,
-  // consider boosting thread priority for the scope.
-
-  // Hold the lock for the entire function to prevent a case in which a thread
-  // fails to commit while another thread is stalled between acquiring the
-  // handle of the process to terminate and actually terminating it.
-  internal::ScopedGuard guard(g_process_to_terminate_on_commit_failure_lock);
-
-  HANDLE process_to_terminate =
-      std::exchange(g_process_to_terminate_on_commit_failure, nullptr);
-  if (process_to_terminate == nullptr) {
-    return;
-  }
-
-  ::TerminateProcess(process_to_terminate, kTerminateOnCommitFailureExitCode);
-  ::CloseHandle(process_to_terminate);
-}
-#endif
 
 }  // namespace partition_alloc

@@ -27,9 +27,6 @@
 #include "ui/gfx/native_ui_types.h"
 #include "url/ipc/url_param_traits.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif
 
 namespace blink {
 class PageState;
@@ -50,18 +47,11 @@ template <>
 struct ParamTraits<gfx::NativeWindow> {
   typedef gfx::NativeWindow param_type;
   static void Write(base::Pickle* m, const param_type& p) {
-#if BUILDFLAG(IS_WIN)
-    m->WriteUInt32(base::win::HandleToUint32(p));
-#else
     m->WriteData(reinterpret_cast<const char*>(&p), sizeof(p));
-#endif
   }
   static bool Read(const base::Pickle* m,
                    base::PickleIterator* iter,
                    param_type* r) {
-#if BUILDFLAG(IS_WIN)
-    return iter->ReadUInt32(reinterpret_cast<uint32_t*>(r));
-#else
     std::string_view data;
     bool result = iter->ReadStringPiece(&data);
     if (result && data.size() == sizeof(gfx::NativeWindow)) {
@@ -71,7 +61,6 @@ struct ParamTraits<gfx::NativeWindow> {
       NOTREACHED();
     }
     return result;
-#endif
   }
 };
 

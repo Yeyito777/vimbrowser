@@ -83,31 +83,6 @@ struct FeatureEntry {
     // string. Default state is disabled like SINGLE_VALUE.
     STRING_VALUE,
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // The below two types are for *platform* features -- that is, those defined
-    // and queried via platform2/featured/feature_library.h. Such features
-    // should be defined outside of the browser (e.g., in platform2 or
-    // platform) using a compile-time-constant default value and name.
-    // See feature_library.h for more documentation.
-
-    // Corresponds to a feature *name*, starting with "CrOSLateBoot", for a
-    // platform feature.
-    //
-    // Broadly similar to FEATURE_VALUE, but we cannot define |base::Feature|s
-    // starting with CrOSLateBoot in the browser directly -- they must instead
-    // be defined and queried outside of the browser, using
-    // platform2/featured/feature_library.h.
-    PLATFORM_FEATURE_NAME_VALUE,
-
-    // Corresponds to a feature *name*, starting with "CrOSLateBoot", for a
-    // platform feature, along with its parameters.
-    //
-    // Broadly similar to FEATURE_WITH_PARAMS_VALUE, but we cannot define
-    // |base::Feature|s starting with CrOSLateBoot in the browser directly --
-    // they must instead be defined and queried outside of the browser, using
-    // platform2/featured/feature_library.h.
-    PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE,
-#endif  // BUILDFLAG(IS_CHROMEOS)
   };
 
   // Describes state of a feature.

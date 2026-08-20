@@ -91,9 +91,7 @@ void ResizeForNextOutput(std::string* compressed_log, z_stream* stream) {
 BASE_FEATURE(kWebRTCLogUploadSuffix, base::FEATURE_ENABLED_BY_DEFAULT);
 
 std::string GetLogUploadProduct() {
-#if BUILDFLAG(IS_WIN)
-  const char product[] = "Chrome";
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   const char product[] = "Chrome_Mac";
 #elif BUILDFLAG(IS_LINUX)
 #if !defined(ADDRESS_SANITIZER)
@@ -101,10 +99,6 @@ std::string GetLogUploadProduct() {
 #else
   const char product[] = "Chrome_Linux_ASan";
 #endif
-#elif BUILDFLAG(IS_ANDROID)
-  const char product[] = "Chrome_Android";
-#elif BUILDFLAG(IS_CHROMEOS)
-  const char product[] = "Chrome_ChromeOS";
 #else
 #error Platform not supported.
 #endif

@@ -166,9 +166,6 @@ class ThreadGroupImpl::WorkerDelegate : public WorkerThread::Delegate,
     // Associated WorkerThread, if any, initialized in OnMainEntry().
     raw_ptr<WorkerThread> worker_thread_;
 
-#if BUILDFLAG(IS_WIN)
-    std::unique_ptr<win::ScopedWindowsThreadEnvironment> win_thread_environment;
-#endif  // BUILDFLAG(IS_WIN)
   } worker_only_;
 
   // Writes from the worker thread protected by |outer_->lock_|. Reads from any
@@ -373,19 +370,10 @@ void ThreadGroupImpl::WorkerDelegate::OnMainEntry(WorkerThread* worker) {
 #endif
   }
 
-#if BUILDFLAG(IS_WIN)
-  worker_only().win_thread_environment = GetScopedWindowsThreadEnvironment(
-      outer_->after_start().worker_environment);
-#endif  // BUILDFLAG(IS_WIN)
 
   std::string thread_name =
       StringPrintf("ThreadPool%sWorker", outer_->thread_group_label_.c_str());
   PlatformThread::SetName(thread_name);
-#if BUILDFLAG(IS_ANDROID)
-  if (outer_->monitor_worker_thread_priorities_) {
-    PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(thread_name);
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   outer_->BindToCurrentThread();
   worker_only().worker_thread_ = static_cast<WorkerThread*>(worker);
@@ -425,9 +413,6 @@ void ThreadGroupImpl::WorkerDelegate::OnMainExit(WorkerThread* worker_base) {
   }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  worker_only().win_thread_environment.reset();
-#endif  // BUILDFLAG(IS_WIN)
 
   if (outer_->thread_group_profiler_) {
     outer_->thread_group_profiler_->OnWorkerThreadExiting(worker_base);

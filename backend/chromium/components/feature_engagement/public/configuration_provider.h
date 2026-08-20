@@ -60,12 +60,6 @@ class ConfigurationProvider {
   virtual bool MaybeProvideGroupConfiguration(const base::Feature& feature,
                                               GroupConfig& config) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Provides an allowed set of prefixes for the events which can be stored and
-  // kept, regardless of whether or not they are used in a config.
-  virtual std::set<std::string> MaybeProvideAllowedEventPrefixes(
-      const base::Feature& feature) const;
-#endif
 
   // Gets a description of the source of the configuration for debugging and
   // error tracing purposes.

@@ -216,12 +216,10 @@ PlainTextRange CachedTextInputInfo::GetPlainTextRange(
           ? start_offset
           : RangeLength(EphemeralRange(container_start, range.EndPosition()));
 // TODO(crbug.com/1256635): This DCHECK is triggered by Crostini on CrOS.
-#if !BUILDFLAG(IS_CHROMEOS)
   DCHECK_EQ(
       static_cast<unsigned>(TextIterator::RangeLength(
           EphemeralRange(container_start, range.EndPosition()), Behavior())),
       end_offset);
-#endif
   return PlainTextRange(start_offset, end_offset);
 }
 
@@ -261,12 +259,10 @@ unsigned CachedTextInputInfo::RangeLength(const EphemeralRange& range) const {
               Behavior());
 // TODO(crbug.com/1256635): Revert https://crrev.com/c/3221041 to re-enable this
 // DCHECK on CrOS.
-#if !BUILDFLAG(IS_CHROMEOS)
       DCHECK_EQ(
           static_cast<unsigned>(TextIterator::RangeLength(range, Behavior())),
           length)
           << it->value << " " << range;
-#endif
       return length;
     }
   }

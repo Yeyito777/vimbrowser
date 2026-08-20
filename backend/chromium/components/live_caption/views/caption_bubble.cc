@@ -219,39 +219,7 @@ class CaptionBubbleEventObserver : public ui::EventObserver {
   std::unique_ptr<views::EventMonitor> event_monitor_;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-DEFINE_UI_CLASS_PROPERTY_KEY(bool, kIsCaptionBubbleKey, false)
-#endif
 
-#if BUILDFLAG(IS_WIN)
-class MediaFoundationRendererErrorMessageView : public views::StyledLabel {
-  METADATA_HEADER(MediaFoundationRendererErrorMessageView, views::StyledLabel)
-
- public:
-  explicit MediaFoundationRendererErrorMessageView(
-      CaptionBubble* caption_bubble)
-      : caption_bubble_(caption_bubble) {}
-
-  // views::View:
-  bool HandleAccessibleAction(const ui::AXActionData& action_data) override {
-    switch (action_data.action) {
-      case ax::mojom::Action::kDoDefault:
-        caption_bubble_->OnContentSettingsLinkClicked();
-        return true;
-      default:
-        break;
-    }
-    return views::StyledLabel::HandleAccessibleAction(action_data);
-  }
-
- private:
-  const raw_ptr<CaptionBubble> caption_bubble_;  // Not owned.
-};
-
-BEGIN_METADATA(MediaFoundationRendererErrorMessageView)
-END_METADATA
-
-#endif
 
 // CaptionBubble implementation of BubbleFrameView. This class takes care
 // of making the caption draggable.
@@ -656,45 +624,6 @@ void CaptionBubble::Init() {
   generic_error_message->SetVisible(false);
   auto generic_error_icon = std::make_unique<views::ImageView>();
 
-#if BUILDFLAG(IS_WIN)
-  // Define an error message that will be displayed in the caption bubble if the
-  // renderer is using hardware-based decryption.
-  auto media_foundation_renderer_error_message =
-      std::make_unique<views::View>();
-  media_foundation_renderer_error_message
-      ->SetLayoutManager(std::make_unique<views::BoxLayout>(
-          views::BoxLayout::Orientation::kHorizontal, gfx::Insets(),
-          kErrorMessageBetweenChildSpacingDip))
-      ->set_cross_axis_alignment(views::BoxLayout::CrossAxisAlignment::kStart);
-  media_foundation_renderer_error_message->SetVisible(false);
-  auto media_foundation_renderer_error_icon =
-      std::make_unique<views::ImageView>();
-  auto media_foundation_renderer_error_text =
-      std::make_unique<MediaFoundationRendererErrorMessageView>(this);
-  media_foundation_renderer_error_text->SetAutoColorReadabilityEnabled(false);
-  media_foundation_renderer_error_text->SetSubpixelRenderingEnabled(false);
-  media_foundation_renderer_error_text->SetFocusBehavior(FocusBehavior::ALWAYS);
-  media_foundation_renderer_error_text->SetTextContext(
-      views::style::CONTEXT_DIALOG_BODY_TEXT);
-
-  // Make the whole text view behave as a link for accessibility.
-  media_foundation_renderer_error_text->GetViewAccessibility().SetRole(
-      ax::mojom::Role::kLink);
-
-  const std::u16string link =
-      l10n_util::GetStringUTF16(IDS_LIVE_CAPTION_BUBBLE_CONTENT_SETTINGS);
-
-  media_foundation_renderer_error_text->SetText(l10n_util::GetStringFUTF16(
-      IDS_LIVE_CAPTION_BUBBLE_MEDIA_FOUNDATION_RENDERER_ERROR, link));
-
-  auto media_foundation_renderer_error_checkbox =
-      std::make_unique<views::Checkbox>(
-          l10n_util::GetStringUTF16(
-              IDS_LIVE_CAPTION_BUBBLE_MEDIA_FOUNDATION_RENDERER_ERROR_CHECKBOX),
-          base::BindRepeating(
-              &CaptionBubble::MediaFoundationErrorCheckboxPressed,
-              base::Unretained(this)));
-#endif
 
   base::RepeatingClosure expand_or_collapse_callback = base::BindRepeating(
       &CaptionBubble::ExpandOrCollapseButtonPressed, base::Unretained(this));
@@ -748,25 +677,6 @@ void CaptionBubble::Init() {
   generic_error_message_ =
       content_container->AddChildView(std::move(generic_error_message));
 
-#if BUILDFLAG(IS_WIN)
-  media_foundation_renderer_error_icon_ =
-      media_foundation_renderer_error_message->AddChildView(
-          std::move(media_foundation_renderer_error_icon));
-
-  auto inner_box_layout = std::make_unique<views::BoxLayoutView>();
-  inner_box_layout->SetOrientation(views::BoxLayout::Orientation::kVertical);
-  inner_box_layout->SetBetweenChildSpacing(
-      views::LayoutProvider::Get()->GetDistanceMetric(
-          views::DISTANCE_UNRELATED_CONTROL_VERTICAL));
-  media_foundation_renderer_error_text_ = inner_box_layout->AddChildView(
-      std::move(media_foundation_renderer_error_text));
-  media_foundation_renderer_error_checkbox_ = inner_box_layout->AddChildView(
-      std::move(media_foundation_renderer_error_checkbox));
-  media_foundation_renderer_error_message->AddChildView(
-      std::move(inner_box_layout));
-  media_foundation_renderer_error_message_ = content_container->AddChildView(
-      std::move(media_foundation_renderer_error_message));
-#endif
 
   expand_button_ = content_container->AddChildView(std::move(expand_button));
   collapse_button_ =
@@ -844,9 +754,6 @@ void CaptionBubble::OnBeforeBubbleWidgetInit(views::Widget::InitParams* params,
   params->z_order = ui::ZOrderLevel::kFloatingWindow;
   params->visible_on_all_workspaces = true;
   params->name = "LiveCaptionWindow";
-#if BUILDFLAG(IS_CHROMEOS)
-  params->init_properties_container.SetProperty(kIsCaptionBubbleKey, true);
-#endif
 }
 
 bool CaptionBubble::ShouldShowCloseButton() const {
@@ -907,9 +814,6 @@ void CaptionBubble::CloseButtonPressed() {
     model_->CloseButtonPressed();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  caption_bubble_settings_->SetLiveCaptionEnabled(false);
-#endif
 }
 
 void CaptionBubble::ExpandOrCollapseButtonPressed() {
@@ -1088,29 +992,11 @@ void CaptionBubble::OnErrorChanged(
     scroll_lock_button_->SetVisible(!has_error && is_expanded_);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (error_type ==
-      CaptionBubbleErrorType::kMediaFoundationRendererUnsupported) {
-    media_foundation_renderer_error_message_->SetVisible(has_error);
-    generic_error_message_->SetVisible(false);
-  } else {
-    generic_error_message_->SetVisible(has_error);
-    media_foundation_renderer_error_message_->SetVisible(false);
-  }
-#else
   generic_error_message_->SetVisible(has_error);
-#endif
 
   Redraw();
 }
 
-#if BUILDFLAG(IS_WIN)
-void CaptionBubble::OnContentSettingsLinkClicked() {
-  if (error_clicked_callback_) {
-    error_clicked_callback_.Run();
-  }
-}
-#endif
 
 void CaptionBubble::UpdateControlsVisibility(bool show_controls) {
   if (show_controls) {
@@ -1202,9 +1088,6 @@ const gfx::FontList CaptionBubble::GetFontList(int font_size) {
   font_names.push_back(kPrimaryFont);
   font_names.push_back(kSecondaryFont);
   font_names.push_back(kTertiaryFont);
-#if BUILDFLAG(IS_CHROMEOS)
-  font_names.push_back(kArabicFont);
-#endif
 
   const gfx::FontList font_list = new_font_list_getter_.Run(
       font_names, gfx::Font::FontStyle::NORMAL,
@@ -1232,12 +1115,6 @@ void CaptionBubble::SetTextSizeAndFontFamily() {
       gfx::Size(kErrorImageSizeDip * textScaleFactor,
                 kErrorImageSizeDip * textScaleFactor));
 
-#if BUILDFLAG(IS_WIN)
-  media_foundation_renderer_error_icon_->SetImageSize(
-      gfx::Size(kErrorImageSizeDip, kErrorImageSizeDip));
-  media_foundation_renderer_error_text_->SizeToFit(
-      kMaxWidthDip * textScaleFactor - kSidePaddingDip * 2);
-#endif
 }
 
 void CaptionBubble::SetTextColor() {
@@ -1266,43 +1143,6 @@ void CaptionBubble::SetTextColor() {
   generic_error_icon_->SetImage(ui::ImageModel::FromVectorIcon(
       vector_icons::kErrorOutlineIcon, primary_color));
 
-#if BUILDFLAG(IS_WIN)
-
-  const std::u16string link =
-      l10n_util::GetStringUTF16(IDS_LIVE_CAPTION_BUBBLE_CONTENT_SETTINGS);
-  size_t offset;
-  const std::u16string text = l10n_util::GetStringFUTF16(
-      IDS_LIVE_CAPTION_BUBBLE_MEDIA_FOUNDATION_RENDERER_ERROR,
-      l10n_util::GetStringUTF16(IDS_LIVE_CAPTION_BUBBLE_CONTENT_SETTINGS),
-      &offset);
-
-  media_foundation_renderer_error_text_->ClearStyleRanges();
-  views::StyledLabel::RangeStyleInfo error_message_style;
-  error_message_style.override_color = primary_color;
-  media_foundation_renderer_error_text_->AddStyleRange(gfx::Range(0, offset),
-                                                       error_message_style);
-
-  views::StyledLabel::RangeStyleInfo link_style =
-      views::StyledLabel::RangeStyleInfo::CreateForLink(
-          base::BindRepeating(&CaptionBubble::OnContentSettingsLinkClicked,
-                              base::Unretained(this)));
-  link_style.override_color =
-      color_provider->GetColor(ui::kColorLiveCaptionBubbleLink);
-  media_foundation_renderer_error_text_->AddStyleRange(
-      gfx::Range(offset, offset + link.length()), link_style);
-
-  media_foundation_renderer_error_text_->AddStyleRange(
-      gfx::Range(offset + link.length(), text.length()), error_message_style);
-  media_foundation_renderer_error_icon_->SetImage(
-      ui::ImageModel::FromVectorIcon(vector_icons::kErrorOutlineIcon,
-                                     primary_color));
-  media_foundation_renderer_error_checkbox_->SetEnabledTextColors(
-      primary_color);
-  media_foundation_renderer_error_checkbox_->SetTextSubpixelRenderingEnabled(
-      false);
-  media_foundation_renderer_error_checkbox_->SetCheckedIconImageColor(
-      color_provider->GetColor(ui::kColorLiveCaptionBubbleCheckbox));
-#endif
   views::SetImageFromVectorIconWithColor(
       back_to_tab_button_, vector_icons::kBackToTabChromeRefreshIcon,
       kButtonDip, {header_color, icon_disabled_color});
@@ -1416,17 +1256,6 @@ void CaptionBubble::UpdateContentSize() {
       gfx::Size(left_header_width, button_size.height()));
   download_progress_label_->SetPreferredSize(gfx::Size(width, content_height));
 
-#if BUILDFLAG(IS_WIN)
-  // The Media Foundation renderer error message should not scale with the
-  // user's caption style preference.
-  if (HasMediaFoundationError()) {
-    width = kMaxWidthDip;
-    content_height = media_foundation_renderer_error_message_
-                         ->GetPreferredSize(
-                             views::SizeBounds(width - kSidePaddingDip * 2, {}))
-                         .height();
-  }
-#endif
 
   // The header height is the same as the close button height. The footer height
   // is the same as the expand button height.
@@ -1485,11 +1314,6 @@ void CaptionBubble::Hide() {
 }
 
 void CaptionBubble::MediaFoundationErrorCheckboxPressed() {
-#if BUILDFLAG(IS_WIN)
-  error_silenced_callback_.Run(
-      CaptionBubbleErrorType::kMediaFoundationRendererUnsupported,
-      media_foundation_renderer_error_checkbox_->GetChecked());
-#endif
 }
 
 bool CaptionBubble::HasMediaFoundationError() {

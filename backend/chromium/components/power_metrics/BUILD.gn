@@ -31,16 +31,6 @@ static_library("power_metrics") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "energy_metrics_provider_win.cc",
-      "energy_metrics_provider_win.h",
-    ]
-
-    libs = [ "setupapi.lib" ]
-    ldflags = [ "/DELAYLOAD:setupapi.dll" ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "energy_metrics_provider_linux.cc",

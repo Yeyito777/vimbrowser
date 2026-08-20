@@ -80,9 +80,6 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/user_manager/user_manager.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -801,10 +798,6 @@ void CrxInstaller::ConfirmInstall() {
 
   if (KioskModeInfo::IsKioskOnly(extension())) {
     bool in_kiosk_mode = false;
-#if BUILDFLAG(IS_CHROMEOS)
-    user_manager::UserManager* user_manager = user_manager::UserManager::Get();
-    in_kiosk_mode = user_manager && user_manager->IsLoggedInAsKioskChromeApp();
-#endif
     if (!in_kiosk_mode) {
       ReportFailureFromUIThread(CrxInstallError(
           CrxInstallErrorType::DECLINED, CrxInstallErrorDetail::KIOSK_MODE_ONLY,

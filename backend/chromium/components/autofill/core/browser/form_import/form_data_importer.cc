@@ -192,12 +192,10 @@ FormDataImporter::ExtractedFormData FormDataImporter::ExtractFormData(
         GetPaymentsFormDataImporter().ExtractCreditCard(submitted_form);
   }
 
-#if !BUILDFLAG(IS_IOS)
   if (payment_methods_autofill_enabled) {
     extracted_form_data.extracted_iban =
         GetPaymentsFormDataImporter().ExtractIban(submitted_form);
   }
-#endif  // !BUILDFLAG(IS_IOS)
 
   size_t num_complete_address_profiles = 0;
   if (profile_autofill_enabled &&

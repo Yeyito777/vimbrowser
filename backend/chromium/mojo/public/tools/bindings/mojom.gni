@@ -48,19 +48,11 @@ declare_args() {
   # Enables Closure compilation of generated JS lite bindings. In environments
   # where compilation is supported, any mojom target "foo" will also have a
   # corresponding "foo_js_library_for_compile" target generated.
-  if (is_chromeos) {
-    enable_mojom_closure_compile = enable_js_type_check && optimize_webui
-  }
 }
 
 # Closure libraries are needed for mojom_closure_compile, and when
 # js_type_check is enabled on Ash.
-if (is_chromeos) {
-  generate_mojom_closure_libraries =
-      enable_mojom_closure_compile || enable_js_type_check
-} else {
-  generate_mojom_closure_libraries = false
-}
+generate_mojom_closure_libraries = false
 
 # NOTE: We would like to avoid scrambling message IDs where it doesn't add
 # value, so we limit the behavior to desktop builds for now.
@@ -723,18 +715,10 @@ template("mojom") {
       enabled_features += [ "is_posix" ]
     }
 
-    if (is_chromeos) {
-      enabled_features += [ "is_chromeos" ]
-    } else if (is_fuchsia) {
-      enabled_features += [ "is_fuchsia" ]
-    } else if (is_ios) {
-      enabled_features += [ "is_ios" ]
-    } else if (is_linux) {
+    if (is_linux) {
       enabled_features += [ "is_linux" ]
     } else if (is_mac) {
       enabled_features += [ "is_mac" ]
-    } else if (is_win) {
-      enabled_features += [ "is_win" ]
     }
 
     if (is_apple) {

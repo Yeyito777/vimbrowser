@@ -224,9 +224,6 @@ class BLINK_MODULES_EXPORT WebMediaPlayerMS
  private:
   friend class WebMediaPlayerMSTest;
 
-#if BUILDFLAG(IS_WIN)
-  static const gfx::Size kUseMappableSIVideoFramesMinResolution;
-#endif  // BUILDFLAG(IS_WIN)
 
   void ReplaceCurrentFrameWithACopy();
 

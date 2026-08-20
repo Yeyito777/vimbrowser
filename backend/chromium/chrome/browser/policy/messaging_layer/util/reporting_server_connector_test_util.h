@@ -18,12 +18,6 @@
 #include "components/reporting/util/statusor.h"
 #include "services/network/test/test_url_loader_factory.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash::system {
-class ScopedFakeStatisticsProvider;
-
-}  // namespace ash::system
-#endif
 
 namespace reporting {
 
@@ -55,10 +49,6 @@ class ReportingServerConnector::TestEnvironment {
       std::unique_ptr<EncryptedReportingClient> encrypted_reporting_client);
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ash::system::ScopedFakeStatisticsProvider>
-      fake_statistics_provider_;
-#endif
   network::TestURLLoaderFactory url_loader_factory_;
   std::unique_ptr<policy::DeviceManagementService> device_management_service_;
   std::unique_ptr<::policy::CloudPolicyStore> store_;

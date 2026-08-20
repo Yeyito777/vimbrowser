@@ -17,9 +17,7 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "services/network/pervasive_resources/shared_resource_checker_patterns.h"
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 // Each pattern can only be used by up to 2 URLs in a given hour (allowing for
 // a resource to update once per hour).
@@ -92,10 +90,8 @@ class SharedResourceChecker::PatternEntry {
 SharedResourceChecker::SharedResourceChecker(
     const content_settings::CookieSettingsBase& cookie_settings)
     : cookie_settings_(cookie_settings) {
-#if !BUILDFLAG(IS_FUCHSIA)
   enabled_ = base::FeatureList::IsEnabled(
       features::kCacheSharingForPervasiveResources);
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 }
 
 SharedResourceChecker::~SharedResourceChecker() = default;
@@ -210,13 +206,11 @@ bool SharedResourceChecker::IsSharedResource(
     return false;
   }
 
-#if !BUILDFLAG(IS_FUCHSIA)
   if (!loaded_) {
     LoadPervasivePatterns(internal::kPervasivePatternsZstd,
                           sizeof(internal::kPervasivePatternsZstd),
                           internal::kPervasivePatternsExpiration);
   }
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
   // Check to see if the URL matches one of the configured patterns (indexed by
   // origin).

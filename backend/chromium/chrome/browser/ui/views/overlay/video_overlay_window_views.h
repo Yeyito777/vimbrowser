@@ -22,9 +22,6 @@
 #include "ui/views/view_observer.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ui/frame/highlight_border_overlay.h"
-#endif
 
 namespace views {
 class ImageView;
@@ -142,17 +139,6 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
   void OnAutoPipSettingOverlayViewHidden() override;
 
   bool ControlsHitTestContainsPoint(const gfx::Point& point);
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets the proper hit test component when the hit point is on the resize
-  // handle in order to force a drag-to-resize.
-  int GetResizeHTComponent() const;
-
-  gfx::Rect GetResizeHandleControlsBounds();
-
-  // Updates the bounds of |resize_handle_view_| based on what |quadrant| the
-  // PIP window is in.
-  void UpdateResizeHandleBounds(WindowQuadrant quadrant);
-#endif
 
   // Called when the bounds of the controls should be updated.
   void OnUpdateControlsBounds();
@@ -495,11 +481,6 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
   raw_ptr<AutoPipSettingOverlayView> overlay_view_ = nullptr;
   raw_ptr<views::View> title_view_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Generates a nine patch layer painted with a highlight border for ChromeOS
-  // Ash.
-  std::unique_ptr<HighlightBorderOverlay> highlight_border_overlay_;
-#endif
 
   // Current playback state on the video in Picture-in-Picture window. It is
   // used to toggle play/pause/replay button.

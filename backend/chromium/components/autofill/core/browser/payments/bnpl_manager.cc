@@ -45,8 +45,6 @@
 
 #if !BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
 #include "components/autofill/core/browser/payments/desktop_bnpl_strategy.h"
-#elif BUILDFLAG(IS_ANDROID)
-#include "components/autofill/core/browser/payments/android_bnpl_strategy.h"
 #endif  // !BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
 
 namespace autofill::payments {
@@ -544,10 +542,6 @@ void BnplManager::GetDetailsForCreateBnplPaymentInstrument() {
   request_details.app_locale = ongoing_flow_state_->app_locale;
   request_details.billing_customer_number =
       ongoing_flow_state_->billing_customer_number;
-#if BUILDFLAG(IS_ANDROID)
-  request_details.client_behavior_signals.push_back(
-      ClientBehaviorConstants::kShowAccountEmailInLegalMessage);
-#endif  // BUILDFLAG(IS_ANDROID)
   request_details.issuer_id = autofill::ConvertToBnplIssuerIdString(
       ongoing_flow_state_->issuer->issuer_id());
 
@@ -564,10 +558,6 @@ void BnplManager::GetDetailsForUpdateBnplPaymentInstrument() {
   request_details.app_locale = ongoing_flow_state_->app_locale;
   request_details.billing_customer_number =
       ongoing_flow_state_->billing_customer_number;
-#if BUILDFLAG(IS_ANDROID)
-  request_details.client_behavior_signals.push_back(
-      ClientBehaviorConstants::kShowAccountEmailInLegalMessage);
-#endif  // BUILDFLAG(IS_ANDROID)
   request_details.instrument_id = base::NumberToString(
       ongoing_flow_state_->issuer->payment_instrument()->instrument_id());
   request_details.type =

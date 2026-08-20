@@ -43,11 +43,6 @@
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "url/url_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/password_manager/core/browser/password_sync_util.h"
-
-using password_manager::sync_util::IsSyncFeatureEnabledIncludingPasswords;
-#endif
 
 using autofill::password_generation::PasswordGenerationType;
 using password_manager::PasswordForm;
@@ -116,16 +111,6 @@ void UserTriggeredManualGenerationFromContextMenu(
 }
 
 bool IsAbleToSavePasswords(password_manager::PasswordManagerClient* client) {
-#if BUILDFLAG(IS_ANDROID)
-  if (password_manager::sync_util::HasChosenToSyncPasswords(
-          client->GetSyncService())) {
-    // After store split on Android, AccountPasswordStore is a default store for
-    // saving passwords when sync is enabled. If either of conditions above is
-    // not satisfied fallback to ProfilePasswordStore.
-    return client->GetAccountPasswordStore() &&
-           IsAbleToSavePasswords(client->GetAccountPasswordStore()->GetError());
-  }
-#endif
   // TODO(b/324054761): Check AccountPasswordStore store when needed.
   return client->GetProfilePasswordStore() &&
          IsAbleToSavePasswords(client->GetProfilePasswordStore()->GetError());
@@ -396,18 +381,6 @@ std::string GetSignonRealm(const GURL& url) {
   return url.ReplaceComponents(rep).spec();
 }
 
-#if BUILDFLAG(IS_IOS)
-bool IsCredentialProviderEnabledOnStartup(const PrefService* local_state) {
-  return local_state->GetBoolean(
-      password_manager::prefs::kCredentialProviderEnabledOnStartup);
-}
-
-void SetCredentialProviderEnabledOnStartup(PrefService* local_state,
-                                           bool enabled) {
-  local_state->SetBoolean(
-      password_manager::prefs::kCredentialProviderEnabledOnStartup, enabled);
-}
-#endif
 
 bool IsNumeric(char16_t c) {
   return '0' <= c && c <= '9';
@@ -455,7 +428,6 @@ std::u16string GetHumanReadableRealm(const std::string& signon_realm) {
   return base::UTF8ToUTF16(signon_realm);
 }
 
-#if !BUILDFLAG(IS_IOS)
 bool ShouldUploadActorLoginMqls() {
   return base::FeatureList::IsEnabled(
              password_manager::features::kActorLoginQualityLogs) &&
@@ -466,6 +438,5 @@ bool ShouldUploadActorLoginMqls() {
          !base::FeatureList::IsEnabled(
              password_manager::features::kActorLoginFederatedLoginSupport);
 }
-#endif  // !BUILDFLAG(IS_IOS)
 
 }  // namespace password_manager_util

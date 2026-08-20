@@ -58,11 +58,6 @@ enum class SessionEvent {
 };
 // LINT.ThenChange(/tools/metrics/histograms/metadata/accessibility/enums.xml:LiveCaptionSessionEvent)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Used by ash window manager to place the caption bubble in the correct
-// container.
-extern const ui::ClassProperty<bool>* const kIsCaptionBubbleKey;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Caption Bubble
@@ -119,9 +114,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
 
   void SetCaptionBubbleStyle();
 
-#if BUILDFLAG(IS_WIN)
-  void OnContentSettingsLinkClicked();
-#endif
 
   void UpdateControlsVisibility(bool show_controls);
   void OnMouseEnteredOrExitedWindow(bool entered);
@@ -260,15 +252,6 @@ class CaptionBubble : public views::BubbleDialogDelegateView,
   raw_ptr<views::ImageButton> collapse_button_;
   raw_ptr<CaptionBubbleFrameView> frame_;
 
-#if BUILDFLAG(IS_WIN)
-  raw_ptr<views::StyledLabel> media_foundation_renderer_error_text_;
-  raw_ptr<views::ImageView> media_foundation_renderer_error_icon_;
-  raw_ptr<views::View> media_foundation_renderer_error_message_;
-
-  // Checkbox the user can use to indicate whether to silence the error message
-  // for the origin.
-  raw_ptr<views::Checkbox> media_foundation_renderer_error_checkbox_ = nullptr;
-#endif
 
   std::optional<ui::CaptionStyle> caption_style_;
   raw_ptr<CaptionBubbleModel> model_ = nullptr;

@@ -36,9 +36,6 @@ config("compiler") {
 config("runtime_library") {
   # Set here because OS_CHROMEOS cannot be autodetected in build_config.h like
   # OS_LINUX and the like.
-  if (is_chromeos) {
-    defines = [ "OS_CHROMEOS" ]
-  }
 
   if ((!is_chromeos || default_toolchain != "//build/toolchain/cros:target") &&
       (!use_custom_libcxx || current_cpu == "mipsel")) {

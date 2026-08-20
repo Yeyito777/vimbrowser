@@ -17,11 +17,6 @@
 #include "components/services/app_service/public/cpp/icon_types.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/arc/mojom/app.mojom-forward.h"
-#include "chromeos/ash/experiences/arc/mojom/intent_helper.mojom-forward.h"
-#include "ui/base/resource/resource_scale_factor.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace gfx {
 class ImageSkia;
@@ -79,28 +74,6 @@ gfx::ImageSkia LoadMaskImage(const ScaleToSize& scale_to_size);
 
 gfx::ImageSkia ApplyBackgroundAndMask(const gfx::ImageSkia& image);
 
-#if BUILDFLAG(IS_CHROMEOS)
-gfx::ImageSkia CompositeImagesAndApplyMask(
-    const gfx::ImageSkia& foreground_image,
-    const gfx::ImageSkia& background_image);
-
-void ArcRawIconPngDataToImageSkia(
-    arc::mojom::RawIconPngDataPtr icon,
-    int size_hint_in_dip,
-    base::OnceCallback<void(const gfx::ImageSkia& icon)> callback);
-
-void ArcActivityIconsToImageSkias(
-    const std::vector<arc::mojom::ActivityIconPtr>& icons,
-    base::OnceCallback<void(const std::vector<gfx::ImageSkia>& icons)>
-        callback);
-
-// TODO(crbug.com/40755741): Unify this function with AppIconLoader class.
-// It's the same as AppIconLoader::OnReadWebAppIcon().
-gfx::ImageSkia ConvertSquareBitmapsToImageSkia(
-    const std::map<web_app::SquareSizePx, SkBitmap>& icon_bitmaps,
-    IconEffects icon_effects,
-    int size_hint_in_dip);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 gfx::ImageSkia ConvertIconBitmapsToImageSkia(
     const std::map<web_app::SquareSizePx, SkBitmap>& icon_bitmaps,
@@ -140,36 +113,6 @@ void LoadIconFromWebApp(Profile* profile,
                         IconEffects icon_effects,
                         LoadIconCallback callback);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Requests a compressed icon data for an web app identified by `web_app_id`.
-void GetWebAppCompressedIconData(Profile* profile,
-                                 const std::string& web_app_id,
-                                 int size_in_dip,
-                                 ui::ResourceScaleFactor scale_factor,
-                                 LoadIconCallback callback);
-
-// Requests a compressed icon data for a chrome app identified by
-// `extension_id`.
-void GetChromeAppCompressedIconData(Profile* profile,
-                                    const std::string& extension_id,
-                                    int size_in_dip,
-                                    ui::ResourceScaleFactor scale_factor,
-                                    LoadIconCallback callback);
-
-// Requests a compressed icon data for an ARC app identified by `app_id`.
-void GetArcAppCompressedIconData(Profile* profile,
-                                 const std::string& app_id,
-                                 int size_in_dip,
-                                 ui::ResourceScaleFactor scale_factor,
-                                 LoadIconCallback callback);
-
-// Requests a compressed icon data for a Guest OS app identified by `app_id`.
-void GetGuestOSAppCompressedIconData(Profile* profile,
-                                     const std::string& app_id,
-                                     int size_in_dip,
-                                     ui::ResourceScaleFactor scale_factor,
-                                     LoadIconCallback callback);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Loads an icon from a FilePath. If that fails, it calls the fallback.
 //

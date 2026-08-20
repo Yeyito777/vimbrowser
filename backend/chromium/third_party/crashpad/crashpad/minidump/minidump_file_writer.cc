@@ -116,14 +116,7 @@ void MinidumpFileWriter::InitializeFromSnapshot(
   const ExceptionSnapshot* exception_snapshot = process_snapshot->Exception();
   if (exception_snapshot) {
     auto exception = std::make_unique<MinidumpExceptionWriter>();
-#if BUILDFLAG(IS_IOS)
-    // It's expected that iOS intermediate dumps can be written with missing
-    // information, but it's better to try and report as much as possible
-    // rather than drop the incomplete minidump.
-    constexpr bool allow_missing_thread_id_from_map = true;
-#else
     constexpr bool allow_missing_thread_id_from_map = false;
-#endif
     exception->InitializeFromSnapshot(
         exception_snapshot, thread_id_map, allow_missing_thread_id_from_map);
     add_stream_result = AddStream(std::move(exception));

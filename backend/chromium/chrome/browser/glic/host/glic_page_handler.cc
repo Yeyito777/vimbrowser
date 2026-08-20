@@ -125,7 +125,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/views/widget/widget.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/feedback/feedback_uploader_chrome.h"
 #include "chrome/browser/feedback/feedback_uploader_factory_chrome.h"
 #include "chrome/browser/feedback/system_logs/chrome_system_logs_fetcher.h"
@@ -137,7 +136,6 @@
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "ui/base/base_window.h"
-#endif
 
 namespace mojo {
 
@@ -177,14 +175,8 @@ mojom::FormFactor GetGlicFormFactor(ui::DeviceFormFactor form_factor) {
 
 #if BUILDFLAG(IS_MAC)
 constexpr mojom::Platform kPlatform = mojom::Platform::kMacOS;
-#elif BUILDFLAG(IS_WIN)
-constexpr mojom::Platform kPlatform = mojom::Platform::kWindows;
 #elif BUILDFLAG(IS_LINUX)
 constexpr mojom::Platform kPlatform = mojom::Platform::kLinux;
-#elif BUILDFLAG(IS_CHROMEOS)
-constexpr mojom::Platform kPlatform = mojom::Platform::kChromeOS;
-#elif BUILDFLAG(IS_ANDROID)
-constexpr mojom::Platform kPlatform = mojom::Platform::kAndroid;
 #else
 constexpr mojom::Platform kPlatform = mojom::Platform::kUnknown;
 #endif
@@ -285,7 +277,6 @@ class ActiveStateCalculator : public PanelStateObserver {
 
     // attached_browser is always null in Multi-instance, and ANDROID implies
     // Multi-instance.
-#if !BUILDFLAG(IS_ANDROID)
     if (attached_browser_ && !IsDeleteScheduled(attached_browser_)) {
       attached_browser_subscriptions_.push_back(
           attached_browser_->RegisterDidBecomeActive(base::BindRepeating(
@@ -300,7 +291,6 @@ class ActiveStateCalculator : public PanelStateObserver {
               &ActiveStateCalculator::AttachedBrowserDidClose,
               base::Unretained(this))));
     }
-#endif
     return true;
   }
 
@@ -557,7 +547,6 @@ class JournalHandler {
  private:
   void SendResponseFeedback(const std::string& reason) {
 // NEEDS_ANDROID_IMPL: FeedbackUploaderFactoryChrome
-#if !BUILDFLAG(IS_ANDROID)
     base::WeakPtr<feedback::FeedbackUploader> uploader =
         feedback::FeedbackUploaderFactoryChrome::GetForBrowserContext(
             actor_keyed_service_->GetProfile())
@@ -600,7 +589,6 @@ class JournalHandler {
               feedback_data->OnFeedbackPageDataComplete();
             },
             std::move(feedback_data)));
-#endif
   }
 
   void FileInitDone(bool success) {
@@ -840,11 +828,9 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
                   base::Unretained(this)));
     }
 
-#if !BUILDFLAG(IS_ANDROID)  // single instance not implemented on android
     if (!GlicEnabling::IsMultiInstanceEnabled()) {
       browser_attach_observation_ = ObserveBrowserForAttachment(profile_, this);
     }
-#endif
 
     system_permission_settings_observation_ =
         system_permission_settings::Observe(base::BindRepeating(
@@ -914,13 +900,11 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
         features::kGlicEnableCachedGetUserProfileInfo);
 
     local_state_pref_change_registrar_.Init(g_browser_process->local_state());
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL
     local_state_pref_change_registrar_.Add(
         prefs::kGlicLauncherHotkey,
         base::BindRepeating(&GlicWebClientHandler::OnLocalStatePrefChanged,
                             base::Unretained(this)));
     state->hotkey = GetHotkeyString();
-#endif
     state->enable_default_tab_context_setting_feature =
         base::FeatureList::IsEnabled(features::kGlicDefaultTabContextSetting);
     state->default_tab_context_setting_enabled =
@@ -1446,7 +1430,6 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
 
   void CaptureRegion(
       mojo::PendingRemote<mojom::CaptureRegionObserver> observer) override {
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL: CaptureRegion (b/494315475)
     const FocusedTabData& focus = sharing_manager().GetFocusedTabData();
     // Prioritize the focused tab, but fall back to the unfocused tab if one is
     // available. This is useful in cases where the active tab is not
@@ -1454,22 +1437,15 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
     tabs::TabInterface* active_tab =
         focus.is_focus() ? focus.focus() : focus.unfocused_tab();
     glic_service_->CaptureRegion(active_tab, std::move(observer));
-#else
-    NOTIMPLEMENTED();
-#endif
   }
 
   void DeleteCapturedRegion(int32_t tab_id,
                             const base::UnguessableToken& id) override {
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL: CaptureRegion (b/494315475)
     tabs::TabInterface* tab = tabs::TabHandle(tab_id).Get();
     if (!tab) {
       return;
     }
     glic_service_->DeleteCapturedRegion(tab, id);
-#else
-    NOTIMPLEMENTED();
-#endif
   }
 
   void SetAudioDucking(bool enabled,
@@ -1615,15 +1591,6 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
     result->is_managed =
         management_service && management_service->IsAccountManaged();
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // ChromeOS doesn't support profile, so local profile name and custom
-    // profile avatar are not supported. Instead, we will just use the user
-    // account avatar.
-    auto icon = account_info.GetAvatarImage();
-    if (icon.has_value()) {
-      result->avatar_icon = icon->AsBitmap();
-    }
-#else
     result->local_profile_name =
         base::UTF16ToUTF8(entry->GetLocalProfileName());
     // TODO(crbug.com/382794680): Determine the correct size.
@@ -1631,7 +1598,6 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
     if (!icon.IsEmpty()) {
       result->avatar_icon = icon.AsBitmap();
     }
-#endif  //  BUILDFLAG(IS_CHROMEOS)
     std::move(callback).Run(std::move(result));
   }
 
@@ -1828,7 +1794,6 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
     pref_service_->SetInteger(prefs::kGlicCompletedFre,
                               static_cast<int>(prefs::FreStatus::kCompleted));
 
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL
     GlicLauncherConfiguration::CheckDefaultBrowserToEnableLauncher();
 
     Browser* browser = chrome::FindTabbedBrowser(profile_, false);
@@ -1836,7 +1801,6 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
       interface->NotifyAdditionalConditionEvent(
           feature_engagement::events::kGlicOnboardingCompleted);
     }
-#endif  // !BUILDFLAG(IS_ANDROID)
   }
 
   // GlicWindowController::StateObserver implementation.
@@ -2177,13 +2141,11 @@ class GlicWebClientHandler : public glic::mojom::WebClientHandler,
   }
 
   void OnLocalStatePrefChanged(const std::string& pref_name) {
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL
     if (pref_name == prefs::kGlicLauncherHotkey) {
       web_client_->NotifyOsHotkeyStateChanged(GetHotkeyString());
     } else {
       CHECK(false) << "Unknown local state pref changed: " << pref_name;
     }
-#endif
   }
 
   void OnFocusedTabChanged(const FocusedTabData& focused_tab_data) {
@@ -2549,7 +2511,6 @@ void GlicPageHandler::Zoom(mojom::ZoomAction zoom_action) {
 }
 
 content::RenderFrameHost* GlicPageHandler::GetGuestMainFrame() {
-#if !BUILDFLAG(IS_ANDROID)  // NEEDS_ANDROID_IMPL
   extensions::WebViewGuest* web_view_guest = nullptr;
   content::RenderFrameHost* webui_frame =
       webui_contents_->GetPrimaryMainFrame();
@@ -2566,10 +2527,6 @@ content::RenderFrameHost* GlicPageHandler::GetGuestMainFrame() {
         return content::RenderFrameHost::FrameIterationAction::kContinue;
       });
   return web_view_guest ? web_view_guest->GetGuestMainFrame() : nullptr;
-#else
-  // TODO(b/470059315): Important to implement in Android.
-  return nullptr;
-#endif
 }
 
 void GlicPageHandler::SetProfileReadyState(

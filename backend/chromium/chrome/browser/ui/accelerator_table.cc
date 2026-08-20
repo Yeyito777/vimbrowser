@@ -46,9 +46,7 @@ const AcceleratorMapping kAcceleratorMap[] = {
 //      item with the appropriate modifier.
 //   2) Update GetShortcutsNotPresentInMainMenu() in
 //      global_keyboard_shortcuts_mac.mm.
-#if !BUILDFLAG(IS_CHROMEOS)
     {ui::VKEY_F7, ui::EF_NONE, IDC_CARET_BROWSING_TOGGLE},
-#endif
     {ui::VKEY_ESCAPE, ui::EF_NONE, IDC_CLOSE_FIND_OR_STOP},
 
 #if !BUILDFLAG(IS_MAC)
@@ -144,13 +142,6 @@ const AcceleratorMapping kAcceleratorMap[] = {
     {ui::VKEY_F6, ui::EF_NONE, IDC_FOCUS_NEXT_PANE},
     {ui::VKEY_F6, ui::EF_SHIFT_DOWN, IDC_FOCUS_PREVIOUS_PANE},
     {ui::VKEY_F6, ui::EF_CONTROL_DOWN, IDC_FOCUS_WEB_CONTENTS_PANE},
-#if BUILDFLAG(IS_CHROMEOS)
-    // On Chrome OS, Control + Search + the seventh key from escape (most
-    // commonly Brightness Up) toggles caret browsing.
-    // Note that VKEY_F7 is not a typo; Search + the seventh function key maps
-    // to F7 for accelerators.
-    {ui::VKEY_F7, ui::EF_CONTROL_DOWN, IDC_CARET_BROWSING_TOGGLE},
-#endif  // BUILDFLAG(IS_CHROMEOS)
     {ui::VKEY_F10, ui::EF_NONE, IDC_FOCUS_MENU_BAR},
     {ui::VKEY_F11, ui::EF_NONE, IDC_FULLSCREEN},
     {ui::VKEY_M, ui::EF_SHIFT_DOWN | ui::EF_PLATFORM_ACCELERATOR,
@@ -168,38 +159,15 @@ const AcceleratorMapping kAcceleratorMap[] = {
     {ui::VKEY_NEW, ui::EF_NONE, IDC_NEW_TAB},
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Chrome OS supports the print key, however XKB conflates the print
-    // and printscreen keys together so it is not supported on Linux.
-    // See crbug.com/683097
-    {ui::VKEY_PRINT, ui::EF_NONE, IDC_PRINT},
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
     // Chrome OS supports search-based shortcut to open feedback app.
     {ui::VKEY_I, ui::EF_CONTROL_DOWN | ui::EF_COMMAND_DOWN, IDC_FEEDBACK},
 #endif  // BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Chrome OS keyboard does not have delete key, so assign it to backspace.
-    {ui::VKEY_BACK, ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN,
-     IDC_CLEAR_BROWSING_DATA},
-#else   // !BUILDFLAG(IS_CHROMEOS)
     {ui::VKEY_DELETE, ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN,
      IDC_CLEAR_BROWSING_DATA},
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // On Chrome OS, VKEY_BROWSER_SEARCH is handled in Ash.
-    {ui::VKEY_OEM_2, ui::EF_CONTROL_DOWN, IDC_HELP_PAGE_VIA_KEYBOARD},
-    {ui::VKEY_OEM_2, ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN,
-     IDC_HELP_PAGE_VIA_KEYBOARD},
-    {ui::VKEY_BROWSER_FAVORITES, ui::EF_NONE, IDC_SHOW_BOOKMARK_MANAGER},
-    {ui::VKEY_BROWSER_STOP, ui::EF_NONE, IDC_STOP},
-    // On Chrome OS, Search + Esc is used to call out task manager.
-    {ui::VKEY_ESCAPE, ui::EF_COMMAND_DOWN, IDC_TASK_MANAGER_SHORTCUT},
-    {ui::VKEY_Z, ui::EF_COMMAND_DOWN, IDC_TOGGLE_MULTITASK_MENU},
-#else   // BUILDFLAG(IS_CHROMEOS)
     {ui::VKEY_ESCAPE, ui::EF_SHIFT_DOWN, IDC_TASK_MANAGER_SHORTCUT},
     {ui::VKEY_LMENU, ui::EF_NONE, IDC_FOCUS_MENU_BAR},
     {ui::VKEY_MENU, ui::EF_NONE, IDC_FOCUS_MENU_BAR},
@@ -207,7 +175,6 @@ const AcceleratorMapping kAcceleratorMap[] = {
     // On Windows, all VKEY_BROWSER_* keys except VKEY_BROWSER_SEARCH are
     // handled via WM_APPCOMMAND.
     {ui::VKEY_BROWSER_SEARCH, ui::EF_NONE, IDC_FOCUS_SEARCH},
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
     {ui::VKEY_I, ui::EF_SHIFT_DOWN | ui::EF_ALT_DOWN, IDC_FEEDBACK},
@@ -244,12 +211,10 @@ const AcceleratorMapping kAcceleratorMap[] = {
      IDC_SHOW_BOOKMARK_MANAGER},
     {ui::VKEY_J, ui::EF_CONTROL_DOWN, IDC_SHOW_DOWNLOADS},
     {ui::VKEY_H, ui::EF_CONTROL_DOWN, IDC_SHOW_HISTORY},
-#if !BUILDFLAG(IS_CHROMEOS)
     // On Chrome OS, these keys are assigned to change UI scale.
     {ui::VKEY_OEM_MINUS, ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN,
      IDC_ZOOM_MINUS},
     {ui::VKEY_OEM_PLUS, ui::EF_SHIFT_DOWN | ui::EF_CONTROL_DOWN, IDC_ZOOM_PLUS},
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 #endif  // !BUILDFLAG(IS_MAC)
 };
 
@@ -313,10 +278,6 @@ std::vector<AcceleratorMapping> GetAcceleratorList() {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
     accelerators->emplace_back(AcceleratorMapping(
         {ui::VKEY_N, ui::EF_SHIFT_DOWN | ui::EF_ALT_DOWN, IDC_NEW_SPLIT_TAB}));
-#elif BUILDFLAG(IS_CHROMEOS)
-    accelerators->emplace_back(
-        AcceleratorMapping({ui::VKEY_N, ui::EF_CONTROL_DOWN | ui::EF_ALT_DOWN,
-                            IDC_NEW_SPLIT_TAB}));
 #endif
 
     // See https://devblogs.microsoft.com/oldnewthing/20040329-00/?p=40003

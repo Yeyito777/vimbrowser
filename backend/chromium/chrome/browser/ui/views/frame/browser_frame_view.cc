@@ -47,11 +47,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/window/hit_test_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/taskbar/taskbar_decorator_win.h"
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 namespace {
 constexpr std::string_view kShowBrowserFrameRegionsCommandLineSwitch =
@@ -381,33 +376,6 @@ views::View::Views BrowserFrameView::GetChildrenInZOrder() {
   return views;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Sending the WM_NCPOINTERDOWN, WM_NCPOINTERUPDATE, and WM_NCPOINTERUP to the
-// default window proc does not bring up the system menu on long press, so we
-// use the gesture recognizer to turn it into a LONG_TAP gesture and handle it
-// here. See https://crbug.com/1327506 for more info.
-void BrowserFrameView::OnGestureEvent(ui::GestureEvent* event) {
-  gfx::Point event_loc = event->location();
-  // This opens the title bar system context menu on long press in the titlebar.
-  // NonClientHitTest returns HTCAPTION if `event_loc` is in the empty space on
-  // the titlebar.
-  if (event->type() == ui::EventType::kGestureLongTap &&
-      NonClientHitTest(event_loc) == HTCAPTION) {
-    views::View::ConvertPointToScreen(this, &event_loc);
-    event_loc = display::win::GetScreenWin()->DIPToScreenPoint(event_loc);
-    views::ShowSystemMenuAtScreenPixelLocation(views::HWNDForView(this),
-                                               event_loc);
-    event->SetHandled();
-  }
-}
-
-int BrowserFrameView::GetSystemMenuY() const {
-  return GetTopInset(false) +
-         std::max(
-             0, GetClientFrameElementInfo().tabstrip_preferred_height -
-                    GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 BEGIN_METADATA(BrowserFrameView)
 END_METADATA

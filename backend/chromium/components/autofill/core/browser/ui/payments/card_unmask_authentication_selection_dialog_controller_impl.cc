@@ -29,9 +29,6 @@ CardUnmaskAuthenticationSelectionDialogControllerImpl::
           std::move(confirm_unmasking_method_callback)),
       cancel_unmasking_closure_(std::move(cancel_unmasking_closure)) {
   CHECK(!challenge_options_.empty());
-#if BUILDFLAG(IS_IOS)
-  selected_challenge_option_id_ = challenge_options_[0].id;
-#endif  // BUILDFLAG(IS_IOS)
 }
 
 CardUnmaskAuthenticationSelectionDialogControllerImpl::

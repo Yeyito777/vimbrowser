@@ -156,119 +156,9 @@ AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityOnScreenMode);
 // Returns true if the on screen AXMode is enabled.
 AX_BASE_EXPORT bool IsAccessibilityOnScreenAXModeEnabled();
 
-#if BUILDFLAG(IS_WIN)
-// This is a killswitch. Controls whether
-// HWNDMessageHandler::GetParentOfAXFragmentRoot returns nullptr (legacy) or
-// delegates to GetParentNativeViewAccessible().
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityWinAXFragmentRootParent);
-AX_BASE_EXPORT bool IsAccessibilityWinAXFragmentRootParentEnabled();
 
-// When enabled, modify the exposed UIA accessibility tree to match Narrator's
-// expectations. This fixes a bug keeping Narrator's cursor contained within
-// the web content.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kFixNarratorWebContentContainment);
-AX_BASE_EXPORT bool IsFixNarratorWebContentContainmentEnabled();
 
-// Use Chrome-specific accessibility COM API.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kIChromeAccessible);
-AX_BASE_EXPORT bool IsIChromeAccessibleEnabled();
 
-// Enables calls to UiaDisconnectProvider when destroying a AXFragmentRootWin's
-// HWND.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kUiaDisconnectRootProviders);
-
-// Use the browser's UIA provider when requested by
-// an accessibility client.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kUiaProvider);
-
-// Optimizes event firing by only emitting events when at least one listener is
-// subscribed. Killswitch to turn it off in case this work has negative
-// side-effects on assistive technologies.
-// TODO(https://crbug.com/402375302): Remove in M139.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kUiaEventOptimization);
-
-// Enables MathML support in Windows UI Automation (UIA) implementation by
-// adding a custom property for exposing mathematical content to assistive
-// technologies.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kUiaMathMlSupport);
-AX_BASE_EXPORT bool IsUiaMathMlSupportEnabled();
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(accessibility): Should this be moved to ash_features.cc?
-AX_BASE_EXPORT bool IsDictationOfflineAvailable();
-
-// Adds option to enable Accessibility accelerator.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityAccelerator);
-AX_BASE_EXPORT bool IsAccessibilityAcceleratorEnabled();
-
-// Adds option to limit the movement on the screen.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityReducedAnimations);
-AX_BASE_EXPORT bool IsAccessibilityReducedAnimationsEnabled();
-
-// Adds reduced animations toggle to kiosk quick settings.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityReducedAnimationsInKiosk);
-AX_BASE_EXPORT bool IsAccessibilityReducedAnimationsInKioskEnabled();
-
-// Allow context checking with the accessibility Dictation
-// feature.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(
-    kExperimentalAccessibilityDictationContextChecking);
-AX_BASE_EXPORT bool
-IsExperimentalAccessibilityDictationContextCheckingEnabled();
-
-// Whether the screen magnifier can follow the ChromeVox focus.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityMagnifierFollowsChromeVox);
-AX_BASE_EXPORT bool IsAccessibilityMagnifierFollowsChromeVoxEnabled();
-
-// Control mouse with keyboard.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityMouseKeys);
-AX_BASE_EXPORT bool IsAccessibilityMouseKeysEnabled();
-
-// Show captions on a braille display.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityCaptionsOnBrailleDisplay);
-AX_BASE_EXPORT bool IsAccessibilityCaptionsOnBrailleDisplayEnabled();
-
-// Controls whether the shake cursor to locate feature is available.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityShakeToLocate);
-AX_BASE_EXPORT bool IsAccessibilityShakeToLocateEnabled();
-
-// Controls whether the disable touchpad feature is enabled.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityDisableTouchpad);
-AX_BASE_EXPORT bool IsAccessibilityDisableTouchpadEnabled();
-
-// Controls whether the flash screen for notifications feature is available.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityFlashScreenFeature);
-AX_BASE_EXPORT bool IsAccessibilityFlashScreenFeatureEnabled();
-
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityManifestV3ChromeVox);
-AX_BASE_EXPORT bool IsAccessibilityManifestV3EnabledForChromeVox();
-
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityManifestV3EspeakNGTts);
-AX_BASE_EXPORT bool IsAccessibilityManifestV3EnabledForEspeakNGTts();
-
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityManifestV3GoogleTts);
-AX_BASE_EXPORT bool IsAccessibilityManifestV3EnabledForGoogleTts();
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_ANDROID)
-
-// When populating the AccessibilityNodeInfo on Android, Clank will insert Line
-// Separator U+2028 characters in the text to denote soft line breaks.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityInlineLineSeparators);
-AX_BASE_EXPORT bool IsAccessibilityInlineLineSeparatorsEnabled();
-
-// Propagate bounding rectangles of cursor moves and input focus changes to the
-// Android platform to allow Magnification to follow them. For compatibility
-// with older behaviour, Android SDK levels before Baklava 36.1 will only be
-// notified on cursor moves.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityMagnificationFollowsFocus);
-AX_BASE_EXPORT bool IsAccessibilityMagnificationFollowsFocusEnabled();
-
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if !BUILDFLAG(IS_ANDROID)
 // Use the AXTree fixing code, which may be an assortment of different
 // tools/methods to fix the AXTree. This is not available on Android.
 AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAXTreeFixing);
@@ -377,7 +267,6 @@ AX_BASE_EXPORT BASE_DECLARE_FEATURE(
     kScreenAIPartitionAllocAdvancedChecksEnabled);
 #endif  // BUILDFLAG(IS_LINUX)
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_MAC)
 AX_BASE_EXPORT BASE_DECLARE_FEATURE(kMacAccessibilityAPIMigration);

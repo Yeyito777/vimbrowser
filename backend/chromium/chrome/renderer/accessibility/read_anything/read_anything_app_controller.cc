@@ -1953,11 +1953,7 @@ bool ReadAnythingAppController::IsReadabilityWithLinksEnabled() const {
 }
 
 bool ReadAnythingAppController::IsChromeOsAsh() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 bool ReadAnythingAppController::IsGoogleDocs() const {
@@ -2256,9 +2252,7 @@ void ReadAnythingAppController::OnVoiceChange(const std::string& voice,
 }
 
 void ReadAnythingAppController::LogExtensionState() {
-#if !BUILDFLAG(IS_CHROMEOS)
   page_handler_->LogExtensionState();
-#endif
 }
 
 void ReadAnythingAppController::OnLanguagePrefChange(const std::string& lang,
@@ -2442,25 +2436,10 @@ void ReadAnythingAppController::SetLanguageCode(const std::string& code) {
   ExecuteJavaScript("chrome.readingMode.languageChanged();");
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ReadAnythingAppController::OnDeviceLocked() {
-  if (read_aloud_model_.speech_playing()) {
-    read_aloud_model_.LogSpeechStop(
-        ReadAloudAppModel::ReadAloudStopSource::kLockChromeosDevice);
-  }
-  LogLineFocusSession();
-  RecordEstimatedWordsSeen();
-  RecordEstimatedWordsHeard();
-  // Signal to the WebUI that the device has been locked. We'll only receive
-  // this callback on ChromeOS.
-  ExecuteJavaScript("chrome.readingMode.onLockScreen();");
-}
-#else
 void ReadAnythingAppController::OnTtsEngineInstalled() {
   VLOG(1) << "OnTtsEngineInstalled";
   ExecuteJavaScript("chrome.readingMode.onTtsEngineInstalled()");
 }
-#endif
 
 void ReadAnythingAppController::OnReadingModeHidden(bool tab_active) {
   page_handler_->AckReadingModeHidden();

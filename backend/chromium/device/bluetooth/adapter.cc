@@ -114,11 +114,6 @@ void Adapter::GetInfo(GetInfoCallback callback) {
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   adapter_info->system_name = adapter_->GetSystemName();
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  adapter_info->floss = floss::features::IsFlossEnabled();
-  adapter_info->extended_advertisement_support =
-      adapter_->IsExtendedAdvertisementsAvailable();
-#endif
   adapter_info->initialized = adapter_->IsInitialized();
   adapter_info->present = adapter_->IsPresent();
   adapter_info->powered = adapter_->IsPowered();
@@ -313,13 +308,7 @@ void Adapter::CreateLocalGattService(
 
 void Adapter::IsLeScatternetDualRoleSupported(
     IsLeScatternetDualRoleSupportedCallback callback) {
-#if BUILDFLAG(IS_CHROMEOS)
-  std::move(callback).Run(std::ranges::contains(
-      adapter_->GetSupportedRoles(),
-      device::BluetoothAdapter::BluetoothRole::kCentralPeripheral));
-#else
   std::move(callback).Run(/*is_supported=*/false);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void Adapter::AdapterPresentChanged(device::BluetoothAdapter* adapter,
@@ -621,37 +610,6 @@ void Adapter::OnConnectToServiceInsecurelyError(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  device::BluetoothDevice* device = adapter_->GetDevice(it->second->address);
-  DCHECK(device);
-
-  ConnectToServiceFailureReason failure_reason =
-      ExtractFailureReasonFromErrorString(error_message);
-  // When the local device thinks it's paired with the remote device (IsBonded)
-  // and we receive one of these errors when trying to connect, then we're most
-  // likely in a state where the remote device doesn't recognize the pairing
-  // (half-paired).
-  bool is_half_paired_failure =
-      device->IsBonded() &&
-      (failure_reason == ConnectToServiceFailureReason::kReasonCanceled ||
-       failure_reason == ConnectToServiceFailureReason::kReasonRefused ||
-       failure_reason == ConnectToServiceFailureReason::kReasonUnknown);
-
-  if (is_half_paired_failure && it->second->should_unbond_on_error) {
-    // To recover from the half-paired state, just forget the remote device.
-    // This strategy works because the local device will continue attempting to
-    // connect. On the next attempt, it will no longer be in the half-paired
-    // state.
-    DLOG(ERROR) << "Half-paired state detected. Forgetting the device.";
-    device->Forget(base::BindOnce(&Adapter::OnConnectToServiceError,
-                                  weak_ptr_factory_.GetWeakPtr(), request_id,
-                                  error_message),
-                   base::BindOnce(&Adapter::OnConnectToServiceError,
-                                  weak_ptr_factory_.GetWeakPtr(), request_id,
-                                  error_message));
-    return;
-  }
-#endif
 
   OnConnectToServiceError(request_id, error_message);
 }

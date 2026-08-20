@@ -47,9 +47,6 @@
 #include "ui/gfx/geometry/transform_util.h"
 #include "ui/gfx/paint_vector_icon.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/vr/elements/spinner.h"
-#endif
 
 namespace vr {
 
@@ -195,71 +192,6 @@ void SetVisibleInLayout(UiElement* e, bool v) {
   e->set_requires_layout(v);
 }
 
-#if BUILDFLAG(IS_WIN)
-void BindIndicatorTranscienceForWin(
-    TransientElement* e,
-    Model* model,
-    UiScene* scene,
-    const std::optional<
-        std::tuple<bool, CapturingStateModel, CapturingStateModel>>& last_value,
-    const std::tuple<bool, CapturingStateModel, CapturingStateModel>& value) {
-  const bool in_web_vr_presentation = model->web_vr.IsImmersiveWebXrVisible() &&
-                                      model->web_vr.has_received_permissions;
-
-  const CapturingStateModel active_capture = std::get<1>(value);
-  const CapturingStateModel potential_capture = std::get<2>(value);
-
-  if (!in_web_vr_presentation) {
-    e->SetVisibleImmediately(false);
-    return;
-  }
-
-  e->SetVisible(true);
-  e->RefreshVisible();
-
-  for (const auto& spec : GetIndicatorSpecs()) {
-    SetVisibleInLayout(
-        scene->GetUiElementByName(spec.webvr_name),
-        active_capture.*spec.signal || potential_capture.*spec.signal);
-  }
-
-  e->RemoveKeyframeModels(TRANSFORM);
-
-  e->SetTranslate(0, kWebVrPermissionOffsetStart, 0);
-
-  // Build up a keyframe model for the initial transition.
-  std::unique_ptr<gfx::KeyframedTransformAnimationCurve> curve(
-      gfx::KeyframedTransformAnimationCurve::Create());
-
-  gfx::TransformOperations value_1;
-  value_1.AppendTranslate(0, kWebVrPermissionOffsetStart, 0);
-  curve->AddKeyframe(gfx::TransformKeyframe::Create(
-      base::TimeDelta(), value_1,
-      gfx::CubicBezierTimingFunction::CreatePreset(
-          gfx::CubicBezierTimingFunction::EaseType::EASE)));
-
-  gfx::TransformOperations value_2;
-  value_2.AppendTranslate(0, kWebVrPermissionOffsetOvershoot, 0);
-  curve->AddKeyframe(gfx::TransformKeyframe::Create(
-      base::Milliseconds(kWebVrPermissionOffsetMs), value_2,
-      gfx::CubicBezierTimingFunction::CreatePreset(
-          gfx::CubicBezierTimingFunction::EaseType::EASE)));
-
-  gfx::TransformOperations value_3;
-  value_3.AppendTranslate(0, kWebVrPermissionOffsetFinal, 0);
-  curve->AddKeyframe(gfx::TransformKeyframe::Create(
-      base::Milliseconds(kWebVrPermissionAnimationDurationMs), value_3,
-      gfx::CubicBezierTimingFunction::CreatePreset(
-          gfx::CubicBezierTimingFunction::EaseType::EASE)));
-
-  curve->set_target(e);
-
-  e->AddKeyframeModel(gfx::KeyframeModel::Create(
-      std::move(curve), gfx::KeyframeEffect::GetNextKeyframeModelId(),
-      TRANSFORM));
-}
-
-#else
 
 void BindIndicatorTranscience(TransientElement* e,
                               Model* model,
@@ -316,16 +248,11 @@ void BindIndicatorTranscience(TransientElement* e,
       TRANSFORM));
 }
 
-#endif
 
 int GetIndicatorsTimeout() {
   // Some runtimes on Windows have quite lengthy animations that may cause
   // indicators to not be visible at our normal timeout length.
-#if BUILDFLAG(IS_WIN)
-  return kWindowsInitialIndicatorsTimeoutSeconds;
-#else
   return kToastTimeoutSeconds;
-#endif
 }
 
 }  // namespace
@@ -501,17 +428,6 @@ void UiSceneCreator::CreateWebVrTimeoutScreen() {
           base::Unretained(scaler.get()))));
 
   // TODO(https://crbug.com/327467653): Investigate spinner code.
-#if BUILDFLAG(IS_WIN)
-  auto spinner = std::make_unique<Spinner>(512);
-  spinner->SetName(kWebVrTimeoutSpinner);
-  spinner->SetDrawPhase(kPhaseForeground);
-  spinner->SetTransitionedProperties({OPACITY});
-  spinner->SetVisible(false);
-  spinner->SetSize(kTimeoutSpinnerSizeDMM, kTimeoutSpinnerSizeDMM);
-  spinner->SetTranslate(0, kTimeoutSpinnerVerticalOffsetDMM, 0);
-  spinner->SetColor(model_->color_scheme().web_vr_timeout_spinner);
-  VR_BIND_VISIBILITY(spinner, model->web_vr.state == kWebVrTimeoutImminent);
-#endif
 
   auto timeout_message = Create<Rect>(kWebVrTimeoutMessage, kPhaseForeground);
   timeout_message->SetVisible(false);
@@ -547,9 +463,6 @@ void UiSceneCreator::CreateWebVrTimeoutScreen() {
   timeout_message->AddChild(std::move(timeout_layout));
 
   scaler->AddChild(std::move(timeout_message));
-#if BUILDFLAG(IS_WIN)
-  scaler->AddChild(std::move(spinner));
-#endif
   scene_->AddUiElement(kWebVrViewportAwareRoot, std::move(scaler));
 }
 void UiSceneCreator::CreateViewportAwareRoot() {
@@ -559,9 +472,6 @@ void UiSceneCreator::CreateViewportAwareRoot() {
   // On Windows, allow the viewport-aware UI to translate as well as rotate, so
   // it remains centered appropriately if the user moves.  Only enabled for
   // OS_WIN, since it conflicts with browser UI that isn't shown on Windows.
-#if BUILDFLAG(IS_WIN)
-  element->SetRecenterOnRotate(true);
-#endif
   scene_->AddUiElement(kWebVrRoot, std::move(element));
 }
 
@@ -582,24 +492,6 @@ void UiSceneCreator::CreateWebVrOverlayElements() {
   auto parent = CreateTransientParent(kWebVrIndicatorTransience,
                                       GetIndicatorsTimeout(), true);
 
-#if BUILDFLAG(IS_WIN)
-  parent->AddBinding(
-      std::make_unique<
-          Binding<std::tuple<bool, CapturingStateModel, CapturingStateModel>>>(
-          VR_BIND_LAMBDA(
-              [](Model* model) {
-                return std::tuple<bool, CapturingStateModel,
-                                  CapturingStateModel>(
-
-                    model->web_vr.IsImmersiveWebXrVisible() &&
-                        model->web_vr.has_received_permissions,
-                    model->active_capturing, model->potential_capturing);
-              },
-              base::Unretained(model_)),
-          VR_BIND_LAMBDA(BindIndicatorTranscienceForWin,
-                         base::Unretained(parent.get()),
-                         base::Unretained(model_), base::Unretained(scene_))));
-#else
 
   parent->AddBinding(std::make_unique<Binding<bool>>(
       VR_BIND_LAMBDA(
@@ -610,7 +502,6 @@ void UiSceneCreator::CreateWebVrOverlayElements() {
           base::Unretained(model_)),
       VR_BIND_LAMBDA(BindIndicatorTranscience, base::Unretained(parent.get()),
                      base::Unretained(model_), base::Unretained(scene_))));
-#endif
 
   auto scaler = std::make_unique<ScaledDepthAdjuster>(kWebVrToastDistance);
   scaler->AddChild(std::move(indicators));

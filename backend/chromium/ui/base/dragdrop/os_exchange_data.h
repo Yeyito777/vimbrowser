@@ -149,45 +149,6 @@ class COMPONENT_EXPORT(UI_BASE) OSExchangeData {
   using FileContentsInfo = OSExchangeDataProvider::FileContentsInfo;
   std::optional<FileContentsInfo> GetFileContents() const;
 
-#if BUILDFLAG(IS_WIN)
-  // Methods used to query and retrieve file data from a drag source
-  // IDataObject implementation packaging the data with the
-  // CFSTR_FILEDESCRIPTOR/CFSTR_FILECONTENTS clipboard formats instead of the
-  // more common CF_HDROP. These formats are intended to represent "virtual
-  // files," not files that live on the platform file system. For a drop target
-  // to read the file contents, it must be streamed from the drag source
-  // application.
-
-  // Method that returns true if there are virtual files packaged in the data
-  // store.
-  bool HasVirtualFilenames() const;
-
-  // Retrieves names of any "virtual files" in the data store packaged using the
-  // CFSTR_FILEDESCRIPTOR/CFSTR_FILECONTENTS clipboard formats instead of the
-  // more common CF_HDROP used for "real files." Real files are preferred over
-  // virtual files here to avoid duplication, as the data store may package
-  // the same file lists using different formats. GetVirtualFilenames just
-  // retrieves the display names but not the temp file paths. The temp files
-  // are only created upon drop via a call to the async method
-  // GetVirtualFilesAsTempFiles.
-  std::optional<std::vector<FileInfo>> GetVirtualFilenames() const;
-
-  // Retrieves "virtual file" contents via creation of intermediary temp files.
-  // Method is called on dropping on the Chromium drop target. Since creating
-  // the temp files involves file I/O, the method is asynchronous and the caller
-  // must provide a callback function that receives a vector of pairs of temp
-  // file paths and display names. The method will invoke the callback with an
-  // empty vector if there are no virtual files in the data object.
-  //
-  // TODO(crbug.com/41452260): Implement virtual file extraction to
-  // dynamically stream data to the renderer when File's bytes are actually
-  // requested
-  void GetVirtualFilesAsTempFiles(
-      base::OnceCallback<void(const std::vector</*temp path*/ std::pair<
-                                  base::FilePath,
-                                  /*display name*/ base::FilePath>>&)> callback)
-      const;
-#endif
 
 #if defined(USE_AURA)
   // Adds a snippet of HTML.  |html| is just raw html but this sets both

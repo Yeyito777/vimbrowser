@@ -196,9 +196,6 @@
 #include "ui/base/ui_base_features.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/native_theme/native_theme.h"
-#endif
 
 #if !BUILDFLAG(IS_MAC)
 #include "skia/ext/legacy_display_globals.h"
@@ -206,9 +203,6 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "third_party/blink/public/web/win/web_font_rendering.h"
-#endif
 
 // Get rid of WTF's pow define so we can use std::pow.
 #undef pow
@@ -1772,60 +1766,6 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
       prefs.dont_send_key_events_to_javascript);
   settings->SetWebAppScope(WebString::FromASCII(prefs.web_app_scope.spec()));
 
-#if BUILDFLAG(IS_ANDROID)
-  settings->SetAllowCustomScrollbarInMainFrame(false);
-  settings->SetAccessibilityFontScaleFactor(prefs.font_scale_factor);
-  settings->SetAccessibilityFontWeightAdjustment(prefs.font_weight_adjustment);
-  settings->SetAccessibilityTextSizeContrastFactor(
-      prefs.text_size_contrast_factor);
-  settings->SetDeviceScaleAdjustment(prefs.device_scale_adjustment);
-  web_view_impl->SetIgnoreViewportTagScaleLimits(prefs.force_enable_zoom);
-  settings->SetDefaultVideoPosterURL(
-      WebString::FromASCII(prefs.default_video_poster_url.spec()));
-  settings->SetSupportDeprecatedTargetDensityDPI(
-      prefs.support_deprecated_target_density_dpi);
-  settings->SetWideViewportQuirkEnabled(prefs.wide_viewport_quirk);
-  settings->SetScaleAllFontsIfNoMetaTextScaleTag(
-      prefs.scale_all_fonts_if_no_meta_text_scale_tag);
-  settings->SetUseWideViewport(prefs.use_wide_viewport);
-  settings->SetForceZeroLayoutHeight(prefs.force_zero_layout_height);
-  settings->SetViewportMetaMergeContentQuirk(
-      prefs.viewport_meta_merge_content_quirk);
-  settings->SetViewportMetaNonUserScalableQuirk(
-      prefs.viewport_meta_non_user_scalable_quirk);
-  settings->SetViewportMetaZeroValuesQuirk(
-      prefs.viewport_meta_zero_values_quirk);
-  settings->SetClobberUserAgentInitialScaleQuirk(
-      prefs.clobber_user_agent_initial_scale_quirk);
-  settings->SetIgnoreMainFrameOverflowHiddenQuirk(
-      prefs.ignore_main_frame_overflow_hidden_quirk);
-  settings->SetReportScreenSizeInPhysicalPixelsQuirk(
-      prefs.report_screen_size_in_physical_pixels_quirk);
-  settings->SetShouldReuseGlobalForUnownedMainFrame(
-      prefs.reuse_global_for_unowned_main_frame);
-  settings->SetPreferHiddenVolumeControls(true);
-  settings->SetSpellCheckEnabledByDefault(prefs.spellcheck_enabled_by_default);
-
-  RuntimeEnabledFeatures::SetVideoFullscreenOrientationLockEnabled(
-      prefs.video_fullscreen_orientation_lock_enabled);
-  RuntimeEnabledFeatures::SetVideoRotateToFullscreenEnabled(
-      prefs.video_rotate_to_fullscreen_enabled);
-  settings->SetEmbeddedMediaExperienceEnabled(
-      prefs.embedded_media_experience_enabled);
-  settings->SetImmersiveModeEnabled(prefs.immersive_mode_enabled);
-  settings->SetDoNotUpdateSelectionOnMutatingSelectionRange(
-      prefs.do_not_update_selection_on_mutating_selection_range);
-  RuntimeEnabledFeatures::SetCSSHexAlphaColorEnabled(
-      prefs.css_hex_alpha_color_enabled);
-  RuntimeEnabledFeatures::SetScrollTopLeftInteropEnabled(
-      prefs.scroll_top_left_interop_enabled);
-  RuntimeEnabledFeatures::SetAcceleratedSmallCanvasesEnabled(
-      !prefs.disable_accelerated_small_canvases);
-  RuntimeEnabledFeatures::SetLongPressLinkSelectTextEnabled(
-      prefs.long_press_link_select_text);
-  settings->SetDynamicSafeAreaInsetsEnabled(
-      prefs.dynamic_safe_area_insets_enabled);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA)
   RuntimeEnabledFeatures::SetWebAuthEnabled(!prefs.disable_webauthn);
@@ -1890,25 +1830,10 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
       prefs.default_maximum_page_scale_factor);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  RuntimeEnabledFeatures::SetMiddleClickAutoscrollEnabled(true);
-#endif
 
   RuntimeEnabledFeatures::SetTranslateServiceEnabled(
       prefs.translate_service_available);
 
-#if BUILDFLAG(IS_WIN)
-  if (web_view_impl->GetPage()) {
-    if (auto* prewarmer = WebFontRendering::GetFontPrewarmer()) {
-      GenericFontFamilySettings& font_settings =
-          web_view_impl->GetPage()
-              ->GetSettings()
-              .GetGenericFontFamilySettings();
-      prewarmer->PrewarmFamily(font_settings.Serif());
-      prewarmer->PrewarmFamily(font_settings.SansSerif());
-    }
-  }
-#endif
 
   // Disabling the StrictMimetypeCheckForWorkerScriptsEnabled enterprise policy
   // overrides the corresponding RuntimeEnabledFeature (via its Pref).
@@ -3603,24 +3528,6 @@ void WebViewImpl::UpdateFontRenderingFromRendererPrefs() {
       gfx::FontRenderParams::SubpixelRenderingToSkiaPixelGeometry(
           renderer_preferences_.subpixel_rendering),
       renderer_preferences_.text_contrast, renderer_preferences_.text_gamma);
-#if BUILDFLAG(IS_WIN)
-  // Cache the system font metrics in blink.
-  WebFontRendering::SetMenuFontMetrics(
-      WebString::FromUTF16(renderer_preferences_.menu_font_family_name),
-      renderer_preferences_.menu_font_height);
-  WebFontRendering::SetSmallCaptionFontMetrics(
-      WebString::FromUTF16(
-          renderer_preferences_.small_caption_font_family_name),
-      renderer_preferences_.small_caption_font_height);
-  WebFontRendering::SetStatusFontMetrics(
-      WebString::FromUTF16(renderer_preferences_.status_font_family_name),
-      renderer_preferences_.status_font_height);
-  WebFontRendering::SetAntialiasedTextEnabled(
-      renderer_preferences_.should_antialias_text);
-  WebFontRendering::SetLCDTextEnabled(
-      renderer_preferences_.subpixel_rendering !=
-      gfx::FontRenderParams::SUBPIXEL_RENDERING_NONE);
-#else
   WebFontRenderStyle::SetHinting(
       RendererPreferencesToSkiaHinting(renderer_preferences_));
   WebFontRenderStyle::SetAutoHint(renderer_preferences_.use_autohinter);
@@ -3637,19 +3544,9 @@ void WebViewImpl::UpdateFontRenderingFromRendererPrefs() {
         renderer_preferences_.system_font_family_name));
   }
 #endif  // BUILDFLAG(IS_LINUX)
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // !BUILDFLAG(IS_MAC)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebViewImpl::UpdateUseOverlayScrollbar(bool use_overlay_scrollbar) {
-  ui::NativeTheme::GetInstanceForWeb()->set_use_overlay_scrollbar(
-      use_overlay_scrollbar);
-  if (MainFrameImpl() && MainFrameImpl()->GetFrameView()) {
-    MainFrameImpl()->GetFrameView()->UsesOverlayScrollbarsChanged();
-  }
-}
-#endif
 
 void WebViewImpl::ActivatePrerenderedPage(
     mojom::blink::PrerenderPageActivationParamsPtr
@@ -3783,13 +3680,6 @@ void WebViewImpl::UpdateRendererPreferences(
   SetExplicitlyAllowedPorts(
       renderer_preferences_.explicitly_allowed_network_ports);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!ScrollbarTheme::MockScrollbarsEnabled()) {
-    WebRuntimeFeatures::EnableOverlayScrollbars(
-        renderer_preferences_.use_overlay_scrollbar);
-    UpdateUseOverlayScrollbar(renderer_preferences_.use_overlay_scrollbar);
-  }
-#endif
 
   ViewSourceLineWrappingPreference::Set(
       renderer_preferences_.view_source_line_wrap_enabled);
@@ -3866,12 +3756,6 @@ void WebViewImpl::UpdateWebPreferences(
     // Insecure content should not be allowed in a fenced frame.
     web_preferences_.allow_running_insecure_content = false;
 
-#if BUILDFLAG(IS_ANDROID)
-    // Reusing the global for unowned main frame is only used for
-    // Android WebView. Since this is a fenced frame it is not the
-    // outermost main frame so we can safely disable this feature.
-    web_preferences_.reuse_global_for_unowned_main_frame = false;
-#endif
   }
 
   if (MainFrameImpl()) {

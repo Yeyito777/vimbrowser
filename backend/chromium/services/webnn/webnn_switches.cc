@@ -30,18 +30,6 @@ base::span<const char* const> GetWebNNSwitchesCopiedFromGpuProcessHost() {
 #if BUILDFLAG(WEBNN_USE_TFLITE) || BUILDFLAG(WEBNN_USE_LITERT)
       kWebNNTfliteDumpModel,
 #endif
-#if BUILDFLAG(IS_WIN)
-      kWebNNOrtLoggingLevel,
-      kWebNNOrtDumpModel,
-      kWebNNOrtLibraryPathForTesting,
-      kWebNNOrtEpLibraryPathForTesting,
-      kWebNNOrtEpDevice,
-      kWebNNOrtIgnoreEpBlocklist,
-      kWebNNOrtIgnoreIhvEps,
-      kWebNNOrtGraphOptimizationLevel,
-      kWebNNOrtEnableProfiling,
-      kWebNNOrtDisableCpuFallback,
-#endif
   });
   return flags;
 }

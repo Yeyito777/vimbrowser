@@ -27,16 +27,8 @@ constexpr char kAuthHeaderBearer[] = "Bearer ";
 constexpr char kServerTimeoutHeader[] = "X-Server-Timeout";
 
 optimization_guide::proto::Platform GetPlatform() {
-#if BUILDFLAG(IS_WIN)
-  return optimization_guide::proto::PLATFORM_WINDOWS;
-#elif BUILDFLAG(IS_IOS)
-  return optimization_guide::proto::PLATFORM_IOS;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return optimization_guide::proto::PLATFORM_MAC;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return optimization_guide::proto::PLATFORM_CHROMEOS;
-#elif BUILDFLAG(IS_ANDROID)
-  return optimization_guide::proto::PLATFORM_ANDROID;
 #elif BUILDFLAG(IS_LINUX)
   return optimization_guide::proto::PLATFORM_LINUX;
 #else
@@ -160,16 +152,8 @@ optimization_guide::proto::OriginInfo GetClientOriginInfo() {
 }
 
 optimization_guide::proto::ChromePlatform GetChromePlatform() {
-#if BUILDFLAG(IS_WIN)
-  return optimization_guide::proto::CHROME_PLATFORM_WINDOWS;
-#elif BUILDFLAG(IS_IOS)
-  return optimization_guide::proto::CHROME_PLATFORM_IOS;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return optimization_guide::proto::CHROME_PLATFORM_MAC;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return optimization_guide::proto::CHROME_PLATFORM_CHROMEOS;
-#elif BUILDFLAG(IS_ANDROID)
-  return optimization_guide::proto::CHROME_PLATFORM_ANDROID;
 #elif BUILDFLAG(IS_LINUX)
   return optimization_guide::proto::CHROME_PLATFORM_LINUX;
 #else

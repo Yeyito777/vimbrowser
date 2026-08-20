@@ -63,34 +63,11 @@ const WebsiteSettingsInfo* WebsiteSettingsRegistry::Register(
     WebsiteSettingsInfo::ScopingType scoping_type,
     Platforms platform,
     WebsiteSettingsInfo::IncognitoBehavior incognito_behavior) {
-#if BUILDFLAG(IS_WIN)
-  if (!(platform & PLATFORM_WINDOWS))
-    return nullptr;
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (!(platform & PLATFORM_LINUX))
     return nullptr;
 #elif BUILDFLAG(IS_MAC)
   if (!(platform & PLATFORM_MAC))
-    return nullptr;
-#elif BUILDFLAG(IS_CHROMEOS)
-  if (!(platform & PLATFORM_CHROMEOS))
-    return nullptr;
-#elif BUILDFLAG(IS_ANDROID)
-  if (!(platform & PLATFORM_ANDROID))
-    return nullptr;
-  // Don't sync settings to mobile platforms. The UI is different to desktop and
-  // doesn't allow the settings to be managed in the same way. See
-  // crbug.com/642184.
-  sync_status = WebsiteSettingsInfo::UNSYNCABLE;
-#elif BUILDFLAG(IS_IOS)
-  if (!(platform & PLATFORM_IOS))
-    return nullptr;
-  // Don't sync settings to mobile platforms. The UI is different to desktop and
-  // doesn't allow the settings to be managed in the same way. See
-  // crbug.com/642184.
-  sync_status = WebsiteSettingsInfo::UNSYNCABLE;
-#elif BUILDFLAG(IS_FUCHSIA)
-  if (!(platform & PLATFORM_FUCHSIA))
     return nullptr;
 #else
 #error "Unsupported platform"

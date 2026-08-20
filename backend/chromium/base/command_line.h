@@ -42,10 +42,7 @@ class FilePath;
 
 class BASE_EXPORT CommandLine {
  public:
-#if BUILDFLAG(IS_WIN)
-  // The native command line string type.
-  using StringType = std::wstring;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   using StringType = std::string;
 #endif
 
@@ -59,9 +56,6 @@ class BASE_EXPORT CommandLine {
   // must start from the index 0.
   static CommandLine FromArgvWithoutProgram(const StringVector& argv);
 
-#if BUILDFLAG(IS_WIN)
-  static CommandLine FromString(StringViewType command_line);
-#endif
 
   // A constructor for CommandLines that only carry switches and arguments.
   enum NoProgram { NO_PROGRAM };
@@ -87,24 +81,6 @@ class BASE_EXPORT CommandLine {
 
   ~CommandLine();
 
-#if BUILDFLAG(IS_WIN)
-  // By default this class will treat command-line arguments beginning with
-  // slashes as switches on Windows, but not other platforms.
-  //
-  // If this behavior is inappropriate for your application, you can call this
-  // function BEFORE initializing the current process' global command line
-  // object and the behavior will be the same as Posix systems (only hyphens
-  // begin switches, everything else will be an arg).
-  static void set_slash_is_not_a_switch();
-
-  // Normally when the CommandLine singleton is initialized it gets the command
-  // line via the GetCommandLineW API and then uses the shell32 API
-  // CommandLineToArgvW to parse the command line and convert it back to
-  // argc and argv. Tests who don't want this dependency on shell32 and need
-  // to honor the arguments passed in should use this function.
-  // TODO(tsepez): should be UNSAFE_BUFFER_USAGE.
-  static void InitUsingArgvForTesting(int argc, const char* const* argv);
-#endif
 
   // Initialize the current process CommandLine singleton. On Windows, ignores
   // its arguments (we instead parse GetCommandLineW() directly) because we
@@ -143,40 +119,6 @@ class BASE_EXPORT CommandLine {
   // GetCommandLineStringForShell() instead.
   StringType GetCommandLineString() const;
 
-#if BUILDFLAG(IS_WIN)
-  // Quotes and escapes `arg` if necessary so that it will be interpreted as a
-  // single command-line parameter according to the following rules in line with
-  // `::CommandLineToArgvW` and C++ `main`:
-  // * Returns `arg` unchanged if `arg` does not include any characters that may
-  // need encoding, which is spaces, tabs, backslashes, and double-quotes.
-  // * Otherwise, double-quotes `arg` and in addition:
-  //   * Escapes any double-quotes in `arg` with backslashes.
-  //   * Escapes backslashes in `arg` if:
-  //     * `arg` ends with backslashes , or
-  //     * the backslashes end in a pre-existing double quote.
-  //
-  // https://learn.microsoft.com/en-us/search/?terms=CommandLineToArgvW and
-  // http://msdn.microsoft.com/en-us/library/17w5ykft.aspx#parsing-c-command-line-arguments.
-  static std::wstring QuoteForCommandLineToArgvW(const std::wstring& arg);
-
-  // Returns the command-line string in the proper format for the Windows shell,
-  // ending with the argument placeholder "--single-argument %1". The single-
-  // argument switch prevents unexpected parsing of arguments from other
-  // software that cannot be trusted to escape double quotes when substituting
-  // into a placeholder (e.g., "%1" insert sequences populated by the Windows
-  // shell).
-  // NOTE: this must be used to generate the command-line string for the shell
-  // even if this command line was parsed from a string with the proper syntax,
-  // because the --single-argument switch is not preserved during parsing.
-  StringType GetCommandLineStringForShell() const;
-
-  // Returns the represented command-line string. Allows the use of unsafe
-  // Windows insert sequences like "%1". Only use this method if
-  // GetCommandLineStringForShell() is not adequate AND the processor inserting
-  // the arguments is known to do so securely (i.e., is not the Windows shell).
-  // If in doubt, do not use.
-  StringType GetCommandLineStringWithUnsafeInsertSequences() const;
-#endif
 
   // Constructs and returns the represented arguments string.
   // CAUTION! This should be avoided on POSIX because quoting behavior is
@@ -247,16 +189,6 @@ class BASE_EXPORT CommandLine {
   // Common for debuggers, like "gdb --args".
   void PrependWrapper(StringViewType wrapper);
 
-#if BUILDFLAG(IS_WIN)
-  // Initialize by parsing the given command line string.
-  // The program name is assumed to be the first item in the string.
-  void ParseFromString(StringViewType command_line);
-
-  // Returns true if the command line had the --single-argument switch, and
-  // thus likely came from a Windows shell registration. This is only set if the
-  // command line is parsed, and is not changed after it is parsed.
-  bool HasSingleArgumentSwitch() const { return has_single_argument_switch_; }
-#endif
 
   // Detaches this object from the current sequence in preparation for a move to
   // a different sequence.
@@ -307,28 +239,6 @@ class BASE_EXPORT CommandLine {
   StringType GetArgumentsStringInternal(
       bool allow_unsafe_insert_sequences) const;
 
-#if BUILDFLAG(IS_WIN)
-  // Initializes by parsing |raw_command_line_string_|, treating everything
-  // after |single_arg_switch_string| + <a single character> as the command
-  // line's single argument, and dropping any arguments previously parsed. The
-  // command line must contain |single_arg_switch_string|, and the argument, if
-  // present, must be separated from |single_arg_switch_string| by one
-  // character.
-  // NOTE: the single-argument switch is not preserved after parsing;
-  // GetCommandLineStringForShell() must be used to reproduce the original
-  // command-line string with single-argument switch.
-  void ParseAsSingleArgument(const StringType& single_arg_switch_string);
-
-  // The string returned by GetCommandLineW(), to be parsed via
-  // ParseFromString(). Empty if this command line was not parsed from a string,
-  // or if ParseFromString() has finished executing.
-  StringViewType raw_command_line_string_;
-
-  // Set to true if the command line had --single-argument when initially
-  // parsed. It does not change if the command line mutates after initial
-  // parsing.
-  bool has_single_argument_switch_ = false;
-#endif
 
   // The singleton CommandLine representing the current process's command line.
   static CommandLine* current_process_commandline_;

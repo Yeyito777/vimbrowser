@@ -76,9 +76,6 @@
 #include "third_party/skia/include/core/SkColor.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_data.h"
-#endif
 
 namespace web_app {
 namespace {

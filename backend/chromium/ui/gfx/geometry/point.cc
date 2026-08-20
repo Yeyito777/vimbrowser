@@ -9,44 +9,18 @@
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/gfx/geometry/point_f.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_IOS)
-#include <CoreGraphics/CoreGraphics.h>
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
 namespace gfx {
 
-#if BUILDFLAG(IS_WIN)
-Point::Point(DWORD point) {
-  POINTS points = MAKEPOINTS(point);
-  x_ = points.x;
-  y_ = points.y;
-}
-
-Point::Point(const POINT& point) : x_(point.x), y_(point.y) {
-}
-
-Point& Point::operator=(const POINT& point) {
-  x_ = point.x;
-  y_ = point.y;
-  return *this;
-}
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 Point::Point(const CGPoint& point) : x_(point.x), y_(point.y) {
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-POINT Point::ToPOINT() const {
-  POINT p;
-  p.x = x();
-  p.y = y();
-  return p;
-}
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 CGPoint Point::ToCGPoint() const {
   return CGPointMake(x(), y());
 }

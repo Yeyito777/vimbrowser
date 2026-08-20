@@ -30,19 +30,11 @@ class FakeDisplayClient : public mojom::DisplayClient {
       const gfx::CALayerParams& ca_layer_params) override;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  void CreateLayeredWindowUpdater(
-      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
-  void AddChildWindowToBrowser(gpu::SurfaceHandle child_window) override;
-#endif
 
 #if BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
   void DidCompleteSwapWithNewSize(const gfx::Size& size) override;
 #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetPreferredRefreshRate(float refresh_rate) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   mojo::Receiver<mojom::DisplayClient> receiver_{this};

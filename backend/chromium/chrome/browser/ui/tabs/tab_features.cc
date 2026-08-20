@@ -131,15 +131,9 @@
 #include "ui/accessibility/accessibility_features.h"
 #include "ui/base/unowned_user_data/user_data_factory.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/skills/skills_update_observer.h"
 #include "components/skills/features.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_service_proxy_factory.h"  // nogncheck
-#include "chrome/browser/ui/views/web_apps/protocol_handler_picker_coordinator.h"
-#endif
 
 namespace tabs {
 
@@ -259,14 +253,12 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
               tab, tab, profile->GetPrefs(), *page_action_controller_);
     }
 
-#if !BUILDFLAG(IS_ANDROID)
     if (base::FeatureList::IsEnabled(
             record_replay::features::kRecordReplayBase)) {
       record_replay_page_action_controller_ =
           GetUserDataFactory().CreateInstance<RecordReplayPageActionController>(
               tab, tab, *page_action_controller_);
     }
-#endif
 
     js_optimizations_page_action_controller_ =
         std::make_unique<JsOptimizationsPageActionController>(
@@ -507,26 +499,16 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
   tab_alert_controller_ =
       GetUserDataFactory().CreateInstance<TabAlertController>(tab, tab);
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(
           record_replay::features::kRecordReplayBase)) {
     record_replay_client_ =
         GetUserDataFactory().CreateInstance<ChromeRecordReplayClient>(tab, tab);
   }
-#endif
 
   tab_contextualization_controller_ =
       GetUserDataFactory().CreateInstance<lens::TabContextualizationController>(
           tab, &tab);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (apps::AppServiceProxyFactory::IsAppServiceAvailableForProfile(profile)) {
-    protocol_handler_picker_coordinator_ =
-        GetUserDataFactory()
-            .CreateInstance<web_app::ProtocolHandlerPickerCoordinator>(
-                tab, tab, apps::AppServiceProxyFactory::GetForProfile(profile));
-  }
-#endif
 
   // The controller is created for all tabs but only affects back button
   // behavior for destination tabs with opener relationships.
@@ -556,7 +538,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
   }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(features::kSkillsEnabled)) {
     skills_update_observer_ =
         std::make_unique<skills::SkillsUpdateObserver>(tab);
@@ -567,7 +548,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
             tab, *page_action_controller_);
   }
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 TabUIHelper* TabFeatures::SetTabUIHelperForTesting(
     std::unique_ptr<TabUIHelper> tab_ui_helper) {

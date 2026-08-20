@@ -20,9 +20,6 @@
 #include "partition_alloc/shim/allocator_shim.h"
 #include "partition_alloc/shim/allocator_shim_internals.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/shim/winheap_stubs_win.h"
-#endif
 
 namespace allocator_shim {
 namespace internal {
@@ -35,9 +32,6 @@ bool g_call_new_handler_on_malloc_failure = false;
 // Calls the std::new handler thread-safely. Returns true if a new_handler was
 // set and called, false if no new_handler was set.
 bool CallNewHandler(size_t size) {
-#if PA_BUILDFLAG(IS_WIN)
-  return allocator_shim::WinCallNewHandler(size);
-#else
   std::new_handler nh = std::get_new_handler();
   if (!nh) {
     return false;
@@ -46,7 +40,6 @@ bool CallNewHandler(size_t size) {
   // Assume the new_handler will abort if it fails. Exception are disabled and
   // we don't support the case of a new_handler throwing std::bad_balloc.
   return true;
-#endif
 }
 
 #if !(PA_BUILDFLAG(IS_WIN) && defined(COMPONENT_BUILD))

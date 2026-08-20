@@ -42,11 +42,6 @@
 #include "partition_alloc/address_pool_manager_bitmap.h"
 #endif
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "wow64apiset.h"
-#endif
 
 #if PA_BUILDFLAG(IS_LINUX) || PA_BUILDFLAG(IS_CHROMEOS)
 #include <pthread.h>
@@ -382,11 +377,9 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
   size_t num_provisioned_slots =
       bucket_num_slots - slot_span->num_unprovisioned_slots;
   std::array<char, kMaxSlotCount> slot_usage{};
-#if !PA_BUILDFLAG(IS_WIN)
   // The last freelist entry should not be discarded when using OS_WIN.
   // DiscardVirtualMemory makes the contents of discarded memory undefined.
   size_t last_slot = static_cast<size_t>(-1);
-#endif
   std::fill_n(slot_usage.begin(), num_provisioned_slots, 1);
   SlotSpanStart slot_span_start =
       internal::SlotSpanMetadata::ToSlotSpanStart(slot_span, root);
@@ -398,7 +391,6 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
         slot_span_start.offset(SlotStart::Unchecked(entry).Untag().value()));
     PA_DCHECK(slot_number < num_provisioned_slots);
     slot_usage[slot_number] = 0;
-#if !PA_BUILDFLAG(IS_WIN)
     // If we have a slot where the encoded next pointer is 0, we can actually
     // discard that entry because touching a discarded page is guaranteed to
     // return the original content or 0. (Note that this optimization won't be
@@ -407,7 +399,6 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
     if (entry->IsEncodedNextPtrZero()) {
       last_slot = slot_number;
     }
-#endif
   }
 
   // If the slot(s) at the end of the slot span are not in use, we can truncate
@@ -535,13 +526,11 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
       if (num_new_freelist_entries) {
         PA_DCHECK(back);
         FreelistEntry::EmplaceAndInitNull(back);
-#if !PA_BUILDFLAG(IS_WIN)
         // Memorize index of the last slot in the list, as it may be able to
         // participate in an optimization related to page discaring (below), due
         // to its next pointer encoded as 0.
         last_slot = bucket->GetSlotNumber(
             slot_span_start.offset(SlotStart::Unchecked(back).Untag().value()));
-#endif
       } else {
         PA_DCHECK(!back);
         slot_span->SetFreelistHead(nullptr);
@@ -593,15 +582,11 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
     begin_addr = slot_span_start.GetNthSlotStart(i, slot_size).value();
     end_addr = begin_addr + slot_size;
     bool can_discard_free_list_pointer = false;
-#if !PA_BUILDFLAG(IS_WIN)
     if (i != last_slot) {
       begin_addr += sizeof(internal::FreelistEntry);
     } else {
       can_discard_free_list_pointer = true;
     }
-#else
-    begin_addr += sizeof(internal::FreelistEntry);
-#endif
 
     uintptr_t rounded_up_begin_addr = RoundUpToSystemPage(begin_addr);
     uintptr_t rounded_down_begin_addr = RoundDownToSystemPage(begin_addr);
@@ -788,23 +773,9 @@ void PartitionAllocThreadIsolationInit(ThreadIsolationOption thread_isolation) {
     internal::PartitionOutOfMemoryWithLotsOfUncommitedPages(size);
   }
 
-#if PA_BUILDFLAG(IS_WIN)
-  // If true then we are running on 64-bit Windows.
-  BOOL is_wow_64 = FALSE;
-  // Intentionally ignoring failures.
-  IsWow64Process(GetCurrentProcess(), &is_wow_64);
-  // 32-bit address space on Windows is typically either 2 GiB (on 32-bit
-  // Windows) or 4 GiB (on 64-bit Windows). 2.8 and 1.0 GiB are just rough
-  // guesses as to how much address space PA can consume (note that code,
-  // stacks, and other allocators will also consume address space).
-  const size_t kReasonableVirtualSize = (is_wow_64 ? 2800 : 1024) * 1024 * 1024;
-  // Make it obvious whether we are running on 64-bit Windows.
-  PA_DEBUG_DATA_ON_STACK("iswow64", static_cast<size_t>(is_wow_64));
-#else
   constexpr size_t kReasonableVirtualSize =
       // 1.5GiB elsewhere, since address space is typically 3GiB.
       (1024 + 512) * 1024 * 1024;
-#endif
   if (virtual_address_space_size > kReasonableVirtualSize) {
     internal::PartitionOutOfMemoryWithLargeVirtualSize(
         virtual_address_space_size);

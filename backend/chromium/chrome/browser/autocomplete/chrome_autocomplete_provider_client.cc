@@ -90,11 +90,6 @@
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/app_list/search/essential_search/essential_search_manager.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "chrome/browser/autocomplete/keyword_extensions_delegate_impl.h"
@@ -102,7 +97,6 @@
 #include "extensions/common/extension_features.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/sharing_hub/sharing_hub_features.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_finder.h"
@@ -117,7 +111,6 @@
 #include "chrome/browser/ui/views/side_panel/history_clusters/history_clusters_side_panel_coordinator.h"
 #include "chrome/browser/upgrade_detector/upgrade_detector.h"
 #include "components/lens/lens_overlay_invocation_source.h"
-#endif
 
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
 #include "chrome/browser/autocomplete/autocomplete_scoring_model_service_factory.h"
@@ -128,7 +121,6 @@
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 // This list should be kept in sync with chrome/common/webui_url_constants.h.
 // Only include useful sub-pages, confirmation alerts are not useful.
 constexpr auto kChromeSettingsSubPages = std::to_array<base::cstring_view>({
@@ -143,11 +135,9 @@ constexpr auto kChromeSettingsSubPages = std::to_array<base::cstring_view>({
     chrome::kSearchEnginesSubPage,
     chrome::kSecuritySubPage,
     chrome::kSyncSetupSubPage,
-#if !BUILDFLAG(IS_CHROMEOS)
     chrome::kImportDataSubPage,
     chrome::kManageProfileSubPage,
     chrome::kPeopleSubPage,
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 });
 
 content::WebContents* GetWebContents(
@@ -169,7 +159,6 @@ lens::LensSearchboxController* GetLensSearchboxController(
   }
   return nullptr;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 constexpr char kEnglishLanguageCode[] = "en";
 constexpr std::string kEnglishExpansionCountryCodes[] = {"au", "ca", "gb",
@@ -391,24 +380,18 @@ std::vector<std::u16string> ChromeAutocompleteProviderClient::GetBuiltinURLs() {
   std::vector<std::u16string> builtins;
   const base::span<const base::cstring_view> url_hosts =
       chrome::ChromeURLHosts();
-#if BUILDFLAG(IS_ANDROID)
-  builtins.reserve(url_hosts.size());
-#else
   builtins.reserve(url_hosts.size() + kChromeSettingsSubPages.size());
-#endif
 
   for (base::cstring_view chrome_builtin_host : url_hosts) {
     builtins.push_back(base::ASCIIToUTF16(chrome_builtin_host));
   }
   std::ranges::sort(builtins);
 
-#if !BUILDFLAG(IS_ANDROID)
   std::u16string settings(chrome::kChromeUISettingsHost16);
   settings += u"/";
   for (base::cstring_view chrome_settings_sub_page : kChromeSettingsSubPages) {
     builtins.push_back(settings + base::ASCIIToUTF16(chrome_settings_sub_page));
   }
-#endif
 
   return builtins;
 }
@@ -418,9 +401,7 @@ ChromeAutocompleteProviderClient::GetBuiltinsToProvideAsUserTypes() {
   std::vector<std::u16string> builtins_to_provide;
   builtins_to_provide.push_back(chrome::kChromeUIChromeURLsURL16);
   builtins_to_provide.push_back(chrome::kChromeUIFlagsURL16);
-#if !BUILDFLAG(IS_ANDROID)
   builtins_to_provide.push_back(chrome::kChromeUISettingsURL16);
-#endif
   builtins_to_provide.push_back(chrome::kChromeUIVersionURL16);
   return builtins_to_provide;
 }
@@ -486,16 +467,7 @@ bool ChromeAutocompleteProviderClient::IsGuestSession() const {
 }
 
 bool ChromeAutocompleteProviderClient::SearchSuggestEnabled() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return profile_->GetPrefs()->GetBoolean(prefs::kSearchSuggestEnabled) &&
-         (!g_browser_process->platform_part() ||
-          !g_browser_process->platform_part()->essential_search_manager() ||
-          !g_browser_process->platform_part()
-               ->essential_search_manager()
-               ->ShouldDisableSearchSuggest());
-#else
   return profile_->GetPrefs()->GetBoolean(prefs::kSearchSuggestEnabled);
-#endif
 }
 
 bool ChromeAutocompleteProviderClient::AllowDeletingBrowserHistory() const {
@@ -550,11 +522,9 @@ void ChromeAutocompleteProviderClient::DeleteMatchingURLsForKeywordFromHistory(
 void ChromeAutocompleteProviderClient::PrefetchImage(const GURL& url) {
   // Note: Android uses different image fetching mechanism to avoid
   // penalty of copying byte buffers from C++ to Java.
-#if !BUILDFLAG(IS_ANDROID)
   BitmapFetcherService* bitmap_fetcher_service =
       BitmapFetcherServiceFactory::GetForBrowserContext(profile_);
   bitmap_fetcher_service->Prefetch(url);
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::StartServiceWorker(
@@ -595,11 +565,7 @@ bool ChromeAutocompleteProviderClient::IsIncognitoModeAvailable() const {
 }
 
 bool ChromeAutocompleteProviderClient::IsSharingHubAvailable() const {
-#if !BUILDFLAG(IS_ANDROID)
   return sharing_hub::SharingHubOmniboxEnabled(profile_);
-#else
-  return false;
-#endif
 }
 
 bool ChromeAutocompleteProviderClient::IsHistoryEmbeddingsEnabled() const {
@@ -612,7 +578,6 @@ bool ChromeAutocompleteProviderClient::IsHistoryEmbeddingsSettingVisible()
 }
 
 bool ChromeAutocompleteProviderClient::IsLensEnabled() const {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* lens_search_controller =
           GetLensSearchController(GetWebContents(web_contents_getter_))) {
     // Guaranteed to exist if lens_search_controller is  not null.
@@ -622,12 +587,10 @@ bool ChromeAutocompleteProviderClient::IsLensEnabled() const {
         .lens_overlay_entry_point_controller()
         ->IsEnabled();
   }
-#endif
   return false;
 }
 
 bool ChromeAutocompleteProviderClient::AreLensEntrypointsVisible() const {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* lens_search_controller =
           GetLensSearchController(GetWebContents(web_contents_getter_))) {
     // Guaranteed to exist if lens_search_controller is  not null.
@@ -637,18 +600,15 @@ bool ChromeAutocompleteProviderClient::AreLensEntrypointsVisible() const {
         .lens_overlay_entry_point_controller()
         ->AreVisible();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   return false;
 }
 
 std::optional<bool> ChromeAutocompleteProviderClient::IsPagePaywalled() const {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* web_contents = GetWebContents(web_contents_getter_)) {
     if (auto* tab_helper = OmniboxTabHelper::FromWebContents(web_contents)) {
       return tab_helper->IsPagePaywalled();
     }
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   return false;
 }
 
@@ -667,31 +627,21 @@ bool ChromeAutocompleteProviderClient::ShouldSendPageTitleSuggestParam() const {
 
 bool ChromeAutocompleteProviderClient::IsOmniboxNextLensSearchChipEnabled()
     const {
-#if !BUILDFLAG(IS_ANDROID)
   return IsOmniboxNextAimPopupEnabled() && omnibox::kShowLensSearchChip.Get();
-#else
-  return false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 bool ChromeAutocompleteProviderClient::IsOmniboxNextAimPopupEnabled() const {
-#if !BUILDFLAG(IS_ANDROID)
   return omnibox::IsAimPopupEnabled(profile_);
-#else
-  return false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 base::CallbackListSubscription
 ChromeAutocompleteProviderClient::GetLensSuggestInputsWhenReady(
     LensOverlaySuggestInputsCallback callback) const {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* lens_searchbox_controller =
           GetLensSearchboxController(GetWebContents(web_contents_getter_))) {
     return lens_searchbox_controller->GetLensSuggestInputsWhenReady(
         std::move(callback));
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   std::move(callback).Run(std::nullopt);
   return {};
 }
@@ -702,39 +652,30 @@ ChromeAutocompleteProviderClient::GetWeakPtr() {
 }
 
 void ChromeAutocompleteProviderClient::OpenSharingHub() {
-#if !BUILDFLAG(IS_ANDROID)
   if (BrowserWindowInterface* const bwi =
           GetLastActiveBrowserWindowInterfaceWithAnyProfile()) {
     chrome::ExecuteCommand(bwi, IDC_SHARING_HUB);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::NewIncognitoWindow() {
-#if !BUILDFLAG(IS_ANDROID)
   chrome::NewIncognitoWindow(profile_);
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::OpenIncognitoClearBrowsingDataDialog() {
-#if !BUILDFLAG(IS_ANDROID)
   if (BrowserWindowInterface* const bwi =
           GetLastActiveBrowserWindowInterfaceWithAnyProfile()) {
     chrome::ShowIncognitoClearBrowsingDataDialog(bwi);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::CloseIncognitoWindows() {
-#if !BUILDFLAG(IS_ANDROID)
   if (profile_->IsIncognitoProfile()) {
     chrome::CloseAllBrowsersWithIncognitoProfile(profile_);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 bool ChromeAutocompleteProviderClient::OpenJourneys(const std::string& query) {
-#if !BUILDFLAG(IS_ANDROID)
   BrowserWindowInterface* const bwi =
       GetLastActiveBrowserWindowInterfaceWithAnyProfile();
   if (!bwi) {
@@ -748,13 +689,11 @@ bool ChromeAutocompleteProviderClient::OpenJourneys(const std::string& query) {
     return true;
   }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   return false;
 }
 
 void ChromeAutocompleteProviderClient::OpenLensOverlay(bool show) {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* lens_search_controller =
           GetLensSearchController(GetWebContents(web_contents_getter_))) {
     if (show) {
@@ -772,21 +711,18 @@ void ChromeAutocompleteProviderClient::OpenLensOverlay(bool show) {
           lens::LensOverlayInvocationSource::kOmnibox);
     }
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::IssueContextualSearchRequest(
     const GURL& destination_url,
     AutocompleteMatchType::Type match_type,
     bool is_zero_prefix_suggestion) {
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* lens_search_controller =
           GetLensSearchController(GetWebContents(web_contents_getter_))) {
     lens_search_controller->IssueContextualSearchRequest(
         lens::LensOverlayInvocationSource::kOmniboxContextualSuggestion,
         destination_url, match_type, is_zero_prefix_suggestion);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeAutocompleteProviderClient::PromptPageTranslation() {}

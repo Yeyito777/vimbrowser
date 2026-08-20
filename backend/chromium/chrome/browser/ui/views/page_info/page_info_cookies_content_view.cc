@@ -31,9 +31,6 @@
 #include "ui/views/vector_icons.h"
 #include "ui/views/view_class_properties.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/views/accessibility/non_accessible_image_view.h"
-#endif
 
 namespace {
 
@@ -160,9 +157,6 @@ PageInfoCookiesContentView::PageInfoCookiesContentView(PageInfo* presenter)
 
   AddThirdPartyCookiesContainer();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  MaybeAddSyncDisclaimer();
-#endif
 
   // We need the container to have a placeholder to put the buttons in,
   // to ensure the views order.
@@ -483,69 +477,3 @@ void PageInfoCookiesContentView::AddThirdPartyCookiesContainer() {
   third_party_cookies_enforced_icon_ = third_party_cookies_row_->AddControl(
       std::make_unique<views::ImageView>());
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-void PageInfoCookiesContentView::MaybeAddSyncDisclaimer() {
-  if (!presenter_->ShouldSyncCookiesForCurrentUrl()) {
-    return;
-  }
-
-  const ChromeLayoutProvider* layout_provider = ChromeLayoutProvider::Get();
-  AddChildView(
-      PageInfoViewFactory::CreateSeparator(layout_provider->GetDistanceMetric(
-          DISTANCE_HORIZONTAL_SEPARATOR_PADDING_PAGE_INFO_VIEW)));
-
-  // Cookie sync disclaimer consists of an enterprise icon and a text with a
-  // link to Chrome Sync settings.
-  cookies_sync_container_ =
-      AddChildView(std::make_unique<views::BoxLayoutView>());
-  cookies_sync_container_->SetOrientation(
-      views::BoxLayout::Orientation::kHorizontal);
-  const auto button_insets = layout_provider->GetInsetsMetric(
-      ChromeInsetsMetric::INSETS_PAGE_INFO_HOVER_BUTTON);
-  cookies_sync_container_->SetProperty(views::kMarginsKey, button_insets);
-  // Make the distance between the icon and the text be the same as in
-  // RichHoverButton. For consistency with children of
-  // `cookies_buttons_container_view_`.
-  const int child_spacing = layout_provider->GetDistanceMetric(
-      DISTANCE_RICH_HOVER_BUTTON_ICON_HORIZONTAL);
-  cookies_sync_container_->SetBetweenChildSpacing(child_spacing);
-
-  // Add the enterprise icon.
-  cookies_sync_icon_ = cookies_sync_container_->AddChildView(
-      std::make_unique<NonAccessibleImageView>());
-  const int icon_size = GetLayoutConstant(LayoutConstant::kPageInfoIconSize);
-  cookies_sync_icon_->SetImageSize({icon_size, icon_size});
-  cookies_sync_icon_->SetImage(
-      PageInfoViewFactory::GetImageModel(vector_icons::kBusinessIcon));
-
-  // Add the description.
-  cookies_sync_description_ = cookies_sync_container_->AddChildView(
-      std::make_unique<views::StyledLabel>());
-  cookies_sync_description_->SetDefaultTextStyle(views::style::STYLE_BODY_3);
-  cookies_sync_description_->SetID(
-      PageInfoViewFactory::VIEW_ID_PAGE_INFO_COOKIES_SYNC);
-  cookies_sync_description_->SetDefaultEnabledColorId(kColorPageInfoForeground);
-  cookies_sync_description_->SizeToFit(PageInfoViewFactory::kMinBubbleWidth -
-                                       button_insets.width() - icon_size -
-                                       child_spacing);
-  cookies_sync_description_->SetHorizontalAlignment(
-      gfx::HorizontalAlignment::ALIGN_LEFT);
-
-  std::u16string sync_settings_text_for_link =
-      l10n_util::GetStringUTF16(IDS_PAGE_INFO_SYNC_SETTINGS_LINK);
-  size_t offset;
-  cookies_sync_description_->SetText(
-      l10n_util::GetStringFUTF16(IDS_PAGE_INFO_COOKIE_SYNC_DESCRIPTION,
-                                 sync_settings_text_for_link, &offset));
-
-  // Add the link to Chrome Sync settings.
-  gfx::Range link_range(offset, offset + sync_settings_text_for_link.length());
-  views::StyledLabel::RangeStyleInfo link_style =
-      views::StyledLabel::RangeStyleInfo::CreateForLink(base::BindRepeating(
-          &PageInfoCookiesContentView::SyncSettingsLinkClicked,
-          base::Unretained(this)));
-  link_style.text_style = views::style::STYLE_LINK_3;
-  cookies_sync_description_->AddStyleRange(link_range, link_style);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)

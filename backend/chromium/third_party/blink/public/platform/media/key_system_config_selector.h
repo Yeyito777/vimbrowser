@@ -96,11 +96,6 @@ class BLINK_PLATFORM_EXPORT KeySystemConfigSelector {
   void OnPermissionResult(std::unique_ptr<SelectionRequest> request,
                           bool is_permission_granted);
 
-#if BUILDFLAG(IS_WIN)
-  void OnHardwareSecureDecryptionAllowedResult(
-      std::unique_ptr<SelectionRequest> request,
-      bool is_hardware_secure_decryption_allowed);
-#endif  // BUILDFLAG(IS_WIN)
 
   ConfigurationSupport GetSupportedConfiguration(
       const std::string& key_system,

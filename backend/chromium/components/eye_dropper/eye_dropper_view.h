@@ -19,18 +19,11 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/views/widget/widget_delegate.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/scoped_observation.h"
-#include "ui/aura/window_observer.h"
-#endif
 
 namespace eye_dropper {
 
 // EyeDropperView is used on Aura platforms.
 class EyeDropperView : public content::EyeDropper,
-#if BUILDFLAG(IS_CHROMEOS)
-                       public aura::WindowObserver,
-#endif
                        public views::WidgetDelegateView {
   METADATA_HEADER(EyeDropperView, views::WidgetDelegateView)
 
@@ -56,11 +49,6 @@ class EyeDropperView : public content::EyeDropper,
   void WindowClosing() override;
   void OnWidgetMove() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // aura::WindowObserver:
-  void OnWindowAddedToRootWindow(aura::Window* window) override;
-  void OnWindowDestroying(aura::Window* window) override;
-#endif
 
  private:
   class ViewPositionHandler;
@@ -118,10 +106,6 @@ class EyeDropperView : public content::EyeDropper,
   gfx::Point last_cursor_position_ =
       display::Screen::Get()->GetCursorScreenPoint();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::ScopedObservation<aura::Window, aura::WindowObserver>
-      window_observation_{this};
-#endif
 };
 
 }  // namespace eye_dropper

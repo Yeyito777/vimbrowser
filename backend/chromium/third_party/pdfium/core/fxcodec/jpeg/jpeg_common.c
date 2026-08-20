@@ -86,11 +86,3 @@ void jpeg_common_error_fatal(j_common_ptr cinfo) {
   JpegCommon* pCommon = (JpegCommon*)(cinfo->client_data);
   longjmp(pCommon->jmpbuf, -1);
 }
-
-#if BUILDFLAG(IS_WIN)
-void jpeg_common_dest_do_nothing(j_compress_ptr cinfo) {}
-
-boolean jpeg_common_dest_empty(j_compress_ptr cinfo) {
-  return FALSE;
-}
-#endif  // BUILDFLAG(IS_WIN)

@@ -42,9 +42,5 @@ static_library("test") {
     "//url",
   ]
 
-  if (is_ios) {
-    sources += [ "thumbnail_ios.mm" ]
-  } else {
-    sources += [ "thumbnail.cc" ]
-  }
+  sources += [ "thumbnail.cc" ]
 }

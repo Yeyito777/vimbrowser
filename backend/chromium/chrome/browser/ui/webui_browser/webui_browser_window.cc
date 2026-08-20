@@ -48,9 +48,6 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/system_web_apps/system_web_app_ui_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -295,16 +292,7 @@ void WebUIBrowserWindow::SetZOrderLevel(ui::ZOrderLevel order) {
 }
 
 gfx::NativeWindow WebUIBrowserWindow::GetNativeWindow() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Ash ChromeOS has a UaF on widget's aura::Window during browser shutdown.
-  // The window is stored in apps::InstanceRegistry which becomes dangling after
-  // the BrowserWindow is destroyed.
-  // TODO(webium): Fix ChromeOS. Run WebUIBrowserTest.StartupAndShutdown
-  // to verify.
-  return gfx::NativeWindow();
-#else
   return widget_->GetNativeWindow();
-#endif
 }
 
 bool WebUIBrowserWindow::IsOnCurrentWorkspace() const {
@@ -379,12 +367,6 @@ ui::ColorProviderKey WebUIBrowserWindow::GetColorProviderKey() const {
 
   key.app_controller = browser_->app_controller();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS SystemWebApps use the OS theme all the time.
-  if (ash::IsSystemWebApp(browser_)) {
-    return key;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const auto* theme_service =
       ThemeServiceFactory::GetForProfile(browser_->profile());
@@ -443,11 +425,6 @@ ui::ColorProviderKey WebUIBrowserWindow::GetColorProviderKey() const {
   // TODO(webium): special windows might need FrameType::kNative.
   key.frame_type = ui::ColorProviderKey::FrameType::kChromium;
 
-#if BUILDFLAG(IS_WIN)
-  if (theme_service && theme_service->UsingDeviceTheme()) {
-    key.frame_style = ui::ColorProviderKey::FrameStyle::kSystem;
-  }
-#endif
 
   return key;
 }
@@ -550,11 +527,6 @@ bool WebUIBrowserWindow::FindCommandIdForAccelerator(
 void WebUIBrowserWindow::LoadAccelerators() {
   // Let's fill our own accelerator table.
   const bool is_app_mode = IsRunningInForcedAppMode();
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool is_captive_portal_signin_window =
-      browser_->profile()->IsOffTheRecord() &&
-      browser_->profile()->GetOTRProfileID().IsCaptivePortal();
-#endif
   for (const auto& entry : GetAcceleratorList()) {
     // In app mode, only allow accelerators of allowlisted commands to pass
     // through.
@@ -563,22 +535,6 @@ void WebUIBrowserWindow::LoadAccelerators() {
       continue;
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (is_captive_portal_signin_window) {
-      int command = entry.command_id;
-      // Captive portal signin uses an OTR profile without history.
-      if (command == IDC_SHOW_HISTORY) {
-        continue;
-      }
-      // The NewTab command expects navigation to occur in the same browser
-      // window. For captive portal signin this is not the case, so hide these
-      // to reduce confusion.
-      if (command == IDC_NEW_TAB || command == IDC_NEW_TAB_TO_RIGHT ||
-          command == IDC_CREATE_NEW_TAB_GROUP) {
-        continue;
-      }
-    }
-#endif
 
     ui::Accelerator accelerator(entry.keycode, entry.modifiers);
     accelerator_table_[accelerator] = entry.command_id;
@@ -892,17 +848,11 @@ WebUIBrowserWindow::ShowSendTabToSelfPromoBubble(content::WebContents* contents,
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebUIBrowserWindow::ToggleMultitaskMenu() {
-  NOTIMPLEMENTED_LOG_ONCE();
-}
-#else
 sharing_hub::SharingHubBubbleView* WebUIBrowserWindow::ShowSharingHubBubble(
     share::ShareAttempt attempt) {
   NOTIMPLEMENTED_LOG_ONCE();
   return nullptr;
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 DownloadBubbleUIController*
 WebUIBrowserWindow::GetDownloadBubbleUIController() {

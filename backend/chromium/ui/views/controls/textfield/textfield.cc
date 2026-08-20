@@ -83,9 +83,6 @@
 #include "ui/views/widget/widget.h"
 #include "ui/wm/core/coordinate_conversion.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/base/ime/linux/text_edit_command_auralinux.h"
@@ -102,12 +99,6 @@
 #include "ui/ozone/public/platform_gl_egl_utility.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/aura/window.h"
-#include "ui/base/ime/ash/extension_ime_util.h"
-#include "ui/base/ime/ash/input_method_manager.h"
-#include "ui/wm/core/ime_util_chromeos.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/views/touchui/touch_selection_controller_impl.h"
@@ -753,9 +744,7 @@ bool Textfield::OnMousePressed(const ui::MouseEvent& event) {
     if (!had_focus) {
       RequestFocusWithPointer(ui::EventPointerType::kMouse);
     }
-#if !BUILDFLAG(IS_WIN)
     ShowVirtualKeyboardIfEnabled();
-#endif
   }
 
   if (ui::Clipboard::IsSupportedClipboardBuffer(
@@ -1221,10 +1210,6 @@ void Textfield::OnBlur() {
 
   if (GetInputMethod()) {
     GetInputMethod()->DetachTextInputClient(this);
-#if BUILDFLAG(IS_CHROMEOS)
-    wm::RestoreWindowBoundsOnClientFocusLost(
-        GetNativeView()->GetToplevelWindow());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   StopBlinkingCursor();
   cursor_view_->SetVisible(false);
@@ -1795,20 +1780,6 @@ gfx::Rect Textfield::GetSelectionBoundingBox() const {
   return gfx::Rect();
 }
 
-#if BUILDFLAG(IS_WIN)
-std::optional<gfx::Rect> Textfield::GetProximateCharacterBounds(
-    const gfx::Range& range) const {
-  NOTIMPLEMENTED_LOG_ONCE();
-  return std::nullopt;
-}
-
-std::optional<size_t> Textfield::GetProximateCharacterIndexFromPoint(
-    const gfx::Point& screen_point_in_dips,
-    ui::IndexFromPointFlags flags) const {
-  NOTIMPLEMENTED_LOG_ONCE();
-  return std::nullopt;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool Textfield::GetCompositionCharacterBounds(size_t index,
                                               gfx::Rect* rect) const {
@@ -1962,10 +1933,6 @@ void Textfield::ExtendSelectionAndDelete(size_t before, size_t after) {
 }
 
 void Textfield::EnsureCaretNotInRect(const gfx::Rect& rect_in_screen) {
-#if BUILDFLAG(IS_CHROMEOS)
-  aura::Window* top_level_window = GetNativeView()->GetToplevelWindow();
-  wm::EnsureWindowNotInRect(top_level_window, rect_in_screen);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool Textfield::IsTextEditCommandEnabled(ui::TextEditCommand command) const {
@@ -2107,41 +2074,6 @@ bool Textfield::SetCompositionFromExistingText(
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-gfx::Range Textfield::GetAutocorrectRange() const {
-  // TODO(b/316461955): Implement autocorrect UI for native fields.
-  NOTIMPLEMENTED_LOG_ONCE();
-  return gfx::Range();
-}
-
-gfx::Rect Textfield::GetAutocorrectCharacterBounds() const {
-  // TODO(b/316461955): Implement autocorrect UI for native fields.
-  NOTIMPLEMENTED_LOG_ONCE();
-  return gfx::Rect();
-}
-
-bool Textfield::SetAutocorrectRange(const gfx::Range& range) {
-  if (!range.is_empty()) {
-    base::UmaHistogramEnumeration("InputMethod.Assistive.Autocorrect.Count",
-                                  TextInputClient::SubClass::kTextField);
-  }
-  // TODO(b/316461955): Implement autocorrect UI for native fields.
-  NOTIMPLEMENTED_LOG_ONCE();
-  return false;
-}
-
-bool Textfield::AddGrammarFragments(
-    const std::vector<ui::GrammarFragment>& fragments) {
-  if (!fragments.empty()) {
-    base::UmaHistogramEnumeration("InputMethod.Assistive.Grammar.Count",
-                                  TextInputClient::SubClass::kTextField);
-  }
-  // TODO(crbug.com/40178699): Implement this method for CrOS Grammar.
-  NOTIMPLEMENTED_LOG_ONCE();
-  return false;
-}
-
-#endif
 
 void Textfield::GetActiveTextInputControlLayoutBounds(
     std::optional<gfx::Rect>* control_bounds,
@@ -2151,14 +2083,6 @@ void Textfield::GetActiveTextInputControlLayoutBounds(
   *control_bounds = origin;
 }
 
-#if BUILDFLAG(IS_WIN)
-// TODO(crbug.com/41452689): Implement this method once TSF supports
-// reconversion features on native text fields.
-void Textfield::SetActiveCompositionForAccessibility(
-    const gfx::Range& range,
-    const std::u16string& active_composition_text,
-    bool is_composition_committed) {}
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Textfield, views::ViewObserver overrides:
@@ -2478,11 +2402,6 @@ void Textfield::RequestFocusWithPointer(ui::EventPointerType pointer_type) {
 
 void Textfield::RequestFocusForGesture(const ui::GestureEventDetails& details) {
   bool show_virtual_keyboard = true;
-#if BUILDFLAG(IS_WIN)
-  show_virtual_keyboard =
-      details.primary_pointer_type() == ui::EventPointerType::kTouch ||
-      details.primary_pointer_type() == ui::EventPointerType::kPen;
-#endif
 
   RequestFocusWithPointer(details.primary_pointer_type());
   if (show_virtual_keyboard) {
@@ -2611,11 +2530,6 @@ ui::TextEditCommand Textfield::GetCommandForKeyEvent(
 #endif
     case ui::VKEY_BACK:
       if (!control) {
-#if BUILDFLAG(IS_WIN)
-        if (alt) {
-          return shift ? ui::TextEditCommand::REDO : ui::TextEditCommand::UNDO;
-        }
-#endif
         return ui::TextEditCommand::DELETE_BACKWARD;
       }
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)

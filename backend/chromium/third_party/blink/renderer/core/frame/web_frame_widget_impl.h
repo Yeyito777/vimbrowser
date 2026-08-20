@@ -481,14 +481,7 @@ class CORE_EXPORT WebFrameWidgetImpl
                          ui::mojom::blink::DragOperation,
                          base::OnceClosure callback) override;
   void OnStartStylusWriting(
-#if BUILDFLAG(IS_WIN)
-      const gfx::Rect& focus_widget_rect_in_dips,
-#endif  // BUILDFLAG(IS_WIN)
       OnStartStylusWritingCallback callback) override;
-#if BUILDFLAG(IS_ANDROID)
-  void PassImeRenderWidgetHost(
-      mojo::PendingRemote<mojom::blink::ImeRenderWidgetHost>) override;
-#endif
   void NotifyClearedDisplayedGraphics() override;
 
   // mojom::blink::FrameWidgetInputHandler overrides:
@@ -737,11 +730,6 @@ class CORE_EXPORT WebFrameWidgetImpl
 
   // Ask compositor to create the shared memory for dropped frames ukm region.
   base::ReadOnlySharedMemoryRegion CreateSharedMemoryForDroppedFramesUkm();
-#if BUILDFLAG(IS_ANDROID)
-  // Calculate and cache the most up to date line bounding boxes in the document
-  // coordinate space.
-  Vector<gfx::Rect> CalculateVisibleLineBoundsOnScreen();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Returns true if this widget corresponds to a frame which is being replaced.
   // The compositor for the widget has been detached and passed to the new
@@ -938,14 +926,6 @@ class CORE_EXPORT WebFrameWidgetImpl
       WaitForPageScaleAnimationForTestingCallback callback) override;
   void MoveCaret(const gfx::Point& point_in_dips) override;
 
-#if BUILDFLAG(IS_IOS)
-  void StartAutoscrollForSelectionToPoint(
-      const gfx::PointF& point_in_dips) override;
-  void StopAutoscroll() override;
-
-  void RectForEditFieldChars(const gfx::Range& range,
-                             RectForEditFieldCharsCallback callback) override;
-#endif  // BUILDFLAG(IS_IOS)
 
   void SelectAroundCaret(mojom::blink::SelectionGranularity granularity,
                          bool should_show_handle,
@@ -1073,13 +1053,6 @@ class CORE_EXPORT WebFrameWidgetImpl
   void NotifyLatchedScrollMarkerGroup(
       const cc::CompositorCommitData& commit_data);
 
-#if BUILDFLAG(IS_WIN)
-  // Computes a contiguous range of character bounds within proximity of
-  // `pivot_position` to enable gesture support for StylusHandwritingWin.
-  mojom::blink::ProximateCharacterRangeBoundsPtr
-  ComputeProximateCharacterBounds(
-      const PositionWithAffinity& pivot_position) const;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Stores the last cursor anchor info calculated for the currently focused
   // editable element.

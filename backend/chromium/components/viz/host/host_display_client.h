@@ -48,26 +48,17 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
 
   void CreateLayeredWindowUpdater(
       mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
-#if BUILDFLAG(IS_WIN)
-  void AddChildWindowToBrowser(gpu::SurfaceHandle child_window) override;
-#endif
 
 #if BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
   void DidCompleteSwapWithNewSize(const gfx::Size& size) override;
 #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetPreferredRefreshRate(float refresh_rate) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   mojo::Receiver<mojom::DisplayClient> receiver_{this};
 #if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_WIN)
   gfx::AcceleratedWidget widget_;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<LayeredWindowUpdaterImpl> layered_window_updater_;
-#endif
 };
 
 }  // namespace viz

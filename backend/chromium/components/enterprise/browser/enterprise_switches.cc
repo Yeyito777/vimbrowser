@@ -8,11 +8,9 @@
 
 namespace switches {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Enables the Chrome Browser Cloud Management integration on Chromium builds.
 // CBCM is always enabled in branded builds.
 const char kEnableChromeBrowserCloudManagement[] =
     "enable-chrome-browser-cloud-management";
-#endif
 
 }  // namespace switches

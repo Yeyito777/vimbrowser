@@ -41,14 +41,10 @@ namespace {
 static constexpr int kTooltipMaxWidth = 800;
 
 bool CanUseTranslucentTooltipWidget() {
-#if BUILDFLAG(IS_WIN)
-  return false;
-#else
   // On Linux, when using the toolkit theme (eg. Adwaita, the default GTK
   // theme), tooltips may be translucent. This must be indicated to the Wayland
   // compositor to prevent visual artifacts such as flickering.
   return true;
-#endif
 }
 
 bool ShouldIgnoreScreenBounds() {

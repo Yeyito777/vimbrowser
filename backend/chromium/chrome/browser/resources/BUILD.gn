@@ -93,16 +93,6 @@ group("resources") {
     public_deps += [ "media_router/cast_feedback:resources" ]
   }
 
-  if (is_chromeos) {
-    public_deps += [
-      "ash/extended_updates:resources",
-      "ash/inline_login:resources",
-      "ash/settings:resources",
-      "chromeos:resources",
-      "chromeos/dlp_internals:resources",
-    ]
-  }
-
   if (enable_extensions) {
     public_deps += [
       "accessibility:reading_mode_gdocs_extension_resources",
@@ -136,16 +126,10 @@ group("resources") {
     ]
   }
 
-  if (!is_chromeos) {
-    public_deps += [
-      "default_browser/default_browser_modal:resources",
-      "signin/profile_picker:resources",
-    ]
-  }
-
-  if (is_win) {
-    public_deps += [ "inline_login:resources" ]
-  }
+  public_deps += [
+    "default_browser/default_browser_modal:resources",
+    "signin/profile_picker:resources",
+  ]
 
   if (enable_dice_support) {
     public_deps += [
@@ -168,11 +152,7 @@ group("resources") {
   }
 
   if (enable_print_preview) {
-    if (is_chromeos) {
-      public_deps += [ "ash/print_preview:resources" ]
-    } else {
-      public_deps += [ "print_preview:resources" ]
-    }
+    public_deps += [ "print_preview:resources" ]
   }
 
   if (enable_webui_certificate_viewer) {
@@ -221,13 +201,6 @@ if (enable_extensions_core) {
 
     # Some resources within component_extension_resources.grd are generated at
     # build time so we include them as explicit dependencies here
-    if (is_chromeos) {
-      deps = [
-        "chromeos/accessibility/braille_ime:build_ts",
-        "chromeos/contact_center_insights:generate_ccaas_deps",
-        "chromeos/desk_api:generate_desk_api_bundle",
-      ]
-    }
 
     outputs = [
       "grit/component_extension_resources.h",
@@ -250,20 +223,6 @@ grit("app_icon_resources") {
     "app_icon_resources_200_percent.pak",
   ]
   output_dir = "$root_gen_dir/chrome"
-}
-
-if (is_chromeos) {
-  grit("office_web_app_resources") {
-    source = "office_web_app/resources.grd"
-    defines = chrome_grit_defines
-    outputs = [
-      "grit/office_web_app_resources.h",
-      "grit/office_web_app_resources_map.cc",
-      "grit/office_web_app_resources_map.h",
-      "office_web_app_resources.pak",
-    ]
-    output_dir = "$root_gen_dir/chrome"
-  }
 }
 
 if (is_chrome_branded) {

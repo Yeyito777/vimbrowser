@@ -26,9 +26,6 @@
 #include "components/tab_groups/tab_group_visual_data.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace tab_groups {
 class CollaborationFinder;
@@ -145,12 +142,6 @@ class TabGroupSyncService : public KeyedService, public base::SupportsUserData {
   using TabGroupSharingCallback =
       base::OnceCallback<void(TabGroupSharingResult)>;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns a Java object of the type TabGroupSyncService for the given
-  // TabGroupSyncService.
-  static base::android::ScopedJavaLocalRef<jobject> GetJavaObject(
-      TabGroupSyncService* tab_group_sync_service);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   TabGroupSyncService() = default;
   ~TabGroupSyncService() override = default;

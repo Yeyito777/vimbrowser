@@ -166,10 +166,7 @@ class AnnounceTextView : public View {
   }
 
   void UpdateAccessibleRole(ax::mojom::Role announce_role) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS, kAlert role can invoke an unnecessary event on reparenting.
-    GetViewAccessibility().SetRole(ax::mojom::Role::kStaticText);
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     // TODO(crbug.com/40658933): Use live regions (do not use alerts).
     // May require setting kLiveStatus, kContainerLiveStatus to "polite".
     GetViewAccessibility().SetRole(ax::mojom::Role::kAlert);

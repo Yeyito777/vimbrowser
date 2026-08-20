@@ -49,11 +49,6 @@
 #include "third_party/metrics_proto/user_action_event.pb.h"
 
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/current_module.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
@@ -86,11 +81,6 @@ void LogMetadata::AddSampleCount(base::HistogramBase::Count32 sample_count) {
 
 namespace {
 
-#if BUILDFLAG(IS_IOS)
-// The foreground/background ID. When a MetricsLog instance is created, its
-// `fg_bg_id` system profile field will be set to this value.
-static int g_fg_bg_id_counter = 1;
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
 // Convenience function to return the given time at a resolution in seconds.
 static int64_t ToMonotonicSeconds(base::TimeTicks time_ticks) {
@@ -320,16 +310,6 @@ int64_t MetricsLog::GetCurrentTime() {
   return ToMonotonicSeconds(base::TimeTicks::Now());
 }
 
-#if BUILDFLAG(IS_IOS)
-// static
-void MetricsLog::IncrementFgBgId() {
-  g_fg_bg_id_counter++;
-}
-
-void MetricsLog::ClearFgBgId() {
-  uma_proto_.mutable_system_profile()->clear_fg_bg_id();
-}
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
 void MetricsLog::AssignFinalizedRecordId(PrefService* local_state) {
   DCHECK(!uma_proto_.has_finalized_record_id());
@@ -414,9 +394,6 @@ void MetricsLog::RecordCoreSystemProfile(
 
   system_profile->set_session_hash(GetSessionHash());
 
-#if BUILDFLAG(IS_IOS)
-  system_profile->set_fg_bg_id(g_fg_bg_id_counter);
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
   metrics::SystemProfileProto::Hardware* hardware =
       system_profile->mutable_hardware();
@@ -427,31 +404,19 @@ void MetricsLog::RecordCoreSystemProfile(
   }
   hardware->set_system_ram_mb(base::SysInfo::AmountOfPhysicalMemory().InMiB());
   hardware->set_hardware_class(base::SysInfo::HardwareModelName());
-#if BUILDFLAG(IS_WIN)
-  hardware->set_dll_base(reinterpret_cast<uint64_t>(CURRENT_MODULE()));
-#endif
 
   metrics::SystemProfileProto::OS* os = system_profile->mutable_os();
-#if BUILDFLAG(IS_CHROMEOS)
-  os->set_name("CrOS");
-#else
   os->set_name(base::SysInfo::OperatingSystemName());
-#endif
   os->set_version(base::SysInfo::OperatingSystemVersion());
 
 // On ChromeOS, KernelVersion refers to the Linux kernel version and
 // OperatingSystemVersion refers to the ChromeOS release version.
-#if BUILDFLAG(IS_CHROMEOS)
-  os->set_kernel_version(base::SysInfo::KernelVersion());
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Linux operating system version is copied over into kernel version to be
   // consistent.
   os->set_kernel_version(base::SysInfo::OperatingSystemVersion());
 #endif
 
-#if BUILDFLAG(IS_IOS)
-  os->set_build_number(base::SysInfo::GetIOSBuildNumber());
-#endif
 
 #if BUILDFLAG(IS_LINUX)
   std::unique_ptr<base::Environment> env = base::Environment::Create();
@@ -649,12 +614,5 @@ void MetricsLog::TruncateEvents() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void MetricsLog::SetUserId(const std::string& user_id) {
-  uint64_t hashed_user_id = Hash(user_id);
-  uma_proto_.set_user_id(hashed_user_id);
-  log_metadata_.user_id = hashed_user_id;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace metrics

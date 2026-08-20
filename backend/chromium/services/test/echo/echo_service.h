@@ -32,12 +32,6 @@ class EchoService : public mojom::EchoService {
                                 base::UnsafeSharedMemoryRegion region) override;
   void Quit() override;
   void Crash() override;
-#if BUILDFLAG(IS_WIN)
-  void DelayLoad() override;
-  void LoadNativeLibrary(const ::base::FilePath& library,
-                         bool call_winmm_fn,
-                         LoadNativeLibraryCallback callback) override;
-#endif
 
   void DecryptEncrypt(os_crypt_async::Encryptor encryptor,
                       const std::vector<uint8_t>& input,

@@ -27,9 +27,6 @@
 #include "extensions/common/extension_id.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/file_manager/path_util.h"
-#endif
 
 namespace image_writer_api = extensions::api::image_writer_private;
 
@@ -60,14 +57,9 @@ void OperationManager::StartWriteFromUrl(
     const std::string& hash,
     const std::string& device_path,
     Operation::StartWriteCallback callback) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS can only support a single operation at a time.
-  if (operations_.size() > 0) {
-#else
   auto existing_operation = operations_.find(extension_id);
 
   if (existing_operation != operations_.end()) {
-#endif
 
     std::move(callback).Run(false, error::kOperationAlreadyInProgress);
     return;
@@ -94,14 +86,9 @@ void OperationManager::StartWriteFromFile(
     const base::FilePath& path,
     const std::string& device_path,
     Operation::StartWriteCallback callback) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS can only support a single operation at a time.
-  if (operations_.size() > 0) {
-#else
   auto existing_operation = operations_.find(extension_id);
 
   if (existing_operation != operations_.end()) {
-#endif
     std::move(callback).Run(false, error::kOperationAlreadyInProgress);
     return;
   }
@@ -203,12 +190,7 @@ void OperationManager::OnError(const ExtensionId& extension_id,
 }
 
 base::FilePath OperationManager::GetAssociatedDownloadFolder() {
-#if BUILDFLAG(IS_CHROMEOS)
-  Profile* profile = Profile::FromBrowserContext(browser_context_);
-  return file_manager::util::GetDownloadsFolderForProfile(profile);
-#else
   return base::FilePath();
-#endif
 }
 
 Operation* OperationManager::GetOperation(const ExtensionId& extension_id) {

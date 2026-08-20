@@ -20,13 +20,9 @@ import("//tools/grit/grit_rule.gni")
 import("//ui/base/ui_features.gni")
 import("//ui/qt/qt.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-} else if (is_mac) {
+if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//build/util/branding.gni")
-} else if (is_fuchsia) {
-  import("//build/config/fuchsia/config.gni")
 }
 
 build_ime = !is_ios
@@ -107,9 +103,7 @@ source_set("constants") {
 # (ideally none).
 source_set("types") {
   sources = [ "window_open_disposition.h" ]
-  if (!is_ios) {
-    sources += [ "ui_base_types.h" ]
-  }
+  sources += [ "ui_base_types.h" ]
 }
 
 component("base") {
@@ -220,63 +214,6 @@ component("base") {
 
   libs = []
 
-  if (is_win) {
-    sources += [
-      "dragdrop/drag_source_win.cc",
-      "dragdrop/drag_source_win.h",
-      "dragdrop/drop_target_win.cc",
-      "dragdrop/drop_target_win.h",
-      "dragdrop/os_exchange_data_provider_win.cc",
-      "dragdrop/os_exchange_data_provider_win.h",
-      "l10n/l10n_util_win.cc",
-      "l10n/l10n_util_win.h",
-      "resource/resource_bundle_win.cc",
-      "resource/resource_bundle_win.h",
-      "resource/resource_data_dll_win.cc",
-      "resource/resource_data_dll_win.h",
-      "win/accessibility_ids_win.h",
-      "win/atl_module.h",
-      "win/event_creation_utils.cc",
-      "win/event_creation_utils.h",
-      "win/foreground_helper.cc",
-      "win/foreground_helper.h",
-      "win/hidden_window.cc",
-      "win/hidden_window.h",
-      "win/hwnd_metrics.cc",
-      "win/hwnd_metrics.h",
-      "win/hwnd_subclass.cc",
-      "win/hwnd_subclass.h",
-      "win/internal_constants.h",
-      "win/lock_state.cc",
-      "win/lock_state.h",
-      "win/message_box_win.cc",
-      "win/message_box_win.h",
-      "win/mouse_wheel_util.cc",
-      "win/mouse_wheel_util.h",
-      "win/power_setting_change_listener.cc",
-      "win/power_setting_change_listener.h",
-      "win/scoped_ole_initializer.cc",
-      "win/scoped_ole_initializer.h",
-      "win/session_change_observer.cc",
-      "win/session_change_observer.h",
-      "win/shell.cc",
-      "win/shell.h",
-      "win/touch_input.cc",
-      "win/touch_input.h",
-      "win/win_cursor.cc",
-      "win/win_cursor.h",
-      "win/win_cursor_factory.cc",
-      "win/win_cursor_factory.h",
-      "win/window_event_target.cc",
-      "win/window_event_target.h",
-    ]
-    ldflags = [ "/DELAYLOAD:dwmapi.dll" ]
-    libs += [
-      "dwmapi.lib",
-      "wtsapi32.lib",
-    ]
-  }
-
   if (is_mac) {
     sources += [
       "cocoa/accessibility_focus_overrider.h",
@@ -342,18 +279,11 @@ component("base") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "device_form_factor_ios.mm",
-      "resource/resource_bundle_ios.mm",
-    ]
-  } else {
-    sources += [
-      "user_activity/user_activity_detector.cc",
-      "user_activity/user_activity_detector.h",
-      "user_activity/user_activity_observer.h",
-    ]
-  }
+  sources += [
+    "user_activity/user_activity_detector.cc",
+    "user_activity/user_activity_detector.h",
+    "user_activity/user_activity_observer.h",
+  ]
 
   if (use_blink) {
     sources += [
@@ -378,12 +308,10 @@ component("base") {
       "themed_vector_icon.h",
     ]
 
-    if (!is_ios) {
-      sources += [
-        "menu_source_utils.cc",
-        "menu_source_utils.h",
-      ]
-    }
+    sources += [
+      "menu_source_utils.cc",
+      "menu_source_utils.h",
+    ]
 
     if (is_linux || is_chromeos) {
       sources += [
@@ -391,13 +319,6 @@ component("base") {
         "accelerators/menu_label_accelerator_util_linux.h",
         "linux/linux_desktop.cc",
         "linux/linux_desktop.h",
-      ]
-    }
-
-    if (is_chromeos) {
-      sources += [
-        "accelerators/ash/quick_insert_event_property.cc",
-        "accelerators/ash/quick_insert_event_property.h",
       ]
     }
 
@@ -410,9 +331,7 @@ component("base") {
       ]
     }
 
-    if (is_win) {
-      sources += [ "pointer/pointer_device_win.cc" ]
-    } else if (is_ios && target_platform == "iphoneos") {
+    if (is_ios && target_platform == "iphoneos") {
       sources += [ "pointer/pointer_device_ios.cc" ]
     } else if (is_linux || is_chromeos) {
       sources += [ "pointer/pointer_device_linux.cc" ]
@@ -426,18 +345,8 @@ component("base") {
 
   if (is_mac) {
     sources += [ "accelerators/media_keys_listener_mac.mm" ]
-  } else if (is_win) {
-    sources += [
-      "accelerators/global_media_keys_listener_win.cc",
-      "accelerators/global_media_keys_listener_win.h",
-      "accelerators/media_keys_listener_win.cc",
-    ]
   } else {
     sources += [ "accelerators/media_keys_listener_stub.cc" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "resource/resource_bundle_fuchsia.cc" ]
   }
 
   configs += [
@@ -500,21 +409,6 @@ component("base") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "l10n/l10n_util_mac_bridge.h",
-      "l10n/l10n_util_mac_bridge.mm",
-    ]
-    public_deps += [ "//ui/events:event_constants" ]
-    deps += [
-      ":l10n_util_ios",
-      "//base",
-      "//ui/events",
-      "//ui/events:dom_keycode_converter",
-      "//ui/events:events_base",
-    ]
-  }
-
   if (use_blink) {
     deps += [
       "//cc/paint",
@@ -522,14 +416,6 @@ component("base") {
       "//ui/events/devices",
       "//ui/lottie",
     ]
-  }
-
-  if (is_win) {
-    public_deps += [
-      "//ui/base/cursor",
-      "//ui/base/cursor/mojom:cursor_type_shared",
-    ]
-    deps += [ "//ui/resources:ui_unscaled_resources_grd" ]
   }
 
   if (is_mac) {
@@ -601,21 +487,6 @@ component("base") {
       "nine_image_painter_factory.h",
     ]
   }
-
-  if (is_ios) {
-    sources -= [ "device_form_factor_desktop.cc" ]
-  }
-}
-
-if (is_ios) {
-  source_set("l10n_util_ios") {
-    sources = [
-      "l10n/l10n_util_ios.h",
-      "l10n/l10n_util_ios.mm",
-    ]
-    deps = [ "//base" ]
-    frameworks = [ "Foundation.framework" ]
-  }
 }
 
 component("data_exchange") {
@@ -652,13 +523,6 @@ component("features") {
     "ui_base_features.h",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "shortcut_mapping_pref_delegate.cc",
-      "shortcut_mapping_pref_delegate.h",
-    ]
-  }
-
   deps = [
     ":buildflags",
     "//base",
@@ -682,9 +546,7 @@ if (is_win || is_mac || is_linux || is_chromeos) {
       "//ui/snapshot",
     ]
 
-    if (!is_fuchsia) {
-      data_deps = [ ":goldctl" ]
-    }
+    data_deps = [ ":goldctl" ]
 
     # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
     # enable the diagnostic by removing this line.
@@ -699,9 +561,7 @@ if (use_blink) {
     # Because this links to a CIPD dependency, which is a symlink on Unix
     # platforms, refer to the actual executable rather than the whole directory;
     # copying the whole directory doesn't work, at least with "mb.py zip".
-    if (is_win) {
-      data += [ "//tools/skia_goldctl/win/goldctl.exe" ]
-    } else if (is_mac) {
+    if (is_mac) {
       data += [
         "//tools/skia_goldctl/mac_amd64/goldctl",
         "//tools/skia_goldctl/mac_arm64/goldctl",
@@ -749,37 +609,16 @@ static_library("test_support") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "test/ui_controls_internal_win.cc",
-      "test/ui_controls_internal_win.h",
-    ]
-  }
-
-  if (!is_ios) {
-    sources += [
-      "accelerators/test_accelerator_target.cc",
-      "accelerators/test_accelerator_target.h",
-      "test/mock_base_window.cc",
-      "test/mock_base_window.h",
-      "test/test_dialog_model_host.cc",
-      "test/test_dialog_model_host.h",
-      "test/ui_controls.cc",
-      "test/ui_controls.h",
-    ]
-  } else {
-    sources += [
-      "test/ios/ui_image_test_utils.h",
-      "test/ios/ui_image_test_utils.mm",
-    ]
-
-    if (target_platform == "iphoneos") {
-      sources += [
-        "test/ios/keyboard_appearance_listener.h",
-        "test/ios/keyboard_appearance_listener.mm",
-      ]
-    }
-  }
+  sources += [
+    "accelerators/test_accelerator_target.cc",
+    "accelerators/test_accelerator_target.h",
+    "test/mock_base_window.cc",
+    "test/mock_base_window.h",
+    "test/test_dialog_model_host.cc",
+    "test/test_dialog_model_host.h",
+    "test/ui_controls.cc",
+    "test/ui_controls.h",
+  ]
 
   if (use_aura && (is_win || is_chromeos || is_castos)) {
     sources += [
@@ -796,9 +635,7 @@ static_library("test_support") {
     "//ui/base/interaction:test_support",
   ]
 
-  if (!is_ios) {
-    public_deps += [ "//ui/base/mojom:ui_base_types" ]
-  }
+  public_deps += [ "//ui/base/mojom:ui_base_types" ]
 
   deps = [
     "//base",
@@ -814,13 +651,6 @@ static_library("test_support") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_ios) {
-    deps -= [
-      "//ui/events:events_base",
-      "//ui/events:test_support",
-    ]
-  }
-
   if (build_ime) {
     sources += [
       "ime/dummy_input_method.cc",
@@ -834,33 +664,6 @@ static_library("test_support") {
     deps += [
       "//ui/base/ime",
       "//ui/events",
-    ]
-
-    if (is_win) {
-      deps += [ "//ui/base/ime/win" ]
-    }
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "ime/ash/mock_component_extension_ime_manager.cc",
-      "ime/ash/mock_component_extension_ime_manager.h",
-      "ime/ash/mock_component_extension_ime_manager_delegate.cc",
-      "ime/ash/mock_component_extension_ime_manager_delegate.h",
-      "ime/ash/mock_ime_candidate_window_handler.cc",
-      "ime/ash/mock_ime_candidate_window_handler.h",
-      "ime/ash/mock_ime_engine_handler.cc",
-      "ime/ash/mock_ime_engine_handler.h",
-      "ime/ash/mock_ime_input_context_handler.cc",
-      "ime/ash/mock_ime_input_context_handler.h",
-      "ime/ash/mock_input_method_manager.cc",
-      "ime/ash/mock_input_method_manager.h",
-      "ime/ash/mock_input_method_manager_impl.cc",
-      "ime/ash/mock_input_method_manager_impl.h",
-    ]
-    deps += [
-      "//ui/base/ime/ash",
-      "//ui/base/ime/ash:typing_session_manager",
     ]
   }
 
@@ -895,15 +698,6 @@ copy("ui_base_test_resources_pak") {
   sources = [ "$target_gen_dir/ui_base_test_resources.pak" ]
   outputs = [ "$root_out_dir/ui_base_test_resources.pak" ]
   public_deps = [ ":ui_base_test_resources_grit" ]
-}
-
-if (is_ios) {
-  bundle_data("ui_base_test_bundle_data") {
-    testonly = true
-    public_deps = [ ":ui_base_test_resources_grit" ]
-    sources = [ "$target_gen_dir/ui_base_test_resources.pak" ]
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-  }
 }
 
 source_set("run_all_unittests") {
@@ -1006,9 +800,7 @@ test("ui_base_unittests") {
     deps += [ "//ui/base/unowned_user_data:unit_tests" ]
   }
 
-  if (!is_ios) {
-    sources += [ "user_activity/user_activity_detector_unittest.cc" ]
-  }
+  sources += [ "user_activity/user_activity_detector_unittest.cc" ]
 
   if (is_mac) {
     sources += [
@@ -1032,30 +824,21 @@ test("ui_base_unittests") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "l10n/l10n_util_ios_unittest.mm",
-      "l10n/l10n_util_mac_unittest.mm",
-      "test/ios/ui_image_test_utils_unittest.mm",
-    ]
-    deps += [ ":l10n_util_ios" ]
-  } else {  # !is_ios
-    sources += [
-      "accelerators/accelerator_manager_unittest.cc",
-      "accelerators/accelerator_map_unittest.cc",
-      "accelerators/accelerator_unittest.cc",
-      "accelerators/command_unittest.cc",
-      "accelerators/menu_label_accelerator_util_unittest.cc",
-      "models/dialog_model_menu_model_adapter_unittest.cc",
-      "models/dialog_model_unittest.cc",
-      "models/list_model_unittest.cc",
-      "models/list_selection_model_unittest.cc",
-      "models/tree_node_model_unittest.cc",
-      "text/bytes_formatting_unittest.cc",
-      "themed_vector_icon_unittest.cc",
-      "webui/web_ui_util_unittest.cc",
-    ]
-  }
+  sources += [
+    "accelerators/accelerator_manager_unittest.cc",
+    "accelerators/accelerator_map_unittest.cc",
+    "accelerators/accelerator_unittest.cc",
+    "accelerators/command_unittest.cc",
+    "accelerators/menu_label_accelerator_util_unittest.cc",
+    "models/dialog_model_menu_model_adapter_unittest.cc",
+    "models/dialog_model_unittest.cc",
+    "models/list_model_unittest.cc",
+    "models/list_selection_model_unittest.cc",
+    "models/tree_node_model_unittest.cc",
+    "text/bytes_formatting_unittest.cc",
+    "themed_vector_icon_unittest.cc",
+    "webui/web_ui_util_unittest.cc",
+  ]
 
   if (use_blink) {
     deps += [
@@ -1092,32 +875,6 @@ test("ui_base_unittests") {
       "//ui/base/ime:text_edit_commands",
       "//ui/base/ime/mojom:test_interfaces",
     ]
-    if (is_win) {
-      sources += [
-        "ime/win/on_screen_keyboard_display_manager_unittest.cc",
-        "ime/win/tsf_input_scope_unittest.cc",
-        "ime/win/tsf_text_store_unittest.cc",
-      ]
-      deps += [ "//ui/base/ime/win" ]
-    }
-    if (is_chromeos) {
-      sources += [
-        "dragdrop/os_exchange_data_provider_non_backed_unittest.cc",
-        "ime/ash/component_extension_ime_manager_unittest.cc",
-        "ime/ash/extension_ime_util_unittest.cc",
-        "ime/ash/ime_keyboard_unittest.cc",
-        "ime/ash/input_method_ash_unittest.cc",
-        "ime/ash/input_method_descriptor_unittest.cc",
-        "ime/ash/input_method_util_unittest.cc",
-        "ime/ash/typing_session_manager_unittest.cc",
-      ]
-      deps += [
-        "//ash/constants",
-        "//build:branding_buildflags",
-        "//ui/base/ime/ash",
-        "//ui/base/ime/ash:typing_session_manager",
-      ]
-    }
     if (is_linux && use_aura) {
       sources += [
         "dragdrop/os_exchange_data_provider_non_backed_unittest.cc",
@@ -1138,35 +895,13 @@ test("ui_base_unittests") {
   }
 
   # Include the correct ui_base_test resources per platform.
-  if (is_ios) {
-    deps += [ ":ui_base_test_bundle_data" ]
-  } else {
-    data += [ "$root_out_dir/ui_base_test_resources.pak" ]
-    data_deps += [ ":ui_base_test_resources_pak" ]
-  }
+  data += [ "$root_out_dir/ui_base_test_resources.pak" ]
+  data_deps += [ ":ui_base_test_resources_pak" ]
 
-  if (is_ios) {
-    deps += [ "//ui/resources:ui_test_pak_bundle_data" ]
-  } else {
-    deps += [
-      "//ui/base/accelerators/mojom:unittests",
-      "//ui/base/cursor/mojom:unittests",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "dragdrop/os_exchange_data_win_unittest.cc",
-      "view_prop_unittest.cc",
-      "win/hwnd_subclass_unittest.cc",
-      "win/win_cursor_factory_unittest.cc",
-    ]
-    deps += [
-      "//ui/base/cursor",
-      "//ui/base/cursor/mojom:cursor_type_shared",
-      "//ui/base/idle:unit_tests",
-    ]
-  }
+  deps += [
+    "//ui/base/accelerators/mojom:unittests",
+    "//ui/base/cursor/mojom:unittests",
+  ]
 
   if (use_pangocairo) {
     configs += [ "//build/config/linux/pangocairo" ]
@@ -1182,10 +917,6 @@ test("ui_base_unittests") {
       "//ui/events",
       "//ui/events/platform",
     ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ui/events:dom_keycode_converter" ]
   }
 
   if (is_linux || is_chromeos || is_mac || is_win || is_fuchsia) {
@@ -1260,18 +991,6 @@ if (is_mac) {
   }
 }
 
-if (is_win) {
-  # This source set is used by both //chrome/browser and
-  # //chrome/installer/setup.  It must have minimal dependencies for the latter
-  # (e.g., no skia).
-  source_set("fullscreen_win") {
-    sources = [
-      "fullscreen_win.cc",
-      "fullscreen_win.h",
-    ]
-  }
-}
-
 if (is_linux || is_chromeos) {
   # This source set defines linux wm role names and must not have any external
   # dependencies and be kept as minimal as possible.
@@ -1284,18 +1003,6 @@ if (is_linux || is_chromeos) {
 # be source_set, otherwise the linker will drop the tests as dead code.
 source_set("base_interactive_ui_tests") {
   testonly = true
-  if (is_win) {
-    sources =
-        [ "accelerators/global_media_keys_listener_win_interactive_test.cc" ]
-
-    deps = [
-      ":base",
-      ":test_support",
-      "//base/test:test_support",
-      "//testing/gtest",
-      "//ui/events",
-    ]
-  }
 }
 
 fuzzer_test("file_info_fuzzer") {

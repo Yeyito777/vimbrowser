@@ -553,11 +553,7 @@ GURL FamilyLinkUrlFilter::GetUnnormalizedEffectiveUrlToUnblock(
 
 GURL FamilyLinkUrlFilter::GetEffectiveUrlToUnblock(
     WebFilteringResult result) const {
-#if !BUILDFLAG(IS_CHROMEOS)
   return NormalizeUrl(GetUnnormalizedEffectiveUrlToUnblock(result));
-#else
-  return GetUnnormalizedEffectiveUrlToUnblock(result);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void FamilyLinkUrlFilter::GetFilteringBehavior(

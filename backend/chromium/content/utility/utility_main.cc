@@ -82,33 +82,12 @@
 
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/services/ime/ime_sandbox_hook.h"
-#include "chromeos/services/tts/tts_sandbox_hook.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/message_loop/message_pump_apple.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/debug/crash_logging.h"
-#include "base/native_library.h"
-#include "base/rand_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/synchronization/waitable_event.h"
-#include "base/win/scoped_com_initializer.h"
-#include "base/win/win_util.h"
-#include "base/win/windows_handle_util.h"
-#include "base/win/windows_version.h"
-#include "content/utility/sandbox_delegate_data.mojom.h"
-#include "sandbox/policy/win/sandbox_warmup.h"
-#include "sandbox/win/src/sandbox.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_WIN)
-sandbox::TargetServices* g_utility_target_services = nullptr;
-#endif  // BUILDFLAG(IS_WIN)
 
         // BUILDFLAG(IS_CHROMEOS))
 
@@ -162,46 +141,6 @@ bool ShouldUseAmdGpuPolicy(sandbox::mojom::Sandbox sandbox_type) {
 }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-// Handle pre-lockdown sandbox hooks
-bool PreLockdownSandboxHook(base::span<const uint8_t> delegate_blob) {
-  // TODO(crbug.com/40265190) Migrate other settable things to delegate_data.
-  CHECK(!delegate_blob.empty());
-  content::mojom::sandbox::UtilityConfigPtr sandbox_config;
-  if (!content::mojom::sandbox::UtilityConfig::Deserialize(
-          delegate_blob.data(), delegate_blob.size(), &sandbox_config)) {
-    NOTREACHED();
-  }
-  if (!sandbox_config->preload_libraries.empty()) {
-    for (const auto& library_path : sandbox_config->preload_libraries) {
-      CHECK(library_path.IsAbsolute());
-      base::NativeLibraryLoadError lib_error;
-      HMODULE h_mod = base::LoadNativeLibrary(library_path, &lib_error);
-      // We deliberately "leak" `h_mod` so that the module stays loaded.
-      if (!h_mod) {
-        // The browser should not request libraries that do not exist, so crash
-        // on failure. Record info to distinguish crash signatures.
-        base::debug::Alias(&lib_error);
-        std::string dll_name_str = base::WideToUTF8(library_path.value());
-        DEBUG_ALIAS_FOR_CSTR(dll_name, dll_name_str.c_str(), 256);
-        SCOPED_CRASH_KEY_STRING256("PreSandboxHook", "ModuleName", dll_name);
-
-        NOTREACHED();
-      }
-    }
-  }
-
-  HANDLE event =
-      base::win::Uint32ToHandle(sandbox_config->bootstrap_event_handle);
-
-  CHECK(event && event != INVALID_HANDLE_VALUE);
-  CHECK(::SetEvent(event));
-  // Close handle to ensure nothing can reset it after sandbox lockdown.
-  CHECK(::CloseHandle(event));
-
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void SetUtilityThreadName(const std::string& utility_sub_type) {
   // Typical utility sub-types are audio.mojom.AudioService or
@@ -246,11 +185,6 @@ int UtilityMain(MainFunctionParams parameters) {
   }
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // On Fuchsia always use IO threads to allow FIDL calls.
-  if (message_pump_type == base::MessagePumpType::DEFAULT)
-    message_pump_type = base::MessagePumpType::IO;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   // The main task executor of the utility process.
   base::SingleThreadTaskExecutor main_thread_task_executor(
@@ -347,14 +281,6 @@ int UtilityMain(MainFunctionParams parameters) {
       break;
 #endif  // BUILDFLAG(USE_LINUX_VIDEO_ACCELERATION)
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS)
-    case sandbox::mojom::Sandbox::kIme:
-      pre_sandbox_hook = base::BindOnce(&ash::ime::ImePreSandboxHook);
-      break;
-    case sandbox::mojom::Sandbox::kTts:
-      pre_sandbox_hook = base::BindOnce(&chromeos::tts::TtsPreSandboxHook);
-      break;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     default:
       break;
   }
@@ -387,61 +313,6 @@ int UtilityMain(MainFunctionParams parameters) {
     base::HangWatcher::GetInstance()->Start();
   }
 
-#elif BUILDFLAG(IS_WIN)
-  std::optional<base::win::ScopedCOMInitializer> scoped_com_initializer;
-  if (message_pump_type == base::MessagePumpType::UI) {
-    scoped_com_initializer.emplace();
-    CHECK(scoped_com_initializer->Succeeded());
-  }
-
-  g_utility_target_services = parameters.sandbox_info->target_services;
-
-  // Call hooks with data provided by UtilitySandboxedProcessLauncherDelegate.
-  // Must happen before IO thread to preempt any mojo services starting.
-  if (g_utility_target_services) {
-    auto delegate_data = g_utility_target_services->GetDelegateData();
-    if (delegate_data.has_value() && !delegate_data->empty()) {
-      PreLockdownSandboxHook(delegate_data.value());
-    }
-  }
-
-  auto sandbox_type =
-      sandbox::policy::SandboxTypeFromCommandLine(*parameters.command_line);
-  DVLOG(1) << "Sandbox type: " << static_cast<int>(sandbox_type);
-
-  // https://crbug.com/1076771 https://crbug.com/1075487 Premature unload of
-  // shell32 caused process to crash during process shutdown. See also a
-  // separate fix for https://crbug.com/1139752. Fixed in Windows 11.
-  if (base::win::GetVersion() < base::win::Version::WIN11) {
-    HMODULE shell32_pin = ::LoadLibrary(L"shell32.dll");
-    UNREFERENCED_PARAMETER(shell32_pin);
-  }
-
-  // Not all utility processes require DPI awareness as this context only
-  // pertains to certain workloads & impacted system API calls (e.g. UX
-  // scaling or per-monitor windowing). We do not blanket apply DPI awareness
-  // as utility processes running within a kService sandbox with the Win32K
-  // Lockdown policy applied may crash when calling EnableHighDPISupport. See
-  // crbug.com/978133.
-  if (sandbox_type == sandbox::mojom::Sandbox::kMediaFoundationCdm) {
-    // The Media Foundation Utility Process needs to be marked as DPI aware so
-    // the Media Engine & CDM can correctly identify the target monitor for
-    // video output. This is required to ensure that the proper monitor is
-    // queried for hardware capabilities & any settings are applied to the
-    // correct monitor.
-    base::win::EnableHighDPISupport();
-  }
-
-  if (!sandbox::policy::IsUnsandboxedSandboxType(sandbox_type) &&
-      sandbox_type != sandbox::mojom::Sandbox::kCdm &&
-      sandbox_type != sandbox::mojom::Sandbox::kMediaFoundationCdm) {
-    if (!g_utility_target_services)
-      return false;
-
-    sandbox::policy::WarmupRandomnessInfrastructure();
-
-    g_utility_target_services->LowerToken();
-  }
 #endif
 
   ChildProcess utility_process(base::ThreadType::kDefault);

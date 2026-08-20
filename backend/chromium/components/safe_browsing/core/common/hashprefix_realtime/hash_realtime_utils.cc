@@ -41,10 +41,6 @@ bool CanCheckUrl(const GURL& url) {
 
 bool IsHashDetailRelevant(const V5::FullHash::FullHashDetail& detail) {
   if (std::ranges::contains(detail.attributes(), V5::ThreatAttribute::CANARY)) {
-#if BUILDFLAG(IS_IOS)
-    // iOS doesn't support CANARY threat attribute.
-    return false;
-#else
     if (detail.threat_type() != V5::ThreatType::SOCIAL_ENGINEERING) {
       // CANARY should only be attached with SOCIAL_ENGINEERING,
       // ABUSIVE_EXPERIENCE_VIOLATION, BETTER_ADS_VIOLATION or API_ABUSE. Only
@@ -57,7 +53,6 @@ bool IsHashDetailRelevant(const V5::FullHash::FullHashDetail& detail) {
       // CANARY and FRAME_ONLY should not be set at the same time.
       return false;
     }
-#endif
   }
 
   switch (detail.threat_type()) {
@@ -150,15 +145,9 @@ HashRealTimeSelection DetermineHashRealTimeSelection(
   }
   return can_do_lookup
              ?
-#if BUILDFLAG(IS_ANDROID)
-             (only_background_lookup_eligible
-                  ? HashRealTimeSelection::kDatabaseManagerBackgroundOnly
-                  : HashRealTimeSelection::kDatabaseManager)
-#else
              (only_background_lookup_eligible
                   ? HashRealTimeSelection::kHashRealTimeServiceBackgroundOnly
                   : HashRealTimeSelection::kHashRealTimeService)
-#endif
              : HashRealTimeSelection::kNone;
 }
 

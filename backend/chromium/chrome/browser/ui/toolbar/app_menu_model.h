@@ -311,11 +311,6 @@ class AppMenuModel : public ui::SimpleMenuModel,
   // indicating whether any menu items were added.
   [[nodiscard]] bool AddSafetyHubMenuItem();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Disables/Enables the settings item based on kSystemFeaturesDisableList
-  // pref.
-  void UpdateSettingsItemState();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Time menu has been open. Used by LogMenuMetrics() to record the time
   // to action when the user selects a menu item.

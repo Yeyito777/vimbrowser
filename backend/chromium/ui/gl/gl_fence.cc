@@ -23,9 +23,6 @@
 #include "ui/gl/gl_fence_android_native_fence_sync.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gl/gl_fence_win.h"
-#endif
 
 namespace gl {
 
@@ -95,8 +92,6 @@ bool GLFence::IsGpuFenceSupported() {
 #if defined(USE_GL_FENCE_ANDROID_NATIVE_FENCE_SYNC)
   return gl::GLSurfaceEGL::GetGLDisplayEGL()
       ->IsAndroidNativeFenceSyncSupported();
-#elif BUILDFLAG(IS_WIN)
-  return gl::GLFenceWin::IsSupported();
 #else
   return false;
 #endif
@@ -108,8 +103,6 @@ std::unique_ptr<GLFence> GLFence::CreateFromGpuFence(
   DCHECK(IsGpuFenceSupported());
 #if defined(USE_GL_FENCE_ANDROID_NATIVE_FENCE_SYNC)
   return GLFenceAndroidNativeFenceSync::CreateFromGpuFence(gpu_fence);
-#elif BUILDFLAG(IS_WIN)
-  return GLFenceWin::CreateFromGpuFence(gpu_fence);
 #else
   NOTREACHED();
 #endif
@@ -120,8 +113,6 @@ std::unique_ptr<GLFence> GLFence::CreateForGpuFence() {
   DCHECK(IsGpuFenceSupported());
 #if defined(USE_GL_FENCE_ANDROID_NATIVE_FENCE_SYNC)
   return GLFenceAndroidNativeFenceSync::CreateForGpuFence();
-#elif BUILDFLAG(IS_WIN)
-  return GLFenceWin::CreateForGpuFence();
 #else
   NOTREACHED();
 #endif

@@ -21,9 +21,7 @@
 #include "build/build_config.h"
 #include "third_party/perfetto/include/perfetto/tracing/tracing.h"
 
-#if !BUILDFLAG(IS_WIN)
 #define TEST_TRACE_PROCESSOR_ENABLED
-#endif
 
 namespace base::test {
 

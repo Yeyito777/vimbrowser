@@ -49,16 +49,7 @@ proto_library("proto_internal") {
     "secure_connect.proto",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "chrome_device_policy.proto",
-      "install_attributes.proto",
-    ]
-  }
-
-  if (!is_ios) {
-    sources += [ "chrome_extension_policy.proto" ]
-  }
+  sources += [ "chrome_extension_policy.proto" ]
 
   extra_configs =
       [ "//third_party/private_membership:private_membership_config" ]

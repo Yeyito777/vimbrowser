@@ -43,9 +43,6 @@ class PrefServiceFlagsStorage : public FlagsStorage {
 
   static void RegisterPrefs(PrefRegistrySimple* registry);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   raw_ptr<PrefService, DanglingUntriaged> prefs_;

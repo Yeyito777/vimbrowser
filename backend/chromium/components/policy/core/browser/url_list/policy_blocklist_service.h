@@ -59,14 +59,6 @@ class POLICY_EXPORT PolicyBlocklistService : public KeyedService {
   PolicyBlocklistState GetURLBlocklistStateWithPolicySource(
       const GURL& url) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Configures the URL filters source the `url_blocklist_manager_`. If
-  // `enforced` is false, the default URL filters source is used (i.e. the
-  // URLBlocklist and URLAllowlist prefs). If `enforced` is true, the
-  // `url_blocklist_manager_` is configured to use a custom source for URL
-  // filters.
-  void SetAlwaysOnVpnPreConnectUrlAllowlistEnforced(bool enforced);
-#endif
 
  private:
   // `URLBlocklistManager` handling URLBlock(Allow)list policies

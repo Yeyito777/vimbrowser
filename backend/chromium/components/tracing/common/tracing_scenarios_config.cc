@@ -266,9 +266,6 @@ GetPresetTracingScenariosConfig() {
     [[maybe_unused]] auto etw_config = CreateDefaultPresetTracingScenarioConfig(
         "AlwaysOnScenarioWithEtw", kAlwaysOnScenarioWithEtwDescription,
         CreatePresetTracingConfigWithEtw());
-#if BUILDFLAG(IS_WIN)
-    *config.add_scenarios() = etw_config;
-#endif  // BUILDFLAG(IS_WIN)
     return config;
   }
   return ParseEncodedTracingScenariosConfig(kPresetTracingConfig.Get());

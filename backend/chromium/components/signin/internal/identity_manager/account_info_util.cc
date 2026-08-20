@@ -260,11 +260,6 @@ std::optional<AccountInfo> DeserializeAccountInfo(const base::DictValue& dict) {
 
   const std::string* gaia_id =
       FindStringIfNonEmpty(dict, local::kAccountGaiaKey);
-#if BUILDFLAG(IS_CHROMEOS)
-  AccountInfo::Builder builder =
-      AccountInfo::Builder::CreateWithPossiblyEmptyGaiaId(
-          GaiaId(gaia_id ? *gaia_id : std::string()), *email);
-#else
   if (!gaia_id) {
     // Gaia ID is required on all platforms except ChromeOS.
     // TODO(crbug.com/40268200): Remove this exception after the migration is
@@ -273,7 +268,6 @@ std::optional<AccountInfo> DeserializeAccountInfo(const base::DictValue& dict) {
   }
 
   AccountInfo::Builder builder(GaiaId(*gaia_id), *email);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   builder.SetAccountId(CoreAccountId::FromString(*account_id));
 

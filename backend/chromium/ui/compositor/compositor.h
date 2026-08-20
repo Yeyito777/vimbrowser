@@ -244,16 +244,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
   // from changes to layer properties.
   void ScheduleRedrawRect(const gfx::Rect& damage_rect);
 
-#if BUILDFLAG(IS_WIN)
-  // Until this is called with |should| true then both DisableSwapUntilResize()
-  // and ReenableSwap() do nothing.
-  void SetShouldDisableSwapUntilResize(bool should);
-
-  // Attempts to immediately swap a frame with the current size if possible,
-  // then disables swapping on this surface until it is resized.
-  void DisableSwapUntilResize();
-  void ReenableSwap();
-#endif
 
   // Sets the compositor's device scale factor and size.
   void SetScaleAndSize(float scale,
@@ -389,14 +379,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
   void RequestSuccessfulPresentationTimeForNextFrame(
       SuccessfulPresentationTimeCallback callback);
 
-#if BUILDFLAG(IS_IOS)
-  void IssueExternalBeginFrameNoAck(const viz::BeginFrameArgs& args);
-#else
   void IssueExternalBeginFrame(
       const viz::BeginFrameArgs& args,
       bool force,
       base::OnceCallback<void(const viz::BeginFrameAck&)> callback);
-#endif
 
   // Creates a CompositorMetricsTracker for tracking this Compositor.
   CompositorMetricsTracker RequestNewCompositorMetricsTracker();
@@ -541,14 +527,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
     return vrr_state_;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Sets the list of refresh rates that the compositor may request to use.
-  void SetSeamlessRefreshRates(
-      const std::vector<float>& seamless_refresh_rates);
-
-  // Notifies observers of a new refresh rate preference.
-  void OnSetPreferredRefreshRate(float refresh_rate);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // While there are outstanding `ScopedKeepSurfaceAlive`, Compositor will
   // attempt to ensure any pending `viz::CopyOutputRequest` in any part of the
@@ -625,9 +603,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
 
   // Used to hold on to IssueExternalBeginFrame(NoAck) arguments if
   // |external_begin_frame_controller_| isn't ready yet.
-#if BUILDFLAG(IS_IOS)
-  using PendingBeginFrameArgs = viz::BeginFrameArgs;
-#else
   struct PendingBeginFrameArgs {
     PendingBeginFrameArgs(
         const viz::BeginFrameArgs& args,
@@ -639,7 +614,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
     const bool force;
     base::OnceCallback<void(const viz::BeginFrameAck&)> callback;
   };
-#endif
   std::optional<PendingBeginFrameArgs> pending_begin_frame_args_;
 
   ui::HostBeginFrameObserver::SimpleBeginFrameObserverList
@@ -690,9 +664,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
   std::optional<base::TimeDelta> max_vsync_interval_ = std::nullopt;
   display::VariableRefreshRateState vrr_state_ =
       display::VariableRefreshRateState::kVrrNotCapable;
-#if BUILDFLAG(IS_CHROMEOS)
-  std::vector<float> seamless_refresh_rates_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const bool use_external_begin_frame_control_;
   const bool force_software_compositor_;
@@ -717,9 +688,6 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
 
   std::unique_ptr<ScrollInputHandler> scroll_input_handler_;
 
-#if BUILDFLAG(IS_WIN)
-  bool should_disable_swap_until_resize_ = false;
-#endif
 
   // Set in DisableSwapUntilResize and reset when a resize happens.
   bool disabled_swap_until_resize_ = false;

@@ -74,11 +74,6 @@
 #include "google_apis/gaia/gaia_id.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "ash/public/cpp/auth/active_session_auth_controller.h"
-#include "ash/public/cpp/webauthn_dialog_controller.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/common/chrome_version.h"
@@ -514,13 +509,6 @@ void GPMEnclaveController::BuildUVKeyOptions(
   uv_options.rp_id = rp_id_;
   uv_options.render_frame_host_id = render_frame_host_id_;
   uv_options.local_auth_token = std::move(model_->local_auth_token);
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::features::IsWebAuthNAuthDialogMergeEnabled()) {
-    uv_options.dialog_controller = ash::ActiveSessionAuthController::Get();
-  } else {
-    uv_options.dialog_controller = ash::WebAuthNDialogController::Get();
-  }
-#endif
 }
 
 void GPMEnclaveController::OnPasskeyCreated(

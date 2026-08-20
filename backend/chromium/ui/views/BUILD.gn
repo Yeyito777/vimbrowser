@@ -641,29 +641,10 @@ component("views") {
     "//ui/views/window/vector_icons",
   ]
 
-  if (is_chromeos) {
-    public += [ "highlight_border.h" ]
-    sources += [ "highlight_border.cc" ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/constants",
-      "//ui/base/ime/ash",
-      "//ui/chromeos/styles:cros_tokens_color_mappings_generator",
-    ]
-  }
-
   if (is_linux) {
     public_deps += [ "//ui/linux:linux_ui" ]
     deps += [ "//ui/base/ime/linux" ]
     sources += [ "controls/menu/menu_config_linux.cc" ]
-  }
-
-  if (is_chromeos) {
-    public += [ "controls/views_text_services_context_menu_chromeos.h" ]
-    sources += [
-      "controls/menu/menu_config_chromeos.cc",
-      "controls/views_text_services_context_menu_chromeos.cc",
-    ]
   }
 
   if (is_mac) {
@@ -731,56 +712,6 @@ component("views") {
       "Foundation.framework",
       "IOSurface.framework",
       "QuartzCore.framework",
-    ]
-  }
-
-  if (is_win) {
-    public += [
-      "controls/menu/native_menu_win.h",
-      "widget/widget_hwnd_utils.h",
-      "win/fullscreen_handler.h",
-      "win/hwnd_message_handler.h",
-      "win/hwnd_message_handler_delegate.h",
-      "win/hwnd_message_handler_headless.h",
-      "win/hwnd_util.h",
-      "win/pen_event_handler_util.h",
-      "win/pen_event_processor.h",
-      "win/pen_id_handler.h",
-      "win/scoped_enable_unadjusted_mouse_events_win.h",
-      "win/scoped_fullscreen_visibility.h",
-      "win/user_resize_detector.h",
-    ]
-    sources += [
-      "controls/menu/menu_config_win.cc",
-      "controls/menu/native_menu_win.cc",
-      "widget/widget_hwnd_utils.cc",
-      "win/fullscreen_handler.cc",
-      "win/hwnd_message_handler.cc",
-      "win/hwnd_message_handler_headless.cc",
-      "win/hwnd_util.cc",
-      "win/pen_event_processor.cc",
-      "win/pen_id_handler.cc",
-      "win/scoped_enable_unadjusted_mouse_events_win.cc",
-      "win/scoped_fullscreen_visibility.cc",
-      "win/user_resize_detector.cc",
-    ]
-    libs = [
-      "dwmapi.lib",
-      "imm32.lib",
-      "oleacc.lib",
-      "uiautomationcore.lib",
-    ]
-    ldflags = [
-      "/DELAYLOAD:dwmapi.dll",
-      "/DELAYLOAD:imm32.dll",
-      "/DELAYLOAD:oleacc.dll",
-      "/DELAYLOAD:user32.dll",
-    ]
-    deps += [
-      "//components/stylus_handwriting/win",
-      "//services/tracing/public/cpp",
-      "//third_party/iaccessible2",
-      "//third_party/wtl",
     ]
   }
 
@@ -883,26 +814,6 @@ component("views") {
         "widget/desktop_aura/desktop_screen_position_client.cc",
         "widget/desktop_aura/desktop_window_tree_host.cc",
       ]
-      if (is_win) {
-        public += [ "widget/desktop_aura/desktop_window_tree_host_win.h" ]
-        sources += [
-          "widget/desktop_aura/desktop_drag_drop_client_win.cc",
-          "widget/desktop_aura/desktop_drag_drop_client_win.h",
-          "widget/desktop_aura/desktop_drop_target_win.cc",
-          "widget/desktop_aura/desktop_native_cursor_manager_win.cc",
-          "widget/desktop_aura/desktop_native_cursor_manager_win.h",
-          "widget/desktop_aura/desktop_screen_win.cc",
-          "widget/desktop_aura/desktop_screen_win.h",
-          "widget/desktop_aura/desktop_screen_win_headless.cc",
-          "widget/desktop_aura/desktop_screen_win_headless.h",
-          "widget/desktop_aura/desktop_window_tree_host_win.cc",
-        ]
-        deps += [
-          "//components/headless/screen_info",
-          "//ui/events:dom_keyboard_layout",
-          "//ui/events:keyboard_hook",
-        ]
-      }
       if (use_ozone) {
         public += [ "widget/desktop_aura/desktop_screen_ozone.h" ]
         sources += [ "widget/desktop_aura/desktop_screen_ozone.cc" ]
@@ -967,17 +878,6 @@ component("views") {
         "accessibility/view_ax_platform_node_delegate_mac.mm",
       ]
     }
-
-    if (is_win) {
-      sources += [
-        "accessibility/view_ax_platform_node_delegate_win.cc",
-        "accessibility/view_ax_platform_node_delegate_win.h",
-      ]
-    }
-  }
-
-  if (is_fuchsia) {
-    sources += [ "controls/menu/menu_config_fuchsia.cc" ]
   }
 
   if (use_ozone) {
@@ -1161,16 +1061,6 @@ source_set("test_support") {
     "//ui/base/mojom:ui_base_types",
   ]
 
-  if (is_win) {
-    sources += [
-      "test/desktop_window_tree_host_win_test_api.cc",
-      "test/desktop_window_tree_host_win_test_api.h",
-      "win/test_support/fake_ipen_device.cc",
-      "win/test_support/fake_ipen_device.h",
-      "win/test_support/fake_ipen_device_statics.cc",
-      "win/test_support/fake_ipen_device_statics.h",
-    ]
-  }
   if (is_mac) {
     sources += [
       "test/desktop_test_views_delegate_mac.mm",
@@ -1422,34 +1312,6 @@ test("views_unittests") {
     "//ui/resources:ui_test_pak_data",
   ]
 
-  if (is_win) {
-    public_deps = [
-      "//build/win:default_exe_manifest",
-      "//third_party/iaccessible2",
-      "//third_party/wtl",
-    ]
-
-    deps += [
-      "//components/stylus_handwriting/win",
-      "//ui/base:data_exchange",
-    ]
-
-    libs = [
-      "imm32.lib",
-      "oleacc.lib",
-      "comctl32.lib",
-      "uiautomationcore.lib",
-    ]
-
-    sources += [
-      "accessibility/test_list_grid_view.cc",
-      "accessibility/test_list_grid_view.h",
-      "accessibility/view_ax_platform_node_delegate_win_unittest.cc",
-      "win/pen_event_processor_unittest.cc",
-      "win/pen_id_handler_unittest.cc",
-    ]
-  }
-
   if (is_linux) {
     deps += [
       "//ui/base/ime/linux",
@@ -1506,18 +1368,6 @@ test("views_unittests") {
     sources += [ "widget/widget_activation_delegate_unittest.cc" ]
   }
 
-  if (is_fuchsia) {
-    # These tests use SwiftShader (crbug.com/1022542), which uses JIT.
-    test_runner_shard = "//build/config/fuchsia/test/elf_test_ambient_exec_runner.shard.test-cml"
-
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
-  }
-
   if (use_aura) {
     sources += [
       "accessibility/accessibility_alert_window_unittest.cc",
@@ -1541,11 +1391,6 @@ test("views_unittests") {
     if (is_mac) {
       # views_unittests not yet compiling on Mac. http://crbug.com/378134
       sources -= [ "widget/window_reorderer_unittest.cc" ]
-    }
-
-    if (is_win) {
-      sources +=
-          [ "widget/desktop_aura/desktop_window_tree_host_win_unittest.cc" ]
     }
 
     if (enable_desktop_aura || is_chromeos) {
@@ -1646,13 +1491,6 @@ source_set("views_interactive_ui_tests") {
 
   public_deps = [ "//ui/base/mojom" ]
 
-  if (is_win) {
-    sources += [
-      "accessibility/ax_system_caret_win_interactive_uitest.cc",
-      "win/hwnd_message_handler_interactive_uitest.cc",
-    ]
-  }
-
   if (is_mac) {
     sources += [
       "cocoa/bridged_native_widget_interactive_uitest.mm",
@@ -1693,10 +1531,6 @@ source_set("views_interactive_ui_tests") {
         "widget/desktop_aura/desktop_native_widget_aura_interactive_uitest.cc",
       ]
     }
-  }
-
-  if (is_chromeos) {
-    sources -= [ "corewm/desktop_capture_controller_unittest.cc" ]
   }
 }
 

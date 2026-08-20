@@ -27,9 +27,7 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/vector2d.h"
 
-#if BUILDFLAG(IS_WIN)
-typedef struct tagRECT RECT;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 typedef struct CGRect CGRect;
 #endif
 
@@ -48,16 +46,11 @@ class COMPONENT_EXPORT(GEOMETRY) Rect {
         size_(ClampWidthOrHeight(origin.x(), size.width()),
               ClampWidthOrHeight(origin.y(), size.height())) {}
 
-#if BUILDFLAG(IS_WIN)
-  explicit Rect(const RECT& r);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   explicit Rect(const CGRect& r);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Construct an equivalent Win32 RECT object.
-  RECT ToRECT() const;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   // Construct an equivalent CoreGraphics object.
   CGRect ToCGRect() const;
 #endif

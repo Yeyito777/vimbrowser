@@ -8,17 +8,9 @@
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/net/system_network_context_manager.h"
-#endif
 
 namespace features {
 
-#if BUILDFLAG(IS_ANDROID)
-// Kill switch for allowing TWAs to autoplay with sound without requiring a user
-// gesture to unlock, for parity with PWAs.
-BASE_FEATURE(kAllowUnmutedAutoplayForTWA, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // This is used to enable an experiment for modifying confidence cutoff of
 // prerender and preconnect for autocomplete action predictor.
@@ -60,11 +52,7 @@ BASE_FEATURE(kCertificateTransparencyAskBeforeEnabling,
 // fail to validate with network time will fall back to the system time.
 // This has no effect if the network_time::kNetworkTimeServiceQuerying flag is
 // disabled, or the BrowserNetworkTimeQueriesEnabled policy is set to false.
-#if !BUILDFLAG(IS_CHROMEOS)
 BASE_FEATURE(kCertVerificationNetworkTime, base::FEATURE_ENABLED_BY_DEFAULT);
-#else
-BASE_FEATURE(kCertVerificationNetworkTime, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // Killswitch that guards clearing all user data in the ProfileImpl destructor.
 BASE_FEATURE(kClearUserDataUponProfileDestruction,
@@ -89,11 +77,7 @@ BASE_FEATURE(kDestroyProfileOnBrowserClose,
 // Enables showing the email of the flex org admin that setup CBCM in the
 // management disclosures.
 BASE_FEATURE(kFlexOrgManagementDisclosure,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Enables the Incoming Call Notifications scenario. When created by an
 // installed origin, an incoming call notification should have increased
@@ -102,20 +86,14 @@ BASE_FEATURE(kFlexOrgManagementDisclosure,
 // notifications, but with the added "Close" button. See
 // https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/Notifications/notifications_actions_customization.md
 BASE_FEATURE(kIncomingCallNotifications,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 BASE_FEATURE(kInitialExternalExtensions, base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if !BUILDFLAG(IS_ANDROID)
 // Adds a "Snooze" action to mute notifications during screen sharing sessions.
 BASE_FEATURE(kMuteNotificationSnoozeAction, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // This feature enables monitoring of first-party network requests in order to
 // find possible violations. Example: A Chrome policy is set to disabled but the
@@ -132,10 +110,8 @@ BASE_FEATURE(kNewTabPageTriggerForPrefetch, base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Adds an "Unsubscribe" action to web push notifications that allows stopping
 // notifications from a given origin with a single tap (with an option to undo).
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kNotificationOneTapUnsubscribeOnDesktop,
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 // When this feature is enabled, Chrome will register os_update_handler with
@@ -189,76 +165,20 @@ BASE_FEATURE(kSecretPortalKeyProviderUseForEncryption,
 // Enables migration of the network context data from `unsandboxed_data_path` to
 // `data_path`. See the explanation in network_context.mojom.
 BASE_FEATURE(kTriggerNetworkDataMigration,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Enables runtime detection of USB devices which provide a WebUSB landing page
 // descriptor.
 BASE_FEATURE(kWebUsbDeviceDetection, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Disable dynamic code using ACG. Prevents the browser process from generating
-// dynamic code or modifying executable code. See comments in
-// sandbox/win/src/security_level.h. Only available on Windows 10 RS1 (1607,
-// Build 14393) onwards.
-BASE_FEATURE(kBrowserDynamicCodeDisabled, base::FEATURE_DISABLED_BY_DEFAULT);
 
-// The Chrome DLL can be pre-read with ::PrefetchVirtualMemory() from the
-// browser or a child process. Pre-reading is supposed to bring the whole DLL in
-// physical memory more efficiently than a series of hard faults. However,
-// pre-reading consumes a non-trivial amount of CPU even when the DLL is already
-// in physical memory and it may not be necessary to have the full DLL in
-// physical memory (space taken by unused parts of the DLL could potentially be
-// used for more important stuff). This file has multiple features to experiment
-// with policies for pre-reading the Chrome DLL in child processes. The
-// `kPrefetchVirtualMemoryPolicy` feature defined elsewhere controls pre-reading
-// the Chrome DLL from the browser process.
-
-// When enabled, child processes never pre-read the Chrome DLL.
-BASE_FEATURE(kNoPreReadMainDll, base::FEATURE_DISABLED_BY_DEFAULT);
-
-// When enabled, child processes don't pre-read the Chrome DLL if we believe the
-// Chrome DLL is on an SSD (i.e. pre-read only on spinning disk).
-BASE_FEATURE(kNoPreReadMainDllIfSsd, base::FEATURE_ENABLED_BY_DEFAULT);
-
-// When enabled, the browser process suppresses pre-read in child processes
-// shortly after browser startup, where "shortly after" is dictated by the
-// feature param below. This is thought to be a productive strategy since the
-// browser process will have recently pre-read the DLL during browser
-// startup. In that case, the browser process has recently pre-read the DLL so
-// pre-reading again is thought to be counter-productive (CPU consumption for no
-// gains).
-BASE_FEATURE(kNoPreReadMainDllStartup, base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Time after browser startup during which child processes don't pre-read the
-// Chrome DLL when `kNoPreReadMainDllStartup` is enabled.
-const base::FeatureParam<base::TimeDelta>
-    kNoPreReadMainDllStartup_StartupDuration{&kNoPreReadMainDllStartup,
-                                             "no-preread-dll-startup-time",
-                                             base::Minutes(2)};
-
-// When enabled, the browser process will re-launch itself when launched with
-// an elevated linked token. The re-launched browser will use the token from
-// the Windows Shell (explorer.exe), which is typically non-elevated.
-BASE_FEATURE(kAutoDeElevate, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
-
-#if !BUILDFLAG(IS_ANDROID)
 // This flag controls whether to perform Pak integrity check on startup to
 // report statistics for on-disk corruption.
 // Disabled on ChromeOS, as dm-verity enforces integrity and the check would
 // be redundant.
 BASE_FEATURE(kReportPakFileIntegrity,
-#if !BUILDFLAG(IS_CHROMEOS)
              base::FEATURE_ENABLED_BY_DEFAULT);
-#else
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // This flag enables the removal of IWAs surface captures from Chrome Tabs
 // category in getDisplayMedia() API. When disabled, IWAs surface captures

@@ -9,9 +9,6 @@
 #include "ui/views/widget/native_widget.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 namespace views {
 
@@ -31,10 +28,6 @@ gfx::Rect NativeFrameView::GetBoundsForClientView() const {
 
 gfx::Rect NativeFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
-#if BUILDFLAG(IS_WIN)
-  return views::GetWindowBoundsForClientBounds(
-      static_cast<View*>(const_cast<NativeFrameView*>(this)), client_bounds);
-#else
   // Enforce minimum size (1, 1) in case that |client_bounds| is passed with
   // empty size.
   gfx::Rect window_bounds = client_bounds;
@@ -42,7 +35,6 @@ gfx::Rect NativeFrameView::GetWindowBoundsForClientBounds(
     window_bounds.set_size(gfx::Size(1, 1));
   }
   return window_bounds;
-#endif
 }
 
 int NativeFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -53,17 +45,9 @@ gfx::Size NativeFrameView::CalculatePreferredSize(
     const SizeBounds& available_size) const {
   gfx::Size client_preferred_size =
       widget_->client_view()->GetPreferredSize(available_size);
-#if BUILDFLAG(IS_WIN)
-  // Returns the client size. On Windows, this is the expected behavior for
-  // native frames (see |NativeWidgetWin::WidgetSizeIsClientSize()|), while
-  // other platforms currently always return client bounds from
-  // |GetWindowBoundsForClientBounds()|.
-  return client_preferred_size;
-#else
   return widget_->non_client_view()
       ->GetWindowBoundsForClientBounds(gfx::Rect(client_preferred_size))
       .size();
-#endif
 }
 
 gfx::Size NativeFrameView::GetMinimumSize() const {

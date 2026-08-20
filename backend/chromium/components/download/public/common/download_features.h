@@ -20,17 +20,6 @@ COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(kBackoffInDownloading);
 #endif
 COMPONENTS_DOWNLOAD_EXPORT bool IsBackoffInDownloadingEnabled();
 
-#if BUILDFLAG(IS_ANDROID)
-// Whether to enable smart suggestion for large downloads
-COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(
-    kSmartSuggestionForLargeDownloads);
-
-// Whether to show blocked sensitive downloads on download home.
-COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(kShowBlockedSensitiveDownload);
-
-// Whether to show the download scanning state on download home.
-COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(kShowDownloadScanningState);
-#endif
 
 // Whether download notification service uses new unified API based on offline
 // item and native persistence of notification IDs.
@@ -65,11 +54,6 @@ COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(kAllowedMixedContentInlinePdf);
 COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(
     kEnableAsyncNotificationManagerForDownload);
 
-#if BUILDFLAG(IS_ANDROID)
-// Whether to enable save package for off the record mode.
-COMPONENTS_DOWNLOAD_EXPORT BASE_DECLARE_FEATURE(
-    kEnableSavePackageForOffTheRecord);
-#endif  // BUILDFLAG(IS_ANDROID)
 }  // namespace features
 
 }  // namespace download

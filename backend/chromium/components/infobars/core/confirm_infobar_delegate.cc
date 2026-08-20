@@ -79,11 +79,6 @@ int ConfirmInfoBarDelegate::GetLinkSpacingWhenPositionedBeforeButton() const {
   return 0;
 }
 
-#if BUILDFLAG(IS_IOS)
-bool ConfirmInfoBarDelegate::UseIconBackgroundTint() const {
-  return true;
-}
-#endif
 
 bool ConfirmInfoBarDelegate::Accept() {
   for (auto& observer : observers_) {

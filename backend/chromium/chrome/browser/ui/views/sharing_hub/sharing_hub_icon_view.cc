@@ -77,13 +77,8 @@ views::BubbleDialogDelegate* SharingHubIconView::GetBubble() const {
     return nullptr;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  CHECK(!controller->sharing_hub_bubble_view());
-  return nullptr;
-#else
   return static_cast<SharingHubBubbleViewImpl*>(
       controller->sharing_hub_bubble_view());
-#endif
 }
 
 void SharingHubIconView::UpdateImpl() {

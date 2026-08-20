@@ -327,9 +327,6 @@ bool CookieSettings::IsThirdPartyCookiesAllowedScheme(
 CookieSettings::~CookieSettings() = default;
 
 bool CookieSettings::ShouldBlockThirdPartyCookiesInternal() const {
-#if BUILDFLAG(IS_IOS)
-  return false;
-#else
   DCHECK(thread_checker_.CalledOnValidThread());
   DCHECK(pref_change_registrar_);
 
@@ -349,7 +346,6 @@ bool CookieSettings::ShouldBlockThirdPartyCookiesInternal() const {
     case CookieControlsMode::kOff:
       return is_incognito_;
   }
-#endif
 }
 
 bool CookieSettings::MitigationsEnabledFor3pcdInternal() const {

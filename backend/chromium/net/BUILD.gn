@@ -18,9 +18,6 @@ import("//url/features.gni")
 
 if (is_mac) {
   import("//build/config/mac/mac_sdk.gni")
-} else if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-  import("//build/config/ios/bundle_data_from_filelist.gni")
 }
 
 # Android:
@@ -1341,17 +1338,6 @@ component("net") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "cert/cert_verify_proc_ios.cc",
-      "cert/cert_verify_proc_ios.h",
-      "cert/test_root_certs_ios.cc",
-      "disk_cache/blockfile/file_ios.cc",
-      "proxy_resolution/proxy_config_service_ios.cc",
-      "proxy_resolution/proxy_config_service_ios.h",
-    ]
-  }
-
   if (is_linux) {
     sources += [
       "base/network_change_notifier_linux.cc",
@@ -1429,60 +1415,6 @@ component("net") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "base/file_stream_context_win.cc",
-      "base/net_errors_win.cc",
-      "base/network_change_notifier_win.cc",
-      "base/network_change_notifier_win.h",
-      "base/network_cost_change_notifier_win.cc",
-      "base/network_cost_change_notifier_win.h",
-      "base/network_interfaces_win.cc",
-      "base/network_interfaces_win.h",
-      "base/platform_mime_util_win.cc",
-      "base/winsock_init.cc",
-      "base/winsock_init.h",
-      "base/winsock_util.cc",
-      "base/winsock_util.h",
-      "cert/test_root_certs_builtin.cc",
-      "cert/x509_util_win.cc",
-      "cert/x509_util_win.h",
-      "disk_cache/blockfile/file_win.cc",
-      "disk_cache/blockfile/mapped_file_win.cc",
-      "disk_cache/cache_util_win.cc",
-      "disk_cache/simple/simple_util_win.cc",
-      "http/http_auth_handler_ntlm_win.cc",
-      "http/http_auth_sspi_win.cc",
-      "http/http_auth_sspi_win.h",
-      "http/url_security_manager_win.cc",
-      "proxy_resolution/win/dhcp_pac_file_adapter_fetcher_win.cc",
-      "proxy_resolution/win/dhcp_pac_file_adapter_fetcher_win.h",
-      "proxy_resolution/win/dhcp_pac_file_fetcher_win.cc",
-      "proxy_resolution/win/dhcp_pac_file_fetcher_win.h",
-      "proxy_resolution/win/dhcpcsvc_init_win.cc",
-      "proxy_resolution/win/dhcpcsvc_init_win.h",
-      "proxy_resolution/win/proxy_config_service_win.cc",
-      "proxy_resolution/win/proxy_config_service_win.h",
-      "proxy_resolution/win/proxy_resolver_winhttp.cc",
-      "proxy_resolution/win/proxy_resolver_winhttp.h",
-      "proxy_resolution/win/windows_system_proxy_resolution_request.cc",
-      "proxy_resolution/win/windows_system_proxy_resolution_request.h",
-      "proxy_resolution/win/windows_system_proxy_resolution_service.cc",
-      "proxy_resolution/win/windows_system_proxy_resolution_service.h",
-      "proxy_resolution/win/windows_system_proxy_resolver.h",
-      "proxy_resolution/win/winhttp_status.h",
-      "socket/tcp_socket_io_completion_port_win.cc",
-      "socket/tcp_socket_io_completion_port_win.h",
-      "socket/tcp_socket_win.cc",
-      "socket/tcp_socket_win.h",
-      "socket/udp_socket_win.cc",
-      "socket/udp_socket_win.h",
-      "ssl/client_cert_store_win.cc",
-      "ssl/client_cert_store_win.h",
-      "ssl/ssl_platform_key_win.cc",
-    ]
-  }
-
   if (use_kerberos) {
     sources += [
       "http/http_auth_handler_negotiate.cc",
@@ -1513,9 +1445,7 @@ component("net") {
         "socket/ephemeral_port_randomizer_mac.h",
       ]
     }
-    if (!is_ios) {
-      sources += [ "disk_cache/blockfile/file_posix.cc" ]
-    }
+    sources += [ "disk_cache/blockfile/file_posix.cc" ]
     if (posix_bypass_mmap) {
       sources += [ "disk_cache/blockfile/mapped_file_bypass_mmap_posix.cc" ]
     } else {
@@ -1530,23 +1460,21 @@ component("net") {
     ]
   }
 
-  if (!is_win) {
-    sources += [
-      "http/http_auth_handler_ntlm_portable.cc",
-      "http/http_auth_ntlm_mechanism.cc",
-      "http/http_auth_ntlm_mechanism.h",
-      "ntlm/ntlm.cc",
-      "ntlm/ntlm.h",
-      "ntlm/ntlm_buffer_reader.cc",
-      "ntlm/ntlm_buffer_reader.h",
-      "ntlm/ntlm_buffer_writer.cc",
-      "ntlm/ntlm_buffer_writer.h",
-      "ntlm/ntlm_client.cc",
-      "ntlm/ntlm_client.h",
-      "ntlm/ntlm_constants.cc",
-      "ntlm/ntlm_constants.h",
-    ]
-  }
+  sources += [
+    "http/http_auth_handler_ntlm_portable.cc",
+    "http/http_auth_ntlm_mechanism.cc",
+    "http/http_auth_ntlm_mechanism.h",
+    "ntlm/ntlm.cc",
+    "ntlm/ntlm.h",
+    "ntlm/ntlm_buffer_reader.cc",
+    "ntlm/ntlm_buffer_reader.h",
+    "ntlm/ntlm_buffer_writer.cc",
+    "ntlm/ntlm_buffer_writer.h",
+    "ntlm/ntlm_client.cc",
+    "ntlm/ntlm_client.h",
+    "ntlm/ntlm_constants.cc",
+    "ntlm/ntlm_constants.h",
+  ]
 
   if (use_external_gssapi) {
     sources += [
@@ -1573,14 +1501,6 @@ component("net") {
       "//net/cert:root_store_proto_lite",
       "//net/data/ssl/chrome_root_store:gen_root_store_inc",
     ]
-    if (is_win) {
-      sources += [
-        "cert/internal/trust_store_win.cc",
-        "cert/internal/trust_store_win.h",
-        "third_party/mozilla_win/cert/win_util.cc",
-        "third_party/mozilla_win/cert/win_util.h",
-      ]
-    }
   }
 
   if (use_nss_certs) {
@@ -1598,38 +1518,18 @@ component("net") {
       "third_party/mozilla_security_manager/nsPKCS12Blob.h",
     ]
     deps += [ "//build:chromeos_buildflags" ]
-    if (!is_castos) {
-      sources += [
-        "ssl/client_cert_store_nss.cc",
-        "ssl/client_cert_store_nss.h",
-        "ssl/ssl_platform_key_nss.cc",
-        "ssl/ssl_platform_key_nss.h",
-      ]
-    }
+    sources += [
+      "ssl/client_cert_store_nss.cc",
+      "ssl/client_cert_store_nss.h",
+      "ssl/ssl_platform_key_nss.cc",
+      "ssl/ssl_platform_key_nss.h",
+    ]
 
     # TODO(crbug.com/41467965): This is a public config because
     # multi_threaded_cert_verifier.h depends on NSS. When the linked bug is
     # fixed, switch this to a non-public config, so NSS usage must be explicit
     # in the build.
     public_configs = [ "//build/config/linux/nss" ]
-  }
-
-  if (is_fuchsia) {
-    deps += [
-      "//net/data/ssl/chrome_root_store:gen_root_store_inc",
-      "//third_party/fuchsia-sdk/sdk/pkg/async-loop-cpp",
-    ]
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.net.interfaces:fuchsia.net.interfaces_hlcpp" ]
-    sources += [
-      "base/fuchsia/network_interface_cache.cc",
-      "base/fuchsia/network_interface_cache.h",
-      "base/network_change_notifier_fuchsia.cc",
-      "base/network_change_notifier_fuchsia.h",
-      "base/network_interfaces_fuchsia.cc",
-      "base/network_interfaces_fuchsia.h",
-      "base/platform_mime_util_fuchsia.cc",
-      "cert/test_root_certs_builtin.cc",
-    ]
   }
 
   if (enable_unix_sockets) {
@@ -1654,37 +1554,6 @@ component("net") {
       "SystemConfiguration.framework",
       "UniformTypeIdentifiers.framework",
     ]
-  }
-
-  if (is_ios) {
-    libs = [ "resolv" ]
-    frameworks = [
-      "CFNetwork.framework",
-      "Network.framework",
-      "MobileCoreServices.framework",
-      "Security.framework",
-      "SystemConfiguration.framework",
-      "UniformTypeIdentifiers.framework",
-    ]
-
-    if (target_platform == "iphoneos") {
-      frameworks += [ "CoreTelephony.framework" ]
-    }
-  }
-
-  if (is_win) {
-    libs = [
-      "crypt32.lib",
-      "dhcpcsvc.lib",
-      "iphlpapi.lib",
-      "ncrypt.lib",
-      "rpcrt4.lib",
-      "secur32.lib",
-      "urlmon.lib",
-      "winhttp.lib",
-    ]
-
-    ldflags = [ "/DELAYLOAD:urlmon.dll" ]
   }
 
   if (!disable_file_support) {
@@ -1767,13 +1636,8 @@ component("net") {
 
   # ICU support.
   if (use_platform_icu_alternatives) {
-    if (is_ios) {
-      # Use ICU alternative on iOS.
-      sources += [ "base/net_string_util_icu_alternatives_ios.mm" ]
-    } else {
-      assert(false,
-             "ICU alternative is not implemented for platform: " + target_os)
-    }
+    assert(false,
+           "ICU alternative is not implemented for platform: " + target_os)
   } else {
     # Use ICU.
     sources += [
@@ -1899,14 +1763,6 @@ source_set("net_deps") {
 
   if (use_gio) {
     public_configs += [ "//build/linux:gio_config" ]
-  }
-
-  if (is_fuchsia) {
-    public_deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.hardware.network:fuchsia.hardware.network_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.net.interfaces:fuchsia.net.interfaces_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
   }
 
   if (use_platform_icu_alternatives) {
@@ -2041,32 +1897,22 @@ static_library("preload_decoder") {
   deps = [ "//base" ]
 }
 
-if (!is_ios) {
-  executable("dump_cache") {
-    testonly = true
-    sources = [
-      "tools/dump_cache/dump_cache.cc",
-      "tools/dump_cache/dump_cache_helper.cc",
-      "tools/dump_cache/dump_cache_helper.h",
-      "tools/dump_cache/dump_files.cc",
-      "tools/dump_cache/dump_files.h",
-    ]
+executable("dump_cache") {
+  testonly = true
+  sources = [
+    "tools/dump_cache/dump_cache.cc",
+    "tools/dump_cache/dump_cache_helper.cc",
+    "tools/dump_cache/dump_cache_helper.h",
+    "tools/dump_cache/dump_files.cc",
+    "tools/dump_cache/dump_files.h",
+  ]
 
-    deps = [
-      ":net",
-      ":test_support",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
-  }
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("test_support_bundle_data") {
-    visibility = [ ":test_support" ]
-    testonly = true
-    filelist_name = "data/test_support_bundle_data.filelist"
-  }
+  deps = [
+    ":net",
+    ":test_support",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
 }
 
 static_library("gtest_util") {
@@ -2281,13 +2127,6 @@ static_library("test_support") {
     "url_request/url_request_test_util.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "test/win/fake_network_cost_manager.cc",
-      "test/win/fake_network_cost_manager.h",
-    ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "base/address_tracker_linux_test_util.cc",
@@ -2339,10 +2178,6 @@ static_library("test_support") {
     frameworks = [ "Security.framework" ]
   }
 
-  if (is_ios) {
-    deps += [ ":test_support_bundle_data" ]
-  }
-
   if (use_nss_certs) {
     configs += [ "//build/config/linux/nss" ]
   }
@@ -2387,99 +2222,97 @@ static_library("test_support") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (!is_ios) {
-  executable("cert_verify_tool") {
-    testonly = true
-    sources = [
-      "tools/cert_verify_tool/cert_verify_tool.cc",
-      "tools/cert_verify_tool/cert_verify_tool_util.cc",
-      "tools/cert_verify_tool/cert_verify_tool_util.h",
-      "tools/cert_verify_tool/verify_using_cert_verify_proc.cc",
-      "tools/cert_verify_tool/verify_using_cert_verify_proc.h",
-      "tools/cert_verify_tool/verify_using_path_builder.cc",
-      "tools/cert_verify_tool/verify_using_path_builder.h",
-    ]
+executable("cert_verify_tool") {
+  testonly = true
+  sources = [
+    "tools/cert_verify_tool/cert_verify_tool.cc",
+    "tools/cert_verify_tool/cert_verify_tool_util.cc",
+    "tools/cert_verify_tool/cert_verify_tool_util.h",
+    "tools/cert_verify_tool/verify_using_cert_verify_proc.cc",
+    "tools/cert_verify_tool/verify_using_cert_verify_proc.h",
+    "tools/cert_verify_tool/verify_using_path_builder.cc",
+    "tools/cert_verify_tool/verify_using_path_builder.h",
+  ]
 
-    deps = [
-      ":net",
-      ":test_support",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
+  deps = [
+    ":net",
+    ":test_support",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
 
-    if (is_mac) {
-      frameworks = [ "Security.framework" ]
-    }
+  if (is_mac) {
+    frameworks = [ "Security.framework" ]
   }
+}
 
-  executable("crash_cache") {
-    testonly = true
-    sources = [ "tools/crash_cache/crash_cache.cc" ]
+executable("crash_cache") {
+  testonly = true
+  sources = [ "tools/crash_cache/crash_cache.cc" ]
 
-    deps = [
-      ":net",
-      ":test_support",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
-  }
+  deps = [
+    ":net",
+    ":test_support",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
+}
 
-  executable("hpack_example_generator") {
-    testonly = true
-    sources = [ "spdy/fuzzing/hpack_example_generator.cc" ]
+executable("hpack_example_generator") {
+  testonly = true
+  sources = [ "spdy/fuzzing/hpack_example_generator.cc" ]
 
-    deps = [
-      ":net",
-      ":spdy_test_tools",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
-  }
+  deps = [
+    ":net",
+    ":spdy_test_tools",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
+}
 
-  executable("net_watcher") {
-    testonly = true
-    sources = [ "tools/net_watcher/net_watcher.cc" ]
-    deps = [
-      ":net",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
-  }
+executable("net_watcher") {
+  testonly = true
+  sources = [ "tools/net_watcher/net_watcher.cc" ]
+  deps = [
+    ":net",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
+}
 
-  executable("run_testserver") {
-    testonly = true
-    sources = [ "tools/testserver/run_testserver.cc" ]
-    deps = [
-      ":test_support",
-      "//base",
-      "//base/test:test_support",
-      "//build/win:default_exe_manifest",
-      "//testing/gtest",
-    ]
-  }
+executable("run_testserver") {
+  testonly = true
+  sources = [ "tools/testserver/run_testserver.cc" ]
+  deps = [
+    ":test_support",
+    "//base",
+    "//base/test:test_support",
+    "//build/win:default_exe_manifest",
+    "//testing/gtest",
+  ]
+}
 
-  executable("stress_cache") {
-    testonly = true
-    sources = [ "tools/stress_cache/stress_cache.cc" ]
+executable("stress_cache") {
+  testonly = true
+  sources = [ "tools/stress_cache/stress_cache.cc" ]
 
-    deps = [
-      ":net",
-      ":test_support",
-      "//base",
-      "//build/win:default_exe_manifest",
-    ]
-  }
+  deps = [
+    ":net",
+    ":test_support",
+    "//base",
+    "//build/win:default_exe_manifest",
+  ]
+}
 
-  executable("tld_cleanup") {
-    sources = [ "tools/tld_cleanup/tld_cleanup.cc" ]
+executable("tld_cleanup") {
+  sources = [ "tools/tld_cleanup/tld_cleanup.cc" ]
 
-    deps = [
-      "//base",
-      "//base:i18n",
-      "//build/win:default_exe_manifest",
-      "//net/tools/tld_cleanup",
-    ]
-  }
+  deps = [
+    "//base",
+    "//base:i18n",
+    "//build/win:default_exe_manifest",
+    "//net/tools/tld_cleanup",
+  ]
 }
 
 if (use_external_gssapi) {
@@ -2634,53 +2467,34 @@ source_set("simple_quic_tools") {
   public_deps = [ "//net/third_party/quiche:quiche_tool_support" ]
 }
 
-if (!is_ios) {
-  executable("quic_client") {
-    testonly = true
-    sources = [ "tools/quic/quic_simple_client_bin.cc" ]
-    deps = [
-      ":net",
-      ":simple_quic_tools",
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net/third_party/quiche:quic_client_core",
-      "//url",
-    ]
-  }
-  executable("quic_server") {
-    testonly = true
-    sources = [
-      "tools/quic/quic_simple_server_backend_factory.cc",
-      "tools/quic/quic_simple_server_backend_factory.h",
-      "tools/quic/quic_simple_server_bin.cc",
-    ]
-    deps = [
-      ":net",
-      ":simple_quic_tools",
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net/third_party/quiche:quic_server_core",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
+executable("quic_client") {
+  testonly = true
+  sources = [ "tools/quic/quic_simple_client_bin.cc" ]
+  deps = [
+    ":net",
+    ":simple_quic_tools",
+    "//base",
+    "//build/win:default_exe_manifest",
+    "//net/third_party/quiche:quic_client_core",
+    "//url",
+  ]
 }
-
-if (is_ios) {
-  bundle_data_from_filelist("net_test_bundle_data") {
-    testonly = true
-    filelist_name = "data/test_bundle_data.filelist"
-  }
-
-  bundle_data("registry_controlled_domains_bundle_data") {
-    testonly = true
-    sources = [
-      "//net/base/registry_controlled_domains/effective_tld_names.dat",
-      "//net/base/registry_controlled_domains/effective_tld_names.gperf",
-    ]
-    outputs = [ "{{bundle_resources_dir}}/" +
-                "{{source_root_relative_dir}}/{{source_file_part}}" ]
-  }
+executable("quic_server") {
+  testonly = true
+  sources = [
+    "tools/quic/quic_simple_server_backend_factory.cc",
+    "tools/quic/quic_simple_server_backend_factory.h",
+    "tools/quic/quic_simple_server_bin.cc",
+  ]
+  deps = [
+    ":net",
+    ":simple_quic_tools",
+    "//base",
+    "//build/win:default_exe_manifest",
+    "//net/third_party/quiche:quic_server_core",
+    "//third_party/boringssl",
+    "//third_party/protobuf:protobuf_lite",
+  ]
 }
 
 # TODO(crbug.com/477528387): Consider enabling net_fuzztests for cronet builds.
@@ -3114,23 +2928,6 @@ target(_test_target_type, "net_unittests") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "base/network_change_notifier_win_unittest.cc",
-      "base/network_cost_change_notifier_win_unittest.cc",
-      "base/network_interfaces_win_unittest.cc",
-      "http/http_auth_sspi_win_unittest.cc",
-      "http/mock_sspi_library_win.cc",
-      "http/mock_sspi_library_win.h",
-      "proxy_resolution/win/dhcp_pac_file_adapter_fetcher_win_unittest.cc",
-      "proxy_resolution/win/dhcp_pac_file_fetcher_win_unittest.cc",
-      "proxy_resolution/win/proxy_config_service_win_unittest.cc",
-      "proxy_resolution/win/windows_system_proxy_resolution_service_unittest.cc",
-      "ssl/client_cert_store_win_unittest.cc",
-      "ssl/ssl_platform_key_win_unittest.cc",
-    ]
-  }
-
   configs += [ "//build/config:precompiled_headers" ]
   defines = []
   if (disable_zstd_filter) {
@@ -3217,10 +3014,6 @@ target(_test_target_type, "net_unittests") {
     sources += [ "base/sockaddr_util_posix_unittest.cc" ]
   }
 
-  if (is_chromeos) {
-    sources += [ "base/network_change_notifier_passive_unittest.cc" ]
-  }
-
   if (enable_reporting) {
     sources += [
       "network_error_logging/mock_persistent_nel_store_unittest.cc",
@@ -3279,32 +3072,17 @@ target(_test_target_type, "net_unittests") {
     ]
   }
 
-  if (!is_win) {
-    sources += [
-      "http/http_auth_handler_ntlm_portable_unittest.cc",
-      "ntlm/ntlm_buffer_reader_unittest.cc",
-      "ntlm/ntlm_buffer_writer_unittest.cc",
-      "ntlm/ntlm_client_unittest.cc",
-      "ntlm/ntlm_test_data.h",
-      "ntlm/ntlm_unittest.cc",
-    ]
-  }
+  sources += [
+    "http/http_auth_handler_ntlm_portable_unittest.cc",
+    "ntlm/ntlm_buffer_reader_unittest.cc",
+    "ntlm/ntlm_buffer_writer_unittest.cc",
+    "ntlm/ntlm_client_unittest.cc",
+    "ntlm/ntlm_test_data.h",
+    "ntlm/ntlm_unittest.cc",
+  ]
 
   if (enable_python_utils) {
     sources += [ "test/python_utils_unittest.cc" ]
-  }
-
-  if (is_fuchsia) {
-    deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.net.interfaces:fuchsia.net.interfaces_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/fidl_cpp",
-    ]
-    sources += [
-      "base/fuchsia/network_interface_cache_unittest.cc",
-      "base/network_change_notifier_fuchsia_unittest.cc",
-    ]
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/network.shard.test-cml" ]
   }
 
   if (use_nss_certs) {
@@ -3313,12 +3091,10 @@ target(_test_target_type, "net_unittests") {
       "cert/nss_cert_database_unittest.cc",
       "cert/x509_util_nss_unittest.cc",
     ]
-    if (!is_castos) {
-      sources += [
-        "ssl/client_cert_store_nss_unittest.cc",
-        "ssl/ssl_platform_key_nss_unittest.cc",
-      ]
-    }
+    sources += [
+      "ssl/client_cert_store_nss_unittest.cc",
+      "ssl/ssl_platform_key_nss_unittest.cc",
+    ]
     configs += [ "//build/config/linux/nss" ]
   }
 
@@ -3378,13 +3154,6 @@ target(_test_target_type, "net_unittests") {
     sources += [ "url_request/http_with_dns_over_https_unittest.cc" ]
   }
 
-  if (is_ios) {
-    bundle_deps = [
-      ":net_test_bundle_data",
-      ":registry_controlled_domains_bundle_data",
-    ]
-  }
-
   if (enable_unix_sockets) {
     sources += [
       "socket/unix_domain_client_socket_posix_unittest.cc",
@@ -3424,25 +3193,12 @@ target(_test_target_type, "net_unittests") {
     sources += [ "filter/zstd_source_stream_unittest.cc" ]
   }
 
-  if (is_win) {
-    libs = [
-      "iphlpapi.lib",
-      "ncrypt.lib",
-    ]
-  }
-
   if (chrome_root_store_supported) {
     sources += [ "cert/internal/trust_store_chrome_unittest.cc" ]
     deps += [
       "//base/version_info",
       "//net/data/ssl/chrome_root_store:gen_root_store_test_inc",
     ]
-
-    if (is_win) {
-      sources += [ "cert/internal/trust_store_win_unittest.cc" ]
-      sources += [ "cert/internal/path_builder_trust_store_win_unittest.cc" ]
-      libs += [ "crypt32.lib" ]
-    }
   }
 
   # Include transport_security_state_generator tests.
@@ -3509,57 +3265,52 @@ target(_test_target_type, "net_unittests") {
 }
 
 # !is_android && !is_win && !is_mac
-if (!is_ios) {
-  # TODO(crbug.com/40460932): this should be converted to "app" template and
-  # enabled on iOS too.
-  test("net_perftests") {
-    sources = [
-      "base/mime_sniffer_perftest.cc",
-      "cookies/cookie_monster_perftest.cc",
-      "disk_cache/disk_cache_perftest.cc",
-      "extras/sqlite/sqlite_persistent_cookie_store_perftest.cc",
-      "http/http_no_vary_search_data_perftest.cc",
-      "http/http_request_headers_perftest.cc",
-      "http/no_vary_search_cache_perftest.cc",
-      "socket/udp_socket_perftest.cc",
-      "spdy/spdy_http_utils_perftest.cc",
-      "url_request/url_request_quic_perftest.cc",
-    ]
+# TODO(crbug.com/40460932): this should be converted to "app" template and
+# enabled on iOS too.
+test("net_perftests") {
+  sources = [
+    "base/mime_sniffer_perftest.cc",
+    "cookies/cookie_monster_perftest.cc",
+    "disk_cache/disk_cache_perftest.cc",
+    "extras/sqlite/sqlite_persistent_cookie_store_perftest.cc",
+    "http/http_no_vary_search_data_perftest.cc",
+    "http/http_request_headers_perftest.cc",
+    "http/no_vary_search_cache_perftest.cc",
+    "socket/udp_socket_perftest.cc",
+    "spdy/spdy_http_utils_perftest.cc",
+    "url_request/url_request_quic_perftest.cc",
+  ]
 
-    deps = [
-      ":extras",
-      ":net",
-      ":quic_test_tools",
-      ":simple_quic_tools",
-      ":test_support",
-      "//base",
-      "//base:i18n",
-      "//base/test:test_support_perf",
-      "//testing/gtest",
-      "//testing/perf",
-      "//third_party/google_benchmark",
-      "//url",
-    ]
-    data_deps = [
-      # Needed for isolate script to execute.
-      "//testing:run_perf_test",
-    ]
+  deps = [
+    ":extras",
+    ":net",
+    ":quic_test_tools",
+    ":simple_quic_tools",
+    ":test_support",
+    "//base",
+    "//base:i18n",
+    "//base/test:test_support_perf",
+    "//testing/gtest",
+    "//testing/perf",
+    "//third_party/google_benchmark",
+    "//url",
+  ]
+  data_deps = [
+    # Needed for isolate script to execute.
+    "//testing:run_perf_test",
+  ]
 
-    if (enable_device_bound_sessions) {
-      sources += [ "device_bound_sessions/session_store_impl_perftest.cc" ]
-      deps += [
-        ":device_bound_sessions_storage_proto",
-        "//components/unexportable_keys",
-        "//crypto:test_support",
-      ]
-    }
+  if (enable_device_bound_sessions) {
+    sources += [ "device_bound_sessions/session_store_impl_perftest.cc" ]
+    deps += [
+      ":device_bound_sessions_storage_proto",
+      "//components/unexportable_keys",
+      "//crypto:test_support",
+    ]
+  }
 
-    if (enable_websockets) {
-      sources += [ "websockets/websocket_frame_perftest.cc" ]
-    }
-    if (is_win) {
-      deps += [ "//build/win:default_exe_manifest" ]
-    }
+  if (enable_websockets) {
+    sources += [ "websockets/websocket_frame_perftest.cc" ]
   }
 }
 
@@ -3850,21 +3601,19 @@ fuzzer_test("canonicalize_host_fuzzer") {
   dict = "base/canonicalize_host_fuzzer.dict"
 }
 
-if (!is_win) {
-  fuzzer_test("net_ntlm_ntlm_client_fuzzer") {
-    sources = [
-      "ntlm/ntlm_client_fuzzer.cc",
-      "ntlm/ntlm_test_data.h",
-    ]
-    deps = [
-      ":net_fuzzer_test_support",
-      ":test_support",
-      "//base",
-      "//net",
-    ]
-    dict = "data/fuzzer_dictionaries/net_ntlm_ntlm_client_fuzzer.dict"
-    seed_corpus = "data/fuzzer_data/ntlm_client_fuzzer/"
-  }
+fuzzer_test("net_ntlm_ntlm_client_fuzzer") {
+  sources = [
+    "ntlm/ntlm_client_fuzzer.cc",
+    "ntlm/ntlm_test_data.h",
+  ]
+  deps = [
+    ":net_fuzzer_test_support",
+    ":test_support",
+    "//base",
+    "//net",
+  ]
+  dict = "data/fuzzer_dictionaries/net_ntlm_ntlm_client_fuzzer.dict"
+  seed_corpus = "data/fuzzer_data/ntlm_client_fuzzer/"
 }
 
 if (!disable_brotli_filter) {

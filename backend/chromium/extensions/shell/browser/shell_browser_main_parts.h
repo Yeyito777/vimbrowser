@@ -25,10 +25,6 @@ class ShellExtensionsBrowserClient;
 class ShellExtensionSystem;
 class ShellUpdateQueryParamsDelegate;
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ShellAudioController;
-class ShellNetworkController;
-#endif
 
 // Handles initialization of AppShell.
 class ShellBrowserMainParts : public content::BrowserMainParts {
@@ -59,17 +55,11 @@ class ShellBrowserMainParts : public content::BrowserMainParts {
   // Initializes the ExtensionSystem.
   void InitExtensionSystem();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ShellNetworkController> network_controller_;
-#endif
 
   std::unique_ptr<ShellBrowserContext> browser_context_;
   std::unique_ptr<PrefService> local_state_;
   std::unique_ptr<PrefService> user_pref_service_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ShellAudioController> audio_controller_;
-#endif
 
   // The DesktopController outlives ExtensionSystem and context-keyed services.
   std::unique_ptr<DesktopController> desktop_controller_;

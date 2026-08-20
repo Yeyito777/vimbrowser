@@ -196,9 +196,6 @@ absl_test("vlog_is_on_test") {
 
 absl_test("absl_check_test") {
   sources = [ "absl_check_test.cc" ]
-  if (is_ios) {
-    sources = []
-  }
   deps = [
     ":absl_check",
     ":check_test_impl",
@@ -215,9 +212,6 @@ absl_test("absl_log_basic_test") {
 
 absl_test("check_test") {
   sources = [ "check_test.cc" ]
-  if (is_ios) {
-    sources = []
-  }
   deps = [
     ":check",
     ":check_test_impl",
@@ -350,9 +344,6 @@ absl_test("log_macro_hygiene_test") {
 
 absl_test("log_sink_test") {
   sources = [ "log_sink_test.cc" ]
-  if (is_ios) {
-    sources = []
-  }
   deps = [
     ":log",
     ":log_sink",
@@ -399,9 +390,6 @@ absl_test("log_modifier_methods_test") {
 
 absl_test("scoped_mock_log_test") {
   sources = [ "scoped_mock_log_test.cc" ]
-  if (is_ios) {
-    sources = []
-  }
   deps = [
     ":globals",
     ":log",

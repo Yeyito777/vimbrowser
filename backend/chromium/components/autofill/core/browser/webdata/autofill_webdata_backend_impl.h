@@ -257,10 +257,6 @@ class AutofillWebDataBackendImpl final
   // information, see crbug.com/411681430.
   WebDatabase::State ClearLocalCvcsUpToMay2025(WebDatabase* db);
 
-#if BUILDFLAG(IS_IOS)
-  // Method to clean up for crbug.com/445879524.
-  WebDatabase::State CleanupForCrbug445879524(WebDatabase* db);
-#endif  // BUILDFLAG(IS_IOS)
 
   // Returns the PaymentsCustomerData from the database.
   std::unique_ptr<WDTypedResult> GetPaymentsCustomerData(WebDatabase* db);

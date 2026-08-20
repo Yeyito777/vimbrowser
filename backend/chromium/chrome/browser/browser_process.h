@@ -50,11 +50,9 @@ class StatusTray;
 class SystemNetworkContextManager;
 class WebRtcLogUploader;
 
-#if !BUILDFLAG(IS_ANDROID)
 class HidSystemTrayIcon;
 class UsbSystemTrayIcon;
 class IntranetRedirectDetector;
-#endif
 
 namespace embedder_support {
 class OriginTrialsSettingsStorage;
@@ -217,9 +215,7 @@ class BrowserProcess {
   virtual supervised_user::DeviceParentalControls&
   device_parental_controls() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   virtual IntranetRedirectDetector* intranet_redirect_detector() = 0;
-#endif
 
   // Sets or gets the locale used by the application. It is the IETF language
   // tag, defined in BCP 47. The region subtag is not included when it adds no
@@ -280,18 +276,13 @@ class BrowserProcess {
 
   virtual component_updater::ComponentUpdateService* component_updater() = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  virtual MediaFileSystemRegistry* media_file_system_registry() = 0;
-#endif
 
   virtual WebRtcLogUploader* webrtc_log_uploader() = 0;
 
   virtual network_time::NetworkTimeTracker* network_time_tracker() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Avoid using this. Prefer using GCMProfileServiceFactory.
   virtual gcm::GCMDriver* gcm_driver() = 0;
-#endif
 
   // Returns the tab manager. On non-supported platforms, this returns null.
   // TODO(sebmarchand): Update callers to
@@ -305,7 +296,6 @@ class BrowserProcess {
   // through the policy engine.
   virtual SerialPolicyAllowedPorts* serial_policy_allowed_ports() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns the object which maintains Human Interface Device (HID) system tray
   // icon.
   virtual HidSystemTrayIcon* hid_system_tray_icon() = 0;
@@ -313,7 +303,6 @@ class BrowserProcess {
   // Returns the object which maintains Universal Serial Bus (USB) system tray
   // icon.
   virtual UsbSystemTrayIcon* usb_system_tray_icon() = 0;
-#endif
 
   // Obtain the browser instance of OSCryptAsync, which should be used for data
   // encryption.

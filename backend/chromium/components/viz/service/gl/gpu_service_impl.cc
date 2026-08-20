@@ -84,18 +84,7 @@
 #include "url/gurl.h"
 
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/chromeos_camera/gpu_mjpeg_decode_accelerator_factory.h"
-#include "components/chromeos_camera/mojo_jpeg_encode_accelerator_service.h"
-#include "components/chromeos_camera/mojo_mjpeg_decode_accelerator_service.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/service/shared_image/d3d_image_backing_factory.h"
-#include "mojo/public/cpp/system/platform_handle.h"
-#include "ui/gl/dcomp_surface_registry.h"
-#include "ui/gl/direct_composition_support.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "ui/base/cocoa/quartz_util.h"
@@ -131,12 +120,7 @@ constexpr char kGpuInitializationEventCategory[] = "latency";
 constexpr char kGpuInitializationEvent[] = "GpuInitialization";
 
 bool IsAcceleratedJpegDecodeSupported() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return chromeos_camera::GpuMjpegDecodeAcceleratorFactory::
-      IsAcceleratedJpegDecodeSupported();
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void RunGetPeakGpuMemoryUsageCallbackOnMainThread(
@@ -275,9 +259,6 @@ GpuServiceImpl::~GpuServiceImpl() {
 
   bind_task_tracker_.TryCancelAll();
 
-#if BUILDFLAG(IS_WIN)
-  gl::DirectCompositionOverlayCapsMonitor::GetInstance()->RemoveObserver(this);
-#endif
 
   // Destroy the receiver on the IO thread.
   {
@@ -377,19 +358,6 @@ void GpuServiceImpl::InitializeWithHost(
       default_offscreen_surface, std::move(creation_params), sync_point_manager,
       shared_image_manager, scheduler, shutdown_event);
 
-#if BUILDFLAG(IS_WIN)
-  // shared_image_d3d must be initialized after we call
-  // InitializeWithHostInternal as that is where the shared context state is
-  // created.
-  auto shared_context_state = GetContextState();
-  if (shared_context_state) {
-    gpu_info_.shared_image_d3d =
-        gpu::D3DImageBackingFactory::IsD3DSharedImageSupported(
-            shared_context_state->GetD3D11Device().Get(), gpu_preferences_);
-
-    gpu_host_->DidUpdateGPUInfo(gpu_info_);
-  }
-#endif
 }
 
 void GpuServiceImpl::InitializeWithHostInternal(
@@ -473,12 +441,6 @@ void GpuServiceImpl::InitializeWithHostInternal(
 
   UMA_HISTOGRAM_BOOLEAN("GPU.DrDcEnabled", !!compositor_gpu_thread_);
 
-#if BUILDFLAG(IS_WIN)
-  // Add GpuServiceImpl to DirectCompositionOverlayCapsMonitor observer list for
-  // overlay and DXGI info update. This should be added after |gpu_host_| is
-  // initialized.
-  gl::DirectCompositionOverlayCapsMonitor::GetInstance()->AddObserver(this);
-#endif
 }
 
 void GpuServiceImpl::Bind(
@@ -511,42 +473,7 @@ void GpuServiceImpl::SetPriorityChangedCallback(
   priority_changed_callback_ = std::move(callback);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void GpuServiceImpl::CreateJpegDecodeAccelerator(
-    mojo::PendingReceiver<chromeos_camera::mojom::MjpegDecodeAccelerator>
-        jda_receiver) {
-  DCHECK(io_runner_->BelongsToCurrentThread());
-  chromeos_camera::MojoMjpegDecodeAcceleratorService::Create(
-      std::move(jda_receiver),
-      base::BindRepeating(
-          &GpuServiceImpl::SetMjpegDecodeAcceleratorBeginFrameCB,
-          base::Unretained(this)));
-}
 
-void GpuServiceImpl::CreateJpegEncodeAccelerator(
-    mojo::PendingReceiver<chromeos_camera::mojom::JpegEncodeAccelerator>
-        jea_receiver) {
-  DCHECK(io_runner_->BelongsToCurrentThread());
-  chromeos_camera::MojoJpegEncodeAcceleratorService::Create(
-      std::move(jea_receiver));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_WIN)
-void GpuServiceImpl::RegisterDCOMPSurfaceHandle(
-    mojo::PlatformHandle surface_handle,
-    RegisterDCOMPSurfaceHandleCallback callback) {
-  base::UnguessableToken token =
-      gl::DCOMPSurfaceRegistry::GetInstance()->RegisterDCOMPSurfaceHandle(
-          surface_handle.TakeHandle());
-  std::move(callback).Run(token);
-}
-
-void GpuServiceImpl::UnregisterDCOMPSurfaceHandle(
-    const base::UnguessableToken& token) {
-  gl::DCOMPSurfaceRegistry::GetInstance()->UnregisterDCOMPSurfaceHandle(token);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void GpuServiceImpl::CreateVideoEncodeAcceleratorProvider(
     mojo::PendingReceiver<media::mojom::VideoEncodeAcceleratorProvider>
@@ -557,20 +484,6 @@ void GpuServiceImpl::CreateVideoEncodeAcceleratorProvider(
   // and creating encoder might take quite some time, and they might block
   // processing of other mojo calls if executed on the current runner.
   scoped_refptr<base::SequencedTaskRunner> runner;
-#if BUILDFLAG(IS_FUCHSIA)
-  // TODO(crbug.com/40850116): Fuchsia does not support FIDL communication from
-  // ThreadPool's worker threads.
-  if (!vea_thread_) {
-    base::Thread::Options thread_options(base::MessagePumpType::IO, /*size=*/0);
-    vea_thread_ =
-        std::make_unique<base::Thread>("GpuVideoEncodeAcceleratorThread");
-    CHECK(vea_thread_->StartWithOptions(std::move(thread_options)));
-  }
-  runner = vea_thread_->task_runner();
-#elif BUILDFLAG(IS_WIN)
-  // Windows hardware encoder requires a COM STA thread.
-  runner = base::ThreadPool::CreateCOMSTATaskRunner({base::MayBlock()});
-#else
   // MayBlock() because MF VEA can take long time running GetSupportedProfiles()
   if (base::FeatureList::IsEnabled(
           media::kUseSequencedTaskRunnerForMojoVEAProvider)) {
@@ -578,7 +491,6 @@ void GpuServiceImpl::CreateVideoEncodeAcceleratorProvider(
   } else {
     runner = base::ThreadPool::CreateSingleThreadTaskRunner({base::MayBlock()});
   }
-#endif
   media::MojoVideoEncodeAcceleratorProvider::Create(
       std::move(vea_provider_receiver),
       base::BindRepeating(&media::GpuVideoEncodeAcceleratorFactory::CreateVEA),
@@ -656,22 +568,6 @@ void GpuServiceImpl::GetPeakMemoryUsage(uint32_t sequence_num,
                                 weak_ptr_, sequence_num, std::move(callback)));
 }
 
-#if BUILDFLAG(IS_WIN)
-void GpuServiceImpl::RequestDXGIInfo(RequestDXGIInfoCallback callback) {
-  DCHECK(io_runner_->BelongsToCurrentThread());
-  main_runner_->PostTask(
-      FROM_HERE, base::BindOnce(&GpuServiceImpl::RequestDXGIInfoOnMainThread,
-                                weak_ptr_, std::move(callback)));
-}
-
-void GpuServiceImpl::RequestDXGIInfoOnMainThread(
-    RequestDXGIInfoCallback callback) {
-  DCHECK(main_runner_->BelongsToCurrentThread());
-  dxgi_info_ = gl::GetDirectCompositionHDRMonitorDXGIInfo();
-  io_runner_->PostTask(FROM_HERE,
-                       base::BindOnce(std::move(callback), dxgi_info_.Clone()));
-}
-#endif
 
 void GpuServiceImpl::LoseAllContexts() {
   if (IsExiting())
@@ -1201,25 +1097,6 @@ void GpuServiceImpl::SetMjpegDecodeAcceleratorBeginFrameCB(
   mjpeg_decode_accelerator_begin_frame_cb_ = std::move(cb);
 }
 
-#if BUILDFLAG(IS_WIN)
-// Update Overlay and DXGI Info
-void GpuServiceImpl::OnOverlayCapsChanged() {
-  gpu::OverlayInfo old_overlay_info = gpu_info_.overlay_info;
-  gpu::CollectHardwareOverlayInfo(&gpu_info_.overlay_info);
-
-  // Update overlay info in the GPU process and send the updated data back to
-  // the GPU host in the Browser process through mojom if the info has changed.
-  if (old_overlay_info != gpu_info_.overlay_info)
-    gpu_host_->DidUpdateOverlayInfo(gpu_info_.overlay_info);
-
-  // Update DXGI adapter info in the GPU process through the GPU host mojom.
-  auto old_dxgi_info = std::move(dxgi_info_);
-  dxgi_info_ = gl::GetDirectCompositionHDRMonitorDXGIInfo();
-  if (!mojo::Equals(dxgi_info_, old_dxgi_info)) {
-    gpu_host_->DidUpdateDXGIInfo(dxgi_info_.Clone());
-  }
-}
-#endif
 
 gpu::SyncPointManager* GpuServiceImpl::CreateSyncPointManager() {
   owned_sync_point_manager_ = std::make_unique<gpu::SyncPointManager>();

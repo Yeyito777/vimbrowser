@@ -45,10 +45,6 @@ source_set("global_media_controls") {
     "//ui/base",
     "//ui/gfx",
   ]
-
-  if (is_chromeos) {
-    public_deps += [ "//ash" ]
-  }
 }
 
 source_set("impl") {
@@ -137,8 +133,4 @@ source_set("unit_tests") {
     "//skia",
     "//ui/gfx:test_support",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/crosapi:test_support" ]
-  }
 }

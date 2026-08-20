@@ -12,11 +12,7 @@
 #include "build/build_config.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/test/test_reg_util_win.h"
-#else
 #include "base/test/scoped_path_override.h"
-#endif
 
 // This class does not work yet on desktop Android because it relies on running
 // a python executable on the test device.
@@ -36,10 +32,6 @@ class ScopedTestNativeMessagingHost {
   static const char kBinaryMissingHostName[];
   static const char kSupportsNativeInitiatedConnectionsHostName[];
 
-#if BUILDFLAG(IS_WIN)
-  // When run on Windows, an additional .EXE backed NativeHost is available.
-  static const char kHostExeName[];
-#endif
 
   static const char kExtensionId[];
 
@@ -52,21 +44,13 @@ class ScopedTestNativeMessagingHost {
   ~ScopedTestNativeMessagingHost();
 
   void RegisterTestHost(bool user_level);
-#if BUILDFLAG(IS_WIN)
-  // Register the Windows-only Native Host exe.
-  void RegisterTestExeHost(std::string_view filename, bool user_level);
-#endif
 
   const base::FilePath& temp_dir() { return temp_dir_.GetPath(); }
 
  private:
   base::ScopedTempDir temp_dir_;
 
-#if BUILDFLAG(IS_WIN)
-  registry_util::RegistryOverrideManager registry_override_;
-#else
   std::unique_ptr<base::ScopedPathOverride> path_override_;
-#endif
 };
 
 }  // namespace extensions

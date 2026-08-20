@@ -34,9 +34,6 @@ void AddURLPatternSetToList(
     network::mojom::CorsOriginAccessMatchPriority priority) {
   static const char* const kSchemes[] = {
       content::kChromeUIScheme,
-#if BUILDFLAG(IS_CHROMEOS)
-      content::kExternalFileScheme,
-#endif
       extensions::kExtensionScheme,
       url::kFileScheme,
       url::kFtpScheme,

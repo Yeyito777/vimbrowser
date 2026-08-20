@@ -17,11 +17,7 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <dlfcn.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace crashpad {
 namespace test {
@@ -36,19 +32,11 @@ class ScopedModuleHandle {
     Impl(const Impl&) = delete;
     Impl& operator=(const Impl&) = delete;
 
-#if BUILDFLAG(IS_POSIX)
     using ModuleHandle = void*;
 
     static void* LookUpSymbol(ModuleHandle handle, const char* symbol_name) {
       return dlsym(handle, symbol_name);
     }
-#elif BUILDFLAG(IS_WIN)
-    using ModuleHandle = HMODULE;
-
-    static void* LookUpSymbol(ModuleHandle handle, const char* symbol_name) {
-      return reinterpret_cast<void*>(GetProcAddress(handle, symbol_name));
-    }
-#endif
 
     static void Close(ModuleHandle handle);
   };

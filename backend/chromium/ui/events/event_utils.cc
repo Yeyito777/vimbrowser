@@ -24,11 +24,6 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "ui/events/win/events_win_utils.h"
-#endif
 
 namespace ui {
 
@@ -194,38 +189,6 @@ void ComputeEventLatencyOS(EventType type,
   UMA_HISTOGRAM_EVENT_LATENCY_TIMES("Event.Latency.OS2", delta);
 }
 
-#if BUILDFLAG(IS_WIN)
-
-void ComputeEventLatencyOSFromTOUCHINPUT(EventType event_type,
-                                         TOUCHINPUT touch_input,
-                                         base::TimeTicks current_time) {
-  base::TimeTicks time_stamp =
-      EventLatencyTimeFromTickClock(touch_input.dwTime, current_time);
-  ComputeEventLatencyOS(event_type, time_stamp, current_time);
-}
-
-void ComputeEventLatencyOSFromPOINTER_INFO(EventType event_type,
-                                           POINTER_INFO pointer_info,
-                                           base::TimeTicks current_time) {
-  base::TimeTicks time_stamp;
-  if (pointer_info.PerformanceCount) {
-    if (!base::TimeTicks::IsHighResolution()) {
-      // The tick clock will be incompatible with |event_time|.
-      return;
-    }
-    time_stamp =
-        EventLatencyTimeFromPerformanceCounter(pointer_info.PerformanceCount);
-  } else if (pointer_info.dwTime) {
-    time_stamp =
-        EventLatencyTimeFromTickClock(pointer_info.dwTime, current_time);
-  } else {
-    // Bad POINTER_INFO with no timestamp.
-    return;
-  }
-  ComputeEventLatencyOS(event_type, time_stamp, current_time);
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 void ConvertEventLocationToTargetWindowLocation(
     const gfx::Point& target_window_origin,
@@ -359,11 +322,6 @@ std::vector<std::string_view> KeyEventFlagsNames(int event_flags) {
     names.push_back("IS_EXTENDED_KEY");
   if (event_flags & EF_IS_STYLUS_BUTTON)
     names.push_back("IS_STYLUS_BUTTON");
-#if BUILDFLAG(IS_CHROMEOS)
-  if (event_flags & EF_IS_CUSTOMIZED_FROM_BUTTON) {
-    names.push_back("IS_CUSTOMIZED_FROM_BUTTON");
-  }
-#endif
 
   return names;
 }

@@ -150,16 +150,7 @@ ApiKeyCache::ApiKeyCache(const DefaultApiKeys& default_api_keys)
                             api_key_from_feature == api_key_);
 
 // A special non-stable key is at the moment defined only for Android Chrome.
-#if BUILDFLAG(IS_ANDROID)
-  api_key_non_stable_ = CalculateKeyValue(
-      default_api_keys.google_api_key_android_non_stable,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_ANDROID_NON_STABLE), std::string(),
-      nullptr, std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-#else
   api_key_non_stable_ = api_key_;
-#endif
 
   api_key_remoting_ = CalculateKeyValue(
       default_api_keys.google_api_key_remoting,
@@ -174,59 +165,13 @@ ApiKeyCache::ApiKeyCache(const DefaultApiKeys& default_api_keys)
       std::string(), environment.get(), command_line, gaia_config,
       default_api_keys.allow_override_via_environment,
       default_api_keys.allow_unset_values);
-#if !BUILDFLAG(IS_ANDROID)
   api_key_hats_ = CalculateKeyValue(
       default_api_keys.google_api_key_hats,
       STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_HATS), std::string(), nullptr,
       std::string(), environment.get(), command_line, gaia_config,
       default_api_keys.allow_override_via_environment,
       default_api_keys.allow_unset_values);
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  api_key_sharing_ = CalculateKeyValue(
-      default_api_keys.google_api_key_sharing,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_SHARING), std::string(), nullptr,
-      std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-  api_key_read_aloud_ = CalculateKeyValue(
-      default_api_keys.google_api_key_read_aloud,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_READ_ALOUD), std::string(), nullptr,
-      std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-  api_key_fresnel_ = CalculateKeyValue(
-      default_api_keys.google_api_key_fresnel,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_FRESNEL), std::string(), nullptr,
-      std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-  api_key_boca_ = CalculateKeyValue(
-      default_api_keys.google_api_key_boca,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_BOCA), std::string(), nullptr,
-      std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-  api_key_cros_system_geo_ = CalculateKeyValue(
-      default_api_keys.google_api_key_cros_system_geo_,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_CROS_SYSTEM_GEO), std::string(),
-      nullptr, std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-  api_key_cros_chrome_geo_ = CalculateKeyValue(
-      default_api_keys.google_api_key_cros_chrome_geo_,
-      STRINGIZE_NO_EXPANSION(GOOGLE_API_KEY_CROS_CHROME_GEO), std::string(),
-      nullptr, std::string(), environment.get(), command_line, gaia_config,
-      default_api_keys.allow_override_via_environment,
-      default_api_keys.allow_unset_values);
-
-#endif
 
   metrics_key_ = CalculateKeyValue(
       default_api_keys.google_metrics_signing_key,

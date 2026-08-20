@@ -63,9 +63,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/critical_closure.h"
-#endif
 
 using base::Time;
 
@@ -213,21 +210,6 @@ bool HistoryService::BackendLoaded() {
   return backend_loaded_;
 }
 
-#if BUILDFLAG(IS_IOS)
-void HistoryService::HandleBackgrounding() {
-  TRACE_EVENT0("browser", "HistoryService::HandleBackgrounding");
-
-  if (!backend_task_runner_ || !history_backend_.get())
-    return;
-
-  ScheduleTask(
-      PRIORITY_NORMAL,
-      base::MakeCriticalClosure(
-          "HistoryService::HandleBackgrounding",
-          base::BindOnce(&HistoryBackend::PersistState, history_backend_.get()),
-          /*is_immediate=*/true));
-}
-#endif
 
 void HistoryService::ClearCachedDataForContextID(ContextID context_id) {
   TRACE_EVENT0("browser", "HistoryService::ClearCachedDataForContextID");

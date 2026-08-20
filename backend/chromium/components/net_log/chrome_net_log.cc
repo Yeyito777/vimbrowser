@@ -37,11 +37,7 @@ base::DictValue GetPlatformConstantsForNetLog(
       base::SysInfo::OperatingSystemVersion().c_str(),
       base::SysInfo::OperatingSystemArchitecture().c_str());
   dict.Set("os_type", os_type);
-#if BUILDFLAG(IS_WIN)
-  dict.Set("command_line", base::WideToUTF8(command_line_string));
-#else
   dict.Set("command_line", command_line_string);
-#endif
 
   constants_dict.Set("clientInfo", std::move(dict));
 

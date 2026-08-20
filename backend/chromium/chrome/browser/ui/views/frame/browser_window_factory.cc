@@ -22,10 +22,6 @@
 #include "ui/aura/window_occlusion_tracker.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/views/frame/browser_view_ash.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif
 
 // static
 std::unique_ptr<BrowserWindow, BrowserWindowDeleter>
@@ -47,11 +43,7 @@ BrowserWindow::CreateBrowserWindow(Browser* browser,
   // Create the view and the frame. The frame will attach itself via the view
   // so we don't need to do anything with the pointer.
   BrowserView* view = nullptr;
-#if BUILDFLAG(IS_CHROMEOS)
-  view = new BrowserViewAsh(browser);
-#else
   view = new BrowserView(browser);
-#endif
   auto browser_widget = std::make_unique<BrowserWidget>(view);
   view->set_browser_widget(std::move(browser_widget));
   if (in_tab_dragging) {
@@ -72,11 +64,6 @@ BrowserWindow::CreateBrowserWindow(Browser* browser,
   // because it requires gfx::NativeWindow to be an aura::Window*.
   view->GetWidget()->GetNativeWindow()->SetProperty(
       aura::client::kCreatedByUserGesture, user_gesture);
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::IsKioskSession()) {
-    view->SetForceFullscreen(true);
-  }
 #endif
 
   return std::unique_ptr<BrowserWindow, BrowserWindowDeleter>(view);

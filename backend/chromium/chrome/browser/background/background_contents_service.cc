@@ -59,9 +59,6 @@
 #include "ui/message_center/public/cpp/notification_types.h"
 #include "ui/message_center/public/cpp/notifier_id.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/notifier_catalogs.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using content::SiteInstance;
 using content::WebContents;
@@ -761,14 +758,8 @@ void BackgroundContentsService::NotificationImageReady(
       message_center::NOTIFICATION_TYPE_SIMPLE, id, std::u16string(), message,
       ui::ImageModel::FromImage(notification_icon), std::u16string(),
       GURL("chrome://extension-crash"),
-#if BUILDFLAG(IS_CHROMEOS)
-      message_center::NotifierId(
-          message_center::NotifierType::SYSTEM_COMPONENT, kNotifierId,
-          ash::NotificationCatalogName::kBackgroundCrash),
-#else
       message_center::NotifierId(message_center::NotifierType::SYSTEM_COMPONENT,
                                  kNotifierId),
-#endif  // BUILDFLAG(IS_CHROMEOS)
       {}, delegate);
   notification_service->Display(NotificationHandler::Type::TRANSIENT,
                                 notification,

@@ -27,11 +27,6 @@
 #include "ui/gl/gl_implementation.h"
 #include "ui/gl/gpu_preference.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <dxgi.h>
-
-#include "base/win/windows_types.h"
-#endif
 
 #if BUILDFLAG(ENABLE_VULKAN)
 #include "gpu/vulkan/vulkan_info.h"
@@ -179,44 +174,6 @@ struct GPU_CONFIG_EXPORT VideoEncodeAcceleratorSupportedProfile {
 using VideoEncodeAcceleratorSupportedProfiles =
     std::vector<VideoEncodeAcceleratorSupportedProfile>;
 
-#if BUILDFLAG(IS_WIN)
-enum class OverlaySupport {
-  kNone = 0,
-  kDirect = 1,
-  kScaling = 2,
-  kSoftware = 3
-};
-
-GPU_CONFIG_EXPORT const char* OverlaySupportToString(OverlaySupport support);
-
-struct GPU_CONFIG_EXPORT OverlayInfo {
-  OverlayInfo() = default;
-  OverlayInfo(const OverlayInfo& other) = default;
-  OverlayInfo& operator=(const OverlayInfo& other) = default;
-  bool operator==(const OverlayInfo& other) const {
-    return direct_composition == other.direct_composition &&
-           supports_overlays == other.supports_overlays &&
-           yuy2_overlay_support == other.yuy2_overlay_support &&
-           nv12_overlay_support == other.nv12_overlay_support &&
-           bgra8_overlay_support == other.bgra8_overlay_support &&
-           rgb10a2_overlay_support == other.rgb10a2_overlay_support &&
-           p010_overlay_support == other.p010_overlay_support;
-  }
-  bool operator!=(const OverlayInfo& other) const { return !(*this == other); }
-
-  // True if we use direct composition surface on Windows.
-  bool direct_composition = false;
-
-  // True if we use direct composition surface overlays on Windows.
-  bool supports_overlays = false;
-  OverlaySupport yuy2_overlay_support = OverlaySupport::kNone;
-  OverlaySupport nv12_overlay_support = OverlaySupport::kNone;
-  OverlaySupport bgra8_overlay_support = OverlaySupport::kNone;
-  OverlaySupport rgb10a2_overlay_support = OverlaySupport::kNone;
-  OverlaySupport p010_overlay_support = OverlaySupport::kNone;
-};
-
-#endif
 
 #if BUILDFLAG(IS_MAC)
 GPU_CONFIG_EXPORT bool ValidateMacOSSpecificTextureTarget(int target);
@@ -245,19 +202,6 @@ struct GPU_CONFIG_EXPORT GPUInfo {
     uint32_t revision = 0u;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-    // The graphics card subsystem id.
-    // The lower 16 bits represents the subsystem vendor id.
-    uint32_t sub_sys_id = 0u;
-
-    // The graphics card LUID. This is a unique identifier for the graphics card
-    // that is guaranteed to be unique until the computer is restarted. The LUID
-    // is used over the vendor id and device id because the device id is only
-    // unique relative its vendor, not to each other. If there are more than one
-    // of the same exact graphics card, they all have the same vendor id and
-    // device id but different LUIDs.
-    CHROME_LUID luid = {};
-#endif  // BUILDFLAG(IS_WIN)
 
     // The 64-bit ID used for GPU selection by ANGLE_platform_angle_device_id.
     // On Mac this matches the registry ID of an IOGraphicsAccelerator2 or
@@ -301,9 +245,6 @@ struct GPU_CONFIG_EXPORT GPUInfo {
 
   const GPUDevice* GetGpuByPreference(gl::GpuPreference preference) const;
 
-#if BUILDFLAG(IS_WIN)
-  GPUDevice* FindGpuByLuid(DWORD low_part, LONG high_part);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_VULKAN)
   std::vector<uint8_t> SerializeVulkanInfo() const;
@@ -426,25 +367,6 @@ struct GPU_CONFIG_EXPORT GPUInfo {
   uint32_t target_cpu_bits = 31;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // The supported DirectML feature level in the gpu driver;
-  uint32_t directml_feature_level = 0;
-
-  // The supported d3d12 feature level in the gpu driver;
-  uint32_t d3d12_feature_level = 0;
-
-  // The supported d3d11 feature level in the gpu driver;
-  uint32_t d3d11_feature_level = 0;
-
-  // The support Vulkan API version in the gpu driver;
-  uint32_t vulkan_version = 0;
-
-  // The GPU hardware overlay info.
-  OverlayInfo overlay_info;
-
-  // Are d3d shared images supported.
-  bool shared_image_d3d = false;
-#endif
   VideoDecodeAcceleratorSupportedProfiles
       video_decode_accelerator_supported_profiles;
 

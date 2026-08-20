@@ -35,13 +35,7 @@ source_set("power_save_blocker") {
     deps += [ "//dbus" ]
   }
 
-  if (is_chromeos) {
-    sources += [ "power_save_blocker_ash.cc" ]
-    deps += [
-      "//chromeos/dbus/power",
-      "//chromeos/dbus/power:power_manager_proto",
-    ]
-  } else if (is_linux && use_dbus) {
+  if (is_linux && use_dbus) {
     sources += [ "power_save_blocker_linux.cc" ]
     deps += [
       "//components/dbus/thread_linux",
@@ -55,8 +49,6 @@ source_set("power_save_blocker") {
       "CoreFoundation.framework",
       "IOKit.framework",
     ]
-  } else if (is_win) {
-    sources += [ "power_save_blocker_win.cc" ]
   } else {
     # Fuchsia and non-DBus Linux.
     sources += [ "power_save_blocker_stub.cc" ]

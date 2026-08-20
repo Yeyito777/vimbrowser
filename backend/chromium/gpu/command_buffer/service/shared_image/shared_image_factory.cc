@@ -68,27 +68,12 @@
 #include "gpu/command_buffer/service/shared_image/iosurface_image_backing_factory.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/service/dxgi_shared_handle_manager.h"
-#include "gpu/command_buffer/service/shared_image/d3d_image_backing_factory.h"
-#include "gpu/command_buffer/service/shared_image/dcomp_image_backing_factory.h"
-#include "ui/gl/direct_composition_support.h"
-#include "ui/gl/gl_angle_util_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/channel.h>
-#include "gpu/vulkan/vulkan_device_queue.h"
-#include "gpu/vulkan/vulkan_implementation.h"
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 #if BUILDFLAG(USE_DAWN)
 #include "gpu/command_buffer/service/shared_image/dawn_image_backing_factory.h"
 #endif  // BUILDFLAG(USE_DAWN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #include "base/feature_list.h"
 
@@ -110,10 +95,6 @@ const char* GmbTypeToString(gfx::GpuMemoryBufferType type) {
     case gfx::NATIVE_PIXMAP:
       return "platform";
 #endif
-#if BUILDFLAG(IS_WIN)
-    case gfx::DXGI_SHARED_HANDLE:
-      return "platform";
-#endif
   }
   NOTREACHED();
 }
@@ -123,8 +104,6 @@ gfx::GpuMemoryBufferType GetNativeBufferType() {
   return gfx::GpuMemoryBufferType::IO_SURFACE_BUFFER;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
   return gfx::GpuMemoryBufferType::NATIVE_PIXMAP;
-#elif BUILDFLAG(IS_WIN)
-  return gfx::GpuMemoryBufferType::DXGI_SHARED_HANDLE;
 #else
   return gfx::GpuMemoryBufferType::EMPTY_BUFFER;
 #endif
@@ -203,36 +182,6 @@ SharedImageFactory::SharedImageFactory(
     factories_.push_back(std::move(gl_texture_backing_factory));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (gl::DirectCompositionSupported()) {
-    factories_.push_back(
-        std::make_unique<DCompImageBackingFactory>(context_state_));
-  }
-  // WebNN requires use of shared images for WebGPUInterop.
-  const bool is_webnn_feature_enabled =
-      (gpu_feature_info.status_values[GPU_FEATURE_TYPE_WEBNN] ==
-       kGpuFeatureStatusEnabled);
-
-  const bool enable_webnn_only_d3d_factory =
-      is_webnn_feature_enabled && !IsD3DSharedImageSupported();
-
-  if (IsD3DSharedImageSupported() || enable_webnn_only_d3d_factory) {
-    auto d3d_factory = std::make_unique<D3DImageBackingFactory>(
-        context_state_->GetD3D11Device(),
-        shared_image_manager_->dxgi_shared_handle_manager(),
-        context_state_->GetGLFormatCaps(), workarounds_,
-        enable_webnn_only_d3d_factory);
-    factories_.push_back(std::move(d3d_factory));
-  }
-  {
-    auto gl_texture_backing_factory =
-        std::make_unique<GLTextureImageBackingFactory>(
-            gpu_preferences_, workarounds_, feature_info.get(),
-            context_state_->progress_reporter(),
-            /*supports_cpu_upload=*/true);
-    factories_.push_back(std::move(gl_texture_backing_factory));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_VULKAN)
   // If Chrome and ANGLE are sharing the same vulkan device queue, AngleVulkan
@@ -244,15 +193,6 @@ SharedImageFactory::SharedImageFactory(
     factories_.push_back(std::move(factory));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (gr_context_type_ == GrContextType::kVulkan) {
-    auto external_vk_image_factory =
-        std::make_unique<ExternalVkImageBackingFactory>(
-            context_state_,
-            gpu_preferences_.enable_webgpu_on_vk_via_gl_interop);
-    factories_.push_back(std::move(external_vk_image_factory));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // BUILDFLAG(ENABLE_VULKAN)
 
   // Create EGLImageBackingFactory if egl images are supported. Note that the
@@ -401,27 +341,6 @@ bool SharedImageFactory::IsNativeBufferSupported(
 #elif BUILDFLAG(IS_OZONE)
   return ui::OzonePlatform::GetInstance()->IsNativePixmapConfigSupported(format,
                                                                          usage);
-#elif BUILDFLAG(IS_WIN)
-  switch (usage) {
-    case gfx::BufferUsage::GPU_READ:
-    case gfx::BufferUsage::SCANOUT:
-      return format == viz::SinglePlaneFormat::kRGBA_8888 ||
-             format == viz::SinglePlaneFormat::kRGBX_8888 ||
-             format == viz::SinglePlaneFormat::kBGRA_8888 ||
-             format == viz::SinglePlaneFormat::kBGRX_8888;
-    case gfx::BufferUsage::SCANOUT_CPU_READ_WRITE:
-    case gfx::BufferUsage::GPU_READ_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_VDA_WRITE:
-    case gfx::BufferUsage::PROTECTED_SCANOUT:
-    case gfx::BufferUsage::PROTECTED_SCANOUT_VDA_WRITE:
-    case gfx::BufferUsage::SCANOUT_CAMERA_READ_WRITE:
-    case gfx::BufferUsage::CAMERA_AND_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_VEA_CPU_READ:
-    case gfx::BufferUsage::VEA_READ_CAMERA_AND_CPU_READ_WRITE:
-    case gfx::BufferUsage::SCANOUT_FRONT_RENDERING:
-      return false;
-  }
-  NOTREACHED();
 #else
   return false;
 #endif
@@ -647,34 +566,7 @@ void SharedImageFactory::DestroyAllSharedImages(bool have_context) {
   shared_images_.clear();
 }
 
-#if BUILDFLAG(IS_WIN)
-bool SharedImageFactory::IsD3DSharedImageSupported() const {
-  if (!context_state_) {
-    return false;
-  }
 
-  return D3DImageBackingFactory::IsD3DSharedImageSupported(
-      context_state_->GetD3D11Device().Get(), gpu_preferences_);
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_FUCHSIA)
-void SharedImageFactory::RegisterSysmemBufferCollection(
-    zx::eventpair service_handle,
-    zx::channel sysmem_token,
-    const viz::SharedImageFormat& format,
-    gfx::BufferUsage usage,
-    bool register_with_image_pipe) {
-  auto* vulkan_context_provider = context_state_->vk_context_provider();
-  VkDevice device =
-      vulkan_context_provider->GetDeviceQueue()->GetVulkanDevice();
-  DCHECK(device != VK_NULL_HANDLE);
-  vulkan_context_provider->GetVulkanImplementation()
-      ->RegisterSysmemBufferCollection(
-          device, std::move(service_handle), std::move(sysmem_token), format,
-          usage, gfx::Size(), 0, register_with_image_pipe);
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 bool SharedImageFactory::CopyToGpuMemoryBuffer(const Mailbox& mailbox) {
   auto* shared_image = GetFactoryRef(mailbox);
@@ -705,28 +597,9 @@ SharedImageFactory::CreateNativeGpuMemoryBufferHandle(
 bool SharedImageFactory::CopyNativeBufferToSharedMemoryAsync(
     gfx::GpuMemoryBufferHandle buffer_handle,
     base::UnsafeSharedMemoryRegion shared_memory) {
-#if BUILDFLAG(IS_WIN)
-  return D3DImageBackingFactory::CopyNativeBufferToSharedMemoryAsync(
-      std::move(buffer_handle), std::move(shared_memory));
-#else
   return false;
-#endif
 }
 
-#if BUILDFLAG(IS_WIN)
-bool SharedImageFactory::CopyToGpuMemoryBufferAsync(
-    const Mailbox& mailbox,
-    base::OnceCallback<void(bool)> callback) {
-  auto* shared_image = GetFactoryRef(mailbox);
-  if (!shared_image) {
-    DLOG(ERROR)
-        << "CopyToGpuMemoryBufferAsync: Could not find shared image mailbox";
-    return false;
-  }
-  shared_image->CopyToGpuMemoryBufferAsync(std::move(callback));
-  return true;
-}
-#endif
 
 bool SharedImageFactory::GetGpuMemoryBufferHandleInfo(
     const Mailbox& mailbox,
@@ -772,11 +645,6 @@ gpu::SharedImageCapabilities SharedImageFactory::MakeCapabilities() {
   shared_image_caps.supports_scanout_shared_images =
       shared_image_manager_->SupportsScanoutImages();
 
-#if BUILDFLAG(IS_WIN)
-  // Scanout for software video frames is supported on Windows except on D3D9.
-  shared_image_caps.supports_scanout_shared_images_for_software_video_frames =
-      gl::QueryD3D11DeviceObjectFromANGLE();
-#endif
 
   const bool is_angle_metal =
       gl::GetGLImplementation() == gl::kGLImplementationEGLANGLE &&
@@ -845,13 +713,6 @@ gpu::SharedImageCapabilities SharedImageFactory::MakeCapabilities() {
       texture_target_for_io_surfaces_;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  shared_image_caps.shared_image_d3d = IsD3DSharedImageSupported();
-  shared_image_caps.shared_image_swap_chain =
-      shared_image_caps.shared_image_d3d &&
-      D3DImageBackingFactory::IsSwapChainSupported(
-          gpu_preferences_, context_state_->dawn_context_provider());
-#endif  // BUILDFLAG(IS_WIN)
 
   return shared_image_caps;
 }
@@ -940,13 +801,6 @@ void SharedImageFactory::LogGetFactoryFailed(gpu::SharedImageUsageSet usage,
              << ", size: " << size.ToString()
              << ", debug_label: " << debug_label;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not dump crash reports for Reven ChromeOS boards.
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(ash::switches::kRevenBranding)) {
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::string new_debug_label = debug_label;
   // Get the debug label with Process Id for filtering crash reports by label as

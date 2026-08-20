@@ -48,11 +48,6 @@ source_set("chromeos") {
   if (use_v4l2_codec) {
     deps += [ "//media/gpu/v4l2" ]
   }
-
-  if (is_chromeos) {
-    deps +=
-        [ "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu" ]
-  }
 }
 
 # This target can be depended by targets in //media/gpu/{v4l2,vaapi}.
@@ -140,17 +135,6 @@ source_set("common") {
       "//gpu/vulkan/init",
     ]
   }
-
-  if (is_chromeos) {
-    sources += [
-      "decoder_buffer_transcryptor.cc",
-      "decoder_buffer_transcryptor.h",
-    ]
-    deps += [
-      ":cdm-oemcrypto-proto",
-      "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu",
-    ]
-  }
 }
 
 # Although fourcc is platform-agnostic; however, it is restricted by the above
@@ -229,15 +213,6 @@ source_set("video_frame_mapper") {
   ]
 }
 
-if (is_chromeos) {
-  proto_library("cdm-oemcrypto-proto") {
-    sources = [
-      "//third_party/cros_system_api/dbus/cdm_oemcrypto/secure_buffer.proto",
-    ]
-    proto_out_dir = "media/gpu/chromeos"
-  }
-}
-
 source_set("unit_tests") {
   testonly = true
   deps = [
@@ -269,10 +244,6 @@ source_set("unit_tests") {
     "video_decoder_pipeline_unittest.cc",
     "video_frame_resource_unittest.cc",
   ]
-  if (is_chromeos) {
-    deps +=
-        [ "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

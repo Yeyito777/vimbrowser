@@ -25,11 +25,6 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#include "chrome/browser/policy/system_features_disable_list_policy_handler.h"
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_delegate_map.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class PrefService;
 class Profile;
@@ -66,10 +61,6 @@ class WebAppPolicyManager {
     provider_ = &provider;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetSystemWebAppDelegateMap(
-      const ash::SystemWebAppDelegateMap* system_web_apps_delegate_map);
-#endif
 
   void SetProvider(base::PassKey<WebAppProvider>, WebAppProvider& provider);
 
@@ -116,15 +107,6 @@ class WebAppPolicyManager {
   // is disabled and notifies sync_bridge_ about the current app state.
   void OnDisableListPolicyChanged();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets system web apps disabled by SystemFeaturesDisableList policy.
-  const absl::flat_hash_set<ash::SystemWebAppType>& GetDisabledSystemWebApps()
-      const;
-
-  // Checks if UI mode of disabled web apps is hidden for `system_app_type`.
-  bool IsDisabledAppsModeHidden(
-      std::optional<ash::SystemWebAppType> system_app_type) const;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Checks if web app is disabled by SystemFeaturesDisableList policy.
   bool IsWebAppInDisabledList(const webapps::AppId& app_id) const;
@@ -221,21 +203,9 @@ class WebAppPolicyManager {
   raw_ptr<PrefService> pref_service_ = nullptr;
   raw_ptr<WebAppProvider> provider_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  raw_ptr<const ash::SystemWebAppDelegateMap, DanglingUntriaged>
-      system_web_apps_delegate_map_ = nullptr;
-#endif
   PrefChangeRegistrar pref_change_registrar_;
   PrefChangeRegistrar local_state_pref_change_registrar_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // List of disabled system web apps, containing app types.
-  absl::flat_hash_set<ash::SystemWebAppType> disabled_system_apps_;
-
-  // List of disabled system web apps that shouldn't be hidden, containing app
-  // types. Should be a subset of `disabled_system_apps_`.
-  absl::flat_hash_set<ash::SystemWebAppType> disabled_system_apps_not_hidden_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // List of disabled system and progressive web apps, containing app ids.
   absl::flat_hash_set<webapps::AppId> disabled_web_apps_;

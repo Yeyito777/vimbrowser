@@ -85,15 +85,6 @@ DISPLAY_UTIL_EXPORT gfx::ColorSpace GetForcedDisplayColorProfile();
 // command line via "--force-color-profile".
 DISPLAY_UTIL_EXPORT bool HasForceDisplayColorProfile();
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Taken from DisplayChangeObserver::CreateDisplayColorSpaces()
-// Constructs the raster DisplayColorSpaces out of |snapshot_color_space|,
-// including the HDR ones if present and |allow_high_bit_depth| is set.
-DISPLAY_UTIL_EXPORT gfx::DisplayColorSpaces CreateDisplayColorSpaces(
-    const gfx::ColorSpace& snapshot_color_space,
-    bool allow_high_bit_depth,
-    const std::optional<gfx::HDRStaticMetadata>& hdr_static_metadata);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 DISPLAY_UTIL_EXPORT int ConnectorIndex8(int device_index, int display_index);
 

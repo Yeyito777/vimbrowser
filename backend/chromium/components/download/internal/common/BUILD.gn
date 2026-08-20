@@ -96,10 +96,6 @@ source_set("internal") {
         [ "//components/enterprise/obfuscation/core:enterprise_obfuscation" ]
   }
 
-  if (is_win) {
-    sources += [ "base_file_win.cc" ]
-  }
-
   if (is_posix || is_fuchsia) {
     sources += [ "base_file_posix.cc" ]
   }

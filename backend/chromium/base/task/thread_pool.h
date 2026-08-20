@@ -203,24 +203,6 @@ class BASE_EXPORT ThreadPool {
       SingleThreadTaskRunnerThreadMode thread_mode =
           SingleThreadTaskRunnerThreadMode::SHARED);
 
-#if BUILDFLAG(IS_WIN)
-  // Returns a SingleThreadTaskRunner whose PostTask invocations result in
-  // scheduling tasks using |traits| in a COM Single-Threaded Apartment on a
-  // thread determined by |thread_mode|. See
-  // base/task/single_thread_task_runner_thread_mode.h for |thread_mode|
-  // details. If |traits| identifies an existing thread,
-  // SingleThreadTaskRunnerThreadMode::SHARED must be used. Tasks run in the
-  // same Single-Threaded Apartment in posting order for the returned
-  // SingleThreadTaskRunner. There is not necessarily a one-to-one
-  // correspondence between SingleThreadTaskRunners and Single-Threaded
-  // Apartments. The implementation is free to share apartments or create new
-  // apartments as necessary. In either case, care should be taken to make sure
-  // COM pointers are not smuggled across apartments.
-  static scoped_refptr<SingleThreadTaskRunner> CreateCOMSTATaskRunner(
-      const TaskTraits& traits,
-      SingleThreadTaskRunnerThreadMode thread_mode =
-          SingleThreadTaskRunnerThreadMode::SHARED);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Returns a SequencedTaskRunner whose PostTask invocations result in
   // scheduling tasks using |traits|. Tasks run one at a time in posting order.

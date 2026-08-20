@@ -18,13 +18,6 @@
 #include "components/feedback/system_logs/system_logs_fetcher.h"
 #include "extensions/browser/api/feedback_private/feedback_private_delegate.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <optional>
-#include <string>
-
-#include "chromeos/ash/components/dbus/debug_daemon/binary_log_files_reader.h"
-#include "services/data_decoder/public/cpp/data_decoder.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace feedback {
 class FeedbackData;
@@ -75,13 +68,6 @@ class FeedbackService : public base::RefCountedThreadSafe<FeedbackService> {
       SendFeedbackCallback callback);
 
   FeedbackPrivateDelegate* GetFeedbackPrivateDelegate() { return delegate_; }
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetLogFilesRootPathForTesting(const base::FilePath& log_file_root);
-  void SetUrlLoaderFactory(
-      scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory) {
-    url_loader_factory_ = url_loader_factory;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  protected:
   virtual ~FeedbackService();
@@ -111,54 +97,10 @@ class FeedbackService : public base::RefCountedThreadSafe<FeedbackService> {
   void OnAllLogsFetched(const FeedbackParams& params,
                         scoped_refptr<feedback::FeedbackData> feedback_data);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets logs that aren't covered by FetchSystemInformation, but should be
-  // included in the feedback report. These currently consist of the Intel Wi-Fi
-  // debug logs (if they exist).
-  void FetchExtraLogs(const FeedbackParams& params,
-                      scoped_refptr<feedback::FeedbackData> feedback_data);
-  // Receive binary log files fetched from debugd.
-  void OnBinaryLogFilesFetched(
-      const FeedbackParams& params,
-      scoped_refptr<feedback::FeedbackData> feedback_data,
-      base::RepeatingClosure barrier_closure_callback,
-      feedback::BinaryLogFilesReader::BinaryLogsResponse binary_logs);
-  void OnExtraLogsFetched(const FeedbackParams& params,
-                          scoped_refptr<feedback::FeedbackData> feedback_data);
-
-  // Gathers command line variations, and encrypts them
-  void EncryptVariations(scoped_refptr<feedback::FeedbackData> feedback_data,
-                         base::RepeatingClosure barrier_closure);
-  std::string VariationsFetchHpkeKey();
-  void VariationsEncryptWithHpkeKey(
-      const std::vector<uint8_t>& hpke_public_key,
-      scoped_refptr<feedback::FeedbackData> feedback_data,
-      base::RepeatingClosure barrier_closure);
-  void VariationsExtractHpkePublicKey(
-      scoped_refptr<feedback::FeedbackData> feedback_data,
-      base::RepeatingClosure barrier_closure,
-      data_decoder::DataDecoder::ValueOrError result);
-  void VariationsFinished(bool file_added,
-                          base::RepeatingClosure barrier_clsoure);
-  void OnVariationsFetchHpkeURL(
-      std::unique_ptr<network::SimpleURLLoader> loader,
-      scoped_refptr<feedback::FeedbackData> feedback_data,
-      base::RepeatingClosure barrier_closure,
-      std::optional<std::string> body);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   raw_ptr<content::BrowserContext, AcrossTasksDanglingUntriaged>
       browser_context_;
   raw_ptr<FeedbackPrivateDelegate, AcrossTasksDanglingUntriaged> delegate_;
-#if BUILDFLAG(IS_CHROMEOS)
-  // Root file path for log files. It can be overwritten for testing purpose.
-  base::FilePath log_file_root_{FILE_PATH_LITERAL("/var/log/")};
-  feedback::BinaryLogFilesReader binary_log_files_reader_;
-  // Decoder for data decoding service.
-  data_decoder::DataDecoder data_decoder_;
-  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace extensions

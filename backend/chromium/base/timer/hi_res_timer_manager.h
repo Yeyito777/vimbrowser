@@ -42,10 +42,6 @@ class BASE_EXPORT HighResolutionTimerManager
 
   bool hi_res_clock_available_;
 
-#if BUILDFLAG(IS_WIN)
-  // Timer for polling the high resolution timer usage.
-  base::RepeatingTimer timer_;
-#endif
 };
 
 }  // namespace base

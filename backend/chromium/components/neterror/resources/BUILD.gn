@@ -40,9 +40,6 @@ preprocess_if_expr("preprocess") {
   ]
   out_folder = "${target_gen_dir}/preprocessed"
   in_files = ts_files
-  if (is_ios) {
-    in_files += [ "error_page_controller_ios.js" ]
-  }
 }
 
 webui_ts_library("build_ts") {

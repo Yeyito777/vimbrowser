@@ -298,11 +298,6 @@ source_set("common") {
     ]
   }
 
-  if (is_ios) {
-    # TOOD: Create ios file instead of stealing android
-    sources += [ "cursors/webcursor_android.cc" ]
-  }
-
   if (is_mac) {
     sources += [
       "mac/attributed_string_type_converters.h",
@@ -317,16 +312,7 @@ source_set("common") {
     sources += [ "font_list_mac.mm" ]
   }
 
-  if (is_win) {
-    sources += [
-      "font_cache_dispatcher_win.cc",
-      "font_list_win.cc",
-    ]
-  }
-
-  if (!is_chromeos) {
-    sources -= [ "cursors/webcursor_ash.cc" ]
-  }
+  sources -= [ "cursors/webcursor_ash.cc" ]
 
   if (use_aura) {
     deps += [ "//ui/wm" ]
@@ -366,11 +352,6 @@ source_set("common") {
 
   if (is_mac) {
     deps += [ "//media/gpu" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "font_list_fuchsia.cc" ]
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fdio" ]
   }
 
   if (use_clang_profiling_inside_sandbox) {
@@ -428,10 +409,6 @@ mojom("mojo_bindings") {
 
   if (is_linux || is_chromeos) {
     sources += [ "thread_type_switcher.mojom" ]
-  }
-
-  if (is_win) {
-    sources += [ "sandbox_support.mojom" ]
   }
 
   enabled_features = []

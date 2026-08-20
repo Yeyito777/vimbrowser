@@ -43,11 +43,7 @@ bool SchemeMaySupportRedirectingToHTTPS(BrowserContext* browser_context,
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  return url.SchemeIs(kExternalFileScheme);
-#else   // BUILDFLAG(IS_CHROMEOS)
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // Returns true if a ServiceWorkerMainResourceLoaderInterceptor should be

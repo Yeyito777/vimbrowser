@@ -15,16 +15,6 @@ source_set("tracing") {
     "//content/public/browser",
   ]
 
-  if (is_win) {
-    sources += [
-      "windows_system_tracing_client_impl_win.h",
-      "windows_system_tracing_client_win.h",
-    ]
-    public_deps += [
-      "//chrome/windows_services/elevated_tracing_service:tracing_service_idl",
-    ]
-  }
-
   public_deps += [ "//chrome/browser/ui:browser_list" ]
 }
 
@@ -51,14 +41,6 @@ source_set("impl") {
     "//components/version_info",
   ]
 
-  if (is_win) {
-    sources += [ "windows_system_tracing_client_impl_win.cc" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
-
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 
@@ -78,22 +60,6 @@ source_set("unit_tests") {
     "//third_party/metrics_proto",
     "//third_party/zlib/google:compression_utils",
   ]
-
-  if (is_win) {
-    sources += [ "windows_system_tracing_client_impl_unittest_win.cc" ]
-    deps += [
-      "//chrome/windows_services/elevated_tracing_service:tracing_service_idl",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/demo_mode",
-      "//chromeos/ash/components/login/login_state",
-      "//chromeos/ash/components/system",
-      "//chromeos/dbus/power",
-    ]
-  }
 }
 
 source_set("browser_tests") {

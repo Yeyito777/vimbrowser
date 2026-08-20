@@ -44,14 +44,6 @@
 #include "components/variations/service/variations_service.h"
 #include "components/variations/service/variations_service_utils.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/system/sys_info.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_helper.h"  // nogncheck
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"  // nogncheck
-#include "chromeos/constants/chromeos_features.h"
-#include "components/user_manager/user.h"       // nogncheck
-#include "components/user_manager/user_type.h"  // nogncheck
-#endif
 
 namespace glic {
 
@@ -88,11 +80,7 @@ constexpr char kDefaultEnabledLocales[] = "en-us";
 namespace {
 
 signin::Tribool CanUseGeminiInChrome(AccountCapabilities& capabilities) {
-#if BUILDFLAG(IS_ANDROID)
-  return signin::Tribool::kUnknown;
-#else  // TODO: Re-enable after crrev.com/c/7281467
   return capabilities.can_use_gemini_in_chrome();
-#endif
 }
 
 std::vector<std::string> GetFieldTrialParamAsSplitString(
@@ -395,23 +383,6 @@ bool GlicGlobalEnabling::IsEnabledByFlags() {
   bool is_enabled = base::FeatureList::IsEnabled(features::kGlic) &&
                     locale_enablement_.value_or(true) &&
                     country_enablement_.value_or(true);
-#if BUILDFLAG(IS_CHROMEOS)
-  static const bool supported_system_requirements = [] {
-    constexpr base::ByteCount kMinimumMemoryThreshold = base::GiB(8);
-
-    // TODO(b:468055370): Remove the bypassing once the glic is fully launched.
-    const bool bypass_cbx_requirement =
-        base::FeatureList::IsEnabled(
-            chromeos::features::kGlicEnableFor8GbDevices) &&
-        base::SysInfo::AmountOfPhysicalMemory() >= kMinimumMemoryThreshold;
-
-    return (bypass_cbx_requirement ||
-            base::FeatureList::IsEnabled(
-                chromeos::features::kFeatureManagementGlic));
-  }();
-
-  is_enabled = is_enabled && supported_system_requirements;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return is_enabled;
 }
 
@@ -426,37 +397,6 @@ bool GlicEnabling::IsProfileEligible(const Profile* profile) {
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Due to the tight coupling of the browser Profile and OS users in ChromeOS,
-  // we check the user session type to align with other desktop browser
-  // behavior.
-  if (!ash::IsUserBrowserContext(profile)) {
-    // We only allow regular user session profiles.
-    // E.g. disallowed on login screen.
-    return false;
-  }
-  auto* user = ash::BrowserContextHelper::Get()->GetUserByBrowserContext(
-      const_cast<Profile*>(profile));
-  if (user == nullptr) {
-    // When there is no signed in user on ChromeOS, assume that the profile is
-    // not eligible.
-    return false;
-  }
-  switch (user->GetType()) {
-    case user_manager::UserType::kRegular:
-    case user_manager::UserType::kChild:
-      // These are ok to use glic.
-      break;
-    case user_manager::UserType::kGuest:
-    case user_manager::UserType::kPublicAccount:
-    case user_manager::UserType::kKioskChromeApp:
-    case user_manager::UserType::kKioskWebApp:
-    case user_manager::UserType::kKioskIWA:
-    case user_manager::UserType::kKioskArcvmApp:
-      // Disallows guest session, and device local account sessions.
-      return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Glic is supported only in regular profiles, i.e. disable in incognito,
   // guest, system profile, etc.

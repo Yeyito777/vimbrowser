@@ -43,7 +43,6 @@ std::pair<int, int> GetAvailablePointerAndHoverTypes() {
              : GetAvailablePointerAndHoverTypesImpl();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 PointerType GetPrimaryPointerType() {
   const int available_pointer_types = GetAvailablePointerAndHoverTypes().first;
   if (available_pointer_types & POINTER_TYPE_FINE) {
@@ -64,9 +63,7 @@ HoverType GetPrimaryHoverType() {
   DCHECK_EQ(available_hover_types, HOVER_TYPE_NONE);
   return HOVER_TYPE_NONE;
 }
-#endif
 
-#if !BUILDFLAG(IS_WIN)
 std::optional<PointerDevice> GetPointerDevice(PointerDevice::Key key) {
   return std::nullopt;
 }
@@ -74,6 +71,5 @@ std::optional<PointerDevice> GetPointerDevice(PointerDevice::Key key) {
 std::vector<PointerDevice> GetPointerDevices() {
   return {};
 }
-#endif
 
 }  // namespace ui

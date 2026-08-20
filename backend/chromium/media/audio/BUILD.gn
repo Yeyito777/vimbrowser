@@ -198,54 +198,6 @@ source_set("audio") {
     weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
   }
 
-  if (is_ios) {
-    sources += [
-      "ios/audio_manager_ios.cc",
-      "ios/audio_manager_ios.h",
-      "ios/audio_private_api.h",
-      "ios/audio_session_manager_ios.h",
-      "ios/audio_session_manager_ios.mm",
-    ]
-
-    frameworks += [ "AVFoundation.framework" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "win/audio_device_listener_win.cc",
-      "win/audio_device_listener_win.h",
-      "win/audio_ducker_win.cc",
-      "win/audio_ducker_win.h",
-      "win/audio_low_latency_input_win.cc",
-      "win/audio_low_latency_input_win.h",
-      "win/audio_low_latency_output_win.cc",
-      "win/audio_low_latency_output_win.h",
-      "win/audio_manager_win.cc",
-      "win/audio_manager_win.h",
-      "win/audio_session_creation_observer_win.cc",
-      "win/audio_session_creation_observer_win.h",
-      "win/audio_session_event_listener_win.cc",
-      "win/audio_session_event_listener_win.h",
-      "win/avrt_wrapper_win.cc",
-      "win/avrt_wrapper_win.h",
-      "win/core_audio_util_win.cc",
-      "win/core_audio_util_win.h",
-      "win/device_enumeration_win.cc",
-      "win/device_enumeration_win.h",
-      "win/waveout_output_win.cc",
-      "win/waveout_output_win.h",
-    ]
-
-    deps += [ "//media/base/win:media_foundation_util" ]
-
-    libs += [
-      "dxguid.lib",
-      "setupapi.lib",
-      "winmm.lib",
-      "mmdevapi.lib",
-    ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [ "linux/audio_manager_linux.cc" ]
   }
@@ -305,22 +257,6 @@ source_set("audio") {
     } else {
       deps += [ ":libpulse_stubs" ]
     }
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia/audio_input_stream_fuchsia.cc",
-      "fuchsia/audio_input_stream_fuchsia.h",
-      "fuchsia/audio_manager_fuchsia.cc",
-      "fuchsia/audio_manager_fuchsia.h",
-      "fuchsia/audio_output_stream_fuchsia.cc",
-      "fuchsia/audio_output_stream_fuchsia.h",
-    ]
-    deps += [
-      "//media/fuchsia/common",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.media:fuchsia.media_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
   }
 }
 
@@ -464,34 +400,6 @@ source_set("unit_tests") {
       "cras/cras_input_unittest.cc",
       "cras/cras_unified_unittest.cc",
     ]
-  }
-
-  if (is_win) {
-    sources += [
-      "win/audio_device_listener_win_unittest.cc",
-      "win/audio_low_latency_input_win_unittest.cc",
-      "win/audio_low_latency_output_win_unittest.cc",
-      "win/audio_output_win_unittest.cc",
-      "win/audio_session_event_listener_win_unittest.cc",
-      "win/core_audio_util_win_unittest.cc",
-      "win/device_enumeration_win_unittest.cc",
-      "win/test_support/fake_iactivate_audio_interface_async_operation.cc",
-      "win/test_support/fake_iactivate_audio_interface_async_operation.h",
-      "win/test_support/fake_iaudio_capture_client.cc",
-      "win/test_support/fake_iaudio_capture_client.h",
-      "win/test_support/fake_iaudio_client.cc",
-      "win/test_support/fake_iaudio_client.h",
-      "win/test_support/fake_win_wasapi_environment.cc",
-      "win/test_support/fake_win_wasapi_environment.h",
-      "win/test_support/wasapi_test_error_code.h",
-    ]
-
-    deps += [ "//media/gpu" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "fuchsia/audio_input_stream_fuchsia_test.cc" ]
-    deps += [ "//media/fuchsia/audio:test_support" ]
   }
 
   if (use_alsa) {

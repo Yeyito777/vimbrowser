@@ -66,9 +66,7 @@ group("perf_without_chrome") {
   ]
 
   # Runs a script which generates the ad tagging ruleset.
-  if (!is_ios) {
-    data_deps += [ "//components/subresource_filter/tools:index_ruleset" ]
-  }
+  data_deps += [ "//components/subresource_filter/tools:index_ruleset" ]
 }
 
 # This group makes visible those targets in subdirectories that are not

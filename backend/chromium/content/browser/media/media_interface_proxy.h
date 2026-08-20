@@ -31,10 +31,6 @@
 #include "mojo/public/cpp/bindings/unique_receiver_set.h"
 #include "services/service_manager/public/mojom/interface_provider.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/task/sequenced_task_runner.h"
-#include "media/mojo/mojom/media_foundation_service.mojom.h"
-#endif
 
 namespace content {
 
@@ -71,20 +67,6 @@ class MediaInterfaceProxy final : public DocumentUserData<MediaInterfaceProxy>,
       const base::UnguessableToken& overlay_plane_id,
       mojo::PendingReceiver<media::mojom::Renderer> receiver) final;
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  void CreateFlingingRenderer(
-      const std::string& presentation_id,
-      mojo::PendingRemote<media::mojom::FlingingRendererClientExtension>
-          client_extension,
-      mojo::PendingReceiver<media::mojom::Renderer> receiver) final;
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-  void CreateMediaFoundationRenderer(
-      mojo::PendingRemote<media::mojom::MediaLog> media_log_remote,
-      mojo::PendingReceiver<media::mojom::Renderer> receiver,
-      mojo::PendingReceiver<media::mojom::MediaFoundationRendererExtension>
-          renderer_extension_receiver) final;
-#endif  // BUILDFLAG(IS_WIN)
   void CreateCdm(const media::CdmConfig& cdm_config,
                  CreateCdmCallback create_cdm_cb) final;
 
@@ -115,30 +97,7 @@ class MediaInterfaceProxy final : public DocumentUserData<MediaInterfaceProxy>,
   void OnCdmServiceConnectionError(const media::CdmType& cdm_type);
 #endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Callback for for Chrome OS CDM creation to facilitate falling back to the
-  // library CDM if the daemon is unavailable or other settings prevent usage of
-  // it.
-  void OnChromeOsCdmCreated(
-      const media::CdmConfig& cdm_config,
-      CreateCdmCallback callback,
-      mojo::PendingRemote<media::mojom::ContentDecryptionModule> receiver,
-      media::mojom::CdmContextPtr cdm_context,
-      media::CreateCdmStatus status);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-  // Gets the InterfaceFactory from MediaFoundationService. May return null if
-  // MediaFoundationService cannot be used or connection failed.
-  InterfaceFactory* GetMediaFoundationServiceInterfaceFactory(
-      const base::FilePath& cdm_path);
-
-  void ConnectToMediaFoundationService(const base::FilePath& cdm_path);
-  bool ShouldUseMediaFoundationServiceForCdm(
-      const media::CdmConfig& cdm_config);
-
-  mojo::Remote<media::mojom::InterfaceFactory> mf_interface_factory_remote_;
-#endif  // BUILDFLAG(IS_WIN)
 
   mojo::UniqueReceiverSet<media::mojom::FrameInterfaceFactory> frame_factories_;
 

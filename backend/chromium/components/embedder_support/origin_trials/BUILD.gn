@@ -41,7 +41,4 @@ static_library("test_support") {
   ]
 
   # fuchsia explicitly needs this for lib/zx.
-  if (is_fuchsia) {
-    deps += [ "//mojo/public/cpp/bindings" ]
-  }
 }

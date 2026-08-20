@@ -30,12 +30,6 @@ import("//tools/grit/preprocess_if_expr.gni")
 import("//tools/typescript/webui_ts_library.gni")
 import("//v8/gni/v8.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-  import("//build/ios/extension_bundle_data.gni")
-}
-
 # Exposes a free function to enable the field trial testing config.
 # This allows testing new features enabled in the Dev/Beta/Stable channels.
 #
@@ -707,23 +701,12 @@ static_library("test_support") {
     "../public/test/mock_captured_surface_controller.h",
   ]
 
-  if (!is_fuchsia) {
-    sources += [
-      "../browser/speech/fake_speech_recognition_manager_delegate.cc",
-      "../browser/speech/fake_speech_recognition_manager_delegate.h",
-    ]
-    deps += [ "//components/soda" ]
-    public_deps += [ "//components/soda:test_support" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "../browser/renderer_host/input/mock_tfhandwriting.cc",
-      "../browser/renderer_host/input/mock_tfhandwriting.h",
-      "../browser/renderer_host/input/stylus_handwriting_win_test_helper.cc",
-      "../browser/renderer_host/input/stylus_handwriting_win_test_helper.h",
-    ]
-  }
+  sources += [
+    "../browser/speech/fake_speech_recognition_manager_delegate.cc",
+    "../browser/speech/fake_speech_recognition_manager_delegate.h",
+  ]
+  deps += [ "//components/soda" ]
+  public_deps += [ "//components/soda:test_support" ]
 
   # HID support is not available without udev.
   is_linux_without_udev = (is_linux || is_chromeos) && !use_udev
@@ -742,12 +725,6 @@ static_library("test_support") {
       "//device/fido:mocks",
       "//device/fido:test_support",
     ]
-    if (is_chromeos) {
-      deps += [
-        "//chromeos/dbus/tpm_manager",
-        "//chromeos/dbus/u2f",
-      ]
-    }
   }
 
   if (use_atk) {
@@ -789,34 +766,8 @@ static_library("test_support") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "../browser/renderer_host/test_render_widget_host_view_ios_factory.h",
-      "../browser/renderer_host/test_render_widget_host_view_ios_factory.mm",
-    ]
-  }
-
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "dwrite_font_fake_sender_win.cc",
-      "dwrite_font_fake_sender_win.h",
-      "mock_keyboard_driver_win.cc",
-      "mock_keyboard_driver_win.h",
-    ]
-    deps += [
-      "//content:sandbox_helper_win",
-      "//third_party/iaccessible2",
-    ]
-    libs = [ "oleacc.lib" ]
-  }
-
-  if (is_win) {
-    deps += [ "//sandbox" ]
-    public_configs = [ "//build/config/win:delayloads_for_tests" ]
   }
 
   if (v8_use_external_startup_data) {
@@ -848,17 +799,6 @@ static_library("test_support") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "../browser/smart_card/mock_smart_card_context_factory.cc",
-      "../browser/smart_card/mock_smart_card_context_factory.h",
-    ]
-  }
-
-  if (is_fuchsia) {
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.mediacodec:fuchsia.mediacodec_hlcpp" ]
-  }
-
   if (use_dbus) {
     deps += [ "//components/dbus" ]
   }
@@ -870,43 +810,6 @@ static_library("test_support") {
 
 # Fuchsia performance tests on smart displays use web_engine and a browser
 # like shell instead of an actual browser, so Fuchsia needs a separate target.
-if (is_fuchsia) {
-  # TODO(crbug.com/40830160): Split this test suite into chrome/WebEngine
-  # versions.
-  # TODO(crbug.com/40829930): Move WebEngine-specific suites to //fuchsia_web/webengine/
-  group("performance_web_engine_test_suite") {
-    testonly = true
-    data = [ "//content/test/gpu/run_telemetry_benchmark_fuchsia.py" ]
-    data_deps = [
-      ":fuchsia_telemetry_test_data",
-      ":telemetry_gpu_integration_test_data",
-      "//base:base_perftests",
-      "//testing:run_perf_test",
-      "//tools/perf/:perf",
-    ]
-  }
-  group("fuchsia_telemetry_test_data") {
-    testonly = true
-    data = [ "//content/test/gpu/fuchsia_util.py" ]
-    if (fuchsia_browser_type == "web_engine_shell") {
-      data += [
-        "$root_gen_dir/package_metadata/web_engine_shell.meta",
-        "$root_gen_dir/package_metadata/web_engine_with_webui.meta",
-      ]
-      if (enable_cast_receiver) {
-        data += [ "$root_gen_dir/package_metadata/cast_streaming_shell.meta" ]
-      }
-
-      data_deps = [
-        "//fuchsia_web/shell",
-        "//fuchsia_web/webengine:web_engine_with_webui_installer",
-      ]
-    } else {
-      data += [ "$root_gen_dir/package_metadata/chrome.meta" ]
-      data_deps = [ "//chrome/app:chrome_fuchsia" ]
-    }
-  }
-}
 
 group("telemetry_gpu_integration_test_scripts_only") {
   testonly = true
@@ -1770,10 +1673,6 @@ test("content_browsertests") {
     sources += [ "../browser/network/address_map_linux_browsertest.cc" ]
   }
 
-  if (is_win) {
-    sources += [ "../browser/network/sandboxed_socket_broker_browsertest.cc" ]
-  }
-
   if (enable_reporting) {
     sources += [ "../browser/security/coop/cross_origin_opener_policy_reporting_browsertest.cc" ]
   }
@@ -1969,37 +1868,17 @@ test("content_browsertests") {
     "$root_gen_dir/third_party/perfetto/protos/perfetto/config/chrome/scenario_config.descriptor",
   ]
 
-  if (!is_ios) {
-    sources += [ "../browser/file_system_access/file_system_access_observer_browsertest.cc" ]
+  sources += [
+    "../browser/file_system_access/file_system_access_observer_browsertest.cc",
+  ]
 
-    # Add Material Design components for accessibility tests on desktop platforms
-    data += [ "//third_party/material_web_components/" ]
-  }
+  # Add Material Design components for accessibility tests on desktop platforms
+  data += [ "//third_party/material_web_components/" ]
 
-  if (is_ios) {
-    entitlements_path = "//content/app/ios/appex/app.entitlements"
-    bundle_deps = [
-      ":content_test_bundle_data",
-      ":content_test_perfetto_bundle_data",
-      ":content_test_perfetto_chrome_bundle_data",
-      "//media/test:media_bundle_data",
-      "//mojo/public/interfaces/bindings/tests:validation_unittest_bundle_data",
-      "//testing/buildbot/filters:content_browsertests_filter_bundle_data",
-    ]
-
-    if (target_platform == "iphoneos") {
-      deps += [
-        "//content/test/ios/appex:test_content_process_bundle",
-        "//content/test/ios/appex:test_gpu_process_bundle",
-        "//content/test/ios/appex:test_network_process_bundle",
-      ]
-    }
-  } else {
-    data_deps += [
-      "//testing/buildbot/filters:content_browsertests_filters",
-      "//third_party/perfetto/protos/perfetto/config/chrome:scenario_descriptor",
-    ]
-  }
+  data_deps += [
+    "//testing/buildbot/filters:content_browsertests_filters",
+    "//third_party/perfetto/protos/perfetto/config/chrome:scenario_descriptor",
+  ]
 
   if (enable_plugins) {
     sources += [ "../browser/plugin_service_impl_browsertest.cc" ]
@@ -2039,10 +1918,6 @@ test("content_browsertests") {
       if (use_aura && !is_castos) {
         sources += [ "../browser/media/capture/aura_window_video_capture_device_browsertest.cc" ]
       }
-
-      if (is_chromeos) {
-        deps += [ "//ui/wm" ]
-      }
     }
   }
 
@@ -2054,54 +1929,8 @@ test("content_browsertests") {
     ]
   }
 
-  if (!is_chromeos) {
-    sources +=
-        [ "../browser/media/media_keys_listener_manager_impl_browsertest.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources +=
-        [ "../browser/lock_screen/lock_screen_service_impl_browsertest.cc" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "../browser/accessibility/accessibility_win_browsertest.cc",
-      "../browser/accessibility/ax_platform_node_textprovider_win_browsertest.cc",
-      "../browser/accessibility/ax_platform_node_textrangeprovider_win_browsertest.cc",
-      "../browser/accessibility/ax_platform_node_win_browsertest.cc",
-      "../browser/accessibility/hit_testing_win_browsertest.cc",
-      "../browser/media/system_media_controls/web_app_system_media_controls_browsertest.cc",
-      "../browser/network/network_service_process_tracker_win_browsertest.cc",
-      "../browser/renderer_host/accessibility_object_lifetime_win_browsertest.cc",
-      "../browser/renderer_host/accessibility_tree_linkage_win_browsertest.cc",
-      "../browser/renderer_host/direct_manipulation_test_helper_win.cc",
-      "../browser/renderer_host/direct_manipulation_test_helper_win.h",
-      "../browser/renderer_host/direct_manipulation_win_browsertest.cc",
-      "../browser/renderer_host/input/stylus_handwriting_controller_win_browsertest.cc",
-      "../browser/renderer_host/render_process_host_sandbox_policy_win_browsertest.cc",
-      "../browser/scheduler/responsiveness/native_event_observer_browsertest_win.cc",
-    ]
-
-    deps += [
-      "//components/stylus_handwriting/win",
-      "//components/system_media_controls",
-      "//net:net_resources",
-      "//sandbox",
-      "//third_party/blink/public:resources",
-      "//third_party/blink/public/strings",
-      "//third_party/iaccessible2",
-      "//third_party/isimpledom",
-      "//ui/strings:auto_image_annotation_strings",
-    ]
-
-    data_deps += [ "//services/test/echo:echo_preload_library" ]
-
-    libs = [
-      "dbghelp.lib",
-      "uiautomationcore.lib",
-    ]
-  }
+  sources +=
+      [ "../browser/media/media_keys_listener_manager_impl_browsertest.cc" ]
 
   if (is_linux || is_chromeos) {
     sources += [
@@ -2121,10 +1950,6 @@ test("content_browsertests") {
       configs += [ "//build/config/linux/atk" ]
       deps += [ "//ui/base/glib" ]
     }
-  }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/assistant:buildflags" ]
   }
 
   # Non-Android.
@@ -2148,13 +1973,7 @@ test("content_browsertests") {
     sources += [ "../browser/compute_pressure/pressure_service_browsertest.cc" ]
   }
 
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
-
-  if (!is_ios) {
-    data += [ "//content/test/data/clipboard/" ]
-  }
+  data += [ "//content/test/data/clipboard/" ]
   if (!is_ios && !is_fuchsia) {
     sources += [
       "../browser/direct_sockets/direct_sockets_open_browsertest.cc",
@@ -2165,18 +1984,6 @@ test("content_browsertests") {
 
   if (is_posix) {
     deps += [ "//services/tracing:test_utils" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "../browser/smart_card/smart_card_browsertest.cc" ]
-    deps += [ "//chromeos/components/firewall_hole" ]
-
-    if (is_component_build) {
-      sources += [
-        "//content/browser/direct_sockets/firewall_hole_delegate.cc",
-        "//content/browser/direct_sockets/firewall_hole_delegate.h",
-      ]
-    }
   }
 
   # HID support is not available without udev.
@@ -2207,23 +2014,6 @@ test("content_browsertests") {
     data_deps += [ "//content/shell:content_shell" ]
     data += [ "$root_out_dir/Content Shell.app/" ]
     weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 12.3
-  }
-
-  if (is_ios) {
-    sources += [
-      "../browser/keyboard_lock_browsertest_ios.mm",
-      "../browser/pointer_lock_browsertest_ios.mm",
-    ]
-    bundle_deps += [ ":content_shell_pak_bundle_data" ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/dbus/audio",
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//chromeos/ash/components/system",
-    ]
   }
 
   if (use_aura && !is_win) {
@@ -2319,27 +2109,9 @@ test("content_browsertests") {
   }
 
   # MidiManager is not supported in Fuchsia (see crbug.com/40217214).
-  if (is_fuchsia) {
-    sources -= [ "../browser/media/midi_browsertest.cc" ]
-  }
 
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/dbus/constants" ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/audio_output.shard.test-cml",
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/network.shard.test-cml",
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
@@ -2993,22 +2765,6 @@ test("content_unittests") {
     ]
   }
 
-  if (is_fuchsia) {
-    sources += [ "../browser/renderer_host/media/fuchsia_media_codec_provider_impl_unittest.cc" ]
-
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-
-      # TODO(crbug.com/40055105): Investigate removing the requirement
-      # for VmexResource.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/network.shard.test-cml",
-      "//build/config/fuchsia/test/platform_video_codecs.shard.test-cml",
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
-  }
-
   if (enable_compute_pressure) {
     sources += [
       "../browser/compute_pressure/pressure_service_for_frame_unittest.cc",
@@ -3018,17 +2774,7 @@ test("content_unittests") {
     ]
   }
 
-  if (!is_ios) {
-    sources += [ "../browser/file_system_access/file_path_watcher/file_path_watcher_unittest.cc" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "../browser/renderer_host/renderer_sandboxed_process_launcher_delegate_unittest.cc",
-      "../browser/service_host/utility_sandbox_delegate_unittest.cc",
-      "../browser/speech/tts_win_utils_unittest.cc",
-    ]
-  }
+  sources += [ "../browser/file_system_access/file_path_watcher/file_path_watcher_unittest.cc" ]
 
   if (is_win || is_mac) {
     sources += [ "../browser/media/system_media_controls/web_app_system_media_controls_manager_unittest.cc" ]
@@ -3049,16 +2795,6 @@ test("content_unittests") {
       "//content/test/data/browsing_topics/",
       "//content/test/data/btm/",
       "//media/test/data/",
-    ]
-  }
-  if (is_ios) {
-    bundle_deps = [
-      ":content_shell_pak_bundle_data",
-      ":content_test_bundle_data",
-      ":content_test_perfetto_bundle_data",
-      ":content_test_perfetto_chrome_bundle_data",
-      "//media/test:media_bundle_data",
-      "//testing/buildbot/filters:content_unittests_filters_bundle_data",
     ]
   }
 
@@ -3241,16 +2977,6 @@ test("content_unittests") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "//content/browser/direct_sockets/firewall_hole_delegate_unittest.cc",
-    ]
-    deps += [
-      "//chromeos/components/firewall_hole",
-      "//chromeos/dbus/permission_broker",
-    ]
-  }
-
   if (enable_smart_card) {
     sources +=
         [ "../browser/smart_card/emulation/smart_card_emulation_unittest.cc" ]
@@ -3263,16 +2989,14 @@ test("content_unittests") {
 
   data_deps = [ "//testing/buildbot/filters:content_unittests_filters" ]
 
-  if (!is_ios) {
-    data_deps += [
-      "//third_party/perfetto/protos/perfetto/config:descriptor",
-      "//third_party/perfetto/protos/perfetto/config/chrome:scenario_descriptor",
-    ]
-    data += [
-      "$root_gen_dir/third_party/perfetto/protos/perfetto/config/chrome/scenario_config.descriptor",
-      "$root_gen_dir/third_party/perfetto/protos/perfetto/config/config.descriptor",
-    ]
-  }
+  data_deps += [
+    "//third_party/perfetto/protos/perfetto/config:descriptor",
+    "//third_party/perfetto/protos/perfetto/config/chrome:scenario_descriptor",
+  ]
+  data += [
+    "$root_gen_dir/third_party/perfetto/protos/perfetto/config/chrome/scenario_config.descriptor",
+    "$root_gen_dir/third_party/perfetto/protos/perfetto/config/config.descriptor",
+  ]
 
   # Platforms where sqlite_dev_shell is defined.
   if (is_win || is_mac || is_linux || is_chromeos) {
@@ -3291,10 +3015,6 @@ test("content_unittests") {
 
   if (is_linux || is_chromeos) {
     deps += [ "//components/crash/content/browser/error_reporting" ]
-  }
-
-  if (is_fuchsia) {
-    deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.accessibility.semantics:fuchsia.accessibility.semantics_cpp" ]
   }
 
   if (enable_printing || enable_printing_tests) {
@@ -3326,23 +3046,18 @@ test("content_unittests") {
         "../browser/media/capture/pip_screen_capture_coordinator_proxy_impl_unittest.cc",
       ]
     }
-    if (!is_ios) {
-      deps += [
-        "//content/common:buildflags",
-        "//third_party/libyuv",
-        "//third_party/webrtc_overrides:webrtc_component",
-      ]
-      sources += [
-        "../browser/media/captured_surface_controller_permission_manager_unittest.cc",
-        "../browser/media/captured_surface_controller_unittest.cc",
-      ]
-    }
+    deps += [
+      "//content/common:buildflags",
+      "//third_party/libyuv",
+      "//third_party/webrtc_overrides:webrtc_component",
+    ]
+    sources += [
+      "../browser/media/captured_surface_controller_permission_manager_unittest.cc",
+      "../browser/media/captured_surface_controller_unittest.cc",
+    ]
 
-    if (!is_ios) {
-      deps += [ "//media/capture:test_support" ]
-      sources +=
-          [ "../browser/media/capture/desktop_capture_device_unittest.cc" ]
-    }
+    deps += [ "//media/capture:test_support" ]
+    sources += [ "../browser/media/capture/desktop_capture_device_unittest.cc" ]
   }
 
   if (is_linux || is_chromeos) {
@@ -3355,35 +3070,6 @@ test("content_unittests") {
   if (is_win || is_linux || is_chromeos) {
     sources += [ "../child/font_data/font_data_manager_unittest.cc" ]
     deps += [ "//components/services/font_data/public/mojom" ]
-  }
-  if (is_win) {
-    sources += [
-      "../browser/child_process_sandbox_support_win_unittest.cc",
-      "../browser/device_posture/device_posture_registry_watcher_win_unittest.cc",
-      "../browser/renderer_host/direct_manipulation_test_helper_win.cc",
-      "../browser/renderer_host/direct_manipulation_test_helper_win.h",
-      "../browser/renderer_host/direct_manipulation_win_unittest.cc",
-      "../browser/renderer_host/dwrite_font_proxy_impl_win_unittest.cc",
-      "../browser/screenlock_monitor/screenlock_monitor_device_source_win_unittest.cc",
-      "../child/dwrite_font_proxy/dwrite_font_proxy_win_unittest.cc",
-      "../child/dwrite_font_proxy/font_fallback_win_unittest.cc",
-      "../child/font_warmup_win_unittest.cc",
-    ]
-    deps += [
-      "//components/services/font_data/public/mojom",
-      "//components/stylus_handwriting/win",
-      "//sandbox/policy:sandbox_test_utils",
-      "//sandbox/win:sandbox",
-      "//third_party/blink/public/common",
-      "//third_party/blink/public/common:font_unique_name_table_proto",
-      "//third_party/iaccessible2",
-      "//third_party/microsoft_webauthn",
-      "//ui/base",
-    ]
-    libs = [
-      "dwrite.lib",
-      "wtsapi32.lib",
-    ]
   }
   if (is_mac) {
     deps += [
@@ -3403,16 +3089,6 @@ test("content_unittests") {
       "IOSurface.framework",
     ]
     weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 12.3
-  }
-  if (is_chromeos) {
-    sources += [ "../browser/handwriting/handwriting_recognition_service_impl_cros_unittest.cc" ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/dbus/audio",
-      "//chromeos/services/machine_learning/public/cpp:stub",
-      "//chromeos/services/machine_learning/public/mojom",
-    ]
   }
 
   # Non-Android.
@@ -3438,19 +3114,17 @@ test("content_unittests") {
     "//media/mojo/mojom:web_speech_recognition",
   ]
 
-  if (!is_fuchsia) {
-    sources += [
-      "../browser/speech/on_device_speech_recognition_engine_unittest.cc",
-      "../browser/speech/soda_speech_recognition_engine_impl_unittest.cc",
-      "../browser/speech/speech_recognition_dispatcher_host_unittest.cc",
-      "../browser/speech/speech_recognition_manager_impl_unittest.cc",
-    ]
-    deps += [
-      "//components/soda:constants",
-      "//components/soda:utils",
-      "//media/mojo/mojom:speech_recognition",
-    ]
-  }
+  sources += [
+    "../browser/speech/on_device_speech_recognition_engine_unittest.cc",
+    "../browser/speech/soda_speech_recognition_engine_impl_unittest.cc",
+    "../browser/speech/speech_recognition_dispatcher_host_unittest.cc",
+    "../browser/speech/speech_recognition_manager_impl_unittest.cc",
+  ]
+  deps += [
+    "//components/soda:constants",
+    "//components/soda:utils",
+    "//media/mojo/mojom:speech_recognition",
+  ]
 
   # HID support is not available without udev.
   is_linux_without_udev = (is_linux || is_chromeos) && !use_udev
@@ -3470,12 +3144,6 @@ test("content_unittests") {
       "//device/fido:mocks",
       "//device/fido:test_support",
     ]
-    if (is_chromeos) {
-      deps += [
-        "//chromeos/dbus/tpm_manager",
-        "//chromeos/dbus/u2f",
-      ]
-    }
     if (is_ios && use_blink) {
       deps += [ "//crypto:test_support" ]
     }
@@ -3534,19 +3202,6 @@ test("content_unittests") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (is_ios) {
-  bundle_data("content_shell_pak_bundle_data") {
-    testonly = true
-    public_deps = [ "//content/shell:pak" ]
-    sources = [ "$root_out_dir/content_shell.pak" ]
-    outputs = [ "{{bundle_resources_dir}}/content_shell.pak" ]
-  }
-
-  bundle_data_from_filelist("content_test_bundle_data") {
-    testonly = true
-    filelist_name = "content_test_bundle_data.filelist"
-  }
-}
 if (is_apple) {
   bundle_data("content_test_perfetto_bundle_data") {
     testonly = true
@@ -3626,16 +3281,4 @@ group("gpu_pytype") {
     ":telemetry_gpu_integration_test_support",
     "//testing:pytype_dependencies",
   ]
-}
-
-if (is_fuchsia) {
-  group("telemetry_gpu_integration_test_fuchsia") {
-    testonly = true
-    data = [ "//content/test/gpu/run_gpu_integration_test_fuchsia.py" ]
-    data_deps = [
-      "//content/test:fuchsia_telemetry_test_data",
-      "//content/test:telemetry_gpu_integration_test_support",
-      "//tools/perf/chrome_telemetry_build:telemetry_chrome_test",
-    ]
-  }
 }

@@ -133,18 +133,6 @@ if (is_apple) {
       "src/common/system_utils_mac.cpp",
     ]
   }
-  if (is_ios) {
-    libangle_common_sources += [ "src/common/system_utils_ios.cpp" ]
-  }
-}
-
-if (is_win) {
-  libangle_common_sources += [ "src/common/system_utils_win.cpp" ]
-  if (angle_is_winuwp) {
-    libangle_common_sources += [ "src/common/system_utils_winuwp.cpp" ]
-  } else {
-    libangle_common_sources += [ "src/common/system_utils_win32.cpp" ]
-  }
 }
 
 libangle_image_util_headers = [
@@ -672,10 +660,6 @@ libglesv1_cm_sources = [
   "src/libGLESv1_CM/libGLESv1_CM.cpp",
   "src/libGLESv1_CM/resource.h",
 ]
-
-if (is_win) {
-  libglesv1_cm_sources += [ "src/libGLESv1_CM/libGLESv1_CM.rc" ]
-}
 
 libegl_sources = [
   "src/libEGL/egl_loader_autogen.h",

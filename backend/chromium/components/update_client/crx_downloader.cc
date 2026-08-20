@@ -16,9 +16,6 @@
 #include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
-#if BUILDFLAG(IS_WIN)
-#include "components/update_client/background_downloader_win.h"
-#endif
 #include "components/update_client/network.h"
 #include "components/update_client/task_traits.h"
 #include "components/update_client/update_client_errors.h"

@@ -315,31 +315,6 @@ bool UploadResponseParser::enable_upload_size_adjustment() const {
          enable_upload_size_adjustment.value();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns true if `generation_guid` can be parsed as a GUID or if
-// `generation_guid` does not need to be parsed based on the type of device.
-// Returns false otherwise.
-bool GenerationGuidIsValid(bool is_generation_guid_required,
-                           const std::string& generation_guid) {
-  if (generation_guid.empty() && !is_generation_guid_required) {
-    // This is a legacy ChromeOS managed device and is not required to have
-    // a `generation_guid`.
-    return true;
-  }
-  // If the generation guid has some value, try to parse it.
-  return base::Uuid::ParseCaseInsensitive(generation_guid).is_valid();
-}
-
-// Returns true if `generation_guid` is required and missing.
-// Returns false otherwise.
-bool IsMissingGenerationGuid(bool is_generation_guid_required,
-                             const std::string* generation_guid) {
-  if (!is_generation_guid_required) {
-    return false;
-  }
-  return !generation_guid || generation_guid->empty();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Returns true if any required sequence info is missing. Returns
 // false otherwise.
@@ -349,10 +324,6 @@ bool IsMissingSequenceInformation(bool is_generation_guid_required,
                                   const std::optional<Priority> priority_result,
                                   const std::string* generation_guid) {
   return !sequencing_id || !generation_id || generation_id->empty() ||
-#if BUILDFLAG(IS_CHROMEOS)
-         IsMissingGenerationGuid(is_generation_guid_required,
-                                 generation_guid) ||
-#endif  // BUILDFLAG(IS_CHROMEOS)
          !priority_result.has_value() ||
          !Priority_IsValid(priority_result.value());
 }
@@ -393,18 +364,6 @@ UploadResponseParser::SequenceInformationValueToProto(
   proto.set_generation_id(gen_id);
   proto.set_priority(Priority(priority_result.value()));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If `generation_guid` does not exist, set it to be an empty string.
-  const std::string gen_guid = generation_guid ? *generation_guid : "";
-  if (!GenerationGuidIsValid(is_generation_guid_required, gen_guid)) {
-    return base::unexpected(Status(
-        error::INVALID_ARGUMENT,
-        base::StrCat({"Provided value did not conform to a valid "
-                      "SequenceInformation proto. Invalid generation guid : ",
-                      sequence_information_dict.DebugString()})));
-  }
-  proto.set_generation_guid(gen_guid);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return proto;
 }
 

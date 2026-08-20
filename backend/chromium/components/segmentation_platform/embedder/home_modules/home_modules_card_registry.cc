@@ -12,11 +12,6 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/segmentation_platform/embedder/home_modules/constants.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "components/segmentation_platform/embedder/home_modules/home_modules_card_registry_ios.h"
-#elif BUILDFLAG(IS_ANDROID)
-#include "components/segmentation_platform/embedder/home_modules/home_modules_card_registry_android.h"
-#endif
 
 namespace segmentation_platform::home_modules {
 
@@ -24,36 +19,18 @@ namespace segmentation_platform::home_modules {
 std::unique_ptr<HomeModulesCardRegistry> HomeModulesCardRegistry::Create(
     PrefService* profile_prefs,
     PrefService* local_state_prefs) {
-#if BUILDFLAG(IS_IOS)
-  return std::make_unique<HomeModulesCardRegistryIOS>(profile_prefs,
-                                                      local_state_prefs);
-#elif BUILDFLAG(IS_ANDROID)
-  return std::make_unique<HomeModulesCardRegistryAndroid>(profile_prefs,
-                                                          local_state_prefs);
-#else
   // Fallback for platforms that don't support home modules (e.g., Desktop).
   return nullptr;
-#endif
 }
 
 // static
 void HomeModulesCardRegistry::RegisterProfilePrefs(
     PrefRegistrySimple* registry) {
-#if BUILDFLAG(IS_IOS)
-  HomeModulesCardRegistryIOS::RegisterProfilePrefs(registry);
-#elif BUILDFLAG(IS_ANDROID)
-  HomeModulesCardRegistryAndroid::RegisterProfilePrefs(registry);
-#endif
 }
 
 // static
 void HomeModulesCardRegistry::RegisterLocalStatePrefs(
     PrefRegistrySimple* registry) {
-#if BUILDFLAG(IS_IOS)
-  HomeModulesCardRegistryIOS::RegisterLocalStatePrefs(registry);
-#elif BUILDFLAG(IS_ANDROID)
-  HomeModulesCardRegistryAndroid::RegisterLocalStatePrefs(registry);
-#endif
 }
 
 HomeModulesCardRegistry::HomeModulesCardRegistry(PrefService* profile_prefs,

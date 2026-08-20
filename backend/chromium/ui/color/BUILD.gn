@@ -122,27 +122,6 @@ source_set("unit_tests") {
   ]
 }
 
-if (is_win) {
-  component("accent_color_observer") {
-    sources = [
-      "win/accent_color_observer.cc",
-      "win/accent_color_observer.h",
-    ]
-
-    defines = [ "IS_COLOR_IMPL" ]
-
-    public_deps = [
-      "//base",
-      "//third_party/abseil-cpp:absl",
-    ]
-
-    deps = [
-      "//skia",
-      "//ui/gfx:color_utils",
-    ]
-  }
-}
-
 component("mixers") {
   sources = [
     "color_mixers.cc",
@@ -183,21 +162,12 @@ component("mixers") {
 
   public_deps = [ "//base" ]
 
-  if (is_chromeos) {
-    sources += [ "chromeos/native_color_mixers_chromeos.cc" ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [
       "mac/css_system_color_mixer_mac.mm",
       "mac/native_color_mixers_mac.mm",
     ]
     frameworks = [ "AppKit.framework" ]
-  } else if (is_win) {
-    sources += [
-      "win/css_system_color_mixer_win.cc",
-      "win/native_color_mixers_win.cc",
-      "win/native_color_mixers_win.h",
-    ]
-    deps += [ ":accent_color_observer" ]
   }
 }
 

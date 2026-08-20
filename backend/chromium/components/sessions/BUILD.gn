@@ -6,69 +6,39 @@ config("implementation") {
   defines = [ "SESSIONS_IMPLEMENTATION" ]
 }
 
-if (!is_ios) {
-  component("sessions") {
-    sources = [
-      "content/content_live_tab.cc",
-      "content/content_live_tab.h",
-      "content/content_platform_specific_tab_data.cc",
-      "content/content_platform_specific_tab_data.h",
-      "content/content_record_password_state.cc",
-      "content/content_record_password_state.h",
-      "content/content_serialized_navigation_builder.cc",
-      "content/content_serialized_navigation_builder.h",
-      "content/content_serialized_navigation_driver.cc",
-      "content/content_serialized_navigation_driver.h",
-      "content/extended_info_handler.h",
-      "content/navigation_task_id.cc",
-      "content/navigation_task_id.h",
-      "content/session_tab_helper.cc",
-      "content/session_tab_helper.h",
-      "content/session_tab_helper_delegate.h",
-    ]
+component("sessions") {
+  sources = [
+    "content/content_live_tab.cc",
+    "content/content_live_tab.h",
+    "content/content_platform_specific_tab_data.cc",
+    "content/content_platform_specific_tab_data.h",
+    "content/content_record_password_state.cc",
+    "content/content_record_password_state.h",
+    "content/content_serialized_navigation_builder.cc",
+    "content/content_serialized_navigation_builder.h",
+    "content/content_serialized_navigation_driver.cc",
+    "content/content_serialized_navigation_driver.h",
+    "content/extended_info_handler.h",
+    "content/navigation_task_id.cc",
+    "content/navigation_task_id.h",
+    "content/session_tab_helper.cc",
+    "content/session_tab_helper.h",
+    "content/session_tab_helper_delegate.h",
+  ]
 
-    configs += [ ":implementation" ]
+  configs += [ ":implementation" ]
 
-    public_deps = [
-      ":shared",
-      "//content/public/browser",
-    ]
+  public_deps = [
+    ":shared",
+    "//content/public/browser",
+  ]
 
-    deps = [
-      "//base",
-      "//content/public/common",
-      "//ui/base",
-      "//url",
-    ]
-  }
-} else {
-  source_set("sessions") {
-    sources = [
-      "ios/ios_live_tab.h",
-      "ios/ios_live_tab.mm",
-      "ios/ios_restore_live_tab.h",
-      "ios/ios_restore_live_tab.mm",
-      "ios/ios_serialized_navigation_builder.h",
-      "ios/ios_serialized_navigation_builder.mm",
-      "ios/ios_serialized_navigation_driver.cc",
-      "ios/ios_serialized_navigation_driver.h",
-      "ios/ios_webstate_live_tab.h",
-      "ios/ios_webstate_live_tab.mm",
-    ]
-
-    public_deps = [
-      ":shared",
-      "//ios/web/public",
-      "//ios/web/public/session/proto",
-    ]
-
-    deps = [
-      "//base",
-      "//ios/web/common",
-      "//ios/web/public/session",
-      "//ios/web/public/session/proto:proto_util",
-    ]
-  }
+  deps = [
+    "//base",
+    "//content/public/common",
+    "//ui/base",
+    "//url",
+  ]
 }
 
 component("session_id") {
@@ -173,16 +143,14 @@ static_library("test_support") {
     "//url",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "content/content_test_helper.cc",
-      "content/content_test_helper.h",
-    ]
-    deps += [
-      "//content/public/browser",
-      "//content/public/common",
-    ]
-  }
+  sources += [
+    "content/content_test_helper.cc",
+    "content/content_test_helper.h",
+  ]
+  deps += [
+    "//content/public/browser",
+    "//content/public/common",
+  ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
@@ -199,18 +167,11 @@ source_set("unit_tests") {
     "core/tab_restore_service_helper_unittest.cc",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "content/content_serialized_navigation_builder_unittest.cc",
-      "content/content_serialized_navigation_driver_unittest.cc",
-      "content/navigation_task_id_unittest.cc",
-    ]
-  } else {
-    sources += [
-      "ios/ios_serialized_navigation_builder_unittest.mm",
-      "ios/ios_serialized_navigation_driver_unittest.cc",
-    ]
-  }
+  sources += [
+    "content/content_serialized_navigation_builder_unittest.cc",
+    "content/content_serialized_navigation_driver_unittest.cc",
+    "content/navigation_task_id_unittest.cc",
+  ]
 
   public_deps = [ ":sessions" ]
 
@@ -225,17 +186,10 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_ios) {
-    deps += [
-      "//content/public/common",
-      "//content/test:test_support",
-    ]
-  } else {
-    deps += [
-      "//ios/web/public/test",
-      "//ios/web/public/test:test_fixture",
-    ]
-  }
+  deps += [
+    "//content/public/common",
+    "//content/test:test_support",
+  ]
 }
 
 bundle_data("unit_tests_bundle_data") {

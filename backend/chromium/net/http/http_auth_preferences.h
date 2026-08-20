@@ -46,9 +46,6 @@ class NET_EXPORT HttpAuthPreferences {
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   virtual bool NtlmV2Enabled() const;
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
-#if BUILDFLAG(IS_ANDROID)
-  virtual std::string AuthAndroidNegotiateAccountType() const;
-#endif
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   virtual bool AllowGssapiLibraryLoad() const;
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
@@ -113,12 +110,6 @@ class NET_EXPORT HttpAuthPreferences {
 
   void SetAllowDefaultCredentials(DefaultCredentials creds);
 
-#if BUILDFLAG(IS_ANDROID)
-  void set_auth_android_negotiate_account_type(
-      const std::string& account_type) {
-    auth_android_negotiate_account_type_ = account_type;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
  private:
   bool delegate_by_kdc_policy_ = false;
@@ -132,9 +123,6 @@ class NET_EXPORT HttpAuthPreferences {
   bool ntlm_v2_enabled_ = true;
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_ANDROID)
-  std::string auth_android_negotiate_account_type_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   bool allow_gssapi_library_load_ = true;

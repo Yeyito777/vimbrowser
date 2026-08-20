@@ -278,20 +278,9 @@ void FakeRemoteGattCharacteristic::DeprecatedWriteRemoteCharacteristic(
                      write_type));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FakeRemoteGattCharacteristic::PrepareWriteRemoteCharacteristic(
-    base::span<const uint8_t> value,
-    base::OnceClosure callback,
-    ErrorCallback error_callback) {
-  NOTIMPLEMENTED();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void FakeRemoteGattCharacteristic::SubscribeToNotifications(
     device::BluetoothRemoteGattDescriptor* ccc_descriptor,
-#if BUILDFLAG(IS_CHROMEOS)
-    NotificationType notification_type,
-#endif  // BUILDFLAG(IS_CHROMEOS)
     base::OnceClosure callback,
     ErrorCallback error_callback) {
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(

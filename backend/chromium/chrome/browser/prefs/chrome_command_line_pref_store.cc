@@ -34,12 +34,6 @@
 #include "ui/display/display_switches.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#include "ash/constants/ash_switches.h"
-#include "chrome/browser/ash/borealis/borealis_prefs.h"
-#include "chrome/browser/ash/borealis/borealis_switches.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "extensions/common/switches.h"
@@ -53,16 +47,6 @@ const CommandLinePrefStore::SwitchToPreferenceMapEntry
         {switches::kSSLVersionMin, prefs::kSSLVersionMin},
         {switches::kSSLVersionMax, prefs::kSSLVersionMax},
         {switches::kWebRtcIPHandlingPolicy, prefs::kWebRTCIPHandlingPolicy},
-#if BUILDFLAG(IS_ANDROID)
-        {switches::kAuthAndroidNegotiateAccountType,
-         prefs::kAuthAndroidNegotiateAccountType},
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-        {ash::switches::kSchedulerConfiguration,
-         ash::prefs::kSchedulerConfiguration},
-        {borealis::switches::kLaunchOptions,
-         borealis::prefs::kExtraLaunchOptions},
-#endif
 };
 
 const CommandLinePrefStore::SwitchToPreferenceMapEntry
@@ -84,13 +68,6 @@ const CommandLinePrefStore::BooleanSwitchToPreferenceMapEntry
         {switches::kDisablePrintPreview, prefs::kPrintPreviewDisabled, true},
         {safe_browsing::switches::kSbEnableEnhancedProtection,
          prefs::kSafeBrowsingEnhanced, true},
-#if BUILDFLAG(IS_CHROMEOS)
-        {ash::switches::kEnableTouchpadThreeFingerClick,
-         ash::prefs::kEnableTouchpadThreeFingerClick, true},
-        {switches::kEnableUnifiedDesktop,
-         prefs::kUnifiedDesktopEnabledByDefault, true},
-        {ash::switches::kEnableCastReceiver, prefs::kCastReceiverEnabled, true},
-#endif
         {switches::kEnableLocalSyncBackend,
          syncer::prefs::kEnableLocalSyncBackend, true},
 #if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)

@@ -673,7 +673,6 @@ KeySystemConfigSelector::GetSupportedConfiguration(
   // permission has already been denied. This would happen anyway later.
   EmeFeatureSupport distinctive_identifier_support =
       key_systems_->GetDistinctiveIdentifierSupport(key_system);
-#if !BUILDFLAG(IS_ANDROID)
   // NOTE: This is an additional action we are taking here that is not in the
   // spec currently.  Specifically, we are not allowing a distinctive identifier
   // for cross-origin frames. We do not do this on Android because there is no
@@ -684,7 +683,6 @@ KeySystemConfigSelector::GetSupportedConfiguration(
       return CONFIGURATION_NOT_SUPPORTED;
     distinctive_identifier_support = EmeFeatureSupport::NOT_SUPPORTED;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   EmeConfig::Rule di_rule = GetDistinctiveIdentifierConfigRule(
       distinctive_identifier_support, distinctive_identifier);
   if (!config_state->IsRuleSupported(di_rule)) {
@@ -1108,28 +1106,6 @@ void KeySystemConfigSelector::SelectConfigInternal(
              EmeFeatureRequirement::kRequired);
         cdm_config.use_hw_secure_codecs =
             config_state.AreHwSecureCodecsRequired();
-#if BUILDFLAG(IS_WIN)
-        // Check whether hardware secure decryption CDM should be disabled.
-        if (cdm_config.use_hw_secure_codecs &&
-            base::FeatureList::IsEnabled(
-                media::kHardwareSecureDecryptionFallback) &&
-            media::kHardwareSecureDecryptionFallbackPerSite.Get()) {
-          if (!request->was_hardware_secure_decryption_preferences_requested) {
-            media_permission_->IsHardwareSecureDecryptionAllowed(
-                blink::BindOnce(&KeySystemConfigSelector::
-                                    OnHardwareSecureDecryptionAllowedResult,
-                                weak_factory_.GetWeakPtr(),
-                                std::move(request)));
-            return;
-          }
-
-          if (!config_state.IsHardwareSecureDecryptionAllowed()) {
-            DVLOG(2) << "Rejecting requested configuration because "
-                     << "Hardware secure decryption is not allowed.";
-            continue;
-          }
-        }
-#endif  // BUILDFLAG(IS_WIN)
 
         std::move(request->cb)
             .Run(Status::kSupported, &accumulated_configuration, &cdm_config);
@@ -1151,17 +1127,5 @@ void KeySystemConfigSelector::OnPermissionResult(
   SelectConfigInternal(std::move(request));
 }
 
-#if BUILDFLAG(IS_WIN)
-void KeySystemConfigSelector::OnHardwareSecureDecryptionAllowedResult(
-    std::unique_ptr<SelectionRequest> request,
-    bool is_hardware_secure_decryption_allowed) {
-  DVLOG(3) << __func__;
-
-  request->was_hardware_secure_decryption_preferences_requested = true;
-  request->is_hardware_secure_decryption_allowed =
-      is_hardware_secure_decryption_allowed;
-  SelectConfigInternal(std::move(request));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace blink

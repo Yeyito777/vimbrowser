@@ -27,8 +27,4 @@ source_set("management_identity_impl") {
     "//components/prefs",
     "//components/signin/public/identity_manager",
   ]
-
-  if (is_chromeos_ash) {
-    deps += [ "//chrome/browser/ash/policy/core" ]
-  }
 }

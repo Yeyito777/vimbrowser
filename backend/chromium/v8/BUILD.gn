@@ -27,10 +27,6 @@ if (v8_enable_temporal_support) {
   import("//build/config/rust.gni")
 }
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`.
-}
-
 # For faster Windows builds. See https://crbug.com/v8/8475.
 emit_builtins_as_inline_asm = is_win && is_clang
 
@@ -1720,19 +1716,9 @@ config("toolchain") {
 
   if (v8_current_cpu == "x86") {
     defines += [ "V8_TARGET_ARCH_IA32" ]
-    if (is_win) {
-      # Ensure no surprising artifacts from 80bit double math with x86.
-      cflags += [ "/arch:SSE2" ]
-    }
   }
   if (v8_current_cpu == "x64") {
     defines += [ "V8_TARGET_ARCH_X64" ]
-    if (is_win) {
-      # Increase the initial stack size. The default is 1MB, this is 2MB. This
-      # applies only to executables and shared libraries produced by V8 since
-      # ldflags are not pushed to dependants.
-      ldflags += [ "/STACK:2097152" ]
-    }
   }
 
   # TODO(infra): Support v8_enable_prof on Windows.
@@ -1756,14 +1742,10 @@ config("toolchain") {
   }
 
   if (v8_no_inline) {
-    if (is_win) {
-      cflags += [ "/Ob0" ]
-    } else {
-      cflags += [
-        "-fno-inline-functions",
-        "-fno-inline",
-      ]
-    }
+    cflags += [
+      "-fno-inline-functions",
+      "-fno-inline",
+    ]
   }
 
   if (is_clang) {
@@ -1783,12 +1765,10 @@ config("toolchain") {
     }
 
     # TODO(fuchsia:127411): Re-enable once FIDL bindings are compatible.
-    if (!is_fuchsia) {
-      # Google3 enables this warning, so we should also enable it to find issue
-      # earlier. See https://reviews.llvm.org/D56731 for details about this
-      # warning.
-      cflags += [ "-Wctad-maybe-unsupported" ]
-    }
+    # Google3 enables this warning, so we should also enable it to find issue
+    # earlier. See https://reviews.llvm.org/D56731 for details about this
+    # warning.
+    cflags += [ "-Wctad-maybe-unsupported" ]
 
     if (is_clang && use_cppgc_clang_plugin && clang_use_chrome_plugins) {
       # The plugin is built directly into clang, so there's no need to load it
@@ -5026,10 +5006,6 @@ v8_header_set("v8_internal_headers") {
       "third_party/valgrind/valgrind.h",
     ]
 
-    if (is_win) {
-      sources += [ "src/diagnostics/unwinding-info-win64.h" ]
-    }
-
     if (v8_enable_sparkplug) {
       sources += [
         "src/baseline/x64/baseline-assembler-x64-inl.h",
@@ -5118,9 +5094,6 @@ v8_header_set("v8_internal_headers") {
            (is_linux || is_mac))) {
         sources += [ "src/trap-handler/trap-handler-simulator.h" ]
       }
-    }
-    if (is_win) {
-      sources += [ "src/diagnostics/unwinding-info-win64.h" ]
     }
   } else if (v8_current_cpu == "mips64" || v8_current_cpu == "mips64el") {
     sources += [
@@ -6520,10 +6493,6 @@ v8_cluster_source_set("v8_base_without_compiler") {
       "src/regexp/x64/regexp-macro-assembler-x64.cc",
     ]
 
-    if (is_win) {
-      sources += [ "src/diagnostics/unwinding-info-win64.cc" ]
-    }
-
     if (v8_enable_webassembly) {
       # iOS Xcode simulator builds run on an x64 target. iOS and macOS are both
       # based on Darwin and thus POSIX-compliant to a similar degree.
@@ -6595,9 +6564,6 @@ v8_cluster_source_set("v8_base_without_compiler") {
           (is_linux || is_chromeos || is_mac || is_win)) {
         sources += [ "src/trap-handler/handler-outside-simulator.cc" ]
       }
-    }
-    if (is_win) {
-      sources += [ "src/diagnostics/unwinding-info-win64.cc" ]
     }
   } else if (v8_current_cpu == "mips64" || v8_current_cpu == "mips64el") {
     sources += [
@@ -6752,24 +6718,6 @@ v8_cluster_source_set("v8_base_without_compiler") {
   }
 
   # Architecture independent but platform-specific sources
-  if (is_win) {
-    if (v8_enable_etw_stack_walking) {
-      sources += [
-        "src/diagnostics/etw-debug-win.cc",
-        "src/diagnostics/etw-debug-win.h",
-        "src/diagnostics/etw-isolate-capture-state-monitor-win.cc",
-        "src/diagnostics/etw-isolate-capture-state-monitor-win.h",
-        "src/diagnostics/etw-isolate-load-script-data-win.cc",
-        "src/diagnostics/etw-isolate-load-script-data-win.h",
-        "src/diagnostics/etw-isolate-operations-win.cc",
-        "src/diagnostics/etw-isolate-operations-win.h",
-        "src/diagnostics/etw-jit-metadata-win.cc",
-        "src/diagnostics/etw-jit-metadata-win.h",
-        "src/diagnostics/etw-jit-win.cc",
-        "src/diagnostics/etw-jit-win.h",
-      ]
-    }
-  }
 
   configs = [
     ":internal_config",
@@ -6827,9 +6775,6 @@ v8_cluster_source_set("v8_base_without_compiler") {
   if (v8_enable_i18n_support) {
     deps += [ ":run_gen-regexp-special-case" ]
     sources += [ "$target_gen_dir/src/regexp/special-case.cc" ]
-    if (is_win) {
-      deps += [ "$v8_icu_path:icudata" ]
-    }
   } else {
     sources -= [
       "src/builtins/builtins-intl.cc",
@@ -7239,52 +7184,11 @@ v8_component("v8_libbase") {
     ]
 
     libs = [ "dl" ]
-  } else if (is_fuchsia) {
-    sources += [
-      "src/base/debug/stack_trace_fuchsia.cc",
-      "src/base/platform/platform-fuchsia.cc",
-    ]
-    deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.kernel:fuchsia.kernel_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/component_incoming_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/zx",
-    ]
   } else if (is_mac) {
     sources += [
       "src/base/debug/stack_trace_posix.cc",
       "src/base/platform/platform-darwin.cc",
     ]
-  } else if (is_ios) {
-    sources += [
-      "src/base/debug/stack_trace_posix.cc",
-      "src/base/platform/platform-darwin.cc",
-    ]
-  } else if (is_win) {
-    # TODO(infra): Add support for cygwin.
-    sources += [
-      "src/base/debug/stack_trace_win.cc",
-      "src/base/platform/platform-win32.cc",
-      "src/base/platform/platform-win32.h",
-      "src/base/win32-headers.h",
-    ]
-
-    defines += [ "_CRT_RAND_S" ]  # for rand_s()
-
-    libs = [
-      "dbghelp.lib",
-      "winmm.lib",
-      "ws2_32.lib",
-    ]
-
-    if (v8_enable_etw_stack_walking) {
-      libs += [ "advapi32.lib" ]  # Needed for TraceLoggingProvider.h
-    }
-
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-
-    data_deps += [ "//build/win:runtime_libs" ]
   } else if (current_os == "zos") {
     sources += [
       "src/base/debug/stack_trace_zos.cc",
@@ -7419,8 +7323,6 @@ v8_component("v8_libplatform") {
     sources += [ "src/libplatform/tracing/recorder.h" ]
     if (is_mac) {
       sources += [ "src/libplatform/tracing/recorder-mac.cc" ]
-    } else if (is_win) {
-      sources += [ "src/libplatform/tracing/recorder-win.cc" ]
     }
   }
 
@@ -7510,12 +7412,7 @@ v8_source_set("v8_heap_base") {
   ]
 
   if (current_cpu == "x64") {
-    if (is_win) {
-      # Prefer a masm version with unwind directives.
-      sources += [ "src/heap/base/asm/x64/push_registers_masm.asm" ]
-    } else {
-      sources += [ "src/heap/base/asm/x64/push_registers_asm.cc" ]
-    }
+    sources += [ "src/heap/base/asm/x64/push_registers_asm.cc" ]
   } else if (current_cpu == "x86") {
     sources += [ "src/heap/base/asm/ia32/push_registers_asm.cc" ]
   } else if (current_cpu == "arm") {
@@ -7921,9 +7818,7 @@ if (current_toolchain == v8_snapshot_toolchain) {
   # disable it while taking a V8 snapshot.
   config("disable_icf") {
     visibility = [ ":*" ]  # Only targets in this file can depend on this.
-    if (is_win) {
-      ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
-    } else if (is_apple && !use_lld) {
+    if (is_apple && !use_lld) {
       ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
     } else if (use_lld) {
       ldflags = [ "-Wl,--icf=none" ]
@@ -8100,10 +7995,8 @@ group("v8_archive") {
 
   deps = [ ":d8" ]
 
-  if (!is_win) {
-    # On windows, cctest doesn't link with v8_static_library.
-    deps += [ "test/cctest" ]
-  }
+  # On windows, cctest doesn't link with v8_static_library.
+  deps += [ "test/cctest" ]
 }
 
 # TODO(dglazkov): Remove the "!build_with_chromium" condition once this clause
@@ -8344,8 +8237,6 @@ v8_executable("d8") {
 
   if (is_posix || is_fuchsia) {
     sources += [ "src/d8/d8-posix.cc" ]
-  } else if (is_win) {
-    sources += [ "src/d8/d8-windows.cc" ]
   }
 
   if (v8_correctness_fuzzer) {

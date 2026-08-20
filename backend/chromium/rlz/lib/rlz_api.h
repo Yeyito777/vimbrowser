@@ -7,10 +7,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#define RLZ_LIB_API __cdecl
-#else
 #define RLZ_LIB_API
-#endif
 
 #endif  // RLZ_LIB_RLZ_API_H_

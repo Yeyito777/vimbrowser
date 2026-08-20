@@ -124,14 +124,6 @@ void DrawPolygon::ConstructNormal() {
   normal_ = new_normal;
 }
 
-#if BUILDFLAG(IS_WIN)
-//
-// Allows the unittest to invoke this for the more general constructor.
-//
-void DrawPolygon::RecomputeNormalForTesting() {
-  ConstructNormal();
-}
-#endif
 
 float DrawPolygon::SignedPointDistance(const gfx::Point3F& point) const {
   return gfx::DotProduct(point - points_[0], normal_);

@@ -83,10 +83,8 @@ const char kExtraImageProvided[] =
 const char kNotificationIdTooLong[] =
     "The notification's ID should be %d characters or less";
 
-#if !BUILDFLAG(IS_CHROMEOS)
 const char kLowPriorityDeprecatedOnPlatform[] =
     "Low-priority notifications are deprecated on this platform.";
-#endif
 
 // Given an extension id and another id, returns an id that is unique
 // relative to other extensions.
@@ -224,13 +222,11 @@ bool NotificationsApiFunction::CreateNotification(
     return false;
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (options->priority &&
       *options->priority < message_center::DEFAULT_PRIORITY) {
     *error = kLowPriorityDeprecatedOnPlatform;
     return false;
   }
-#endif
 
   NotificationBitmapSizes bitmap_sizes = GetNotificationBitmapSizes();
 
@@ -385,13 +381,11 @@ bool NotificationsApiFunction::UpdateNotification(
     api::notifications::NotificationOptions* options,
     message_center::Notification* notification,
     std::string* error) {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (options->priority &&
       *options->priority < message_center::DEFAULT_PRIORITY) {
     *error = kLowPriorityDeprecatedOnPlatform;
     return false;
   }
-#endif
 
   NotificationBitmapSizes bitmap_sizes = GetNotificationBitmapSizes();
   const float image_scale = ui::GetScaleForMaxSupportedResourceScaleFactor();

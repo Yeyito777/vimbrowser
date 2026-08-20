@@ -45,9 +45,6 @@ class SkiaOutputDeviceVulkan final : public SkiaOutputDevice {
       gpu::MemoryTracker* memory_tracker,
       DidSwapBufferCompleteCallback did_swap_buffer_complete_callback);
 
-#if BUILDFLAG(IS_WIN)
-  gpu::SurfaceHandle GetChildSurfaceHandle();
-#endif
   // SkiaOutputDevice implementation:
   void Submit(scoped_refptr<gpu::SharedContextState> context_state,
               bool sync_cpu,

@@ -12,9 +12,6 @@
 #include "media/base/media_switches.h"
 #include "media/gpu/ipc/service/media_gpu_channel.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/gpu/windows/d3d12_helpers.h"
-#endif
 
 namespace media {
 

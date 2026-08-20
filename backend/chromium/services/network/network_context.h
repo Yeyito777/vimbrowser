@@ -215,12 +215,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
     return &cors_exempt_header_list_;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  const std::vector<std::unique_ptr<base::android::ApplicationStatusListener>>&
-  app_status_listeners() const {
-    return app_status_listeners_;
-  }
-#endif
 
   // Creates a URLLoaderFactory with a ResourceSchedulerClient specified. This
   // is used to reuse the existing ResourceSchedulerClient for cloned
@@ -519,13 +513,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
       const net::AuthCredentials& credentials,
       AddAuthCacheEntryCallback callback) override;
   void SetCorsNonWildcardRequestHeadersSupport(bool value) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void LookupProxyAuthCredentials(
-      const net::ProxyServer& proxy_server,
-      const std::string& auth_scheme,
-      const std::string& realm,
-      LookupProxyAuthCredentialsCallback callback) override;
-#endif
   void SetSharedDictionaryCacheMaxSize(uint64_t cache_max_size) override;
   void ClearSharedDictionaryCache(
       base::Time start_time,
@@ -894,10 +881,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
   // If non-null, called when the mojo pipe for the NetworkContext is closed.
   OnConnectionCloseCallback on_connection_close_callback_;
 
-#if BUILDFLAG(IS_ANDROID)
-  std::vector<std::unique_ptr<base::android::ApplicationStatusListener>>
-      app_status_listeners_;
-#endif
 
   mojo::Receiver<mojom::NetworkContext> receiver_;
 

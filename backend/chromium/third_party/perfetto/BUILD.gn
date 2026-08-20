@@ -98,9 +98,7 @@ if (enable_perfetto_tools) {
   all_targets += [ "src/tools" ]
 
   # Windows does not have an IPC implementation.
-  if (!is_win) {
-    all_targets += [ "src/websocket_bridge" ]
-  }
+  all_targets += [ "src/websocket_bridge" ]
 }
 
 if (enable_perfetto_unittests) {
@@ -125,12 +123,10 @@ if (enable_perfetto_integration_tests) {
     "test:client_api_example",
     "test/stress_test",
   ]
-  if (!is_win) {
-    all_targets += [
-      "examples/shared_lib:example_shlib_data_source",
-      "examples/shared_lib:example_shlib_track_event",
-    ]
-  }
+  all_targets += [
+    "examples/shared_lib:example_shlib_data_source",
+    "examples/shared_lib:example_shlib_track_event",
+  ]
 }
 
 if (enable_perfetto_trace_processor_json) {
@@ -298,11 +294,7 @@ if (build_with_chromium) {
 
   # TODO(altimin): this is a temp workaround around very strange link failures
   # on win-dbg-ng buildbot.
-  if (!is_win) {
-    libtrace_processor_target_type = "source_set"
-  } else {
-    libtrace_processor_target_type = "component"
-  }
+  libtrace_processor_target_type = "source_set"
 
   # In Chromium, we want to ensure that we don't link dynamically against sqlite
   # (as Chromium also uses a more restricted version of sqlite which is actually

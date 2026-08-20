@@ -10,10 +10,6 @@ import("//testing/test.gni")
 import("//third_party/blink/renderer/build/scripts/scripts.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 blink_python_runner("make_generated_document_policy_features") {
   script = "../renderer/build/scripts/make_document_policy_features.py"
 
@@ -332,10 +328,6 @@ source_set("common") {
     deps += [ "//media" ]
   }
 
-  if (is_win) {
-    deps += [ "//ui/gfx/" ]
-  }
-
   if (is_chromeos || is_win || is_castos || is_fuchsia) {
     defines = [ "ENABLE_PROTECTED_MEDIA_IDENTIFIER_PERMISSION" ]
   }
@@ -355,13 +347,6 @@ test("blink_common_unittests") {
     "//third_party/blink/public/common",
     "//ui/gfx:test_support",
   ]
-  if (is_ios) {
-    bundle_deps = [ ":blink_common_unittests_pak_bundle_data" ]
-  }
-  if (is_fuchsia) {
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml" ]
-  }
 
   data_deps = [ ":common_unittests_data" ]
 }
@@ -481,13 +466,6 @@ source_set("common_unittests_sources") {
 
 group("common_unittests_data") {
   data = [ "page_state/test_data/" ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("blink_common_unittests_pak_bundle_data") {
-    testonly = true
-    filelist_name = "blink_common_unittests_bundle_data.filelist"
-  }
 }
 
 static_library("test_support") {

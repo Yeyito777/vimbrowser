@@ -7,9 +7,6 @@
 
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/enterprise/data_controls/core/browser/component.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace data_controls {
 
@@ -59,9 +56,6 @@ struct ActionDestination {
   // for clipboard interactions, and as such defaults to "false".
   bool other_profile = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  Component component = Component::kUnknownComponent;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // Generic struct that represents metadata about an action involved in Data

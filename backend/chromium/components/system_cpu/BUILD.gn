@@ -36,15 +36,6 @@ source_set("system_cpu") {
       "host_processor_info_scanner.h",
     ]
   }
-
-  if (is_win) {
-    sources += [
-      "cpu_probe_win.cc",
-      "cpu_probe_win.h",
-    ]
-
-    libs += [ "pdh.lib" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -72,10 +63,6 @@ source_set("unit_tests") {
       "core_times_unittest.cc",
       "cpu_probe_mac_unittest.cc",
     ]
-  }
-
-  if (is_win) {
-    sources += [ "cpu_probe_win_unittest.cc" ]
   }
 }
 

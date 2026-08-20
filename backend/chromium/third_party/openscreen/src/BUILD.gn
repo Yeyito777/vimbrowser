@@ -46,27 +46,25 @@ group("gn_all") {
   ]
 
   # TODO(issuetracker.google.com/236163082): implement support on Windows.
-  if (!is_win) {
-    deps += [
-      "cast/streaming:receiver",
-      "cast/streaming:sender",
-      "discovery:dnssd",
-      "discovery:mdns",
-      "discovery:public",
-      "osp",
-      "platform",
+  deps += [
+    "cast/streaming:receiver",
+    "cast/streaming:sender",
+    "discovery:dnssd",
+    "discovery:mdns",
+    "discovery:public",
+    "osp",
+    "platform",
 
-      # Quiche currently has an issue around logging macros on Windows.
-      "third_party/quiche",
+    # Quiche currently has an issue around logging macros on Windows.
+    "third_party/quiche",
+  ]
+  if (!build_with_chromium) {
+    deps += [
+      "cast/standalone_sender:cast_sender",
+      "osp:osp_demo",
+      "third_party/protobuf:protoc($host_toolchain)",
+      "third_party/zlib",
     ]
-    if (!build_with_chromium) {
-      deps += [
-        "cast/standalone_sender:cast_sender",
-        "osp:osp_demo",
-        "third_party/protobuf:protoc($host_toolchain)",
-        "third_party/zlib",
-      ]
-    }
   }
 
   # The cast_receiver depends on the standalone implementation which is only
@@ -97,9 +95,7 @@ openscreen_source_set("openscreen_unittests_all") {
     ]
   }
   public_deps += [ "osp/msgs:unittests" ]
-  if (!is_win) {
-    public_deps += [ "osp:unittests" ]
-  }
+  public_deps += [ "osp:unittests" ]
 }
 if (!build_with_chromium) {
   openscreen_executable("openscreen_unittests") {

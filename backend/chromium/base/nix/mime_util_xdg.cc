@@ -22,9 +22,7 @@
 #include "base/strings/utf_string_conversion_utils.h"
 #include "build/build_config.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "base/synchronization/lock.h"
-#endif
 
 namespace base::nix {
 namespace {
@@ -255,7 +253,6 @@ std::string GetFileMimeType(const FilePath& filepath) {
 
   // Files never change on ChromeOS, but for linux, match xdgmime behavior and
   // check every 5s and reload if any files have changed.
-#if !BUILDFLAG(IS_CHROMEOS)
   static Time last_check;
   // Lock is required since this may be called on any thread.
   static NoDestructor<Lock> lock;
@@ -276,7 +273,6 @@ std::string GetFileMimeType(const FilePath& filepath) {
       last_check = now;
     }
   }
-#endif
 
   auto it = mime_type_map->find(ext.substr(1));
   return it != mime_type_map->end() ? it->second.mime_type : std::string();

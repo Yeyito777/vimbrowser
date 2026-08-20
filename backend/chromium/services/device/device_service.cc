@@ -89,12 +89,10 @@ DeviceService::DeviceService(
       base::SingleThreadTaskRunner::GetCurrentDefault());
 #endif  // defined(IS_SERIAL_ENABLED_PLATFORM)
 
-#if !BUILDFLAG(IS_IOS_TVOS)
   // Ensure that the battery backend is initialized now; otherwise it may end up
   // getting initialized on access during destruction, when it's no longer safe
   // to initialize.
   device::BatteryStatusService::GetInstance();
-#endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS_TVOS)
 }
 
 DeviceService::~DeviceService() {
@@ -146,9 +144,7 @@ void DeviceService::OverrideUsbDeviceManagerBinderForTesting(
 
 void DeviceService::BindBatteryMonitor(
     mojo::PendingReceiver<mojom::BatteryMonitor> receiver) {
-#if !BUILDFLAG(IS_IOS_TVOS)
   BatteryMonitorImpl::Create(std::move(receiver));
-#endif
 }
 
 #if BUILDFLAG(ENABLE_COMPUTE_PRESSURE)
@@ -181,14 +177,6 @@ void DeviceService::BindHidManager(
   hid_manager_->AddReceiver(std::move(receiver));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void DeviceService::BindMtpManager(
-    mojo::PendingReceiver<mojom::MtpManager> receiver) {
-  if (!mtp_device_manager_)
-    mtp_device_manager_ = MtpDeviceManager::Initialize();
-  mtp_device_manager_->AddReceiver(std::move(receiver));
-}
-#endif
 
 #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(USE_UDEV)
 void DeviceService::BindInputDeviceManager(

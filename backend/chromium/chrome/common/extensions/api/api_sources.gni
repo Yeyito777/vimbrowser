@@ -97,47 +97,6 @@ if (enable_extensions) {
     "webrtc_desktop_capture_private.idl",
   ]
 
-  if (is_chromeos) {
-    schema_sources_ += [
-      "accessibility_private.json",
-      "accessibility_service_private.idl",
-      "certificate_provider.idl",
-      "certificate_provider_internal.idl",
-      "document_scan.idl",
-      "echo_private.json",
-      "enterprise_device_attributes.idl",
-      "enterprise_kiosk_input.idl",
-      "enterprise_login.idl",
-      "enterprise_networking_attributes.idl",
-      "enterprise_platform_keys.idl",
-      "enterprise_platform_keys_internal.idl",
-      "enterprise_platform_keys_private.json",
-      "file_manager_private.idl",
-      "file_manager_private_internal.idl",
-      "file_system_provider.idl",
-      "file_system_provider_internal.idl",
-      "image_loader_private.idl",
-      "input_method_private.json",
-      "login.idl",
-      "login_screen_storage.idl",
-      "login_screen_ui.idl",
-      "login_state.idl",
-      "odfs_config_private.idl",
-      "platform_keys.idl",
-      "platform_keys_internal.idl",
-      "quick_unlock_private.idl",
-      "smart_card_provider_private.idl",
-      "speech_recognition_private.idl",
-      "system_log.idl",
-      "terminal_private.json",
-      "users_private.idl",
-      "vpn_provider.idl",
-      "wallpaper.json",
-      "wm_desks_private.idl",
-    ]
-
-  }
-
   if (is_linux || is_win || is_chromeos) {
     schema_sources_ += [ "input_ime.json" ]
   }
@@ -151,13 +110,6 @@ if (enable_extensions) {
     "idltest.idl",
     "page_action.json",
   ]
-
-  if (is_chromeos) {
-    uncompiled_sources_ += [
-      "chromeos_info_private.json",
-      "media_player_private.json",
-    ]
-  }
 }
 
 chrome_extensions_api_schema_sources = get_path_info(schema_sources_, "abspath")

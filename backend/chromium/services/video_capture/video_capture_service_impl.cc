@@ -29,9 +29,6 @@
 #include "services/video_capture/virtual_device_enabled_device_factory.h"
 #include "services/viz/public/cpp/gpu/gpu.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "media/capture/video/chromeos/camera_app_device_bridge_impl.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
 #include "media/capture/capture_switches.h"
@@ -65,23 +62,6 @@ class VideoCaptureServiceImpl::GpuDependenciesContext {
     return gpu_io_task_runner_;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void InjectGpuDependencies(
-      mojo::PendingRemote<mojom::AcceleratorFactory> accelerator_factory_info) {
-    DCHECK(gpu_io_task_runner_->RunsTasksInCurrentSequence());
-    accelerator_factory_.reset();
-    accelerator_factory_.Bind(std::move(accelerator_factory_info));
-  }
-
-  void CreateJpegDecodeAccelerator(
-      mojo::PendingReceiver<chromeos_camera::mojom::MjpegDecodeAccelerator>
-          receiver) {
-    DCHECK(gpu_io_task_runner_->RunsTasksInCurrentSequence());
-    if (!accelerator_factory_)
-      return;
-    accelerator_factory_->CreateJpegDecodeAccelerator(std::move(receiver));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // Task runner for operating |accelerator_factory_| and
@@ -92,9 +72,6 @@ class VideoCaptureServiceImpl::GpuDependenciesContext {
   // operated on.
   scoped_refptr<base::SequencedTaskRunner> gpu_io_task_runner_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  mojo::Remote<mojom::AcceleratorFactory> accelerator_factory_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::WeakPtrFactory<GpuDependenciesContext> weak_factory_for_gpu_io_thread_{
       this};
@@ -127,11 +104,6 @@ class VideoCaptureServiceImpl::VizGpuContextProvider
       // Ensure there are no dangling pointers.
       media::VideoCaptureGpuChannelHost::GetInstance().SetSharedImageInterface(
           nullptr);
-#if BUILDFLAG(IS_CHROMEOS)
-      media::VideoCaptureDeviceFactoryChromeOS::SetGpuChannelHost(nullptr);
-      media::VideoCaptureDeviceFactoryChromeOS::SetSharedImageInterface(
-          nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
       context_provider_.reset();
     }
   }
@@ -169,10 +141,6 @@ class VideoCaptureServiceImpl::VizGpuContextProvider
     // with. Set it back when GpuChannelHost is created/re-created successfully.
     media::VideoCaptureGpuChannelHost::GetInstance().SetSharedImageInterface(
         nullptr);
-#if BUILDFLAG(IS_CHROMEOS)
-    media::VideoCaptureDeviceFactoryChromeOS::SetGpuChannelHost(nullptr);
-    media::VideoCaptureDeviceFactoryChromeOS::SetSharedImageInterface(nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     if (!viz_gpu_) {
       return;
@@ -207,12 +175,6 @@ class VideoCaptureServiceImpl::VizGpuContextProvider
 
     media::VideoCaptureGpuChannelHost::GetInstance().SetSharedImageInterface(
         viz_gpu_->GetGpuChannel()->CreateClientSharedImageInterface());
-#if BUILDFLAG(IS_CHROMEOS)
-    media::VideoCaptureDeviceFactoryChromeOS::SetGpuChannelHost(
-        viz_gpu_->GetGpuChannel());
-    media::VideoCaptureDeviceFactoryChromeOS::SetSharedImageInterface(
-        viz_gpu_->GetGpuChannel()->CreateClientSharedImageInterface());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   // Task runner for operating |viz_gpu_| and
@@ -238,16 +200,6 @@ VideoCaptureServiceImpl::VideoCaptureServiceImpl(
 #if BUILDFLAG(IS_MAC)
     InitializeDeviceMonitor();
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-    media::CameraAppDeviceBridgeImpl::GetInstance()->SetUITaskRunner(
-        ui_task_runner_);
-#endif
-#if BUILDFLAG(IS_WIN)
-    if (base::FeatureList::IsEnabled(
-            features::kWinCameraMonitoringInVideoCaptureService)) {
-      InitializeDeviceMonitor();
-    }
-#endif
 }
 
 VideoCaptureServiceImpl::~VideoCaptureServiceImpl() {
@@ -259,23 +211,6 @@ VideoCaptureServiceImpl::~VideoCaptureServiceImpl() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void VideoCaptureServiceImpl::InjectGpuDependencies(
-    mojo::PendingRemote<mojom::AcceleratorFactory> accelerator_factory) {
-  LazyInitializeGpuDependenciesContext();
-  gpu_dependencies_context_->GetTaskRunner()->PostTask(
-      FROM_HERE, base::BindOnce(&GpuDependenciesContext::InjectGpuDependencies,
-                                gpu_dependencies_context_->GetWeakPtr(),
-                                std::move(accelerator_factory)));
-}
-
-void VideoCaptureServiceImpl::ConnectToCameraAppDeviceBridge(
-    mojo::PendingReceiver<cros::mojom::CameraAppDeviceBridge> receiver) {
-  LazyInitializeDeviceFactory();
-  media::CameraAppDeviceBridgeImpl::GetInstance()->BindReceiver(
-      std::move(receiver));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void VideoCaptureServiceImpl::ConnectToVideoSourceProvider(
     mojo::PendingReceiver<mojom::VideoSourceProvider> receiver) {
@@ -332,18 +267,8 @@ void VideoCaptureServiceImpl::LazyInitializeDeviceFactory() {
   auto video_capture_system = std::make_unique<media::VideoCaptureSystemImpl>(
       std::move(media_device_factory));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  device_factory_ = std::make_unique<VirtualDeviceEnabledDeviceFactory>(
-      std::make_unique<DeviceFactoryImpl>(
-          std::move(video_capture_system),
-          base::BindRepeating(
-              &GpuDependenciesContext::CreateJpegDecodeAccelerator,
-              gpu_dependencies_context_->GetWeakPtr()),
-          gpu_dependencies_context_->GetTaskRunner()));
-#else
   device_factory_ = std::make_unique<VirtualDeviceEnabledDeviceFactory>(
       std::make_unique<DeviceFactoryImpl>(std::move(video_capture_system)));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void VideoCaptureServiceImpl::LazyInitializeVideoSourceProvider() {
@@ -375,23 +300,8 @@ void VideoCaptureServiceImpl::InitializeDeviceMonitor() {
   video_capture_device_monitor_mac_->StartMonitoring();
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  CHECK(base::FeatureList::IsEnabled(
-      features::kWinCameraMonitoringInVideoCaptureService));
-  if (video_capture_system_message_window_win_) {
-    return;
-  }
-  video_capture_system_message_window_win_ =
-      std::make_unique<media::SystemMessageWindowWin>();
-#endif
 }
 
-#if BUILDFLAG(IS_WIN)
-void VideoCaptureServiceImpl::OnGpuInfoUpdate(const CHROME_LUID& luid) {
-  LazyInitializeDeviceFactory();
-  device_factory_->OnGpuInfoUpdate(luid);
-}
-#endif
 
 #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
 void VideoCaptureServiceImpl::SetVizGpu(std::unique_ptr<viz::Gpu> viz_gpu) {

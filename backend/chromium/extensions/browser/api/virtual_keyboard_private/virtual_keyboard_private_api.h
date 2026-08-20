@@ -254,54 +254,6 @@ class VirtualKeyboardPrivateSetWindowBoundsInScreenFunction
   ResponseAction Run() override;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-class VirtualKeyboardPrivateGetClipboardHistoryFunction
-    : public VirtualKeyboardPrivateFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("virtualKeyboardPrivate.getClipboardHistory",
-                             VIRTUALKEYBOARDPRIVATE_GETCLIPBOARDHISTORY)
-
- protected:
-  ~VirtualKeyboardPrivateGetClipboardHistoryFunction() override;
-
-  // ExtensionFunction:
-  ResponseAction Run() override;
-
- private:
-  void OnGetClipboardHistory(
-      std::vector<ash::ClipboardHistoryItem> history_items);
-
-  using ClipboardItems =
-      std::vector<extensions::api::virtual_keyboard_private::ClipboardItem>;
-  void OnClipboardHistoryItemsConverted(std::unique_ptr<ClipboardItems> items);
-};
-
-class VirtualKeyboardPrivatePasteClipboardItemFunction
-    : public VirtualKeyboardPrivateFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("virtualKeyboardPrivate.pasteClipboardItem",
-                             VIRTUALKEYBOARDPRIVATE_PASTECLIPBOARDITEM)
-
- protected:
-  ~VirtualKeyboardPrivatePasteClipboardItemFunction() override;
-
-  // ExtensionFunction:
-  ResponseAction Run() override;
-};
-
-class VirtualKeyboardPrivateDeleteClipboardItemFunction
-    : public VirtualKeyboardPrivateFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("virtualKeyboardPrivate.deleteClipboardItem",
-                             VIRTUALKEYBOARDPRIVATE_DELETECLIPBOARDITEM)
-
- protected:
-  ~VirtualKeyboardPrivateDeleteClipboardItemFunction() override;
-
-  // ExtensionFunction:
-  ResponseAction Run() override;
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class VirtualKeyboardDelegate;
 

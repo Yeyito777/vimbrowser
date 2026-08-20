@@ -73,13 +73,6 @@ source_set("chrome_web_authentication_delegate") {
     "//components/device_event_log",
     "//components/webauthn/core/browser",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/components/webauthn",
-      "//components/user_manager",
-    ]
-  }
 }
 
 source_set("local_credential_management") {
@@ -100,17 +93,6 @@ source_set("local_credential_management") {
     "//components/prefs",
     "//net",
   ]
-
-  if (is_win) {
-    sources += [
-      "local_credential_management_win.cc",
-      "local_credential_management_win.h",
-    ]
-    deps += [
-      "//components/pref_registry",
-      "//components/user_prefs",
-    ]
-  }
 
   if (is_mac) {
     sources += [
@@ -136,15 +118,6 @@ source_set("unexportable_key_utils") {
     ":webauthn",
     "//device/fido",
   ]
-
-  if (is_chromeos) {
-    sources += [ "unexportable_key_utils_chromeos.cc" ]
-    deps += [
-      "//ash/constants",
-      "//ash/public/cpp",
-      "//chromeos/ash/components/osauth/impl",
-    ]
-  }
 }
 
 static_library("test_support") {

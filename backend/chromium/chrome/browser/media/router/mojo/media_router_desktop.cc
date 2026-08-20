@@ -52,9 +52,6 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/media/router/mojo/media_route_provider_util_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/constants.h"
@@ -69,9 +66,7 @@ constexpr char kLoggerComponent[] = "MediaRouterDesktop";
 
 DesktopMediaPickerController::Params MakeDesktopPickerParams(
     content::WebContents* web_contents) {
-#if !BUILDFLAG(IS_CHROMEOS)
   DCHECK(web_contents);
-#endif
 
   DesktopMediaPickerController::Params params(
       DesktopMediaPickerController::Params::RequestSource::kCast);
@@ -146,11 +141,6 @@ void MediaRouterDesktop::Initialize() {
             &MediaRouterDesktop::OnLocalDiscoveryPermissionRejected,
             weak_factory_.GetWeakPtr()));
     InitializeMediaRouteProviders();
-#if BUILDFLAG(IS_WIN)
-    CanFirewallUseLocalPorts(
-        base::BindOnce(&MediaRouterDesktop::OnFirewallCheckComplete,
-                       weak_factory_.GetWeakPtr()));
-#endif
   }
 }
 
@@ -800,28 +790,6 @@ void MediaRouterDesktop::InitializeDialMediaRouteProvider() {
                              std::move(dial_provider_remote));
 }
 
-#if BUILDFLAG(IS_WIN)
-void MediaRouterDesktop::EnsureMdnsDiscoveryEnabled() {
-  DCHECK(media_sink_service_);
-  media_sink_service_->StartMdnsDiscovery();
-}
-
-void MediaRouterDesktop::OnFirewallCheckComplete(
-    bool firewall_can_use_local_ports) {
-  if (firewall_can_use_local_ports) {
-    GetLogger()->LogInfo(
-        mojom::LogCategory::kDiscovery, kLoggerComponent,
-        "Windows firewall allows mDNS. Ensuring mDNS discovery is enabled.", "",
-        "", "");
-    EnsureMdnsDiscoveryEnabled();
-  } else {
-    GetLogger()->LogInfo(mojom::LogCategory::kDiscovery, kLoggerComponent,
-                         "Windows firewall does not allows mDNS. mDNS "
-                         "discovery can be enabled by user gesture.",
-                         "", "", "");
-  }
-}
-#endif
 
 std::string MediaRouterDesktop::GetHashToken() {
   return GetReceiverIdHashToken(

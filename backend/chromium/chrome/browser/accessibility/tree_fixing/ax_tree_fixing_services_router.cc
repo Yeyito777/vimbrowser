@@ -20,9 +20,6 @@
 #include "ui/accessibility/ax_tree_id.h"
 #include "ui/accessibility/ax_tree_update.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/accessibility/accessibility_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace tree_fixing {
 
@@ -96,17 +93,7 @@ AXTreeFixingServicesRouter::AXTreeFixingServicesRouter(Profile* profile)
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (auto* const accessibility_manager = ash::AccessibilityManager::Get();
-      accessibility_manager) {
-    accessibility_status_subscription_ =
-        accessibility_manager->RegisterCallback(base::BindRepeating(
-            &AXTreeFixingServicesRouter::OnAccessibilityStatusEvent,
-            weak_ptr_factory_.GetWeakPtr()));
-  }
-#else
   ax_mode_observation_.Observe(&ui::AXPlatform::GetInstance());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   ToggleEnabledState();
 }
 
@@ -315,19 +302,6 @@ void AXTreeFixingServicesRouter::ToggleEnabledState() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void AXTreeFixingServicesRouter::OnAccessibilityStatusEvent(
-    const ash::AccessibilityStatusEventDetails& details) {
-  // We fix all loaded accessibility trees whenever either ChromeVox or
-  // Select-toSpeak are turned on.
-  if (details.notification_type ==
-          ash::AccessibilityNotificationType::kToggleSpokenFeedback ||
-      details.notification_type ==
-          ash::AccessibilityNotificationType::kToggleSelectToSpeak) {
-    ToggleEnabledState();
-  }
-}
-#else   // !BUILDFLAG(IS_CHROMEOS)
 void AXTreeFixingServicesRouter::OnAXModeAdded(ui::AXMode mode) {
   if (current_ax_mode_.has_mode(ui::AXMode::kExtendedProperties) !=
       mode.has_mode(ui::AXMode::kExtendedProperties)) {
@@ -335,6 +309,5 @@ void AXTreeFixingServicesRouter::OnAXModeAdded(ui::AXMode mode) {
     ToggleEnabledState();
   }
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace tree_fixing

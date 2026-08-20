@@ -78,14 +78,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/mojom/devtools/devtools_agent.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/renderer_host/compositor_impl_android.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "services/device/public/mojom/wake_lock_context.mojom.h"
-#else
 #include "content/browser/devtools/protocol/webauthn_handler.h"
-#endif
 
 #ifdef ENABLE_SMART_CARD
 #include "content/browser/devtools/protocol/smart_card_emulation_handler.h"
@@ -432,15 +425,10 @@ bool RenderFrameDevToolsAgentHost::AttachSession(DevToolsSession* session) {
   }
   session->CreateAndAddHandler<protocol::LogHandler>();
   session->CreateAndAddHandler<protocol::FedCmHandler>();
-#if !BUILDFLAG(IS_ANDROID)
   session->CreateAndAddHandler<protocol::WebAuthnHandler>();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   if (sessions().empty()) {
     UpdateRawHeadersAccess(frame_host_);
-#if BUILDFLAG(IS_ANDROID)
-    GetWakeLock()->RequestWakeLock();
-#endif
   }
   return true;
 }
@@ -449,9 +437,6 @@ void RenderFrameDevToolsAgentHost::DetachSession(DevToolsSession* session) {
   // Destroying session automatically detaches in renderer.
   if (sessions().empty()) {
     UpdateRawHeadersAccess(frame_host_);
-#if BUILDFLAG(IS_ANDROID)
-    GetWakeLock()->CancelWakeLock();
-#endif
   }
 }
 
@@ -646,24 +631,6 @@ void RenderFrameDevToolsAgentHost::DestroyOnRenderFrameGone() {
   Release();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-device::mojom::WakeLock* RenderFrameDevToolsAgentHost::GetWakeLock() {
-  // Here is a lazy binding, and will not reconnect after connection error.
-  if (!wake_lock_) {
-    mojo::PendingReceiver<device::mojom::WakeLock> receiver =
-        wake_lock_.BindNewPipeAndPassReceiver();
-    device::mojom::WakeLockContext* wake_lock_context =
-        web_contents()->GetWakeLockContext();
-    if (wake_lock_context) {
-      wake_lock_context->GetWakeLock(
-          device::mojom::WakeLockType::kPreventDisplaySleep,
-          device::mojom::WakeLockReason::kOther, "DevTools",
-          std::move(receiver));
-    }
-  }
-  return wake_lock_.get();
-}
-#endif
 
 void RenderFrameDevToolsAgentHost::ChangeFrameHostAndObservedProcess(
     RenderFrameHostImpl* frame_host) {
@@ -696,13 +663,7 @@ void RenderFrameDevToolsAgentHost::RenderProcessExited(
   switch (info.status) {
     case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-#endif
     case base::TERMINATION_STATUS_PROCESS_CRASHED:
-#if BUILDFLAG(IS_ANDROID)
-    case base::TERMINATION_STATUS_OOM_PROTECTED:
-#endif
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
       for (auto* inspector : protocol::InspectorHandler::ForAgentHost(this))
         inspector->TargetCrashed();
@@ -718,15 +679,6 @@ void RenderFrameDevToolsAgentHost::RenderProcessExited(
 
 void RenderFrameDevToolsAgentHost::OnVisibilityChanged(
     content::Visibility visibility) {
-#if BUILDFLAG(IS_ANDROID)
-  if (!sessions().empty()) {
-    if (visibility == content::Visibility::HIDDEN) {
-      GetWakeLock()->CancelWakeLock();
-    } else {
-      GetWakeLock()->RequestWakeLock();
-    }
-  }
-#endif
 }
 
 void RenderFrameDevToolsAgentHost::OnNavigationRequestWillBeSent(

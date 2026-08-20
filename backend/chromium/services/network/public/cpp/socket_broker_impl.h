@@ -33,19 +33,10 @@ class COMPONENT_EXPORT(NETWORK_CPP) SocketBrokerImpl
   SocketBrokerImpl& operator=(const SocketBrokerImpl&) = delete;
 
   // mojom::SocketBroker implementation.
-#if BUILDFLAG(IS_WIN)
-  void CreateTcpSocket(net::AddressFamily address_family,
-                       uint32_t process_id,
-                       CreateTcpSocketCallback callback) override;
-  void CreateUdpSocket(net::AddressFamily address_family,
-                       uint32_t process_id,
-                       CreateUdpSocketCallback callback) override;
-#else
   void CreateTcpSocket(net::AddressFamily address_family,
                        CreateTcpSocketCallback callback) override;
   void CreateUdpSocket(net::AddressFamily address_family,
                        CreateUdpSocketCallback callback) override;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Returns a mojo::PendingRemote to this instance. Adds a receiver to
   // `receivers_`.

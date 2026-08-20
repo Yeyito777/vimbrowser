@@ -82,21 +82,6 @@ class MockNodeChannelDelegate
               OnBroadcast,
               (const NodeName& from_node, Channel::MessagePtr message),
               (override));
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD(void,
-              OnRelayEventMessage,
-              (const NodeName& from_node,
-               base::ProcessHandle from_process,
-               const NodeName& destination,
-               Channel::MessagePtr message),
-              (override));
-  MOCK_METHOD(void,
-              OnEventMessageFromRelay,
-              (const NodeName& from_node,
-               const NodeName& source_node,
-               Channel::MessagePtr message),
-              (override));
-#endif
   MOCK_METHOD(void,
               OnAcceptPeer,
               (const NodeName& from_node,

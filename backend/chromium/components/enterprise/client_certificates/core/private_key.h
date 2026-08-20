@@ -17,9 +17,6 @@
 #include "components/enterprise/client_certificates/proto/client_certificates_database.pb.h"
 #include "crypto/signature_verifier.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <Security/Security.h>
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace net {
 class SSLPrivateKey;
@@ -58,12 +55,6 @@ class PrivateKey : public base::RefCountedThreadSafe<PrivateKey> {
   // May be nullptr if not supported.
   scoped_refptr<net::SSLPrivateKey> GetSSLPrivateKey();
 
-#if BUILDFLAG(IS_IOS)
-  // Returns Apple-specific reference to a Keychain key. This returns
-  // nullptr for all key types except unexportable keys on IOS, for
-  // which a Keychain-backed key reference is required for authentication.
-  virtual SecKeyRef GetSecKeyRef() const;
-#endif  // BUILDFLAG(IS_IOS)
 
  protected:
   PrivateKey(PrivateKeySource source,

@@ -73,33 +73,6 @@ template("chrome_repack_locales") {
       deps += invoker.deps
     }
 
-    if (is_chromeos) {
-      source_patterns += [
-        "${root_gen_dir}/ash/strings/ash_strings_",
-        "${root_gen_dir}/ash/webui/camera_app_ui/resources/strings/ash_camera_app_strings_",
-        "${root_gen_dir}/chromeos/strings/chromeos_strings_",
-        "${root_gen_dir}/remoting/resources/",
-        "${root_gen_dir}/ui/chromeos/strings/ui_chromeos_strings_",
-      ]
-      deps += [
-        "//ash/strings",
-        "//ash/webui/camera_app_ui/resources/strings",
-        "//chromeos/strings",
-        "//remoting/resources",
-        "//ui/chromeos/strings",
-      ]
-      if (is_internal_chrome_branded) {
-        source_patterns += [
-          "${root_gen_dir}/chrome/app/theme/google_chrome/chromeos/strings/chromeos_chrome_internal_strings_",
-          "${root_gen_dir}/chromeos/ash/resources/internal/strings/ash_internal_strings_",
-        ]
-        deps += [
-          "//chrome/app/theme/google_chrome/chromeos/strings",
-          "//chromeos/ash/resources/internal/strings",
-        ]
-      }
-      compress = true
-    }
     if (enable_builtin_search_provider_assets) {
       source_patterns += [ "${root_gen_dir}/third_party/search_engines_data/search_engine_descriptions_strings_" ]
       deps += [

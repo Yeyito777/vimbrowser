@@ -22,18 +22,7 @@
 #include "third_party/skia/include/ports/SkFontScanner_Fontations.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <fuchsia/fonts/cpp/fidl.h>
-#include <lib/sys/cpp/component_context.h>
 
-#include "base/fuchsia/process_context.h"
-#include "third_party/skia/include/ports/SkFontMgr_fuchsia.h"
-#include "third_party/skia/include/ports/SkFontScanner_Fontations.h"
-#endif
-
-#if BUILDFLAG(IS_WIN)
-#include "third_party/skia/include/ports/SkTypeface_win.h"
-#endif
 
 #if defined(SK_FONTMGR_FREETYPE_EMPTY_AVAILABLE)
 #include "third_party/skia/include/ports/SkFontMgr_empty.h"
@@ -64,13 +53,6 @@ static sk_sp<SkFontMgr> fontmgr_factory() {
   return fci ? SkFontMgr_New_FCI(std::move(fci),
                                  SkFontScanner_Make_Fontations())
              : nullptr;
-#elif BUILDFLAG(IS_FUCHSIA)
-  fuchsia::fonts::ProviderSyncPtr provider;
-  base::ComponentContextForProcess()->svc()->Connect(provider.NewRequest());
-  return SkFontMgr_New_Fuchsia(std::move(provider),
-                               SkFontScanner_Make_Fontations());
-#elif BUILDFLAG(IS_WIN)
-  return SkFontMgr_New_DirectWrite();
 #elif defined(SK_FONTMGR_FREETYPE_EMPTY_AVAILABLE)
   return SkFontMgr_New_Custom_Empty();
 #else

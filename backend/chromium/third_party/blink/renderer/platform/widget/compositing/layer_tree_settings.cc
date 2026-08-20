@@ -71,17 +71,6 @@ void InitializeScrollbarFadeAndDelay(cc::LayerTreeSettings& settings) {
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// With 32 bit pixels, this would mean less than 400kb per buffer. Much less
-// than required for, say, nHD.
-static const int kSmallScreenPixelThreshold = 1e5;
-bool IsSmallScreen(const gfx::Size& size) {
-  int area = 0;
-  if (!size.GetCheckedArea().AssignIfValid(&area))
-    return false;
-  return area < kSmallScreenPixelThreshold;
-}
-#endif
 
 std::pair<int, int> GetTilingInterestAreaSizes() {
   int interest_area_size_in_pixels;
@@ -108,7 +97,6 @@ std::pair<int, int> GetTilingInterestAreaSizes() {
   return {interest_area_size_in_pixels, (2 * interest_area_size_in_pixels) / 3};
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // Adjusting tile memory size in case a lot more websites need more tile
 // memory than the current calculation.
 BASE_FEATURE(kAdjustTileGpuMemorySize, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -139,7 +127,6 @@ size_t GetDefaultMemoryMB() {
     return kDefaultMemoryMB;
   }
 }
-#endif
 
 }  // namespace
 
@@ -167,14 +154,6 @@ cc::ManagedMemoryPolicy GetGpuMemoryPolicy(
     return actual;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::SysInfo::IsLowEndDevice() ||
-      base::SysInfo::AmountOfPhysicalMemory().InMiB() < 2000) {
-    actual.bytes_limit_when_visible = 96 * 1024 * 1024;
-  } else {
-    actual.bytes_limit_when_visible = 256 * 1024 * 1024;
-  }
-#else
   // This calculation will increase the tile memory size. It should apply to
   // the other plateforms if no regression on Mac.
   //
@@ -206,7 +185,6 @@ cc::ManagedMemoryPolicy GetGpuMemoryPolicy(
   }
 
   actual.bytes_limit_when_visible = mb_limit_when_visible * 1024 * 1024;
-#endif
   return actual;
 }
 
@@ -236,15 +214,6 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
   settings.enable_checker_imaging =
       !cmd.HasSwitch(::switches::kDisableCheckerImaging) && is_threaded;
 
-#if BUILDFLAG(IS_ANDROID)
-  // We can use a more aggressive limit on Android since decodes tend to take
-  // longer on these devices.
-  settings.min_image_bytes_to_checker = 512 * 1024;  // 512kB
-
-  // Re-rasterization of checker-imaged content with software raster can be too
-  // costly on Android.
-  settings.only_checker_images_with_gpu_raster = true;
-#endif
 
   auto switch_value_as_int = [](const base::CommandLine& command_line,
                                 const std::string& switch_string, int min_value,
@@ -263,27 +232,7 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
   };
 
   int default_tile_size = 256;
-#if BUILDFLAG(IS_ANDROID)
-  const gfx::Size screen_size =
-      gfx::ScaleToFlooredSize(initial_screen_size, initial_device_scale_factor);
-  int display_width = screen_size.width();
-  int display_height = screen_size.height();
-  int numTiles = (display_width * display_height) / (256 * 256);
-  if (numTiles > 16)
-    default_tile_size = 384;
-  if (numTiles >= 40)
-    default_tile_size = 512;
-
-  // Adjust for some resolutions that barely straddle an extra
-  // tile when in portrait mode. This helps worst case scroll/raster
-  // by not needing a full extra tile for each row.
-  constexpr int tolerance = 10;  // To avoid rounding errors.
-  int portrait_width = std::min(display_width, display_height);
-  if (default_tile_size == 256 && std::abs(portrait_width - 768) < tolerance)
-    default_tile_size += 32;
-  if (default_tile_size == 384 && std::abs(portrait_width - 1200) < tolerance)
-    default_tile_size += 32;
-#elif BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC)
   // Use 512 for high DPI (dsf=2.0f) devices.
   if (initial_device_scale_factor >= 2.0f)
     default_tile_size = 512;
@@ -445,33 +394,8 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
     }
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Synchronous compositing is used only for the outermost main frame.
-  bool use_synchronous_compositor =
-      platform->IsSynchronousCompositingEnabledForAndroidWebView() &&
-      !is_for_embedded_frame;
-  // Do not use low memory policies for Android WebView.
-  bool using_low_memory_policy =
-      base::SysInfo::IsLowEndDevice() && !IsSmallScreen(screen_size) &&
-      !platform->IsSynchronousCompositingEnabledForAndroidWebView();
-
-  settings.using_synchronous_renderer_compositor = use_synchronous_compositor;
-  if (using_low_memory_policy) {
-    // On low-end we want to be very careful about killing other
-    // apps. So initially we use 50% more memory to avoid flickering
-    // or raster-on-demand.
-    settings.max_memory_for_prepaint_percentage = 67;
-  } else {
-    // On other devices we have increased memory excessively to avoid
-    // raster-on-demand already, so now we reserve 50% _only_ to avoid
-    // raster-on-demand, and use 50% of the memory otherwise.
-    settings.max_memory_for_prepaint_percentage = 50;
-  }
-
-#else   // BUILDFLAG(IS_ANDROID)
   const bool use_synchronous_compositor = false;
   const bool using_low_memory_policy = base::SysInfo::IsLowEndDevice();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   settings.enable_fluent_scrollbar = ui::IsFluentScrollbarEnabled();
   settings.enable_fluent_overlay_scrollbar =
@@ -563,11 +487,6 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
 
   settings.disallow_non_exact_resource_reuse =
       cmd.HasSwitch(::switches::kDisallowNonExactResourceReuse);
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/746931): This feature appears to be causing visual
-  // corruption on certain android devices. Will investigate and re-enable.
-  settings.disallow_non_exact_resource_reuse = true;
-#endif
 
   settings.wait_for_all_pipeline_stages_before_draw =
       cmd.HasSwitch(::switches::kRunAllCompositorStagesBeforeDraw);

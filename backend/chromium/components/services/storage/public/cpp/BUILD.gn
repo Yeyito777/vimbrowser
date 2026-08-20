@@ -31,9 +31,7 @@ component("cpp") {
     "//third_party/zstd:decompress",
   ]
 
-  if (!is_fuchsia) {
-    public_deps += [ "//third_party/zstd:compress" ]
-  }
+  public_deps += [ "//third_party/zstd:compress" ]
 
   defines = [ "IS_STORAGE_SERVICE_PUBLIC_IMPL" ]
 }

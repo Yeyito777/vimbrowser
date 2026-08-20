@@ -60,9 +60,6 @@
 #include "ui/views/widget/widget_observer.h"
 #include "ui/views/window/dialog_client_view.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/shell.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/views/widget/widget_utils_mac.h"

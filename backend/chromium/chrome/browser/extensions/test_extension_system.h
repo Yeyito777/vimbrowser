@@ -14,9 +14,6 @@
 #include "extensions/browser/extension_system.h"
 #include "services/data_decoder/public/cpp/test_support/in_process_data_decoder.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/user_manager/scoped_user_manager.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 

@@ -80,15 +80,6 @@ component("typemap_traits") {
     "thread_type_mojom_traits.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "logfont_win_mojom_traits.cc",
-      "logfont_win_mojom_traits.h",
-      "wstring_mojom_traits.cc",
-      "wstring_mojom_traits.h",
-    ]
-  }
-
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
   defines = [ "IS_MOJO_BASE_TRAITS_IMPL" ]
@@ -238,8 +229,4 @@ source_set("tests") {
     "//testing/gtest",
     "//third_party/abseil-cpp:absl",
   ]
-
-  if (is_fuchsia) {
-    public_deps += [ "//mojo/public/cpp/base/fuchsia:unittests" ]
-  }
 }

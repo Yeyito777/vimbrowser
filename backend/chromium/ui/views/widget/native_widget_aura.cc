@@ -80,9 +80,6 @@
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
-#endif
 
 DEFINE_UI_CLASS_PROPERTY_TYPE(views::internal::NativeWidgetPrivate*)
 
@@ -335,9 +332,6 @@ void NativeWidgetAura::InitNativeWidget(Widget::InitParams params) {
   OnSizeConstraintsChanged();
 
   std::optional<int64_t> target_display;
-#if BUILDFLAG(IS_CHROMEOS)
-  target_display = params.display_id;
-#endif
   if (parent) {
     parent->AddChild(window_);
   } else {
@@ -655,11 +649,6 @@ void NativeWidgetAura::SetBoundsInternal(const gfx::Rect& bounds,
       !screen->GetDisplayWithDisplayId(display_id.value(), &dst_display)) {
     dst_display = screen->GetDisplayMatching(bounds);
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  // `dst_display` is not used on desktop chrome, and `GetDisplayMatching` above
-  // may return invalid display on Windows.
-  CHECK(dst_display.is_valid());
-#endif
   window_->SetBoundsInScreen(bounds, dst_display);
 }
 
@@ -1465,21 +1454,10 @@ void CloseWindow(aura::Window* window) {
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-BOOL CALLBACK WindowCallbackProc(HWND hwnd, LPARAM lParam) {
-  aura::Window* root_window =
-      DesktopWindowTreeHostWin::GetContentWindowForHWND(hwnd);
-  CloseWindow(root_window);
-  return TRUE;
-}
-#endif
 }  // namespace
 
 // static
 void Widget::CloseAllWidgets() {
-#if BUILDFLAG(IS_WIN)
-  EnumThreadWindows(GetCurrentThreadId(), WindowCallbackProc, 0);
-#endif
 
 #if BUILDFLAG(ENABLE_DESKTOP_AURA) && BUILDFLAG(IS_OZONE)
   DesktopWindowTreeHostPlatform::CleanUpWindowList(CloseWindow);

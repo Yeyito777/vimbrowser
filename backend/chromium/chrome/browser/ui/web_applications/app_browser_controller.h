@@ -31,11 +31,6 @@ class BrowserThemePack;
 class CustomThemeSupplier;
 class TabMenuModelFactory;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash {
-class SystemWebAppDelegate;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace base {
 class TimeTicks;
@@ -286,18 +281,12 @@ class AppBrowserController : public ui::ColorProviderKey::InitializerSupplier,
   // Returns whether prevent close is enabled.
   bool IsPreventCloseEnabled() const;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Whether the browser should show the profile menu button in the toolbar.
   // Not appliccable to ChromeOS, because apps can be installed only for
   // one main profile there.
   virtual bool HasProfileMenuButton() const;
   virtual bool IsProfileMenuButtonVisible() const;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns the SystemWebAppDelegate if any for this controller.
-  virtual const ash::SystemWebAppDelegate* system_app() const;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Updates the custom tab bar's visibility based on whether it should be
   // currently visible or not. If |animate| is set, the change will be

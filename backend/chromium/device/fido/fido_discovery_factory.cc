@@ -17,16 +17,6 @@
 #include "device/fido/hid/fido_hid_discovery.h"
 #include "device/fido/public/features.h"
 
-#if BUILDFLAG(IS_WIN)
-// clang-format off
-// rpc.h needs to be included before winuser.h.
-#include <rpc.h>
-#include <Winuser.h>
-// clang-format on
-
-#include "device/fido/win/discovery.h"
-#include "device/fido/win/webauthn_api.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/process/process_info.h"
@@ -34,9 +24,6 @@
 #include "device/fido/mac/icloud_keychain.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/fido/cros/discovery.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace device {
 
@@ -73,16 +60,6 @@ std::vector<std::unique_ptr<FidoDiscoveryBase>> FidoDiscoveryFactory::Create(
         return {};
       }
 #endif  // BUILDFLAG(IS_MAC)
-#if BUILDFLAG(IS_WIN)
-      {
-        device::WinWebAuthnApi* const webauthn_api =
-            device::WinWebAuthnApi::GetDefault();
-        if (webauthn_api && webauthn_api->SupportsHybrid()) {
-          FIDO_LOG(EVENT) << "Not starting hybrid because Windows handles it.";
-          return {};
-        }
-      }
-#endif  // BUILDFLAG(IS_WIN)
       if (device::BluetoothAdapterFactory::Get()->IsLowEnergySupported() &&
           (cable_data_.has_value() || qr_generator_key_.has_value())) {
 
@@ -191,21 +168,6 @@ FidoDiscoveryFactory::SingleDiscovery(
   return ret;
 }
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<FidoDiscoveryBase>
-FidoDiscoveryFactory::MaybeCreateWinWebAuthnApiDiscovery() {
-  // TODO(martinkr): Inject the window from which the request originated.
-  // Windows uses this parameter to center the dialog over the parent. The
-  // dialog should be centered over the originating Chrome Window; the
-  // foreground window may have changed to something else since the request
-  // was issued.
-  WinWebAuthnApi* const api = WinWebAuthnApi::GetDefault();
-  return api && api->IsAvailable()
-             ? std::make_unique<WinWebAuthnApiAuthenticatorDiscovery>(
-                   GetForegroundWindow(), api)
-             : nullptr;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 std::vector<std::unique_ptr<FidoDiscoveryBase>>
@@ -223,30 +185,5 @@ FidoDiscoveryFactory::MaybeCreatePlatformDiscovery() const {
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::vector<std::unique_ptr<FidoDiscoveryBase>>
-FidoDiscoveryFactory::MaybeCreatePlatformDiscovery() const {
-  auto discovery = std::make_unique<FidoChromeOSDiscovery>(
-      generate_request_id_callback_,
-      std::move(get_assertion_request_for_legacy_credential_check_));
-  discovery->set_require_power_button_mode(require_legacy_cros_authenticator_);
-  return SingleDiscovery(std::move(discovery));
-}
-
-void FidoDiscoveryFactory::set_generate_request_id_callback(
-    base::RepeatingCallback<std::string()> callback) {
-  generate_request_id_callback_ = std::move(callback);
-}
-
-void FidoDiscoveryFactory::set_require_legacy_cros_authenticator(bool value) {
-  require_legacy_cros_authenticator_ = value;
-}
-
-void FidoDiscoveryFactory::
-    set_get_assertion_request_for_legacy_credential_check(
-        CtapGetAssertionRequest request) {
-  get_assertion_request_for_legacy_credential_check_ = std::move(request);
-}
-#endif
 
 }  // namespace device

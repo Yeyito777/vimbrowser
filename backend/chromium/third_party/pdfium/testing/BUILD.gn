@@ -312,13 +312,6 @@ executable("pdfium_test") {
     "../:pdfium_common_config",
   ]
 
-  if (is_win) {
-    sources += [
-      "helpers/win32/com_factory.cc",
-      "helpers/win32/com_factory.h",
-    ]
-  }
-
   if (pdf_enable_v8) {
     deps += [
       "//v8:v8_headers",

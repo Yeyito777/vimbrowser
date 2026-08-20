@@ -2,9 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (!is_fuchsia) {
-  import("//pdf/features.gni")
-}
+import("//pdf/features.gni")
 
 source_set("identity_manager") {
   sources = [
@@ -68,17 +66,7 @@ source_set("identity_manager") {
     "//services/network/public/cpp",
   ]
 
-  if (!is_fuchsia) {
-    deps += [ "//pdf:buildflags" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//components/user_manager" ]
-  }
-
-  if (is_ios) {
-    deps += [ "ios" ]
-  }
+  deps += [ "//pdf:buildflags" ]
 
   allow_circular_includes_from = [
     # This target is a pair with internal/identity_manager. They always go
@@ -140,21 +128,7 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_ios) {
-    deps += [ "//components/signin/public/identity_manager/ios:test_support" ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/account_manager",
-      "//components/account_manager_core",
-      "//components/account_manager_core:test_support",
-    ]
-  }
-
-  if (!is_fuchsia) {
-    deps += [ "//pdf:buildflags" ]
-  }
+  deps += [ "//pdf:buildflags" ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
@@ -192,8 +166,4 @@ source_set("test_support") {
     "//components/sync_preferences:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/account_manager" ]
-  }
 }

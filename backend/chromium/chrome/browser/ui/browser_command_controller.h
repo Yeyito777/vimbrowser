@@ -63,14 +63,6 @@ class BrowserCommandController : public CommandUpdater,
   void ZoomStateChanged();
   void ContentRestrictionsChanged();
   void FullscreenStateChanged();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called when the browser goes in or out of the special locked fullscreen
-  // mode. In this mode the user is basically locked into the current browser
-  // window and tab hence we disable most keyboard shortcuts and we also
-  // prevent changing the state of enabled shortcuts while in this mode (so the
-  // other *Changed() functions will be a NO-OP in this state).
-  void LockedFullscreenStateChanged();
-#endif
   void PrintingStateChanged();
   void GlicWindowActivationChanged(bool active);
   void GlicFreStateChanged(glic::mojom::FreWebUiState new_state);
@@ -110,9 +102,6 @@ class BrowserCommandController : public CommandUpdater,
       Profile* profile);
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  friend class BrowserCommandControllerBrowserTestLockedFullscreen;
-#endif
 
   // Overridden from TabStripModelObserver:
   void OnTabStripModelChanged(
@@ -178,11 +167,6 @@ class BrowserCommandController : public CommandUpdater,
   // Update commands that are used in the Extensions menu in the app menu.
   void UpdateCommandsForExtensionsMenu();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Update commands whose state depends on whether the window is in locked
-  // fullscreen mode or not.
-  void UpdateCommandsForLockedFullscreenMode();
-#endif
 
   // Updates the printing command state.
   void UpdatePrintingState();

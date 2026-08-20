@@ -30,15 +30,6 @@ MappedFileWriter::MappedFileWriter(const base::FilePath& file_path,
     return;  // |buffer_| will be uninitialized, and therefore invalid.
   }
 
-#if BUILDFLAG(IS_WIN)
-  file_handle_ = file.Duplicate();
-  // Tell the OS to delete the file when all handles are closed.
-  if (file_handle_.DeleteOnClose(true)) {
-    delete_behavior_ = kAutoDeleteOnClose;
-  } else {
-    error_ = "Failed to mark file for delete-on-close.";
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   bool is_ok = buffer_.Initialize(std::move(file), {0, length},
                                   base::MemoryMappedFile::READ_WRITE_EXTEND);
@@ -55,13 +46,6 @@ MappedFileWriter::~MappedFileWriter() {
 }
 
 bool MappedFileWriter::Keep() {
-#if BUILDFLAG(IS_WIN)
-  if (delete_behavior_ == kAutoDeleteOnClose &&
-      !file_handle_.DeleteOnClose(false)) {
-    error_ = "Failed to prevent deletion of file.";
-    return false;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   delete_behavior_ = kKeep;
   return true;
 }

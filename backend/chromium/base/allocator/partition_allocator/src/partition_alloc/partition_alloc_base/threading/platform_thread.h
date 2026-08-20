@@ -18,13 +18,9 @@
 #include "partition_alloc/partition_alloc_base/threading/platform_thread_ref.h"
 #include "partition_alloc/partition_alloc_base/time/time.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/windows_types.h"
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-#include <zircon/types.h>
-#elif PA_BUILDFLAG(IS_APPLE)
+#if PA_BUILDFLAG(IS_APPLE)
 #include <mach/mach_types.h>
-#elif PA_BUILDFLAG(IS_POSIX)
+#else
 #include <pthread.h>
 #include <unistd.h>
 #endif
@@ -32,22 +28,16 @@
 namespace partition_alloc::internal::base {
 
 // Used for logging. Always an integer value.
-#if PA_BUILDFLAG(IS_WIN)
-typedef DWORD PlatformThreadId;
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-typedef zx_handle_t PlatformThreadId;
-#elif PA_BUILDFLAG(IS_APPLE)
+#if PA_BUILDFLAG(IS_APPLE)
 typedef mach_port_t PlatformThreadId;
-#elif PA_BUILDFLAG(IS_POSIX)
+#else
 typedef pid_t PlatformThreadId;
 #endif
 
 // Used to operate on threads.
 class PlatformThreadHandle {
  public:
-#if PA_BUILDFLAG(IS_WIN)
-  typedef void* Handle;
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
   typedef pthread_t Handle;
 #endif
 

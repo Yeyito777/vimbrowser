@@ -33,9 +33,6 @@ source_set("impl") {
     "//services/device/public/mojom",
     "//ui/base",
   ]
-  if (is_chromeos) {
-    deps += [ "//ash/webui/settings/public/constants:mojom" ]
-  }
 
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }

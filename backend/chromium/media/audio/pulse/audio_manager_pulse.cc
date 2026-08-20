@@ -192,9 +192,6 @@ std::string AudioManagerPulse::GetDefaultOutputDeviceID() {
 
 std::string AudioManagerPulse::GetAssociatedOutputDeviceID(
     const std::string& input_device_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return AudioManagerBase::GetAssociatedOutputDeviceID(input_device_id);
-#else
   DCHECK(AudioManager::Get()->GetTaskRunner()->BelongsToCurrentThread());
   DCHECK(input_mainloop_);
   DCHECK(input_context_);
@@ -207,7 +204,6 @@ std::string AudioManagerPulse::GetAssociatedOutputDeviceID(
   return input_bus.empty() ? std::string()
                            : pulse::GetOutputCorrespondingTo(
                                  input_mainloop_, input_context_, input_bus);
-#endif
 }
 
 AudioParameters AudioManagerPulse::GetPreferredOutputStreamParameters(

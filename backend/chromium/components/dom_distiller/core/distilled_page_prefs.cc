@@ -71,14 +71,8 @@ bool DistilledPagePrefs::IsUserPrefFontAvailable(
   return true;
 #else
   bool new_fonts_enabled = false;
-#if BUILDFLAG(IS_ANDROID)
-  new_fonts_enabled =
-      base::FeatureList::IsEnabled(dom_distiller::kReaderModeDistillInApp) &&
-      base::FeatureList::IsEnabled(dom_distiller::kReaderModeSupportNewFonts);
-#else  // IS_IOS
   new_fonts_enabled =
       base::FeatureList::IsEnabled(dom_distiller::kReaderModeSupportNewFonts);
-#endif
   return new_fonts_enabled || font_family == mojom::FontFamily::kSansSerif ||
          font_family == mojom::FontFamily::kSerif ||
          font_family == mojom::FontFamily::kMonospace;
@@ -158,11 +152,7 @@ void DistilledPagePrefs::SetDefaultFontScaling(float scaling) {
   // Default zoom level pref is outside of the distilled page prefs font
   // scaling range, so set it to the closest boundary.
   default_font_scaling_ = scaling;
-#if BUILDFLAG(IS_ANDROID)
-  ClampDefaultFontScaling();
-#else
   default_font_scaling_ = std::clamp(scaling, kMinFontScale, kMaxFontScale);
-#endif
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&DistilledPagePrefs::NotifyOnChangeFontScaling,
                                 weak_ptr_factory_.GetWeakPtr()));
@@ -173,12 +163,7 @@ float DistilledPagePrefs::GetFontScaling() {
   if (pref_service_->FindPreference(prefs::kFontScale)->HasUserSetting()) {
     scaling = pref_service_->GetDouble(prefs::kFontScale);
   } else {
-#if BUILDFLAG(IS_ANDROID)
-    ClampDefaultFontScaling();
-    scaling = default_font_scaling_;
-#else
     scaling = kDefaultFontScale;
-#endif
   }
   if (scaling < kMinFontScale || scaling > kMaxFontScale) {
     // Persisted data was incorrect, trying to clean it up by storing the
@@ -205,21 +190,6 @@ void DistilledPagePrefs::RemoveObserver(Observer* obs) {
   observers_.RemoveObserver(obs);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void DistilledPagePrefs::ClampDefaultFontScaling() {
-  float min_font_scale;
-  float max_font_scale;
-  if (base::FeatureList::IsEnabled(dom_distiller::kReaderModeDistillInApp)) {
-    min_font_scale = kMinFontScaleAndroidInApp;
-    max_font_scale = kMaxFontScaleAndroidInApp;
-  } else {
-    min_font_scale = kMinFontScaleAndroidCCT;
-    max_font_scale = kMaxFontScaleAndroidCCT;
-  }
-  default_font_scaling_ =
-      std::clamp(default_font_scaling_, min_font_scale, max_font_scale);
-}
-#endif
 
 void DistilledPagePrefs::NotifyOnChangeFontFamily() {
   mojom::FontFamily new_font_family = GetFontFamily();

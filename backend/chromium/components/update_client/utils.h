@@ -113,10 +113,6 @@ bool CreateScopedTempDirectory(base::ScopedTempDir& dir);
 
 // UTF8 conversions between `std::string` and the `StringType` type found in
 // the `base::FilePath` and `base::CommandLine` classes.
-#if BUILDFLAG(IS_WIN)
-base::FilePath::StringType UTF8ToStringType(const std::string& utf8);
-std::string StringTypeToUTF8(const base::FilePath::StringType& stringtype);
-#else   // BUILDFLAG(IS_WIN)
 constexpr base::FilePath::StringType UTF8ToStringType(const std::string& utf8) {
   return utf8;
 }
@@ -124,7 +120,6 @@ constexpr std::string StringTypeToUTF8(
     const base::FilePath::StringType& stringtype) {
   return stringtype;
 }
-#endif  // BUILDFLAG(IS_WIN)
 
 // Perform a best-effort cleanup up of directories under `dir` that match
 // `matcher` and are `older_than`.

@@ -372,12 +372,6 @@ class GPU_COMMAND_BUFFER_CLIENT_EXPORT ClientSharedImage
     return result.sync_token_;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Allows client to indicate the |gpu_memory_buffer_| to pre map its shared
-  // memory region internally for performance optimization purposes. It is only
-  // used on windows.
-  void SetUsePreMappedMemory(bool use_premapped_memory);
-#endif
 
  private:
   friend class base::RefCountedThreadSafe<ClientSharedImage>;

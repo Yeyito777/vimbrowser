@@ -121,31 +121,6 @@ source_set("feedback_impl") {
     "//services/cert_verifier:lib",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//ash",
-      "//ash/constants",
-      "//ash/webui/os_feedback_ui:url_constants",
-      "//ash/webui/system_apps/public:system_web_app_type",
-      "//chrome/browser/ash/arc",
-      "//chrome/browser/ash/arc:arc_util",
-      "//chrome/browser/ash/arc/policy",
-      "//chrome/browser/ash/login",
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ash/policy/enrollment",
-      "//chrome/browser/ash/system_logs",
-      "//chrome/browser/ash/system_web_apps",
-      "//chrome/browser/ui/ash/multi_user",
-      "//chrome/browser/ui/ash/system_web_apps",
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//chromeos/ash/components/dbus/spaced",
-      "//chromeos/ash/components/login/auth",
-      "//chromeos/ash/components/settings",
-      "//chromeos/ash/components/system",
-      "//chromeos/components/kiosk",
-      "//chromeos/version",
-    ]
-  }
   if (is_linux) {
     sources += [
       "system_logs/log_sources/ozone_platform_state_dump_source.cc",

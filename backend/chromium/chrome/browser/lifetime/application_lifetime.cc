@@ -21,13 +21,8 @@
 #include "components/language/core/common/locale_util.h"
 #include "components/prefs/pref_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/aura/env.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/lifetime/application_lifetime_desktop.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace chrome {
 
@@ -41,9 +36,7 @@ void AttemptExitInternal(bool try_to_quit_application) {
   }
 #endif  // !BUILDFLAG(IS_MAC)
 
-#if !BUILDFLAG(IS_ANDROID)
   OnClosingAllBrowsers(true);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   g_browser_process->platform_part()->AttemptExit(try_to_quit_application);
 }
@@ -51,14 +44,11 @@ void AttemptExitInternal(bool try_to_quit_application) {
 }  // namespace
 
 // The ChromeOS implementations are in application_lifetime_chromeos.cc
-#if !BUILDFLAG(IS_CHROMEOS)
 
 void AttemptUserExit() {
   // Reset the restart bit that might have been set in cancelled restart
   // request.
-#if !BUILDFLAG(IS_ANDROID)
   ProfilePicker::Hide();
-#endif  // !BUILDFLAG(IS_ANDROID)
   PrefService* pref_service = g_browser_process->local_state();
   pref_service->SetBoolean(prefs::kRestartLastSessionOnShutdown, false);
   AttemptExitInternal(false);
@@ -73,44 +63,22 @@ void AttemptExit() {
   // don't notify users of crashes beyond this point.
   // Note that MarkAsCleanShutdown() does not set UMA's exit cleanly bit
   // so crashes during shutdown are still reported in UMA.
-#if !BUILDFLAG(IS_ANDROID)
   // Android doesn't use Browser.
   if (AreAllBrowsersCloseable()) {
     MarkAsCleanShutdown();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   AttemptExitInternal(true);
 }
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 void ExitIgnoreUnloadHandlers() {
   VLOG(1) << "ExitIgnoreUnloadHandlers";
-#if !BUILDFLAG(IS_ANDROID)
   // We always mark exit cleanly.
   MarkAsCleanShutdown();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Disable window occlusion tracking on exit before closing all browser
-  // windows to make shutdown faster. Note that the occlusion tracking is
-  // paused indefinitely. It is okay do so on Chrome OS because there is
-  // no way to abort shutdown and go back to user sessions at this point.
-  DCHECK(aura::Env::HasInstance());
-  aura::Env::GetInstance()->PauseWindowOcclusionTracking();
-
-  // On ChromeOS ExitIgnoreUnloadHandlers() is used to handle SIGTERM.
-  // In this case, AreAllBrowsersCloseable()
-  // can be false in following cases. a) power-off b) signout from
-  // screen locker.
-  browser_shutdown::OnShutdownStarting(
-      AreAllBrowsersCloseable() ? browser_shutdown::ShutdownType::kBrowserExit
-                                : browser_shutdown::ShutdownType::kEndSession);
-#else   // !BUILDFLAG(IS_CHROMEOS)
   // For desktop browsers, always perform a silent exit.
   browser_shutdown::OnShutdownStarting(
       browser_shutdown::ShutdownType::kSilentExit);
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#endif  // !BUILDFLAG(IS_ANDROID)
   AttemptExitInternal(true);
 }
 

@@ -103,9 +103,6 @@ config("internal_config") {
   # OS_CHROMEOS cannot be autodetected in runtime and
   # cannot be detected with regular compiler macros either.
   # Inject it from the build system
-  if (is_chromeos) {
-    defines += [ "DAWN_OS_CHROMEOS" ]
-  }
 
   if (dawn_use_wayland) {
     defines += [ "DAWN_USE_WAYLAND" ]
@@ -180,17 +177,7 @@ config("internal_config") {
       "-Wunused-macros",
     ]
 
-    if (is_win) {
-      cflags += [
-        # clang-cl doesn't know -pedantic, pass it explicitly to the clang driver
-        "/clang:-pedantic",
-
-        # Allow the use of __uuidof()
-        "-Wno-language-extension-token",
-      ]
-    } else {
-      cflags += [ "-pedantic" ]
-    }
+    cflags += [ "-pedantic" ]
   }
 
   if (!is_clang && is_win) {
@@ -368,13 +355,6 @@ if (is_win || is_linux || is_chromeos || is_mac || is_fuchsia || is_ios ||
     public_configs = [ ":internal_config" ]
     deps = [ "${dawn_root}/include/dawn:cpp_headers" ]
 
-    if (is_win) {
-      sources += [
-        "WindowsUtils.cpp",
-        "WindowsUtils.h",
-        "windows_with_undefs.h",
-      ]
-    }
     if (dawn_enable_vulkan) {
       public_deps += [ "${dawn_vulkan_headers_dir}:vulkan_headers" ]
     }

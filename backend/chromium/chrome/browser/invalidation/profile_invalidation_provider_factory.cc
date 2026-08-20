@@ -28,15 +28,6 @@
 #include "content/public/browser/browser_context.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/browser_process_platform_part_ash.h"
-#include "chrome/browser/device_identity/device_identity_provider.h"
-#include "chrome/browser/device_identity/device_oauth2_token_service_factory.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace invalidation {
 namespace {
@@ -53,16 +44,6 @@ std::unique_ptr<InvalidationListener> CreateInvalidationListener(
 }
 
 std::unique_ptr<IdentityProvider> CreateIdentityProvider(Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  policy::BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  if (user_manager::UserManager::IsInitialized() &&
-      user_manager::UserManager::Get()->IsLoggedInAsKioskChromeApp() &&
-      connector->IsDeviceEnterpriseManaged()) {
-    return std::make_unique<DeviceIdentityProvider>(
-        DeviceOAuth2TokenServiceFactory::Get());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return std::make_unique<ProfileIdentityProvider>(
       IdentityManagerFactory::GetForProfile(profile));
@@ -73,15 +54,6 @@ std::unique_ptr<IdentityProvider> CreateIdentityProvider(Profile* profile) {
 // static
 ProfileInvalidationProvider* ProfileInvalidationProviderFactory::GetForProfile(
     Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::IsSigninBrowserContext(profile) ||
-      (user_manager::UserManager::IsInitialized() &&
-       user_manager::UserManager::Get()->IsLoggedInAsGuest())) {
-    // The Chrome OS login and Chrome OS guest profiles do not have GAIA
-    // credentials and do not support invalidation.
-    return nullptr;
-  }
-#endif
   return static_cast<ProfileInvalidationProvider*>(
       GetInstance()->GetServiceForBrowserContext(profile, true));
 }

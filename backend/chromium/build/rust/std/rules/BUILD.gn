@@ -53,13 +53,11 @@ cargo_crate("addr2line") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [
-      ":gimli",
-      ":rustc_std_workspace_alloc",
-      ":rustc_std_workspace_core",
-    ]
-  }
+  deps += [
+    ":gimli",
+    ":rustc_std_workspace_alloc",
+    ":rustc_std_workspace_core",
+  ]
   aliased_deps = {
     alloc = ":rustc_std_workspace_alloc"
     core = ":rustc_std_workspace_core"
@@ -85,13 +83,11 @@ cargo_crate("addr2line") {
     cpp_namespace = "rs_addr2line"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [
-        ":gimli_bindings",
-        ":rustc_std_workspace_alloc_bindings",
-        ":rustc_std_workspace_core_bindings",
-      ]
-    }
+    deps += [
+      ":gimli_bindings",
+      ":rustc_std_workspace_alloc_bindings",
+      ":rustc_std_workspace_core_bindings",
+    ]
   }
 }
 cargo_crate("adler2") {
@@ -128,9 +124,7 @@ cargo_crate("adler2") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [ ":rustc_std_workspace_core" ]
-  }
+  deps += [ ":rustc_std_workspace_core" ]
   aliased_deps = {
     core = ":rustc_std_workspace_core"
   }
@@ -154,9 +148,7 @@ cargo_crate("adler2") {
     cpp_namespace = "rs_adler2"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [ ":rustc_std_workspace_core_bindings" ]
-    }
+    deps += [ ":rustc_std_workspace_core_bindings" ]
   }
 }
 cargo_crate("alloc") {
@@ -1290,12 +1282,10 @@ cargo_crate("gimli") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [
-      ":rustc_std_workspace_alloc",
-      ":rustc_std_workspace_core",
-    ]
-  }
+  deps += [
+    ":rustc_std_workspace_alloc",
+    ":rustc_std_workspace_core",
+  ]
   aliased_deps = {
     alloc = ":rustc_std_workspace_alloc"
     core = ":rustc_std_workspace_core"
@@ -1321,12 +1311,10 @@ cargo_crate("gimli") {
     cpp_namespace = "rs_gimli"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [
-        ":rustc_std_workspace_alloc_bindings",
-        ":rustc_std_workspace_core_bindings",
-      ]
-    }
+    deps += [
+      ":rustc_std_workspace_alloc_bindings",
+      ":rustc_std_workspace_core_bindings",
+    ]
   }
 }
 cargo_crate("hashbrown") {
@@ -1761,9 +1749,7 @@ cargo_crate("libc") {
   ]
   executable_configs += [ "//build/config/compiler:no_chromium_code" ]
   deps = [ "//build/rust/std:std_build_deps" ]
-  if (!is_win) {
-    deps += [ ":rustc_std_workspace_core" ]
-  }
+  deps += [ ":rustc_std_workspace_core" ]
   features = [
     "align",
     "rustc-dep-of-std",
@@ -1787,9 +1773,7 @@ cargo_crate("libc") {
     cpp_namespace = "rs_libc"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [ ":rustc_std_workspace_core_bindings" ]
-    }
+    deps += [ ":rustc_std_workspace_core_bindings" ]
   }
 }
 cargo_crate("memchr") {
@@ -1868,9 +1852,7 @@ cargo_crate("memchr") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [ ":rustc_std_workspace_core" ]
-  }
+  deps += [ ":rustc_std_workspace_core" ]
   aliased_deps = {
     core = ":rustc_std_workspace_core"
   }
@@ -1894,9 +1876,7 @@ cargo_crate("memchr") {
     cpp_namespace = "rs_memchr"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [ ":rustc_std_workspace_core_bindings" ]
-    }
+    deps += [ ":rustc_std_workspace_core_bindings" ]
   }
 }
 cargo_crate("miniz_oxide") {
@@ -1945,13 +1925,11 @@ cargo_crate("miniz_oxide") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [
-      ":adler2",
-      ":rustc_std_workspace_alloc",
-      ":rustc_std_workspace_core",
-    ]
-  }
+  deps += [
+    ":adler2",
+    ":rustc_std_workspace_alloc",
+    ":rustc_std_workspace_core",
+  ]
   aliased_deps = {
     alloc = ":rustc_std_workspace_alloc"
     core = ":rustc_std_workspace_core"
@@ -1977,13 +1955,11 @@ cargo_crate("miniz_oxide") {
     cpp_namespace = "rs_miniz_oxide"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [
-        ":adler2_bindings",
-        ":rustc_std_workspace_alloc_bindings",
-        ":rustc_std_workspace_core_bindings",
-      ]
-    }
+    deps += [
+      ":adler2_bindings",
+      ":rustc_std_workspace_alloc_bindings",
+      ":rustc_std_workspace_core_bindings",
+    ]
   }
 }
 cargo_crate("object") {
@@ -2097,13 +2073,11 @@ cargo_crate("object") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [
-      ":memchr",
-      ":rustc_std_workspace_alloc",
-      ":rustc_std_workspace_core",
-    ]
-  }
+  deps += [
+    ":memchr",
+    ":rustc_std_workspace_alloc",
+    ":rustc_std_workspace_core",
+  ]
   aliased_deps = {
     alloc = ":rustc_std_workspace_alloc"
     core = ":rustc_std_workspace_core"
@@ -2139,13 +2113,11 @@ cargo_crate("object") {
     cpp_namespace = "rs_object"
     deps = []
     deps += []
-    if (!is_win) {
-      deps += [
-        ":memchr_bindings",
-        ":rustc_std_workspace_alloc_bindings",
-        ":rustc_std_workspace_core_bindings",
-      ]
-    }
+    deps += [
+      ":memchr_bindings",
+      ":rustc_std_workspace_alloc_bindings",
+      ":rustc_std_workspace_core_bindings",
+    ]
   }
 }
 cargo_crate("panic_abort") {
@@ -3345,17 +3317,12 @@ cargo_crate("std") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [
-      ":addr2line",
-      ":libc",
-      ":miniz_oxide",
-      ":object",
-    ]
-  }
-  if (is_win) {
-    deps += [ ":windows_link" ]
-  }
+  deps += [
+    ":addr2line",
+    ":libc",
+    ":miniz_oxide",
+    ":object",
+  ]
   features = [
     "addr2line",
     "backtrace",
@@ -3392,17 +3359,12 @@ cargo_crate("std") {
       ":std_detect_bindings",
       ":unwind_bindings",
     ]
-    if (!is_win) {
-      deps += [
-        ":addr2line_bindings",
-        ":libc_bindings",
-        ":miniz_oxide_bindings",
-        ":object_bindings",
-      ]
-    }
-    if (is_win) {
-      deps += [ ":windows_link_bindings" ]
-    }
+    deps += [
+      ":addr2line_bindings",
+      ":libc_bindings",
+      ":miniz_oxide_bindings",
+      ":object_bindings",
+    ]
   }
 }
 cargo_crate("std_detect") {
@@ -3480,9 +3442,7 @@ cargo_crate("std_detect") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [ ":libc" ]
-  }
+  deps += [ ":libc" ]
   aliased_deps = {
     alloc = ":rustc_std_workspace_alloc"
     core = ":rustc_std_workspace_core"
@@ -3506,9 +3466,7 @@ cargo_crate("std_detect") {
       ":rustc_std_workspace_alloc_bindings",
       ":rustc_std_workspace_core_bindings",
     ]
-    if (!is_win) {
-      deps += [ ":libc_bindings" ]
-    }
+    deps += [ ":libc_bindings" ]
   }
 }
 cargo_crate("sysroot") {
@@ -3628,9 +3586,7 @@ cargo_crate("test") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [ ":libc" ]
-  }
+  deps += [ ":libc" ]
   build_root =
       "//third_party/rust-toolchain/lib/rustlib/src/rust/library/test/build.rs"
   build_sources = [
@@ -3656,9 +3612,7 @@ cargo_crate("test") {
       ":getopts_bindings",
       ":std_bindings",
     ]
-    if (!is_win) {
-      deps += [ ":libc_bindings" ]
-    }
+    deps += [ ":libc_bindings" ]
   }
 }
 cargo_crate("unwind") {
@@ -3694,9 +3648,7 @@ cargo_crate("unwind") {
     "//build/rust/std:profiler_builtins_group",
     "//build/rust/std:std_build_deps",
   ]
-  if (!is_win) {
-    deps += [ ":libc" ]
-  }
+  deps += [ ":libc" ]
   aliased_deps = {
     core = ":rustc_std_workspace_core"
   }
@@ -3717,9 +3669,7 @@ cargo_crate("unwind") {
     cpp_namespace = "rs_unwind"
     deps = []
     deps += [ ":rustc_std_workspace_core_bindings" ]
-    if (!is_win) {
-      deps += [ ":libc_bindings" ]
-    }
+    deps += [ ":libc_bindings" ]
   }
 }
 cargo_crate("windows_link") {

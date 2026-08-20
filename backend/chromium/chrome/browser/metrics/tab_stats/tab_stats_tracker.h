@@ -22,19 +22,13 @@
 #include "components/metrics/daily_event.h"
 #include "content/public/browser/web_contents_observer.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/resource_coordinator/lifecycle_unit_observer.h"
-#endif
 
 class PrefRegistrySimple;
 class PrefService;
 class Profile;
 
-#if BUILDFLAG(IS_ANDROID)
-class TabModel;
-#else
 class BrowserWindowInterface;
-#endif
 
 namespace content {
 class WebContents;
@@ -51,9 +45,7 @@ FORWARD_DECLARE_TEST(TabStatsTrackerBrowserTest,
 //     TabStatsTracker::SetInstance(
 //         std::make_unique<TabStatsTracker>(g_browser_process->local_state()));
 class TabStatsTracker :
-#if !BUILDFLAG(IS_ANDROID)
     public resource_coordinator::LifecycleUnitObserver,
-#endif
     public base::PowerSuspendObserver {
  public:
   // Abstraction of a Browser + TabStripModel (on desktop) or a TabModel (on
@@ -100,10 +92,6 @@ class TabStatsTracker :
                            TabDeletionGetsHandledProperly);
   FRIEND_TEST_ALL_PREFIXES(TabStatsTrackerBrowserTest,
                            TabsAndWindowsAreCountedAccurately);
-#if BUILDFLAG(IS_WIN)
-  FRIEND_TEST_ALL_PREFIXES(TabStatsTrackerBrowserTest,
-                           TestCalculateAndRecordNativeWindowVisibilities);
-#endif
 
   // The UmaStatsReportingDelegate is responsible for delivering statistics
   // reported by the TabStatsTracker via UMA.
@@ -189,11 +177,9 @@ class TabStatsTracker :
     // treat exact URL matches as duplicates.
     void ReportTabDuplicateMetrics(bool exclude_fragments);
 
-#if !BUILDFLAG(IS_ANDROID)
     // Calculate and report metrics on the number of split tabs within the tab
     // strips.
     void ReportSplitTabMetrics();
-#endif
 
    protected:
     // Checks if Chrome is running in background with no visible windows,
@@ -271,12 +257,10 @@ class TabStatsTracker :
   // base::PowerSuspendObserver:
   void OnResume() override;
 
-#if !BUILDFLAG(IS_ANDROID)
   // resource_coordinator::LifecycleUnitObserver:
   void OnLifecycleUnitStateChanged(
       resource_coordinator::LifecycleUnit* lifecycle_unit,
       ::mojom::LifecycleUnitState previous_state) override;
-#endif
 
   // Functions to call when a tab strip (or the Android equivalent) is added,
   // removed or modified.
@@ -342,19 +326,12 @@ class TabStatsTracker :
 // The TabStripInterface must not outlive the underlying model.
 class TabStatsTracker::TabStripInterface {
  public:
-#if BUILDFLAG(IS_ANDROID)
-  using PlatformModel = TabModel;
-
-  const TabModel* tab_model() const { return model_.get(); }
-  TabModel* tab_model() { return model_.get(); }
-#else
   using PlatformModel = BrowserWindowInterface;
 
   const BrowserWindowInterface* browser_window_interface() const {
     return model_.get();
   }
   BrowserWindowInterface* browser_window_interface() { return model_.get(); }
-#endif
 
   explicit TabStripInterface(PlatformModel* model);
   ~TabStripInterface();
@@ -371,10 +348,8 @@ class TabStatsTracker::TabStripInterface {
   // Returns the count of tabs in this tab strip.
   size_t GetTabCount() const;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns the count of tabs within Split Views in this tab strip.
   size_t GetSplitTabCount() const;
-#endif
 
   // Returns the active tab for this tab strip. On Android this may return
   // nullptr if the tab's WebContents isn't initialized yet.

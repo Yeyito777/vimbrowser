@@ -73,13 +73,6 @@ class GPU_GLES2_EXPORT SharedImageInterfaceInProcessBase
       scoped_refptr<ClientSharedImage> client_shared_image) final;
   scoped_refptr<ClientSharedImage> ImportSharedImage(
       ExportedSharedImage exported_shared_image) override;
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      const viz::SharedImageFormat& format,
-                                      gfx::BufferUsage usage,
-                                      bool register_with_image_pipe) override;
-#endif  // BUILDFLAG(IS_FUCHSIA)
   SyncToken GenUnverifiedSyncToken() final;
   SyncToken GenVerifiedSyncToken() final;
   void VerifySyncToken(SyncToken& sync_token) final;

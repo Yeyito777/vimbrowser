@@ -27,9 +27,6 @@ class ChromeContentUtilityClient : public content::ContentUtilityClient {
   void RegisterMainThreadServices(mojo::ServiceFactory& services) override;
   void RegisterIOThreadServices(mojo::ServiceFactory& services) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  mojo::GenericPendingReceiver InitMojoServiceManager() override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // True if the utility process runs with elevated privileges.

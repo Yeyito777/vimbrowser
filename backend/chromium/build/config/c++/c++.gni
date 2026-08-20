@@ -160,8 +160,6 @@ assert(!(is_ios && libcxx_is_shared),
 
 if (libcxx_is_shared) {
   libcxx_target_type = "shared_library"
-} else if (is_win) {
-  libcxx_target_type = "source_set"
 } else {
   # Build as a static_library instead of a source_set when possible. Static
   # library semantics are more ideal for libc++, because they ensure that only

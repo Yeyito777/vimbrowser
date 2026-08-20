@@ -57,11 +57,6 @@ if (crashpad_is_external || crashpad_is_in_dart) {
 }
 
 if (crashpad_is_in_chromium) {
-  if (is_ios) {
-    # For `target_platform`.
-    import("//build/config/apple/mobile_config.gni")
-  }
-
   crashpad_is_mac = is_mac
   crashpad_is_ios = is_ios
   crashpad_is_tvos = is_ios && target_platform == "tvos"

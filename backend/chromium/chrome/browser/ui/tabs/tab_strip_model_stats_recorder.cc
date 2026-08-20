@@ -140,12 +140,10 @@ void TabStripModelStatsRecorder::OnTabStripModelChanged(
 
 // This potentially causes a CFI issue on ChromeOS. For more information:
 // crbug.com/457294205
-#if !BUILDFLAG(IS_CHROMEOS)
   if (selection.selection_changed()) {
     UMA_HISTOGRAM_COUNTS_1000("Tabs.Selections.Count",
                               selection.new_model.selected_indices().size());
   }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!selection.active_tab_changed() || tab_strip_model->empty()) {
     return;

@@ -46,10 +46,6 @@ class BASE_EXPORT ThreadPoolInstance {
     enum class CommonThreadPoolEnvironment {
       // Use the default environment (no environment).
       DEFAULT,
-#if BUILDFLAG(IS_WIN)
-      // Place the pool's workers in a COM MTA.
-      COM_MTA,
-#endif  // BUILDFLAG(IS_WIN)
     };
 
     InitParams(size_t max_num_foreground_threads_in);
@@ -92,11 +88,7 @@ class BASE_EXPORT ThreadPoolInstance {
     // renderers. Note that the regression is not present in
     // *TaskLatencyMicroseconds.Renderer* histograms.
     TimeDelta suggested_reclaim_time =
-#if BUILDFLAG(IS_ANDROID)
-        Minutes(5);
-#else
         Seconds(30);
-#endif
   };
 
   // Used to restrict the maximum number of concurrent tasks that can run in a

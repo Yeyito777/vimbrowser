@@ -25,12 +25,6 @@ bool ConfigurationProvider::MaybeProvideGroupConfiguration(
   return false;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::set<std::string> ConfigurationProvider::MaybeProvideAllowedEventPrefixes(
-    const base::Feature& feature) const {
-  return {};
-}
-#endif
 
 stats::ConfigParsingEvent ConfigurationProvider::GetOnSuccessEvent() const {
   return stats::ConfigParsingEvent::SUCCESS;

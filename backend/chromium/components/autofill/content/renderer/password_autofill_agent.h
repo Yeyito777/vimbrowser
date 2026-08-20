@@ -149,9 +149,6 @@ class PasswordAutofillAgent : public content::RenderFrameObserver,
       const ParsingResult& parsing_result) override;
   void CheckViewAreaVisible(FieldRendererId field_id,
                             CheckViewAreaVisibleCallback callback) override;
-#if BUILDFLAG(IS_ANDROID)
-  void TriggerFormSubmission() override;
-#endif
 
   // An editing-related call of WebLocalFrameClient forwarded by AutofillAgent.
   // It returns a request that the agent should use to consume the event.

@@ -48,9 +48,6 @@ class MockBluetoothDevice : public BluetoothDevice {
   MOCK_CONST_METHOD0(GetNameForDisplay, std::u16string());
   MOCK_CONST_METHOD0(GetDeviceType, BluetoothDeviceType());
   MOCK_CONST_METHOD0(IsPaired, bool());
-#if BUILDFLAG(IS_CHROMEOS)
-  MOCK_CONST_METHOD0(IsBonded, bool());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   MOCK_CONST_METHOD0(IsConnected, bool());
   MOCK_CONST_METHOD0(IsGattConnected, bool());
   MOCK_CONST_METHOD0(IsConnectable, bool());
@@ -69,11 +66,6 @@ class MockBluetoothDevice : public BluetoothDevice {
   MOCK_METHOD2(Connect,
                void(BluetoothDevice::PairingDelegate* pairing_delegate,
                     ConnectCallback callback));
-#if BUILDFLAG(IS_CHROMEOS)
-  MOCK_METHOD2(ConnectClassic,
-               void(BluetoothDevice::PairingDelegate* pairing_delegate,
-                    ConnectCallback callback));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   MOCK_METHOD2(Pair,
                void(BluetoothDevice::PairingDelegate* pairing_delegate,
                     ConnectCallback callback));
@@ -111,14 +103,6 @@ class MockBluetoothDevice : public BluetoothDevice {
   MOCK_METHOD1(CreateGattConnectionImpl,
                void(std::optional<BluetoothUUID> service_uuid));
   MOCK_METHOD0(DisconnectGatt, void());
-#if BUILDFLAG(IS_CHROMEOS)
-  MOCK_METHOD2(ExecuteWrite,
-               void(base::OnceClosure callback,
-                    ExecuteWriteErrorCallback error_callback));
-  MOCK_METHOD2(AbortWrite,
-               void(base::OnceClosure callback,
-                    AbortWriteErrorCallback error_callback));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // BluetoothDevice manages the lifetime of its BluetoothGATTServices.
   // This method takes ownership of the MockBluetoothGATTServices. This is only

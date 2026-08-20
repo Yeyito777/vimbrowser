@@ -11,9 +11,7 @@
 #include "build/build_config.h"
 #include "content/public/browser/page_navigator.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "ui/base/window_open_disposition.h"
-#endif
 
 // This is the public interface for a browser window. Most features in
 // //chrome/browser depend on this interface, and thus to prevent circular
@@ -30,7 +28,6 @@
 // the UnownedUserData (via BrowserWindowInterface::GetUnownedUserDataHost())
 // or on DesktopBrowserWindowCapabilities.
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace tabs {
 class TabInterface;
 }  // namespace tabs
@@ -46,7 +43,6 @@ class DesktopBrowserWindowCapabilities;
 class ExclusiveAccessManager;
 class GURL;
 class TabStripModel;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace base {
 class CallbackListSubscription;
@@ -139,20 +135,16 @@ class BrowserWindowInterface : public content::PageNavigator {
     // * Legacy packaged app ("v1 packaged app")
     // * Hosted app (e.g. the Web Store "app" preinstalled on Chromebooks)
     TYPE_APP,
-#if !BUILDFLAG(IS_ANDROID)
     // Devtools browser.
     TYPE_DEVTOOLS,
-#endif
     // App popup browser. It behaves like an app browser (e.g. it should have an
     // AppBrowserController) but looks like a popup (e.g. it never has a tab
     // strip).
     TYPE_APP_POPUP,
-#if !BUILDFLAG(IS_ANDROID)
     // Document picture-in-picture browser.  It's mostly the same as a
     // TYPE_POPUP, except that it floats above other windows.  It also has some
     // additional restrictions, like it cannot navigated, to prevent misuse.
     TYPE_PICTURE_IN_PICTURE,
-#endif
     // If you add a new type, consider updating the test
     // BrowserTest.StartMaximized.
   };
@@ -176,11 +168,6 @@ class BrowserWindowInterface : public content::PageNavigator {
     // down.
     kErrorProfileUnsuitable,
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Indicates the profile is currently loading kiosk mode, so no new windows
-    // should be allowed.
-    kErrorLoadingKiosk,
-#endif
   };
 
   // WARNING: Many uses of base::WeakPtr are inappropriate and lead to bugs.
@@ -216,7 +203,6 @@ class BrowserWindowInterface : public content::PageNavigator {
   //
   // The following methods will be removed in the future.
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns nullptr if no browser window with the given session ID exists.
   static BrowserWindowInterface* FromSessionID(const SessionID& session_id);
 
@@ -323,7 +309,6 @@ class BrowserWindowInterface : public content::PageNavigator {
 
   virtual DesktopBrowserWindowCapabilities* capabilities() = 0;
   virtual const DesktopBrowserWindowCapabilities* capabilities() const = 0;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // S T O P
   // Please do not add new features here without consulting desktop leads

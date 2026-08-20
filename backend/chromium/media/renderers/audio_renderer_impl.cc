@@ -74,12 +74,8 @@ AudioRendererImpl::AudioRendererImpl(
       received_end_of_stream_(false),
       rendered_end_of_stream_(false),
       is_suspending_(false),
-#if BUILDFLAG(IS_ANDROID)
-      is_passthrough_(false) {
-#else
       is_passthrough_(false),
       speech_recognition_client_(speech_recognition_client) {
-#endif
   DCHECK(create_audio_decoders_cb_);
   // PowerObserver's must be added and removed from the same thread, but we
   // won't remove the observer until we're destructed on |task_runner_| so we
@@ -211,9 +207,7 @@ void AudioRendererImpl::SetMediaTime(base::TimeDelta time) {
   audio_clock_ =
       std::make_unique<AudioClock>(time, audio_parameters_.sample_rate());
 
-#if !BUILDFLAG(IS_ANDROID)
   send_pts_for_transcription_ = true;
-#endif
 }
 
 base::TimeDelta AudioRendererImpl::CurrentMediaTime() {
@@ -413,14 +407,12 @@ void AudioRendererImpl::Initialize(DemuxerStream* stream,
       base::BindOnce(&AudioRendererImpl::OnDeviceInfoReceived,
                      weak_factory_.GetWeakPtr(), demuxer_stream_, cdm_context));
 
-#if !BUILDFLAG(IS_ANDROID)
   if (speech_recognition_client_) {
     speech_recognition_client_->SetOnReadyCallback(
         base::BindPostTaskToCurrentDefault(
             base::BindOnce(&AudioRendererImpl::EnableSpeechRecognition,
                            weak_factory_.GetWeakPtr())));
   }
-#endif
 }
 
 void AudioRendererImpl::InitializeSink() {
@@ -601,11 +593,6 @@ void AudioRendererImpl::OnDeviceInfoReceived(
     int stream_channel_count = stream->audio_decoder_config().channels();
 
     bool try_supported_channel_layouts = false;
-#if BUILDFLAG(IS_WIN)
-    try_supported_channel_layouts =
-        base::CommandLine::ForCurrentProcess()->HasSwitch(
-            switches::kTrySupportedChannelLayouts);
-#endif
 
     // We don't know how to up-mix for DISCRETE layouts (fancy multichannel
     // hardware with non-standard speaker arrangement). Instead, pretend the
@@ -1148,7 +1135,6 @@ bool AudioRendererImpl::HandleDecodedBuffer_Locked(
     if (first_packet_timestamp_ == kNoTimestamp)
       first_packet_timestamp_ = buffer->timestamp();
 
-#if !BUILDFLAG(IS_ANDROID)
     // Do not transcribe muted streams initiated by autoplay if the stream was
     // never unmuted.
     if (transcribe_audio_callback_ &&
@@ -1157,7 +1143,6 @@ bool AudioRendererImpl::HandleDecodedBuffer_Locked(
       task_runner_->PostTask(
           FROM_HERE, base::BindOnce(transcribe_audio_callback_, buffer));
     }
-#endif
 
     if (state_ != kUninitialized)
       algorithm_->EnqueueBuffer(std::move(buffer));
@@ -1613,17 +1598,14 @@ void AudioRendererImpl::ConfigureChannelMask() {
 }
 
 void AudioRendererImpl::EnableSpeechRecognition() {
-#if !BUILDFLAG(IS_ANDROID)
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   MEDIA_LOG(INFO, media_log_) << "Enabling transcription.";
   transcribe_audio_callback_ = base::BindRepeating(
       &AudioRendererImpl::TranscribeAudio, weak_factory_.GetWeakPtr());
-#endif
 }
 
 void AudioRendererImpl::TranscribeAudio(
     scoped_refptr<media::AudioBuffer> buffer) {
-#if !BUILDFLAG(IS_ANDROID)
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   if (speech_recognition_client_ && sink_->IsOptimizedForHardwareParameters()) {
     // TODO(crbug.com/413823334): Resend a `new_timestamp` when large
@@ -1635,7 +1617,6 @@ void AudioRendererImpl::TranscribeAudio(
     speech_recognition_client_->AddAudio(std::move(buffer),
                                          std::move(new_timestamp));
   }
-#endif
 }
 
 void AudioRendererImpl::MaybeStartRealSink() {

@@ -63,13 +63,8 @@ void GetStorageStatsImpl(const base::FilePath& temporary_archives_dir,
     base::FileEnumerator file_enumerator(public_archives_dir, false,
                                          base::FileEnumerator::FILES);
     while (!file_enumerator.Next().empty()) {
-#if BUILDFLAG(IS_WIN)
-      std::string extension = base::WideToUTF8(
-          file_enumerator.GetInfo().GetName().FinalExtension());
-#else
       std::string extension =
           file_enumerator.GetInfo().GetName().FinalExtension();
-#endif
       if (extension == "mhtml" || extension == "mht") {
         storage_stats.public_archives_size +=
             file_enumerator.GetInfo().GetSize();

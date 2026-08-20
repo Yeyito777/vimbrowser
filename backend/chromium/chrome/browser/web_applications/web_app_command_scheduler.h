@@ -37,9 +37,6 @@
 #include "components/webapps/browser/uninstall_result_code.h"
 #include "components/webapps/isolated_web_apps/types/iwa_version.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/isolated_web_apps/policy/isolated_web_app_cache_client.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class GURL;
 class Profile;
@@ -94,16 +91,6 @@ struct SynchronizeOsOptions;
 struct WebAppIconDiagnosticResult;
 struct WebAppInstallInfo;
 
-#if BUILDFLAG(IS_CHROMEOS)
-class CleanupBundleCacheSuccess;
-class CleanupBundleCacheError;
-class CopyBundleToCacheSuccess;
-enum class CopyBundleToCacheError;
-class GetBundleCachePathSuccess;
-enum class GetBundleCachePathError;
-class RemoveObsoleteBundleVersionsError;
-class RemoveObsoleteBundleVersionsSuccess;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 enum class RewriteIconResult;
@@ -352,45 +339,6 @@ class WebAppCommandScheduler {
                               std::optional<IwaVersion>)> callback,
       const base::Location& call_location = FROM_HERE);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets the path to an IWA bundle in the cache for a given `session_type`. If
-  // `version` is not provided, it returns the path to the newest cached
-  // version.
-  void GetIsolatedWebAppBundleCachePath(
-      const IsolatedWebAppUrlInfo& url_info,
-      const std::optional<IwaVersion>& version,
-      IwaCacheClient::SessionType session_type,
-      base::OnceCallback<void(
-          base::expected<GetBundleCachePathSuccess, GetBundleCachePathError>)>
-          callback,
-      const base::Location& call_location = FROM_HERE);
-
-  // Copies an IWA bundle file to the cache for a given `session_type`.
-  void CopyIsolatedWebAppBundleToCache(
-      const IsolatedWebAppUrlInfo& url_info,
-      IwaCacheClient::SessionType session_type,
-      base::OnceCallback<void(base::expected<CopyBundleToCacheSuccess,
-                                             CopyBundleToCacheError>)> callback,
-      const base::Location& call_location = FROM_HERE);
-
-  // Cleans all IWA cached bundles for a given `session_type` that are not in
-  // the `iwas_to_keep_in_cache` list.
-  void CleanupIsolatedWebAppBundleCache(
-      const std::vector<web_package::SignedWebBundleId>& iwas_to_keep_in_cache,
-      IwaCacheClient::SessionType session_type,
-      base::OnceCallback<void(
-          base::expected<CleanupBundleCacheSuccess, CleanupBundleCacheError>)>
-          callback,
-      const base::Location& call_location = FROM_HERE);
-
-  void RemoveObsoleteIsolatedWebAppVersionsCache(
-      const IsolatedWebAppUrlInfo& url_info,
-      IwaCacheClient::SessionType session_type,
-      base::OnceCallback<
-          void(base::expected<RemoveObsoleteBundleVersionsSuccess,
-                              RemoveObsoleteBundleVersionsError>)> callback,
-      const base::Location& call_location = FROM_HERE);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Calculates the total browsing data size for all installed Isolated Web
   // Apps.

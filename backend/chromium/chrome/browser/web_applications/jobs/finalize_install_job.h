@@ -26,9 +26,6 @@
 #include "components/webapps/common/web_app_id.h"
 #include "components/webapps/isolated_web_apps/types/storage_location.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_data.h"
-#endif
 
 class Profile;
 
@@ -82,9 +79,6 @@ struct FinalizeJobOptions {
   bool skip_icon_writes_on_download_failure = false;
 
   std::optional<WebAppChromeOsData> chromeos_data;
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<ash::SystemWebAppData> system_web_app_data;
-#endif
 
   // If set, will propagate `IsolatedWebAppStorageLocation` and
   // `IntegrityBlockData` to `WebApp::isolation_data()` with the given values,

@@ -127,7 +127,6 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_service_factory.h"
 #include "chrome/browser/ui/browser.h"
@@ -135,7 +134,6 @@
 #include "chrome/browser/ui/user_education/browser_user_education_interface.h"
 #include "chrome/browser/user_education/user_education_service.h"
 #include "chrome/browser/user_education/user_education_service_factory.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/extension_management.h"
@@ -237,9 +235,6 @@ void DefaultBindingsDelegate::OpenInNewTab(const std::string& url) {
   content::OpenURLParams params(GURL(url), content::Referrer(),
                                 WindowOpenDisposition::NEW_FOREGROUND_TAB,
                                 ui::PAGE_TRANSITION_LINK, false);
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
   Browser* browser = chrome::FindBrowserWithTab(web_contents_);
   // Check if the browser is still alive, as it might have been closed in the
   // meantime.
@@ -248,14 +243,10 @@ void DefaultBindingsDelegate::OpenInNewTab(const std::string& url) {
   if (browser) {
     browser->OpenURL(params, /*navigation_handle_callback=*/{});
   }
-#endif
 }
 
 void DefaultBindingsDelegate::OpenSearchResultsInNewTab(
     const std::string& query) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
   Browser* browser = chrome::FindBrowserWithTab(web_contents_);
   TemplateURLService* url_service =
       TemplateURLServiceFactory::GetForProfile(browser->profile());
@@ -266,7 +257,6 @@ void DefaultBindingsDelegate::OpenSearchResultsInNewTab(
                                 WindowOpenDisposition::NEW_FOREGROUND_TAB,
                                 ui::PAGE_TRANSITION_LINK, false);
   browser->OpenURL(params, /*navigation_handle_callback=*/{});
-#endif
 }
 
 void DefaultBindingsDelegate::InspectedContentsClosing() {
@@ -725,25 +715,16 @@ void DevToolsUIBindings::FrontendWebContentsObserver::
   switch (status) {
     case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-#endif
     case base::TERMINATION_STATUS_PROCESS_CRASHED:
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
     case base::TERMINATION_STATUS_OOM:
     case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
-#if BUILDFLAG(IS_WIN)
-    case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-#endif
       if (devtools_bindings_->agent_host_.get()) {
         devtools_bindings_->Detach();
       }
       break;
     case base::TERMINATION_STATUS_NORMAL_TERMINATION:
     case base::TERMINATION_STATUS_STILL_RUNNING:
-#if BUILDFLAG(IS_ANDROID)
-    case base::TERMINATION_STATUS_OOM_PROTECTED:
-#endif
     case base::TERMINATION_STATUS_MAX_ENUM:
       crashed = false;
       break;
@@ -818,10 +799,8 @@ DevToolsUIBindings::DevToolsUIBindings(content::WebContents* web_contents)
   // Register on-load actions.
   embedder_message_dispatcher_ =
       DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this);
-#if !BUILDFLAG(IS_ANDROID)
   ThemeServiceFactory::GetForProfile(profile_->GetOriginalProfile())
       ->AddObserver(this);
-#endif
   can_access_aida_ = IsAnyAidaPoweredFeatureEnabled();
 }
 
@@ -834,10 +813,8 @@ DevToolsUIBindings::~DevToolsUIBindings() {
                 GetTimeSinceSessionStart().InMilliseconds())
             .SetSessionId(session_id_for_logging_.GetLowForSerialization()));
   }
-#if !BUILDFLAG(IS_ANDROID)
   ThemeServiceFactory::GetForProfile(profile_->GetOriginalProfile())
       ->RemoveObserver(this);
-#endif
 
   if (agent_host_.get()) {
     agent_host_->DetachClient(this);
@@ -926,11 +903,7 @@ void DevToolsUIBindings::AgentHostClosed(
 
 bool DevToolsUIBindings::MayWriteLocalFiles() {
   // Do not allow local file system access via the front-end on Chrome OS.
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 void DevToolsUIBindings::SendMessageAck(int request_id,
@@ -963,11 +936,6 @@ void DevToolsUIBindings::CloseWindow() {
 void DevToolsUIBindings::LoadCompleted() {
   FrontendLoaded();
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android we don't support showing menus with custom menu info provided
-  // by blink::ContextMenuProvider. Use the soft menu to work around it.
-  CallClientMethod("DevToolsAPI", "setUseSoftMenu", base::Value(true));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void DevToolsUIBindings::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -1594,9 +1562,6 @@ void DevToolsUIBindings::SendPortForwardingStatus(base::Value status) {
 }
 
 void DevToolsUIBindings::SetDevicesUpdatesEnabled(bool enabled) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
   if (devices_updates_enabled_ == enabled) {
     return;
   }
@@ -1638,7 +1603,6 @@ void DevToolsUIBindings::SetDevicesUpdatesEnabled(bool enabled) {
     pref_change_registrar_.RemoveAll();
     SendPortForwardingStatus(base::Value());
   }
-#endif
 }
 
 void DevToolsUIBindings::OpenRemotePage(const std::string& browser_id,
@@ -1753,11 +1717,7 @@ bool DevToolsUIBindings::GetFeatureStateForDevTools(
 // static
 base::DictValue DevToolsUIBindings::GetHostConfigDictionary(Profile* profile) {
   base::CommandLine command_line(base::CommandLine::NO_PROGRAM);
-#if BUILDFLAG(IS_CHROMEOS)
-  PrefService* prefs = profile->GetPrefs();
-#else
   PrefService* prefs = g_browser_process->local_state();
-#endif
   auto flags_storage =
       std::make_unique<flags_ui::PrefServiceFlagsStorage>(prefs);
 
@@ -2289,9 +2249,6 @@ void DevToolsUIBindings::RecordUserMetricsAction(const std::string& name) {
 }
 
 void DevToolsUIBindings::RecordNewBadgeUsage(const std::string& feature_name) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
 
   auto* user_education_service =
       UserEducationServiceFactory::GetForBrowserContext(profile_);
@@ -2313,18 +2270,13 @@ void DevToolsUIBindings::RecordNewBadgeUsage(const std::string& feature_name) {
     UserEducationService::MaybeNotifyNewBadgeFeatureUsed(
         web_contents()->GetBrowserContext(), *feature_to_register);
   }
-#endif
 }
 
 // static
 void DevToolsUIBindings::SetChromeFlagInternal(Profile* profile,
                                                const std::string& flag_name,
                                                bool value) {
-#if BUILDFLAG(IS_CHROMEOS)
-  PrefService* prefs = profile->GetPrefs();
-#else
   PrefService* prefs = g_browser_process->local_state();
-#endif
   auto flags_storage =
       std::make_unique<flags_ui::PrefServiceFlagsStorage>(prefs);
 
@@ -2618,15 +2570,11 @@ void DevToolsUIBindings::HandleDirectoryPermissions(
 void DevToolsUIBindings::ShowDevToolsInfoBar(
     const std::u16string& message,
     DevToolsInfoBarDelegate::Callback callback) {
-#if BUILDFLAG(IS_ANDROID)
-  NOTIMPLEMENTED();
-#else
   if (!delegate_->GetInfoBarManager()) {
     std::move(callback).Run(false);
     return;
   }
   DevToolsInfoBarDelegate::Create(message, std::move(callback));
-#endif
 }
 
 DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kCancelButtonId);
@@ -2891,11 +2839,9 @@ bool DevToolsUIBindings::IsAttachedTo(content::DevToolsAgentHost* agent_host) {
                                     : initial_target_id_ == agent_host->GetId();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void DevToolsUIBindings::OnThemeChanged() {
   CallClientMethod("DevToolsAPI", "colorThemeChanged");
 }
-#endif
 
 void DevToolsUIBindings::CallClientMethod(
     const std::string& object_name,

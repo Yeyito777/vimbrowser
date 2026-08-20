@@ -23,10 +23,6 @@ component("webview") {
     sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
   }
 
-  if (is_win) {
-    sources += [ "unhandled_keyboard_event_handler_win.cc" ]
-  }
-
   defines = [ "WEBVIEW_IMPLEMENTATION" ]
 
   if (is_mac) {

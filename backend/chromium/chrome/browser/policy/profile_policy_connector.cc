@@ -49,26 +49,7 @@
 #include "content/public/browser/web_contents.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/policy/core/device_cloud_policy_manager_ash.h"
-#include "chrome/browser/ash/policy/core/device_local_account.h"
-#include "chrome/browser/ash/policy/core/device_local_account_policy_provider.h"
-#include "chrome/browser/ash/policy/login/login_profile_policy_provider.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome/browser/policy/restricted_mgs_policy_provider.h"
-#include "chromeos/ash/components/demo_mode/utils/demo_session_utils.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#include "components/user_manager/user_type.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/android/tab_android.h"
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#else
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/browser_list.h"
@@ -76,94 +57,15 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"  // nogncheck crbug.com/40147906
 #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
 #include "chrome/browser/ui/browser_window/public/global_browser_collection.h"
-#endif
 
 namespace policy {
 
 namespace internal {
-#if BUILDFLAG(IS_CHROMEOS)
-// This class allows observing a |device_wide_policy_service| for policy updates
-// during which the |source_policy_provider| has already been initialized.
-// It is used to know when propagation of primary user policies proxied to the
-// device-wide PolicyService has finished.
-class ProxiedPoliciesPropagatedWatcher : PolicyService::ProviderUpdateObserver {
- public:
-  ProxiedPoliciesPropagatedWatcher(
-      PolicyService* device_wide_policy_service,
-      ProxyPolicyProvider* proxy_policy_provider,
-      ConfigurationPolicyProvider* source_policy_provider,
-      base::OnceClosure proxied_policies_propagated_callback)
-      : device_wide_policy_service_(device_wide_policy_service),
-        proxy_policy_provider_(proxy_policy_provider),
-        source_policy_provider_(source_policy_provider),
-        proxied_policies_propagated_callback_(
-            std::move(proxied_policies_propagated_callback)) {
-    device_wide_policy_service->AddProviderUpdateObserver(this);
-
-    timeout_timer_.Start(
-        FROM_HERE, base::Seconds(kProxiedPoliciesPropagationTimeoutInSeconds),
-        this,
-        &ProxiedPoliciesPropagatedWatcher::OnProviderUpdatePropagationTimedOut);
-  }
-
-  ProxiedPoliciesPropagatedWatcher(const ProxiedPoliciesPropagatedWatcher&) =
-      delete;
-  ProxiedPoliciesPropagatedWatcher& operator=(
-      const ProxiedPoliciesPropagatedWatcher&) = delete;
-  ~ProxiedPoliciesPropagatedWatcher() override {
-    device_wide_policy_service_->RemoveProviderUpdateObserver(this);
-  }
-
-  // PolicyService::Observer:
-  void OnProviderUpdatePropagated(
-      ConfigurationPolicyProvider* provider) override {
-    if (!proxied_policies_propagated_callback_)
-      return;
-    if (provider != proxy_policy_provider_)
-      return;
-
-    if (!source_policy_provider_->IsInitializationComplete(
-            POLICY_DOMAIN_CHROME)) {
-      return;
-    }
-
-    ReportTimeUma();
-    std::move(proxied_policies_propagated_callback_).Run();
-  }
-
-  void OnProviderUpdatePropagationTimedOut() {
-    if (!proxied_policies_propagated_callback_)
-      return;
-    LOG(WARNING) << "Waiting for proxied policies to propagate timed out.";
-    ReportTimeUma();
-    std::move(proxied_policies_propagated_callback_).Run();
-  }
-
- private:
-  static constexpr int kProxiedPoliciesPropagationTimeoutInSeconds = 5;
-
-  void ReportTimeUma() const {
-    UmaHistogramTimes("Enterprise.TimeToUnthrottlePolicyInit",
-                      base::TimeTicks::Now() - construction_time_);
-  }
-
-  const raw_ptr<PolicyService> device_wide_policy_service_;
-  const raw_ptr<const ProxyPolicyProvider> proxy_policy_provider_;
-  const raw_ptr<const ConfigurationPolicyProvider> source_policy_provider_;
-  const base::TimeTicks construction_time_ = base::TimeTicks::Now();
-  base::OnceClosure proxied_policies_propagated_callback_;
-  base::OneShotTimer timeout_timer_;
-};
-#endif
 // Class responsible for showing infobar when test policies are set from
 // the chrome://policy/test page
 class LocalTestInfoBarVisibilityManager :
-#if BUILDFLAG(IS_ANDROID)
-    public TabModelObserver
-#else
     public BrowserCollectionObserver,
     public TabStripModelObserver
-#endif  // BUILDFLAG(IS_ANDROID)
 {
  public:
   LocalTestInfoBarVisibilityManager() = default;
@@ -179,14 +81,6 @@ class LocalTestInfoBarVisibilityManager :
     }
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  void DidAddTab(TabAndroid* tab, TabModel::TabLaunchType type) override {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    if (tab) {
-      AddInfobarForActiveLocalTestPolicies(tab->web_contents());
-    }
-  }
-#else
   void OnBrowserCreated(BrowserWindowInterface* browser) override {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     CHECK(browser);
@@ -218,21 +112,9 @@ class LocalTestInfoBarVisibilityManager :
       tab_strip_model->RemoveObserver(this);
     }
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   void AddInfobarsForActiveLocalTestPoliciesAllTabs() {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-#if BUILDFLAG(IS_ANDROID)
-    for (TabModel* model : TabModelList::models()) {
-      for (int index = 0; index < model->GetTabCount(); ++index) {
-        TabAndroid* tab = model->GetTabAt(index);
-        if (tab) {
-          AddInfobarForActiveLocalTestPolicies(tab->web_contents());
-        }
-      }
-      model->AddObserver(this);
-    }
-#else
     ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
         [this](BrowserWindowInterface* browser) {
           CHECK(browser);
@@ -248,7 +130,6 @@ class LocalTestInfoBarVisibilityManager :
         });
     browser_collection_observation_.Observe(
         GlobalBrowserCollection::GetInstance());
-#endif  // BUILDFLAG(IS_ANDROID)
     infobar_active_ = true;
   }
 
@@ -266,17 +147,6 @@ class LocalTestInfoBarVisibilityManager :
 
   void DismissInfobarsForActiveLocalTestPoliciesAllTabs() {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-#if BUILDFLAG(IS_ANDROID)
-    for (TabModel* model : TabModelList::models()) {
-      for (int index = 0; index < model->GetTabCount(); ++index) {
-        TabAndroid* tab = model->GetTabAt(index);
-        if (tab) {
-          DismissInfobarForActiveLocalTestPolicies(tab->web_contents());
-        }
-      }
-      model->RemoveObserver(this);
-    }
-#else
     ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
         [this](BrowserWindowInterface* browser) {
           CHECK(browser);
@@ -291,7 +161,6 @@ class LocalTestInfoBarVisibilityManager :
           return true;
         });
     browser_collection_observation_.Reset();
-#endif  // BUILDFLAG(IS_ANDROID)
     infobar_active_ = false;
   }
 
@@ -313,31 +182,11 @@ class LocalTestInfoBarVisibilityManager :
 
  private:
   bool infobar_active_ = false;
-#if !BUILDFLAG(IS_ANDROID)
   base::ScopedObservation<GlobalBrowserCollection, BrowserCollectionObserver>
       browser_collection_observation_{this};
-#endif  // !BUILDFLAG(IS_ANDROID)
 };
 }  // namespace internal
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-// Returns the PolicyService that holds device-wide policies.
-PolicyService* GetDeviceWidePolicyService() {
-  BrowserPolicyConnectorAsh* browser_policy_connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  return browser_policy_connector->GetPolicyService();
-}
-
-// Returns the ProxyPolicyProvider which is used to forward primary Profile
-// policies into the device-wide PolicyService.
-ProxyPolicyProvider* GetProxyPolicyProvider() {
-  BrowserPolicyConnectorAsh* browser_policy_connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  return browser_policy_connector->GetGlobalUserCloudPolicyProvider();
-}
-}  // namespace
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 ProfilePolicyConnector::ProfilePolicyConnector() = default;
 
@@ -364,13 +213,7 @@ void ProfilePolicyConnector::Init(
   local_test_infobar_visibility_manager_ =
       std::make_unique<internal::LocalTestInfoBarVisibilityManager>();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  user_ = user;
-  auto* browser_policy_connector =
-      static_cast<BrowserPolicyConnectorAsh*>(connector);
-#else
   DCHECK_EQ(nullptr, user);
-#endif
 
   ConfigurationPolicyProvider* platform_provider =
       connector->GetPlatformProvider();
@@ -378,12 +221,6 @@ void ProfilePolicyConnector::Init(
     AppendPolicyProviderWithSchemaTracking(platform_provider, schema_registry);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (browser_policy_connector->GetDeviceCloudPolicyManager()) {
-    policy_providers_.push_back(
-        browser_policy_connector->GetDeviceCloudPolicyManager());
-  }
-#else
   ConfigurationPolicyProvider* machine_level_user_cloud_policy_provider =
       connector->proxy_policy_provider();
   if (machine_level_user_cloud_policy_provider) {
@@ -393,7 +230,6 @@ void ProfilePolicyConnector::Init(
   if (connector->command_line_policy_provider()) {
     policy_providers_.push_back(connector->command_line_policy_provider());
   }
-#endif
 
     local_test_policy_provider_ = connector->local_test_policy_provider();
 
@@ -401,89 +237,12 @@ void ProfilePolicyConnector::Init(
     policy_providers_.push_back(configuration_policy_provider);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!user) {
-    DCHECK(schema_registry);
-    // This case occurs for the signin and the lock screen app profiles.
-    special_user_policy_provider_ =
-        std::make_unique<LoginProfilePolicyProvider>(
-            browser_policy_connector->GetPolicyService());
-  } else {
-    auto* const manager = user_manager::UserManager::Get();
-    // |user| should never be nullptr except for the signin and the lock screen
-    // app profile.
-    is_primary_user_ = user == manager->GetPrimaryUser();
-    is_user_new_ =
-        user == manager->GetActiveUser() && manager->IsCurrentUserNew();
-    // Note that |DeviceLocalAccountPolicyProvider::Create| returns nullptr when
-    // the user supplied is not a device-local account user or not in demo mode.
-    std::string user_id = user->GetAccountId().GetUserEmail();
-    if (ash::demo_mode::IsDemoAccountSignInEnabled()) {
-      std::vector<DeviceLocalAccount> device_local_accounts =
-          GetDeviceLocalAccounts(ash::CrosSettings::Get());
-      CHECK_EQ(device_local_accounts.size(), 1u);
-      user_id = device_local_accounts[0].user_id;
-    }
-
-    special_user_policy_provider_ = DeviceLocalAccountPolicyProvider::Create(
-        user_id, browser_policy_connector->GetDeviceLocalAccountPolicyService(),
-        force_immediate_load);
-  }
-  if (special_user_policy_provider_) {
-    special_user_policy_provider_->Init(schema_registry);
-    policy_providers_.push_back(special_user_policy_provider_.get());
-  }
-
-  // `RestrictedMGSPolicyProvider::Create()` returns a nullptr when we are not
-  // in a Managed Guest Session.
-  restricted_mgs_policy_provider = RestrictedMGSPolicyProvider::Create();
-  if (restricted_mgs_policy_provider) {
-    restricted_mgs_policy_provider->Init(schema_registry);
-    policy_providers_.push_back(restricted_mgs_policy_provider.get());
-  }
-#endif
 
   std::vector<std::unique_ptr<PolicyMigrator>> migrators;
-#if BUILDFLAG(IS_WIN)
-  migrators.push_back(
-      std::make_unique<browser_switcher::BrowserSwitcherPolicyMigrator>());
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ConfigurationPolicyProvider* user_policy_delegate_candidate =
-      configuration_policy_provider ? configuration_policy_provider
-                                    : special_user_policy_provider_.get();
-
-  // Only proxy primary user policies to the device_wide policy service if all
-  // of the following are true:
-  // (*) This ProfilePolicyConnector has been created for the primary user.
-  // (*) There is a policy provider for this profile. Note that for unmanaged
-  //     users, |user_policy_delegate_candidate| will be nullptr.
-  // (*) The ProxyPolicyProvider is actually used by the device-wide policy
-  //     service. This may not be the case  e.g. in tests that use
-  //     BrowserPolicyConnectorBase::SetPolicyProviderForTesting.
-  if (is_primary_user_ && user_policy_delegate_candidate &&
-      GetDeviceWidePolicyService()->HasProvider(GetProxyPolicyProvider())) {
-    GetProxyPolicyProvider()->SetUnownedDelegate(
-        user_policy_delegate_candidate);
-
-    // When proxying primary user policies to the device-wide PolicyService,
-    // delay signaling that initialization is complete until the policies have
-    // propagated. See CreatePolicyServiceWithInitializationThrottled for
-    // details.
-    policy_service_ = CreatePolicyServiceWithInitializationThrottled(
-        policy_providers_, std::move(migrators),
-        user_policy_delegate_candidate);
-  } else {
-    policy_service_ = std::make_unique<PolicyServiceImpl>(
-        policy_providers_, PolicyServiceImpl::ScopeForMetrics::kUser,
-        std::move(migrators));
-  }
-#else   // BUILDFLAG(IS_CHROMEOS)
   policy_service_ = std::make_unique<PolicyServiceImpl>(
       policy_providers_, PolicyServiceImpl::ScopeForMetrics::kUser,
       std::move(migrators));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (local_test_policy_provider_ && local_test_policy_provider_->is_active()) {
     UseLocalTestPolicyProvider();
@@ -503,18 +262,7 @@ void ProfilePolicyConnector::OverrideIsManagedForTesting(bool is_managed) {
 }
 
 void ProfilePolicyConnector::Shutdown() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_primary_user_)
-    GetProxyPolicyProvider()->SetUnownedDelegate(nullptr);
 
-  if (special_user_policy_provider_)
-    special_user_policy_provider_->Shutdown();
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-  if (restricted_mgs_policy_provider)
-    restricted_mgs_policy_provider->Shutdown();
-#endif
 
   for (auto& wrapped_policy_provider : wrapped_policy_providers_) {
     wrapped_policy_provider->Shutdown();
@@ -536,12 +284,6 @@ bool ProfilePolicyConnector::IsProfilePolicy(const char* policy_key) const {
   return provider == configuration_policy_provider_;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ProfilePolicyConnector::TriggerProxiedPoliciesWaitTimeoutForTesting() {
-  CHECK(proxied_policies_propagated_watcher_);
-  proxied_policies_propagated_watcher_->OnProviderUpdatePropagationTimedOut();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 base::flat_set<std::string> ProfilePolicyConnector::user_affiliation_ids()
     const {
@@ -573,19 +315,6 @@ void ProfilePolicyConnector::DoPostInit() {
 const CloudPolicyStore* ProfilePolicyConnector::GetActualPolicyStore() const {
   if (policy_store_)
     return policy_store_;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (special_user_policy_provider_) {
-    // |special_user_policy_provider_| is non-null for device-local accounts,
-    // for the login profile, and the lock screen app profile.
-    const DeviceCloudPolicyManagerAsh* const device_cloud_policy_manager =
-        g_browser_process->platform_part()
-            ->browser_policy_connector_ash()
-            ->GetDeviceCloudPolicyManager();
-    // The device_cloud_policy_manager can be a nullptr in unit tests.
-    if (device_cloud_policy_manager)
-      return device_cloud_policy_manager->core()->store();
-  }
-#endif
   return nullptr;
 }
 
@@ -612,43 +341,12 @@ void ProfilePolicyConnector::AppendPolicyProviderWithSchemaTracking(
 
 std::string ProfilePolicyConnector::GetTimeToFirstPolicyLoadMetricSuffix()
     const {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!is_primary_user_) {
-    // Don't report the metric for secondary users: we're only interested in the
-    // delay during the initial load as it blocks any other UX.
-    return "";
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!IsManaged()) {
     return "Unmanaged";
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(user_);
-  switch (user_->GetType()) {
-    case user_manager::UserType::kRegular:
-      if (user_manager::UserManager::Get()->IsUserCryptohomeDataEphemeral(
-              user_->GetAccountId())) {
-        return "Managed.Ephemeral";
-      }
-      return is_user_new_ ? "Managed.NewPersistent" : "Managed.Existing";
-    case user_manager::UserType::kChild:
-      return "Child";
-    case user_manager::UserType::kPublicAccount:
-      return "ManagedGuestSession";
-    case user_manager::UserType::kKioskChromeApp:
-    case user_manager::UserType::kKioskWebApp:
-    case user_manager::UserType::kKioskIWA:
-    case user_manager::UserType::kKioskArcvmApp:
-      return "Kiosk";
-    case user_manager::UserType::kGuest:
-      // Don't report the metric in uninteresting or unreachable cases.
-      return "";
-  }
-#else   // BUILDFLAG(IS_CHROMEOS)
   return "Managed";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ProfilePolicyConnector::UseLocalTestPolicyProvider() {
@@ -703,43 +401,5 @@ void ProfilePolicyConnector::RecordAffiliationMetrics() {
                           base::Unretained(this)));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<PolicyService>
-ProfilePolicyConnector::CreatePolicyServiceWithInitializationThrottled(
-    const std::vector<raw_ptr<ConfigurationPolicyProvider, VectorExperimental>>&
-        policy_providers,
-    std::vector<std::unique_ptr<PolicyMigrator>> migrators,
-    ConfigurationPolicyProvider* user_policy_delegate) {
-  DCHECK(user_policy_delegate);
-
-  auto policy_service = PolicyServiceImpl::CreateWithThrottledInitialization(
-      policy_providers, PolicyServiceImpl::ScopeForMetrics::kUser,
-      std::move(migrators));
-
-  // base::Unretained is OK for |this| because
-  // |proxied_policies_propagated_watcher_| is guaranteed not to call its
-  // callback after it has been destroyed. base::Unretained is also OK for
-  // |policy_service.get()| because it will be owned by |*this| and is never
-  // explicitly destroyed.
-  proxied_policies_propagated_watcher_ =
-      std::make_unique<internal::ProxiedPoliciesPropagatedWatcher>(
-          GetDeviceWidePolicyService(), GetProxyPolicyProvider(),
-          user_policy_delegate,
-          base::BindOnce(&ProfilePolicyConnector::OnProxiedPoliciesPropagated,
-                         base::Unretained(this),
-                         base::Unretained(policy_service.get())));
-  return std::move(policy_service);
-}
-
-void ProfilePolicyConnector::OnProxiedPoliciesPropagated(
-    PolicyServiceImpl* policy_service) {
-  policy_service->UnthrottleInitialization();
-  // Do not delete |proxied_policies_propagated_watcher_| synchronously, as the
-  // PolicyService it is observing is expected to be iterating its observer
-  // list.
-  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
-      FROM_HERE, std::move(proxied_policies_propagated_watcher_));
-}
-#endif
 
 }  // namespace policy

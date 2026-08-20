@@ -21,13 +21,6 @@
 #include "extensions/common/feature_switch.h"
 #include "extensions/common/manifest.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/upload_office_to_cloud/upload_office_to_cloud.h"
-#include "chrome/browser/extensions/forced_extensions/assessment_assistant_tracker.h"
-#include "chrome/browser/policy/profile_policy_connector.h"
-#include "chrome/browser/profiles/profile_manager.h"
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -45,25 +38,6 @@ void ExternalComponentLoader::StartLoading() {
   AddExternalExtension(extension_misc::kInAppPaymentsSupportAppId, prefs);
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING) && !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  {
-    // Only load the Assessment Assistant if the current session is managed.
-    if (profile_->GetProfilePolicyConnector()->IsManaged()) {
-      // TODO(http://crbug.com/297415232): Remove the following observer
-      // registrations once the bug is fixed.
-      AssessmentAssistantTrackerFactory::GetInstance()->GetForBrowserContext(
-          profile_);
-
-      AddExternalExtension(extension_misc::kAssessmentAssistantExtensionId,
-                           prefs);
-    }
-
-    if (chromeos::cloud_upload::IsMicrosoftOfficeOneDriveIntegrationAllowed(
-            profile_)) {
-      AddExternalExtension(extension_misc::kODFSExtensionId, prefs);
-    }
-  }
-#endif
 
   LoadFinished(std::move(prefs));
 }

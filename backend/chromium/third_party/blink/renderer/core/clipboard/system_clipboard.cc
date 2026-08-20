@@ -29,9 +29,6 @@
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/ui_base_features.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "third_party/blink/renderer/platform/wtf/text/line_ending.h"
-#endif
 
 namespace blink {
 
@@ -145,9 +142,6 @@ void SystemClipboard::WritePlainText(const String& plain_text,
   // TODO(https://crbug.com/106449): add support for smart replace, which is
   // currently under-specified.
   String text = plain_text;
-#if BUILDFLAG(IS_WIN)
-  text = NormalizeLineEndingsToCRLF(text);
-#endif
   clipboard_->WriteText(NonNullString(text));
 }
 

@@ -51,21 +51,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/widevine/cdm/buildflags.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/plugins/plugin_observer_android.h"
-#elif BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/conflicts/module_database.h"
-#include "chrome/browser/win/conflicts/module_event_sink_impl.h"
-#elif BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/mojo_service_manager/utility_process_bridge.h"
-#include "chromeos/components/cdm_factory_daemon/cdm_factory_daemon_proxy_ash.h"
-#include "components/performance_manager/public/performance_manager.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/printing/print_preview/print_view_manager_cros.h"
-#include "chrome/browser/chromeos/printing/print_preview/print_view_manager_cros_basic.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "content/public/browser/site_instance.h"
@@ -92,12 +78,10 @@
 #endif
 
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/badging/badge_manager.h"
 #include "chrome/browser/record_replay/chrome_record_replay_client.h"
 #include "chrome/browser/ui/search/search_tab_helper.h"
 #include "chrome/common/record_replay/record_replay.mojom.h"
-#endif
 
 #if BUILDFLAG(ENABLE_PDF)
 #include "chrome/browser/ui/pdf/chrome_pdf_document_helper_client.h"
@@ -183,7 +167,6 @@ void MaybeCreateExtensionWebRequestReporterForRenderer(
 #endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 
 // BadgeManager is not used for Android.
-#if !BUILDFLAG(IS_ANDROID)
 void BindBadgeServiceForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
@@ -197,7 +180,6 @@ void BindBadgeServiceForServiceWorker(
   badging::BadgeManager::BindServiceWorkerReceiverIfAllowed(
       render_process_host, info, std::move(receiver));
 }
-#endif
 
 }  // namespace
 
@@ -242,27 +224,6 @@ void ChromeContentBrowserClient::ExposeInterfacesToRenderer(
   }
 #endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 
-#if BUILDFLAG(IS_WIN)
-  // Add the ModuleEventSink interface. This is the interface used by renderer
-  // processes to notify the browser of modules in their address space. The
-  // process handle is not yet available at this point so pass in a callback
-  // to allow to retrieve a duplicate at the time the interface is actually
-  // created.
-  auto get_process = base::BindRepeating(
-      [](int id) -> base::Process {
-        auto* host = content::RenderProcessHost::FromID(id);
-        if (host)
-          return host->GetProcess().Duplicate();
-        return base::Process();
-      },
-      render_process_host->GetDeprecatedID());
-  registry->AddInterface<mojom::ModuleEventSink>(
-      base::BindRepeating(
-          &ModuleEventSinkImpl::Create, std::move(get_process),
-          content::PROCESS_TYPE_RENDERER,
-          base::BindRepeating(&ModuleDatabase::HandleModuleLoadEvent)),
-      ui_task_runner);
-#endif
 
   for (auto& ep : extra_parts_) {
     ep->ExposeInterfacesToRenderer(registry, associated_registry,
@@ -349,9 +310,7 @@ void ChromeContentBrowserClient::
             service_worker_version_info,
         mojo::BinderMapWithContext<
             const content::ServiceWorkerVersionBaseInfo&>* map) {
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::BadgeService>(&BindBadgeServiceForServiceWorker);
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   const GURL& site = service_worker_version_info.scope;
@@ -412,11 +371,9 @@ void ChromeContentBrowserClient::
             BindPasswordManagerDriver(std::move(receiver), render_frame_host);
       },
       &render_frame_host));
-#if !BUILDFLAG(IS_ANDROID)
   associated_registry.AddInterface<record_replay::mojom::RecordReplayDriver>(
       base::BindRepeating(&ChromeRecordReplayClient::BindRecordReplayDriver,
                           &render_frame_host));
-#endif
   associated_registry.AddInterface<chrome::mojom::NetworkDiagnostics>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -456,11 +413,7 @@ void ChromeContentBrowserClient::
       &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_PLUGINS) || BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_ANDROID)
-  using PluginObserverImpl = PluginObserverAndroid;
-#else
     using PluginObserverImpl = PluginObserver;
-#endif
   associated_registry.AddInterface<chrome::mojom::PluginHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -540,7 +493,6 @@ void ChromeContentBrowserClient::
       },
       &render_frame_host));
 #endif  // BUILDFLAG(ENABLE_PDF)
-#if !BUILDFLAG(IS_ANDROID)
   associated_registry.AddInterface<search::mojom::EmbeddedSearchConnector>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -550,7 +502,6 @@ void ChromeContentBrowserClient::
                                                          render_frame_host);
           },
           &render_frame_host));
-#endif  //  !BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(ENABLE_PRINTING)
   associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
       base::BindRepeating(
@@ -561,19 +512,6 @@ void ChromeContentBrowserClient::
               headless::HeadlessPrintManager::BindPrintManagerHost(
                   std::move(receiver), render_frame_host);
             } else {
-#if BUILDFLAG(IS_CHROMEOS)
-              if (base::FeatureList::IsEnabled(
-                      ::features::kPrintPreviewCrosPrimary)) {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-                chromeos::PrintViewManagerCros::BindPrintManagerHost(
-                    std::move(receiver), render_frame_host);
-#else
-                chromeos::PrintViewManagerCrosBasic::BindPrintManagerHost(
-                    std::move(receiver), render_frame_host);
-#endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
-                return;
-              }
-#endif  // BUILDFLAG(CHROMEOS)
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
               printing::PrintViewManager::BindPrintManagerHost(
@@ -624,10 +562,6 @@ void ChromeContentBrowserClient::BindGpuHostReceiver(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (auto r = receiver.As<chromeos::cdm::mojom::BrowserCdmFactory>())
-    chromeos::CdmFactoryDaemonProxyAsh::Create(std::move(r));
-#endif
 }
 
 void ChromeContentBrowserClient::BindUtilityHostReceiver(
@@ -636,15 +570,6 @@ void ChromeContentBrowserClient::BindUtilityHostReceiver(
     metrics::CallStackProfileCollector::Create(std::move(r));
     return;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  if (auto service_manager_receiver =
-          receiver
-              .As<chromeos::mojo_service_manager::mojom::ServiceManager>()) {
-    ash::mojo_service_manager::EstablishUtilityProcessBridge(
-        std::move(service_manager_receiver));
-    return;
-  }
-#endif
 }
 
 void ChromeContentBrowserClient::BindHostReceiverForRenderer(

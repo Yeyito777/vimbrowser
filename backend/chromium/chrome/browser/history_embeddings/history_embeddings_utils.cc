@@ -20,9 +20,6 @@
 #include "components/variations/service/variations_service.h"
 #include "content/public/browser/web_ui_data_source.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
 namespace history_embeddings {
 
@@ -50,11 +47,7 @@ bool IsCountryAndLocale(const std::string& country, const std::string& locale) {
 }  // namespace
 
 constexpr auto kEnabledByDefaultForDesktopOnly =
-#if BUILDFLAG(IS_ANDROID)
-    base::FEATURE_DISABLED_BY_DEFAULT;
-#else
     base::FEATURE_ENABLED_BY_DEFAULT;
-#endif
 
 // These are the kill switches for the launched history embeddings features.
 BASE_FEATURE(kLaunchedHistoryEmbeddings, kEnabledByDefaultForDesktopOnly);
@@ -171,11 +164,6 @@ void PopulateSourceForWebUI(content::WebUIDataSource* source,
 }
 
 bool IsHistoryEmbeddingsFeatureEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!chromeos::features::IsFeatureManagementHistoryEmbeddingEnabled()) {
-    return false;
-  }
-#endif
   // If the feature is overridden manually or via Finch, return its value.
   if (base::FeatureList::GetStateIfOverridden(kHistoryEmbeddings).has_value()) {
     return base::FeatureList::IsEnabled(kHistoryEmbeddings);

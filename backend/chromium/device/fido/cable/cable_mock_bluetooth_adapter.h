@@ -38,9 +38,6 @@ class CableMockBluetoothAdapter : public MockBluetoothAdapter {
   void ExpectDiscoveryWithScanCallback(
       const std::array<uint8_t, kAdvertSize> v2_advert);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void ExpectLEScan(const std::array<uint8_t, kAdvertSize> v2_advert);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void AddNewTestBluetoothDevice(
       base::span<const uint8_t, kAdvertSize> v2_advert);

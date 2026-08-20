@@ -8,9 +8,6 @@
 #include "base/base_export.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/auto_reset.h"
-#endif
 
 namespace base {
 
@@ -36,14 +33,6 @@ BASE_EXPORT bool IsEnterpriseDevice();
 // if possible.
 BASE_EXPORT bool IsManagedOrEnterpriseDevice();
 
-#if BUILDFLAG(IS_WIN)
-// Note: returning base::AutoReset<bool> is preferred, but including that header
-// here causes libc++ header pollution on Windows due to the low-level nature
-// of this file.
-// Sets the global flag for testing enterprise device status.
-[[nodiscard]] BASE_EXPORT AutoReset<bool> SetIsEnterpriseDeviceForTesting(
-    bool is_enterprise);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_APPLE)
 

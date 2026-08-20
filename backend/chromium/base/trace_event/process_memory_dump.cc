@@ -29,25 +29,10 @@
 #include "third_party/perfetto/protos/perfetto/trace/memory_graph.pbzero.h"
 #include "third_party/perfetto/protos/perfetto/trace/trace_packet.pbzero.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <mach/vm_page_size.h>
-#endif
 
-#if BUILDFLAG(IS_POSIX)
 #include <sys/mman.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>  // Must be in front of other Windows header files
 
-#include <Psapi.h>
-#endif
-
-#if BUILDFLAG(IS_FUCHSIA)
-#include <tuple>
-
-#include "base/notreached.h"
-#endif
 
 using ProcessSnapshot =
     ::perfetto::protos::pbzero::MemoryTrackerSnapshot_ProcessSnapshot;
@@ -79,15 +64,7 @@ bool ProcessMemoryDump::is_black_hole_non_fatal_for_testing_ = false;
 
 // static
 size_t ProcessMemoryDump::GetSystemPageSize() {
-#if BUILDFLAG(IS_IOS)
-  // On iOS, getpagesize() returns the user page sizes, but for allocating
-  // arrays for mincore(), kernel page sizes is needed. Use vm_kernel_page_size
-  // as recommended by Apple, https://forums.developer.apple.com/thread/47532/.
-  // Refer to http://crbug.com/542671 and Apple rdar://23651782
-  return vm_kernel_page_size;
-#else
   return base::GetPageSize();
-#endif  // BUILDFLAG(IS_IOS)
 }
 
 // static
@@ -109,10 +86,7 @@ std::optional<size_t> ProcessMemoryDump::CountResidentBytes(
   size_t max_vec_size =
       GetSystemPageCount(std::min(mapped_size, kMaxChunkSize), page_size);
 
-#if BUILDFLAG(IS_WIN)
-  auto vec =
-      base::HeapArray<PSAPI_WORKING_SET_EX_INFORMATION>::WithSize(max_vec_size);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   auto vec = base::HeapArray<char>::WithSize(max_vec_size);
 #elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   auto vec = base::HeapArray<unsigned char>::WithSize(max_vec_size);
@@ -123,33 +97,14 @@ std::optional<size_t> ProcessMemoryDump::CountResidentBytes(
     const size_t chunk_size = std::min(mapped_size - offset, kMaxChunkSize);
     const size_t page_count = GetSystemPageCount(chunk_size, page_size);
     size_t resident_page_count = 0;
-#if BUILDFLAG(IS_WIN)
-    for (size_t i = 0; i < page_count; i++) {
-      vec[i].VirtualAddress =
-          reinterpret_cast<void*>(chunk_start + i * page_size);
-    }
-
-    auto span = vec.first(page_count);
-    failure = !QueryWorkingSetEx(GetCurrentProcess(), span.data(),
-                                 static_cast<DWORD>(span.size_bytes()));
-
-    for (size_t i = 0; i < page_count; i++) {
-      resident_page_count += vec[i].VirtualAttributes.Valid;
-    }
-#elif BUILDFLAG(IS_FUCHSIA)
-    // TODO(crbug.com/42050620): Implement counting resident bytes.
-    // For now, log and avoid unused variable warnings.
-    NOTIMPLEMENTED_LOG_ONCE();
-    std::ignore = chunk_start;
-    std::ignore = page_count;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
     // mincore in MAC does not fail with EAGAIN.
     failure =
         !!mincore(reinterpret_cast<void*>(chunk_start), chunk_size, vec.data());
     for (size_t i = 0; i < page_count; i++) {
       resident_page_count += vec[i] & MINCORE_INCORE ? 1 : 0;
     }
-#elif BUILDFLAG(IS_POSIX)
+#else
     int error_counter = 0;
     int result = 0;
     // HANDLE_EINTR tries for 100 times. So following the same pattern.

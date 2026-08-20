@@ -22,12 +22,7 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/files/scoped_file.h"
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#include "util/win/scoped_handle.h"
-#endif
 
 namespace base {
 class FilePath;
@@ -51,15 +46,6 @@ using FileOperationResult = ssize_t;
 
 //! \brief A value that can never be a valid FileHandle.
 const FileHandle kInvalidFileHandle = -1;
-
-#elif BUILDFLAG(IS_WIN)
-
-using FileHandle = HANDLE;
-using FileOffset = LONGLONG;
-using ScopedFileHandle = ScopedFileHANDLE;
-using FileOperationResult = LONG_PTR;
-
-const FileHandle kInvalidFileHandle = INVALID_HANDLE_VALUE;
 
 #endif
 
@@ -148,11 +134,6 @@ constexpr char kNativeReadFunctionName[] = "read";
 //!
 //! \sa kNativeReadFunctionName
 constexpr char kNativeWriteFunctionName[] = "write";
-
-#elif BUILDFLAG(IS_WIN)
-
-constexpr char kNativeReadFunctionName[] = "ReadFile";
-constexpr char kNativeWriteFunctionName[] = "WriteFile";
 
 #endif
 

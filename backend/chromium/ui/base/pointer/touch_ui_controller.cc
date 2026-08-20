@@ -17,13 +17,6 @@
 #include "base/trace_event/trace_event.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/callback_list.h"
-#include "base/win/win_util.h"
-#include "ui/gfx/win/singleton_hwnd.h"
-#endif
 
 namespace ui {
 
@@ -81,65 +74,6 @@ void RecordMaxTouchPointsSupportedBySystem(int max_touch_points) {
 }
 #endif  // BUILDFLAG(USE_BLINK)
 
-#if BUILDFLAG(IS_WIN)
-
-void RecordPostureModeOnStartup(bool tablet_mode) {
-  base::UmaHistogramEnumeration("Touch.DevicePosture.Startup",
-                                tablet_mode
-                                    ? TouchUiController::PostureMode::kTablet
-                                    : TouchUiController::PostureMode::kDesktop);
-}
-
-void RecordPostureModeOnSwitch(bool tablet_mode) {
-  base::UmaHistogramEnumeration("Touch.DevicePosture.Switch",
-                                tablet_mode
-                                    ? TouchUiController::PostureMode::kTablet
-                                    : TouchUiController::PostureMode::kDesktop);
-}
-
-bool IsWndProcMessageObserved(UINT message) {
-#if BUILDFLAG(USE_BLINK)
-  return message == WM_SETTINGCHANGE || message == WM_POINTERDEVICECHANGE;
-#elif   // BUILDFLAG(USE_BLINK)
-  return message == WM_SETTINGCHANGE;
-#endif  // BUILDFLAG(USE_BLINK)
-}
-
-void SequencedWndProcHandler(UINT message, WPARAM wparam, LPARAM lparam) {
-  switch (message) {
-    case WM_SETTINGCHANGE:
-      TouchUiController::Get()->RefreshTabletMode();
-      break;
-#if BUILDFLAG(USE_BLINK)
-    case WM_POINTERDEVICECHANGE:
-      if (wparam == PDC_ARRIVAL) {
-        TouchUiController::Get()->OnPointerDeviceConnected(
-            reinterpret_cast<HANDLE>(lparam));
-      } else if (wparam == PDC_REMOVAL) {
-        TouchUiController::Get()->OnPointerDeviceDisconnected(
-            reinterpret_cast<HANDLE>(lparam));
-      }
-      break;
-#endif  // BUILDFLAG(USE_BLINK)
-    default:
-      NOTREACHED();
-  }
-}
-
-void OnWndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-  if (!IsWndProcMessageObserved(message)) {
-    return;
-  }
-  // Pass the work to a separate task to avoid possible jank when handling
-  // winapi events. This also makes sure events are processed after
-  // OnInitializePointerDevices which needs to run before handling
-  // WM_POINTERDEVICECHANGE.
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&SequencedWndProcHandler, message, wparam, lparam));
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 void RecordEnteredTouchMode() {
   base::RecordAction(base::UserMetricsAction("TouchMode.EnteredTouchMode"));
@@ -198,97 +132,31 @@ TouchUiController::TouchUiController(TouchUiState touch_ui_state)
         FROM_HERE,
         base::BindOnce(&TouchUiController::OnInitializePointerDevices,
                        weak_factory_.GetWeakPtr()));
-#if BUILDFLAG(IS_WIN)
-    // Register to listen for WM_POINTERDEVICECHANGE.
-    base::win::RegisterPointerDeviceNotifications(
-        gfx::SingletonHwnd::GetInstance()->hwnd(),
-        /*notify_proximity_changes=*/false);
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // BUILDFLAG(USE_BLINK)
 
-#if BUILDFLAG(IS_WIN)
-    hwnd_subscription_ = gfx::SingletonHwnd::GetInstance()->RegisterCallback(
-        base::BindRepeating(&OnWndProc));
-    base::win::IsDeviceInTabletMode(
-        gfx::SingletonHwnd::GetInstance()->hwnd(),
-        base::BindOnce(&TouchUiController::SetInitialTabletMode,
-                       weak_factory_.GetWeakPtr()));
-#endif  // BUILDFLAG(IS_WIN)
   }
-#if !BUILDFLAG(IS_WIN)
   if (touch_ui())
     RecordEnteredTouchMode();
   else
     RecordEnteredNonTouchMode();
-#endif  // !BUILDFLAG(IS_WIN)
 }
 
 TouchUiController::~TouchUiController() = default;
 
 void TouchUiController::OnTabletModeToggled(bool enabled) {
-#if BUILDFLAG(IS_WIN)
-  const bool was_tablet_mode = tablet_mode_;
-#endif  // BUILDFLAG(IS_WIN)
   const bool was_touch_ui = touch_ui();
   tablet_mode_ = enabled;
   if (touch_ui() != was_touch_ui) {
     TouchUiChanged();
   }
-#if BUILDFLAG(IS_WIN)
-  if (tablet_mode_ != was_tablet_mode) {
-    TabletModeChanged();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
-#if BUILDFLAG(IS_WIN)
-void TouchUiController::RefreshTabletMode() {
-  base::win::IsDeviceInTabletMode(
-      gfx::SingletonHwnd::GetInstance()->hwnd(),
-      base::BindOnce(&TouchUiController::OnTabletModeToggled,
-                     weak_factory_.GetWeakPtr()));
-}
-
-void TouchUiController::SetInitialTabletMode(bool enabled) {
-  const bool was_tablet_mode = tablet_mode_;
-  const bool was_touch_ui = touch_ui();
-  tablet_mode_ = enabled;
-  // Unconditionally record the histogram following discovery of the initial
-  // mode.
-  if (touch_ui()) {
-    RecordEnteredTouchMode();
-  } else {
-    RecordEnteredNonTouchMode();
-  }
-  // Notify observers only if the mode has changed.
-  if (touch_ui() != was_touch_ui) {
-    TRACE_EVENT0("ui", "TouchUiController.NotifyListeners");
-    touch_mode_callback_list_.Notify();
-  }
-
-  const auto& convertibility_enabled =
-      base::win::GetConvertibilityEnabledOverride();
-  if (!convertibility_enabled || *convertibility_enabled) {
-    RecordPostureModeOnStartup(enabled);
-    // Notify observers only if the posture mode has changed.
-    if (tablet_mode_ != was_tablet_mode) {
-      tablet_mode_callback_list_.Notify();
-    }
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 base::CallbackListSubscription TouchUiController::RegisterCallback(
     const base::RepeatingClosure& closure) {
   return touch_mode_callback_list_.Add(closure);
 }
 
-#if BUILDFLAG(IS_WIN)
-base::CallbackListSubscription TouchUiController::RegisterTabletModeCallback(
-    const base::RepeatingClosure& closure) {
-  return tablet_mode_callback_list_.Add(closure);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 TouchUiController::TouchUiState TouchUiController::SetTouchUiState(
     TouchUiState touch_ui_state) {
@@ -302,11 +170,6 @@ TouchUiController::TouchUiState TouchUiController::SetTouchUiState(
 bool TouchUiController::SetTabletMode(bool tablet_mode_enabled) {
   const bool was_tablet_mode = tablet_mode_;
   tablet_mode_ = tablet_mode_enabled;
-#if BUILDFLAG(IS_WIN)
-  if (tablet_mode_ != was_tablet_mode) {
-    TabletModeChanged();
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return was_tablet_mode;
 }
 
@@ -320,12 +183,6 @@ void TouchUiController::TouchUiChanged() {
   touch_mode_callback_list_.Notify();
 }
 
-#if BUILDFLAG(IS_WIN)
-void TouchUiController::TabletModeChanged() {
-  RecordPostureModeOnSwitch(tablet_mode());
-  tablet_mode_callback_list_.Notify();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_BLINK)
 void TouchUiController::OnPointerDeviceConnected(PointerDevice::Key key) {

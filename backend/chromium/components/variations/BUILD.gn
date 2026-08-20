@@ -104,20 +104,6 @@ component("variations") {
   # Needed for exporting functions (because the target type is a component).
   defines = [ "IS_VARIATIONS_IMPL" ]
 
-  if (is_ios) {
-    sources += [
-      "variations_request_scheduler_mobile.cc",
-      "variations_request_scheduler_mobile.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "variations_crash_keys_chromeos.cc",
-      "variations_crash_keys_chromeos.h",
-    ]
-  }
-
   public_deps = [
     ":variations_features",
     "proto",
@@ -209,19 +195,11 @@ source_set("unit_tests") {
     "variations_test_utils_unittest.cc",
   ]
 
-  if (is_ios) {
-    sources += [ "variations_request_scheduler_mobile_unittest.cc" ]
-  }
-
   if (use_blink) {
     sources += [
       "net/omnibox_autofocus_http_headers_unittest.cc",
       "net/omnibox_autofocus_url_loader_throttle_unittest.cc",
     ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "variations_crash_keys_chromeos_unittest.cc" ]
   }
 
   # This test uses crash_reporter::GetCrashKeyValue(), which in a component

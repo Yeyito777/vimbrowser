@@ -12,9 +12,6 @@
 #include "ui/base/ime/text_input_client.h"
 #include "ui/events/event.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace ui {
 
@@ -67,22 +64,6 @@ void MockInputMethod::OnBlur() {
   observer_list_.Notify(&InputMethodObserver::OnBlur);
 }
 
-#if BUILDFLAG(IS_WIN)
-bool MockInputMethod::OnUntranslatedIMEMessage(const CHROME_MSG event,
-                                               NativeEventResult* result) {
-  if (result)
-    *result = NativeEventResult();
-  return false;
-}
-
-void MockInputMethod::OnInputLocaleChanged() {}
-
-bool MockInputMethod::IsInputLocaleCJK() const {
-  return false;
-}
-
-void MockInputMethod::OnUrlChanged() {}
-#endif
 
 void MockInputMethod::OnTextInputTypeChanged(TextInputClient* client) {
   observer_list_.Notify(&InputMethodObserver::OnTextInputStateChanged, client);

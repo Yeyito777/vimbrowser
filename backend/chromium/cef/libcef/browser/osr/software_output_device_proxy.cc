@@ -14,13 +14,6 @@
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/gfx/skia_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "skia/ext/skia_utils_win.h"
-#include "ui/gfx/win/gdi_util.h"
-#include "ui/gfx/win/hwnd_util.h"
-#endif
 
 namespace viz {
 
@@ -78,7 +71,6 @@ void SoftwareOutputDeviceProxy::Resize(const gfx::Size& viewport_pixel_size,
     return;
   }
 
-#if !BUILDFLAG(IS_WIN)
   auto shm = base::ReadOnlySharedMemoryRegion::Create(required_bytes);
   if (!shm.IsValid()) {
     DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
@@ -94,11 +86,6 @@ void SoftwareOutputDeviceProxy::Resize(const gfx::Size& viewport_pixel_size,
   canvas_ = skia::CreatePlatformCanvasWithPixels(
       viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
       static_cast<uint8_t*>(shm_.memory()), 0U, skia::CRASH_ON_FAILURE);
-#else
-  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
-      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
-#endif
 
   // Transfer region ownership to the browser process.
   layered_window_updater_->OnAllocatedSharedMemory(viewport_pixel_size_,

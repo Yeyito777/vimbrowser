@@ -35,19 +35,11 @@ bool GetStat(const FilePath& path, bool show_links, stat_wrapper_t* st) {
 }
 
 bool ShouldShowSymLinks(int file_type) {
-#if BUILDFLAG(IS_FUCHSIA)
-  return false;
-#else
   return file_type & FileEnumerator::SHOW_SYM_LINKS;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 bool ShouldTrackVisitedDirectories(int file_type) {
-#if BUILDFLAG(IS_FUCHSIA)
-  return false;
-#else
   return !(file_type & FileEnumerator::SHOW_SYM_LINKS);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 }  // namespace
@@ -170,20 +162,6 @@ FilePath FileEnumerator::Next() {
 
     directory_entries_.clear();
 
-#if BUILDFLAG(IS_FUCHSIA)
-    // Fuchsia does not support .. on the file system server side, see
-    // https://fuchsia.googlesource.com/docs/+/master/dotdot.md and
-    // https://crbug.com/735540. However, for UI purposes, having the parent
-    // directory show up in directory listings makes sense, so we add it here to
-    // match the expectation on other operating systems. In cases where this
-    // is useful it should be resolvable locally.
-    FileInfo dotdot;
-    dotdot.stat_.st_mode = S_IFDIR;
-    dotdot.filename_ = FilePath("..");
-    if (!ShouldSkip(dotdot.filename_)) {
-      directory_entries_.push_back(std::move(dotdot));
-    }
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
     current_directory_entry_ = 0;
     struct dirent* dent;

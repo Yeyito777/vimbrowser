@@ -205,36 +205,7 @@ PA_NOINLINE size_t TraceStackFramePointers(const void** out_trace,
 
 #if PA_BUILDFLAG(CAN_UNWIND_WITH_FRAME_POINTERS)
 uintptr_t GetStackEnd() {
-#if PA_BUILDFLAG(IS_ANDROID)
-  // Bionic reads proc/maps on every call to pthread_getattr_np() when called
-  // from the main thread. So we need to cache end of stack in that case to get
-  // acceptable performance.
-  // For all other threads pthread_getattr_np() is fast enough as it just reads
-  // values from its pthread_t argument.
-  static uintptr_t main_stack_end = 0;
-
-  bool is_main_thread = GetCurrentProcId() == PlatformThread::CurrentId();
-  if (is_main_thread && main_stack_end) {
-    return main_stack_end;
-  }
-
-  uintptr_t stack_begin = 0;
-  size_t stack_size = 0;
-  pthread_attr_t attributes;
-  int error = pthread_getattr_np(pthread_self(), &attributes);
-  if (!error) {
-    error = pthread_attr_getstack(
-        &attributes, reinterpret_cast<void**>(&stack_begin), &stack_size);
-    pthread_attr_destroy(&attributes);
-  }
-  PA_BASE_DCHECK(!error);
-
-  uintptr_t stack_end = stack_begin + stack_size;
-  if (is_main_thread) {
-    main_stack_end = stack_end;
-  }
-  return stack_end;  // 0 in case of error
-#elif PA_BUILDFLAG(IS_APPLE)
+#if PA_BUILDFLAG(IS_APPLE)
   // No easy way to get end of the stack for non-main threads,
   // see crbug.com/617730.
   return reinterpret_cast<uintptr_t>(pthread_get_stackaddr_np(pthread_self()));

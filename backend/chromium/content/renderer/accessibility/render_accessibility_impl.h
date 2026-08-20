@@ -91,9 +91,6 @@ class CONTENT_EXPORT RenderAccessibilityImpl : public RenderAccessibility,
   ui::AXMode GetAXMode() const override;
   void SetPluginAXTreeActionTargetAdapter(
       PluginAXTreeActionTargetAdapter* adapter) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void FireLayoutComplete() override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // RenderFrameObserver implementation.
   void DidCreateNewDocument() override;

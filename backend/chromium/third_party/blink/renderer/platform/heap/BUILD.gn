@@ -130,16 +130,6 @@ source_set("test_support") {
 
 test("blink_heap_unittests") {
   deps = [ ":blink_heap_unittests_sources" ]
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/test_fonts.shard.test-cml",
-
-      # Oilpan reuses V8's v8::PageAllocator which generally requires JIT
-      # permissions.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-    ]
-  }
 }
 
 source_set("blink_heap_unittests_sources") {
@@ -188,13 +178,6 @@ test("blink_heap_perftests") {
   configs += [ "//build/config/compiler:thinlto_optimize_max" ]
 
   deps = [ ":blink_heap_perftests_sources" ]
-
-  if (is_fuchsia) {
-    # Oilpan reuses V8's v8::PageAllocator which generally requires JIT
-    # permissions.
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml" ]
-  }
 }
 
 source_set("blink_heap_perftests_sources") {

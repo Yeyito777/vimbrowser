@@ -194,17 +194,6 @@ class MediaRouterDesktop : public MediaRouterBase, public mojom::MediaRouter {
   void InitializeCastMediaRouteProvider();
   void InitializeDialMediaRouteProvider();
 
-#if BUILDFLAG(IS_WIN)
-  // Ensures that mDNS discovery is enabled in the Cast MRP. This can be
-  // called many times but the MRPM will only be called once per registration
-  // period.
-  void EnsureMdnsDiscoveryEnabled();
-
-  // Callback used to enable mDNS in the MRPM if a firewall prompt will not be
-  // triggered. If a firewall prompt would be triggered, enabling mDNS won't
-  // happen until the user is clearly interacting with MR.
-  void OnFirewallCheckComplete(bool firewall_can_use_local_ports);
-#endif
 
   // Gets the per-profile Cast SDK hash token used by Cast and DIAL MRPs.
   std::string GetHashToken();

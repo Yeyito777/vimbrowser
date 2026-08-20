@@ -9,10 +9,6 @@ import("//build/config/cronet/config.gni")
 import("//build/config/dcheck_always_on.gni")
 import("//build/config/features.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-}
-
 declare_args() {
   # Specify the current PGO phase.
   # Here's the different values that can be used:

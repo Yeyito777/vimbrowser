@@ -260,12 +260,8 @@ bool ProcessedLocalAudioSource::EnsureSourceIsStarted() {
       Platform::Current()->NewAudioCapturerSource(web_frame, source_config);
   new_source->Initialize(audio_capture_params, this);
   // We need to set the AGC control before starting the stream.
-#if BUILDFLAG(IS_CHROMEOS)
-  new_source->SetAutomaticGainControl(true);
-#else
   new_source->SetAutomaticGainControl(
       processing_layout_.webrtc_processing_settings().automatic_gain_control);
-#endif
   source_ = std::move(new_source);
   source_->Start();
 

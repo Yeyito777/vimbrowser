@@ -15,10 +15,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-// windows.h must come before the third_party/libjpeg_turbo includes.
-#include <windows.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,10 +57,6 @@ void jpeg_common_error_do_nothing_int(j_common_ptr cinfo, int arg);
 void jpeg_common_error_do_nothing_char(j_common_ptr cinfo, char* arg);
 void jpeg_common_error_fatal(j_common_ptr cinfo);
 
-#if BUILDFLAG(IS_WIN)
-void jpeg_common_dest_do_nothing(j_compress_ptr cinfo);
-boolean jpeg_common_dest_empty(j_compress_ptr cinfo);
-#endif  // BUILDFLAG(IS_WIN)
 
 #ifdef __cplusplus
 }  // extern "C"

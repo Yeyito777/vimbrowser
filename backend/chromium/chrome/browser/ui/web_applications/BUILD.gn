@@ -16,13 +16,6 @@ source_set("web_applications") {
     "//components/webapps/common",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "web_app_relaunch_notification.h",
-      "web_app_run_on_os_login_notification.h",
-    ]
-  }
-
   if (toolkit_views) {
     sources += [ "pwa_install_page_action.h" ]
     public_deps += [ "//chrome/browser/ui/views/page_action" ]
@@ -124,14 +117,6 @@ source_set("impl") {
     "//content/public/browser",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "web_app_relaunch_notification.cc",
-      "web_app_run_on_os_login_notification.cc",
-    ]
-    deps += [ "//chromeos/strings:strings_grit" ]
-  }
-
   if (toolkit_views) {
     sources += [ "pwa_install_page_action.cc" ]
   }
@@ -185,23 +170,6 @@ source_set("impl") {
       "//components/services/app_service",
       "//ui/native_window_tracker",
     ]
-    if (is_chromeos) {
-      deps += [
-        "//chrome/browser/ash/app_list",
-        "//chrome/browser/ash/apps",
-        "//chrome/browser/ash/browser_delegate",
-        "//chrome/browser/ash/file_manager",
-        "//chrome/browser/ash/system_web_apps",
-        "//chrome/browser/chromeos/app_mode",
-        "//chrome/browser/ui/ash/shelf",
-        "//chrome/browser/ui/ash/system_web_apps",
-        "//chrome/browser/ui/webui/ash/settings/app_management",
-        "//chromeos/ash/components/nonclosable_app_ui",
-        "//chromeos/ash/experiences/system_web_apps/types",
-        "//chromeos/components/kiosk",
-        "//chromeos/ui/frame",
-      ]
-    }
   }
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
@@ -300,29 +268,6 @@ source_set("browser_tests") {
     "//ui/base/clipboard:clipboard_test_support",
     "//ui/native_theme:test_support",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "app_browser_controller_browsertest_chromeos.cc",
-      "create_shortcut_browsertest.cc",
-      "web_app_guest_session_browsertest_chromeos.cc",
-    ]
-
-    deps += [
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/browser_delegate",
-      "//chrome/browser/ash/file_manager",
-      "//chrome/browser/ash/file_manager:test_support",
-      "//chrome/browser/ash/system_web_apps/test_support",
-      "//chrome/browser/ui/ash/shelf",
-      "//chrome/browser/ui/ash/system_web_apps",
-      "//chrome/browser/ui/extensions",
-      "//chromeos/ash/components/browser_context_helper",
-      "//chromeos/constants",
-      "//components/session_manager/core",
-      "//components/user_manager",
-    ]
-  }
 }
 
 source_set("app_service_browser_tests") {
@@ -335,14 +280,6 @@ source_set("app_service_browser_tests") {
     "web_app_tab_restore_browsertest.cc",
     "web_app_window_controls_overlay_browsertest.cc",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "share_to_target_browsertest.cc",
-      "web_app_relaunch_notification_browsertest.cc",
-      "web_share_target_browsertest.cc",
-    ]
-  }
 
   defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
@@ -367,11 +304,4 @@ source_set("app_service_browser_tests") {
     "//components/webapps/browser:test_support",
     "//components/webapps/common",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/fileapi",
-      "//chrome/browser/sharesheet",
-    ]
-  }
 }

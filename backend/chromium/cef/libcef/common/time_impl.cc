@@ -9,20 +9,6 @@
 #include "cef/include/internal/cef_types_wrappers.h"
 #include "cef/libcef/common/time_util.h"
 
-#if BUILDFLAG(IS_WIN)
-namespace {
-
-// From MSDN, FILETIME "Contains a 64-bit value representing the number of
-// 100-nanosecond intervals since January 1, 1601 (UTC)." This value must
-// be less than 0x8000000000000000. Otherwise, the function
-// FileTimeToSystemTime fails.
-// From base/time/time_win.cc:
-bool CanConvertToFileTime(int64_t us) {
-  return us >= 0 && us <= (std::numeric_limits<int64_t>::max() / 10);
-}
-
-}  // namespace
-#endif  // BUILDFLAG(IS_WIN)
 
 void cef_time_to_basetime(const cef_time_t& cef_time, base::Time& time) {
   base::Time::Exploded exploded;
@@ -38,12 +24,6 @@ void cef_time_to_basetime(const cef_time_t& cef_time, base::Time& time) {
 }
 
 void cef_time_from_basetime(const base::Time& time, cef_time_t& cef_time) {
-#if BUILDFLAG(IS_WIN)
-  int64_t t = time.ToDeltaSinceWindowsEpoch().InMicroseconds();
-  if (!CanConvertToFileTime(t)) {
-    return;
-  }
-#endif
 
   base::Time::Exploded exploded;
   time.UTCExplode(&exploded);

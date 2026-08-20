@@ -233,18 +233,9 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/gfx/animation/animation.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/threading/thread_restrictions.h"
-#include "components/stylus_handwriting/win/features.h"
-#include "content/browser/renderer_host/dip_util.h"
-#include "ui/gfx/geometry/dip_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #include "ui/accessibility/accessibility_features.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "content/browser/date_time_chooser/date_time_chooser.h"
-#endif
 
 #if BUILDFLAG(ENABLE_VR)
 #include "content/browser/xr/service/xr_runtime_manager_impl.h"
@@ -908,58 +899,6 @@ class WebContentsImpl::WebContentsDestructionObserver
   raw_ptr<WebContentsImpl> owner_;
 };
 
-#if BUILDFLAG(IS_IOS)
-// TODO(sreejakshetty): Make |WebContentsImpl::ColorChooserHolder| per-frame
-// instead of WebContents-owned.
-// WebContentsImpl::ColorChooserHolder -----------------------------------------
-class WebContentsImpl::ColorChooserHolder : public blink::mojom::ColorChooser {
- public:
-  ColorChooserHolder(
-      mojo::PendingReceiver<blink::mojom::ColorChooser> receiver,
-      mojo::PendingRemote<blink::mojom::ColorChooserClient> client)
-      : receiver_(this, std::move(receiver)), client_(std::move(client)) {}
-
-  ~ColorChooserHolder() override {
-    if (chooser_) {
-      chooser_->End();
-    }
-  }
-
-  void SetChooser(std::unique_ptr<content::ColorChooser> chooser) {
-    chooser_ = std::move(chooser);
-    if (chooser_) {
-      receiver_.set_disconnect_handler(
-          base::BindOnce([](content::ColorChooser* chooser) { chooser->End(); },
-                         base::Unretained(chooser_.get())));
-    }
-  }
-
-  void SetSelectedColor(SkColor color) override {
-    OPTIONAL_TRACE_EVENT0(
-        "content", "WebContentsImpl::ColorChooserHolder::SetSelectedColor");
-    if (chooser_) {
-      chooser_->SetSelectedColor(color);
-    }
-  }
-
-  void DidChooseColorInColorChooser(SkColor color) {
-    OPTIONAL_TRACE_EVENT0(
-        "content",
-        "WebContentsImpl::ColorChooserHolder::DidChooseColorInColorChooser");
-    client_->DidChooseColor(color);
-  }
-
- private:
-  // Color chooser that was opened by this tab.
-  std::unique_ptr<content::ColorChooser> chooser_;
-
-  // mojo receiver.
-  mojo::Receiver<blink::mojom::ColorChooser> receiver_;
-
-  // mojo renderer client.
-  mojo::Remote<blink::mojom::ColorChooserClient> client_;
-};
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
 // WebContentsImpl::WebContentsTreeNode ----------------------------------------
 WebContentsImpl::WebContentsTreeNode::WebContentsTreeNode(
@@ -1311,10 +1250,6 @@ WebContentsImpl::WebContentsImpl(BrowserContext* browser_context)
       SlowWebPreferenceCache::GetInstance());
   renderer_preferences_.caret_blink_interval =
       native_theme->caret_blink_interval();
-#if BUILDFLAG(IS_CHROMEOS)
-  renderer_preferences_.use_overlay_scrollbar =
-      native_theme->use_overlay_scrollbar();
-#endif
 
   screen_change_monitor_ =
       std::make_unique<ScreenChangeMonitor>(base::BindRepeating(
@@ -1393,9 +1328,6 @@ WebContentsImpl::~WebContentsImpl() {
   // Clear out any JavaScript state.
   CancelDialogManagerDialogs(/*reset_state=*/true);
 
-#if BUILDFLAG(IS_IOS)
-  color_chooser_holder_.reset();
-#endif
   find_request_manager_.reset();
 
   // crbug.com/373898450: The `FrameTree` should outlive the animation manager.
@@ -2762,12 +2694,6 @@ bool WebContentsImpl::IsCrashed() {
     case base::TERMINATION_STATUS_OOM:
     case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-#endif
-#if BUILDFLAG(IS_WIN)
-    case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-#endif
       return true;
     case base::TERMINATION_STATUS_NORMAL_TERMINATION:
     case base::TERMINATION_STATUS_STILL_RUNNING:
@@ -3552,9 +3478,6 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences(
 
 // TODO(dtapuska): Enable barrel button selection drag support on Android.
 // crbug.com/758042
-#if BUILDFLAG(IS_WIN)
-  prefs.barrel_button_for_drag_enabled = true;
-#endif  // BUILDFLAG(IS_WIN)
 
   prefs.enable_scroll_animator =
       command_line.HasSwitch(switches::kEnableSmoothScrolling) ||
@@ -3592,10 +3515,6 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences(
   }
 
 
-#if BUILDFLAG(IS_WIN)
-  prefs.stylus_handwriting_enabled =
-      stylus_handwriting::win::IsStylusHandwritingWinEnabled();
-#endif
 
   prefs.disable_reading_from_canvas =
       command_line.HasSwitch(switches::kDisableReadingFromCanvas);
@@ -4528,7 +4447,6 @@ void WebContentsImpl::FullscreenStateChanged(
   }
 }
 
-#if !BUILDFLAG(IS_IOS)
 bool WebContentsImpl::CanUseWindowingControls(
     RenderFrameHostImpl* requesting_frame) {
   return GetDelegate() &&
@@ -4562,7 +4480,6 @@ void WebContentsImpl::SetResizable(bool resizable) {
   }
   GetDelegate()->SetResizableFromWebAPI(resizable);
 }
-#endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
 // TODO(laurila, crbug.com/1466855): Map into new `ui::DisplayState` enum
 // instead of `ui::mojom::WindowShowState`.
@@ -5692,16 +5609,6 @@ bool WebContentsImpl::ShouldIgnoreUnresponsiveRenderer() {
   // Ignore unresponsive renderers if the debugger is attached to them since the
   // unresponsiveness might be a result of the renderer sitting on a breakpoint.
   //
-#if BUILDFLAG(IS_WIN)
-  // Check if a windows debugger is attached to the renderer process.
-  base::ProcessHandle process_handle =
-      GetPrimaryMainFrame()->GetProcess()->GetProcess().Handle();
-  BOOL debugger_present = FALSE;
-  if (CheckRemoteDebuggerPresent(process_handle, &debugger_present) &&
-      debugger_present) {
-    return true;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // TODO(pfeldman): Fix this to only return true if the renderer is *actually*
   // sitting on a breakpoint. https://crbug.com/684202
@@ -6831,21 +6738,6 @@ WebContents* WebContentsImpl::GetFirstWebContentsInLiveOriginalOpenerChain() {
                     : nullptr;
 }
 
-#if BUILDFLAG(IS_IOS)
-void WebContentsImpl::DidChooseColorInColorChooser(SkColor color) {
-  OPTIONAL_TRACE_EVENT1("content",
-                        "WebContentsImpl::DidChooseColorInColorChooser",
-                        "color", color);
-  if (color_chooser_holder_) {
-    color_chooser_holder_->DidChooseColorInColorChooser(color);
-  }
-}
-
-void WebContentsImpl::DidEndColorChooser() {
-  OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::DidEndColorChooser");
-  color_chooser_holder_.reset();
-}
-#endif
 
 int WebContentsImpl::DownloadImageFromAxNode(const ui::AXTreeID tree_id,
                                              const ui::AXNodeID node_id,
@@ -8128,34 +8020,6 @@ void WebContentsImpl::OnColorChooserFactoryReceiver(
   color_chooser_factory_receivers_.Add(this, std::move(receiver));
 }
 
-#if BUILDFLAG(IS_IOS)
-void WebContentsImpl::OpenColorChooser(
-    mojo::PendingReceiver<blink::mojom::ColorChooser> chooser_receiver,
-    mojo::PendingRemote<blink::mojom::ColorChooserClient> client,
-    SkColor color,
-    std::vector<blink::mojom::ColorSuggestionPtr> suggestions) {
-  OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::OpenColorChooser");
-  // Create `color_chooser_holder_` before calling OpenColorChooser since
-  // OpenColorChooser may callback with results.
-  color_chooser_holder_.reset();
-  color_chooser_holder_ = std::make_unique<ColorChooserHolder>(
-      std::move(chooser_receiver), std::move(client));
-
-  auto new_color_chooser =
-      delegate_ ? delegate_->OpenColorChooser(this, color, suggestions)
-                : nullptr;
-  if (color_chooser_holder_ && new_color_chooser) {
-    color_chooser_holder_->SetChooser(std::move(new_color_chooser));
-  } else if (new_color_chooser) {
-    // OpenColorChooser synchronously called back to DidEndColorChooser.
-    DCHECK(!color_chooser_holder_);
-    new_color_chooser->End();
-  } else if (color_chooser_holder_) {
-    DCHECK(!new_color_chooser);
-    color_chooser_holder_.reset();
-  }
-}
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
 void WebContentsImpl::UpdateFaviconURL(
     RenderFrameHostImpl* source,
@@ -11378,20 +11242,11 @@ void WebContentsImpl::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
   HandleColorRelatedStateChanges();
 
   const auto caret_blink_interval = observed_theme->caret_blink_interval();
-#if BUILDFLAG(IS_CHROMEOS)
-  const auto use_overlay_scrollbar = observed_theme->use_overlay_scrollbar();
-#endif
   bool renderer_preference_changed = false;
   if (renderer_preferences_.caret_blink_interval != caret_blink_interval) {
     renderer_preferences_.caret_blink_interval = caret_blink_interval;
     renderer_preference_changed = true;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  if (renderer_preferences_.use_overlay_scrollbar != use_overlay_scrollbar) {
-    renderer_preferences_.use_overlay_scrollbar = use_overlay_scrollbar;
-    renderer_preference_changed = true;
-  }
-#endif
 
   if (renderer_preference_changed) {
     SyncRendererPrefs();

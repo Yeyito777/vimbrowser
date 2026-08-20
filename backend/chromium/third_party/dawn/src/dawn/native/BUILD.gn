@@ -948,13 +948,6 @@ source_set("sources") {
           "vulkan/external_memory/MemoryServiceImplementationOpaqueFD.h",
         ]
       }
-    } else if (is_fuchsia) {
-      sources += [
-        "vulkan/external_memory/MemoryServiceImplementationZirconHandle.cpp",
-        "vulkan/external_memory/MemoryServiceImplementationZirconHandle.h",
-        "vulkan/external_semaphore/SemaphoreServiceImplementationZirconHandle.cpp",
-        "vulkan/external_semaphore/SemaphoreServiceImplementationZirconHandle.h",
-      ]
     }
     if (dawn_is_winuwp) {
       defines += [ "DAWN_IS_WINUWP" ]

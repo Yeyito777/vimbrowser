@@ -19,13 +19,6 @@
 #include "gpu/ipc/service/shared_image_stub.h"
 #include "ui/gfx/gpu_memory_buffer_handle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11.h>
-#include <wrl/client.h>
-
-#include "gpu/command_buffer/service/dxgi_shared_handle_manager.h"
-#include "gpu/command_buffer/service/shared_image/d3d_image_backing.h"
-#endif
 
 namespace gpu {
 class Scheduler;
@@ -41,14 +34,6 @@ class GPU_IPC_SERVICE_EXPORT GpuChannelSharedImageInterface
   GpuChannelSharedImageInterface& operator=(
       const GpuChannelSharedImageInterface&) = delete;
 
-#if BUILDFLAG(IS_WIN)
-  scoped_refptr<ClientSharedImage> CreateSharedImageForD3D11Video(
-      const SharedImageInfo& si_info,
-      Microsoft::WRL::ComPtr<ID3D11Texture2D> texture,
-      scoped_refptr<gpu::DXGISharedHandleState> dxgi_shared_handle_state,
-      size_t array_slice,
-      const bool is_thread_safe);
-#endif
 
   SequenceId sequence() { return sequence_; }
 

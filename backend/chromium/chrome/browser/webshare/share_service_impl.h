@@ -17,9 +17,6 @@
 #include "content/public/browser/document_service.h"
 #include "third_party/blink/public/mojom/webshare/webshare.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/webshare/chromeos/sharesheet_client.h"
-#endif
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 #include "chrome/browser/webshare/safe_browsing_request.h"
@@ -75,9 +72,6 @@ class ShareServiceImpl
   std::optional<SafeBrowsingRequest> safe_browsing_request_;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  webshare::SharesheetClient sharesheet_client_;
-#endif
 
   base::WeakPtrFactory<ShareServiceImpl> weak_factory_{this};
 };

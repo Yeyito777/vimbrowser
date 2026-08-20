@@ -38,11 +38,7 @@ void DefaultDownloadDirPolicyHandler::ApplyPolicySettingsWithParameters(
     return;
   std::string str_value = value->GetString();
   base::FilePath::StringType string_value =
-#if BUILDFLAG(IS_WIN)
-      base::UTF8ToWide(str_value);
-#else
       str_value;
-#endif
 
   base::FilePath::StringType expanded_value =
       download_dir_util::ExpandDownloadDirectoryPath(string_value, parameters);
@@ -50,21 +46,12 @@ void DefaultDownloadDirPolicyHandler::ApplyPolicySettingsWithParameters(
       policies.GetValue(policy::key::kDownloadDirectory,
                         base::Value::Type::STRING) != nullptr;
   if (policies.Get(policy_name())->level == policy::POLICY_LEVEL_RECOMMENDED) {
-#if BUILDFLAG(IS_WIN)
-    if (!has_valid_download_dir_policy) {
-      prefs->SetValue(prefs::kDownloadDefaultDirectory,
-                      base::Value(base::WideToUTF8(expanded_value)));
-    }
-    prefs->SetValue(prefs::kSaveFileDefaultDirectory,
-                    base::Value(base::WideToUTF8(expanded_value)));
-#else
     if (!has_valid_download_dir_policy) {
       prefs->SetValue(prefs::kDownloadDefaultDirectory,
                       base::Value(expanded_value));
     }
     prefs->SetValue(prefs::kSaveFileDefaultDirectory,
                     base::Value(expanded_value));
-#endif
     // Prevents a download path set by policy from being reset because it is
     // dangerous.
     prefs->SetBoolean(prefs::kDownloadDirUpgraded, true);

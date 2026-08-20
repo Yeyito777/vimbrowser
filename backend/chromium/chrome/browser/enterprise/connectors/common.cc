@@ -15,10 +15,6 @@
 #include "components/enterprise/connectors/core/features.h"
 #include "extensions/common/constants.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "chrome/browser/enterprise/signin/enterprise_signin_prefs.h"
@@ -291,11 +287,6 @@ void RunSavePackageScanningCallback(download::DownloadItem* item,
 }
 
 bool IncludeDeviceInfo(Profile* profile, bool per_profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  const user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  return user && user->IsAffiliated();
-#else
   // A browser managed through the device can send device info.
   if (!per_profile) {
     return true;
@@ -309,7 +300,6 @@ bool IncludeDeviceInfo(Profile* profile, bool per_profile) {
   // A managed device can share its info with the profile if they are
   // affiliated.
   return enterprise_util::IsProfileAffiliated(profile);
-#endif
 }
 
 std::string GetProfileEmail(Profile* profile) {

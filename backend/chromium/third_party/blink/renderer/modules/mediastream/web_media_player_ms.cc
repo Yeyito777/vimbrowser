@@ -138,15 +138,6 @@ base::TimeDelta GetFrameTime(scoped_refptr<media::VideoFrame> frame) {
 constexpr base::TimeDelta kForceBeginFramesTimeout = base::Seconds(1);
 }  // namespace
 
-#if BUILDFLAG(IS_WIN)
-// Since we do not have native MappableSharedImage support in Windows, using
-// mappable SharedImages can cause a CPU regression. This is more apparent and
-// can have adverse affects in lower resolution content which are defined by
-// these thresholds, see https://crbug.com/835752.
-// static
-const gfx::Size WebMediaPlayerMS::kUseMappableSIVideoFramesMinResolution =
-    gfx::Size(1920, 1080);
-#endif  // BUILDFLAG(IS_WIN)
 
 // FrameDeliverer is responsible for delivering frames received on
 // the video task runner by calling of EnqueueFrame() method of |compositor_|.
@@ -186,10 +177,6 @@ class WebMediaPlayerMS::FrameDeliverer {
     DCHECK_CALLED_ON_VALID_SEQUENCE(video_sequence_checker_);
 
 // On Android, stop passing frames.
-#if BUILDFLAG(IS_ANDROID)
-    if (render_frame_suspended_)
-      return;
-#endif  // BUILDFLAG(IS_ANDROID)
 
     if (!mappable_shared_image_pool_) {
       const media::VideoFrame::ID original_frame_id = frame->unique_id();
@@ -203,13 +190,6 @@ class WebMediaPlayerMS::FrameDeliverer {
     // not going to be shown for the time period.
     bool skip_creating_mappable_si = render_frame_suspended_;
 
-#if BUILDFLAG(IS_WIN)
-    skip_creating_mappable_si |=
-        frame->visible_rect().width() <
-            kUseMappableSIVideoFramesMinResolution.width() ||
-        frame->visible_rect().height() <
-            kUseMappableSIVideoFramesMinResolution.height();
-#endif  // BUILDFLAG(IS_WIN)
 
     if (skip_creating_mappable_si) {
       media::VideoFrame::ID original_frame_id = frame->unique_id();
@@ -1205,24 +1185,12 @@ void WebMediaPlayerMS::OnPageHidden() {
 
 // On Android, substitute the displayed VideoFrame with a copy to avoid holding
 // onto it unnecessarily.
-#if BUILDFLAG(IS_ANDROID)
-  if (!paused_)
-    compositor_->ReplaceCurrentFrameWithACopy();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void WebMediaPlayerMS::SuspendForFrameClosed() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
 // On Android, pause the video completely for this time period.
-#if BUILDFLAG(IS_ANDROID)
-  if (!paused_) {
-    should_play_upon_shown_ = true;
-    Pause(PauseReason::kPageHidden);
-  }
-
-  delegate_->PlayerGone(delegate_id_);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (frame_deliverer_) {
     PostCrossThreadTask(
@@ -1254,10 +1222,6 @@ void WebMediaPlayerMS::OnPageShown() {
 
 // On Android, resume playback on visibility. play() clears
 // |should_play_upon_shown_|.
-#if BUILDFLAG(IS_ANDROID)
-  if (should_play_upon_shown_)
-    Play();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void WebMediaPlayerMS::OnIdleTimeout() {}

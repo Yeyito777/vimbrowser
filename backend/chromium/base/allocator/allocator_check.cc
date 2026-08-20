@@ -7,9 +7,6 @@
 #include "build/build_config.h"
 #include "partition_alloc/buildflags.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "partition_alloc/shim/winheap_stubs_win.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include <malloc.h>

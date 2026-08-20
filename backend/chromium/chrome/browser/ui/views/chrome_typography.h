@@ -9,17 +9,9 @@
 #include "ui/views/style/typography.h"
 #include "ui/views/style/typography_provider.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// gn check complains on Linux Ozone.
-#include "ash/public/cpp/ash_typography.h"  // nogncheck
-#endif
 
 enum ChromeTextContext {
-#if BUILDFLAG(IS_CHROMEOS)
-  CHROME_TEXT_CONTEXT_START = ash::ASH_TEXT_CONTEXT_END,
-#else
   CHROME_TEXT_CONTEXT_START = views::style::VIEWS_TEXT_CONTEXT_END,
-#endif
 
   // Smaller version of CONTEXT_DIALOG_BODY_TEXT. Usually 12pt.
   CONTEXT_DIALOG_BODY_TEXT_SMALL = CHROME_TEXT_CONTEXT_START,
@@ -77,11 +69,7 @@ enum ChromeTextContext {
 };
 
 enum ChromeTextStyle {
-#if BUILDFLAG(IS_CHROMEOS)
-  CHROME_TEXT_STYLE_START = ash::ASH_TEXT_STYLE_END,
-#else
   CHROME_TEXT_STYLE_START = views::style::VIEWS_TEXT_STYLE_END,
-#endif
 
   // A solid shade of red.
   STYLE_RED = CHROME_TEXT_STYLE_START,

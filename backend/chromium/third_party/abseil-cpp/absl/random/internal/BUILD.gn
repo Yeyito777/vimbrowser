@@ -38,10 +38,6 @@ absl_source_set("fast_uniform_bits") {
 absl_source_set("seed_material") {
   public = [ "seed_material.h" ]
   sources = [ "seed_material.cc" ]
-  if (is_win) {
-    # TODO(mbonadei): In the bazel file this is -DEFAULTLIB:bcrypt.lib.
-    libs = [ "bcrypt.lib" ]
-  }
   deps = [
     ":fast_uniform_bits",
     "//third_party/abseil-cpp/absl/base:config",

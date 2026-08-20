@@ -98,15 +98,9 @@ void UserCloudSigninRestrictionPolicyFetcher::FetchAccessToken(
     base::OnceCallback<void(const std::string&)> callback) {
   CHECK(callback);
   CHECK(!account_id.empty());
-#if BUILDFLAG(IS_IOS)
-  CHECK(identity_manager->HasAccountWithRefreshTokenOnDevice(account_id));
-  signin::AccessTokenFetcher::Source source =
-      signin::AccessTokenFetcher::Source::kDevice;
-#else
   CHECK(identity_manager->HasAccountWithRefreshToken(account_id));
   signin::AccessTokenFetcher::Source source =
       signin::AccessTokenFetcher::Source::kProfile;
-#endif  // BUILDFLAG(IS_IOS)
   CHECK(!access_token_fetcher_);
 
   // base::Unretained is safe here because `access_token_fetcher_` is owned by

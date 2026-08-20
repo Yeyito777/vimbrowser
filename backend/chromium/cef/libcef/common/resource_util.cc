@@ -55,18 +55,6 @@ bool GetDefaultUserDataDirectory(base::FilePath* result) {
   return true;
 }
 
-#elif BUILDFLAG(IS_WIN)
-
-// Based on chrome/common/chrome_paths_win.cc.
-bool GetDefaultUserDataDirectory(base::FilePath* result) {
-  if (!base::PathService::Get(base::DIR_LOCAL_APP_DATA, result)) {
-    return false;
-  }
-  *result = result->Append(FILE_PATH_LITERAL("CEF"));
-  *result = result->Append(FILE_PATH_LITERAL("User Data"));
-  return true;
-}
-
 #endif
 
 base::FilePath GetUserDataPath(CefSettings* settings,

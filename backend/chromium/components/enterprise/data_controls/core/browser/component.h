@@ -10,9 +10,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/dlp/dlp_service.pb.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace data_controls {
 
@@ -52,9 +49,6 @@ constexpr static const std::array<Component,
 Component GetComponentMapping(const std::string& component);
 std::string GetComponentMapping(Component component);
 
-#if BUILDFLAG(IS_CHROMEOS)
-::dlp::DlpComponent GetComponentProtoMapping(const std::string& component);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace data_controls
 

@@ -83,13 +83,6 @@ void UpdateAllShortcuts(const std::u16string& old_app_title,
 // on the UI thread.
 void UpdateShortcutsForAllApps(Profile* profile, base::OnceClosure callback);
 
-#if BUILDFLAG(IS_WIN)
-// Update the relaunch details for the given app's window, making the taskbar
-// group's "Pin to the taskbar" button function correctly.
-void UpdateRelaunchDetailsForApp(Profile* profile,
-                                 const extensions::Extension* extension,
-                                 HWND hwnd);
-#endif  // BUILDFLAG(IS_WIN)
 
 SynchronizeOsOptions ConvertShortcutLocationsToSynchronizeOptions(
     const ShortcutLocations& locations,

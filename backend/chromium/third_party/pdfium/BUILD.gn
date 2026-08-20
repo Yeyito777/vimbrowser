@@ -51,11 +51,6 @@ config("pdfium_common_config") {
     defines += [ "PDF_USE_PARTITION_ALLOC" ]
   }
 
-  if (is_win) {
-    # Assume UTF-8 by default to avoid code page dependencies.
-    cflags += [ "/utf-8" ]
-  }
-
   if (is_clang) {
     # Override -Wno-c++11-narrowing.
     cflags += [ "-Wc++11-narrowing" ]
@@ -255,14 +250,6 @@ component("pdfium") {
       "fpdfsdk/fpdfxfa",
       "xfa/fxfa",
       "xfa/fxfa/parser",
-    ]
-  }
-
-  if (is_win) {
-    libs += [
-      "advapi32.lib",
-      "gdi32.lib",
-      "user32.lib",
     ]
   }
 

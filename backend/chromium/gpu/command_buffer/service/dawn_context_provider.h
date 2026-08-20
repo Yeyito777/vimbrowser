@@ -23,10 +23,6 @@
 #include "third_party/skia/include/gpu/graphite/ContextOptions.h"
 #include "third_party/skia/include/gpu/graphite/dawn/DawnTypes.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11.h>
-#include <wrl/client.h>
-#endif
 
 namespace gl {
 class ProgressReporter;
@@ -102,9 +98,6 @@ class GPU_GLES2_EXPORT DawnContextProvider {
 
   GraphiteSharedContext* GetGraphiteSharedContext() const;
 
-#if BUILDFLAG(IS_WIN)
-  Microsoft::WRL::ComPtr<ID3D11Device> GetD3D11Device() const;
-#endif
 
   bool SupportsFeature(wgpu::FeatureName feature);
 

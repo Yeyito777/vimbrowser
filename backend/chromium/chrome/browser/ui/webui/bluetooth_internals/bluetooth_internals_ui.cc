@@ -14,9 +14,6 @@
 #include "services/network/public/mojom/content_security_policy.mojom.h"
 #include "ui/webui/webui_util.h"  // nogncheck
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/bluetooth/debug_logs_manager_factory.h"
-#endif
 
 BluetoothInternalsUIConfig::BluetoothInternalsUIConfig()
     : DefaultWebUIConfig(content::kChromeUIScheme,
@@ -50,9 +47,4 @@ void BluetoothInternalsUI::BindInterface(
     mojo::PendingReceiver<mojom::BluetoothInternalsHandler> receiver) {
   page_handler_ =
       std::make_unique<BluetoothInternalsHandler>(host, std::move(receiver));
-#if BUILDFLAG(IS_CHROMEOS)
-  page_handler_->set_debug_logs_manager(
-      ash::bluetooth::DebugLogsManagerFactory::GetForProfile(
-          Profile::FromWebUI(web_ui())));
-#endif
 }

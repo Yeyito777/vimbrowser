@@ -7,9 +7,7 @@
 #include "build/build_config.h"
 #include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
 
-#if !BUILDFLAG(IS_WIN)
 #define USE_SHARED_INSTANCE
-#endif
 
 // These numbers were picked as roughly 1/4th of the empirical lower limit at
 // which we start getting errors when allocating new codecs. Some platforms have
@@ -18,15 +16,8 @@
 // that the true limits are OS-wide, while these thresholds are per-process. It
 // also takes into account that we never actually gate codec creation, and we
 // only vary the eagerness with which we will try to reclaim codecs instead.
-#if BUILDFLAG(IS_WIN)
-constexpr int kDecoderPressureThreshold = 6;
-constexpr int kEncoderPressureThreshold = 0;
-#elif BUILDFLAG(IS_CHROMEOS)
-constexpr int kSharedPressureThreshold = 3;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 constexpr int kSharedPressureThreshold = 24;
-#elif BUILDFLAG(IS_ANDROID)
-constexpr int kSharedPressureThreshold = 4;
 #else
 // By default (e.g. for Linux, Fuschia, Chromecast...), any codec with pressure
 // should be reclaimable, regardless of global presure.

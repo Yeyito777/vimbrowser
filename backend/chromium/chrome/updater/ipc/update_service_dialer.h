@@ -7,10 +7,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/updater/ipc/update_service_dialer_win.h"
-#else  // BUILDFLAG(IS_WIN)
 #include "chrome/updater/ipc/update_service_dialer_posix.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #endif  // CHROME_UPDATER_IPC_UPDATE_SERVICE_DIALER_H_

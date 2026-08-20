@@ -524,23 +524,6 @@ void WorkerScriptFetcher::CreateScriptLoader(
   base::RepeatingCallback<WebContents*()> wc_getter =
       base::BindRepeating([]() -> WebContents* { return nullptr; });
   FrameTreeNodeId frame_tree_node_id = FrameTreeNodeId();
-#if BUILDFLAG(IS_FUCHSIA)
-  // To make `WebEngineContentBrowserClient::CreateURLLoaderThrottles()`
-  // returns throttles, valid `frame_tree_node_id` and `wc_getter` should
-  // be passed. See crbug.com/40244093#comment17.
-  // Upon `UrlRequestRewriteDoesNotAddHeadersForSharedWorkers`, SharedWorkers
-  // are not expected to return throttles and excluded.
-  //
-  // In case of the corner case a shared worker creates a dedicated worker after
-  // the closest ancestor's frame is gone, `wc_getter` will returns nullptr,
-  // and `WebEngineContentBrowserClient::CreateURLLoaderThrottles()` also
-  // returns {}.
-  if (std::holds_alternative<blink::DedicatedWorkerToken>(worker_token)) {
-    frame_tree_node_id = ancestor_render_frame_host.GetFrameTreeNodeId();
-    wc_getter = base::BindRepeating(&WebContents::FromFrameTreeNodeId,
-                                    frame_tree_node_id);
-  }
-#endif
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>> throttles =
       CreateContentBrowserURLLoaderThrottles(
           *resource_request, browser_context, wc_getter,

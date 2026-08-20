@@ -461,7 +461,6 @@ void WindowEventDispatcher::OnOtherRootGotCapture() {
   // root window, in which case this function will get called whenever those
   // windows grab mouse capture. Sending mouse exit messages in these cases
   // causes subtle bugs like (crbug.com/394672).
-#if !BUILDFLAG(IS_WIN)
   if (mouse_moved_handler_) {
     // Dispatch a mouse exit to reset any state associated with hover. This is
     // important when going from no window having capture to a window having
@@ -472,7 +471,6 @@ void WindowEventDispatcher::OnOtherRootGotCapture() {
     if (details.dispatcher_destroyed)
       return;
   }
-#endif
 
   mouse_moved_handler_ = nullptr;
   mouse_pressed_handler_ = nullptr;
@@ -830,23 +828,6 @@ void WindowEventDispatcher::PostSynthesizeMouseMove(Window* window) {
   if (synthesize_mouse_move_ || in_shutdown_)
     return;
 
-#if BUILDFLAG(IS_WIN)
-  // Gets the window at the current cursor point.
-  gfx::Point cursor_point = display::Screen::Get()->GetCursorScreenPoint();
-  gfx::NativeWindow window_under_cursor =
-      display::Screen::Get()->GetWindowAtScreenPoint(cursor_point);
-
-  ConvertPointFromScreen(&cursor_point);
-  // If the mouse cursor is within the |window|, but |window_under_cursor| is
-  // null, it means another program's window is occluding ours. And also, if
-  // |window_under_cursor| doesn't belong to ours then we do not synthesize a
-  // mouse move event.
-  if (window->ContainsPointInRoot(cursor_point) &&
-      (!window_under_cursor ||
-       !host_->window()->Contains(window_under_cursor))) {
-    return;
-  }
-#endif
 
   synthesize_mouse_move_ = true;
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(

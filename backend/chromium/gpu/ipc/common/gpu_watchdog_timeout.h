@@ -24,8 +24,6 @@ constexpr base::TimeDelta kGpuWatchdogTimeout = base::Seconds(50);
 #else
 constexpr base::TimeDelta kGpuWatchdogTimeout = base::Seconds(25);
 #endif
-#elif BUILDFLAG(IS_WIN)
-constexpr base::TimeDelta kGpuWatchdogTimeout = base::Seconds(30);
 #else
 constexpr base::TimeDelta kGpuWatchdogTimeout = base::Seconds(15);
 #endif

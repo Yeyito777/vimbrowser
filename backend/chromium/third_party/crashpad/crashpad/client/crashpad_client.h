@@ -27,24 +27,15 @@
 #include "build/build_config.h"
 #include "util/file/file_io.h"
 
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "util/misc/capture_context.h"
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 #if BUILDFLAG(IS_APPLE)
 #include "base/apple/scoped_mach_port.h"
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#include "util/win/scoped_handle.h"
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include <signal.h>
 #include <ucontext.h>
 #endif
 
-#if BUILDFLAG(IS_IOS)
-#include "client/upload_behavior_ios.h"
-#include "handler/user_stream_data_source.h"  // nogncheck
-#endif
 
 namespace crashpad {
 
@@ -805,15 +796,6 @@ class CrashpadClient {
   static void UseSystemDefaultHandler();
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  //! \brief Sets a timestamp on the signal handler to be passed on to
-  //!     crashpad_handler and then eventually Chrome OS's crash_reporter.
-  //!
-  //! \note This method is used by clients that use `StartHandler()` to start
-  //!     a handler and not by clients that use any other handler starting
-  //!     methods.
-  static void SetCrashLoopBefore(uint64_t crash_loop_before_time);
-#endif
 
  private:
 #if BUILDFLAG(IS_WIN) || DOXYGEN
@@ -823,10 +805,6 @@ class CrashpadClient {
 
 #if BUILDFLAG(IS_APPLE)
   base::apple::ScopedMachSendRight exception_port_;
-#elif BUILDFLAG(IS_WIN)
-  std::wstring ipc_pipe_;
-  ScopedKernelHANDLE handler_start_thread_;
-  ScopedVectoredExceptionRegistration vectored_handler_;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   std::set<int> unhandled_signals_;
 #endif  // BUILDFLAG(IS_APPLE)

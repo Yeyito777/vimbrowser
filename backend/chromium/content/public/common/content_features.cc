@@ -259,11 +259,7 @@ BASE_FEATURE(kDevToolsPrivacyUI, base::FEATURE_ENABLED_BY_DEFAULT);
 // Controls whether the Digital Goods API is enabled.
 // https://github.com/WICG/digital-goods/
 BASE_FEATURE(kDigitalGoodsApi,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Enables the BTM (Bounce Tracking Mitigation) feature.
@@ -547,11 +543,7 @@ BASE_FEATURE(kIsolatesPriorityBestEffortWhenHidden,
 // check kEnableIsolatedWebAppsInRenderer command line flag in the renderer
 // process.
 BASE_FEATURE(kIsolatedWebApps,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Enables process isolation of fenced content (content inside fenced frames)
 // from non-fenced content. See
@@ -621,11 +613,7 @@ const base::FeatureParam<double> kNavigationConfidenceEpsilonValue{
 // some tasks related to navigation network responses in a kHigh priority
 // queue.
 BASE_FEATURE(kNavigationNetworkResponseQueue,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 // If the network service is enabled, runs it in process.
@@ -850,12 +838,10 @@ BASE_FEATURE(kServiceWorkerAutoPreload, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kServiceWorkerStaticRouterRaceNetworkRequestPerformanceImprovement,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if !BUILDFLAG(IS_IOS)
 // Run video capture service in the Browser process as opposed to a dedicated
 // utility process.
 BASE_FEATURE(kRunVideoCaptureServiceInBrowserProcess,
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Update scheduler settings using resourced on ChromeOS.
 BASE_FEATURE(kSchedQoSOnResourcedForChrome, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -1033,10 +1019,7 @@ BASE_FEATURE(kV8VmFuture, base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Enables per PWA System Media Controls. Only supported on Windows and macOS.
 BASE_FEATURE(kWebAppSystemMediaControls,
-#if BUILDFLAG(IS_WIN)
-             // Windows enabled since 124.
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
              // macOS enabled in 130. If a kill switch is needed, it should be
              // safe to only disable the failing platform (ie. macOS here).
              base::FEATURE_ENABLED_BY_DEFAULT);
@@ -1191,11 +1174,7 @@ const base::FeatureParam<CapturingState>::Option kNavigationCapturingParams[] =
 
 const base::FeatureParam<CapturingState> kNavigationCapturingDefaultState{
     &kPwaNavigationCapturing, "link_capturing_state",
-#if BUILDFLAG(IS_CHROMEOS)
-    CapturingState::kReimplDefaultOff,
-#else
     CapturingState::kReimplDefaultOn,
-#endif
     &kNavigationCapturingParams};
 
 const base::FeatureParam<std::string> kForcedOffCapturingAppsOnFirstNavigation{
@@ -1224,14 +1203,10 @@ enum class VideoCaptureServiceConfiguration {
 };
 
 VideoCaptureServiceConfiguration GetVideoCaptureServiceConfiguration() {
-#if BUILDFLAG(IS_IOS)
-  return VideoCaptureServiceConfiguration::kEnabledForBrowserProcess;
-#else
   return base::FeatureList::IsEnabled(
              features::kRunVideoCaptureServiceInBrowserProcess)
              ? VideoCaptureServiceConfiguration::kEnabledForBrowserProcess
              : VideoCaptureServiceConfiguration::kEnabledForOutOfProcess;
-#endif
 }
 
 }  // namespace

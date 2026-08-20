@@ -199,12 +199,7 @@ class MEDIA_EXPORT VideoEncodeAcceleratorAdapter
 
   VideoEncodeAccelerator::Config::EncoderType required_encoder_type_ =
       VideoEncodeAccelerator::Config::EncoderType::kHardware;
-#if BUILDFLAG(IS_FUCHSIA)
-  // TODO(crbug.com/40241991): Fuchsia only supports I420 for now.
-  static constexpr VideoPixelFormat kDefaultPixelFormat = PIXEL_FORMAT_I420;
-#else
   static constexpr VideoPixelFormat kDefaultPixelFormat = PIXEL_FORMAT_NV12;
-#endif
   bool supports_frame_size_change_ = false;
   bool supports_gpu_shared_images_ = false;
 };

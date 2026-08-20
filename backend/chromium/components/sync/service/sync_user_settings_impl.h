@@ -36,11 +36,7 @@ class SyncUserSettingsImpl : public SyncUserSettings, public SyncPrefObserver {
     // Observer-like notifications.
     virtual void OnSyncClientDisabledByPolicyChanged() = 0;
     virtual void OnSelectedTypesChanged() = 0;
-#if BUILDFLAG(IS_CHROMEOS)
-    virtual void OnSyncFeatureDisabledViaDashboardCleared() = 0;
-#else   // BUILDFLAG(IS_CHROMEOS)
     virtual void OnInitialSyncFeatureSetupCompleted() = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   };
 
   // `delegate`, `crypto` and `prefs` must not be null and must outlive this
@@ -59,16 +55,11 @@ class SyncUserSettingsImpl : public SyncUserSettings, public SyncPrefObserver {
   void SetEncryptionBootstrapToken(const std::string& token);
   bool IsSyncClientDisabledByPolicy() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetSyncFeatureDisabledViaDashboard();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // SyncUserSettings implementation.
   bool IsInitialSyncFeatureSetupComplete() const override;
-#if !BUILDFLAG(IS_CHROMEOS)
   void SetInitialSyncFeatureSetupComplete(
       SyncFirstSetupCompleteSource source) override;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   bool IsSyncEverythingEnabled() const override;
   // TODO(b/321217859): On Android, temporarily remove kPasswords from the
   // selected types while the local UPM migration is ongoing. This was
@@ -86,16 +77,6 @@ class SyncUserSettingsImpl : public SyncUserSettings, public SyncPrefObserver {
   void KeepAccountSettingsPrefsOnlyForUsers(
       const std::vector<GaiaId>& available_gaia_ids) override;
   UserSelectableTypeSet GetRegisteredSelectableTypes() const override;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool IsSyncFeatureDisabledViaDashboard() const override;
-  void ClearSyncFeatureDisabledViaDashboard() override;
-  bool IsSyncAllOsTypesEnabled() const override;
-  UserSelectableOsTypeSet GetSelectedOsTypes() const override;
-  bool IsOsTypeManagedByPolicy(UserSelectableOsType type) const override;
-  void SetSelectedOsTypes(bool sync_all_os_types,
-                          UserSelectableOsTypeSet types) override;
-  UserSelectableOsTypeSet GetRegisteredSelectableOsTypes() const override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   bool IsCustomPassphraseAllowed() const override;
   bool IsEncryptEverythingEnabled() const override;
   DataTypeSet GetAllEncryptedDataTypes() const override;

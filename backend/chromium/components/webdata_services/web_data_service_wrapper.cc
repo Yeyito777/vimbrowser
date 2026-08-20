@@ -87,7 +87,6 @@ void InitWalletOfferSyncBridgeOnDBSequence(
       autofill_backend, autofill_web_data.get());
 }
 
-#if !BUILDFLAG(IS_IOS)
 void InitValuableSyncBridgeOnDBSequence(
     scoped_refptr<base::SequencedTaskRunner> db_task_runner,
     const scoped_refptr<autofill::AutofillWebDataService>& autofill_web_data,
@@ -115,7 +114,6 @@ void InitWalletUsageDataSyncBridgeOnDBSequence(
       CreateForWebDataServiceAndBackend(autofill_backend,
                                         autofill_web_data.get());
 }
-#endif
 
 void InitWalletCredentialSyncBridgeOnDBSequence(
     scoped_refptr<base::SequencedTaskRunner> db_task_runner,
@@ -164,11 +162,9 @@ WebDataServiceWrapper::WebDataServiceWrapper(
 #endif
   profile_database_->AddTable(
       std::make_unique<plus_addresses::PlusAddressTable>());
-#if !BUILDFLAG(IS_IOS)
   if (base::FeatureList::IsEnabled(syncer::kSyncAutofillLoyaltyCard)) {
     profile_database_->AddTable(std::make_unique<autofill::ValuablesTable>());
   }
-#endif
   profile_database_->LoadDatabase(os_crypt);
 
   profile_autofill_web_data_ =
@@ -210,7 +206,6 @@ WebDataServiceWrapper::WebDataServiceWrapper(
   profile_autofill_web_data_->GetAutofillBackend(
       base::BindOnce(&InitWalletOfferSyncBridgeOnDBSequence, db_task_runner,
                      profile_autofill_web_data_));
-#if !BUILDFLAG(IS_IOS)
   profile_autofill_web_data_->GetAutofillBackend(
       base::BindOnce(&InitWalletUsageDataSyncBridgeOnDBSequence, db_task_runner,
                      profile_autofill_web_data_));
@@ -225,7 +220,6 @@ WebDataServiceWrapper::WebDataServiceWrapper(
         base::BindOnce(&InitValuableMetadataSyncBridgeOnDBSequence,
                        db_task_runner, profile_autofill_web_data_));
   }
-#endif
 
   if (base::FeatureList::IsEnabled(syncer::kSyncAutofillWalletCredentialData)) {
     profile_autofill_web_data_->GetAutofillBackend(
@@ -257,11 +251,9 @@ WebDataServiceWrapper::WebDataServiceWrapper(
   account_autofill_web_data_->GetAutofillBackend(
       base::BindOnce(&InitWalletOfferSyncBridgeOnDBSequence, db_task_runner,
                      account_autofill_web_data_));
-#if !BUILDFLAG(IS_IOS)
   account_autofill_web_data_->GetAutofillBackend(
       base::BindOnce(&InitWalletUsageDataSyncBridgeOnDBSequence, db_task_runner,
                      account_autofill_web_data_));
-#endif
 
   if (base::FeatureList::IsEnabled(syncer::kSyncAutofillWalletCredentialData)) {
     account_autofill_web_data_->GetAutofillBackend(

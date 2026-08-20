@@ -22,9 +22,6 @@
 #include "ui/gfx/gpu_memory_buffer_handle.h"
 #include "ui/ozone/platform/headless/vulkan_surface_headless.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/channel.h>
-#endif
 
 namespace ui {
 
@@ -44,10 +41,6 @@ bool VulkanImplementationHeadless::InitializeVulkanInstance(
   }
 
   base::FilePath path;
-#if BUILDFLAG(IS_FUCHSIA)
-  path = base::FilePath(use_swiftshader() ? "libvk_swiftshader.so"
-                                          : "libvulkan.so");
-#else
   if (use_swiftshader()) {
     if (!base::PathService::Get(base::DIR_MODULE, &path))
       return false;
@@ -55,7 +48,6 @@ bool VulkanImplementationHeadless::InitializeVulkanInstance(
   } else {
     path = base::FilePath("libvulkan.so.1");
   }
-#endif
 
   return vulkan_instance_.Initialize(path, required_extensions, {});
 }
@@ -161,18 +153,5 @@ VulkanImplementationHeadless::CreateImageFromGpuMemoryHandle(
       tiling, VK_QUEUE_FAMILY_EXTERNAL);
 }
 
-#if BUILDFLAG(IS_FUCHSIA)
-void VulkanImplementationHeadless::RegisterSysmemBufferCollection(
-    VkDevice device,
-    zx::eventpair service_handle,
-    zx::channel sysmem_token,
-    viz::SharedImageFormat format,
-    gfx::BufferUsage usage,
-    gfx::Size size,
-    size_t min_buffer_count,
-    bool register_with_image_pipe) {
-  NOTIMPLEMENTED();
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 }  // namespace ui

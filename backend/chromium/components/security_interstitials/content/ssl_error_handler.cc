@@ -424,11 +424,7 @@ void SSLErrorHandlerDelegateImpl::CheckForCaptivePortal() {
 }
 
 bool SSLErrorHandlerDelegateImpl::DoesOSReportCaptivePortal() {
-#if BUILDFLAG(IS_WIN)
-  return security_interstitials::IsBehindCaptivePortal();
-#else
   return false;
-#endif
 }
 
 bool SSLErrorHandlerDelegateImpl::GetSuggestedUrl(

@@ -885,11 +885,6 @@ ContentBrowserClient::GetOnDeviceSpeechRecognitionAvailabilityStatus(
   return media::mojom::AvailabilityStatus::kUnavailable;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-TtsControllerDelegate* ContentBrowserClient::GetTtsControllerDelegate() {
-  return nullptr;
-}
-#endif
 
 TtsPlatform* ContentBrowserClient::GetTtsPlatform() {
   return nullptr;
@@ -1023,60 +1018,6 @@ std::unique_ptr<NavigationUIData> ContentBrowserClient::GetNavigationUIData(
   return nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-
-bool ContentBrowserClient::PreSpawnChild(sandbox::TargetConfig* config,
-                                         sandbox::mojom::Sandbox sandbox_type,
-                                         ChildSpawnFlags flags) {
-  return true;
-}
-
-bool ContentBrowserClient::IsUtilityCetCompatible(
-    const std::string& utility_sub_type) {
-  return true;
-}
-
-std::wstring ContentBrowserClient::GetAppContainerSidForSandboxType(
-    sandbox::mojom::Sandbox sandbox_type,
-    AppContainerFlags flags) {
-  // Embedders should override this method and return different SIDs for each
-  // sandbox type. Note: All content level tests will run child processes in the
-  // same AppContainer.
-  return std::wstring(
-      L"S-1-15-2-3251537155-1984446955-2931258699-841473695-1938553385-"
-      L"924012148-129201922");
-}
-
-bool ContentBrowserClient::IsAppContainerDisabled(
-    sandbox::mojom::Sandbox sandbox_type) {
-  return false;
-}
-
-std::wstring ContentBrowserClient::GetLPACCapabilityNameForNetworkService() {
-  // Embedders should override this method and return different LPAC capability
-  // name. This will be used to secure the user data files required for the
-  // network service.
-  return std::wstring(L"lpacContentNetworkService");
-}
-
-bool ContentBrowserClient::ShouldEnableAudioProcessHighPriority() {
-  // TODO(crbug.com/40242320): Delete this method when the
-  // kAudioProcessHighPriorityEnabled enterprise policy is deprecated.
-  return false;
-}
-
-bool ContentBrowserClient::ShouldRestrictCoreSharingOnRenderer() {
-  return false;
-}
-
-std::optional<std::wstring>
-ContentBrowserClient::GetWindowsSecurityAttributeName() const {
-  // Embedders should override this method and return the name of the security
-  // attribute previously assigned to the browser's process token.
-  return std::nullopt;
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
 ContentBrowserClient::CreateURLLoaderThrottles(
@@ -1279,11 +1220,6 @@ FontAccessDelegate* ContentBrowserClient::GetFontAccessDelegate() {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-SmartCardDelegate* ContentBrowserClient::GetSmartCardDelegate() {
-  return nullptr;
-}
-#endif
 
 bool ContentBrowserClient::ShowPaymentHandlerWindow(
     content::BrowserContext* browser_context,

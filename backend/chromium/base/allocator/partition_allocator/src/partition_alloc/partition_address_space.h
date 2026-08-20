@@ -414,19 +414,6 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) PartitionAddressSpace {
   static_assert(base::bits::HasSingleBit(kConfigurablePoolMaxSize));
   static_assert(base::bits::HasSingleBit(kConfigurablePoolMinSize));
 
-#if PA_BUILDFLAG(IS_IOS)
-
-#if !PA_CONFIG(DYNAMICALLY_SELECT_POOL_SIZE)
-#error iOS is only supported with a dynamically sized GigaCase.
-#endif
-
-  // We can't afford pool sizes as large as kPoolMaxSize in iOS EarlGrey tests,
-  // since the test process cannot use an extended virtual address space (see
-  // crbug.com/1250788).
-  static constexpr size_t kCorePoolSizeForIOSTestProcess = kGiB / 4;
-  static_assert(kCorePoolSizeForIOSTestProcess < kCorePoolSize);
-  static_assert(base::bits::HasSingleBit(kCorePoolSizeForIOSTestProcess));
-#endif  // PA_BUILDFLAG(IOS_IOS)
 
 #if !PA_CONFIG(DYNAMICALLY_SELECT_POOL_SIZE)
   // Masks used to easy determine belonging to a pool.

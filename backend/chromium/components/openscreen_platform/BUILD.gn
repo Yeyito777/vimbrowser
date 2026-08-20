@@ -50,21 +50,6 @@ source_set("openscreen_platform_using_net_sockets") {
     "//components/cast_streaming/test:test_sender_using_net_sockets",
     "//media/cast:media_vpx_quantizer_parser_fuzzer",
   ]
-  if (is_ios) {
-    # Allow broader visibility for platforms with unique generated targets.
-    visibility += [
-      "//components/cast_streaming/browser:*",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__compile_java",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__compile_resources",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__create",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__java",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__java__dex",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__java__header",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__apk__java__validate",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__library",
-      "//media/cast:media_vpx_quantizer_parser_fuzzer__library__jni_registration__native_sources",
-    ]
-  }
 
   assert_no_deps = [ "//services/network:network_service" ]
 
@@ -138,10 +123,6 @@ if (!is_win && !is_ios) {
 source_set("unittests") {
   testonly = true
   visibility += [ "//components:components_unittests${exec_target_suffix}" ]
-  if (is_ios) {
-    # Allow broader visibility for platforms with unique generated targets.
-    visibility += [ "//components:*" ]
-  }
 
   public = []
 

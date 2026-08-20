@@ -512,15 +512,6 @@ bool HasTextInputs(const FormData& form_data) {
                              &FormFieldData::IsTextInputElement);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool IsWebAuthnForm(base::optional_ref<const FormData> form_data) {
-  auto has_webauthn_attribute = [](const FormFieldData& field) {
-    return field.parsed_autocomplete() && field.parsed_autocomplete()->webauthn;
-  };
-  return form_data &&
-         std::ranges::any_of(form_data->fields(), has_webauthn_attribute);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 FieldPropertiesFlags GetFieldFlags(AutofillSuggestionTriggerSource source) {
   return source == AutofillSuggestionTriggerSource::kManualFallbackPasswords
@@ -1701,22 +1692,6 @@ void PasswordAutofillAgent::CheckViewAreaVisible(
   std::move(callback).Run(!element.VisibleBoundsInWidget().IsEmpty());
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void PasswordAutofillAgent::TriggerFormSubmission() {
-  // Find the last interacted element to simulate an enter keystroke at.
-  WebFormControlElement form_control =
-      GetFormControlByRendererId(field_renderer_id_to_submit_);
-  if (!form_control) {
-    // The target field doesn't exist anymore. Don't try to submit it.
-    return;
-  }
-
-  // `form_control` can only be `WebInputElement`, not `WebSelectElement`.
-  WebInputElement input = form_control.To<WebInputElement>();
-  input.DispatchSimulatedEnter();
-  field_renderer_id_to_submit_ = FieldRendererId();
-}
-#endif
 
 std::optional<FormData> PasswordAutofillAgent::GetFormDataFromWebForm(
     const WebFormElement& web_form,
@@ -2376,11 +2351,6 @@ void PasswordAutofillAgent::MaybeTriggerSuggestionsOnFocusedElement(
   std::optional<FormData> form_data = GetFormDataFromWebForm(
       focused_element.GetOwningFormForAutofill(), /*form_cache=*/{});
   if (form_data && (times_received_fill_data_[form_data->renderer_id()] == 1) &&
-#if BUILDFLAG(IS_ANDROID)
-      // Limit showing suggestions on autofocus to WebAuthn forms only, since
-      // Android suggestion UI (TTF) can be much more intrusive.
-      IsWebAuthnForm(form_data) &&
-#endif  // BUILDFLAG(IS_ANDROID)
       base::FeatureList::IsEnabled(
           password_manager::features::kShowSuggestionsOnAutofocus)) {
     // Updating the focused field in the `FocusStateNotifier` to the currently

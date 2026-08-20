@@ -23,53 +23,9 @@
 #include "chrome/common/importer/safari_importer_utils.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/common/importer/edge_importer_utils_win.h"
-#endif
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-void DetectIEProfiles(
-    std::vector<user_data_importer::SourceProfile>* profiles) {
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
-
-  // IE always exists and doesn't have multiple profiles.
-  user_data_importer::SourceProfile ie;
-  ie.importer_name = l10n_util::GetStringUTF16(IDS_IMPORT_FROM_IE);
-  ie.importer_type = user_data_importer::TYPE_IE;
-  ie.services_supported = user_data_importer::HISTORY |
-                          user_data_importer::FAVORITES |
-                          user_data_importer::SEARCH_ENGINES;
-  profiles->push_back(ie);
-}
-
-void DetectEdgeProfiles(
-    std::vector<user_data_importer::SourceProfile>* profiles) {
-  if (!importer::EdgeImporterCanImport()) {
-    return;
-  }
-  user_data_importer::SourceProfile edge;
-  edge.importer_name = l10n_util::GetStringUTF16(IDS_IMPORT_FROM_EDGE);
-  edge.importer_type = user_data_importer::TYPE_EDGE;
-  edge.services_supported = user_data_importer::FAVORITES;
-  edge.source_path = importer::GetEdgeDataFilePath();
-  profiles->push_back(edge);
-}
-
-void DetectBuiltinWindowsProfiles(
-    std::vector<user_data_importer::SourceProfile>* profiles) {
-  if (shell_integration::IsIEDefaultBrowser()) {
-    DetectIEProfiles(profiles);
-    DetectEdgeProfiles(profiles);
-  } else {
-    DetectEdgeProfiles(profiles);
-    DetectIEProfiles(profiles);
-  }
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 void DetectSafariProfiles(
@@ -98,12 +54,7 @@ void DetectFirefoxProfiles(
     std::vector<user_data_importer::SourceProfile>* profiles) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
-#if BUILDFLAG(IS_WIN)
-  const std::string firefox_install_id =
-      shell_integration::GetFirefoxProgIdSuffix();
-#else
   const std::string firefox_install_id;
-#endif  // BUILDFLAG(IS_WIN)
   std::vector<FirefoxDetail> details = GetFirefoxDetails(firefox_install_id);
   if (details.empty())
     return;
@@ -114,9 +65,6 @@ void DetectFirefoxProfiles(
       continue;
 
     int version = 0;
-#if BUILDFLAG(IS_WIN)
-    version = GetCurrentFirefoxMajorVersionFromRegistry();
-#endif
 
     if (version < 2) {
       GetFirefoxVersionAndPathFromProfile(detail.path, &version, &app_path);
@@ -138,9 +86,6 @@ void DetectFirefoxProfiles(
     firefox.profile = detail.name;
     firefox.importer_type = user_data_importer::TYPE_FIREFOX;
     firefox.source_path = detail.path;
-#if BUILDFLAG(IS_WIN)
-    firefox.app_path = GetFirefoxInstallPathFromRegistry();
-#endif
     if (firefox.app_path.empty())
       firefox.app_path = app_path;
     firefox.services_supported = user_data_importer::HISTORY |
@@ -167,15 +112,7 @@ std::vector<user_data_importer::SourceProfile> DetectSourceProfilesWorker(
 
   // The first run import will automatically take settings from the first
   // profile detected, which should be the user's current default.
-#if BUILDFLAG(IS_WIN)
-  if (shell_integration::IsFirefoxDefaultBrowser()) {
-    DetectFirefoxProfiles(locale, &profiles);
-    DetectBuiltinWindowsProfiles(&profiles);
-  } else {
-    DetectBuiltinWindowsProfiles(&profiles);
-    DetectFirefoxProfiles(locale, &profiles);
-  }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (shell_integration::IsFirefoxDefaultBrowser()) {
     DetectFirefoxProfiles(locale, &profiles);
     DetectSafariProfiles(&profiles);

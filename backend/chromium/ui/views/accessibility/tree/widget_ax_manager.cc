@@ -16,11 +16,6 @@
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <oleacc.h>
-
-#include "ui/views/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/views/widget/native_widget_mac.h"
@@ -269,14 +264,7 @@ void WidgetAXManager::UnrecoverableAccessibilityError() {
 
 gfx::AcceleratedWidget WidgetAXManager::AccessibilityGetAcceleratedWidget() {
   // This method is only used on Windows, where we need the HWND to fire events.
-#if BUILDFLAG(IS_WIN)
-  if (!widget_) {
-    return gfx::kNullAcceleratedWidget;
-  }
-  return HWNDForView(widget_->GetRootView());
-#else
   return gfx::kNullAcceleratedWidget;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 gfx::NativeViewAccessible
@@ -291,19 +279,6 @@ WidgetAXManager::AccessibilityGetNativeViewAccessible() {
   if (auto* native_widget =
           static_cast<NativeWidgetMac*>(widget_->native_widget())) {
     return native_widget->GetNativeViewAccessibleForNSView();
-  }
-#elif BUILDFLAG(IS_WIN)
-  // Hold a reference to the parent in this instance to ensure that it lives
-  // long enough for the caller to take its own reference, if needed.
-  if (!parent_accessible_) {
-    HWND hwnd = HWNDForView(widget_->GetRootView());
-    if (!hwnd) {
-      return nullptr;
-    }
-    if (SUCCEEDED(::AccessibleObjectFromWindow(
-            hwnd, OBJID_WINDOW, IID_PPV_ARGS(&parent_accessible_)))) {
-      return parent_accessible_.Get();
-    }
   }
 #endif
   return gfx::NativeViewAccessible();

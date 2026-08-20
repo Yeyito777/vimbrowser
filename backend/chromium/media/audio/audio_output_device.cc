@@ -396,11 +396,7 @@ void AudioOutputDevice::OnStreamCreated(
 
   DCHECK(io_task_runner_->BelongsToCurrentThread());
   DCHECK(shared_memory_region.IsValid());
-#if BUILDFLAG(IS_WIN)
   DCHECK(socket_handle.is_valid());
-#else
-  DCHECK(socket_handle.is_valid());
-#endif
   DCHECK_GT(shared_memory_region.GetSize(), 0u);
 
   if (state_ != STREAM_CREATION_REQUESTED)

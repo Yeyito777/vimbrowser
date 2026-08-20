@@ -307,10 +307,6 @@ void RenderViewContextMenuBase::UpdateMenuIcon(int command_id,
     return;
 
   menu_model_.SetIcon(index.value(), icon);
-#if BUILDFLAG(IS_CHROMEOS)
-  if (toolkit_delegate_)
-    toolkit_delegate_->RebuildMenu();
-#endif
 }
 
 void RenderViewContextMenuBase::RemoveMenuItem(int command_id) {

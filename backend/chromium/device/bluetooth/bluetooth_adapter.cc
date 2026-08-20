@@ -369,28 +369,6 @@ void BluetoothAdapter::NotifyDeviceBatteryChanged(
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapter::NotifyDeviceBondedChanged(BluetoothDevice* device,
-                                                 bool new_bonded_status) {
-  for (auto& observer : observers_)
-    observer.DeviceBondedChanged(this, device, new_bonded_status);
-}
-
-void BluetoothAdapter::NotifyDeviceIsBlockedByPolicyChanged(
-    BluetoothDevice* device,
-    bool new_blocked_status) {
-  DCHECK_EQ(device->GetAdapter(), this);
-
-  for (auto& observer : observers_)
-    observer.DeviceBlockedByPolicyChanged(this, device, new_blocked_status);
-}
-
-void BluetoothAdapter::NotifyGattNeedsDiscovery(BluetoothDevice* device) {
-  for (auto& observer : observers_) {
-    observer.GattNeedsDiscovery(device);
-  }
-}
-#endif
 
 void BluetoothAdapter::NotifyGattServiceAdded(
     BluetoothRemoteGattService* service) {
@@ -521,14 +499,6 @@ void BluetoothAdapter::NotifyGattDescriptorValueChanged(
     observer.GattDescriptorValueChanged(this, descriptor, value);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapter::
-    NotifyLowEnergyScanSessionHardwareOffloadingStatusChanged(
-        LowEnergyScanSessionHardwareOffloadingStatus status) {
-  for (auto& observer : observers_)
-    observer.LowEnergyScanSessionHardwareOffloadingStatusChanged(status);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 BluetoothAdapter::SetPoweredCallbacks::SetPoweredCallbacks() = default;
 BluetoothAdapter::SetPoweredCallbacks::~SetPoweredCallbacks() = default;

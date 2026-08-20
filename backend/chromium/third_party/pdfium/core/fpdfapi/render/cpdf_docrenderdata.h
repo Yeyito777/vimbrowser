@@ -15,9 +15,6 @@
 #include "core/fxcrt/observed_ptr.h"
 #include "core/fxcrt/retain_ptr.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <memory>
-#endif
 
 class CPDF_Font;
 class CPDF_Object;
@@ -25,9 +22,6 @@ class CPDF_TransferFunc;
 class CPDF_Type3Cache;
 class CPDF_Type3Font;
 
-#if BUILDFLAG(IS_WIN)
-class CFX_PSFontTracker;
-#endif
 
 class CPDF_DocRenderData : public CPDF_Document::RenderDataIface {
  public:
@@ -44,9 +38,6 @@ class CPDF_DocRenderData : public CPDF_Document::RenderDataIface {
   RetainPtr<CPDF_TransferFunc> GetTransferFunc(
       RetainPtr<const CPDF_Object> obj);
 
-#if BUILDFLAG(IS_WIN)
-  CFX_PSFontTracker* GetPSFontTracker();
-#endif
 
  protected:
   // protected for use by test subclasses.
@@ -61,9 +52,6 @@ class CPDF_DocRenderData : public CPDF_Document::RenderDataIface {
            std::less<>>
       transfer_func_map_;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<CFX_PSFontTracker> psfont_tracker_;
-#endif
 };
 
 #endif  // CORE_FPDFAPI_RENDER_CPDF_DOCRENDERDATA_H_

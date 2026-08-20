@@ -80,11 +80,6 @@ inline constexpr char kAutofillCreditCardEnabled[] =
 // Boolean that is true if FIDO Authentication is enabled for card unmasking.
 inline constexpr char kAutofillCreditCardFidoAuthEnabled[] =
     "autofill.credit_card_fido_auth_enabled";
-#if BUILDFLAG(IS_ANDROID)
-// Boolean that is true if Autofill is enabled and allowed to save data.
-inline constexpr char kAutofillCreditCardFidoAuthOfferCheckboxState[] =
-    "autofill.credit_card_fido_auth_offer_checkbox_state";
-#endif  // BUILDFLAG(IS_ANDROID)
 // Boolean that is true if a form with an IBAN field has ever been submitted, or
 // an IBAN has ever been saved via Chrome payments settings page. This helps to
 // enable IBAN functionality for those users who are not in a country where IBAN
@@ -171,37 +166,6 @@ inline constexpr char
         "autofill.payment_methods_mandatory_reauth_promo_counter";
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID) ||
         // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-// Boolean that is true iff Chrome only provdides a virtual view structure that
-// Android Autofill providers can use for filling. This pref is profile bound
-// since each profile may have a preference for filling. It is not syncable as
-// the setup on each device requires steps outside the browser. Enabling this
-// pref on a device without a proper provider may yield a surprising absence of
-// filling.
-inline constexpr char kAutofillUsingPlatformAutofill[] =
-    "autofill.using_virtual_view_structure";
-// Boolean set by the `ThirdPartyPasswordManagersAllowed` policy. Defaults to
-// true which allows users to set the `kAutofillUsingPlatformAutofill` pref.
-// If set to false, user can only use the built-in password manager.
-inline constexpr char kAutofillThirdPartyPasswordManagersAllowed[] =
-    "autofill.third_party_password_managers_allowed";
-// String storing the active autofill service when the user last decided to use
-// the virtual view structure for autofilling. Defaults to an empty string. The
-// empty string means no autofill service was selected and default built-in
-// Autofill should be used.
-inline constexpr char kAutofillThirdPartyPackageUsedForPlatformAutofill[] =
-    "autofill.third_party_package_used_for_platform_autofill";
-inline constexpr char kFacilitatedPaymentsEwallet[] =
-    "facilitated_payments.ewallet";
-inline constexpr char kFacilitatedPaymentsPix[] = "facilitated_payments.pix";
-inline constexpr char kFacilitatedPaymentsPixAccountLinking[] =
-    "facilitated_payments.pix_account_linking_enabled";
-inline constexpr char kFacilitatedPaymentsA2AEnabled[] =
-    "facilitated_payments.a2a_enabled";
-// Whether the user has seen the A2A flow at least once.
-inline constexpr char kFacilitatedPaymentsA2ATriggeredOnce[] =
-    "facilitated_payments.a2a_triggered_once";
-#endif  // BUILDFLAG(IS_ANDROID)
 // Dictionaries containing metadata for Home and Work addresses. See
 // HomeAndWorkMetadataStore.
 inline constexpr char kAutofillHomeMetadata[] = "autofill.home_metadata";

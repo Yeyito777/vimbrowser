@@ -15,11 +15,7 @@ namespace paint_preview {
 namespace {
 
 base::FilePath ToFilePath(std::string_view path_str) {
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::UTF8ToWide(path_str));
-#else
   return base::FilePath(path_str);
-#endif
 }
 
 RecordingMap RecordingMapFromBufferMap(

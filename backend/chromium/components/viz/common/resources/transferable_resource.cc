@@ -93,14 +93,6 @@ void TransferableResource::AsValueInto(
   value->SetBoolean("is_low_latency_rendering", is_low_latency_rendering);
   value->SetInteger("synchronization_type",
                     static_cast<int>(synchronization_type));
-#if BUILDFLAG(IS_ANDROID)
-  if (ycbcr_info) {
-    value->BeginDictionary("ycbcr_info");
-    ycbcr_info->AsValueInto(value);
-    value->EndDictionary();
-  }
-  value->SetBoolean("is_backed_by_surface_view", is_backed_by_surface_view);
-#endif
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_WIN)
   value->SetBoolean("wants_promotion_hint", wants_promotion_hint);
 #endif

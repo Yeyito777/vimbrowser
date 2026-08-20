@@ -56,9 +56,6 @@ class TaskProvider {
       Task* existing_task,
       base::ProcessHandle new_process_handle,
       base::ProcessId new_process_id) const;
-#if BUILDFLAG(IS_CHROMEOS)
-  void NotifyObserverTaskIdsListToBeInvalidated() const;
-#endif
 
  private:
   // This will be called once an observer is set for this provider. When it is

@@ -111,9 +111,7 @@ void UkmDataManagerImpl::PauseOrResumeObservation(bool pause) {
   // TODO(b/290821132): Remove this check.
   if (!ukm_observer_) {
     // On iOS the eg tests do not set this flag.
-#if !BUILDFLAG(IS_IOS)
     CHECK_IS_TEST();
-#endif
     return;
   }
   ukm_observer_->PauseOrResumeObservation(pause);

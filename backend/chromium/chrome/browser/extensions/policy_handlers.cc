@@ -36,9 +36,6 @@
 #include "extensions/common/url_pattern.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/enterprise_util.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 

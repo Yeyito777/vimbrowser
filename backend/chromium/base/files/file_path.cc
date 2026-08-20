@@ -29,11 +29,7 @@
 #include "base/third_party/icu/icu_utf.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/win_util.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
@@ -615,9 +611,7 @@ FilePath FilePath::InsertBeforeExtensionASCII(std::string_view suffix) const {
 
 FilePath FilePath::InsertBeforeExtensionUTF8(std::string_view suffix) const {
   DCHECK(IsStringUTF8(suffix));
-#if BUILDFLAG(IS_WIN)
-  return InsertBeforeExtension(UTF8ToWide(suffix));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return InsertBeforeExtension(suffix);
 #endif
 }
@@ -649,9 +643,7 @@ FilePath FilePath::AddExtensionASCII(std::string_view extension) const {
 
 FilePath FilePath::AddExtensionUTF8(std::string_view extension) const {
   DCHECK(IsStringUTF8(extension));
-#if BUILDFLAG(IS_WIN)
-  return AddExtension(UTF8ToWide(extension));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return AddExtension(extension);
 #endif
 }
@@ -759,9 +751,7 @@ FilePath FilePath::AppendASCII(std::string_view component) const {
 
 FilePath FilePath::AppendUTF8(std::string_view component) const {
   DCHECK(base::IsStringUTF8(component));
-#if BUILDFLAG(IS_WIN)
-  return Append(UTF8ToWide(component));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return Append(component);
 #endif
 }
@@ -825,54 +815,11 @@ bool FilePath::ReferencesParent() const {
   const std::vector<StringType> components = GetComponents();
   return std::any_of(
       components.begin(), components.end(), [](const StringType& component) {
-#if BUILDFLAG(IS_WIN)
-        // Windows has odd, undocumented behavior with path components
-        // containing only whitespace and . characters. So, if all we see is .
-        // and whitespace, then we treat any .. sequence as referencing parent.
-        return component.find_first_not_of(FILE_PATH_LITERAL(". \n\r\t")) ==
-                   std::string::npos &&
-               component.find(kParentDirectory) != std::string::npos;
-#else
         return component == kParentDirectory;
-#endif
       });
 }
 
-#if BUILDFLAG(IS_WIN)
-
-std::u16string FilePath::LossyDisplayName() const {
-  return AsString16(path_);
-}
-
-std::string FilePath::MaybeAsASCII() const {
-  return base::IsStringASCII(path_) ? WideToASCII(path_) : std::string();
-}
-
-std::string FilePath::AsUTF8Unsafe() const {
-  return WideToUTF8(value());
-}
-
-std::u16string FilePath::AsUTF16Unsafe() const {
-  return WideToUTF16(value());
-}
-
-// static
-FilePath FilePath::FromASCII(std::string_view ascii) {
-  DCHECK(base::IsStringASCII(ascii));
-  return FilePath(ASCIIToWide(ascii));
-}
-
-// static
-FilePath FilePath::FromUTF8Unsafe(std::string_view utf8) {
-  return FilePath(UTF8ToWide(utf8));
-}
-
-// static
-FilePath FilePath::FromUTF16Unsafe(std::u16string_view utf16) {
-  return FilePath(AsWStringView(utf16));
-}
-
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
 // See file_path.h for a discussion of the encoding of paths on POSIX
 // platforms.  These encoding conversion functions are not quite correct.
@@ -931,9 +878,7 @@ FilePath FilePath::FromUTF16Unsafe(std::u16string_view utf16) {
 #endif  // BUILDFLAG(IS_WIN)
 
 void FilePath::WriteToPickle(Pickle* pickle) const {
-#if BUILDFLAG(IS_WIN)
-  pickle->WriteString16(AsStringPiece16(path_));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   pickle->WriteString(path_);
 #else
 #error Unsupported platform
@@ -941,13 +886,7 @@ void FilePath::WriteToPickle(Pickle* pickle) const {
 }
 
 bool FilePath::ReadFromPickle(PickleIterator* iter) {
-#if BUILDFLAG(IS_WIN)
-  std::u16string path;
-  if (!iter->ReadString16(&path)) {
-    return false;
-  }
-  path_ = UTF16ToWide(path);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   if (!iter->ReadString(&path_)) {
     return false;
   }
@@ -962,45 +901,7 @@ bool FilePath::ReadFromPickle(PickleIterator* iter) {
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Windows specific implementation of file string comparisons.
-
-int FilePath::CompareIgnoreCase(StringViewType string1,
-                                StringViewType string2) {
-  // CharUpperW within user32 is used here because it will provide unicode
-  // conversions regardless of locale. The STL alternative, towupper, has a
-  // locale consideration that prevents it from converting all characters by
-  // default.
-  CHECK(win::IsUser32AndGdi32Available());
-  // Perform character-wise upper case comparison rather than using the
-  // fully Unicode-aware CompareString(). For details see:
-  // http://blogs.msdn.com/michkap/archive/2005/10/17/481600.aspx
-  StringViewType::const_iterator i1 = string1.begin();
-  StringViewType::const_iterator i2 = string2.begin();
-  StringViewType::const_iterator string1end = string1.end();
-  StringViewType::const_iterator string2end = string2.end();
-  for (; i1 != string1end && i2 != string2end; ++i1, ++i2) {
-    wchar_t c1 =
-        (wchar_t)LOWORD(::CharUpperW((LPWSTR)(DWORD_PTR)MAKELONG(*i1, 0)));
-    wchar_t c2 =
-        (wchar_t)LOWORD(::CharUpperW((LPWSTR)(DWORD_PTR)MAKELONG(*i2, 0)));
-    if (c1 < c2) {
-      return -1;
-    }
-    if (c1 > c2) {
-      return 1;
-    }
-  }
-  if (i1 != string1end) {
-    return 1;
-  }
-  if (i2 != string2end) {
-    return -1;
-  }
-  return 0;
-}
-
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 // Mac OS X specific implementation of file string comparisons.
 
 // cf.

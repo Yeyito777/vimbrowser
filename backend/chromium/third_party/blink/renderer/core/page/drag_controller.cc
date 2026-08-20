@@ -96,9 +96,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/vector2d_conversions.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace blink {
 
@@ -107,12 +104,7 @@ using ui::mojom::blink::DragOperation;
 
 static const int kMaxOriginalImageArea = 1500 * 1500;
 static const int kLinkDragBorderInset = 2;
-#if BUILDFLAG(IS_ANDROID)
-// Android handles drag image transparency at the browser level
-static const float kDragImageAlpha = 1.00f;
-#else
 static const float kDragImageAlpha = 0.75f;
-#endif
 
 #if DCHECK_IS_ON()
 static bool DragTypeIsValid(DragSourceAction action) {

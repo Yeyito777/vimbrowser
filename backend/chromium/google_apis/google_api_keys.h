@@ -95,33 +95,10 @@ COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetRemotingAPIKey();
 // Retrieves the Speech On-Device API (SODA) API Key.
 COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetSodaAPIKey();
 
-#if !BUILDFLAG(IS_ANDROID)
 // Retrieves the HaTS API Key. This key is only used for desktop HaTS
 // and the internal API Key is only defined in non-Android builds.
 COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetHatsAPIKey();
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Retrieves the Sharing API Key.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetSharingAPIKey();
-
-// Retrieves the ReadAloud API Key.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetReadAloudAPIKey();
-
-// Retrieves the Fresnel API Key.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetFresnelAPIKey();
-
-// Retrieves the Boca API Key.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetBocaAPIKey();
-
-// Retrieves the ChromeOS-specific Geolocation API Key used by the System
-// Services.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetCrosSystemGeoAPIKey();
-// Retrieves the ChromeOS-specific Geolocation API Key used by the Chrome
-// browser.
-COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetCrosChromeGeoAPIKey();
-
-#endif
 
 // Retrieves the key used to sign metrics (UMA/UKM) uploads.
 COMPONENT_EXPORT(GOOGLE_APIS) const std::string& GetMetricsKey();

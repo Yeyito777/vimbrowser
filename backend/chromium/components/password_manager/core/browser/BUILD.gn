@@ -9,9 +9,7 @@ import("//third_party/libprotobuf-mutator/fuzzable_proto_library.gni")
 
 config("password_reuse_detection_config") {
   defines = []
-  if (!is_ios) {
-    defines += [ "ON_FOCUS_PING_ENABLED" ]
-  }
+  defines += [ "ON_FOCUS_PING_ENABLED" ]
 }
 
 static_library("browser") {
@@ -239,12 +237,10 @@ static_library("browser") {
     deps += [ "//content/public/browser" ]
   }
 
-  if (!is_chromeos) {
-    sources += [
-      "password_reuse_manager_signin_notifier_impl.cc",
-      "password_reuse_manager_signin_notifier_impl.h",
-    ]
-  }
+  sources += [
+    "password_reuse_manager_signin_notifier_impl.cc",
+    "password_reuse_manager_signin_notifier_impl.h",
+  ]
 }
 
 source_set("password_switches") {
@@ -479,9 +475,7 @@ source_set("unit_tests") {
     sources += [ "hash_password_manager_unittest.cc" ]
   }
 
-  if (!is_chromeos) {
-    sources += [ "password_reuse_manager_signin_notifier_impl_unittest.cc" ]
-  }
+  sources += [ "password_reuse_manager_signin_notifier_impl_unittest.cc" ]
 
   deps = [
     ":test_support",
@@ -528,10 +522,6 @@ source_set("unit_tests") {
   ]
 
   deps += [ "//components/webauthn/core/browser:test_support" ]
-
-  if (is_ios) {
-    deps += [ "//components/test:password_manager_test_bundle_data" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

@@ -232,42 +232,6 @@ class EventSender {
   bool is_drag_mode() const { return is_drag_mode_; }
   void set_is_drag_mode(bool drag_mode) { is_drag_mode_ = drag_mode; }
 
-#if BUILDFLAG(IS_WIN)
-  int wm_key_down() const { return wm_key_down_; }
-  void set_wm_key_down(int key_down) { wm_key_down_ = key_down; }
-
-  int wm_key_up() const { return wm_key_up_; }
-  void set_wm_key_up(int key_up) { wm_key_up_ = key_up; }
-
-  int wm_char() const { return wm_char_; }
-  void set_wm_char(int wm_char) { wm_char_ = wm_char; }
-
-  int wm_dead_char() const { return wm_dead_char_; }
-  void set_wm_dead_char(int dead_char) { wm_dead_char_ = dead_char; }
-
-  int wm_sys_key_down() const { return wm_sys_key_down_; }
-  void set_wm_sys_key_down(int key_down) { wm_sys_key_down_ = key_down; }
-
-  int wm_sys_key_up() const { return wm_sys_key_up_; }
-  void set_wm_sys_key_up(int key_up) { wm_sys_key_up_ = key_up; }
-
-  int wm_sys_char() const { return wm_sys_char_; }
-  void set_wm_sys_char(int sys_char) { wm_sys_char_ = sys_char; }
-
-  int wm_sys_dead_char() const { return wm_sys_dead_char_; }
-  void set_wm_sys_dead_char(int sys_dead_char) {
-    wm_sys_dead_char_ = sys_dead_char;
-  }
-
-  int wm_key_down_;
-  int wm_key_up_;
-  int wm_char_;
-  int wm_dead_char_;
-  int wm_sys_key_down_;
-  int wm_sys_key_up_;
-  int wm_sys_char_;
-  int wm_sys_dead_char_;
-#endif
 
   const raw_ptr<blink::WebFrameWidget> web_frame_widget_;
   const raw_ptr<TestRunner> test_runner_;

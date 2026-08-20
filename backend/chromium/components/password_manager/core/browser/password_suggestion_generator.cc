@@ -69,13 +69,11 @@ std::u16string ReplaceEmptyUsername(const std::u16string& username,
 
 Suggestion CreatePasskeyFromAnotherDeviceEntry(bool listed_passkeys) {
   int title_id;
-#if !BUILDFLAG(IS_IOS)
   if (base::FeatureList::IsEnabled(
           password_manager::features::
               kAutofillReintroduceHybridPasskeyDropdownItem)) {
     title_id = IDS_PASSWORD_MANAGER_USE_PASSKEY_OTHER_DEVICE;
   } else
-#endif  // !BUILDFLAG(IS_IOS)
   {
     title_id = listed_passkeys ? IDS_PASSWORD_MANAGER_USE_DIFFERENT_PASSKEY
                                : IDS_PASSWORD_MANAGER_USE_PASSKEY;
@@ -358,9 +356,6 @@ void RecordPendingStatePromoHistogram(FillingReauthPromoShown sample) {
 #endif
 
 bool ShowPasskeysFromAnotherDeviceInAutofill() {
-#if BUILDFLAG(IS_IOS)
-  return true;
-#else
   // Show the hybrid passkey item if the context menu experiment (which moves
   // this option) is not enabled, or if the feature to reintroduce it to the
   // dropdown is explicitly enabled.
@@ -370,7 +365,6 @@ bool ShowPasskeysFromAnotherDeviceInAutofill() {
          base::FeatureList::IsEnabled(
              password_manager::features::
                  kAutofillReintroduceHybridPasskeyDropdownItem);
-#endif  // BUILDFLAG(IS_IOS)
 }
 }  // namespace
 

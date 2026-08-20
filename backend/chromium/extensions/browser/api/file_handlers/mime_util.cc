@@ -20,10 +20,6 @@
 #include "net/base/mime_util.h"
 #include "storage/browser/file_system/file_system_url.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/extensions_api_client.h"
-#include "extensions/browser/api/file_handlers/non_native_file_system_delegate.h"
-#endif
 
 namespace extensions::app_file_handler_util {
 
@@ -63,40 +59,6 @@ void SniffMimeType(const base::FilePath& local_path, std::string* result) {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Converts a result passed as a scoped pointer to a dereferenced value passed
-// to |callback|.
-void OnGetMimeTypeFromFileForNonNativeLocalPathCompleted(
-    std::unique_ptr<std::string> mime_type,
-    base::OnceCallback<void(const std::string&)> callback) {
-  std::move(callback).Run(*mime_type);
-}
-
-// Called when fetching MIME type for a non-native local path is completed.
-// If |success| is false, then tries to guess the MIME type by looking at the
-// file name.
-void OnGetMimeTypeFromMetadataForNonNativeLocalPathCompleted(
-    const base::FilePath& local_path,
-    base::OnceCallback<void(const std::string&)> callback,
-    const std::optional<std::string>& mime_type) {
-  if (mime_type) {
-    std::move(callback).Run(mime_type.value());
-    return;
-  }
-
-  // MIME type not available with metadata, hence try to guess it from the
-  // file's extension.
-  auto mime_type_from_extension = std::make_unique<std::string>();
-  std::string* const mime_type_from_extension_ptr =
-      mime_type_from_extension.get();
-  base::ThreadPool::PostTaskAndReply(
-      FROM_HERE, {base::MayBlock()},
-      base::BindOnce(base::IgnoreResult(&net::GetMimeTypeFromFile), local_path,
-                     mime_type_from_extension_ptr),
-      base::BindOnce(&OnGetMimeTypeFromFileForNonNativeLocalPathCompleted,
-                     std::move(mime_type_from_extension), std::move(callback)));
-}
-#endif
 
 // Called when sniffing for MIME type in the native local file is completed.
 void OnSniffMimeTypeForNativeLocalPathCompleted(
@@ -143,20 +105,6 @@ void GetMimeTypeForLocalPath(
     content::BrowserContext* context,
     const base::FilePath& local_path,
     base::OnceCallback<void(const std::string&)> callback) {
-#if BUILDFLAG(IS_CHROMEOS)
-  NonNativeFileSystemDelegate* delegate =
-      ExtensionsAPIClient::Get()->GetNonNativeFileSystemDelegate();
-  if (delegate && delegate->HasNonNativeMimeTypeProvider(context, local_path)) {
-    // For non-native files, try to get the MIME type from metadata. If not
-    // available, then try to guess from the extension. Never sniff (because
-    // it can be very slow).
-    delegate->GetNonNativeLocalPathMimeType(
-        context, local_path,
-        base::BindOnce(&OnGetMimeTypeFromMetadataForNonNativeLocalPathCompleted,
-                       local_path, std::move(callback)));
-    return;
-  }
-#endif
 
   // For native local files, try to guess the mime from the extension. If
   // not available, then try to sniff if.

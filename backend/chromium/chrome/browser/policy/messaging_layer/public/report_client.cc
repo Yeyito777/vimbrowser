@@ -30,23 +30,19 @@
 #include "components/reporting/util/status.h"
 #include "components/reporting/util/statusor.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "chrome/browser/policy/messaging_layer/upload/upload_provider.h"
 #include "components/reporting/encryption/verification.h"
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace reporting {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 namespace {
 
 const base::FilePath::CharType kReportingDirectory[] =
     FILE_PATH_LITERAL("reporting");
 
 }  // namespace
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 ReportingClient::ReportingClient(
     scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner)
@@ -55,10 +51,6 @@ ReportingClient::ReportingClient(
               [](base::OnceCallback<void(
                      StatusOr<scoped_refptr<StorageModuleInterface>>)>
                      storage_created_cb) {
-#if BUILDFLAG(IS_CHROMEOS)
-                StorageSelector::CreateMissiveStorageModule(
-                    std::move(storage_created_cb));
-#else   // !BUILDFLAG(IS_CHROMEOS)
                 base::FilePath reporting_path;
                 const auto res = base::PathService::Get(chrome::DIR_USER_DATA,
                                                         &reporting_path);
@@ -74,7 +66,6 @@ ReportingClient::ReportingClient(
                             &ReportingClient::AsyncStartUploader,
                             ReportQueueProvider::GetInstance()->GetWeakPtr())),
                     std::move(storage_created_cb));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
               }),
           sequenced_task_runner) {
   // Register itself as observer to connector.
@@ -187,7 +178,6 @@ void ReportingClient::ConfigureReportQueue(
           std::move(configuration), std::move(completion_cb)));
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Uploader is passed to Storage in order to upload messages using
 // `UploadClient`.
 class ReportingClient::Uploader : public UploaderInterface {
@@ -403,5 +393,4 @@ void ReportingClient::DeliverAsyncStartUploader(
           upload_provider_->GetWeakPtr()));
   std::move(start_uploader_cb).Run(std::move(uploader));
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }  // namespace reporting

@@ -88,13 +88,6 @@ if (!build_with_chromium) {
         # see bugs.webrtc.org/11027#c5.
         deps += [ ":webrtc_lib_link_test" ]
       }
-      if (is_ios) {
-        deps += [
-          "examples:apprtcmobile_tests",
-          "sdk:sdk_framework_unittests",
-          "sdk:sdk_unittests",
-        ]
-      }
 
       deps += [ "modules/video_capture:video_capture_tests" ]
 
@@ -204,27 +197,11 @@ config("common_inherited_config") {
   if (is_posix || is_fuchsia) {
     defines += [ "WEBRTC_POSIX" ]
   }
-  if (is_ios) {
-    defines += [
-      "WEBRTC_MAC",
-      "WEBRTC_IOS",
-    ]
-  }
   if (is_linux || is_chromeos) {
     defines += [ "WEBRTC_LINUX" ]
   }
   if (is_mac) {
     defines += [ "WEBRTC_MAC" ]
-  }
-  if (is_fuchsia) {
-    defines += [ "WEBRTC_FUCHSIA" ]
-  }
-  if (is_win) {
-    defines += [ "WEBRTC_WIN" ]
-  }
-
-  if (is_chromeos) {
-    defines += [ "CHROMEOS" ]
   }
 
   if (rtc_sanitize_coverage != "") {
@@ -530,9 +507,6 @@ if (!build_with_chromium) {
       deps += [ "api/audio:create_audio_device_module" ]
     }
     if (!build_with_chromium) {
-      if (is_ios) {
-        deps += [ "sdk:framework_objc" ]
-      }
     }
   }
 
@@ -567,14 +541,6 @@ if (use_libfuzzer || use_afl) {
 
 if (rtc_include_tests && !build_with_chromium) {
   rtc_unittests_resources = [ "resources/reference_video_640x360_30fps.y4m" ]
-
-  if (is_ios) {
-    bundle_data("rtc_unittests_bundle_data") {
-      testonly = true
-      sources = rtc_unittests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
 
   rtc_test("rtc_unittests") {
     testonly = true
@@ -630,10 +596,6 @@ if (rtc_include_tests && !build_with_chromium) {
         "logging:rtc_event_log_tests",
       ]
     }
-
-    if (is_ios) {
-      deps += [ ":rtc_unittests_bundle_data" ]
-    }
   }
 
   rtc_test("rtc_p2p_unittests") {
@@ -673,10 +635,6 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
 
     data_deps = [ "resources:video_engine_tests_data" ]
-
-    if (is_ios) {
-      deps += [ "resources:video_engine_tests_bundle_data" ]
-    }
   }
 
   rtc_test("webrtc_perf_tests") {
@@ -691,10 +649,6 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
 
     data_deps = [ "resources:webrtc_perf_tests_data" ]
-
-    if (is_ios) {
-      deps += [ "resources:webrtc_perf_tests_bundle_data" ]
-    }
   }
 
   rtc_test("webrtc_nonparallel_tests") {

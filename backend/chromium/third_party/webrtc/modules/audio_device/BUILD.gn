@@ -365,24 +365,6 @@ rtc_library("audio_device_impl") {
           "../third_party/portaudio:mac_portaudio",
         ]
       }
-      if (is_win) {
-        sources += [
-          "win/audio_device_core_win.cc",
-          "win/audio_device_core_win.h",
-        ]
-        libs = [
-          # Required for the built-in WASAPI AEC.
-          "dmoguids.lib",
-          "wmcodecdspuuid.lib",
-          "amstrmid.lib",
-          "msdmo.lib",
-          "oleaut32.lib",
-        ]
-        deps += [
-          "../../rtc_base:win32",
-          "../../rtc_base/win:scoped_com_initializer",
-        ]
-      }
       configs += [ ":audio_device_warnings_config" ]
     }
   } else {
@@ -478,15 +460,6 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
     if (is_linux || is_chromeos || is_mac || is_win) {
       sources += [ "audio_device_unittest.cc" ]
-    }
-    if (is_win) {
-      sources += [ "win/core_audio_utility_win_unittest.cc" ]
-      deps += [
-        ":audio_device_module_from_input_and_output",
-        ":windows_core_audio_utility",
-        "../../rtc_base/win:scoped_com_initializer",
-        "../../rtc_base/win:windows_version",
-      ]
     }
 
     if (!rtc_include_internal_audio_device) {

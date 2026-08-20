@@ -115,31 +115,6 @@ void AccountNameEmailStore::MaybeUpdateOrCreateAccountNameEmail() {
   UpdateOrCreateAccountNameEmail(extended_info.value());
 }
 
-#if BUILDFLAG(IS_IOS)
-void AccountNameEmailStore::MaybeUpdateOrCreateAccountNameEmail(
-    const std::string& account_name,
-    const std::string& email) {
-  if (!ReconcileProfileWithBlockReason() ||
-      !identity_manager_observer_.GetSource()) {
-    return;
-  }
-
-  if (identity_manager_observer_.GetSource()
-          ->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin)
-          .IsEmpty()) {
-    return;
-  }
-
-  if (account_name.empty()) {
-    return;
-  }
-
-  AccountInfo info = AccountInfo::Builder(GaiaId("dummy"), email)
-                         .SetFullName(account_name)
-                         .Build();
-  UpdateOrCreateAccountNameEmail(info);
-}
-#endif
 
 bool AccountNameEmailStore::ReconcileProfileWithBlockReason() {
   std::optional<ProfileUpdateBlockReason> reason =

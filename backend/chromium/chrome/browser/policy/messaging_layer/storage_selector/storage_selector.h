@@ -10,14 +10,12 @@
 #include "components/reporting/storage/storage_module_interface.h"
 #include "components/reporting/util/statusor.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include <string_view>
 #include <utility>
 
 #include "base/functional/callback.h"
 #include "chrome/browser/policy/messaging_layer/util/upload_declarations.h"
 #include "components/reporting/storage/storage_uploader_interface.h"  // nogncheck
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace base {
 class FilePath;
@@ -36,11 +34,6 @@ class StorageSelector {
  public:
   static bool is_use_missive();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static void CreateMissiveStorageModule(
-      base::OnceCallback<void(StatusOr<scoped_refptr<StorageModuleInterface>>)>
-          cb);
-#else  // !BUILDFLAG(IS_CHROMEOS)
   static void CreateLocalStorageModule(
       const base::FilePath& local_reporting_path,
       std::string_view verification_key,
@@ -55,7 +48,6 @@ class StorageSelector {
   static EncryptionKeyAttachedCallback GetLocalEncryptionKeyAttachedCb(
       scoped_refptr<StorageModuleInterface> storage_module);
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 };
 }  // namespace reporting
 

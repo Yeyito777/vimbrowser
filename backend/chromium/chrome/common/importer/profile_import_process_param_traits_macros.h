@@ -20,15 +20,9 @@
 #undef IPC_MESSAGE_EXPORT
 #define IPC_MESSAGE_EXPORT
 
-#if BUILDFLAG(IS_WIN)
-IPC_ENUM_TRAITS_MIN_MAX_VALUE(user_data_importer::ImporterType,
-                              user_data_importer::TYPE_UNKNOWN,
-                              user_data_importer::TYPE_EDGE)
-#else
 IPC_ENUM_TRAITS_MIN_MAX_VALUE(user_data_importer::ImporterType,
                               user_data_importer::TYPE_UNKNOWN,
                               user_data_importer::TYPE_BOOKMARKS_FILE)
-#endif
 
 IPC_ENUM_TRAITS_MIN_MAX_VALUE(user_data_importer::ImportItem,
                               user_data_importer::NONE,

@@ -122,9 +122,7 @@ perfetto_unittest_source_set("unittests") {
 
   # These tests rely on test_task_runner.h which
   # has no Windows implementation.
-  if (!is_win) {
-    sources += [ "tracing_service_impl_unittest.cc" ]
-  }
+  sources += [ "tracing_service_impl_unittest.cc" ]
 }
 
 if (enable_perfetto_benchmarks) {

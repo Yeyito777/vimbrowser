@@ -31,10 +31,6 @@ bool ShouldUpdateTextInputState(const ui::mojom::TextInputState& old_state,
   return old_state.type != new_state.type ||
          old_state.flags != new_state.flags ||
          old_state.can_compose_inline != new_state.can_compose_inline;
-#elif BUILDFLAG(IS_ANDROID)
-  // On Android, TextInputState update is sent only if there is some change in
-  // the state. So the new state is always different.
-  return true;
 #else
   NOTREACHED();
 #endif
@@ -124,22 +120,6 @@ TextInputManager::GetCompositionRangeInfo() const {
   return active_view_ ? &composition_range_info_map_.at(active_view_) : nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-const blink::mojom::ProximateCharacterRangeBounds*
-TextInputManager::GetProximateCharacterBoundsInfo(
-    const RenderWidgetHostViewBase& view) const {
-  // TODO(crbug.com/355578906): Remove const_cast<RenderWidgetHostViewBase*>,
-  // which is needed because TextInputManager::ViewMap has mutable
-  // `RenderWidgetHostViewBase*` keys and the two RenderWidgetHostViewAura
-  // callers are const methods passing (*this).
-  // - RenderWidgetHostViewAura::GetProximateCharacterBounds
-  // - RenderWidgetHostViewAura::GetProximateCharacterIndexFromPoint
-  const auto found = proximate_character_bounds_map_.find(
-      const_cast<RenderWidgetHostViewBase*>(&view));
-  return found != proximate_character_bounds_map_.end() ? found->second.get()
-                                                        : nullptr;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 const TextInputManager::TextSelection* TextInputManager::GetTextSelection(
     RenderWidgetHostViewBase* view) const {
@@ -193,9 +173,7 @@ void TextInputManager::UpdateTextInputState(
     // calls necessary).
     // NOTE: Android requires state to be returned even when the current state
     // is/becomes NONE. Otherwise IME may become irresponsive.
-#if !BUILDFLAG(IS_ANDROID)
     return;
-#endif
   }
 
   // Since |view| is registered, we already have a previous value for its
@@ -252,17 +230,6 @@ void TextInputManager::UpdateTextInputState(
   NotifyObserversAboutInputStateUpdate(view, changed);
 }
 
-#if BUILDFLAG(IS_WIN)
-void TextInputManager::UpdateProximateCharacterBounds(
-    RenderWidgetHostViewBase& view,
-    blink::mojom::ProximateCharacterRangeBoundsPtr proximate_bounds) {
-  if (!proximate_bounds) {
-    proximate_character_bounds_map_.erase(&view);
-    return;
-  }
-  proximate_character_bounds_map_[&view] = std::move(proximate_bounds);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void TextInputManager::ImeCancelComposition(RenderWidgetHostViewBase* view) {
   DCHECK(IsRegistered(view));
@@ -424,9 +391,6 @@ void TextInputManager::Unregister(RenderWidgetHostViewBase* view) {
   selection_region_map_.erase(view);
   composition_range_info_map_.erase(view);
   text_selection_map_.erase(view);
-#if BUILDFLAG(IS_WIN)
-  proximate_character_bounds_map_.erase(view);
-#endif  // BUILDFLAG(IS_WIN)
 
   if (active_view_ == view) {
     active_view_ = nullptr;

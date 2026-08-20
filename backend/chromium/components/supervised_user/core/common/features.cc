@@ -67,12 +67,7 @@ bool IsLocalWebApprovalsEnabled() {
   // Move this logic to SupervisedUserService, once it's migrated to
   // components, and de-release the intended usage of
   // WebsiteParentApproval::IsLocalApprovalSupported for Android.
-#if BUILDFLAG(IS_ANDROID)
-  return base::FeatureList::IsEnabled(kLocalWebApprovals) &&
-         IsGoogleBrandedBuild();
-#else
   return base::FeatureList::IsEnabled(kLocalWebApprovals);
-#endif
 }
 
 bool IsLocalWebApprovalsEnabledForSubframes() {

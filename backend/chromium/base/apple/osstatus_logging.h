@@ -11,11 +11,7 @@
 #include "base/logging.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <MacTypes.h>
-#else
 #include <libkern/OSTypes.h>
-#endif
 
 // Use the OSSTATUS_LOG family to log messages related to errors in macOS/iOS
 // system routines that report status via an OSStatus or OSErr value. It is

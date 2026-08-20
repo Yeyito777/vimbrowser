@@ -114,20 +114,7 @@ SkiaOutputDeviceGL::SkiaOutputDeviceGL(
   }
   capabilities_.pending_swap_params.max_pending_swaps =
       gl_surface_->GetBufferCount() - 1;
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(weiliangc): This capability is used to check whether we should do
-  // overlay. Since currently none of the other overlay system is implemented,
-  // only update this for Android.
-  // This output device is never offscreen.
-  capabilities_.supports_surfaceless = gl_surface_->IsSurfaceless();
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If Chrome OS is run on Linux for development purposes, we need to
-  // advertise a hardware orientation mode since Ash manages a separate device
-  // rotation independent of the host's native windowing system.
-  capabilities_.orientation_mode = OutputSurface::OrientationMode::kHardware;
-#endif  // IS_CHROMEOS
 
   DCHECK(context_state_);
   DCHECK(gl_surface_);
@@ -175,10 +162,8 @@ SkiaOutputDeviceGL::SkiaOutputDeviceGL(
     // use-case to have multiple active windows there. On other platforms we
     // disable GLSurface's VSync if we're swapping multiple surfaces per frame
     // to prevent SwapBuffers from blocking and slowing down other windows.
-#if !BUILDFLAG(IS_ANDROID)
     multisurface_swapbuffers_tracker_ =
         std::make_unique<MultiSurfaceSwapBuffersTracker>();
-#endif
   } else {
     gl_surface_->SetVSyncEnabled(false);
   }
@@ -190,9 +175,7 @@ SkiaOutputDeviceGL::~SkiaOutputDeviceGL() {
 }
 
 bool SkiaOutputDeviceGL::Reshape(const ReshapeParams& params) {
-#if !BUILDFLAG(IS_CHROMEOS)
   DCHECK_EQ(params.transform, gfx::OVERLAY_TRANSFORM_NONE);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   const gfx::Size size = params.GfxSize();
   const SkColorType color_type = params.image_info.colorType();

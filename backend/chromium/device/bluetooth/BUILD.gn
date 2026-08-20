@@ -8,19 +8,6 @@ import("//device/bluetooth/cast_bluetooth.gni")
 import("//device/bluetooth/emulation/buildflags.gni")
 
 config("bluetooth_config") {
-  if (is_win) {
-    ldflags = [
-      "/DELAYLOAD:BluetoothApis.dll",
-
-      # Despite MSDN stating that Bthprops.dll contains the
-      # symbols declared by bthprops.lib, they actually reside here:
-      "/DELAYLOAD:Bthprops.cpl",
-      "/DELAYLOAD:setupapi.dll",
-    ]
-  }
-  if (is_castos) {
-    defines = [ "USE_CAST_BLUETOOTH_ADAPTER" ]
-  }
 }
 
 config("bluetooth_emulation_config") {
@@ -187,16 +174,6 @@ component("bluetooth") {
 
   public_deps = [ "//device/bluetooth/public/cpp" ]
 
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/services/nearby/public/cpp/",
-      "//chromeos/ash/services/secure_channel/public/cpp/shared",
-      "//chromeos/constants",
-      "//device/bluetooth/bluez/ble_scan_parser",
-    ]
-  }
-
   if (is_apple) {
     sources += [
       "bluetooth_advertisement_mac.h",
@@ -252,57 +229,6 @@ component("bluetooth") {
     frameworks += [
       "IOBluetooth.framework",
       "IOKit.framework",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [
-      "bluetooth_adapter_ios.h",
-      "bluetooth_adapter_ios.mm",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "bluetooth_adapter_win.cc",
-      "bluetooth_adapter_win.h",
-      "bluetooth_adapter_winrt.cc",
-      "bluetooth_adapter_winrt.h",
-      "bluetooth_advertisement_winrt.cc",
-      "bluetooth_advertisement_winrt.h",
-      "bluetooth_classic_win.cc",
-      "bluetooth_classic_win.h",
-      "bluetooth_device_win.cc",
-      "bluetooth_device_win.h",
-      "bluetooth_device_winrt.cc",
-      "bluetooth_device_winrt.h",
-      "bluetooth_gatt_discoverer_winrt.cc",
-      "bluetooth_gatt_discoverer_winrt.h",
-      "bluetooth_init_win.cc",
-      "bluetooth_init_win.h",
-      "bluetooth_pairing_winrt.cc",
-      "bluetooth_pairing_winrt.h",
-      "bluetooth_remote_gatt_characteristic_winrt.cc",
-      "bluetooth_remote_gatt_characteristic_winrt.h",
-      "bluetooth_remote_gatt_descriptor_winrt.cc",
-      "bluetooth_remote_gatt_descriptor_winrt.h",
-      "bluetooth_remote_gatt_service_winrt.cc",
-      "bluetooth_remote_gatt_service_winrt.h",
-      "bluetooth_service_record_win.cc",
-      "bluetooth_service_record_win.h",
-      "bluetooth_socket_win.cc",
-      "bluetooth_socket_win.h",
-      "bluetooth_task_manager_win.cc",
-      "bluetooth_task_manager_win.h",
-      "event_utils_winrt.h",
-    ]
-
-    libs = [
-      # Bthprops must be listed before BluetoothApis or else delay loading
-      # crashes.
-      "Bthprops.lib",
-      "BluetoothApis.lib",
-      "setupapi.lib",
     ]
   }
 
@@ -562,25 +488,13 @@ component("bluetooth") {
           "dbus/dbus_bluez_manager_wrapper_linux.h",
         ]
       }
-      if (is_chromeos) {
-        import("//chromeos/dbus/config/use_real_dbus_clients.gni")
-        configs += [ "//chromeos/dbus/config:use_real_dbus_clients_config" ]
-        sources += [
-          "chromeos/bluetooth_connection_logger.cc",
-          "chromeos/bluetooth_connection_logger.h",
-          "chromeos/bluetooth_utils.cc",
-          "chromeos/bluetooth_utils.h",
-          "chromeos_platform_features.cc",
-          "chromeos_platform_features.h",
-        ]
-      }
       if (use_dbus) {
         public_deps += [
           "//components/dbus",
           "//dbus",
         ]
       }
-    } else {  # !use_bluez
+    } else {
       defines += [ "LINUX_WITHOUT_DBUS" ]
       sources += [
         "dbus/dbus_bluez_manager_wrapper_linux.h",
@@ -591,32 +505,8 @@ component("bluetooth") {
     # force_cast_bluetooth is used to compile with both cast & BlueZ, by
     # omitting the stubs that would otherwise be added in.
     if (!use_bluez || force_cast_bluetooth) {
-      if (is_castos) {
-        sources += [
-          "cast/bluetooth_adapter_cast.cc",
-          "cast/bluetooth_adapter_cast.h",
-          "cast/bluetooth_device_cast.cc",
-          "cast/bluetooth_device_cast.h",
-          "cast/bluetooth_remote_gatt_characteristic_cast.cc",
-          "cast/bluetooth_remote_gatt_characteristic_cast.h",
-          "cast/bluetooth_remote_gatt_descriptor_cast.cc",
-          "cast/bluetooth_remote_gatt_descriptor_cast.h",
-          "cast/bluetooth_remote_gatt_service_cast.cc",
-          "cast/bluetooth_remote_gatt_service_cast.h",
-          "cast/bluetooth_utils.cc",
-          "cast/bluetooth_utils.h",
-        ]
-
-        public_deps += [ "//chromecast/public" ]
-
-        deps += [
-          "//chromecast/device/bluetooth:util",
-          "//chromecast/device/bluetooth/le",
-        ]
-      } else {
-        defines += [ "NO_PLATFORM_BLUETOOTH" ]
-        sources += [ "bluetooth_adapter_stub.cc" ]
-      }
+      defines += [ "NO_PLATFORM_BLUETOOTH" ]
+      sources += [ "bluetooth_adapter_stub.cc" ]
     }
   }
 
@@ -647,13 +537,6 @@ static_library("mocks") {
     "test/mock_bluetooth_socket.cc",
     "test/mock_bluetooth_socket.h",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "test/mock_bluetooth_low_energy_scan_session.cc",
-      "test/mock_bluetooth_low_energy_scan_session.h",
-    ]
-  }
 
   public_deps = [
     ":bluetooth",

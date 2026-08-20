@@ -86,17 +86,6 @@ source_set("utility") {
     ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/assistant:buildflags",
-      "//chromeos/ash/services/ime:sandbox_hook",
-      "//chromeos/services/tts:sandbox_hook",
-    ]
-    if (use_linux_video_acceleration) {
-      deps += [ "//chromeos/ash/experiences/arc/video_accelerator" ]
-    }
-  }
-
   if (is_linux || is_chromeos) {
     deps += [
       "//content/utility/speech:speech_recognition_sandbox_hook",
@@ -138,19 +127,6 @@ source_set("utility") {
       "//content/services/isolated_xr_device:lib",
       "//device/vr/public/mojom:isolated_xr_service",
     ]
-  }
-
-  if (is_win) {
-    deps += [ ":delegate_data" ]
-  }
-}
-
-if (is_win) {
-  mojom("delegate_data") {
-    disable_variants = true
-
-    sources = [ "sandbox_delegate_data.mojom" ]
-    public_deps = [ "//mojo/public/mojom/base" ]
   }
 }
 

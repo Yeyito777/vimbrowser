@@ -35,18 +35,12 @@ component("proxy_config") {
   # and disable include checking so GN doesn't complain about the missing
   # dependency (it still links OK). This cycle should be fixed and header
   # checking enabled.
-  if (is_chromeos) {
-    check_includes = false
-  } else {
-    deps += [ "//components/pref_registry" ]
-  }
+  deps += [ "//components/pref_registry" ]
 
-  if (!is_ios) {
-    sources += [
-      "proxy_policy_handler.cc",
-      "proxy_policy_handler.h",
-    ]
-  }
+  sources += [
+    "proxy_policy_handler.cc",
+    "proxy_policy_handler.h",
+  ]
 
   if (!is_ios && !is_fuchsia) {
     sources += [
@@ -80,9 +74,7 @@ source_set("unit_tests") {
     "//third_party/abseil-cpp:absl",
   ]
 
-  if (!is_ios) {
-    sources += [ "proxy_policy_handler_unittest.cc" ]
-  }
+  sources += [ "proxy_policy_handler_unittest.cc" ]
 
   if (!is_ios && !is_fuchsia) {
     sources += [ "proxy_override_rules_policy_handler_unittest.cc" ]

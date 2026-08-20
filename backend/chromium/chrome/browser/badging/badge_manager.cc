@@ -32,8 +32,6 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/badging/badge_manager_delegate_mac.h"
-#elif BUILDFLAG(IS_WIN)
-#include "chrome/browser/badging/badge_manager_delegate_win.h"
 #endif
 
 using web_app::WebAppProvider;
@@ -67,8 +65,6 @@ BadgeManager::BadgeManager(Profile* profile)
   // web_apps_chromeos.cc.
 #if BUILDFLAG(IS_MAC)
   SetDelegate(std::make_unique<BadgeManagerDelegateMac>(profile, this));
-#elif BUILDFLAG(IS_WIN)
-  SetDelegate(std::make_unique<BadgeManagerDelegateWin>(profile, this));
 #endif
 }
 

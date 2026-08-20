@@ -14,15 +14,6 @@
 #include "build/build_config.h"
 #include "components/enterprise/browser/controller/browser_dm_token_storage.h"
 
-#if BUILDFLAG(IS_WIN)
-// Windows include must be first for the code to compile.
-// clang-format off
-#include <windows.h>
-#include <dpapi.h>
-// clang-format on
-
-#include "base/win/registry.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "base/environment.h"
@@ -39,106 +30,7 @@
 namespace extensions {
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-const wchar_t kDefaultRegistryPath[] =
-    L"SOFTWARE\\Google\\Endpoint Verification";
-const wchar_t kValueName[] = L"Safe Storage";
-
-LONG ReadEncryptedSecret(std::string* encrypted_secret) {
-  base::win::RegKey key;
-  constexpr DWORD kMaxRawSize = 1024;
-  char raw_data[kMaxRawSize];
-  DWORD raw_data_size = kMaxRawSize;
-  DWORD raw_type;
-  encrypted_secret->clear();
-  LONG result = key.Open(HKEY_CURRENT_USER, kDefaultRegistryPath, KEY_READ);
-  if (result != ERROR_SUCCESS) {
-    return result;
-  }
-  result = key.ReadValue(kValueName, raw_data, &raw_data_size, &raw_type);
-  if (result != ERROR_SUCCESS) {
-    return result;
-  }
-  if (raw_type != REG_BINARY) {
-    key.DeleteValue(kValueName);
-    return ERROR_INVALID_DATATYPE;
-  }
-  encrypted_secret->insert(0, raw_data, raw_data_size);
-  return ERROR_SUCCESS;
-}
-
-// Encrypts the |plaintext| and write the result in |cyphertext|. This
-// function was taken from os_crypt/os_crypt_win.cc (Chromium).
-LONG EncryptString(const std::string& plaintext, std::string* ciphertext) {
-  DATA_BLOB input;
-  input.pbData =
-      const_cast<BYTE*>(reinterpret_cast<const BYTE*>(plaintext.data()));
-  input.cbData = static_cast<DWORD>(plaintext.length());
-  ciphertext->clear();
-
-  DATA_BLOB output;
-  BOOL result = ::CryptProtectData(&input, nullptr, nullptr, nullptr, nullptr,
-                                   0, &output);
-  if (!result) {
-    return ::GetLastError();
-  }
-
-  // this does a copy
-  ciphertext->assign(reinterpret_cast<std::string::value_type*>(output.pbData),
-                     output.cbData);
-
-  LocalFree(output.pbData);
-  return ERROR_SUCCESS;
-}
-
-// Decrypts the |cyphertext| and write the result in |plaintext|. This
-// function was taken from os_crypt/os_crypt_win.cc (Chromium).
-LONG DecryptString(const std::string& ciphertext, std::string* plaintext) {
-  DATA_BLOB input;
-  input.pbData =
-      const_cast<BYTE*>(reinterpret_cast<const BYTE*>(ciphertext.data()));
-  input.cbData = static_cast<DWORD>(ciphertext.length());
-  plaintext->clear();
-
-  DATA_BLOB output;
-  BOOL result =
-      ::CryptUnprotectData(&input, nullptr, nullptr, nullptr, nullptr, 0,
-                           &output);
-  if (!result) {
-    return ::GetLastError();
-  }
-
-  plaintext->assign(reinterpret_cast<char*>(output.pbData), output.cbData);
-  LocalFree(output.pbData);
-  return ERROR_SUCCESS;
-}
-
-LONG CreateRandomSecret(std::string* secret) {
-  // Generate a password with 128 bits of randomness.
-  const int kBytes = 128 / 8;
-  std::string generated_secret =
-      base::Base64Encode(base::RandBytesAsVector(kBytes));
-
-  std::string encrypted_secret;
-  LONG result = EncryptString(generated_secret, &encrypted_secret);
-  if (result != ERROR_SUCCESS) {
-    return result;
-  }
-
-  base::win::RegKey key;
-  result = key.Create(HKEY_CURRENT_USER, kDefaultRegistryPath, KEY_WRITE);
-  if (result != ERROR_SUCCESS) {
-    return result;
-  }
-  result = key.WriteValue(kValueName, encrypted_secret.data(),
-                          encrypted_secret.size(), REG_BINARY);
-  if (result == ERROR_SUCCESS) {
-    *secret = generated_secret;
-  }
-  return result;
-}
-
-#elif BUILDFLAG(IS_MAC)  // BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC)  // BUILDFLAG(IS_WIN)
 
 constexpr char kServiceName[] = "Endpoint Verification Safe Storage";
 constexpr char kAccountName[] = "Endpoint Verification";
@@ -272,9 +164,7 @@ base::FilePath GetEndpointVerificationDir() {
   }
 
   bool got_path = false;
-#if BUILDFLAG(IS_WIN)
-  got_path = base::PathService::Get(base::DIR_LOCAL_APP_DATA, &path);
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
@@ -380,19 +270,7 @@ void RetrieveDeviceSecret(
     bool force_recreate,
     base::OnceCallback<void(const std::string&, int32_t)> callback) {
   std::string secret;
-#if BUILDFLAG(IS_WIN)
-  std::string encrypted_secret;
-  LONG result = ReadEncryptedSecret(&encrypted_secret);
-  if (result == ERROR_FILE_NOT_FOUND) {
-    result = CreateRandomSecret(&secret);
-  } else if (result == ERROR_SUCCESS) {
-    result = DecryptString(encrypted_secret, &secret);
-  }
-  // If something failed above [re]try creating the secret if forced.
-  if (result != ERROR_SUCCESS && force_recreate) {
-    result = CreateRandomSecret(&secret);
-  }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   int32_t result = ReadEncryptedSecret(&secret, force_recreate);
 #else
   int32_t result = -1;  // Anything but 0 is a failure.

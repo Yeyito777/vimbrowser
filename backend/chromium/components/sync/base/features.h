@@ -57,7 +57,6 @@ BASE_DECLARE_FEATURE(kSyncLoyaltyCardMetadata);
 // Enables syncing of accessibility annotations to devices.
 BASE_DECLARE_FEATURE(kSyncAccessibilityAnnotation);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Flag that controls Uno fast-follow features which are:
 // On Android:
 // - Batch upload of left-behind bookmarks from the bookmark manager
@@ -68,7 +67,6 @@ BASE_DECLARE_FEATURE(kSyncAccessibilityAnnotation);
 // Adding history sync opt-in entry points, and other follow-ups to
 // `kReplaceSyncPromosWithSignInPromos`.
 BASE_DECLARE_FEATURE(kUnoPhase2FollowUp);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // Controls whether to enable syncing of Autofill Wallet Credential Data.
 BASE_DECLARE_FEATURE(kSyncAutofillWalletCredentialData);
@@ -177,29 +175,8 @@ inline constexpr base::FeatureParam<double>
         &kSyncIncreaseNudgeDelayForSingleClient,
         "SyncIncreaseNudgeDelayForSingleClientFactor", 2.0};
 
-#if BUILDFLAG(IS_ANDROID)
-// If enabled, WebAPK data will be synced for Backup&Restore purposes.
-BASE_DECLARE_FEATURE(kWebApkBackupAndRestoreBackend);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-// Flag to test different alternatives for the passwords sync error message
-// content.
-BASE_DECLARE_FEATURE(kSyncEnablePasswordsSyncErrorMessageAlternative);
-inline constexpr base::FeatureParam<int>
-    kSyncEnablePasswordsSyncErrorMessageAlternativeVersion{
-        &kSyncEnablePasswordsSyncErrorMessageAlternative, "version", 3};
 
-// If enabled, the error message to unlock passwords is shown for longer.
-BASE_DECLARE_FEATURE(kSyncTrustedVaultErrorMessageDuration);
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_IOS)
-// Enables a message improvements to the existing trusted vault error infobar
-// (informing users that fixing the error will help them to start syncing their
-// passwords).
-BASE_DECLARE_FEATURE(kSyncTrustedVaultInfobarMessageImprovements);
-#endif  // BUILDFLAG(IS_IOS)
 
 // If enabled, the preferences sync service will use the selected types to
 // determine whether the pref values should be set in the account storage.

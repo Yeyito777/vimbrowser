@@ -37,10 +37,6 @@ BASE_I18N_EXPORT bool InitializeICUWithFileDescriptor(
 // notably releasing the mapped ICU data file, and handle.
 BASE_I18N_EXPORT void ResetGlobalsForTesting();
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Overrides the directory used by ICU for external time zone data.
-BASE_I18N_EXPORT void SetIcuTimeZoneDataDirForTesting(const char* dir);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 #endif  // ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE
 
 // In a test binary, initialize functions might be called twice.

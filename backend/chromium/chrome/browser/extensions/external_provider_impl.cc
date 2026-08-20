@@ -63,27 +63,7 @@
 #include "chrome/browser/web_applications/preinstalled_app_install_features.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_paths.h"
-#include "ash/constants/ash_switches.h"
-#include "base/path_service.h"
-#include "chrome/browser/ash/customization/customization_document.h"
-#include "chrome/browser/ash/extensions/authentication_screen_extensions_external_loader.h"
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/policy/core/device_local_account_policy_service.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/chromeos/app_mode/kiosk_app_external_loader.h"
-#include "chrome/browser/chromeos/extensions/external_loader/device_local_account_external_policy_loader.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"
-#include "chromeos/ash/experiences/arc/arc_util.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/extensions/external_registry_loader_win.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -94,26 +74,6 @@ namespace extensions {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-const char kCameraAppId[] = "hfhhnacclhffhdffklopdkcgdhifgngh";
-
-// Certain pre-installed extensions are no longer needed on ARC devices as they
-// were replaced by their ARC counterparts.
-bool ShouldUninstallExtensionReplacedByArcApp(const std::string& extension_id) {
-  if (!arc::IsArcAvailable())
-    return false;
-
-  if (extension_id == extension_misc::kGooglePlayBooksAppId ||
-      extension_id == extension_misc::kGooglePlayMoviesAppId ||
-      extension_id == extension_misc::kGooglePlayMusicAppId) {
-    return true;
-  }
-
-  return false;
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -259,25 +219,6 @@ void ExternalProviderImpl::RetrieveExtensionsFromPrefs(
   for (auto pref : *prefs_) {
     const std::string& extension_id = pref.first;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (extension_id == kCameraAppId) {
-      unsupported_extensions.insert(extension_id);
-      install_stage_tracker->ReportFailure(
-          extension_id,
-          InstallStageTracker::FailureReason::REPLACED_BY_SYSTEM_APP);
-      continue;
-    }
-
-    if (ShouldUninstallExtensionReplacedByArcApp(extension_id)) {
-      VLOG(1) << "Extension with key: " << extension_id << " was replaced "
-              << "by a default ARC app, and will be uninstalled.";
-      unsupported_extensions.emplace(extension_id);
-      install_stage_tracker->ReportFailure(
-          extension_id,
-          InstallStageTracker::FailureReason::REPLACED_BY_ARC_APP);
-      continue;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     if (!crx_file::id_util::IdIsValid(extension_id)) {
       LOG(WARNING) << "Malformed extension dictionary: key "
@@ -671,51 +612,6 @@ void ExternalProviderImpl::CreateExternalProviders(
   [[maybe_unused]] ManifestLocation crx_location =
       ManifestLocation::kInvalidLocation;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool install_on_lock_screen =
-      chromeos::features::IsLockScreenBadgeAuthEnabled() &&
-      ash::IsLockScreenBrowserContext(profile);
-  if (ash::IsSigninBrowserContext(profile) || install_on_lock_screen) {
-    // Download extensions/apps installed by policy in the login and lock screen
-    // profiles. Extensions (not apps) installed through this path will have
-    // type |TYPE_LOGIN_SCREEN_EXTENSION| with limited API capabilities.
-    crx_location = ManifestLocation::kExternalPolicyDownload;
-    external_loader = base::MakeRefCounted<
-        chromeos::AuthenticationScreenExtensionsExternalLoader>(profile);
-    auto signin_profile_provider = std::make_unique<ExternalProviderImpl>(
-        service, external_loader, profile, crx_location,
-        ManifestLocation::kExternalPolicyDownload, Extension::FOR_LOGIN_SCREEN);
-    signin_profile_provider->set_auto_acknowledge(true);
-    signin_profile_provider->set_allow_updates(true);
-    provider_list->push_back(std::move(signin_profile_provider));
-    return;
-  }
-
-  policy::BrowserPolicyConnectorAsh* const connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  DCHECK(connector);
-  bool is_chrome_os_public_session = false;
-  const user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  if (user && connector->IsDeviceEnterpriseManaged()) {
-    auto account_type =
-        policy::GetDeviceLocalAccountType(user->GetAccountId().GetUserEmail());
-    if (account_type.has_value()) {
-      if (account_type == policy::DeviceLocalAccountType::kPublicSession) {
-        is_chrome_os_public_session = true;
-      }
-      policy::DeviceLocalAccountPolicyBroker* broker =
-          connector->GetDeviceLocalAccountPolicyService()->GetBrokerForUser(
-              user->GetAccountId().GetUserEmail());
-      if (broker) {
-        external_loader = broker->extension_loader();
-        crx_location = ManifestLocation::kExternalPolicy;
-      } else {
-        NOTREACHED();
-      }
-    }
-  }
-#endif
 
   if (!external_loader.get()) {
     external_loader = base::MakeRefCounted<ExternalPolicyLoader>(
@@ -736,42 +632,6 @@ void ExternalProviderImpl::CreateExternalProviders(
   // Load the KioskAppExternalProvider when running in the Chrome App kiosk
   // mode.
   if (IsRunningInForcedAppMode()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    if (profiles::IsChromeAppKioskSession() &&
-        // If kPreventKioskAutolaunchForTesting is specified,
-        // the app won't be provided, so skip these providers.
-        !base::CommandLine::ForCurrentProcess()->HasSwitch(
-            ash::switches::kPreventKioskAutolaunchForTesting)) {
-      ManifestLocation location = ManifestLocation::kExternalPolicy;
-
-      if (!connector->IsDeviceEnterpriseManaged())
-        location = ManifestLocation::kExternalPref;
-
-      auto kiosk_app_provider = std::make_unique<ExternalProviderImpl>(
-          service,
-          base::MakeRefCounted<chromeos::KioskAppExternalLoader>(
-              chromeos::KioskAppExternalLoader::AppClass::kPrimary),
-          profile, location, ManifestLocation::kInvalidLocation,
-          Extension::NO_FLAGS);
-      kiosk_app_provider->set_auto_acknowledge(true);
-      kiosk_app_provider->set_install_immediately(true);
-      kiosk_app_provider->set_allow_updates(true);
-      provider_list->push_back(std::move(kiosk_app_provider));
-
-      // Kiosk secondary app external provider.
-      auto secondary_kiosk_app_provider =
-          std::make_unique<ExternalProviderImpl>(
-              service,
-              base::MakeRefCounted<chromeos::KioskAppExternalLoader>(
-                  chromeos::KioskAppExternalLoader::AppClass::kSecondary),
-              profile, ManifestLocation::kExternalPref,
-              ManifestLocation::kExternalPrefDownload, Extension::NO_FLAGS);
-      secondary_kiosk_app_provider->set_auto_acknowledge(true);
-      secondary_kiosk_app_provider->set_install_immediately(true);
-      secondary_kiosk_app_provider->set_allow_updates(true);
-      provider_list->push_back(std::move(secondary_kiosk_app_provider));
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     return;
   }
 
@@ -791,7 +651,6 @@ void ExternalProviderImpl::CreateExternalProviders(
     return;
   }
 
-#if !BUILDFLAG(IS_WIN)
   // On Mac OS, items in /Library/... should be written by the superuser.
   // Check that all components of the path are writable by root only.
   ExternalPrefLoader::Options check_admin_permissions_on_mac;
@@ -802,38 +661,6 @@ void ExternalProviderImpl::CreateExternalProviders(
   check_admin_permissions_on_mac = ExternalPrefLoader::NONE;
 #endif
   int bundled_extension_creation_flags = Extension::NO_FLAGS;
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  bundled_extension_creation_flags = Extension::FROM_WEBSTORE |
-      Extension::WAS_INSTALLED_BY_DEFAULT;
-
-  if (!is_chrome_os_public_session) {
-    int pref_load_flags =
-        profile->IsNewProfile()
-            ? ExternalPrefLoader::DELAY_LOAD_UNTIL_PRIORITY_SYNC
-            : ExternalPrefLoader::NONE;
-    pref_load_flags |= ExternalPrefLoader::USE_USER_TYPE_PROFILE_FILTER;
-    provider_list->push_back(std::make_unique<ExternalProviderImpl>(
-        service,
-        base::MakeRefCounted<ExternalPrefLoader>(
-            chrome::DIR_STANDALONE_EXTERNAL_EXTENSIONS, pref_load_flags,
-            profile),
-        profile, ManifestLocation::kExternalPref,
-        ManifestLocation::kExternalPrefDownload,
-        bundled_extension_creation_flags));
-
-    // OEM pre-installed apps.
-    int oem_extension_creation_flags =
-        bundled_extension_creation_flags | Extension::WAS_INSTALLED_BY_OEM;
-    ash::ServicesCustomizationDocument* customization =
-        ash::ServicesCustomizationDocument::GetInstance();
-    provider_list->push_back(std::make_unique<ExternalProviderImpl>(
-        service, customization->CreateExternalLoader(profile), profile,
-        ManifestLocation::kExternalPref,
-        ManifestLocation::kExternalPrefDownload, oem_extension_creation_flags));
-  }
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
   if (!profile->GetPrefs()->GetBoolean(pref_names::kBlockExternalExtensions)) {
 #if BUILDFLAG(IS_LINUX)
     provider_list->push_back(std::make_unique<ExternalProviderImpl>(
@@ -845,14 +672,6 @@ void ExternalProviderImpl::CreateExternalProviders(
         ManifestLocation::kExternalPrefDownload,
         bundled_extension_creation_flags));
 #endif
-#if BUILDFLAG(IS_WIN)
-    auto registry_provider = std::make_unique<ExternalProviderImpl>(
-        service, new ExternalRegistryLoader, profile,
-        ManifestLocation::kExternalRegistry,
-        ManifestLocation::kExternalPrefDownload, Extension::NO_FLAGS);
-    registry_provider->set_allow_updates(true);
-    provider_list->push_back(std::move(registry_provider));
-#else
     provider_list->push_back(std::make_unique<ExternalProviderImpl>(
         service,
         base::MakeRefCounted<ExternalPrefLoader>(
@@ -872,7 +691,6 @@ void ExternalProviderImpl::CreateExternalProviders(
             nullptr),
         profile, ManifestLocation::kExternalPref,
         ManifestLocation::kExternalPrefDownload, Extension::NO_FLAGS));
-#endif
 #endif
   }
 

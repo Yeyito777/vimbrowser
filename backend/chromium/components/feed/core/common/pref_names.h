@@ -36,9 +36,6 @@ extern const char kLastFetchHadNoticeCard[];
 
 // The pref name for the bit that determines whether logging is enabled for the
 // feed in the last fetch of content. iOS only.
-#if BUILDFLAG(IS_IOS)
-extern const char kLastFetchHadLoggingEnabled[];
-#endif  // BUILDFLAG(IS_IOS)
 
 // The pref name for the counter for the number of views on the privacy notice
 // card.

@@ -38,9 +38,6 @@
 #include "ui/views/window/window_resources.h"
 #include "ui/views/window/window_shape.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#endif
 
 namespace views {
 
@@ -299,17 +296,11 @@ int DefaultFrameView::TitlebarBottomThickness() const {
 }
 
 int DefaultFrameView::IconSize() const {
-#if BUILDFLAG(IS_WIN)
-  // This metric scales up if either the titlebar height or the titlebar font
-  // size are increased.
-  return display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CYSMICON);
-#else
   // The icon never shrinks below 16 px on a side.
   constexpr int kIconMinimumSize = 16;
   return std::max(
       TypographyProvider::Get().GetWindowTitleFontList().GetHeight(),
       kIconMinimumSize);
-#endif
 }
 
 gfx::Rect DefaultFrameView::IconBounds() const {

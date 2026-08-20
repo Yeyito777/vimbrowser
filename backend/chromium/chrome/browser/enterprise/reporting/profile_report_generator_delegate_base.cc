@@ -141,9 +141,6 @@ void ProfileReportGeneratorDelegateBase::GetProfileName(
 policy::CloudPolicyManager*
 ProfileReportGeneratorDelegateBase::GetCloudPolicyManager(
     bool is_machine_scope) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return nullptr;
-#else
   // CBCM report will include CBCM policy fetch information.
   if (is_machine_scope) {
     return g_browser_process->browser_policy_connector()
@@ -153,7 +150,6 @@ ProfileReportGeneratorDelegateBase::GetCloudPolicyManager(
   // Profile report will include user cloud policy information by default.
   // Or ProfileCloudPolicyManager when it's not managed by gaia account.
   return profile_->GetCloudPolicyManager();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace enterprise_reporting

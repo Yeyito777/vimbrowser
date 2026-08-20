@@ -60,10 +60,6 @@
 #include "third_party/blink/renderer/platform/wtf/shared_buffer.h"
 #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "third_party/blink/renderer/platform/scheduler/public/non_main_thread.h"
-#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
-#endif  // IS_WIN
 
 using ResultOrError =
     base::expected<blink::FontResource::DecodedResult, blink::String>;
@@ -98,19 +94,8 @@ base::expected<FontResource::DecodedResult, String> DecodeFont(
 }
 
 scoped_refptr<base::SequencedTaskRunner> GetFontDecodingTaskRunner() {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, the font decoding relies on FontManager, which requires
-  // creating garbage collected objects. This means the thread the decoding
-  // runs on must be GC enabled.
-  DEFINE_THREAD_SAFE_STATIC_LOCAL(
-      std::unique_ptr<NonMainThread>, font_decoding_thread,
-      (NonMainThread::CreateThread(
-          ThreadCreationParams(ThreadType::kFontThread).SetSupportsGC(true))));
-  return font_decoding_thread->GetTaskRunner();
-#else
   return worker_pool::CreateSequencedTaskRunner(
       {base::TaskPriority::USER_BLOCKING});
-#endif  // IS_WIN
 }
 
 }  // namespace

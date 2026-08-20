@@ -83,18 +83,6 @@ class UpdaterState {
     int GetUpdatePolicy() const override;
     update_client::CategorizedError GetLastUpdateCheckError() const override;
   };
-#elif BUILDFLAG(IS_WIN)
-  class StateReaderOmaha final : public StateReader {
-   private:
-    // Overrides for StateReader.
-    std::string GetUpdaterName() const override;
-    base::Version GetUpdaterVersion(bool is_machine) const override;
-    bool IsAutoupdateCheckEnabled() const override;
-    base::Time GetUpdaterLastStartedAU(bool is_machine) const override;
-    base::Time GetUpdaterLastChecked(bool is_machine) const override;
-    int GetUpdatePolicy() const override;
-    update_client::CategorizedError GetLastUpdateCheckError() const override;
-  };
 #endif
   class StateReaderChromiumUpdater final : public StateReader {
    public:

@@ -37,13 +37,6 @@ enum class AllowedScreenCaptureLevel {
 
 namespace capture_policy {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// This pref connects to the MultiScreenCaptureAllowedForUrls policy and will
-// replace the deprecated GetDisplayMediaSetSelectAllScreensAllowedForUrls
-// policy once the pivot to IWAs is complete.
-inline static constexpr char kManagedMultiScreenCaptureAllowedForUrls[] =
-    "profile.managed_multi_screen_capture_allowed_for_urls";
-#endif
 
 // Gets the highest capture level that the requesting origin is allowed to
 // request based on any configured enterprise policies. This is a convenience

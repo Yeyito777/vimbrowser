@@ -97,9 +97,7 @@
 #include "content/public/browser/web_contents.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/password_manager/password_manager_util_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "chrome/browser/password_manager/password_manager_util_mac.h"
 #endif
 
@@ -308,8 +306,6 @@ void ManagePasswordsUIController::OnOpenPasswordDetailsBubble(
 #if BUILDFLAG(IS_MAC)
   message = l10n_util::GetStringUTF16(
       IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT);
 #endif
 
   AuthenticateUserWithMessage(

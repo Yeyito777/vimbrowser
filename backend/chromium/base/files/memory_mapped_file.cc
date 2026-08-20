@@ -33,11 +33,6 @@ bool MemoryMappedFile::Initialize(const FilePath& file_name, Access access) {
       break;
     case READ_WRITE_COPY:
       flags = File::FLAG_OPEN | File::FLAG_READ;
-#if BUILDFLAG(IS_FUCHSIA)
-      // Fuchsia's mmap() implementation does not allow us to create a
-      // copy-on-write mapping of a file opened as read-only.
-      flags |= File::FLAG_WRITE;
-#endif
       break;
     case READ_WRITE:
       flags = File::FLAG_OPEN | File::FLAG_READ | File::FLAG_WRITE;
@@ -45,12 +40,6 @@ bool MemoryMappedFile::Initialize(const FilePath& file_name, Access access) {
     case READ_WRITE_EXTEND:
       // Can't open with "extend" because no maximum size is known.
       NOTREACHED();
-#if BUILDFLAG(IS_WIN)
-    case READ_CODE_IMAGE:
-      flags |= File::FLAG_OPEN | File::FLAG_READ |
-               File::FLAG_WIN_EXCLUSIVE_WRITE | File::FLAG_WIN_EXECUTE;
-      break;
-#endif
   }
   file_.Initialize(file_name, flags);
 
@@ -96,11 +85,6 @@ bool MemoryMappedFile::Initialize(File file,
         return false;
       }
       break;
-#if BUILDFLAG(IS_WIN)
-    case READ_CODE_IMAGE:
-      DCHECK(Region::kWholeFile == region);
-      break;
-#endif
   }
 
   if (IsValid()) {

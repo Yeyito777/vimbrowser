@@ -128,7 +128,6 @@ bool Animation::ScrollAnimationsEnabledBySystem() {
   // Defined in platform specific file for Windows, OSX, ChromeOS and Linux.
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // static
 void Animation::UpdatePrefersReducedMotion() {
   // prefers_reduced_motion_ should only be modified on the UI thread.
@@ -139,7 +138,6 @@ void Animation::UpdatePrefersReducedMotion() {
   // experience for users on systems that don't have APIs for reduced motion.
   prefers_reduced_motion_ = false;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS) || BUILDFLAG(IS_FUCHSIA)
 
 // static

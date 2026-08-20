@@ -126,14 +126,8 @@ const SkBitmap& CopyOutputResultSkiaRGBA::AsSkBitmap() const {
     // should not prevent readback, however, so once that is fixed, this code
     // could be removed.
     auto info =
-#if BUILDFLAG(IS_IOS)
-        SkImageInfo::Make(size().width(), size().height(),
-                          kRGBA_8888_SkColorType, kPremul_SkAlphaType,
-                          color_space_);
-#else
         SkImageInfo::MakeN32Premul(size().width(), size().height(),
                                    color_space_);
-#endif  // BUILDFLAG(IS_IOS)
 
     SkBitmap bitmap;
     bitmap.installPixels(info, const_cast<void*>(data), row_bytes);

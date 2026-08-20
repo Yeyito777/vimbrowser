@@ -26,10 +26,8 @@
 #include "third_party/dawn/include/dawn/webgpu_cpp.h"
 #include "third_party/rust/chromium_crates_io/vendor/llguidance-v1/llguidance.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "gpu/config/gpu_info_collector.h"
 #include "gpu/config/gpu_util.h"
-#endif
 
 namespace ml {
 
@@ -181,12 +179,10 @@ ChromeMLConstraint ConstraintClone(ChromeMLConstraint constraint) {
 DISABLE_CFI_DLSYM
 std::unique_ptr<ChromeML> ChromeML::Create(
     const std::optional<std::string>& library_name) {
-#if !BUILDFLAG(IS_IOS)
   // Log GPU info for crash reports.
   gpu::GPUInfo gpu_info;
   gpu::CollectBasicGraphicsInfo(&gpu_info);
   gpu::SetKeysForCrashLogging(gpu_info);
-#endif
 
   std::unique_ptr<ChromeMLHolder> holder = ChromeMLHolder::Create(library_name);
   if (!holder) {

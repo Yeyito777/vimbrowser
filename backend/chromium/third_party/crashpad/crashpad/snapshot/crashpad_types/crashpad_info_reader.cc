@@ -20,12 +20,8 @@
 #include "build/build_config.h"
 #include "client/crashpad_info.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "util/win/traits.h"
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include "util/linux/traits.h"
-#elif BUILDFLAG(IS_FUCHSIA)
-#include "util/fuchsia/traits.h"
 #endif
 
 namespace crashpad {

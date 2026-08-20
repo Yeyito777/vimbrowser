@@ -127,12 +127,6 @@ void SecurityInterstitialPageController::OpenEnhancedProtectionSettings() {
                   CMD_OPEN_ENHANCED_PROTECTION_SETTINGS);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SecurityInterstitialPageController::OpenAdvancedProtectionSettings() {
-  SendCommand(security_interstitials::SecurityInterstitialCommand::
-                  CMD_OPEN_ANDROID_ADVANCED_PROTECTION_SETTINGS);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void SecurityInterstitialPageController::OpenHelpCenterInNewTab() {
   SendCommand(security_interstitials::SecurityInterstitialCommand::
@@ -220,9 +214,6 @@ void SecurityInterstitialPageController::SendCommand(
       interface->OpenEnhancedProtectionSettings();
       break;
     case security_interstitials::CMD_OPEN_ANDROID_ADVANCED_PROTECTION_SETTINGS:
-#if BUILDFLAG(IS_ANDROID)
-      interface->OpenAndroidAdvancedProtectionSettings();
-#endif  // BUILDFLAG(IS_ANDROID)
       break;
     case security_interstitials::CMD_OPEN_HELP_CENTER_IN_NEW_TAB:
       interface->OpenHelpCenterInNewTab();
@@ -286,11 +277,6 @@ SecurityInterstitialPageController::GetObjectTemplateBuilder(
           .SetMethod("openEnhancedProtectionSettings",
                      &SecurityInterstitialPageController::
                          OpenEnhancedProtectionSettings)
-#if BUILDFLAG(IS_ANDROID)
-          .SetMethod("openAndroidAdvancedProtectionSettings",
-                     &SecurityInterstitialPageController::
-                         OpenAdvancedProtectionSettings)
-#endif  // BUILDFLAG(IS_ANDROID)
           .SetMethod(
               "openHelpCenterInNewTab",
               &SecurityInterstitialPageController::OpenHelpCenterInNewTab)

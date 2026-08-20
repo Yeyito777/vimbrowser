@@ -1171,12 +1171,7 @@ void SingleThreadProxy::DoBeginMainFrame(
   layer_tree_host_->BeginMainFrame(begin_frame_args);
   layer_tree_host_->AnimateLayers(begin_frame_args.frame_time);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool record_metrics =
-      layer_tree_host_->GetSettings().is_layer_tree_for_ui;
-#else
   constexpr bool record_metrics = false;
-#endif
   layer_tree_host_->RequestMainFrameUpdate(record_metrics);
 
   // Reset the flag for the next time around. It has been used for this frame.

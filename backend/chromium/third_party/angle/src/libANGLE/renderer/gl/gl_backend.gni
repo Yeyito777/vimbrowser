@@ -67,32 +67,6 @@ gl_backend_sources = [
   "renderergl_utils.h",
 ]
 
-if (is_win) {
-  gl_backend_sources += [
-    "../../../third_party/khronos/GL/wglext.h",
-    "wgl/ContextWGL.cpp",
-    "wgl/ContextWGL.h",
-    "wgl/D3DTextureSurfaceWGL.cpp",
-    "wgl/D3DTextureSurfaceWGL.h",
-    "wgl/DXGISwapChainWindowSurfaceWGL.cpp",
-    "wgl/DXGISwapChainWindowSurfaceWGL.h",
-    "wgl/DisplayWGL.cpp",
-    "wgl/DisplayWGL.h",
-    "wgl/FunctionsWGL.cpp",
-    "wgl/FunctionsWGL.h",
-    "wgl/PbufferSurfaceWGL.cpp",
-    "wgl/PbufferSurfaceWGL.h",
-    "wgl/RendererWGL.cpp",
-    "wgl/RendererWGL.h",
-    "wgl/SurfaceWGL.h",
-    "wgl/WindowSurfaceWGL.cpp",
-    "wgl/WindowSurfaceWGL.h",
-    "wgl/functionswgl_typedefs.h",
-    "wgl/wgl_utils.cpp",
-    "wgl/wgl_utils.h",
-  ]
-}
-
 if (angle_use_x11) {
   gl_backend_sources += [
     "glx/DisplayGLX.cpp",

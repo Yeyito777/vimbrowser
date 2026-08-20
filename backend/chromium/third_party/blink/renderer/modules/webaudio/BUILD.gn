@@ -176,11 +176,6 @@ blink_modules_sources("webaudio") {
     "wave_shaper_node.h",
   ]
 
-  if (is_win) {
-    # Result of 32-bit shift implicitly converted to 64 bits.
-    cflags = [ "/wd4334" ]
-  }
-
   if (current_cpu == "x86" || current_cpu == "x64") {
     sources += [ "cpu/x86/oscillator_kernel_sse2.cc" ]
   }

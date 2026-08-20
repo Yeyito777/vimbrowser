@@ -367,8 +367,4 @@ source_set("browser_tests") {
   if (is_linux) {
     deps += [ "//ui/linux:linux_ui" ]
   }
-
-  if (is_chromeos) {
-    sources += [ "application_launch_browsertest.cc" ]
-  }
 }

@@ -49,10 +49,6 @@ source_set("search_engines") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/profiles" ]
-  }
-
   if (enable_rlz) {
     deps += [ "//components/rlz" ]
   }

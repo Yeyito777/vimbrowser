@@ -30,9 +30,6 @@
 #include "url/url_canon_ip.h"
 #include "url/url_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/constants/url_constants.h"  // nogncheck
-#endif                                         // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -275,12 +272,6 @@ metrics::OmniboxInputType AutocompleteInput::Parse(
   if (!canonicalized_url->is_valid())
     return metrics::OmniboxInputType::QUERY;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::EqualsCaseInsensitiveASCII(parsed_scheme_utf8,
-                                       chromeos::kAppInstallUriScheme)) {
-    return metrics::OmniboxInputType::URL;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (base::EqualsCaseInsensitiveASCII(parsed_scheme_utf8, url::kFileScheme)) {
     // A user might or might not type a scheme when entering a file URL.  In
@@ -617,16 +608,8 @@ bool AutocompleteInput::ShouldUpgradeToHttps(
     GURL* upgraded_url) {
   if (url::HostIsIPAddress(url.GetHost()) ||
       net::IsHostnameNonUnique(url.GetHost())) {
-#if !BUILDFLAG(IS_IOS)
     // Never upgrade IP addresses or non-unique hostnames on non-iOS builds.
     return false;
-#else
-    // On iOS, tests use a loopback IP address instead of hostnames due to
-    // platform limitations. Only allow them when running tests.
-    if (!https_port_for_testing || !url::HostIsIPAddress(url.host())) {
-      return false;
-    }
-#endif
   }
 
   if (url.GetScheme() == url::kHttpScheme &&
@@ -647,16 +630,10 @@ bool AutocompleteInput::ShouldUpgradeToHttps(
     //   upgraded (e.g. example.com:80 will load https://example.com).
     DCHECK_EQ(url::kHttpScheme, url.GetScheme());
     GURL::Replacements replacements;
-#if !BUILDFLAG(IS_IOS)
     // We sometimes use a fake HTTPS server on iOS as we can't serve good HTTPS
     // from a test server. On all other platforms, we never use fake HTTPS
     // server.
     DCHECK(!use_fake_https_for_https_upgrade_testing);
-#else
-    // On iOS, use_fake_https_for_https_upgrade_testing should only be true if
-    // https_port_for_testing is also true.
-    DCHECK(!use_fake_https_for_https_upgrade_testing || https_port_for_testing);
-#endif
 
     if (!use_fake_https_for_https_upgrade_testing) {
       replacements.SetSchemeStr(url::kHttpsScheme);
@@ -665,17 +642,9 @@ bool AutocompleteInput::ShouldUpgradeToHttps(
     const std::string port_str = base::NumberToString(https_port_for_testing);
     if (https_port_for_testing) {
       // We'll only get here in tests.
-#if BUILDFLAG(IS_IOS)
-      if (url.port().empty()) {
-        // On iOS, if the URL doesn't have a port, this is probably an
-        // incomplete URL that's still being typed. Ignore.
-        return false;
-      }
-#else
       // On other platforms, tests should always have a non-default port on the
       // input text.
       DCHECK(!url.GetPort().empty());
-#endif
       replacements.SetPortStr(port_str);
     }
     *upgraded_url = url.ReplaceComponents(replacements);

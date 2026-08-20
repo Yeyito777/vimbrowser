@@ -27,10 +27,6 @@
 #include "ui/base/base_window.h"
 #include "ui/views/widget/widget_delegate.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace glic {
 
@@ -195,12 +191,6 @@ void GlicFloatingUi::Zoom(mojom::ZoomAction zoom_action) {
 }
 
 void GlicFloatingUi::ShowTitleBarContextMenuAt(gfx::Point event_loc) {
-#if BUILDFLAG(IS_WIN)
-  views::View::ConvertPointToScreen(GetGlicView(), &event_loc);
-  event_loc = display::win::GetScreenWin()->DIPToScreenPoint(event_loc);
-  views::ShowSystemMenuAtScreenPixelLocation(views::HWNDForView(GetGlicView()),
-                                             event_loc);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void GlicFloatingUi::EnableDragResize(bool enabled) {
@@ -224,28 +214,10 @@ void GlicFloatingUi::MaybeSetWidgetCanResize() {
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows when resize is enabled there is an invisible border added
-  // around the client area. We need to make the widget larger or smaller to
-  // keep the visible client area the same size.
-  gfx::Rect previous_client_bounds =
-      GetGlicWidget()->GetClientAreaBoundsInScreen();
-#endif  // BUILDFLAG(IS_WIN)
 
   // Update resize state on widget delegate.
   GetGlicWidget()->widget_delegate()->SetCanResize(user_resizable_);
 
-#if BUILDFLAG(IS_WIN)
-  if (user_resizable_) {
-    // Resizable so the widget area is larger than the client area.
-    gfx::Rect new_widget_bounds =
-        GetGlicWidget()->VisibleToWidgetBounds(previous_client_bounds);
-    GetGlicWidget()->SetBoundsConstrained(new_widget_bounds);
-  } else {
-    // Not resizable so the client and widget areas are the same.
-    GetGlicWidget()->SetBoundsConstrained(previous_client_bounds);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void GlicFloatingUi::OnSourceTabDestroyed(tabs::TabInterface* tab) {
@@ -455,14 +427,12 @@ std::unique_ptr<GlicUiEmbedder> GlicFloatingUi::CreateInactiveEmbedder() const {
   return GlicInactiveFloatingUi::From(*this);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 base::WeakPtr<views::View> GlicFloatingUi::GetView() {
   if (auto* glic_view = GetGlicView()) {
     return glic_view->GetWeakPtr();
   }
   return nullptr;
 }
-#endif
 
 void GlicFloatingUi::SwitchConversation(
     glic::mojom::ConversationInfoPtr info,

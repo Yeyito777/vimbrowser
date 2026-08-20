@@ -18,61 +18,14 @@
 #include "chrome/browser/ui/browser_window/public/profile_browser_collection.h"
 #include "ui/base/base_window.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "ui/views/widget/widget_observer.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/gfx/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace glic {
 
 namespace {
-#if BUILDFLAG(IS_WIN)
-
-struct IsBrowserTopmostWindowState {
-  HWND browser_hwnd = nullptr;
-  bool browser_is_topmost_window = false;
-};
-
-// Window enumerator used to determine if the top most visible window, other
-// than the system tray, is the browser window it is looking for. This is called
-// in z-order, i.e., topmost window first.
-// Window enumerator, so returning FALSE stops enumerating.
-// `lParam` is a pointer to IsBrowserTopmostWindowState, which contains the
-// browser HWND it is looking for. When finished enumerating, it sets
-// topmost_visible_non_opaque_hwnd to the topmost non system tray HWND it
-// finds.
-BOOL CALLBACK IsBrowserWindowTopmostWindowEnumerator(HWND hwnd, LPARAM lParam) {
-  struct IsBrowserTopmostWindowState* state =
-      reinterpret_cast<struct IsBrowserTopmostWindowState*>(lParam);
-  if (hwnd == state->browser_hwnd) {
-    state->browser_is_topmost_window = true;
-    return FALSE;
-  } else if (gfx::GetClassName(hwnd) != L"Shell_TrayWnd" &&
-             gfx::IsWindowVisibleAndFullyOpaque(hwnd, nullptr)) {
-    state->browser_is_topmost_window = false;
-    return FALSE;
-  }
-  return TRUE;
-}
-
-bool IsBrowserWindowTopmostWindow(BrowserWindowInterface* bwi) {
-  HWND browser_hwnd =
-      bwi->GetWindow()->GetNativeWindow()->GetHost()->GetAcceleratedWidget();
-
-  struct IsBrowserTopmostWindowState state{browser_hwnd, false};
-  EnumWindows(&IsBrowserWindowTopmostWindowEnumerator,
-              reinterpret_cast<LPARAM>(&state));
-  return state.browser_is_topmost_window;
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 bool IsBrowserGlicCompatible(Profile* profile,
                              BrowserWindowInterface* browser) {
@@ -115,23 +68,13 @@ bool IsBrowserInForeground(BrowserWindowInterface* bwi) {
   if (IsActive(bwi)) {
     return true;
   }
-#if BUILDFLAG(IS_WIN)
-  // On Windows, clicking the status bar icon makes an active browser window
-  // inactive, but it will still be the last active browser. Attach to the
-  // last active browser if it's the foremost visible window, other than the
-  // system tray.
-  return IsBrowserWindowTopmostWindow(bwi);
-#else
   return false;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 bool IsBrowserVisible(BrowserWindowInterface* bwi) {
   return bwi && bwi->GetWindow() && bwi->GetWindow()->IsVisible() &&
          !bwi->GetWindow()->IsMinimized()
-#if !BUILDFLAG(IS_ANDROID)
          && bwi->capabilities()->IsVisibleOnScreen()
-#endif
       ;
 }
 
@@ -145,7 +88,6 @@ BrowserWindowInterface* GetActiveGlicEligibleBrowser(Profile* profile) {
   return nullptr;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 class BrowserAttachObservationImpl : public BrowserAttachObservation,
                                      public BrowserCollectionObserver,
                                      public views::WidgetObserver {
@@ -244,6 +186,5 @@ std::unique_ptr<BrowserAttachObservation> ObserveBrowserForAttachment(
     BrowserAttachObserver* observer) {
   return std::make_unique<BrowserAttachObservationImpl>(profile, observer);
 }
-#endif
 
 }  // namespace glic

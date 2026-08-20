@@ -66,23 +66,6 @@ component("midi") {
     }
   }
 
-  if (is_win) {
-    deps += [ "//services/device/public/cpp/usb" ]
-    sources += [
-      "midi_manager_win.cc",
-      "midi_manager_win.h",
-      "midi_manager_winrt.cc",
-      "midi_manager_winrt.h",
-    ]
-
-    libs += [ "setupapi.lib" ]
-
-    # This library is included in base in static builds.
-    if (is_component_build) {
-      libs += [ "cfgmgr32.lib" ]
-    }
-  }
-
   if (use_alsa && use_udev) {
     deps += [ "//crypto" ]
     libs += [ "asound" ]

@@ -51,10 +51,6 @@ void LegacyDisplayGlobals::SetCachedParams(SkPixelGeometry pixel_geometry,
                                            float text_gamma) {
   base::AutoLock lock(GetLock());
   g_pixel_geometry = pixel_geometry;
-#if BUILDFLAG(IS_WIN)
-  g_text_contrast = text_contrast;
-  g_text_gamma = text_gamma;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 // static

@@ -101,13 +101,8 @@ class DownloadTestBase : public InProcessBrowserTest {
   };
 
   static constexpr char kDownloadTest1Path[] = "download-test1.lib";
-#if BUILDFLAG(IS_WIN)
-  static constexpr char kDangerousMockFilePath[] =
-      "/downloads/dangerous/dangerous.exe";
-#elif BUILDFLAG(IS_POSIX)
   static constexpr char kDangerousMockFilePath[] =
       "/downloads/dangerous/dangerous.sh";
-#endif
 
   DownloadTestBase();
   ~DownloadTestBase() override;

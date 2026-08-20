@@ -36,10 +36,7 @@
 #include "ui/gfx/font_render_params.h"
 
 
-#if BUILDFLAG(IS_WIN)
-#include "services/webnn/host/execution_provider_initializer.h"
-#include "ui/gfx/win/rendering_window_manager.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
 #endif
 
@@ -127,13 +124,6 @@ GpuHostImpl::GpuHostImpl(Delegate* delegate,
       params_(std::move(params)) {
   // Create a special GPU info collection service if the GPU process is used for
   // info collection only.
-#if BUILDFLAG(IS_WIN)
-  if (params_.info_collection_gpu_process) {
-    viz_main_->CreateInfoCollectionGpuService(
-        info_collection_gpu_service_remote_.BindNewPipeAndPassReceiver());
-    return;
-  }
-#endif
 
   DCHECK(delegate_);
 
@@ -413,13 +403,6 @@ mojom::GpuService* GpuHostImpl::gpu_service() {
   return gpu_service_remote_.get();
 }
 
-#if BUILDFLAG(IS_WIN)
-mojom::InfoCollectionGpuService* GpuHostImpl::info_collection_gpu_service() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  DCHECK(info_collection_gpu_service_remote_.is_bound());
-  return info_collection_gpu_service_remote_.get();
-}
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 
@@ -714,23 +697,6 @@ void GpuHostImpl::DidUpdateGPUInfo(const gpu::GPUInfo& gpu_info) {
 #endif  // BUILDFLAG(IS_OZONE)
 }
 
-#if BUILDFLAG(IS_WIN)
-void GpuHostImpl::DidUpdateOverlayInfo(const gpu::OverlayInfo& overlay_info) {
-  delegate_->DidUpdateOverlayInfo(overlay_info);
-}
-
-void GpuHostImpl::DidUpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) {
-  delegate_->DidUpdateDXGIInfo(std::move(dxgi_info));
-}
-
-void GpuHostImpl::AddChildWindow(gpu::SurfaceHandle parent_window,
-                                 gpu::SurfaceHandle child_window) {
-  if (pid_ != base::kNullProcessId) {
-    gfx::RenderingWindowManager::GetInstance()->RegisterChild(
-        parent_window, child_window, /*expected_child_process_id=*/pid_);
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void GpuHostImpl::MaybeSendFontRenderParams() {
   if (const auto& params = GetFontRenderParams().Get()) {
@@ -775,12 +741,6 @@ void GpuHostImpl::ClearGrShaderDiskCache() {
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-void GpuHostImpl::EnsureWebNNExecutionProvidersReady(
-    EnsureWebNNExecutionProvidersReadyCallback cb) {
-  webnn::EnsureExecutionProvidersReady(std::move(cb));
-}
-#endif
 
 void GpuHostImpl::CreateWebNNWeightsFile(CreateWebNNWeightsFileCallback cb) {
   webnn::CreateWeightsFile(std::move(cb));

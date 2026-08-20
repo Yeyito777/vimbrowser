@@ -10,9 +10,6 @@
 #include "components/signin/public/base/signin_buildflags.h"
 #include "device/vr/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#endif
 
 // List of chrome:// URLs to test for
 //  1) TrustedTypes violations (see NoTrustedTypesViolation test).
@@ -28,9 +25,7 @@ static const char* const kChromeUrls[] = {
     "chrome://accessibility",
 #endif
 // TODO:(https://crbug.com/1439754): Flakily crashes on ChromeOS.
-#if !BUILDFLAG(IS_CHROMEOS)
     "chrome://app-service-internals",
-#endif
     "chrome://actor-internals",
     "chrome://actor-overlay",
     "chrome://attribution-internals",
@@ -53,9 +48,7 @@ static const char* const kChromeUrls[] = {
     "chrome://connection-help",
     "chrome://connection-monitoring-detected",
     "chrome://connectors-internals",
-#if !BUILDFLAG(IS_ANDROID)
     "chrome://content-annotator-internals",
-#endif
     "chrome://crashes",
 // TODO(crbug.com/40913109): Re-enable this test
 #if !BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
@@ -64,9 +57,7 @@ static const char* const kChromeUrls[] = {
     "chrome://customize-chrome-side-panel.top-chrome",
     "chrome://data-sharing-internals",
 
-#if !BUILDFLAG(IS_CHROMEOS)
     "chrome://default-browser-modal",
-#endif
 
     "chrome://debug-webuis-disabled",
     "chrome://device-log",
@@ -174,60 +165,7 @@ static const char* const kChromeUrls[] = {
     "chrome://cast-feedback",
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-    "chrome://explore-sites-internals",
-    "chrome://internals/notifications",
-    "chrome://internals/query-tiles",
-    "chrome://snippets-internals",
-    "chrome://webapks",
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-    "chrome://accessory-update",
-    "chrome://account-manager-error",
-    "chrome://account-migration-welcome",
-    "chrome://add-supervision/",
-    "chrome://app-disabled",
-    "chrome://camera-app/views/main.html",
-    "chrome://bluetooth-pairing",
-    "chrome://certificate-manager/",
-    "chrome://cloud-upload",
-    "chrome://connectivity-diagnostics",
-    "chrome://crostini-installer",
-    "chrome://cryptohome",
-    "chrome://diagnostics",
-    "chrome://drive-internals",
-    "chrome://emoji-picker",
-    "chrome://file-manager",
-    "chrome://help-app",
-    "chrome://manage-mirrorsync",
-    "chrome://multidevice-internals",
-    "chrome://multidevice-setup",
-    "chrome://nearby",
-    "chrome://nearby-internals",
-    "chrome://network",
-    "chrome://office-fallback",
-    "chrome://os-feedback",
-    "chrome-untrusted://os-feedback",
-    "chrome://os-settings",
-    "chrome://parent-access",
-    "chrome://password-change",
-    "chrome://personalization",
-    "chrome://power",
-    "chrome://print-management",
-    "chrome-untrusted://projector",
-    "chrome://proximity-auth/proximity_auth.html",
-    "chrome://scanning",
-    "chrome://set-time",
-    "chrome://shimless-rma",
-    "chrome://shortcut-customization",
-    "chrome://slow",
-    "chrome://smb-credentials-dialog",
-    "chrome://smb-share-dialog",
-    "chrome://urgent-password-expiry-notification",
-    "chrome://sys-internals",
-#endif
-#if !BUILDFLAG(IS_CHROMEOS)
     "chrome://apps",
     "chrome://browser-switch",
     "chrome://browser-switch/internals",
@@ -235,16 +173,12 @@ static const char* const kChromeUrls[] = {
     "chrome://intro",
     "chrome://profile-customization/?debug",
     "chrome://signin-email-confirmation",
-#endif
 #if !BUILDFLAG(IS_MAC)
     "chrome://sandbox",
 #endif  // !BUILDFLAG(IS_MAC)
 #if !BUILDFLAG(IS_MAC)
     // TODO(crbug.com/40772380): this test is flaky on mac.
     "chrome://bluetooth-internals",
-#endif
-#if BUILDFLAG(IS_WIN)
-    "chrome://conflicts",
 #endif
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
     "chrome://signin-dice-web-intercept.top-chrome/?debug",
@@ -330,79 +264,6 @@ static constexpr const char* const kChromeUntestedUrls[] = {
     // enabled.
     "chrome://chrome-signin/?reason=5",
     "chrome://chrome-signin",
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-    "chrome-untrusted://boca-app",
-    "chrome-untrusted://camera-app",
-    "chrome-untrusted://class-tools-remote-display",
-    "chrome-untrusted://crosh",
-    "chrome-untrusted://demo-mode-app",
-    "chrome-untrusted://eche-app",
-    "chrome-untrusted://file-manager",
-    "chrome-untrusted://focus-mode-player",
-    "chrome-untrusted://help-app",
-    "chrome-untrusted://help-app-kids-magazine",
-    "chrome-untrusted://mako",
-    "chrome-untrusted://media-app",
-    "chrome-untrusted://projector-annotator",
-    "chrome-untrusted://sample-system-web-app",
-    "chrome-untrusted://scanner-feedback",
-    "chrome-untrusted://terminal",
-    "chrome://add-supervision",
-    "chrome://app-install-dialog",
-    // TODO:(https://crbug.com/1439754): Flakily crashes on ChromeOS.
-    "chrome://app-service-internals",
-    "chrome://arc-overview-tracing",
-    "chrome://arc-power-control",
-    "chrome://borealis-credits",
-    "chrome://borealis-installer",
-    "chrome://borealis-motd",
-    "chrome://camera-app",
-    // TODO(crbug.com/40250068): Move to list above when TrustedTypes are
-    // enabled.
-    "chrome://chrome-signin",
-    "chrome://class-tools-remote-display",
-    "chrome://color-internals",
-    // Crashes because message handler is not registered outside of the dialog
-    // for confirm password change UI.
-    "chrome://confirm-password-change",
-    "chrome://crostini-credits",
-    "chrome://device-emulator",
-    "chrome://dlp-internals",
-    "chrome://eche-app",
-    "chrome://enterprise-reporting",
-    "chrome://extended-updates-dialog",
-    "chrome://files-internals",
-    "chrome://floating-workspace",
-    "chrome://focus-mode-media",
-    "chrome://graduation",
-    "chrome://growth-internals",
-    "chrome://healthd-internals",
-    "chrome://internet-config-dialog",
-    "chrome://internet-detail-dialog",
-    "chrome://kerberos-in-browser",
-    "chrome://launcher-internals",
-    "chrome://local-files-migration",
-    "chrome://lock-network",
-    "chrome://lock-reauth",
-    "chrome://mall",
-    "chrome://media-app",
-    "chrome://mobilesetup",
-    "chrome://notification-tester",
-    "chrome://oobe",
-    "chrome://os-credits",
-    "chrome://os-print",
-    // Needs html path to be valid.
-    "chrome://proximity-auth",
-    "chrome://recorder-app",
-    "chrome://sample-system-web-app",
-    "chrome://sanitize",
-    "chrome://security-curtain",
-    "chrome://sensor-info",
-    "chrome://slow_trace",
-    "chrome://status-area-internals",
-    "chrome://vc-background",
-    "chrome://vm",
 #endif
 };
 

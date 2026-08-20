@@ -71,11 +71,6 @@
 #include "url/url_constants.h"
 #include "url/url_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/webauthn/webauthn_request_registrar.h"
-#include "content/public/browser/browser_thread.h"
-#include "ui/aura/window.h"
-#endif
 
 namespace {
 
@@ -569,17 +564,6 @@ ChromeWebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
 }
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-content::WebAuthenticationDelegate::ChromeOSGenerateRequestIdCallback
-ChromeWebAuthenticationDelegate::GetGenerateRequestIdCallback(
-    content::RenderFrameHost* render_frame_host) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  aura::Window* window =
-      render_frame_host->GetNativeView()->GetToplevelWindow();
-  return chromeos::webauthn::WebAuthnRequestRegistrar::Get()
-      ->GetRegisterCallback(window);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void ChromeWebAuthenticationDelegate::BrowserProvidedPasskeysAvailable(
     content::BrowserContext* browser_context,

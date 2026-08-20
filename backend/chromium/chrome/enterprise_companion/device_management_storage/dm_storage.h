@@ -178,15 +178,10 @@ class DMStorage : public base::RefCountedThreadSafe<DMStorage> {
   virtual ~DMStorage() = default;
 };
 
-#if BUILDFLAG(IS_WIN)
-scoped_refptr<DMStorage> CreateDMStorage(
-    const base::FilePath& policy_cache_root);
-#else
 scoped_refptr<DMStorage> CreateDMStorage(
     const base::FilePath& policy_cache_root,
     const base::FilePath& enrollment_token_path = {},
     const base::FilePath& dm_token_path = {});
-#endif
 scoped_refptr<DMStorage> CreateDMStorage(
     const base::FilePath& policy_cache_root,
     std::unique_ptr<TokenServiceInterface> token_service);

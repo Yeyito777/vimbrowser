@@ -179,36 +179,16 @@
 #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include <commctrl.h>
-#include <shellapi.h>
-
-#include "net/base/winsock_init.h"
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/bluetooth_adapter_factory.h"
-#include "services/data_decoder/public/cpp/data_decoder.h"
-#endif
 
 #if defined(USE_GLIB)
 #include <glib-object.h>
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "media/device_monitors/system_message_window_win.h"
-#elif (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(USE_UDEV)
+#if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(USE_UDEV)
 #include "media/device_monitors/device_monitor_udev.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/job.h>
-
-#include "base/fuchsia/default_job.h"
-#include "base/fuchsia/fuchsia_logging.h"
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 #include "content/browser/sandbox_host_linux.h"
@@ -296,16 +276,6 @@ enum WorkerPoolType : size_t {
   WORKER_POOL_COUNT  // Always last.
 };
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Create and register the job which will contain all child processes
-// of the browser process as well as their descendents.
-void InitDefaultJob() {
-  zx::job job;
-  zx_status_t result = zx::job::create(*zx::job::default_job(), 0, &job);
-  ZX_CHECK(ZX_OK == result, result) << "zx_job_create";
-  base::SetDefaultJob(std::move(job));
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 #if defined(ENABLE_IPC_FUZZER)
 bool GetBuildDirectory(base::FilePath* result) {
@@ -538,24 +508,12 @@ int BrowserMainLoop::EarlyInitialization() {
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-  net::EnsureWinsockInit();
-#endif
 
 #if BUILDFLAG(USE_NSS_CERTS)
   // We want to be sure to init NSPR on the main thread.
   crypto::EnsureNSPRInit();
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  InitDefaultJob();
-
-  // Have child processes & jobs terminate automatically if the browser process
-  // exits, by marking the browser process as "critical" to its job.
-  zx_status_t result =
-      zx::job::default_job()->set_critical(0, *zx::process::self());
-  ZX_CHECK(ZX_OK == result, result) << "zx_job_set_critical";
-#endif
 
   if (parsed_command_line_->HasSwitch(switches::kRendererProcessLimit)) {
     std::string limit_string = parsed_command_line_->GetSwitchValueASCII(
@@ -694,10 +652,8 @@ void BrowserMainLoop::PostCreateMainMessageLoop() {
 
   base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
       sql::SqlMemoryDumpProvider::GetInstance(), "Sql", nullptr);
-#if !BUILDFLAG(IS_CHROMEOS)
   // Chrome Remote Desktop needs TransitionalURLLoaderFactoryOwner on ChromeOS.
   network::TransitionalURLLoaderFactoryOwner::DisallowUsageInProcess();
-#endif
 }
 
 void BrowserMainLoop::CreateMessageLoopForEarlyShutdown() {
@@ -814,17 +770,6 @@ void BrowserMainLoop::CreateStartupTasks() {
 // is entered and startup tasks are run asynchronously from it.
 // InterceptMainMessageLoopRun() thus needs to be forced instead of happening
 // from MainMessageLoopRun().
-#if BUILDFLAG(IS_IOS)
-  StartupTask intercept_main_message_loop_run = base::BindOnce(
-      [](BrowserMainLoop* self) {
-        // Lambda to ignore the return value and always keep a clean exit code
-        // for this StartupTask.
-        self->InterceptMainMessageLoopRun();
-        return self->result_code_;
-      },
-      base::Unretained(this));
-  startup_task_runner_->AddTask(std::move(intercept_main_message_loop_run));
-#endif
 
   startup_task_runner_->RunAllTasksNow(false);
 }
@@ -1105,9 +1050,6 @@ void BrowserMainLoop::ShutdownThreadsAndCleanUp() {
 // On windows, the monitor needs to be destroyed on the same thread
 // as they were created. On Linux, the monitor will be deleted when IO thread
 // goes away.
-#if BUILDFLAG(IS_WIN)
-  system_message_window_.reset();
-#endif
 
   if (BrowserGpuChannelHostFactory::instance())
     BrowserGpuChannelHostFactory::instance()->CloseChannel();
@@ -1258,12 +1200,7 @@ void BrowserMainLoop::PostCreateThreadsImpl() {
         base::BindRepeating(&BindHidManager));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (!base::FeatureList::IsEnabled(
-          video_capture::features::kWinCameraMonitoringInVideoCaptureService)) {
-    system_message_window_ = std::make_unique<media::SystemMessageWindowWin>();
-  }
-#elif (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(USE_UDEV)
+#if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(USE_UDEV)
   device_monitor_linux_ = std::make_unique<media::DeviceMonitorLinux>();
 #endif
 
@@ -1301,10 +1238,6 @@ void BrowserMainLoop::PostCreateThreadsImpl() {
   std::vector<base::PlatformThreadId> allowed_clipboard_threads;
   // The current thread is the UI thread.
   allowed_clipboard_threads.push_back(base::PlatformThread::CurrentId());
-#if BUILDFLAG(IS_WIN)
-  // On Windows, clipboard is also used on the IO thread.
-  allowed_clipboard_threads.push_back(io_thread_->GetThreadId());
-#endif
   ui::Clipboard::SetAllowedThreads(allowed_clipboard_threads);
 
   // Post a task to launch the GPU process if appropriate. Note that if we
@@ -1360,13 +1293,6 @@ bool BrowserMainLoop::InitializeToolkit() {
   // (Need to add InitializeToolkit stage to BrowserParts).
   // See also GTK setup in EarlyInitialization, above, and associated comments.
 
-#if BUILDFLAG(IS_WIN)
-  INITCOMMONCONTROLSEX config;
-  config.dwSize = sizeof(config);
-  config.dwICC = ICC_WIN95_CLASSES;
-  if (!InitCommonControlsEx(&config))
-    PLOG(FATAL);
-#endif
 
 #if defined(USE_AURA)
   // Env creates the compositor. Aura widgets need the compositor to be created
@@ -1385,14 +1311,12 @@ bool BrowserMainLoop::InitializeToolkit() {
 void BrowserMainLoop::InitializeMojo() {
 // iOS browser process does sync calls using mojo (mainly for in process
 // unzipper, so do not enable these checks right now).
-#if !BUILDFLAG(IS_IOS)
   if (!parsed_command_line_->HasSwitch(switches::kSingleProcess)) {
     // Disallow mojo sync calls in the browser process. Note that we allow sync
     // calls in single-process mode since renderer IPCs are made from a browser
     // thread.
     mojo::SyncCallRestrictions::DisallowSyncCall();
   }
-#endif
 
   // Start startup tracing through TracingController's interface. TraceLog has
   // been enabled in content_main_runner where threads are not available. Now We

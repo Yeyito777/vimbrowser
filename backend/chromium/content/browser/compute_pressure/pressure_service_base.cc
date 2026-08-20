@@ -15,9 +15,6 @@
 #include "mojo/public/cpp/bindings/message.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/check.h"
-#endif
 
 namespace {
 
@@ -64,13 +61,6 @@ PressureServiceBase::~PressureServiceBase() {
 // static
 // https://www.w3.org/TR/compute-pressure/#dfn-document-has-implicit-focus
 bool PressureServiceBase::HasImplicitFocus(RenderFrameHost* render_frame_host) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO: http://crbug.com/407801065
-  // On ChromeOS, in rare occasions render_frame_host may be nullptr. The
-  // following DUMP_WILL_BE_CHECK() is used to provide additional information
-  // for diagnosis.
-  DUMP_WILL_BE_CHECK(render_frame_host);
-#endif
   if (!render_frame_host) {
     return false;
   }

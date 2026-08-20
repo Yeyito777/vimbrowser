@@ -50,13 +50,6 @@
 #include "media/gpu/vaapi/h265_vaapi_video_decoder_delegate.h"
 #endif  // BUILDFLAG(ENABLE_HEVC_PARSER_AND_HW_DECODER)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// gn check does not account for BUILDFLAG(), so including these headers will
-// make gn check fail for builds other than ChromeOS. See gn help nogncheck
-// for more information.
-#include "chromeos/components/cdm_factory_daemon/chromeos_cdm_context.h"  // nogncheck
-#include "chromeos/components/cdm_factory_daemon/chromeos_cdm_factory.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace media {
 
@@ -211,9 +204,6 @@ void VaapiVideoDecoder::Initialize(const VideoDecoderConfig& config,
     // don't want |decoder_| to have a dangling pointer. We also destroy
     // |cdm_event_cb_registration_| before |cdm_context_ref_| so that we have a
     // CDM at the moment of destroying the callback registration.
-#if BUILDFLAG(IS_CHROMEOS)
-    cdm_event_cb_registration_ = nullptr;
-#endif
     cdm_context_ref_ = nullptr;
     transcryption_ = false;
 
@@ -228,49 +218,14 @@ void VaapiVideoDecoder::Initialize(const VideoDecoderConfig& config,
   DCHECK(output_frames_.empty());
 
   if (config.is_encrypted()) {
-#if !BUILDFLAG(IS_CHROMEOS)
     SetErrorState("encrypted content is not supported");
     std::move(init_cb).Run(DecoderStatus::Codes::kUnsupportedEncryptionMode);
     return;
-#else
-    if (!cdm_context || !cdm_context->GetChromeOsCdmContext()) {
-      SetErrorState("cannot support encrypted stream w/out ChromeOsCdmContext");
-      std::move(init_cb).Run(DecoderStatus::Codes::kUnsupportedEncryptionMode);
-      return;
-    }
-    bool encrypted_av1_support = false;
-#if BUILDFLAG(USE_CHROMEOS_PROTECTED_AV1)
-    encrypted_av1_support = true;
-#endif
-    if (config.codec() != VideoCodec::kH264 &&
-        config.codec() != VideoCodec::kVP9 &&
-        (config.codec() != VideoCodec::kAV1 || !encrypted_av1_support) &&
-        config.codec() != VideoCodec::kHEVC) {
-      SetErrorState(
-          base::StringPrintf("%s is not supported for encrypted content",
-                             GetCodecName(config.codec()).c_str()));
-      std::move(init_cb).Run(DecoderStatus::Codes::kUnsupportedEncryptionMode);
-      return;
-    }
-    cdm_event_cb_registration_ = cdm_context->RegisterEventCB(
-        base::BindRepeating(&VaapiVideoDecoder::OnCdmContextEvent,
-                            weak_this_factory_.GetWeakPtr()));
-    cdm_context_ref_ = cdm_context->GetChromeOsCdmContext()->GetCdmContextRef();
-    // On AMD the content is transcrypted by the pipeline before reaching us,
-    // but we still need to do special handling with it.
-    transcryption_ = (VaapiWrapper::GetImplementationType() ==
-                      VAImplementation::kMesaGallium);
-#endif
   }
   const VideoCodecProfile profile = config.profile();
   if (!IsConfiguredForTesting()) {
     auto vaapi_wrapper_or_error = VaapiWrapper::CreateForVideoCodec(
-#if BUILDFLAG(IS_CHROMEOS)
-        (!cdm_context_ref_ || transcryption_) ? VaapiWrapper::kDecode
-                                              : VaapiWrapper::kDecodeProtected,
-#else
         VaapiWrapper::kDecode,
-#endif
         profile,
         transcryption_ ? EncryptionScheme::kUnencrypted
                        : config.encryption_scheme(),
@@ -437,31 +392,6 @@ void VaapiVideoDecoder::HandleDecodeTask() {
       // If we have lost our protected HW session, it should be recoverable, so
       // indicate that we have lost our decoder state so it can be reloaded.
       if (decoder_delegate_->HasInitiatedProtectedRecovery()) {
-#if BUILDFLAG(IS_CHROMEOS)
-        // We only do the VAContext recreation for Chrome playback because there
-        // is no mechanism in ARC to re-seek so we would end up using invalid
-        // reference frames.
-        CHECK(cdm_context_ref_);
-        if (!cdm_context_ref_->GetCdmContext()
-                 ->GetChromeOsCdmContext()
-                 ->UsingArcCdm()) {
-          // The VA-API requires surfaces to outlive the contexts using them.
-          // Fortunately, if we got here, any context should have already been
-          // destroyed.
-          CHECK(!!vaapi_wrapper_);
-          CHECK(!vaapi_wrapper_->HasContext());
-          allocated_va_surfaces_.clear();
-          const gfx::Size decoder_pic_size = decoder_->GetPicSize();
-          if (decoder_pic_size.IsEmpty()) {
-            SetErrorState("|decoder_| returned an empty picture size");
-            return;
-          }
-          if (!vaapi_wrapper_->CreateContext(decoder_pic_size)) {
-            SetErrorState("failed creating VAContext");
-            return;
-          }
-        }
-#endif  // BUILDFLAG(IS_CHROMEOS)
         waiting_cb_.Run(WaitingReason::kDecoderStateLost);
       }
       break;
@@ -589,22 +519,6 @@ void VaapiVideoDecoder::SurfaceReady(VASurfaceID va_surface_id,
     frame = std::move(wrapped_frame);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (cdm_context_ref_ && !transcryption_) {
-    // Store the VA-API protected session ID so that it can be re-used for
-    // scaling the decoded video frame later in the pipeline.
-    VAProtectedSessionID va_protected_session_id =
-        vaapi_wrapper_->GetProtectedSessionID();
-
-    static_assert(
-        std::is_same<decltype(va_protected_session_id),
-                     decltype(frame->metadata().hw_va_protected_session_id)::
-                         value_type>::value,
-        "The type of VideoFrameMetadata::hw_va_protected_session_id "
-        "does not match the type exposed by VaapiWrapper");
-    frame->metadata().hw_va_protected_session_id = va_protected_session_id;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const auto gfx_color_space = color_space.ToGfxColorSpace();
   if (gfx_color_space.IsValid())
@@ -632,15 +546,6 @@ void VaapiVideoDecoder::ApplyResolutionChange() {
     // protected content requires overlays currently.
     // NOTE: Only use this for protected content as other requirements for using
     // it are tied to protected content.
-#if BUILDFLAG(IS_CHROMEOS)
-    cdm_context_ref_->GetCdmContext()
-        ->GetChromeOsCdmContext()
-        ->GetScreenResolutions(
-            base::BindPostTaskToCurrentDefault(base::BindOnce(
-                &VaapiVideoDecoder::ApplyResolutionChangeWithScreenSizes,
-                weak_this_)));
-    return;
-#endif
   }
   ApplyResolutionChangeWithScreenSizes(std::vector<gfx::Size>());
 }
@@ -758,13 +663,7 @@ void VaapiVideoDecoder::ApplyResolutionChangeWithScreenSizes(
     profile_ = decoder_->GetProfile();
     auto new_vaapi_wrapper =
         VaapiWrapper::CreateForVideoCodec(
-#if BUILDFLAG(IS_CHROMEOS)
-            (!cdm_context_ref_ || transcryption_)
-                ? VaapiWrapper::kDecode
-                : VaapiWrapper::kDecodeProtected,
-#else
             VaapiWrapper::kDecode,
-#endif
             profile_, encryption_scheme_,
             base::BindRepeating(&ReportVaapiErrorToUMA,
                                 "Media.VaapiVideoDecoder.VAAPIError"))
@@ -951,17 +850,6 @@ bool VaapiVideoDecoder::NeedsTranscryption() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(state_ == State::kWaitingForInput);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // We do not need to invoke transcryption if this is coming from a remote CDM
-  // since it will already have been done.
-  if (cdm_context_ref_ &&
-      cdm_context_ref_->GetCdmContext()->GetChromeOsCdmContext() &&
-      cdm_context_ref_->GetCdmContext()
-          ->GetChromeOsCdmContext()
-          ->IsRemoteCdm()) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return transcryption_;
 }
 

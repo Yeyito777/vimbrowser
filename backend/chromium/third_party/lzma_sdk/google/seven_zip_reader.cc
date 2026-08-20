@@ -31,10 +31,6 @@ extern "C" {
 #include "third_party/lzma_sdk/C/7zCrc.h"
 }
 
-#if BUILDFLAG(IS_WIN)
-#include <ntstatus.h>
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace seven_zip {
 
@@ -565,38 +561,6 @@ bool SevenZipReaderImpl::IsFolderEncrypted(size_t folder_index) const {
   return false;
 }
 
-#if BUILDFLAG(IS_WIN)
-
-// define NTSTATUS to avoid including winternl.h
-using NTSTATUS = LONG;
-
-// Returns EXCEPTION_EXECUTE_HANDLER and populates `status` with the underlying
-// NTSTATUS code for paging errors encountered while accessing file-backed
-// mapped memory. Otherwise, return EXCEPTION_CONTINUE_SEARCH.
-DWORD FilterPageError(const base::span<uint8_t>& mapped_file,
-                      const base::span<uint8_t>& output,
-                      DWORD exception_code,
-                      const EXCEPTION_POINTERS* info,
-                      int32_t* status) {
-  if (exception_code != EXCEPTION_IN_PAGE_ERROR)
-    return EXCEPTION_CONTINUE_SEARCH;
-
-  const EXCEPTION_RECORD* exception_record = info->ExceptionRecord;
-  const uint8_t* address = reinterpret_cast<const uint8_t*>(
-      exception_record->ExceptionInformation[1]);
-  if ((mapped_file.data() <= address &&
-       address < mapped_file.data() + mapped_file.size()) ||
-      (output.data() <= address && address < output.data() + output.size())) {
-    // Cast NTSTATUS to int32_t to avoid including winternl.h
-    *status = exception_record->ExceptionInformation[2];
-
-    return EXCEPTION_EXECUTE_HANDLER;
-  }
-
-  return EXCEPTION_CONTINUE_SEARCH;
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace internal
 
@@ -653,41 +617,7 @@ bool SevenZipReader::ExtractEntry() {
   CHECK_EQ(output.size(), entry.file_size);
 
   Result extract_result = Result::kUnknownError;
-#if BUILDFLAG(IS_WIN)
-  int32_t ntstatus = 0;
-  __try {
-    extract_result = impl_->ExtractFile(entry_index_, output);
-  } __except (internal::FilterPageError(impl_->mapped_span(), output,
-                                        GetExceptionCode(),
-                                        GetExceptionInformation(), &ntstatus)) {
-    LOG(ERROR) << "EXCEPTION_IN_PAGE_ERROR while accessing mapped memory; "
-                  "NTSTATUS = "
-               << ntstatus;
-    // Return kIoError for all known errors except DISK_FULL.
-    switch (ntstatus) {
-      case STATUS_DEVICE_DATA_ERROR:
-      case STATUS_DEVICE_HARDWARE_ERROR:
-      case STATUS_DEVICE_NOT_CONNECTED:
-      case STATUS_INVALID_DEVICE_REQUEST:
-      case STATUS_INVALID_LEVEL:
-      case STATUS_IO_DEVICE_ERROR:
-      case STATUS_IO_TIMEOUT:
-      case STATUS_NO_SUCH_DEVICE:
-        extract_result = Result::kIoError;
-        break;
-      case STATUS_DISK_FULL:
-        extract_result = Result::kDiskFull;
-        break;
-      default:
-        // This error indicates an unexpected error. Spikes in this are
-        // worth investigation.
-        extract_result = Result::kUnknownError;
-        break;
-    }
-  }
-#else
   extract_result = impl_->ExtractFile(entry_index_, output);
-#endif  // BUILDFLAG(IS_WIN)
 
   return delegate_.EntryDone(extract_result, entry);
 }

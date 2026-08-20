@@ -14,13 +14,7 @@
 #include "base/component_export.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <jni.h>
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace ui {
 
@@ -83,13 +77,9 @@ enum class PointerDigitizerType : uint8_t {
 
 // Description of an input pointer device.
 struct COMPONENT_EXPORT(UI_BASE) PointerDevice final {
-#if BUILDFLAG(IS_WIN)
-  using Key = HANDLE;
-#else
   // Placeholder, override as needed when implementing a new platform specific
   // GetPointerDevice(s) method.
   using Key = uintptr_t;
-#endif
 
   Key key;
   PointerDigitizerType digitizer;

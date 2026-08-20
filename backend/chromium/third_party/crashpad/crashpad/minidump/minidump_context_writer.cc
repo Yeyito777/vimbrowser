@@ -37,17 +37,6 @@ static_assert(sizeof(MinidumpContextAMD64) == 1232,
               "MinidumpContextAMD64 size");
 
 // These structures can also be checked against definitions in the Windows SDK.
-#if BUILDFLAG(IS_WIN)
-#if defined(ARCH_CPU_X86_FAMILY)
-static_assert(sizeof(MinidumpContextX86) == sizeof(WOW64_CONTEXT),
-              "WOW64_CONTEXT size");
-#if defined(ARCH_CPU_X86)
-static_assert(sizeof(MinidumpContextX86) == sizeof(CONTEXT), "CONTEXT size");
-#elif defined(ARCH_CPU_X86_64)
-static_assert(sizeof(MinidumpContextAMD64) == sizeof(CONTEXT), "CONTEXT size");
-#endif
-#endif  // ARCH_CPU_X86_FAMILY
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 

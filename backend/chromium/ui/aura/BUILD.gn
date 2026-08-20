@@ -145,31 +145,6 @@ component("aura") {
     "//ui/compositor",
   ]
 
-  if (is_win) {
-    public += [ "input_state_lookup_win.h" ]
-    sources += [
-      "input_state_lookup_win.cc",
-      "native_window_occlusion_tracker_win.cc",
-      "native_window_occlusion_tracker_win.h",
-    ]
-  }
-
-  if (is_win) {
-    sources -= [ "input_state_lookup.cc" ]
-
-    deps += [
-      "//ipc",
-      "//ui/platform_window/win",
-    ]
-  }
-
-  if (is_win) {
-    libs = [
-      "wtsapi32.lib",
-      "dwmapi.lib",
-    ]
-  }
-
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
     public += [ "screen_ozone.h" ]
@@ -249,10 +224,6 @@ static_library("test_support") {
     "//ui/platform_window",
     "//ui/wm",
   ]
-
-  if (is_win) {
-    sources += [ "test/ui_controls_aurawin.cc" ]
-  }
 
   if (use_ozone && (is_chromeos || is_castos)) {
     sources += [
@@ -345,13 +316,6 @@ test("aura_unittests") {
 
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
   }
 
   data_deps = [

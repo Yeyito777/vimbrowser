@@ -31,9 +31,6 @@ static constexpr std::array kSupportedHotkeys = {
     glic::LocalHotkeyManager::Hotkey::kZoomIn,
     glic::LocalHotkeyManager::Hotkey::kZoomOut,
     glic::LocalHotkeyManager::Hotkey::kZoomReset,
-#if BUILDFLAG(IS_WIN)
-    glic::LocalHotkeyManager::Hotkey::kTitleBarContextMenu,
-#endif
 };
 
 // Implementation of ScopedHotkeyRegistration specifically for the Glic panel.
@@ -108,11 +105,6 @@ bool GlicPanelHotkeyDelegate::AcceleratorPressed(
       }
       panel_->Zoom(mojom::ZoomAction::kReset);
       return true;
-#if BUILDFLAG(IS_WIN)
-    case LocalHotkeyManager::Hotkey::kTitleBarContextMenu:
-      panel_->ShowTitleBarContextMenuAt(gfx::Point());
-      return true;
-#endif  //  BUILDFLAG(IS_WIN)
 
     default:
       NOTREACHED() << "no handling implemented for "

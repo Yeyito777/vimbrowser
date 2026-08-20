@@ -380,12 +380,6 @@ source_set("headers") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (is_win) {
-  proto_library("font_unique_name_table_proto") {
-    sources = [ "font_unique_name_lookup/font_unique_name_table.proto" ]
-  }
-}
-
 proto_library("font_enumeration_table_proto") {
   sources = [ "font_access/font_enumeration_table.proto" ]
 }

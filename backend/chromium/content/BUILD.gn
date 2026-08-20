@@ -89,15 +89,6 @@ grit("content_resources") {
     "grit/content_resources_map.h",
     "content_resources.pak",
   ]
-
-  if (is_chromeos) {
-    deps = [
-      "//mojo/public/mojom/base:base_js__generator",
-      "//ui/base/mojom:mojom_js__generator",
-      "//url/mojom:url_mojom_gurl_js__generator",
-      "//url/mojom:url_mojom_origin_js__generator",
-    ]
-  }
 }
 
 # This target exists to "hold" the content_export header so we can do proper
@@ -112,12 +103,4 @@ source_set("export") {
 # those targets depend on this one. This can be depended on for any
 # platform for simplicity, and is a no-op on non-Windows.
 source_set("sandbox_helper_win") {
-  if (is_win) {
-    sources = [
-      "app/sandbox_helper_win.cc",
-      "public/app/sandbox_helper_win.h",
-    ]
-
-    deps = [ "//sandbox" ]
-  }
 }

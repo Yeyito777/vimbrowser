@@ -47,11 +47,6 @@ BASE_DECLARE_FEATURE(kExtensionsCollapseMainMenu);
 // Controls whether the refreshed infobar is enabled.
 BASE_DECLARE_FEATURE(kInfobarRefresh);
 
-#if BUILDFLAG(IS_WIN)
-BASE_DECLARE_FEATURE(kOfferPinToTaskbarWhenSettingToDefault);
-BASE_DECLARE_FEATURE(kOfferPinToTaskbarInFirstRunExperience);
-BASE_DECLARE_FEATURE(kOfferPinToTaskbarInSettings);
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 BASE_DECLARE_FEATURE(kOfferPinToTaskbarInfoBar);
@@ -174,13 +169,11 @@ BASE_DECLARE_FEATURE(kTabDuplicateMetrics);
 BASE_DECLARE_FEATURE(kTabGroupsCollapseFreezing);
 BASE_DECLARE_FEATURE(kTabGroupHoverCards);
 
-#if !BUILDFLAG(IS_ANDROID)
 // General improvements to tab group menus
 
 BASE_DECLARE_FEATURE(kTabGroupMenuMoreEntryPoints);
 bool IsTabGroupMenuMoreEntryPointsEnabled();
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 BASE_DECLARE_FEATURE(kTabHoverCardImages);
 
@@ -246,11 +239,9 @@ BASE_DECLARE_FEATURE(kTabOrganizationUserInstruction);
 
 BASE_DECLARE_FEATURE(kTearOffWebAppTabOpensWebAppWindow);
 
-#if !BUILDFLAG(IS_ANDROID)
 // Enables a three-button password save dialog variant (essentially adding a
 // "not now" button alongside "never").
 BASE_DECLARE_FEATURE(kThreeButtonPasswordSaveDialog);
-#endif
 
 // Enables a side panel that occupies the vertical space from the top of the
 // toolbar to the bottom of the browser. This is taller than the default side
@@ -347,7 +338,6 @@ BASE_DECLARE_FEATURE(kByDateHistoryInSidePanel);
 // Controls whether to use the TabStrip browser api's controller.
 BASE_DECLARE_FEATURE(kTabStripBrowserApi);
 
-#if !BUILDFLAG(IS_ANDROID)
 // Controls whether to add new tabs to active tab group or to the end of the
 // tab strip.
 BASE_DECLARE_FEATURE(kNewTabAddsToActiveGroup);
@@ -367,7 +357,6 @@ bool IsWebUISplitTabsButtonEnabled();
 bool IsWebUILocationBarEnabled();
 
 bool IsWebUIToolbarEnabled();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Controls whether to show a toast for Chrome non milestone update.
 BASE_DECLARE_FEATURE(kNonMilestoneUpdateToast);
@@ -377,11 +366,6 @@ BASE_DECLARE_FEATURE(kBookmarkTabGroupConversion);
 
 bool IsBookmarkTabGroupConversionEnabled();
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_DECLARE_FEATURE(kAndroidAnimatedProgressBarInBrowser);
-
-bool IsAndroidAnimatedProgressBarInBrowserEnabled();
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Controls whether the updated What's New page is enabled.
 BASE_DECLARE_FEATURE(kWhatsNewDesktopRefresh);

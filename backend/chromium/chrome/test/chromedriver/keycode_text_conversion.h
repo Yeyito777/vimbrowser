@@ -33,9 +33,6 @@ bool ConvertCharToKeyCode(char16_t key,
                           int* necessary_modifiers,
                           std::string* error_msg);
 
-#if BUILDFLAG(IS_WIN)
-bool SwitchToUSKeyboardLayout();
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 void InitializeOzoneKeyboardEngineManager();

@@ -20,18 +20,12 @@
 #include "extensions/browser/process_manager.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/web_applications/web_app.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
 #include "chrome/browser/web_applications/web_app_registrar.h"
 #include "chrome/browser/web_applications/web_app_tab_helper.h"
 #include "chrome/browser/web_applications/web_app_utils.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/constants/pref_names.h"
-#include "components/prefs/pref_service.h"
-#endif
 
 namespace {
 
@@ -40,18 +34,6 @@ policy::DeveloperToolsPolicyHandler::Availability GetDevToolsAvailability(
   using Availability = policy::DeveloperToolsPolicyHandler::Availability;
   Availability availability =
       policy::DeveloperToolsPolicyHandler::GetEffectiveAvailability(profile);
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS disable dev tools for captive portal signin windows to prevent
-  // them from being used for general navigation.
-  if (availability != Availability::kDisallowed) {
-    const PrefService::Preference* const captive_portal_pref =
-        profile->GetPrefs()->FindPreference(
-            chromeos::prefs::kCaptivePortalSignin);
-    if (captive_portal_pref && captive_portal_pref->GetValue()->GetBool()) {
-      availability = Availability::kDisallowed;
-    }
-  }
-#endif
   return availability;
 }
 
@@ -118,7 +100,6 @@ bool IsInspectionAllowed(Profile* profile, content::WebContents* web_contents) {
         }
       }
 #endif
-#if !BUILDFLAG(IS_ANDROID)
       if (web_app::AreWebAppsEnabled(profile)) {
         const webapps::AppId* app_id =
             web_app::WebAppTabHelper::GetAppId(web_contents);
@@ -133,7 +114,6 @@ bool IsInspectionAllowed(Profile* profile, content::WebContents* web_contents) {
           }
         }
       }
-#endif
       // If it's not a restricted extension or web app, it's allowed.
       return true;
     }
@@ -144,7 +124,6 @@ bool IsInspectionAllowed(Profile* profile, content::WebContents* web_contents) {
 
 bool IsInspectionAllowed(Profile* profile,
                          const extensions::Extension* extension) {
-#if !BUILDFLAG(IS_ANDROID)
   if (extension) {
     policy::DeveloperToolsPolicyChecker* checker =
         policy::DeveloperToolsPolicyCheckerFactory::GetForBrowserContext(
@@ -163,7 +142,6 @@ bool IsInspectionAllowed(Profile* profile,
         break;
     }
   }
-#endif
   using Availability = policy::DeveloperToolsPolicyHandler::Availability;
   Availability availability;
   if (extension) {
@@ -210,7 +188,6 @@ bool IsInspectionAllowed(Profile* profile,
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool IsInspectionAllowed(Profile* profile, const web_app::WebApp* web_app) {
   if (web_app) {
     policy::DeveloperToolsPolicyChecker* checker =
@@ -253,7 +230,6 @@ bool IsInspectionAllowed(Profile* profile, const web_app::WebApp* web_app) {
       NOTREACHED() << "Unknown developer tools policy";
   }
 }
-#endif
 
 bool IsInspectionAllowed(Profile* profile, const GURL& url) {
   policy::DeveloperToolsPolicyChecker* checker =

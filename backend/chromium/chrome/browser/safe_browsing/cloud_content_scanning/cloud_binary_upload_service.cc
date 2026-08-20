@@ -36,9 +36,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/http/http_status_code.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#endif
 
 namespace safe_browsing {
 namespace {
@@ -906,15 +903,6 @@ void CloudBinaryUploadService::IsAuthorized(
       request->set_analysis_connector(connector);
       request->set_per_profile_request(per_profile_request);
 
-#if BUILDFLAG(IS_CHROMEOS)
-      // WebProtect handles requests from ChromeOS Managed Guest Sessions
-      // differently, as it cannot rely on the GAIA ID to determine whether or
-      // not the user has the BCE license.
-      enterprise_connectors::ClientMetadata client_metadata;
-      client_metadata.set_is_chrome_os_managed_guest_session(
-          chromeos::IsManagedGuestSession());
-      request->set_client_metadata(std::move(client_metadata));
-#endif
 
       QueueForDeepScanning(std::move(request));
     }
@@ -979,9 +967,6 @@ void CloudBinaryUploadService::SetAuthForTesting(
            enterprise_connectors::AnalysisConnector::FILE_ATTACHED,
            enterprise_connectors::AnalysisConnector::BULK_DATA_ENTRY,
            enterprise_connectors::AnalysisConnector::PRINT,
-#if BUILDFLAG(IS_CHROMEOS)
-           enterprise_connectors::AnalysisConnector::FILE_TRANSFER,
-#endif
        }) {
     TokenAndConnector token_and_connector = {dm_token, connector};
     can_upload_enterprise_data_[token_and_connector] = auth_check_result;

@@ -26,24 +26,6 @@ if (use_blink) {
   import("//chrome/common/features.gni")
 }
 
-if (is_chromeos) {
-  # Folders hosting Ash-only WebUIs. Should be kept in sync with
-  # //tools/typescript/path_utils.py. This is used later in this file to choose
-  # a CrOS-specific default TS config file for some targets.
-  ash_folders = [
-    # Source code folders
-    "//ash/webui",
-    "//chrome/browser/resources/ash",
-    "//chrome/browser/resources/chromeos",
-    "//chrome/browser/resources/dlp_internals",
-    "//ui/file_manager",
-
-    # Test folders
-    "//chrome/test/data/webui/chromeos",
-    "//chrome/test/data/webui/cr_components/chromeos",
-  ]
-}
-
 # See documentation at https://chromium.googlesource.com/chromium/src/+/HEAD/docs/webui/webui_build_configuration.md#build_webui
 template("build_webui") {
   not_needed([ "target_name" ])
@@ -281,15 +263,6 @@ template("build_webui") {
 
   # Determine whether the current invocation corresponds to an Ash WebUI.
   is_ash_webui = false
-  if (is_chromeos) {
-    target_dir = get_label_info(":build_ts", "dir")
-
-    foreach(prefix, ash_folders) {
-      if (!is_ash_webui) {
-        is_ash_webui = string_replace(target_dir, prefix, "") != target_dir
-      }
-    }
-  }
 
   # Determine if there is a Lit and/or Polymer dependency. This information is
   # used for determining the default template for html_to_wrapper() as well as

@@ -25,10 +25,6 @@
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/accessibility/accessibility_manager.h"
-#include "ui/events/ash/keyboard_capability.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // static
 void CaretBrowsingDialogDelegate::Show(gfx::NativeWindow parent_window,
@@ -52,52 +48,8 @@ CaretBrowsingDialogDelegate::CaretBrowsingDialogDelegate(
   set_margins(ChromeLayoutProvider::Get()->GetDialogInsetsForContentType(
       views::DialogContentType::kText, views::DialogContentType::kControl));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<ui::KeyboardCode> key =
-      ash::AccessibilityManager::Get()->GetCaretBrowsingActionKey();
-  std::u16string key_string;
-  std::u16string key_name;
-  if (!key) {
-    key_string = l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_F7);
-  } else {
-    switch (*key) {
-      case ui::VKEY_F7:
-        key_string = l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_F7);
-        break;
-      case ui::VKEY_BRIGHTNESS_DOWN:
-        key_name =
-            l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_BRIGHTNESS_DOWN);
-        key_string = l10n_util::GetStringFUTF16(
-            IDS_CARET_BROWSING_KEY_SEARCH_MODIFIER, {key_name});
-        break;
-      case ui::VKEY_BRIGHTNESS_UP:
-        key_name =
-            l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_BRIGHTNESS_UP);
-        key_string = l10n_util::GetStringFUTF16(
-            IDS_CARET_BROWSING_KEY_SEARCH_MODIFIER, {key_name});
-        break;
-      case ui::VKEY_VOLUME_MUTE:
-        key_name = l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_MUTE);
-        key_string = l10n_util::GetStringFUTF16(
-            IDS_CARET_BROWSING_KEY_SEARCH_MODIFIER, {key_name});
-        break;
-      case ui::VKEY_MEDIA_PLAY_PAUSE:
-        key_name = l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_PLAY_PAUSE);
-        key_string = l10n_util::GetStringFUTF16(
-            IDS_CARET_BROWSING_KEY_SEARCH_MODIFIER, {key_name});
-        break;
-      default:
-        key_name = l10n_util::GetStringUTF16(IDS_CARET_BROWSING_KEY_F7);
-        key_string = l10n_util::GetStringFUTF16(
-            IDS_CARET_BROWSING_KEY_SEARCH_MODIFIER, {key_name});
-    }
-  }
-  std::u16string message_text =
-      l10n_util::GetStringFUTF16(IDS_ENABLE_CARET_BROWSING_INFO, {key_string});
-#else
   std::u16string message_text =
       l10n_util::GetStringUTF16(IDS_ENABLE_CARET_BROWSING_INFO);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   auto* message_label = AddChildView(std::make_unique<views::Label>(
       message_text, views::style::CONTEXT_DIALOG_BODY_TEXT));

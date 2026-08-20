@@ -110,10 +110,6 @@ void FileSystemAccessObserverHost::DidResolveTransferTokenToObserve(
   // system.
   bool file_could_be_symlink =
       resolved_token->url().type() == storage::kFileSystemTypeLocal;
-#if BUILDFLAG(IS_FUCHSIA)
-  // Fuchsia does not support symlinks.
-  file_could_be_symlink = false;
-#endif
 
   if (!file_could_be_symlink) {
     DidCheckIfSymlinkOrJunction(std::move(handle), std::move(callback),

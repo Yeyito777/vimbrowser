@@ -11,10 +11,6 @@ import("//testing/test.gni")
 import("//tools/json_schema_compiler/json_schema_api.gni")
 import("//ui/base/ui_features.gni")
 
-if (is_win) {
-  import("//build/toolchain/win/midl.gni")
-}
-
 mojom("ax_constants_mojo") {
   sources = [ "ax_constants.mojom" ]
 }
@@ -119,19 +115,13 @@ component("ax_base") {
     "//ui/gfx/geometry",
   ]
 
-  if (!is_chromeos) {
-    public_deps += [
-      "//base:i18n",
-      "//ui/base",
-      "//ui/strings",
-    ]
-  }
+  public_deps += [
+    "//base:i18n",
+    "//ui/base",
+    "//ui/strings",
+  ]
 
   deps = []
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 }
 
 #if (is_win) {
@@ -221,10 +211,6 @@ component("accessibility_internal") {
     "//skia",
   ]
 
-  if (is_fuchsia) {
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.accessibility.semantics:fuchsia.accessibility.semantics_cpp" ]
-  }
-
   if (use_aura) {
     sources += [
       "aura/aura_window_properties.cc",
@@ -232,24 +218,6 @@ component("accessibility_internal") {
     ]
 
     public_deps += [ "//ui/aura" ]
-  }
-}
-
-if (is_chromeos) {
-  source_set("ax_assistant") {
-    sources = [
-      "ax_assistant_structure.cc",
-      "ax_assistant_structure.h",
-    ]
-
-    configs += [
-      "//build/config/compiler:wexit_time_destructors",
-      "//build/config/compiler:wglobal_constructors",
-    ]
-
-    deps = [ ":accessibility" ]
-
-    public_deps = [ ":ax_enums_mojo" ]
   }
 }
 
@@ -377,63 +345,12 @@ test("accessibility_unittests") {
     ]
     public_deps = [ "//gin" ]
     configs += [ "//v8:external_startup_data" ]
-
-    if (is_fuchsia) {
-      additional_manifest_fragments = [
-        # TODO(crbug.com/40055105): Investigate removing the requirement
-        # for VmexResource.
-        "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-        "//build/config/fuchsia/test/network.shard.test-cml",
-        "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-      ]
-    }
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "platform/fuchsia/accessibility_bridge_fuchsia_unittest.cc",
-      "platform/fuchsia/browser_accessibility_fuchsia_unittest.cc",
-      "platform/fuchsia/browser_accessibility_manager_fuchsia_unittest.cc",
-      "platform/fuchsia/semantic_provider_unittest.cc",
-    ]
-
-    deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.accessibility.semantics:fuchsia.accessibility.semantics_cpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.math:fuchsia.math_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.views:fuchsia.ui.views_cpp_hlcpp_conversion",
-      "//third_party/fuchsia-sdk/sdk/pkg/inspect",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
   }
 
   if (has_native_accessibility) {
     # This test depends heavily on NativeViewAccessible, which is only
     # implemented on these platforms.
     sources += [ "platform/ax_platform_node_base_unittest.cc" ]
-
-    if (is_win) {
-      sources += [
-        "platform/ax_fragment_root_win_unittest.cc",
-        "platform/ax_platform_node_textchildprovider_win_unittest.cc",
-        "platform/ax_platform_node_textprovider_win_unittest.cc",
-        "platform/ax_platform_node_textrangeprovider_win_unittest.cc",
-        "platform/ax_platform_node_win_unittest.cc",
-        "platform/ax_platform_node_win_unittest.h",
-        "platform/browser_accessibility_manager_win_unittest.cc",
-        "platform/browser_accessibility_win_unittest.cc",
-        "platform/iaccessible2/scoped_co_mem_array_unittest.cc",
-      ]
-
-      deps += [
-        "//third_party/iaccessible2",
-        "//ui/accessibility/platform:ichromeaccessible",
-      ]
-
-      libs = [
-        "oleacc.lib",
-        "uiautomationcore.lib",
-      ]
-    }
 
     if (is_mac) {
       sources += [
@@ -490,22 +407,6 @@ fuzzer_test("ax_node_position_fuzzer") {
     ":test_support",
     "//base/test:test_support",
   ]
-}
-
-if (is_win) {
-  fuzzer_test("ax_platform_node_textrangeprovider_win_fuzzer") {
-    sources = [
-      "ax_tree_fuzzer_util.cc",
-      "ax_tree_fuzzer_util.h",
-      "platform/ax_platform_node_textrangeprovider_win_fuzzer.cc",
-    ]
-
-    deps = [
-      ":accessibility",
-      ":test_support",
-      "//base/test:test_support",
-    ]
-  }
 }
 
 test("accessibility_perftests") {

@@ -16,18 +16,7 @@
 #include "ui/gl/gl_switches.h"
 #include "ui/gl/gl_surface_egl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <sync/sync.h>  // nogncheck
 
-#include "base/posix/eintr_wrapper.h"
-#endif
-
-#if BUILDFLAG(IS_WIN)
-#include <d3d11_1.h>
-#include "base/strings/stringprintf.h"
-#include "ui/gl/debug_utils.h"
-#include "ui/gl/direct_composition_support.h"
-#endif
 
 namespace gl {
 namespace {
@@ -71,24 +60,6 @@ void Hang() {
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::ScopedFD MergeFDs(base::ScopedFD a, base::ScopedFD b) {
-  if (!a.is_valid())
-    return b;
-  if (!b.is_valid())
-    return a;
-
-  base::ScopedFD merged(HANDLE_EINTR(sync_merge("", a.get(), b.get())));
-  if (!merged.is_valid())
-    LOG(ERROR) << "Failed to merge fences.";
-  return merged;
-}
-
-void DisableANGLE() {
-  DCHECK_NE(GetGLImplementation(), kGLImplementationEGLANGLE);
-  g_is_angle_enabled = false;
-}
-#endif
 
 bool UsePassthroughCommandDecoder(const base::CommandLine* command_line) {
   if (!g_is_angle_enabled) {
@@ -126,48 +97,6 @@ void SetGlWorkarounds(const GlWorkarounds& workarounds) {
   g_workarounds = workarounds;
 }
 
-#if BUILDFLAG(IS_WIN)
-unsigned int DirectCompositionRootSurfaceBufferCount() {
-  return 2u;
-}
-
-// Labels swapchain buffers with the string name_prefix + _Buffer_ +
-// <buffer_number>
-void LabelSwapChainBuffers(IDXGISwapChain* swap_chain,
-                           const char* name_prefix) {
-  DXGI_SWAP_CHAIN_DESC desc;
-  HRESULT hr = swap_chain->GetDesc(&desc);
-  if (FAILED(hr)) {
-    DLOG(ERROR) << "Failed to GetDesc from swap chain: "
-                << logging::SystemErrorCodeToString(hr);
-    return;
-  }
-  for (unsigned int i = 0; i < desc.BufferCount; i++) {
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> swap_chain_buffer;
-    hr = swap_chain->GetBuffer(i, IID_PPV_ARGS(&swap_chain_buffer));
-    if (FAILED(hr)) {
-      DLOG(ERROR) << "GetBuffer on swap chain buffer " << i
-                  << "failed: " << logging::SystemErrorCodeToString(hr);
-      return;
-    }
-    const std::string buffer_name =
-        base::StringPrintf("%s_Buffer_%d", name_prefix, i);
-    hr = SetDebugName(swap_chain_buffer.Get(), buffer_name.c_str());
-    if (FAILED(hr)) {
-      DLOG(ERROR) << "Failed to label swap chain buffer " << i << ": "
-                  << logging::SystemErrorCodeToString(hr);
-    }
-  }
-}
-
-// Labels swapchain with the name_prefix and its buffers with the string
-// name_prefix + _Buffer_ + <buffer_number>.
-void LabelSwapChainAndBuffers(IDXGISwapChain* swap_chain,
-                              const char* name_prefix) {
-  SetDebugName(swap_chain, name_prefix);
-  LabelSwapChainBuffers(swap_chain, name_prefix);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 GLDisplay* GetDisplay(GpuPreference gpu_preference) {
   return GetDisplay(gpu_preference, gl::DisplayKey::kDefault);

@@ -63,12 +63,10 @@ class ChromeBrowserMainParts : public content::BrowserMainParts {
   // Add additional ChromeBrowserMainExtraParts.
   void AddParts(std::unique_ptr<ChromeBrowserMainExtraParts> parts);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns the RunLoop that would be run by MainMessageLoopRun. This is used
   // by InProcessBrowserTests to allow them to run until the BrowserProcess is
   // ready for the browser to exit.
   static std::unique_ptr<base::RunLoop> TakeRunLoopForTest();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_PROCESS_SINGLETON)
   // See ProcessSingletonNotificationCallback() for details.
@@ -91,9 +89,7 @@ class ChromeBrowserMainParts : public content::BrowserMainParts {
   int PreCreateThreads() override;
   void PostCreateThreads() override;
   int PreMainMessageLoopRun() override;
-#if !BUILDFLAG(IS_ANDROID)
   bool ShouldInterceptMainMessageLoopRun() override;
-#endif
   void WillRunMainMessageLoop(
       std::unique_ptr<base::RunLoop>& run_loop) override;
   void OnFirstIdle() override;
@@ -166,14 +162,12 @@ class ChromeBrowserMainParts : public content::BrowserMainParts {
 
   int result_code_ = content::RESULT_CODE_NORMAL_EXIT;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Create ShutdownWatcherHelper object for watching jank during shutdown.
   // Please keep |shutdown_watcher| as the first object constructed, and hence
   // it is destroyed last.
   std::unique_ptr<ShutdownWatcherHelper> shutdown_watcher_;
 
   std::unique_ptr<WebUsbDetector> web_usb_detector_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Vector of additional ChromeBrowserMainExtraParts.
   // Parts are deleted in the inverse order they are added.
@@ -185,20 +179,14 @@ class ChromeBrowserMainParts : public content::BrowserMainParts {
 
   std::unique_ptr<BrowserProcessImpl> browser_process_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Browser creation happens on the Java side in Android.
   std::unique_ptr<StartupBrowserCreator> browser_creator_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID)
   // Members needed across shutdown methods.
   bool restart_last_session_ = false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID)
   std::optional<base::AutoReset<std::unique_ptr<apps::PublisherHostFactory>>>
       publisher_host_factory_resetter_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_DOWNGRADE_PROCESSING)
   downgrade::DowngradeManager downgrade_manager_;
@@ -221,11 +209,9 @@ class ChromeBrowserMainParts : public content::BrowserMainParts {
   // Must be deleted before `browser_process_`.
   std::unique_ptr<ProfileInitManager> profile_init_manager_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Observer that records metrics related to "Smart Restart" opportunities.
   std::unique_ptr<smart_restart::SmartRestartMetricsObserver>
       smart_restart_metrics_observer_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_CHROME_BROWSER_MAIN_H_

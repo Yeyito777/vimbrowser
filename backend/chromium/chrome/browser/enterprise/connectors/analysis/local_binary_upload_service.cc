@@ -471,17 +471,11 @@ void LocalBinaryUploadService::DoLocalContentAnalysis(
     DVLOG(1) << __func__ << ": id=" << id
              << " file=" << data.path.AsUTF8Unsafe();
   } else if (data.page.IsValid()) {
-#if BUILDFLAG(IS_WIN)
-    sdk_request.mutable_print_data()->set_handle(
-        reinterpret_cast<int64_t>(data.page.GetPlatformHandle()));
-    sdk_request.mutable_print_data()->set_size(data.page.GetSize());
-#else
     // TODO(b/270942162, b/270941037): Migrate other platforms to handle-based
     // print scanning.
     auto mapping = data.page.Map();
     sdk_request.mutable_text_content()->assign(mapping.GetMemoryAs<char>(),
                                                mapping.size());
-#endif
   } else {
     NOTREACHED();
   }

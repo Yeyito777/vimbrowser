@@ -27,27 +27,9 @@ constexpr int kCPUUsageHistogramMin = 1;
 constexpr int kCPUUsageHistogramMax = 1600 * kCPUUsageFactor;
 constexpr int kCPUUsageHistogramBucketCount = 100;
 
-#if BUILDFLAG(IS_WIN)
-bool HasConstantRateTSC() {
-#if defined(ARCH_CPU_ARM64)
-  // Constant rate TSC is never support on Arm CPUs.
-  return false;
-#else
-  // Probe the CPU to detect if constant-rate TSC is supported.
-  return base::time_internal::HasConstantRateTSC();
-#endif
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void RecordAverageCPUUsage(const std::string_view histogram_suffix,
                            const std::optional<double>& cpu_usage) {
-#if BUILDFLAG(IS_WIN)
-  // Skip recording the average CPU usage if the CPU doesn't support constant
-  // rate TSC, since Windows does not offer a way to get a precise measurement
-  // without it.
-  if (!HasConstantRateTSC())
-    return;
-#endif
 
   // The metric definition in
   // tools/metrics/histograms/metadata/power/histograms.xml says, "If no process

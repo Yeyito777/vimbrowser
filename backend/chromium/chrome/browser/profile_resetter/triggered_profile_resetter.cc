@@ -8,9 +8,6 @@
 #include "build/build_config.h"
 
 TriggeredProfileResetter::TriggeredProfileResetter(Profile* profile)
-#if BUILDFLAG(IS_WIN)
-    : profile_(profile)
-#endif  // BUILDFLAG(IS_WIN)
 {
 }
 

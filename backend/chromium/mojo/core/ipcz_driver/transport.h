@@ -42,13 +42,7 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
   // Is the remote process trusted, only tracked on Windows. Not directly
   // sent over the wire.
   enum class ProcessTrust : uint32_t {
-#if BUILDFLAG(IS_WIN)
-    // Default to kTrusted. TODO(crbug.com/414392683) - invert this.
-    kTrusted,
-    kUntrusted,
-#else
     kUntracked,
-#endif
   };
 
   struct EndpointTypes {

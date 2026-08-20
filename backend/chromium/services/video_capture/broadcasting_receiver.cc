@@ -144,15 +144,7 @@ BroadcastingReceiver::BufferContext::CloneBufferHandle(
         NOTREACHED() << "Unexpected video buffer handle type";
       }
     case media::VideoCaptureBufferType::kGpuMemoryBuffer:
-#if BUILDFLAG(IS_WIN)
-      // On windows with MediaFoundationD3D11VideoCapture if the
-      // texture capture path fails, a ShMem buffer might be produced instead.
-      DCHECK(buffer_handle_->is_unsafe_shmem_region());
-      return media::mojom::VideoBufferHandle::NewUnsafeShmemRegion(
-          buffer_handle_->get_unsafe_shmem_region().Duplicate());
-#else
       NOTREACHED() << "Unexpected GpuMemoryBuffer handle type";
-#endif
     case media::VideoCaptureBufferType::kSharedImage:
       NOTREACHED() << "Unexpected SharedImage handle type";
   }

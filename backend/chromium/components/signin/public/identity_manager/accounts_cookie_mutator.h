@@ -116,15 +116,6 @@ class AccountsCookieMutator {
   // know that the contents of the Gaia cookie might have changed.
   virtual void TriggerCookieJarUpdate() = 0;
 
-#if BUILDFLAG(IS_IOS)
-  // Forces the processing of GaiaCookieManagerService::OnCookieChange. On
-  // iOS, it's necessary to force-trigger the processing of cookie changes
-  // from the client as the normal mechanism for internally observing them
-  // is not wired up.
-  // TODO(crbug.com/40613324) : Remove the need to expose this method
-  // or move it to the network::CookieManager.
-  virtual void ForceTriggerOnCookieChange() = 0;
-#endif
 
   // Remove all accounts from the Gaia cookie.
   // Note: this only clears the Gaia cookies. Other cookies such as the SAML

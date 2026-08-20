@@ -39,12 +39,6 @@ struct BatteryDischarge {
   BatteryDischargeMode mode;
   // Discharge rate in milliwatts.
   std::optional<int64_t> rate_milliwatts;
-#if BUILDFLAG(IS_WIN)
-  // Discharge rate in milliwatts, if the client's battery discharge granularity
-  // is at most 17 mWh. Calculated using the used capacity instead of the
-  // current capacity.
-  std::optional<int64_t> rate_milliwatts_with_precise_granularity;
-#endif  // BUILDFLAG(IS_WIN)
   // Discharge rate in hundredth of a percent per minute.
   std::optional<int64_t> rate_relative;
 };
@@ -78,11 +72,5 @@ void ReportBatteryHistograms(base::TimeDelta interval_duration,
                              bool is_initial_interval,
                              const std::vector<const char*>& scenario_suffixes);
 
-#if BUILDFLAG(IS_WIN)
-// Report battery metrics captured over a >10 minutes interval.
-void ReportBatteryHistogramsTenMinutesInterval(
-    base::TimeDelta interval_duration,
-    BatteryDischarge battery_discharge);
-#endif  // BUILDFLAG(IS_WIN)
 
 #endif  // CHROME_BROWSER_METRICS_POWER_POWER_METRICS_H_

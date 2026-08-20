@@ -731,12 +731,6 @@ NetworkContext::NetworkContext(
 
   socket_factory_ = std::make_unique<SocketFactory>(
       url_request_context_->net_log(), url_request_context_);
-#if BUILDFLAG(IS_WIN)
-  if (params_->socket_brokers) {
-    socket_factory_->BindSocketBroker(
-        std::move(params_->socket_brokers->server));
-  }
-#endif
   resource_scheduler_ = std::make_unique<ResourceScheduler>();
 
   if (params_->http_auth_static_network_context_params) {
@@ -2517,45 +2511,6 @@ void NetworkContext::SetCorsNonWildcardRequestHeadersSupport(bool value) {
       cors::NonWildcardRequestHeadersSupport(value);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void NetworkContext::LookupProxyAuthCredentials(
-    const net::ProxyServer& proxy_server,
-    const std::string& auth_scheme,
-    const std::string& realm,
-    LookupProxyAuthCredentialsCallback callback) {
-  net::HttpAuth::Scheme net_scheme =
-      net::HttpAuth::StringToScheme(base::ToLowerASCII(auth_scheme));
-  if (net_scheme == net::HttpAuth::Scheme::AUTH_SCHEME_MAX) {
-    std::move(callback).Run(std::nullopt);
-    return;
-  }
-  net::HttpAuthCache* http_auth_cache =
-      url_request_context_->http_transaction_factory()
-          ->GetSession()
-          ->http_auth_cache();
-  // TODO(crbug.com/40704785): Mapping proxy addresses to URLs is a
-  // lossy conversion, shouldn't do this.
-  const char* scheme =
-      proxy_server.is_secure_http_like() ? "https://" : "http://";
-  url::SchemeHostPort scheme_host_port(
-      GURL(scheme + proxy_server.host_port_pair().ToString()));
-  if (!scheme_host_port.IsValid()) {
-    std::move(callback).Run(std::nullopt);
-    return;
-  }
-
-  //  Unlike server credentials, proxy credentials are not keyed on
-  //  NetworkAnonymizationKey.
-  net::HttpAuthCache::Entry* entry = http_auth_cache->Lookup(
-      scheme_host_port, net::HttpAuth::AUTH_PROXY, realm, net_scheme,
-      net::NetworkAnonymizationKey());
-  if (entry) {
-    std::move(callback).Run(entry->credentials());
-  } else {
-    std::move(callback).Run(std::nullopt);
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 const net::HttpAuthPreferences* NetworkContext::GetHttpAuthPreferences() const {
   return &http_auth_merged_preferences_;
@@ -2738,18 +2693,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
         std::move(params_->proxy_resolver_factory));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (params_->system_proxy_resolver) {
-    builder.SetMojoWindowsSystemProxyResolver(
-        std::move(params_->system_proxy_resolver));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (params_->dhcp_wpad_url_client) {
-    builder.SetDhcpWpadUrlClient(std::move(params_->dhcp_wpad_url_client));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!params_->http_cache_enabled) {
     builder.DisableHttpCache();
@@ -2997,13 +2941,6 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
         command_line->GetSwitchValueASCII(switches::kHostRules));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (params_->socket_brokers) {
-    builder.set_client_socket_factory(
-        std::make_unique<BrokeredClientSocketFactory>(
-            std::move(params_->socket_brokers->client)));
-  }
-#endif
 
   require_network_anonymization_key_ =
       params_->require_network_anonymization_key;
@@ -3129,12 +3066,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  const bool enable_exclusive_access =
-      network_service()->exclusive_cookie_database_locking();
-#else
   const bool enable_exclusive_access = false;
-#endif  // BUILDFLAG(IS_WIN)
 
   scoped_refptr<net::SQLitePersistentCookieStore> sqlite_store(
       new net::SQLitePersistentCookieStore(

@@ -75,23 +75,6 @@ class FileSystemDelegate {
   // string ID is found.
   virtual int GetDescriptionIdForAcceptType(const std::string& accept_type) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Grants or denies an extension's request for access to the named file
-  // system. May prompt the user for consent.
-  virtual void RequestFileSystem(content::BrowserContext* browser_context,
-                                 scoped_refptr<ExtensionFunction> requester,
-                                 ConsentProvider* consent_provider,
-                                 const Extension& extension,
-                                 std::string volume_id,
-                                 bool writable,
-                                 FileSystemCallback success_callback,
-                                 ErrorCallback error_callback) = 0;
-
-  // Immediately calls VolumeListCallback or ErrorCallback.
-  virtual void GetVolumeList(content::BrowserContext* browser_context,
-                             VolumeListCallback success_callback,
-                             ErrorCallback error_callback) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   virtual SavedFilesServiceInterface* GetSavedFilesService(
       content::BrowserContext* browser_context) = 0;

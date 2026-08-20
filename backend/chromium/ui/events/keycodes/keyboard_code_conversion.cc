@@ -280,10 +280,6 @@ int ModifierDomKeyToEventFlag(DomKey key) {
       return EF_SHIFT_DOWN;
     case DomKey::SHIFT_LEVEL5:
       return EF_MOD3_DOWN;
-#if BUILDFLAG(IS_CHROMEOS)
-    case DomKey::FN:
-      return EF_FUNCTION_DOWN;
-#endif
     default:
       return EF_NONE;
   }

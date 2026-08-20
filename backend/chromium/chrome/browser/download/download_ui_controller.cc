@@ -25,14 +25,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/strings/string_util.h"
-#include "chrome/browser/download/android/download_controller.h"
-#include "chrome/browser/download/android/download_controller_base.h"
-#include "components/pdf/common/constants.h"
-#include "content/public/browser/download_manager_delegate.h"
-#include "content/public/common/content_features.h"
-#else
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/browser_list.h"
@@ -42,16 +34,12 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/views/download/bubble/download_toolbar_ui_controller.h"
-#endif
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/download/bubble/download_bubble_ui_controller.h"
 #include "chrome/browser/download/bubble/download_bubble_update_service_factory.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/download/notification/download_notification_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "components/download/public/common/desktop/desktop_auto_resumption_handler.h"
@@ -60,24 +48,6 @@
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-
-class AndroidUIControllerDelegate : public DownloadUIController::Delegate {
- public:
-  AndroidUIControllerDelegate() = default;
-  ~AndroidUIControllerDelegate() override = default;
-
- private:
-  // DownloadUIController::Delegate
-  void OnNewDownloadReady(download::DownloadItem* item) override;
-};
-
-void AndroidUIControllerDelegate::OnNewDownloadReady(
-    download::DownloadItem* item) {
-  DownloadControllerBase::Get()->OnDownloadStarted(item);
-}
-
-#elif !BUILDFLAG(IS_CHROMEOS)
 
 void InitializeDownloadBubbleUpdateService(Profile* profile,
                                            content::DownloadManager* manager) {
@@ -152,7 +122,6 @@ void DownloadBubbleUIControllerDelegate::OnButtonClicked() {
       });
 }
 
-#endif
 } // namespace
 
 DownloadUIController::Delegate::~Delegate() = default;
@@ -162,23 +131,14 @@ void DownloadUIController::Delegate::OnButtonClicked() {}
 DownloadUIController::DownloadUIController(content::DownloadManager* manager,
                                            std::unique_ptr<Delegate> delegate)
     : download_notifier_(manager, this), delegate_(std::move(delegate)) {
-#if BUILDFLAG(IS_ANDROID)
-  if (!delegate_)
-    delegate_ = std::make_unique<AndroidUIControllerDelegate>();
-#else
   // The download bubble UI is used on desktop platforms besides ChromeOS,
   // which uses system notifications instead.
   if (!delegate_) {
     Profile* profile =
         Profile::FromBrowserContext(manager->GetBrowserContext());
-#if BUILDFLAG(IS_CHROMEOS)
-    delegate_ = std::make_unique<DownloadNotificationManager>(profile);
-#else
     delegate_ = std::make_unique<DownloadBubbleUIControllerDelegate>(profile);
     InitializeDownloadBubbleUpdateService(profile, manager);
-#endif
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 DownloadUIController::~DownloadUIController() = default;
@@ -223,16 +183,6 @@ void DownloadUIController::OnDownloadUpdated(content::DownloadManager* manager,
   DownloadItemModel item_model(item);
 
   bool needs_to_render = false;
-#if BUILDFLAG(IS_ANDROID)
-  if (manager && manager->GetDelegate() &&
-      manager->GetDelegate()->ShouldOpenPdfInline() &&
-      item->AllowAutoOpenAfterCompletion() &&
-      item->GetState() == download::DownloadItem::IN_PROGRESS &&
-      base::EqualsCaseInsensitiveASCII(item->GetMimeType(),
-                                       pdf::kPDFMimeType)) {
-    needs_to_render = true;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Ignore if we've already notified the UI about |item| or if it isn't a new
   // download.
@@ -258,11 +208,6 @@ void DownloadUIController::OnDownloadUpdated(content::DownloadManager* manager,
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
   if (web_contents) {
-#if BUILDFLAG(IS_ANDROID)
-    if (!needs_to_render) {
-      DownloadController::CloseTabIfEmpty(web_contents, item);
-    }
-#else   // BUILDFLAG(IS_ANDROID)
     Browser* browser = chrome::FindBrowserWithTab(web_contents);
     // If the download occurs in a new tab, and it's not a save page
     // download (started before initial navigation completed) close it.
@@ -276,7 +221,6 @@ void DownloadUIController::OnDownloadUpdated(content::DownloadManager* manager,
         !item->IsSavePackageDownload()) {
       web_contents->Close();
     }
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   if (item->GetState() == download::DownloadItem::CANCELLED)

@@ -194,14 +194,12 @@ static_library("libyuv_internal") {
   }
 
   # To enable AVX2 or other cpu optimization, pass flag here
-  if (!is_win) {
-    cflags = [
-      # "-mpopcnt",
-      # "-mavx2",
-      # "-mfma",
-      "-ffp-contract=fast",  # Enable fma vectorization for NEON.
-    ]
-  }
+  cflags = [
+    # "-mpopcnt",
+    # "-mavx2",
+    # "-mfma",
+    "-ffp-contract=fast",  # Enable fma vectorization for NEON.
+  ]
 }
 
 if (libyuv_use_neon) {
@@ -308,19 +306,11 @@ if (libyuv_use_lasx) {
 
 if (libyuv_include_tests) {
   config("libyuv_unittest_warnings_config") {
-    if (!is_win) {
-      cflags = [
-        # TODO(fbarchard): Fix sign and unused variable warnings.
-        "-Wno-sign-compare",
-        "-Wno-unused-variable",
-      ]
-    }
-    if (is_win) {
-      cflags = [
-        "/wd4245",  # signed/unsigned mismatch
-        "/wd4189",  # local variable is initialized but not referenced
-      ]
-    }
+    cflags = [
+      # TODO(fbarchard): Fix sign and unused variable warnings.
+      "-Wno-sign-compare",
+      "-Wno-unused-variable",
+    ]
   }
   config("libyuv_unittest_config") {
     defines = [ "GTEST_RELATIVE_PATH" ]
@@ -375,11 +365,6 @@ if (libyuv_include_tests) {
 
       # For enabling ASLR.
       ldflags = [ "-pie" ]
-    }
-    if (is_ios) {
-      configs -= [ "//build/config/compiler:default_symbols" ]
-      configs += [ "//build/config/compiler:symbols" ]
-      cflags = [ "-Wno-sometimes-uninitialized" ]
     }
     if (!is_ios && !libyuv_disable_jpeg) {
       defines += [ "HAVE_JPEG" ]

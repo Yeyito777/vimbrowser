@@ -15,14 +15,7 @@
 namespace gpu {
 namespace {
 
-#if BUILDFLAG(IS_FUCHSIA)
-// On Fuchsia semaphores are passed to scenic as zx::event. Scenic doesn't reset
-// them after waiting, so they would have to be reset explicitly to be reused.
-// OTOH new semaphores are cheap, so reuse doesn't provide significant benefits.
-constexpr size_t kMaxSemaphoresInPool = 0;
-#else
 constexpr size_t kMaxSemaphoresInPool = 16;
-#endif
 
 }  // namespace
 

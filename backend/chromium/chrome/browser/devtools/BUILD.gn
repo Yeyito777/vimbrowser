@@ -43,13 +43,6 @@ if (enable_devtools_frontend) {
     "protocol/system_info.cc",
     "protocol/system_info.h",
   ]
-
-  if (is_chromeos) {
-    _protocol_generated += [
-      "protocol/window_manager.cc",
-      "protocol/window_manager.h",
-    ]
-  }
 }
 
 _concatenated_protocol_path =
@@ -66,10 +59,6 @@ action("concatenate_protocols") {
   outputs = [ output_file ]
 
   args = [ rebase_path(_blink_protocol_path, root_build_dir) ]
-  if (is_chromeos) {
-    inputs += [ "cros_protocol.pdl" ]
-    args += [ rebase_path("cros_protocol.pdl", root_build_dir) ]
-  }
 
   args += [ rebase_path(output_file, root_build_dir) ]
 }
@@ -274,12 +263,6 @@ static_library("devtools") {
   if (is_mac || is_win || is_linux || is_chromeos) {
     deps += [ "//components/webapps/isolated_web_apps:scheme" ]
   }
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/constants",
-    ]
-  }
   sources += [
     "chrome_devtools_manager_delegate.cc",
     "chrome_devtools_manager_delegate.h",
@@ -369,16 +352,6 @@ static_library("devtools") {
     "protocol/target_handler.cc",
     "protocol/target_handler.h",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//ash",
-      "//chromeos/dbus/constants",
-    ]
-    sources += [
-      "protocol/window_manager_handler.cc",
-      "protocol/window_manager_handler.h",
-    ]
-  }
 
   sources += rebase_path(_protocol_generated, ".", target_gen_dir)
 

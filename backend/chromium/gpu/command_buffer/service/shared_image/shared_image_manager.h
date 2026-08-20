@@ -24,11 +24,6 @@ namespace viz {
 class VulkanContextProvider;
 }  // namespace viz
 
-#if BUILDFLAG(IS_WIN)
-namespace gfx {
-class D3DSharedFence;
-}
-#endif
 
 namespace gpu {
 class DXGISharedHandleManager;
@@ -134,19 +129,10 @@ class GPU_GLES2_EXPORT SharedImageManager
       bool needs_detiling);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<LegacyOverlayImageRepresentation> ProduceLegacyOverlay(
-      const Mailbox& mailbox,
-      MemoryTypeTracker* ref);
-#endif
 
   bool UpdateSharedImage(const Mailbox& mailbox,
                          std::unique_ptr<gfx::GpuFence> in_fence);
 
-#if BUILDFLAG(IS_WIN)
-  void UpdateExternalFence(const Mailbox& mailbox,
-                           scoped_refptr<gfx::D3DSharedFence> external_fence);
-#endif
 
   // Provides the usage flags supported by the given |mailbox|. Returns nullopt
   // if no backing is registered for `mailbox`.
@@ -164,9 +150,6 @@ class GPU_GLES2_EXPORT SharedImageManager
     return display_context_on_another_thread_;
   }
 
-#if BUILDFLAG(IS_WIN)
-  scoped_refptr<base::SingleThreadTaskRunner> io_runner() { return io_runner_; }
-#endif
 
 #if BUILDFLAG(IS_OZONE)
   viz::VulkanContextProvider* vulkan_context_provider() {
@@ -183,12 +166,6 @@ class GPU_GLES2_EXPORT SharedImageManager
   // method is to facilitate pageflip testing on the viz thread.
   scoped_refptr<gfx::NativePixmap> GetNativePixmap(const gpu::Mailbox& mailbox);
 
-#if BUILDFLAG(IS_WIN)
-  const scoped_refptr<DXGISharedHandleManager>& dxgi_shared_handle_manager()
-      const {
-    return dxgi_shared_handle_manager_;
-  }
-#endif
 
  private:
   class AutoLock;
@@ -206,10 +183,6 @@ class GPU_GLES2_EXPORT SharedImageManager
 
   bool is_registered_as_memory_dump_provider_ = false;
 
-#if BUILDFLAG(IS_WIN)
-  scoped_refptr<DXGISharedHandleManager> dxgi_shared_handle_manager_;
-  scoped_refptr<base::SingleThreadTaskRunner> io_runner_;
-#endif
 
 #if BUILDFLAG(IS_OZONE)
   bool supports_overlays_on_ozone_ = false;

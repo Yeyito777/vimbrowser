@@ -151,10 +151,6 @@ void ImageDecoder::StartWithOptionsImpl(
 
   data_decoder::mojom::ImageCodec codec =
       data_decoder::mojom::ImageCodec::kDefault;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (image_codec == PNG_CODEC)
-    codec = data_decoder::mojom::ImageCodec::kPng;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   auto callback =
       base::BindOnce(&OnDecodeImageDone,

@@ -155,19 +155,6 @@ template("ts_library") {
     # The |platform| flag is used in path_mappings.py and validate_tsconfig.py,
     # to limit some logic to certain platforms, like preventing special iOS
     # exceptions being abused on other platforms.
-    if (is_ios) {
-      platform = "ios"
-      args += [
-        "--platform",
-        platform,
-      ]
-    } else if (is_chromeos) {
-      platform = "chromeos_ash"
-      args += [
-        "--platform",
-        platform,
-      ]
-    }
 
     args += [ "--path_mappings" ] + path_mappings
     if (defined(invoker.path_mappings)) {

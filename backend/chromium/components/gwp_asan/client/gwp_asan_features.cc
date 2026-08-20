@@ -20,59 +20,7 @@ constexpr base::FeatureState kDefaultEnabled =
 BASE_FEATURE(kGwpAsanMalloc, kDefaultEnabled);
 BASE_FEATURE(kGwpAsanPartitionAlloc, kDefaultEnabled);
 
-#if BUILDFLAG(IS_ANDROID)
-
-// Browser reservation params.
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocBrowserMaxAllocations{&kGwpAsanMalloc,
-                                        "BrowserMaxAllocations", 210};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocBrowserMaxMetadata{&kGwpAsanMalloc, "BrowserMaxMetadata",
-                                     765};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocBrowserTotalPages{&kGwpAsanMalloc, "BrowserTotalPages", 1536};
-
-// Browser sampling params.
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocBrowserAllocationSamplingMultiplier{
-        &kGwpAsanMalloc, "BrowserAllocationSamplingMultiplier", 1500};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocBrowserAllocationSamplingRange{
-        &kGwpAsanMalloc, "BrowserAllocationSamplingRange", 16};
-
-// Renderer sampling params.
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocRendererAllocationSamplingMultiplier{
-        &kGwpAsanMalloc, "RendererAllocationSamplingMultiplier", 1500};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocRendererAllocationSamplingRange{
-        &kGwpAsanMalloc, "RendererAllocationSamplingRange", 12};
-
-// Renderer sampling params (for PartitionAlloc, not PA-E).
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanPartitionAllocRendererAllocationSamplingMultiplier{
-        &kGwpAsanPartitionAlloc, "RendererAllocationSamplingMultiplier", 1500};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanPartitionAllocRendererAllocationSamplingRange{
-        &kGwpAsanPartitionAlloc, "RendererAllocationSamplingRange", 12};
-
-// GPU reservation params.
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocGpuMaxAllocations{&kGwpAsanMalloc, "GpuMaxAllocations", 140};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocGpuMaxMetadata{&kGwpAsanMalloc, "GpuMaxMetadata", 510};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocGpuTotalPages{&kGwpAsanMalloc, "GpuTotalPages", 1024};
-
-// GPU sampling params.
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocGpuAllocationSamplingMultiplier{
-        &kGwpAsanMalloc, "GpuAllocationSamplingMultiplier", 1500};
-GWP_ASAN_EXPORT extern const base::FeatureParam<int>
-    kGwpAsanMallocGpuAllocationSamplingRange{&kGwpAsanMalloc,
-                                             "GpuAllocationSamplingRange", 16};
-
-#elif BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX)
 
 // Browser reservation params.
 GWP_ASAN_EXPORT extern const base::FeatureParam<int>

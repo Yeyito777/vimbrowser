@@ -9,20 +9,12 @@
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/extensions/api/networking_private/networking_private_ui_delegate_chromeos.h"
-#endif
 
 namespace extensions {
 
 std::unique_ptr<NetworkingPrivateDelegate::UIDelegate>
 NetworkingPrivateUIDelegateFactoryImpl::CreateDelegate() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<
-      chromeos::extensions::NetworkingPrivateUIDelegateChromeOS>();
-#else
   return nullptr;
-#endif
 }
 
 }  // namespace extensions

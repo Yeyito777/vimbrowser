@@ -7,10 +7,6 @@ import("//build/config/python.gni")
 import("//mojo/public/interfaces/bindings/tests/validation_data_files.gni")
 import("../../../tools/bindings/mojom.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 group("test_data_deps") {
   testonly = true
   data_deps = [
@@ -19,13 +15,6 @@ group("test_data_deps") {
     ":validation_test_data",
     ":validation_test_data_list",
   ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("validation_unittest_bundle_data") {
-    testonly = true
-    filelist_name = "validation_unittest_bundle_data.filelist"
-  }
 }
 
 copy("validation_test_data") {

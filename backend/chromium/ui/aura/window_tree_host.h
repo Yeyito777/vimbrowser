@@ -297,19 +297,6 @@ class AURA_EXPORT WindowTreeHost : public ui::ImeKeyEventDispatcher,
   // See VideoCaptureLock for details. This may return null.
   std::unique_ptr<VideoCaptureLock> CreateVideoCaptureLock();
 
-#if BUILDFLAG(IS_WIN)
-  // Returns whether a host's window is on the current workspace or not,
-  // std::nullopt if the state is not known.
-  std::optional<bool> on_current_workspace() const {
-    return on_current_workspace_;
-  }
-
-  // Determining if a host's window is on the current workspace can be very
-  // expensive COM call on Windows, so this caches that information.
-  void set_on_current_workspace(std::optional<bool> on_current_workspace) {
-    on_current_workspace_ = on_current_workspace;
-  }
-#endif  // BUILDFLAG_(IS_WIN)
 
  protected:
   friend class ScopedKeyboardHook;

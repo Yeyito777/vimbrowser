@@ -22,11 +22,6 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/webui/webui_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/strings/utf_string_conversions.h"
-#include "chrome/common/webui_url_constants.h"
-#include "ui/base/l10n/l10n_util.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace chromeos {
 

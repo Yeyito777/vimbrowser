@@ -30,16 +30,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <memory>
-
-#include "content/public/app/sandbox_helper_win.h"
-#include "sandbox/policy/mojom/sandbox.mojom.h"
-#include "sandbox/policy/sandbox_type.h"
-#include "sandbox/win/src/sandbox_types.h"
-#endif
 
 CefMainRunner::CefMainRunner(bool multi_threaded_message_loop,
                              bool external_message_pump)
@@ -169,11 +159,7 @@ int CefMainRunner::RunAsHelperProcess(const CefMainArgs& args,
                                       CefRefPtr<CefApp> application,
                                       void* windows_sandbox_info) {
   base::CommandLine command_line(base::CommandLine::NO_PROGRAM);
-#if BUILDFLAG(IS_WIN)
-  command_line.ParseFromString(::GetCommandLineW());
-#else
   command_line.InitFromArgv(args.argc, args.argv);
-#endif
 
   // Wait for the debugger as early in process initialization as possible.
   if (command_line.HasSwitch(switches::kWaitForDebugger)) {
@@ -203,48 +189,8 @@ int CefMainRunner::RunAsHelperProcess(const CefMainArgs& args,
 
   // Execute the secondary process.
   content::ContentMainParams main_params(main_delegate.get());
-#if BUILDFLAG(IS_WIN)
-  // Configure child processes to be killed by the system after the main process
-  // goes away. The main process uses the default shutdown order, which is
-  // 0x280. Note that lower numbers here mean "kill later" and higher numbers
-  // mean "kill sooner". We want to avoid child processes dying first because
-  // they may be relaunched, resulting in relaunch failures and crashes like
-  // IntentionallyCrashBrowserForUnusableGpuProcess.
-  ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
-
-  // Initialize the sandbox services.
-  // Match the logic in MainDllLoader::Launch.
-  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-
-  // IsUnsandboxedSandboxType() can't be used here because its result can be
-  // gated behind a feature flag, which are not yet initialized.
-  const bool is_sandboxed =
-      sandbox::policy::SandboxTypeFromCommandLine(command_line) !=
-      sandbox::mojom::Sandbox::kNoSandbox;
-
-  // When using cef_sandbox_info_create() the sandbox info will always be
-  // initialized. This is incorrect for cases where the sandbox is disabled, and
-  // we adjust for that here.
-  if (!is_sandboxed || windows_sandbox_info == nullptr) {
-    if (is_sandboxed) {
-      // For child processes that are running as --no-sandbox, don't
-      // initialize the sandbox info, otherwise they'll be treated as brokers
-      // (as if they were the browser).
-      content::InitializeSandboxInfo(
-          &sandbox_info, IsExtensionPointDisableSet()
-                             ? sandbox::MITIGATION_EXTENSION_POINT_DISABLE
-                             : 0);
-    }
-    windows_sandbox_info = &sandbox_info;
-  }
-
-  main_params.instance = args.instance;
-  main_params.sandbox_info =
-      static_cast<sandbox::SandboxInterfaceInfo*>(windows_sandbox_info);
-#else
   main_params.argc = args.argc;
   main_params.argv = const_cast<const char**>(args.argv);
-#endif
   return content::ContentMain(std::move(main_params));
 }
 
@@ -261,20 +207,8 @@ int CefMainRunner::ContentMainInitialize(const CefMainArgs& args,
   main_runner_ = content::ContentMainRunner::Create();
   content::ContentMainParams main_params(main_delegate_.get());
 
-#if BUILDFLAG(IS_WIN)
-  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-  if (windows_sandbox_info == nullptr) {
-    windows_sandbox_info = &sandbox_info;
-    *no_sandbox = true;
-  }
-
-  main_params.instance = args.instance;
-  main_params.sandbox_info =
-      static_cast<sandbox::SandboxInterfaceInfo*>(windows_sandbox_info);
-#else
   main_params.argc = args.argc;
   main_params.argv = const_cast<const char**>(args.argv);
-#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
   main_params.disable_signal_handlers = disable_signal_handlers;
@@ -347,11 +281,7 @@ int CefMainRunner::ContentMainRun(bool* initialized,
 
 // static
 void CefMainRunner::BeforeMainInitialize(const CefMainArgs& args) {
-#if BUILDFLAG(IS_WIN)
-  base::CommandLine::Init(0, nullptr);
-#else
   base::CommandLine::Init(args.argc, args.argv);
-#endif
 }
 
 bool CefMainRunner::HandleMainMessageLoopQuit() {

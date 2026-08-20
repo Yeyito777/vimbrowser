@@ -75,10 +75,6 @@ source_set("browser_tests") {
     "//components/permissions",
     "//components/webdata_services",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/experiences/arc" ]
-  }
 }
 
 source_set("unittests") {

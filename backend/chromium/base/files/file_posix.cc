@@ -97,7 +97,6 @@ int CallFutimes(PlatformFile file, const std::array<struct timeval, 2> times) {
 #endif
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 short FcntlFlockType(std::optional<File::LockMode> mode) {
   if (!mode.has_value()) {
     return F_UNLCK;
@@ -123,7 +122,6 @@ File::Error CallFcntlFlock(PlatformFile file,
   }
   return File::FILE_OK;
 }
-#endif
 
 #else   // !BUILDFLAG(IS_AIX)
 
@@ -439,7 +437,6 @@ bool File::GetInfo(Info* info) const {
   return success;
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 File::Error File::Lock(File::LockMode mode) {
   SCOPED_FILE_TRACE("Lock");
   return CallFcntlFlock(file_.get(), mode);
@@ -449,7 +446,6 @@ File::Error File::Unlock() {
   SCOPED_FILE_TRACE("Unlock");
   return CallFcntlFlock(file_.get(), std::optional<File::LockMode>());
 }
-#endif
 
 File File::Duplicate() const {
   if (!IsValid()) {
@@ -552,9 +548,6 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
   static_assert(O_RDONLY == 0, "O_RDONLY must equal zero");
 
   mode_t mode = S_IRUSR | S_IWUSR;
-#if BUILDFLAG(IS_CHROMEOS)
-  mode |= S_IRGRP | S_IROTH;
-#endif
 
 
   int descriptor = HANDLE_EINTR(open(path.value().c_str(), open_flags, mode));

@@ -67,13 +67,6 @@ source_set("impl") {
     "//chrome/common:non_code_constants",
     "//components/country_codes",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/components/kiosk",
-      "//chromeos/components/mgs",
-    ]
-  }
 }
 
 if (!is_chrome_for_testing) {
@@ -129,37 +122,35 @@ if (!is_chrome_for_testing) {
     configs += [ "//build/config/compiler:no_exit_time_destructors" ]
   }
 
-  if (!is_chromeos_device) {
-    source_set("interactive_ui_tests") {
-      testonly = true
+  source_set("interactive_ui_tests") {
+    testonly = true
 
-      defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-      sources = [ "search_engine_choice_dialog_interactive_uitest.cc" ]
+    sources = [ "search_engine_choice_dialog_interactive_uitest.cc" ]
 
-      deps = [
-        ":search_engine_choice",
-        "//base",
-        "//base/test:test_support",
-        "//chrome/app:command_ids",
-        "//chrome/browser/profiles:profile",
-        "//chrome/browser/search_engines",
-        "//chrome/browser/ui",
-        "//chrome/browser/ui:browser_element_identifiers",
-        "//chrome/test:test_support_ui",
-        "//components/country_codes",
-        "//components/regional_capabilities",
-        "//components/search_engines",
-        "//components/variations",
-        "//content/test:test_support",
-        "//testing/gtest",
-        "//ui/base",
-      ]
+    deps = [
+      ":search_engine_choice",
+      "//base",
+      "//base/test:test_support",
+      "//chrome/app:command_ids",
+      "//chrome/browser/profiles:profile",
+      "//chrome/browser/search_engines",
+      "//chrome/browser/ui",
+      "//chrome/browser/ui:browser_element_identifiers",
+      "//chrome/test:test_support_ui",
+      "//components/country_codes",
+      "//components/regional_capabilities",
+      "//components/search_engines",
+      "//components/variations",
+      "//content/test:test_support",
+      "//testing/gtest",
+      "//ui/base",
+    ]
 
-      # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-      # enable the diagnostic by removing this line.
-      configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-    }
+    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
+    # enable the diagnostic by removing this line.
+    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
   }
 }
 

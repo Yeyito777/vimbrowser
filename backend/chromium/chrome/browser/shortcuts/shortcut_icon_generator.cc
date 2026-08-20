@@ -49,14 +49,6 @@ class GeneratedIconImageSource : public gfx::CanvasImageSource {
 
     std::string font_name =
         l10n_util::GetStringUTF8(IDS_SANS_SERIF_FONT_FAMILY);
-#if BUILDFLAG(IS_CHROMEOS)
-    // With adaptive icons, we generate full size square icons as they will be
-    // masked by the OS.
-    icon_size = output_size_;
-    icon_inset = 0;
-    const std::string kChromeOSFontFamily = "Noto Sans";
-    font_name = kChromeOSFontFamily;
-#endif
 
     // Use a dark gray so it will stand out on the black shelf.
     constexpr SkColor color = SK_ColorDKGRAY;

@@ -9,9 +9,6 @@
 #include "sandbox/policy/export.h"
 #include "sandbox/policy/linux/bpf_base_policy_linux.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "sandbox/linux/seccomp-bpf-helpers/baseline_policy_android.h"
-#endif
 
 namespace sandbox::policy {
 
@@ -20,9 +17,6 @@ class SANDBOX_POLICY_EXPORT RendererProcessPolicy : public BPFBasePolicy {
  public:
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   RendererProcessPolicy();
-#elif BUILDFLAG(IS_ANDROID)
-  explicit RendererProcessPolicy(
-      const BaselinePolicyAndroid::RuntimeOptions& options);
 #endif
 
   RendererProcessPolicy(const RendererProcessPolicy&) = delete;

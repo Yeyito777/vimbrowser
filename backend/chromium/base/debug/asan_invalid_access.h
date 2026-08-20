@@ -29,16 +29,6 @@ NOINLINE BASE_EXPORT void AsanHeapUseAfterFree();
 
 // The "corrupt-block" and "corrupt-heap" classes of bugs is specific to
 // Windows.
-#if BUILDFLAG(IS_WIN)
-// Corrupts a memory block and makes sure that the corruption gets detected when
-// we try to free this block.
-NOINLINE BASE_EXPORT void AsanCorruptHeapBlock();
-
-// Corrupts the heap and makes sure that the corruption gets detected when a
-// crash occur.
-NOINLINE BASE_EXPORT void AsanCorruptHeap();
-
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // ADDRESS_SANITIZER
 
 }  // namespace debug

@@ -19,9 +19,6 @@
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/login/signin/oauth2_login_manager.h"
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 class BoundSessionCookieRefreshService;
@@ -35,10 +32,6 @@ class RenderProcessHost;
 
 // The RendererUpdater is responsible for updating renderers about state change.
 class RendererUpdater : public KeyedService
-#if BUILDFLAG(IS_CHROMEOS)
-    ,
-                        public ash::OAuth2LoginManager::Observer
-#endif
 {
  public:
   explicit RendererUpdater(Profile* profile);
@@ -63,12 +56,6 @@ class RendererUpdater : public KeyedService
   mojo::AssociatedRemote<chrome::mojom::RendererConfiguration>
   GetRendererConfiguration(content::RenderProcessHost* render_process_host);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ash::OAuth2LoginManager::Observer:
-  void OnSessionRestoreStateChanged(
-      Profile* user_profile,
-      ash::OAuth2LoginManager::SessionRestoreState state) override;
-#endif
 
   // Update all renderers due to a configuration change.
   void UpdateAllRenderers();
@@ -87,12 +74,6 @@ class RendererUpdater : public KeyedService
   const bool is_off_the_record_;
   const raw_ptr<Profile> original_profile_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  raw_ptr<ash::OAuth2LoginManager> oauth2_login_manager_;
-  bool merge_session_running_;
-  std::vector<mojo::Remote<chrome::mojom::ChromeOSListener>>
-      chromeos_listeners_;
-#endif
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
   const raw_ptr<BoundSessionCookieRefreshService>
       bound_session_cookie_refresh_service_ = nullptr;

@@ -20,9 +20,6 @@
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/test_util.h"
-#endif
 
 class Profile;
 
@@ -39,11 +36,7 @@ namespace web_app {
 class OsIntegrationTestOverrideImpl;
 class WebAppProvider;
 
-#if BUILDFLAG(IS_CHROMEOS)
-using WebAppBrowserTestBaseParent = ChromeOSBrowserUITest;
-#else
 using WebAppBrowserTestBaseParent = MixinBasedInProcessBrowserTest;
-#endif
 
 // Base class for tests of user interface support for web applications.
 class WebAppBrowserTestBase : public WebAppBrowserTestBaseParent {

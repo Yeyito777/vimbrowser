@@ -49,18 +49,5 @@
     .switches = { command_line_switch, switch_value, nullptr, nullptr } \
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// The platform feature name may need to satisfy prefix requirement if
-// ENABLE_BANNED_BASE_FEATURE_PREFIX enabled.
-#define PLATFORM_FEATURE_NAME_TYPE(name)                 \
-  flags_ui::FeatureEntry::PLATFORM_FEATURE_NAME_VALUE, { \
-    .platform_feature_name = { name, {}, nullptr }       \
-  }
-#define PLATFORM_FEATURE_WITH_PARAMS_VALUE_TYPE(name, feature_variations, \
-                                                feature_trial)            \
-  flags_ui::FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE, {      \
-    .platform_feature_name = { name, feature_variations, feature_trial }  \
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #endif  // COMPONENTS_WEBUI_FLAGS_FEATURE_ENTRY_MACROS_H_

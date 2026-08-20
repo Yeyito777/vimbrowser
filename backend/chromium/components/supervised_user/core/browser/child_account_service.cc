@@ -79,20 +79,6 @@ void ChildAccountService::Shutdown() {
   identity_manager_->RemoveObserver(this);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool ChildAccountService::IsChildAccountStatusKnown() {
-  return supervised_user::IsChildAccountStatusKnown(user_prefs_.get());
-}
-
-void ChildAccountService::AddChildStatusReceivedCallback(
-    base::OnceClosure callback) {
-  if (supervised_user::IsChildAccountStatusKnown(user_prefs_.get())) {
-    std::move(callback).Run();
-  } else {
-    status_received_callback_list_.push_back(std::move(callback));
-  }
-}
-#endif
 
 ChildAccountService::AuthState ChildAccountService::GetGoogleAuthState() const {
   CoreAccountId primary_account_id =

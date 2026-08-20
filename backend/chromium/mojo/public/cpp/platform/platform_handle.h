@@ -11,12 +11,7 @@
 #include "build/build_config.h"
 #include "mojo/public/c/system/platform_handle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#include "base/win/windows_handle_util.h"
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/handle.h>
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include "base/apple/scoped_mach_port.h"
 #endif
 
@@ -58,11 +53,7 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   PlatformHandle();
   PlatformHandle(PlatformHandle&& other);
 
-#if BUILDFLAG(IS_WIN)
-  explicit PlatformHandle(base::win::ScopedHandle handle);
-#elif BUILDFLAG(IS_FUCHSIA)
-  explicit PlatformHandle(zx::handle handle);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   explicit PlatformHandle(base::apple::ScopedMachSendRight mach_port);
   explicit PlatformHandle(base::apple::ScopedMachReceiveRight mach_port);
 #endif
@@ -103,42 +94,7 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   // which owns it.
   PlatformHandle Clone() const;
 
-#if BUILDFLAG(IS_WIN)
-  bool is_valid() const { return is_valid_handle(); }
-  bool is_valid_handle() const { return handle_.is_valid(); }
-  bool is_handle() const { return type_ == Type::kHandle; }
-  bool is_pseudo_handle() const {
-    return base::win::IsPseudoHandle(handle_.get());
-  }
-  const base::win::ScopedHandle& GetHandle() const { return handle_; }
-  base::win::ScopedHandle TakeHandle() {
-    DCHECK_EQ(type_, Type::kHandle);
-    type_ = Type::kNone;
-    return std::move(handle_);
-  }
-  [[nodiscard]] HANDLE ReleaseHandle() {
-    DCHECK_EQ(type_, Type::kHandle);
-    type_ = Type::kNone;
-    return handle_.Take();
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  bool is_valid() const { return is_valid_fd() || is_valid_handle(); }
-  bool is_valid_handle() const { return handle_.is_valid(); }
-  bool is_handle() const { return type_ == Type::kHandle; }
-  const zx::handle& GetHandle() const { return handle_; }
-  zx::handle TakeHandle() {
-    if (type_ == Type::kHandle) {
-      type_ = Type::kNone;
-    }
-    return std::move(handle_);
-  }
-  [[nodiscard]] zx_handle_t ReleaseHandle() {
-    if (type_ == Type::kHandle) {
-      type_ = Type::kNone;
-    }
-    return handle_.release();
-  }
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   bool is_valid() const { return is_valid_fd() || is_valid_mach_port(); }
   bool is_valid_mach_port() const {
     return is_valid_mach_send() || is_valid_mach_receive();
@@ -173,10 +129,8 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   [[nodiscard]] mach_port_t ReleaseMachReceiveRight() {
     return TakeMachReceiveRight().release();
   }
-#elif BUILDFLAG(IS_POSIX)
-  bool is_valid() const { return is_valid_fd(); }
 #else
-#error "Unsupported platform."
+  bool is_valid() const { return is_valid_fd(); }
 #endif
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
@@ -200,8 +154,6 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   bool is_valid_platform_file() const {
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     return is_valid_fd();
-#elif BUILDFLAG(IS_WIN)
-    return is_valid_handle();
 #else
 #error "Unsupported platform"
 #endif
@@ -209,8 +161,6 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   base::ScopedPlatformFile TakePlatformFile() {
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     return TakeFD();
-#elif BUILDFLAG(IS_WIN)
-    return TakeHandle();
 #else
 #error "Unsupported platform"
 #endif
@@ -218,8 +168,6 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
   [[nodiscard]] base::PlatformFile ReleasePlatformFile() {
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     return ReleaseFD();
-#elif BUILDFLAG(IS_WIN)
-    return ReleaseHandle();
 #else
 #error "Unsupported platform"
 #endif
@@ -228,11 +176,7 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
  private:
   Type type_ = Type::kNone;
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedHandle handle_;
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::handle handle_;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   base::apple::ScopedMachSendRight mach_send_;
   base::apple::ScopedMachReceiveRight mach_receive_;
 #endif

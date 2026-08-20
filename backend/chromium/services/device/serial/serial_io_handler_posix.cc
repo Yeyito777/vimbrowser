@@ -297,12 +297,7 @@ bool SerialIoHandlerPosix::PostOpen() {
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The Chrome OS permission broker does not open devices in async mode.
-  return base::SetNonBlocking(file().GetPlatformFile());
-#else
   return true;
-#endif
 }
 
 void SerialIoHandlerPosix::PreClose() {

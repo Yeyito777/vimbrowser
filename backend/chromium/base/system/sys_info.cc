@@ -79,116 +79,18 @@ bool SysInfo::IsLowEndDevice() {
   return IsLowEndDeviceImpl();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-namespace {
-
-enum class BucketizedSize {
-  k2GbOrLess,
-  k3Gb,
-  k4Gb,
-  k6Gb,
-  k8GbOrHigher,
-};
-
-BucketizedSize GetSystemRamBucketizedSize() {
-  const ByteSize physical_memory = SysInfo::AmountOfTotalPhysicalMemory();
-
-  // Because of Android carveouts, AmountOfTotalPhysicalMemory() returns smaller
-  // than the actual memory size, So we will use a small lowerbound than "X"GB
-  // to discriminate real "X"GB devices from lower memory ones.
-  // Addendum: This logic should also work for ChromeOS.
-
-  constexpr ByteSize kUpperBound2GB = GiBU(2);  // inclusive
-  if (physical_memory <= kUpperBound2GB) {
-    return BucketizedSize::k2GbOrLess;
-  }
-
-  constexpr ByteSize kLowerBound3GB = kUpperBound2GB;  // exclusive
-  constexpr ByteSize kUpperBound3GB = GiBU(3.2);       // inclusive
-  if (kLowerBound3GB < physical_memory && physical_memory <= kUpperBound3GB) {
-    return BucketizedSize::k3Gb;
-  }
-
-  constexpr ByteSize kLowerBound4GB = kUpperBound3GB;  // exclusive
-  constexpr ByteSize kUpperBound4GB = GiBU(4);         // inclusive
-  if (kLowerBound4GB < physical_memory && physical_memory <= kUpperBound4GB) {
-    return BucketizedSize::k4Gb;
-  }
-
-  constexpr ByteSize kLowerBound6GB = kUpperBound4GB;  // exclusive
-  constexpr ByteSize kUpperBound6GB =
-      ByteSize::FromByteSizeDelta(GiBU(6.5) - MiBU(1));  // inclusive
-  if (kLowerBound6GB < physical_memory && physical_memory <= kUpperBound6GB) {
-    return BucketizedSize::k6Gb;
-  }
-
-  return BucketizedSize::k8GbOrHigher;
-}
-
-BucketizedSize GetCachedSystemRamBucketizedSize() {
-  static BucketizedSize s_size = GetSystemRamBucketizedSize();
-  return s_size;
-}
-
-bool IsPartialLowEndModeOnMidRangeDevicesEnabled() {
-  // TODO(crbug.com/40264947): make the feature not enable on 32-bit devices
-  // before launching or going to high Stable %.
-  return SysInfo::Is4GbOr6GbDevice() &&
-         base::FeatureList::IsEnabled(
-             features::kPartialLowEndModeOnMidRangeDevices);
-}
-
-bool IsPartialLowEndModeOn3GbDevicesEnabled() {
-  return SysInfo::Is3GbDevice() &&
-         base::FeatureList::IsEnabled(features::kPartialLowEndModeOn3GbDevices);
-}
-
-}  // namespace
-
-bool SysInfo::Is3GbDevice() {
-  return GetCachedSystemRamBucketizedSize() == BucketizedSize::k3Gb;
-}
-
-bool SysInfo::Is4GbDevice() {
-  return GetCachedSystemRamBucketizedSize() == BucketizedSize::k4Gb;
-}
-
-bool SysInfo::Is4GbOr6GbDevice() {
-  return GetCachedSystemRamBucketizedSize() == BucketizedSize::k4Gb ||
-         GetCachedSystemRamBucketizedSize() == BucketizedSize::k6Gb;
-}
-
-bool SysInfo::Is6GbDevice() {
-  return GetCachedSystemRamBucketizedSize() == BucketizedSize::k6Gb;
-}
-
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 
 // TODO(crbug.com/40264947): This method is for chromium native code.
 // We need to update the java-side code, i.e.
 // base/android/java/src/org/chromium/base/SysUtils.java,
 // and to make the selected components in java to see this feature.
 bool SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::SysInfo::IsLowEndDevice() ||
-         IsPartialLowEndModeOnMidRangeDevicesEnabled() ||
-         IsPartialLowEndModeOn3GbDevicesEnabled();
-#else
   return base::SysInfo::IsLowEndDevice();
-#endif
 }
 
 bool SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled(
     const FeatureParam<bool>& param_for_exclusion) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::SysInfo::IsLowEndDevice() ||
-         ((IsPartialLowEndModeOnMidRangeDevicesEnabled() ||
-           IsPartialLowEndModeOn3GbDevicesEnabled()) &&
-          !param_for_exclusion.Get());
-#else
   return base::SysInfo::IsLowEndDevice();
-#endif
 }
 
 bool DetectLowEndDevice() {

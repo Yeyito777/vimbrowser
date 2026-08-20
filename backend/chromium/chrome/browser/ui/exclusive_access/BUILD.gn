@@ -127,27 +127,25 @@ source_set("browser_tests") {
   ]
 }
 
-if (!is_chromeos_device) {
-  source_set("interactive_ui_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "fullscreen_controller_interactive_browsertest.cc",
-      "fullscreen_controller_state_interactive_browsertest.cc",
-      "fullscreen_interactive_browsertest.cc",
-    ]
-    deps = [
-      ":test_support",
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/browser/preloading:test_support",
-      "//chrome/browser/ui:test_support",
-      "//chrome/browser/web_applications:web_applications_test_support",
-      "//components/blocked_content",
-      "//components/metrics:content",
-      "//ui/display:test_support",
-    ]
-    if (use_ozone) {
-      deps += [ "//ui/ozone" ]
-    }
+source_set("interactive_ui_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "fullscreen_controller_interactive_browsertest.cc",
+    "fullscreen_controller_state_interactive_browsertest.cc",
+    "fullscreen_interactive_browsertest.cc",
+  ]
+  deps = [
+    ":test_support",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/preloading:test_support",
+    "//chrome/browser/ui:test_support",
+    "//chrome/browser/web_applications:web_applications_test_support",
+    "//components/blocked_content",
+    "//components/metrics:content",
+    "//ui/display:test_support",
+  ]
+  if (use_ozone) {
+    deps += [ "//ui/ozone" ]
   }
 }

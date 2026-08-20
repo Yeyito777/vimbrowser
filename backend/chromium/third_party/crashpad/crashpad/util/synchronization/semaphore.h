@@ -21,11 +21,6 @@
 
 #if BUILDFLAG(IS_APPLE)
 #include <dispatch/dispatch.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_ANDROID)
-#include <condition_variable>
-#include <mutex>
 #else
 #include <semaphore.h>
 #endif
@@ -78,12 +73,6 @@ class Semaphore {
  private:
 #if BUILDFLAG(IS_APPLE)
   dispatch_semaphore_t semaphore_;
-#elif BUILDFLAG(IS_WIN)
-  HANDLE semaphore_;
-#elif BUILDFLAG(IS_ANDROID)
-  std::condition_variable cv_;
-  std::mutex mutex_;
-  int value_;
 #else
   sem_t semaphore_;
 #endif

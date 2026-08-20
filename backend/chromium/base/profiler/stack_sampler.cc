@@ -220,38 +220,6 @@ void StackSampler::RecordStackFrames(StackBuffer* stack_buffer,
     test_delegate_->OnPreStackWalk();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ptrdiff_t stack_size = reinterpret_cast<uint8_t*>(stack_top) -
-                         reinterpret_cast<uint8_t*>(stack_buffer->buffer());
-  constexpr int kBytesPerKilobyte = 1024;
-
-  if ((++stack_size_histogram_sampling_counter_ %
-       kUMAHistogramDownsampleAmount) == 0) {
-    // Record the size of the stack to tune kLargeStackSize.
-    // UmaHistogramMemoryKB has a min of 1000, which isn't useful for our
-    // purposes, so call UmaHistogramCustomCounts directly.
-    // Min is 4KB, since that's the normal pagesize and setting kLargeStackSize
-    // smaller than that would be pointless. Max is 8MB since that's the
-    // current ChromeOS stack size; we shouldn't be able to get a number
-    // larger than that.
-    UmaHistogramCustomCounts(
-        "Memory.StackSamplingProfiler.StackSampleSize2",
-        saturated_cast<int>(stack_size / kBytesPerKilobyte), 4, 8 * 1024, 50);
-  }
-
-  // We expect to very rarely see stacks larger than kLargeStackSize. If we see
-  // a stack larger than kLargeStackSize, we tell the kernel to discard the
-  // contents of the buffer (using madvise(MADV_DONTNEED)) after the first
-  // kLargeStackSize bytes to avoid permanently allocating memory that we won't
-  // use again. We don't want kLargeStackSize to be too small, however; for if
-  // we are constantly calling madvise(MADV_DONTNEED) and then writing to the
-  // same parts of the buffer, we're not saving memory and we'll cause extra
-  // page faults.
-  constexpr ptrdiff_t kLargeStackSize = 32 * kBytesPerKilobyte;
-  if (stack_size > kLargeStackSize) {
-    stack_buffer->MarkUpperBufferContentsAsUnneeded(kLargeStackSize);
-  }
-#endif  // #if BUILDFLAG(IS_CHROMEOS)
 
   if (thread_pool_ready_) {
     // Since `stack_buffer` needs to be the maximum stack size and be

@@ -37,11 +37,6 @@
 #include "third_party/skia/include/gpu/vk/VulkanMutableTextureState.h"
 #include "ui/gfx/presentation_feedback.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "gpu/ipc/common/gpu_surface_lookup.h"
-#include "ui/gl/android/scoped_a_native_window.h"
-#include "ui/gl/android/scoped_java_surface.h"
-#endif
 
 namespace viz {
 
@@ -90,14 +85,6 @@ SkiaOutputDeviceVulkan::~SkiaOutputDeviceVulkan() {
       std::move(vulkan_surface_));
 }
 
-#if BUILDFLAG(IS_WIN)
-gpu::SurfaceHandle SkiaOutputDeviceVulkan::GetChildSurfaceHandle() {
-  if (vulkan_surface_->accelerated_widget() != surface_handle_) [[likely]] {
-    return vulkan_surface_->accelerated_widget();
-  }
-  return gpu::kNullSurfaceHandle;
-}
-#endif
 
 bool SkiaOutputDeviceVulkan::Reshape(const ReshapeParams& params) {
   DCHECK(!scoped_write_);
@@ -280,20 +267,7 @@ void SkiaOutputDeviceVulkan::EndPaint() {
 
 bool SkiaOutputDeviceVulkan::Initialize() {
   gfx::AcceleratedWidget accelerated_widget = gfx::kNullAcceleratedWidget;
-#if BUILDFLAG(IS_ANDROID)
-  auto surface_record =
-      gpu::GpuSurfaceLookup::GetInstance()->AcquireJavaSurface(surface_handle_);
-  // Should only reach here if surface control is disabled. In which case
-  // browser should not be sending ScopedJavaSurfaceControl variant.
-  CHECK(std::holds_alternative<gl::ScopedJavaSurface>(
-      surface_record.surface_variant));
-  gl::ScopedJavaSurface& scoped_java_surface =
-      std::get<gl::ScopedJavaSurface>(surface_record.surface_variant);
-  gl::ScopedANativeWindow window(scoped_java_surface);
-  accelerated_widget = window.a_native_window();
-#else
   accelerated_widget = surface_handle_;
-#endif
   auto vulkan_surface =
       context_provider_->GetVulkanImplementation()->CreateViewSurface(
           accelerated_widget);
@@ -316,14 +290,6 @@ bool SkiaOutputDeviceVulkan::Initialize() {
   capabilities_.supports_post_sub_buffer = true;
   capabilities_.supports_target_damage = true;
   capabilities_.orientation_mode = OutputSurface::OrientationMode::kHardware;
-#if BUILDFLAG(IS_ANDROID)
-  // With vulkan, if the chrome is launched in landscape mode, the chrome is
-  // always blank until chrome window is rotated once. Workaround this problem
-  // by using logic rotation mode.
-  // TODO(crbug.com/40711137): use hardware orientation mode for vulkan,
-  if (features::IsUsingVulkan())
-    capabilities_.orientation_mode = OutputSurface::OrientationMode::kLogic;
-#endif
   capabilities_.damage_area_from_skia_output_device = true;
 
   const auto surface_format = vulkan_surface_->surface_format().format;

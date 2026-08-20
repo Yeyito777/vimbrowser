@@ -20,10 +20,6 @@
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/profiles/profiles_state.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif
 
 SearchEngineChoiceTabHelper::~SearchEngineChoiceTabHelper() = default;
 

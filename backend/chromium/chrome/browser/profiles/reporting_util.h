@@ -40,13 +40,6 @@ enterprise_connectors::ClientMetadata GetContextAsClientMetadata(
 std::optional<std::string> GetUserDmToken(Profile* profile);
 std::optional<std::string> GetUserClientId(Profile* profile);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns the client id if the current session is a managed guest session. Must
-// not be called from other sessions.
-// Returns an empty optional if the device is managed by Active Directory or if
-// policies could not be retrieved from the policy store.
-std::optional<std::string> GetMGSUserClientId();
-#endif
 
 }  // namespace reporting
 

@@ -26,72 +26,9 @@
 #include "components/user_manager/user.h"
 #include "components/user_manager/user_manager.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/login/users/affiliation.h"
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/policy/core/device_local_account_policy_service.h"
-#include "chrome/browser/ash/policy/core/user_cloud_policy_manager_ash.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/browser_process_platform_part_ash.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns policy for the given |profile|. If failed to get policy returns
-// nullptr.
-const enterprise_management::PolicyData* GetPolicyData(Profile* profile) {
-  if (!profile) {
-    return nullptr;
-  }
-
-  auto* manager = profile->GetCloudPolicyManager();
-  if (!manager) {
-    return nullptr;
-  }
-
-  policy::CloudPolicyStore* store = manager->core()->store();
-  if (!store || !store->has_policy()) {
-    return nullptr;
-  }
-
-  return store->policy();
-}
-
-// A callback which fetches device dm_token based on user affiliation.
-using DeviceDMTokenCallback = base::RepeatingCallback<std::string(
-    const std::vector<std::string>& user_affiliation_ids)>;
-
-// Returns the Device DMToken for the given |profile| if:
-// * |profile| is NOT incognito profile
-// * user corresponding to a given |profile| is affiliated.
-// Otherwise returns empty string. More about DMToken:
-// go/dmserver-domain-model#dmtoken.
-std::string GetDeviceDmToken(Profile* profile) {
-  if (!profile)
-    return std::string();
-
-  const user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  if (!user)
-    return std::string();
-
-  DeviceDMTokenCallback device_dm_token_callback =
-      ash::GetDeviceDMTokenForUserPolicyGetter(user->GetAccountId());
-  if (!device_dm_token_callback)
-    return std::string();
-
-  const enterprise_management::PolicyData* policy = GetPolicyData(profile);
-  if (!policy)
-    return std::string();
-
-  std::vector<std::string> user_affiliation_ids(
-      policy->user_affiliation_ids().begin(),
-      policy->user_affiliation_ids().end());
-  return device_dm_token_callback.Run(user_affiliation_ids);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -121,11 +58,6 @@ base::DictValue GetContext(Profile* profile) {
   if (client_id)
     context.SetByDottedPath("profile.clientId", *client_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string device_dm_token = GetDeviceDmToken(profile);
-  if (!device_dm_token.empty())
-    context.SetByDottedPath("device.dmToken", device_dm_token);
-#endif
 
   std::optional<std::string> user_dm_token = GetUserDmToken(profile);
   if (user_dm_token)
@@ -161,12 +93,6 @@ base::DictValue GetContext(Profile* profile) {
     request.mutable_profile()->set_client_id(*client_id);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string device_dm_token = GetDeviceDmToken(profile);
-  if (!device_dm_token.empty()) {
-    request.mutable_device()->set_dm_token(device_dm_token);
-  }
-#endif
 
   std::optional<std::string> user_dm_token = GetUserDmToken(profile);
   if (user_dm_token) {
@@ -202,11 +128,6 @@ enterprise_connectors::ClientMetadata GetContextAsClientMetadata(
   if (client_id)
     metadata.mutable_profile()->set_client_id(*client_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string device_dm_token = GetDeviceDmToken(profile);
-  if (!device_dm_token.empty())
-    metadata.mutable_device()->set_dm_token(device_dm_token);
-#endif
 
   std::optional<std::string> user_dm_token = GetUserDmToken(profile);
   if (user_dm_token)
@@ -241,38 +162,5 @@ std::optional<std::string> GetUserClientId(Profile* profile) {
   return manager ? manager->GetClientId() : std::nullopt;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<std::string> GetMGSUserClientId() {
-  policy::BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  const user_manager::UserManager* user_manager =
-      user_manager::UserManager::Get();
-  policy::DeviceLocalAccountPolicyService* policy_service =
-      connector->GetDeviceLocalAccountPolicyService();
-
-  // The policy service is null if the device is managed by Active Directory.
-  if (!policy_service) {
-    return std::nullopt;
-  }
-
-  const policy::DeviceLocalAccountPolicyBroker* policy_broker =
-      policy_service->GetBrokerForUser(
-          user_manager->GetActiveUser()->GetAccountId().GetUserEmail());
-
-  // The policy broker is null if the active user does not belong to an existing
-  // device-local account, which should never be the case when calling this
-  // function.
-  DCHECK(policy_broker);
-
-  const enterprise_management::PolicyData* policy_data =
-      policy_broker->core()->store()->policy();
-
-  if (policy_data && policy_data->has_device_id()) {
-    return policy_data->device_id();
-  } else {
-    return std::nullopt;
-  }
-}
-#endif
 
 }  // namespace reporting

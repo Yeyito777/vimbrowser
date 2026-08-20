@@ -90,12 +90,6 @@ source_set("password_store_impl") {
   if (is_mac) {
     sources += [ "login_database_mac.cc" ]
   }
-  if (is_ios) {
-    sources += [ "login_database_ios.cc" ]
-  }
-  if (is_win) {
-    sources += [ "login_database_win.cc" ]
-  }
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }
@@ -144,9 +138,6 @@ source_set("unit_tests") {
     "password_store_unittest.cc",
     "statistics_table_unittest.cc",
   ]
-  if (is_ios) {
-    sources += [ "login_database_ios_unittest.cc" ]
-  }
 
   deps = [
     ":password_store_impl",

@@ -27,12 +27,6 @@
 #include "extensions/browser/blocklist_extension_prefs.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"          // nogncheck
-#include "components/user_manager/user_manager.h"  // nogncheck
-#include "components/user_manager/user_type.h"     // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -59,86 +53,6 @@ bool IsLowTrustEnvironment(Profile* profile) {
 }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Contains information about the current user.
-struct UserInfo {
-  UserInfo() = default;
-  UserInfo(user_manager::UserType user_type,
-           bool is_new_user,
-           bool is_user_present)
-      : user_type(user_type),
-        is_new_user(is_new_user),
-        is_user_present(is_user_present) {}
-
-  user_manager::UserType user_type = user_manager::UserType::kRegular;
-  const bool is_new_user = false;
-  const bool is_user_present = false;
-};
-
-// Returns user type of the user associated with the `profile` and whether the
-// user is new or not if there is an active user.
-UserInfo GetUserInfo(Profile* profile) {
-  const user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  if (!user) {
-    return UserInfo();
-  }
-
-  bool is_new_user = user_manager::UserManager::Get()->IsCurrentUserNew() ||
-                     profile->IsNewProfile();
-  UserInfo current_user(user->GetType(), is_new_user, /*is_user_present=*/true);
-  return current_user;
-}
-
-// Converts user_manager::UserType to InstallStageTracker::UserType for
-// histogram purposes.
-ForceInstalledMetrics::UserType ConvertUserType(UserInfo user_info) {
-  switch (user_info.user_type) {
-    case user_manager::UserType::kRegular: {
-      if (user_info.is_new_user) {
-        return ForceInstalledMetrics::UserType::USER_TYPE_REGULAR_NEW;
-      }
-      return ForceInstalledMetrics::UserType::USER_TYPE_REGULAR_EXISTING;
-    }
-    case user_manager::UserType::kGuest:
-      return ForceInstalledMetrics::UserType::USER_TYPE_GUEST;
-    case user_manager::UserType::kPublicAccount:
-      return ForceInstalledMetrics::UserType::USER_TYPE_PUBLIC_ACCOUNT;
-    case user_manager::UserType::kKioskChromeApp:
-      return ForceInstalledMetrics::UserType::USER_TYPE_KIOSK_APP;
-    case user_manager::UserType::kChild:
-      return ForceInstalledMetrics::UserType::USER_TYPE_CHILD;
-    case user_manager::UserType::kKioskWebApp:
-      return ForceInstalledMetrics::UserType::USER_TYPE_WEB_KIOSK_APP;
-    case user_manager::UserType::kKioskIWA:
-      return ForceInstalledMetrics::UserType::USER_TYPE_KIOSK_IWA;
-    case user_manager::UserType::kKioskArcvmApp:
-      return ForceInstalledMetrics::UserType::USER_TYPE_KIOSK_ARCVM_APP;
-    default:
-      NOTREACHED();
-  }
-}
-
-// Reports type of user in case Force Installed Extensions fail to
-// install only if there is a user corresponding to given profile.
-void ReportUserType(Profile* profile, bool is_stuck_in_initial_creation_stage) {
-  UserInfo user_info = GetUserInfo(profile);
-  // There can be extensions on the login screen. There is no user on the login
-  // screen and thus we would not report in that case.
-  if (!user_info.is_user_present)
-    return;
-
-  ForceInstalledMetrics::UserType user_type = ConvertUserType(user_info);
-  base::UmaHistogramEnumeration("Extensions.ForceInstalledFailureSessionType",
-                                user_type);
-  if (is_stuck_in_initial_creation_stage) {
-    base::UmaHistogramEnumeration(
-        "Extensions.ForceInstalledFailureSessionType."
-        "ExtensionStuckInInitialCreationStage",
-        user_type);
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Reports time taken for force installed extension during different
 // installation stages.
@@ -596,15 +510,6 @@ void ForceInstalledMetrics::ReportMetrics() {
           "Extensions.OffStore_ForceInstalledFailureReason3", failure_reason);
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    bool is_stuck_in_initial_creation_stage =
-        failure_reason == FailureReason::IN_PROGRESS &&
-        installation.install_stage == InstallStageTracker::Stage::CREATED &&
-        installation.install_creation_stage ==
-            InstallStageTracker::InstallCreationStage::
-                NOTIFIED_FROM_MANAGEMENT_INITIAL_CREATION_FORCED;
-    ReportUserType(profile_, is_stuck_in_initial_creation_stage);
-#endif  // BUILDFLAG(IS_CHROMEOS)
     LOG(WARNING) << "Forced extension " << extension_id
                  << " failed to install with data="
                  << InstallStageTracker::GetFormattedInstallationData(

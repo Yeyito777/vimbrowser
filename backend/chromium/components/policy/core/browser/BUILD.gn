@@ -65,21 +65,17 @@ source_set("internal") {
     "webui/statistics_collector.h",
   ]
 
-  if (!is_chromeos) {
-    sources += [
-      "cloud/user_policy_signin_service_base.cc",
-      "cloud/user_policy_signin_service_base.h",
-      "cloud/user_policy_signin_service_util.cc",
-      "cloud/user_policy_signin_service_util.h",
-    ]
-  }
+  sources += [
+    "cloud/user_policy_signin_service_base.cc",
+    "cloud/user_policy_signin_service_base.h",
+    "cloud/user_policy_signin_service_util.cc",
+    "cloud/user_policy_signin_service_util.h",
+  ]
 
-  if (!is_fuchsia) {
-    sources += [
-      "incognito/incognito_mode_policy_handler.cc",
-      "incognito/incognito_mode_policy_handler.h",
-    ]
-  }
+  sources += [
+    "incognito/incognito_mode_policy_handler.cc",
+    "incognito/incognito_mode_policy_handler.h",
+  ]
 
   configs += [ "//components/policy:component_implementation" ]
 
@@ -165,12 +161,10 @@ source_set("pref_mapping_test_support") {
 static_library("incognito_mode_policy_test_support") {
   testonly = true
   sources = []
-  if (!is_fuchsia) {
-    sources += [
-      "incognito/incognito_mode_policy_handler_test.cc",
-      "incognito/incognito_mode_policy_handler_test.h",
-    ]
-  }
+  sources += [
+    "incognito/incognito_mode_policy_handler_test.cc",
+    "incognito/incognito_mode_policy_handler_test.h",
+  ]
   deps = [
     ":test_support",
     "//base",
@@ -214,7 +208,5 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_fuchsia) {
-    sources += [ "incognito/incognito_mode_policy_handler_unittest.cc" ]
-  }
+  sources += [ "incognito/incognito_mode_policy_handler_unittest.cc" ]
 }

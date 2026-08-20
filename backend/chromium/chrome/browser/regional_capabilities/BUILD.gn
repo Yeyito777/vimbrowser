@@ -25,15 +25,6 @@ source_set("regional_capabilities") {
     "//components/variations/service",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "regional_capabilities_service_client_chromeos.cc",
-      "regional_capabilities_service_client_chromeos.h",
-    ]
-
-    deps += [ "//chromeos/ash/components/system" ]
-  }
-
   if (is_linux) {
     sources += [
       "regional_capabilities_service_client_linux.cc",
@@ -78,12 +69,6 @@ source_set("unit_tests") {
     "//components/variations:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    sources += [ "regional_capabilities_service_client_chromeos_unittest.cc" ]
-
-    deps += [ "//chromeos/ash/components/system" ]
-  }
 
   if (is_linux) {
     sources += [ "regional_capabilities_service_client_linux_unittest.cc" ]

@@ -52,7 +52,6 @@ namespace content {
 
 namespace {
 
-#if !BUILDFLAG(IS_FUCHSIA)
 
 // The /proc path to max_user_watches.
 constexpr char kInotifyMaxUserWatchesPath[] =
@@ -62,7 +61,6 @@ constexpr char kInotifyMaxUserWatchesPath[] =
 // /proc/sys/fs/inotify/max_user_watches fails.
 constexpr size_t kDefaultInotifyMaxUserWatches = 8192u;
 
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 class FilePathWatcherImpl;
 class InotifyReader;
@@ -106,11 +104,7 @@ class InotifyReaderThreadDelegate final
 class InotifyReader {
  public:
   // Watch descriptor used by AddWatch() and RemoveWatch().
-#if BUILDFLAG(IS_ANDROID)
-  using Watch = uint32_t;
-#else
   using Watch = int;
-#endif
 
   // Record of watchers tracked for watch descriptors.
   struct WatcherEntry {
@@ -1252,10 +1246,6 @@ void FilePathWatcherImpl::RemoveRecursiveWatches() {
 
 bool FilePathWatcherImpl::AddWatchForBrokenSymlink(const base::FilePath& path,
                                                    WatchEntry* watch_entry) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // Fuchsia does not support symbolic links.
-  return false;
-#else   // BUILDFLAG(IS_FUCHSIA)
   DUMP_WILL_BE_CHECK_EQ(InotifyReader::kInvalidWatch, watch_entry->watch);
   std::optional<base::FilePath> link = ReadSymbolicLinkAbsolute(path);
   if (!link) {
@@ -1282,7 +1272,6 @@ bool FilePathWatcherImpl::AddWatchForBrokenSymlink(const base::FilePath& path,
   watch_entry->watch = watch;
   watch_entry->linkname = link->BaseName().value();
   return true;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 bool FilePathWatcherImpl::HasValidWatchVector() const {
@@ -1344,10 +1333,6 @@ void FilePathWatcherImpl::UsageMonitor::StopImpl() {
 }  // namespace
 
 size_t GetMaxNumberOfInotifyWatches() {
-#if BUILDFLAG(IS_FUCHSIA)
-  // Fuchsia has no limit on the number of watches.
-  return std::numeric_limits<int>::max();
-#else
   static const size_t max = []() {
     size_t max_number_of_inotify_watches = 0u;
 
@@ -1360,7 +1345,6 @@ size_t GetMaxNumberOfInotifyWatches() {
     return max_number_of_inotify_watches;
   }();
   return max;
-#endif  // if BUILDFLAG(IS_FUCHSIA)
 }
 
 size_t GetQuotaLimitFromSystemLimitForTesting(size_t system_limit) {

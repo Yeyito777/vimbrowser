@@ -42,10 +42,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/view_utils.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/global_media_controls/public/views/chapter_item_view.h"
-#include "components/vector_icons/vector_icons.h"
-#endif
 
 namespace global_media_controls {
 
@@ -79,15 +75,6 @@ constexpr gfx::Size kControlsButtonSize = gfx::Size(32, 32);
 
 constexpr char kMediaDisplayPageHistogram[] = "Media.Notification.DisplayPage";
 
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr int kProgressRowHeight = 20;
-constexpr gfx::Insets kButtonRowInsets = gfx::Insets::TLBR(0, 8, 0, 0);
-constexpr char16_t kTimestampDelimiter[] = u" / ";
-const gfx::FontList kTimestampFont({"Google Sans"},
-                                   gfx::Font::NORMAL,
-                                   13,
-                                   gfx::Font::Weight::MEDIUM);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class MediaLabelButton : public views::Button {
   METADATA_HEADER(MediaLabelButton, views::Button)
@@ -298,23 +285,6 @@ MediaItemUIDetailedView::MediaItemUIDetailedView(
               base::Unretained(this))));
   controls_row->SetFlexForView(progress_view_, 1);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    controls_row->SetMinimumCrossAxisSize(kProgressRowHeight);
-
-    // Create the replay 10 button.
-    CreateMediaActionButton(
-        button_container_, static_cast<int>(MediaSessionAction::kSeekBackward),
-        vector_icons::kReplay10Icon,
-        IDS_MEDIA_MESSAGE_CENTER_MEDIA_NOTIFICATION_ACTION_REPLAY_10);
-
-    // Create the forward 10 button.
-    CreateMediaActionButton(
-        button_container_, static_cast<int>(MediaSessionAction::kSeekForward),
-        vector_icons::kForward10Icon,
-        IDS_MEDIA_MESSAGE_CENTER_MEDIA_NOTIFICATION_ACTION_FORWARD_10);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Create the next track button.
   CreateMediaActionButton(
@@ -325,24 +295,6 @@ MediaItemUIDetailedView::MediaItemUIDetailedView(
   const gfx::VectorIcon* devices_icon =
       &media_message_center::kMediaCastStartIcon;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    // Create the chapter list button.
-    // TODO(b/327505486): The string id is a place holder for now, the real
-    // label is TBD.
-    chapter_list_button_ = CreateMediaActionButton(
-        button_container_, kEmptyMediaActionButtonId,
-        vector_icons::kVideoLibraryIcon,
-        IDS_MEDIA_MESSAGE_CENTER_MEDIA_NOTIFICATION_ACTION_SHOW_DEVICE_LIST);
-    chapter_list_button_->SetCallback(
-        base::BindRepeating(&MediaItemUIDetailedView::ToggleChapterListView,
-                            base::Unretained(this)));
-    chapter_list_button_->SetVisible(false);
-
-    // Show the `kDevicesIcon` as the device selector button's icon.
-    devices_icon = &vector_icons::kDevicesIcon;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Create the start casting button. Its visibility will be updated later in
   // UpdateDeviceSelectorAvailability().
@@ -462,12 +414,6 @@ void MediaItemUIDetailedView::UpdateWithMediaPosition(
   position_ = position;
   progress_view_->UpdateProgress(position);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    total_duration_view_->SetText(kTimestampDelimiter +
-                                  GetFormattedDuration(position.duration()));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void MediaItemUIDetailedView::UpdateWithMediaArtwork(
@@ -493,15 +439,6 @@ void MediaItemUIDetailedView::UpdateWithMediaArtwork(
 void MediaItemUIDetailedView::UpdateWithChapterArtwork(
     int index,
     const gfx::ImageSkia& image) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    return;
-  }
-
-  if (auto it = chapters_.find(index); it != chapters_.end()) {
-    it->second->UpdateArtwork(image);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void MediaItemUIDetailedView::UpdateDeviceSelectorAvailability(
@@ -637,28 +574,6 @@ void MediaItemUIDetailedView::UpdateActionButtonsVisibility() {
 void MediaItemUIDetailedView::MediaActionButtonPressed(views::Button* button) {
   const auto action = static_cast<MediaSessionAction>(button->GetID());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (action == MediaSessionAction::kSeekBackward) {
-    const auto backward_duration =
-        std::max(base::Seconds(0), position_.GetPosition() - kSeekTime);
-    if (item_) {
-      item_->SeekTo(backward_duration);
-    } else {
-      container_->SeekTo(backward_duration);
-    }
-    return;
-  }
-  if (action == MediaSessionAction::kSeekForward) {
-    const auto forward_duration =
-        std::min(position_.GetPosition() + kSeekTime, position_.duration());
-    if (item_) {
-      item_->SeekTo(forward_duration);
-    } else {
-      container_->SeekTo(forward_duration);
-    }
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (item_) {
     item_->OnMediaSessionActionButtonPressed(action);
@@ -719,12 +634,6 @@ void MediaItemUIDetailedView::StartCastingButtonPressed() {
       if (device_selector_view_->IsDeviceSelectorExpanded()) {
         device_selector_view_->HideDevices();
       } else {
-#if BUILDFLAG(IS_CHROMEOS)
-        // Hide the chapter list view if it's shown.
-        if (chapter_list_view_ && chapter_list_view_->GetVisible()) {
-          ToggleChapterListView();
-        }
-#endif  // BUILDFLAG(IS_CHROMEOS)
         device_selector_view_->ShowDevices();
       }
       UpdateCastingState();
@@ -763,10 +672,6 @@ void MediaItemUIDetailedView::UpdateCastingState() {
     }
 
     bool is_ash_background_listening_enabled = false;
-#if BUILDFLAG(IS_CHROMEOS)
-    is_ash_background_listening_enabled =
-        base::FeatureList::IsEnabled(media::kBackgroundListening);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     device_selector_view_separator_->SetVisible(
         is_expanded && !is_ash_background_listening_enabled);
@@ -791,132 +696,14 @@ void MediaItemUIDetailedView::CreateDeviceSelectorViewSeparator() {
 
 void MediaItemUIDetailedView::UpdateChapterListViewWithMetadata(
     const media_session::MediaMetadata& metadata) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    return;
-  }
-
-  const bool is_chapter_button_visible = chapter_list_button_->GetVisible();
-  if (!chapter_list_view_ && metadata.chapters.empty()) {
-    if (is_chapter_button_visible) {
-      chapter_list_button_->SetVisible(false);
-    }
-    return;
-  }
-
-  if (metadata.chapters.empty()) {
-    chapter_list_view_->RemoveAllChildViews();
-    chapters_.clear();
-
-    if (is_chapter_button_visible) {
-      chapter_list_button_->SetVisible(false);
-    }
-    if (chapter_list_view_->GetVisible()) {
-      chapter_list_view_->SetVisible(false);
-      container_->OnListViewSizeChanged();
-    }
-    return;
-  }
-
-  if (!is_chapter_button_visible) {
-    chapter_list_button_->SetVisible(true);
-  }
-
-  // Ensures the chapter list view exists and is up-to-date:
-  //  1) Creates the chapter list view if it doesn't exist.
-  //  2) Compares existing chapter item views to new metadata:
-  //     a) If chapters match, no updates are needed.
-  //     b) If chapters differ, the list is cleared and updated with the new
-  // chapters.
-  if (!chapter_list_view_) {
-    chapter_list_view_ = AddChildView(
-        views::Builder<views::BoxLayoutView>()
-            .SetOrientation(views::BoxLayout::Orientation::kVertical)
-            .SetInsideBorderInsets(gfx::Insets::TLBR(16, 8, 8, 8))
-            .Build());
-    chapter_list_view_->SetVisible(false);
-  } else {
-    bool chapters_not_changed = metadata.chapters.size() == chapters_.size();
-    // Further checks if every chapter is the same.
-    if (chapters_not_changed) {
-      for (int index = 0; index < static_cast<int>(metadata.chapters.size());
-           index++) {
-        if (!chapters_[index] ||
-            chapters_[index]->chapter() != metadata.chapters[index]) {
-          chapters_not_changed = false;
-          break;
-        }
-      }
-    }
-    if (chapters_not_changed) {
-      return;
-    }
-    chapter_list_view_->RemoveAllChildViews();
-  }
-
-  chapters_.clear();
-  for (int index = 0; index < static_cast<int>(metadata.chapters.size());
-       index++) {
-    chapters_[index] =
-        chapter_list_view_->AddChildView(std::make_unique<ChapterItemView>(
-            metadata.chapters[index], theme_,
-            /*on_chapter_pressed=*/
-            base::BindRepeating(&MediaItemUIDetailedView::SeekToTimestamp,
-                                weak_factory_.GetWeakPtr())));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 views::View* MediaItemUIDetailedView::CreateControlsRow() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    return nullptr;
-  }
-
-  views::View* button_container;
-  AddChildView(
-      views::Builder<views::BoxLayoutView>()
-          .SetOrientation(views::BoxLayout::Orientation::kHorizontal)
-          .SetInsideBorderInsets(kButtonRowInsets)
-          .AddChildren(
-              views::Builder<views::BoxLayoutView>()
-                  .SetOrientation(views::BoxLayout::Orientation::kHorizontal)
-                  .SetProperty(views::kBoxLayoutFlexKey,
-                               views::BoxLayoutFlexSpecification())
-                  .AddChildren(
-                      views::Builder<views::Label>()
-                          .CopyAddressTo(&current_timestamp_view_)
-                          .SetText(
-                              GetFormattedDuration(position_.GetPosition()))
-                          .SetFontList(kTimestampFont)
-                          .SetHorizontalAlignment(gfx::ALIGN_LEFT)
-                          .SetEnabledColor(theme_.primary_foreground_color_id),
-                      views::Builder<views::Label>()
-                          .CopyAddressTo(&total_duration_view_)
-                          .SetText(kTimestampDelimiter +
-                                   GetFormattedDuration(position_.duration()))
-                          .SetFontList(kTimestampFont)
-                          .SetHorizontalAlignment(gfx::ALIGN_LEFT)
-                          .SetEnabledColor(theme_.primary_foreground_color_id)))
-          .AddChildren(
-              views::Builder<views::BoxLayoutView>()
-                  .CopyAddressTo(&button_container)
-                  .SetOrientation(views::BoxLayout::Orientation::kHorizontal))
-          .Build());
-
-  return button_container;
-#else
   return nullptr;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void MediaItemUIDetailedView::OnProgressViewUpdateProgress(
     base::TimeDelta current_timestamp) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    current_timestamp_view_->SetText(GetFormattedDuration(current_timestamp));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // Helper functions for testing:
@@ -972,72 +759,6 @@ views::View* MediaItemUIDetailedView::GetDeviceSelectorSeparatorForTesting() {
   return device_selector_view_separator_;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-views::Button* MediaItemUIDetailedView::GetChapterListButtonForTesting() {
-  return chapter_list_button_;
-}
-
-views::View* MediaItemUIDetailedView::GetChapterListViewForTesting() {
-  return chapter_list_view_;
-}
-
-views::Label* MediaItemUIDetailedView::GetCurrentTimestampViewForTesting() {
-  return current_timestamp_view_;
-}
-
-views::Label* MediaItemUIDetailedView::GetTotalDurationViewForTesting() {
-  return total_duration_view_;
-}
-
-base::flat_map<int, raw_ptr<ChapterItemView, CtnExperimental>>
-MediaItemUIDetailedView::GetChaptersForTesting() {
-  return chapters_;
-}
-
-void MediaItemUIDetailedView::ToggleChapterListView() {
-  if (!base::FeatureList::IsEnabled(media::kBackgroundListening)) {
-    return;
-  }
-
-  if (!chapter_list_view_) {
-    return;
-  }
-
-  const bool is_showing_chapters = chapter_list_view_->GetVisible();
-
-  if (chapters_.empty()) {
-    if (chapter_list_button_->GetVisible()) {
-      chapter_list_button_->SetVisible(false);
-    }
-
-    if (is_showing_chapters) {
-      chapter_list_view_->SetVisible(false);
-    }
-    return;
-  }
-
-  // TODO(b/327505486): Update tooltips.
-  if (is_showing_chapters) {
-    // Hide the ink drop color if user clicks the button to hide devices.
-    views::InkDrop::Get(chapter_list_button_)->GetInkDrop()->SnapToHidden();
-  } else {
-    // Use the ink drop color as the button background if user clicks the
-    // button to show devices.
-    views::InkDrop::Get(chapter_list_button_)->GetInkDrop()->SnapToActivated();
-
-    // Hide the `device_selector_view_` if it's shown.
-    if (device_selector_view_ &&
-        device_selector_view_->IsDeviceSelectorExpanded()) {
-      device_selector_view_->HideDevices();
-      UpdateCastingState();
-      container_->OnListViewSizeChanged();
-    }
-  }
-
-  chapter_list_view_->SetVisible(!is_showing_chapters);
-  container_->OnListViewSizeChanged();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 BEGIN_METADATA(MediaItemUIDetailedView)
 END_METADATA

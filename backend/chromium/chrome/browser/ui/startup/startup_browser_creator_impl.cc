@@ -83,9 +83,6 @@
 #include "components/rlz/rlz_tracker.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/app_restore/full_restore_utils.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/browser_window/public/profile_browser_collection.h"
@@ -107,12 +104,7 @@ namespace {
 // In other platforms, restore apps only when the browser is automatically
 // restarted.
 bool ShouldRestoreApps(bool is_post_restart, Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // In ChromeOS, restore apps only when there are apps launched before reboot.
-  return full_restore::HasAppTypeBrowser(profile->GetPath());
-#else
   return is_post_restart;
-#endif
 }
 
 void UrlsToTabs(const std::vector<GURL>& urls, StartupTabs* tabs) {

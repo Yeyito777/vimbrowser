@@ -73,14 +73,6 @@ class AccountNameEmailStore : public signin::IdentityManager::Observer,
   // kAccountNameEmail profile should be created, updated, or removed.
   void MaybeUpdateOrCreateAccountNameEmail();
 
-#if BUILDFLAG(IS_IOS)
-  // The same as MaybeUpdateOrCreateAccountNameEmail(), but creates/updates the
-  // kAccountNameEmail profile using `account_name` and `email`.
-  // TODO(crbug.com/449708427): Remove once `AccountInfo` supports full_name on
-  // IOS.
-  void MaybeUpdateOrCreateAccountNameEmail(const std::string& account_name,
-                                           const std::string& email);
-#endif
 
   // Persists the `change` in prefs, if it applies to kAccountNameEmail
   // profile.

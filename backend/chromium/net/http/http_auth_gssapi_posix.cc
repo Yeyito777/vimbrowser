@@ -661,11 +661,7 @@ bool HttpAuthGSSAPI::NeedsIdentity() const {
 }
 
 bool HttpAuthGSSAPI::AllowsExplicitCredentials() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 void HttpAuthGSSAPI::SetDelegation(DelegationType delegation_type) {

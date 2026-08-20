@@ -93,20 +93,11 @@ void DesktopOsSignalsCollector::GetOsSignals(
   signal_response->os_version = device_signals::GetOsVersion();
   signal_response->browser_version = version_info::GetVersionNumber();
   signal_response->screen_lock_secured = device_signals::GetScreenlockSecured();
-#if BUILDFLAG(IS_WIN)
-  signal_response->secure_boot_mode = device_signals::GetSecureBootEnabled();
-  signal_response->windows_machine_domain =
-      device_signals::GetWindowsMachineDomain();
-  signal_response->windows_user_domain = device_signals::GetWindowsUserDomain();
-#endif  // BUILDFLAG(IS_WIN)
 
   // PII signals requires user consent
   if (permission == UserPermission::kGranted) {
     signal_response->display_name = policy::GetDeviceName();
     signal_response->hostname = device_signals::GetHostName();
-#if BUILDFLAG(IS_WIN)
-    signal_response->machine_guid = device_signals::GetMachineGuid();
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   signal_response->device_enrollment_domain =
@@ -133,16 +124,9 @@ void DesktopOsSignalsCollector::OnHardwareInfoRetrieved(
   auto on_signals_collected_callback = base::BindOnce(
       &OnSignalsCollected, std::ref(response), std::move(done_closure));
 
-#if BUILDFLAG(IS_WIN)
-  base::ThreadPool::CreateCOMSTATaskRunner({base::MayBlock()})
-      ->PostTaskAndReplyWithResult(FROM_HERE,
-                                   std::move(add_async_os_signals_callback),
-                                   std::move(on_signals_collected_callback));
-#else
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock()}, std::move(add_async_os_signals_callback),
       std::move(on_signals_collected_callback));
-#endif
 }
 
 }  // namespace device_signals

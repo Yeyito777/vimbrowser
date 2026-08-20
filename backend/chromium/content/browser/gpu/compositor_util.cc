@@ -183,12 +183,6 @@ std::vector<GpuFeatureData> GetGpuFeatureData(
   features.emplace_back(
       "multiple_raster_threads",
       GetFakeFeatureStatus(NumberOfRendererRasterThreads() > 1));
-#if BUILDFLAG(IS_ANDROID)
-  features.emplace_back("surface_control",
-                        features::IsAndroidSurfaceControlEnabled()
-                            ? gpu::kGpuFeatureStatusEnabled
-                            : gpu::kGpuFeatureStatusDisabled);
-#endif
   features.emplace_back("raw_draw",
                         GetFakeFeatureStatus(::features::IsUsingRawDraw()));
   features.emplace_back(
@@ -414,12 +408,6 @@ int NumberOfRendererRasterThreads() {
 
   int num_raster_threads = num_processors / 2;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Limit the number of raster threads to 1 on Android.
-  // TODO(reveman): Remove this when we have a better mechanims to prevent
-  // pre-paint raster work from slowing down non-raster work. crbug.com/504515
-  num_raster_threads = 1;
-#endif
 
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
@@ -474,10 +462,6 @@ bool IsGpuMemoryBufferCompositorResourcesEnabled() {
 
 #if BUILDFLAG(IS_APPLE)
   return true;
-#elif BUILDFLAG(IS_WIN)
-  return features::IsDelegatedCompositingEnabled() &&
-         features::kDelegatedCompositingModeParam.Get() ==
-             features::DelegatedCompositingMode::kFull;
 #else
   return false;
 #endif
@@ -489,12 +473,8 @@ int GpuRasterizationMSAASampleCount() {
 
   if (!command_line.HasSwitch(
           blink::switches::kGpuRasterizationMSAASampleCount))
-#if BUILDFLAG(IS_ANDROID)
-    return 4;
-#else
     // Desktop platforms will compute this automatically based on DPI.
     return -1;
-#endif
   std::string string_value = command_line.GetSwitchValueASCII(
       blink::switches::kGpuRasterizationMSAASampleCount);
   int msaa_sample_count = 0;

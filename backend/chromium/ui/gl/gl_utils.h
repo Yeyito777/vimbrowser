@@ -13,13 +13,7 @@
 #include "ui/gl/gl_export.h"
 #include "ui/gl/gpu_preference.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <dxgi1_6.h>
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/files/scoped_file.h"
-#endif
 
 namespace gl {
 class GLApi;
@@ -29,12 +23,6 @@ class GLDisplay;
 GL_EXPORT void Crash();
 GL_EXPORT void Hang();
 
-#if BUILDFLAG(IS_ANDROID)
-GL_EXPORT base::ScopedFD MergeFDs(base::ScopedFD a, base::ScopedFD b);
-
-// Disable ANGLE and force to use native or other GL implementation.
-GL_EXPORT void DisableANGLE();
-#endif
 
 GL_EXPORT bool UsePassthroughCommandDecoder(
     const base::CommandLine* command_line);
@@ -55,20 +43,6 @@ GL_EXPORT const GlWorkarounds& GetGlWorkarounds();
 // Sets the GlWorkarounds. This should be called from the code hosting ui/gl.
 GL_EXPORT void SetGlWorkarounds(const GlWorkarounds& workarounds);
 
-#if BUILDFLAG(IS_WIN)
-// BufferCount for the root surface swap chain.
-GL_EXPORT unsigned int DirectCompositionRootSurfaceBufferCount();
-
-// Labels swapchain with the name_prefix and its buffers with the string
-// name_prefix + _Buffer_ + <buffer_number>.
-GL_EXPORT void LabelSwapChainAndBuffers(IDXGISwapChain* swap_chain,
-                                        const char* name_prefix);
-
-// Same as LabelSwapChainAndBuffers, but only does the buffers. Used for resize
-// operations.
-GL_EXPORT void LabelSwapChainBuffers(IDXGISwapChain* swap_chain,
-                                     const char* name_prefix);
-#endif
 
 // The following functions expose functionalities from GLDisplayManagerEGL
 // and GLDisplayManagerX11 for access outside the ui/gl module. This is because

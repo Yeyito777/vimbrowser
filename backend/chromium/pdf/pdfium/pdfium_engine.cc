@@ -121,9 +121,6 @@
 #include "pdf/pdfium/pdfium_font_linux.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "pdf/pdfium/pdfium_font_win.h"
-#endif
 
 using printing::ConvertUnit;
 using printing::ConvertUnitFloat;
@@ -148,11 +145,7 @@ constexpr int kMaxPasswordTries = 3;
 constexpr base::TimeDelta kTouchLongPressTimeout = base::Milliseconds(300);
 
 // Windows has native panning capabilities. No need to use our own.
-#if BUILDFLAG(IS_WIN)
-constexpr bool kViewerImplementedPanning = false;
-#else
 constexpr bool kViewerImplementedPanning = true;
-#endif
 
 constexpr int32_t kLoadingTextVerticalOffset = 50;
 
@@ -250,8 +243,6 @@ void FormatStringForOS(std::u16string* text) {
   static constexpr char16_t kCr[] = {L'\r', L'\0'};
   static constexpr char16_t kBlank[] = {L'\0'};
   base::ReplaceChars(*text, kCr, kBlank, text);
-#elif BUILDFLAG(IS_WIN)
-  // Do nothing
 #else
   NOTIMPLEMENTED();
 #endif
@@ -655,12 +646,6 @@ void InitializeSDK(bool enable_v8,
   InitializeLinuxFontMapper();
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  if (font_mapping_mode == FontMappingMode::kBlink) {
-    g_font_mapping_mode = font_mapping_mode;
-    InitializeWindowsFontMapper();
-  }
-#endif
 
   InitializeUnsupportedFeaturesHandler();
 }
@@ -2540,9 +2525,6 @@ std::string PDFiumEngine::GetSelectedText() {
       if (selection_[i - 1].page_index() > selection_[i].page_index()) {
         std::swap(current_selection_text, result);
       }
-#if BUILDFLAG(IS_WIN)
-      result.push_back(L'\r');
-#endif
       result.push_back(L'\n');
     }
     result.append(current_selection_text);

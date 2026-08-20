@@ -37,18 +37,11 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/media/webrtc/desktop_capture_devices_util_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#include "chrome/browser/media/android/tab_sharing_indicator_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 
@@ -178,7 +171,6 @@ DesktopMediaIDToDisplayMediaInformation(
 }
 
 // Showing notifications about capture is handled at the OS level in Android.
-#if !BUILDFLAG(IS_ANDROID)
 std::u16string GetNotificationText(const std::u16string& application_title,
                                    bool capture_audio,
                                    content::DesktopMediaID::Type capture_type) {
@@ -216,7 +208,6 @@ std::u16string GetNotificationText(const std::u16string& application_title,
   }
   return std::u16string();
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 std::string DeviceNamePrefix(
     content::WebContents* web_contents,
@@ -289,16 +280,6 @@ void CreateMediaStreamCaptureIndicatorUI(
         on_media_stream_capture_indicator_ui_created_callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   std::unique_ptr<MediaStreamUI> notification_ui;
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(features::kUserMediaScreenCapturing) &&
-      base::FeatureList::IsEnabled(chrome::android::kMediaIndicatorsAndroid) &&
-      base::GetFieldTrialParamByFeatureAsBool(
-          chrome::android::kMediaIndicatorsAndroid, "sharing", false) &&
-      display_notification &&
-      media_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
-    notification_ui = std::make_unique<TabSharingIndicatorAndroid>(media_id);
-  }
-#else
   // If required, register to display the notification for stream capture.
   if (display_notification) {
     if (media_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
@@ -320,7 +301,6 @@ void CreateMediaStreamCaptureIndicatorUI(
           web_contents);
     }
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   std::unique_ptr<content::MediaStreamUI> capture_indicator_ui =
       MediaCaptureDevicesDispatcher::GetInstance()
@@ -389,10 +369,7 @@ std::optional<std::string> ProcessIdToApplicationLoopbackDeviceId(
 
 std::optional<std::string> GetApplicationId(intptr_t window_id,
                                             bool restrict_own_audio) {
-#if BUILDFLAG(IS_WIN)
-  return ProcessIdToApplicationLoopbackDeviceId(GetAppMainProcessId(window_id),
-                                                restrict_own_audio);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return ProcessIdToApplicationLoopbackDeviceId(
       webrtc::GetWindowOwnerPid(window_id), restrict_own_audio);
 #else

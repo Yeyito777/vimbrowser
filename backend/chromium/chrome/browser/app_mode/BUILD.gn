@@ -21,11 +21,4 @@ source_set("app_mode") {
     "//components/permissions:permissions_common",
     "//components/prefs",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/components/kiosk",
-    ]
-  }
 }

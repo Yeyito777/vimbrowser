@@ -135,10 +135,6 @@ base::expected<std::unique_ptr<Response>, Error>
 ObjectProxy::CallMethodAndBlock(MethodCall* method_call, int timeout_ms) {
   bus_->AssertOnDBusThread();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS system daemon has `reply_timeout` configured.
-  CHECK_LE(timeout_ms, TIMEOUT_MAX);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!bus_->Connect() || !method_call->SetDestination(service_name_) ||
       !method_call->SetPath(object_path_)) {
@@ -175,10 +171,6 @@ void ObjectProxy::CallMethodWithErrorResponse(
     ResponseOrErrorCallback callback) {
   bus_->AssertOnOriginThread();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS system daemon has `reply_timeout` configured.
-  CHECK_LE(timeout_ms, TIMEOUT_MAX);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ReplyCallbackHolder callback_holder(bus_->GetOriginTaskRunner(),
                                       std::move(callback));

@@ -105,14 +105,7 @@
 #include "device/fido/mac/credential_metadata.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/fido/cros/authenticator.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/authenticator.h"
-#include "device/fido/win/webauthn_api.h"
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
 #include "content/browser/webauth/is_uvpaa.h"
@@ -327,19 +320,6 @@ std::unique_ptr<device::FidoDiscoveryFactory> MakeDiscoveryFactory(
           render_frame_host->GetBrowserContext()));
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Ignore the ChromeOS u2fd virtual U2F HID device so that it doesn't collide
-  // with the ChromeOS platform authenticator, also implemented in u2fd.
-  // There are two possible PIDs the virtual U2F HID device could use, with or
-  // without corp protocol functionality.
-  constexpr device::VidPid kChromeOsU2fdVidPid{0x18d1, 0x502c};
-  constexpr device::VidPid kChromeOsU2fdCorpVidPid{0x18d1, 0x5212};
-  discovery_factory->set_hid_ignore_list(
-      {kChromeOsU2fdVidPid, kChromeOsU2fdCorpVidPid});
-  discovery_factory->set_generate_request_id_callback(
-      GetWebAuthenticationDelegate()->GetGenerateRequestIdCallback(
-          render_frame_host));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return discovery_factory;
 }
@@ -389,24 +369,6 @@ std::optional<device::CredProtectRequest> ProtectionPolicyToCredProtect(
               device::UserVerificationRequirement::kPreferred) {
         return device::CredProtectRequest::kUVRequired;
       }
-#if BUILDFLAG(IS_WIN)
-      // On Windows, if webauthn.dll is version two or below, rk=preferred
-      // cannot be expressed and will be mapped to rk=false. Some security keys
-      // have a bug where they'll return credProtect=1 when credProtect=2 is
-      // requested for non-discoverable credentials. Thus, for these versions
-      // of webauthn.dll, treat rk=preferred as rk=discouraged for the purposes
-      // of credProtect, because that's what will ultimately be sent to the
-      // security key.
-      //
-      // If a site explicitly requests a credProtect level, we'll still respect
-      // that because they are presumably going to check the response.
-      if (make_credential_options.resident_key ==
-              device::ResidentKeyRequirement::kPreferred &&
-          device::WinWebAuthnApi::GetDefault() &&
-          device::WinWebAuthnApi::GetDefault()->Version() < 3) {
-        return std::nullopt;
-      }
-#endif
       if (make_credential_options.resident_key !=
           device::ResidentKeyRequirement::kDiscouraged) {
         // Otherwise, kUVOrCredIDRequired is made the default unless
@@ -972,10 +934,6 @@ void AuthenticatorCommonImpl::StartGetAssertionRequest(
       ctap_get_assertion_request->user_verification,
       /*user_name=*/std::nullopt, cable_pairings, discover_enclave,
       discovery_factory());
-#if BUILDFLAG(IS_CHROMEOS)
-  discovery_factory()->set_get_assertion_request_for_legacy_credential_check(
-      *ctap_get_assertion_request);
-#endif
   SetHints(req_state_->request_delegate.get(), req_state_->hints);
 
   auto platform_discoveries =
@@ -2224,12 +2182,6 @@ void AuthenticatorCommonImpl::ContinueReportAfterRpIdCheck(
         req_state_->caller_origin, req_state_->relying_party_id,
         options->all_accepted_credentials->user_id,
         options->all_accepted_credentials->all_accepted_credentials_ids);
-#if BUILDFLAG(IS_WIN)
-    device::WinWebAuthnApiAuthenticator::SignalAllAcceptedCredentials(
-        device::WinWebAuthnApi::GetDefault(), req_state_->relying_party_id,
-        options->all_accepted_credentials->user_id,
-        options->all_accepted_credentials->all_accepted_credentials_ids);
-#endif  // BUILDFLAG(IS_WIN)
   } else if (options->current_user_details) {
     UpdateVirtualAuthenticatorUserCreds(
         render_frame_host, req_state_->relying_party_id,
@@ -2243,11 +2195,6 @@ void AuthenticatorCommonImpl::ContinueReportAfterRpIdCheck(
         options->current_user_details->name,
         options->current_user_details->display_name);
   } else if (options->unknown_credential_id) {
-#if BUILDFLAG(IS_WIN)
-    device::WinWebAuthnApiAuthenticator::SignalUnknownCredential(
-        device::WinWebAuthnApi::GetDefault(), *options->unknown_credential_id,
-        req_state_->relying_party_id);
-#endif  // BUILDFLAG(IS_WIN)
     DeleteVirtualAuthenticatorCreds(render_frame_host,
                                     *options->unknown_credential_id,
                                     req_state_->relying_party_id);

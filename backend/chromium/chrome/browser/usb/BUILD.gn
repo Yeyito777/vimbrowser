@@ -52,11 +52,7 @@ source_set("usb") {
     "//ui/gfx",
   ]
 
-  if (!is_chromeos) {
-    sources += [ "usb_status_icon.h" ]
-  } else {
-    sources += [ "usb_pinned_notification.h" ]
-  }
+  sources += [ "usb_status_icon.h" ]
 }
 
 source_set("impl") {
@@ -123,15 +119,7 @@ source_set("impl") {
     "//ui/message_center/public/cpp",
   ]
 
-  if (!is_chromeos) {
-    sources += [ "usb_status_icon.cc" ]
-  } else {
-    sources += [ "usb_pinned_notification.cc" ]
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/settings",
-    ]
-  }
+  sources += [ "usb_status_icon.cc" ]
 
   if (enable_extensions_core) {
     deps += [
@@ -187,28 +175,13 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_chromeos) {
-    sources += [ "usb_status_icon_unittest.cc" ]
-    deps += [
-      "//chrome/app:branded_strings",
-      "//chrome/app:command_ids",
-      "//extensions/common:common_constants",
-      "//ui/base",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "usb_pinned_notification_unittest.cc" ]
-    deps += [
-      ":usb",
-      "//chrome/app:branded_strings",
-      "//chrome/browser/ash/settings",
-      "//chrome/browser/ash/settings:test_support",
-      "//chromeos/ash/components/settings",
-      "//extensions/common:common_constants",
-      "//ui/base",
-    ]
-  }
+  sources += [ "usb_status_icon_unittest.cc" ]
+  deps += [
+    "//chrome/app:branded_strings",
+    "//chrome/app:command_ids",
+    "//extensions/common:common_constants",
+    "//ui/base",
+  ]
 }
 
 if (is_linux || is_mac || is_win) {
@@ -278,7 +251,4 @@ source_set("browser_tests") {
     "//ui/message_center/public/cpp",
     "//url",
   ]
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/test:test_support" ]
-  }
 }

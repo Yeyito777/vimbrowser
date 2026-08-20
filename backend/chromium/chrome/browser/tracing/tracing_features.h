@@ -8,10 +8,5 @@
 #include "base/feature_list.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-// A Feature to selectively enable connecting to the Windows system tracing
-// service when the tracing service is started.
-BASE_DECLARE_FEATURE(kWindowsSystemTracing);
-#endif  // BUILDFLAG(IS_WIN)
 
 #endif  // CHROME_BROWSER_TRACING_TRACING_FEATURES_H_

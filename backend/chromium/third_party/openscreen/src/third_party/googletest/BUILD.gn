@@ -43,10 +43,6 @@ if (build_with_chromium) {
     if (is_clang) {
       cflags_cc += [ "-Wno-exit-time-destructors" ]
     }
-
-    if (is_win) {
-      cflags_cc += [ "-Wno-sign-compare" ]
-    }
   }
 
   source_set("gmock") {

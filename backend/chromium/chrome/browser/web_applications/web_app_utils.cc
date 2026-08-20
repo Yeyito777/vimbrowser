@@ -77,14 +77,6 @@
 #include "ui/gfx/codec/png_codec.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/common/web_app_id_constants.h"
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"
-#include "chromeos/ash/components/file_manager/app_id.h"
-#include "components/user_manager/user_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 namespace web_app {
 
 namespace {
@@ -216,26 +208,6 @@ bool AreWebAppsEnabled(Profile* profile) {
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Web Apps should not be installed to the ChromeOS system profiles except the
-  // lock screen app profile.
-  if (!ash::ProfileHelper::IsUserProfile(profile) &&
-      !ash::IsShimlessRmaAppBrowserContext(profile)) {
-    return false;
-  }
-  auto* user_manager = user_manager::UserManager::Get();
-
-  // Don't enable for Chrome App or ARC Kiosk sessions.
-  if (user_manager && (user_manager->IsLoggedInAsKioskChromeApp() ||
-                       user_manager->IsLoggedInAsKioskArcvmApp())) {
-    return false;
-  }
-
-  // Guest session forces OTR to be turned on.
-  if (profile->IsGuestSession()) {
-    return profile->IsOffTheRecord();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return !profile->IsOffTheRecord();
 }
@@ -261,10 +233,6 @@ bool AreWebAppsUserInstallable(Profile* profile) {
 bool AreWebAppsForceInstallable(Profile* profile) {
   bool allowed = AreWebAppsEnabled(profile) && !profile->IsGuestSession() &&
                  !profile->IsOffTheRecord();
-#if BUILDFLAG(IS_CHROMEOS)
-  allowed = allowed || user_manager::UserManager::Get()->IsLoggedInAsGuest() ||
-            user_manager::UserManager::Get()->IsLoggedInAsManagedGuestSession();
-#endif
   return allowed;
 }
 
@@ -285,13 +253,6 @@ content::BrowserContext* GetBrowserContextForWebApps(
   // profile.
   // TODO(https://crbug.com/384063076): Stop returning for profiles on ChromeOS
   // where `AreWebAppsEnabled` returns `false`.
-#if BUILDFLAG(IS_CHROMEOS)
-  Profile* original_profile = profile->GetOriginalProfile();
-  CHECK(original_profile);
-  if (AreWebAppsEnabled(original_profile)) {
-    return original_profile;
-  }
-#endif
 
   return nullptr;
 }
@@ -337,40 +298,17 @@ base::FilePath GetWebAppsTempDirectory(
 }
 
 std::string_view GetProfileCategoryForLogging(Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!ash::ProfileHelper::IsUserProfile(profile)) {
-    return "SigninOrLockScreen";
-  } else if (user_manager::UserManager::Get()->IsLoggedInAsAnyKioskApp()) {
-    return "Kiosk";
-  } else if (ash::ProfileHelper::IsEphemeralUserProfile(profile)) {
-    return "Ephemeral";
-  } else if (ash::ProfileHelper::IsPrimaryProfile(profile)) {
-    return "Primary";
-  } else {
-    return "Other";
-  }
-#else
   // Chrome OS profiles are different from non-ChromeOS ones. Because System Web
   // Apps are not installed on non Chrome OS, "Other" is returned here.
   return "Other";
-#endif
 }
 
 bool IsChromeOsDataMandatory() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 bool AreAppsLocallyInstalledBySync() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, sync always locally installs an app.
-  return true;
-#else
   return false;
-#endif
 }
 
 bool AreNewFileHandlersASubsetOfOld(const apps::FileHandlers& old_handlers,

@@ -83,9 +83,6 @@
 #include "ui/events/types/event_type.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace base::test {
 class ScopedFeatureList;
@@ -111,16 +108,6 @@ class AXPlatformNodeDelegate;
 class AXTreeID;
 }  // namespace ui
 
-#if BUILDFLAG(IS_WIN)
-namespace Microsoft {
-namespace WRL {
-template <typename>
-class ComPtr;
-}  // namespace WRL
-}  // namespace Microsoft
-
-typedef int PROPERTYID;
-#endif
 
 // A collections of functions designed for use with content_browsertests and
 // browser_tests.
@@ -1096,13 +1083,6 @@ std::vector<RenderFrameHost*> CollectAllRenderFrameHosts(
 // BrowserContext.
 std::vector<WebContents*> GetAllWebContents();
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Executes the WebUI resource tests. Injects the test runner script prior to
-// executing the tests.
-//
-// Returns true if tests ran successfully, false otherwise.
-bool ExecuteWebUIResourceTest(WebContents* web_contents);
-#endif
 
 // Returns the serialized cookie string for the given url. Uses an inclusive
 // SameSiteCookieContext by default, which gets cookies regardless of their
@@ -1223,21 +1203,6 @@ ui::AXPlatformNodeDelegate* FindAccessibilityNodeInSubtree(
     ui::AXPlatformNodeDelegate* node,
     const FindAccessibilityNodeCriteria& criteria);
 
-#if BUILDFLAG(IS_WIN)
-// Retrieve the specified interface from an accessibility node.
-template <typename T>
-Microsoft::WRL::ComPtr<T> QueryInterfaceFromNode(
-    ui::AXPlatformNodeDelegate* node);
-
-// Call GetPropertyValue with the given UIA property id with variant type
-// VT_ARRAY | VT_UNKNOWN  on the target browser accessibility node to retrieve
-// an array of automation elements, then validate the name property of the
-// automation elements with the expected names.
-void UiaGetPropertyValueVtArrayVtUnknownValidate(
-    PROPERTYID property_id,
-    ui::AXPlatformNodeDelegate* target_node,
-    const std::vector<std::string>& expected_names);
-#endif
 
 // Returns the RenderWidgetHost that holds the keyboard lock.
 RenderWidgetHost* GetKeyboardLockWidget(WebContents* web_contents);

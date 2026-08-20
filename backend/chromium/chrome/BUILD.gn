@@ -75,32 +75,6 @@ if (is_win && enable_resource_allowlist_generation) {
   _chrome_resource_allowlist = "$target_gen_dir/chrome_resource_allowlist.txt"
 }
 
-if (is_win) {
-  action("reorder_imports") {
-    script = "//build/win/reorder-imports.py"
-
-    # initialexe/ is used so that the we can reorder imports and write back to
-    # the final destination at $root_out_dir/.
-    inputs = [
-      "$root_out_dir/initialexe/chrome.exe",
-      "$root_out_dir/initialexe/chrome.exe.pdb",
-    ]
-    outputs = [
-      "$root_out_dir/chrome.exe",
-      "$root_out_dir/chrome.exe.pdb",
-    ]
-    args = [
-      "-i",
-      rebase_path("$root_out_dir/initialexe", root_build_dir),
-      "-o",
-      rebase_path("$root_out_dir", root_build_dir),
-      "-a",
-      current_cpu,
-    ]
-    deps = [ ":chrome_initial" ]
-  }
-}
-
 # This does not currently work. See crbug.com/1311822.
 # This target exists above chrome and it's main components in the dependency
 # tree as a central place to put assert_no_deps annotations. Since this depends
@@ -110,10 +84,6 @@ group("assert_no_deps") {
   deps = []
 
   deps += [ ":chrome" ]
-
-  if (is_win) {
-    deps += [ ":chrome_dll" ]
-  }
 
   # This should not pull in installer strings. This is will bloat the binary
   # for no reason and is easy to mess up. See the comment at the top of
@@ -134,17 +104,9 @@ if (!is_mac) {
     # Windows-only deps are OK because chrome_initial uses initialexe/chrome as
     # the output name for that platform.
     # See crbug.com/1146571.
-    if (is_win) {
-      public_deps += [ ":reorder_imports" ]
-      data_deps += [ ":reorder_imports" ]
-    }
   }
 
-  if (is_win) {
-    _chrome_output_name = "initialexe/chrome"
-  } else {
-    _chrome_output_name = "chrome"
-  }
+  _chrome_output_name = "chrome"
 
   executable("chrome_initial") {
     configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
@@ -168,114 +130,12 @@ if (!is_mac) {
       deps += [ "//components/webapps/isolated_web_apps:scheme" ]
     }
 
-    if (is_chromeos) {
-      data_deps += [ "//sandbox/linux:chrome_sandbox" ]
-      if (build_mojo_proxy) {
-        data_deps += [ "//mojo/proxy:mojo_proxy" ]
-      }
-      deps += [ "//components/exo/wayland:ui_controls_protocol_stub" ]
-    }
-
     if (!is_mac) {
       data_deps +=
           [ "//third_party/search_engines_data:prepopulated_engines_file" ]
     }
 
-    if (is_win) {
-      sources += [
-        "app/chrome_exe.rc",
-        "app/chrome_exe_main_win.cc",
-        "app/delay_load_failure_hook_win.cc",
-        "app/delay_load_failure_hook_win.h",
-        "app/main_dll_loader_win.cc",
-        "app/main_dll_loader_win.h",
-        "common/crash_keys.cc",
-        "common/crash_keys.h",
-      ]
-
-      deps += [
-        ":chrome_dll",
-        ":chrome_exe_version",
-        ":copy_first_run",
-        ":packed_resources_integrity_header",
-        ":visual_elements_resources",
-        "//base",
-        "//build:branding_buildflags",
-        "//chrome/app:chrome_exe_main_exports",
-        "//chrome/app:exit_code_watcher",
-        "//chrome/app/version_assembly:chrome_exe_manifest",
-        "//chrome/browser:active_use_util",
-        "//chrome/browser:chrome_process_finder",
-        "//chrome/browser/policy:path_parser",
-        "//chrome/chrome_elf",
-        "//chrome/common:constants",
-        "//chrome/common/win:delay_load_failure_support",
-        "//chrome/install_static:install_static_util",
-        "//chrome/install_static:secondary_module",
-        "//chrome/installer/util:constants",
-        "//chrome/installer/util:did_run_support",
-        "//components/activity_reporter:buildflags",
-        "//components/crash/core/app",
-        "//components/crash/core/app:run_as_crashpad_handler",
-        "//components/crash/core/common",
-        "//components/crash/win:chrome_wer",
-        "//components/webui/flags:switches",
-        "//content:sandbox_helper_win",
-        "//content/public/common:static_switches",
-        "//crypto",
-        "//gpu/command_buffer/service",
-        "//sandbox",
-        "//sandbox/policy",
-        "//sandbox/policy/mojom",
-        "//third_party/breakpad:breakpad_handler",
-        "//third_party/breakpad:breakpad_sender",
-        "//third_party/crashpad/crashpad/util",
-        "//ui/gl",
-      ]
-
-      data_deps += [
-        "//chrome/app/version_assembly:version_assembly_manifest",
-        "//chrome/browser/web_applications/chrome_pwa_launcher",
-        "//chrome/chrome_proxy",
-        "//chrome/elevation_service",
-        "//chrome/notification_helper",
-        "//chrome/windows_services/elevated_tracing_service",
-      ]
-
-      if (enable_platform_experience) {
-        data_deps +=
-            [ "//chrome/browser/platform_experience/win:os_update_handler" ]
-      }
-
-      defines += [ "CHROME_EXE_MAIN" ]
-
-      if (win_console_app) {
-        defines += [ "WIN_CONSOLE_APP" ]
-      } else {
-        # Set /SUBSYSTEM:WINDOWS for chrome.exe itself, unless a console build
-        # has been requested.
-        configs -= [ "//build/config/win:console" ]
-        configs += [ "//build/config/win:windowed" ]
-      }
-
-      configs += [
-        "//build/config/win:delayloads",
-        "//build/config/win:delayloads_not_for_child_dll",
-      ]
-
-      if (current_cpu == "x86") {
-        # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by
-        # Chrome's main thread. This saves significant memory on threads (like
-        # those in the Windows thread pool, and others) whose stack size we can
-        # only control through this setting. Because Chrome's main thread needs
-        # a minimum 1.5 MiB stack, the main thread (in 32-bit builds only) uses
-        # fibers to switch to a 1.5 MiB stack before running any other code.
-        ldflags = [ "/STACK:0x80000" ]
-      } else {
-        # Increase the initial stack size. The default is 1MB, this is 8MB.
-        ldflags = [ "/STACK:0x800000" ]
-      }
-    } else if (use_aura) {
+    if (use_aura) {
       # Non-Windows aura entrypoint.
       sources += [ "app/chrome_exe_main_aura.cc" ]
     }
@@ -314,15 +174,9 @@ if (!is_mac) {
 
       # On Chrome OS builds put priority to the library in the installed
       # directory. This will avoid conflicting of exposed symbols.
-      if (is_chromeos_device) {
-        ldflags += [ "-L" + rebase_path(root_out_dir) ]
-      }
 
       # On Chrome OS builds, put a metadata.json file in root directory
       # containing Chrome version.
-      if (is_chromeos) {
-        data_deps += [ "//build:version_metadata" ]
-      }
 
       # Chrome OS debug builds for arm need to pass --long-plt to the linker.
       # See https://bugs.chromium.org/p/chromium/issues/detail?id=583532
@@ -335,15 +189,6 @@ if (!is_mac) {
         inputs = [ version_script ]
         ldflags += [ "-Wl,--version-script=" +
                      rebase_path(version_script, root_build_dir) ]
-      }
-
-      if (is_chromeos) {
-        public_deps += [ "//ui/lottie" ]
-        deps += [
-          "//chrome/browser/ash/locale",
-          "//chrome/browser/ash/schedqos",
-          "//chromeos/ash/experiences/arc:arc_base_utils",
-        ]
       }
 
       if (use_ozone) {
@@ -391,63 +236,7 @@ if (!is_mac) {
   }
 }  # !is_android && !is_mac
 
-if (is_win) {
-  shared_library("chrome_dll") {
-    configs += [ "//build/config/compiler:wexit_time_destructors" ]
-    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
-    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
-
-    defines = []
-
-    sources = [
-      "//base/win/dllmain.cc",
-      "app/chrome_main.cc",
-      "app/chrome_main_delegate.cc",
-      "app/chrome_main_delegate.h",
-      "app/startup_timestamps.h",
-    ]
-
-    output_name = "chrome"
-
-    deps = [
-      ":chrome_dll_manifest",
-      ":chrome_dll_version",
-      ":dependencies",
-      "//chrome/app:chrome_dll_resources",
-      "//chrome/app:command_ids",
-      "//chrome/app/theme:chrome_unscaled_resources",
-      "//chrome/browser/win:isolated_browser_support",
-      "//chrome/chrome_elf",
-      "//chrome/common:buildflags",
-      "//chrome/common:version_header",
-      "//chrome/common/profiler",
-      "//chrome/install_static:install_static_util",
-      "//chrome/install_static:secondary_module",
-      "//components/crash/core/app",
-      "//components/memory_system",
-      "//components/policy:generated",
-      "//components/webapps/isolated_web_apps:scheme",
-      "//content/public/app",
-      "//crypto",
-      "//net:net_resources",
-      "//sandbox/win:sandbox",
-      "//third_party/cld_3/src/src:cld_3",
-      "//third_party/wtl",
-      "//ui/views",
-    ]
-
-    configs += [ "//build/config/win:delayloads" ]
-
-    if (use_aura) {
-      deps += [ "//ui/compositor" ]
-    }
-  }
-
-  copy("copy_first_run") {
-    sources = [ "app/FirstRun" ]
-    outputs = [ "$root_out_dir/First Run" ]
-  }
-} else if (is_mac) {
+if (is_mac) {
   chrome_helper_name = chrome_product_full_name + " Helper"
   chrome_framework_name = chrome_product_full_name + " Framework"
   chrome_framework_version = chrome_version_full
@@ -1129,10 +918,6 @@ if (is_win) {
       "//third_party/cld_3/src/src:cld_3",
     ]
 
-    if (is_chromeos) {
-      deps += [ "//chrome/browser/ash/schedqos" ]
-    }
-
     if (is_component_build) {
       frameworks = [ "Carbon.framework" ]
     }
@@ -1434,42 +1219,6 @@ group("dependencies") {
 
   if (enable_printing) {
     public_deps += [ "//printing" ]
-  }
-
-  if (is_chromeos) {
-    public_deps += [
-      "//ash/constants",
-      "//chrome/browser/ash/boot_times_recorder",
-      "//chrome/browser/ash/dbus",
-      "//chrome/browser/ash/schedqos",
-      "//chromeos/ash/components/memory",
-      "//chromeos/dbus/constants",
-    ]
-  }
-}
-
-if (is_win) {
-  process_version_rc_template("chrome_exe_version") {
-    sources = [ "app/chrome_exe.ver" ]
-    output = "$target_gen_dir/chrome_exe_version.rc"
-  }
-
-  process_version_rc_template("chrome_dll_version") {
-    sources = [ "app/chrome_dll.ver" ]
-    output = "$target_gen_dir/chrome_dll_version.rc"
-  }
-
-  # This manifest matches what GYP produced. It may not even be necessary.
-  windows_manifest("chrome_dll_manifest") {
-    sources = [
-      as_invoker_manifest,
-      common_controls_manifest,
-    ]
-  }
-
-  process_version_rc_template("other_version") {
-    sources = [ "app/other.ver" ]
-    output = "$target_gen_dir/other_version.rc"
   }
 }
 

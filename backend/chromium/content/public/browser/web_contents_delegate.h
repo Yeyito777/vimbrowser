@@ -44,19 +44,6 @@
 #include "ui/base/window_open_disposition.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#include "content/public/browser/back_forward_transition_animation_manager.h"
-
-namespace base {
-class ScopedClosureRunner;
-}  // namespace base
-
-namespace base::android {
-class ScopedHardwareBufferHandle;
-}  // namespace base::android
-
-#endif
 
 class GURL;
 
@@ -133,11 +120,6 @@ enum class PictureInPictureResult {
   kNotSupported,
 };
 
-#if BUILDFLAG(IS_ANDROID)
-using HardwareBufferResultCallback =
-    base::OnceCallback<void(base::android::ScopedHardwareBufferHandle,
-                            base::ScopedClosureRunner)>;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Objects implement this interface to get notified about changes in the
 // WebContents and to provide necessary functionality. If a method doesn't
@@ -488,10 +470,6 @@ class CONTENT_EXPORT WebContentsDelegate {
                               scoped_refptr<FileSelectListener> listener,
                               const blink::mojom::FileChooserParams& params);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Set to true if RunFileChooser() should be used for FileSystemAccess APIs.
-  virtual bool UseFileChooserForFileSystemAccess() const;
-#endif
 
   // Request to enumerate a directory.  This is equivalent to running the file
   // chooser in directory-enumeration mode and having the user select the given
@@ -593,14 +571,6 @@ class CONTENT_EXPORT WebContentsDelegate {
                          int active_match_ordinal,
                          bool final_update) {}
 
-#if BUILDFLAG(IS_ANDROID)
-  // Provides the rects of the current find-in-page matches.
-  // Sent as a reply to RequestFindMatchRects.
-  virtual void FindMatchRectsReply(WebContents* web_contents,
-                                   int version,
-                                   const std::vector<gfx::RectF>& rects,
-                                   const gfx::RectF& active_rect) {}
-#endif
 
   // Invoked when the preferred size of the contents has been changed.
   virtual void UpdatePreferredSize(WebContents* web_contents,
@@ -678,16 +648,6 @@ class CONTENT_EXPORT WebContentsDelegate {
   virtual std::unique_ptr<AudioStreamBrokerFactory>
   CreateAudioStreamBrokerFactory(WebContents* web_contents);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns true if the given media should be blocked to load.
-  virtual bool ShouldBlockMediaRequest(const GURL& url);
-
-  // Tells the delegate to enter overlay mode.
-  // Overlay mode means that we are currently using AndroidOverlays to display
-  // video, and that the compositor's surface should support alpha and not be
-  // marked as opaque. See media/base/android/android_overlay.h.
-  virtual void SetOverlayMode(bool use_overlay_mode) {}
-#endif
 
   // Returns the size for the new render view created for the pending entry in
   // |web_contents|; if there's no size, returns an empty size.
@@ -795,13 +755,6 @@ class CONTENT_EXPORT WebContentsDelegate {
   // Picture-in-Picture mode has ended.
   virtual void ExitPictureInPicture() {}
 
-#if BUILDFLAG(IS_ANDROID)
-  // Updates information to determine whether a user gesture should carryover to
-  // future navigations. This is needed so navigations within a certain
-  // timeframe of a request initiated by a gesture will be treated as if they
-  // were initiated by a gesture too, otherwise the navigation may be blocked.
-  virtual void UpdateUserGestureCarryoverInfo(WebContents* web_contents) {}
-#endif
 
   // Returns true if lazy loading of images and frames should be enabled.
   virtual bool ShouldAllowLazyLoad();
@@ -875,11 +828,9 @@ class CONTENT_EXPORT WebContentsDelegate {
       const std::vector<blink::mojom::DraggableRegionPtr>& regions,
       WebContents* contents) {}
 
-#if !BUILDFLAG(IS_ANDROID)
   // Whether the WebContents should use per PWA instanced
   // system media controls.
   virtual bool ShouldUseInstancedSystemMediaControls() const;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Allow delegate to override how to take a bitmap snapshot of this
   // WebContents. Return true if the delegate will execute callback with a
@@ -902,41 +853,6 @@ class CONTENT_EXPORT WebContentsDelegate {
       bool include_actionable_elements,
       base::OnceCallback<void(const std::string&)> callback);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Allow delegate to override how to take a snapshot of this WebContents into
-  // a HardwareBuffer. Return true if the delegate will execute callback with a
-  // captured buffer of the committed navigation entry. The callback also
-  // receives a clean up callback that the invoker can call when it's done using
-  // the buffer. The callback will ensure the HardwareBuffer is associated with
-  // the correct NavigationEntry and it must be dispatched asynchronously (with
-  // an empty buffer if the capture fails) if and only if this returns true. And
-  // If the embedder returns false, the caller within content/ will associate
-  // the currently committed entry with a buffer of the rendered web page. Note
-  // that it's the embedder's responsibility for capturing the visible content
-  // at the time of this call, though it can invoke the callback with the buffer
-  // asynchronously, at a later time.
-  virtual bool MaybeCopyContentAreaAsHardwareBuffer(
-      HardwareBufferResultCallback callback);
-
-  // Synchronous version of |MaybeCopyContentAreaAsBitmap|. Return an
-  // empty bitmap if embedder is not showing any custom view.
-  virtual SkBitmap MaybeCopyContentAreaAsBitmapSync();
-
-  // Return an icon to use for privileged internal pages, if no screenshot of
-  // the page is available during back forward transition animations. An empty
-  // bitmap can be returned if the embedder wants to leave the preview empty.
-  virtual SkBitmap GetBackForwardTransitionFallbackUXInternalPageIcon();
-
-  // Notifies the delegate that the back forward transition animation state
-  // has changed. If necessary, the delegate should use this notification to
-  // hold on its animation until the back forward transition has completed.
-  virtual void DidBackForwardTransitionAnimationChange() {}
-
-  // Asks the embedder for the configuration used to compose a fallback UX, for
-  // navigation transitions.
-  virtual BackForwardTransitionAnimationManager::FallbackUXConfig
-  GetBackForwardTransitionFallbackUXConfig();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Returns the saved related_applications web app manifest field associated
   // with the given `web_contents`. The information is saved via the

@@ -102,9 +102,7 @@ class LogMessageVoidify {
   void operator&(base::strings::CStringBuilder&) {}
 };
 
-#if PA_BUILDFLAG(IS_WIN)
-typedef unsigned long SystemErrorCode;
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 typedef int SystemErrorCode;
 #endif
 
@@ -113,24 +111,7 @@ typedef int SystemErrorCode;
 PA_COMPONENT_EXPORT(PARTITION_ALLOC_BASE)
 SystemErrorCode GetLastSystemErrorCode();
 
-#if PA_BUILDFLAG(IS_WIN)
-// Appends a formatted system message of the GetLastError() type.
-class PA_COMPONENT_EXPORT(PARTITION_ALLOC_BASE) Win32ErrorLogMessage
-    : public LogMessage {
- public:
-  Win32ErrorLogMessage(const char* file,
-                       int line,
-                       LogSeverity severity,
-                       SystemErrorCode err);
-  Win32ErrorLogMessage(const Win32ErrorLogMessage&) = delete;
-  Win32ErrorLogMessage& operator=(const Win32ErrorLogMessage&) = delete;
-  // Appends the error message before destructing the encapsulated class.
-  ~Win32ErrorLogMessage() override;
-
- private:
-  SystemErrorCode err_;
-};
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 // Appends a formatted system message of the errno type
 class PA_COMPONENT_EXPORT(PARTITION_ALLOC_BASE) ErrnoLogMessage
     : public LogMessage {

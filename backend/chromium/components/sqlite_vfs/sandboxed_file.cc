@@ -17,9 +17,6 @@
 #include "components/sqlite_vfs/metrics_util.h"
 #include "third_party/sqlite/sqlite3.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace sqlite_vfs {
 

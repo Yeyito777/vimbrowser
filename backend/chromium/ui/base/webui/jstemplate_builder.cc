@@ -72,12 +72,6 @@ void AppendJsonJS(const base::DictValue& json,
     output->append("import {loadTimeData} from ");
     output->append("'//resources/js/load_time_data.js';\n");
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Imported for the side effect of setting the |window.loadTimeData| global,
-    // which is relied on by ChromeOS Ash Tast Tests and some browser tests.
-    // See https://www.crbug.com/1395148.
-    output->append("import '//resources/ash/common/load_time_data.m.js';\n");
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   std::optional<std::string> jstext = base::WriteJson(json);

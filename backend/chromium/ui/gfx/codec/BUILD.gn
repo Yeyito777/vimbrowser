@@ -34,11 +34,6 @@ component("codec") {
     ]
   }
 
-  if (is_win) {
-    cflags = [ "/wd4324" ]  # Structure was padded due to __declspec(align()),
-                            # which is uninteresting.
-  }
-
   defines = [ "CODEC_IMPLEMENTATION" ]
 }
 

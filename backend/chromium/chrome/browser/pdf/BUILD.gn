@@ -50,10 +50,6 @@ source_set("pdf") {
     "//ui/gfx:color_utils",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/browser_context_helper" ]
-  }
 }
 
 source_set("pdf_pref_names") {
@@ -61,24 +57,6 @@ source_set("pdf_pref_names") {
     "pdf_pref_names.cc",
     "pdf_pref_names.h",
   ]
-}
-
-if (is_chromeos) {
-  source_set("pdf_service") {
-    sources = [
-      "pdf_service.cc",
-      "pdf_service.h",
-    ]
-    public_deps = [
-      "//chrome/services/pdf/public/mojom",
-      "//mojo/public/cpp/bindings",
-    ]
-    deps = [
-      "//base",
-      "//chrome/app:generated_resources",
-      "//content/public/browser",
-    ]
-  }
 }
 
 source_set("pdf_extension_test_utils") {

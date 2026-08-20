@@ -68,13 +68,6 @@ component("sql") {
       "CoreServices.framework",
     ]
   }
-
-  if (is_fuchsia) {
-    sources += [
-      "vfs_wrapper_fuchsia.cc",
-      "vfs_wrapper_fuchsia.h",
-    ]
-  }
 }
 
 static_library("test_support") {

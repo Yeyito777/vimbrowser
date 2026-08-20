@@ -27,33 +27,9 @@
 #include "third_party/blink/public/mojom/speech/speech_synthesis.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/speech/extension_api/tts_engine_extension_observer_chromeos_factory.h"
-#include "chrome/common/extensions/extension_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace constants = tts_extension_api_constants;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-
-// ChromeOS source that triggered text-to-speech utterance.
-//
-// These values are logged to UMA. Entries should not be renumbered and
-// numeric values should never be reused. Please keep in sync with
-// "TextToSpeechSource" in src/tools/metrics/histograms/enums.xml.
-// LINT.IfChange(UMATextToSpeechSource)
-enum class UMATextToSpeechSource {
-  kOther = 0,
-  kChromeVox = 1,
-  kSelectToSpeak = 2,
-
-  kMaxValue = kSelectToSpeak,
-};
-// LINT.ThenChange(/tools/metrics/histograms/metadata/accessibility/enums.xml:TextToSpeechSource)
-
-}  // namespace
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace events {
 const char kOnEvent[] = "tts.onEvent";
@@ -269,16 +245,6 @@ ExtensionFunction::ResponseAction TtsSpeakFunction::Run() {
     src_id = src_id_value->GetInt();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  UMATextToSpeechSource source = UMATextToSpeechSource::kOther;
-  const std::string host = source_url().GetHost();
-  if (host == extension_misc::kSelectToSpeakExtensionId) {
-    source = UMATextToSpeechSource::kSelectToSpeak;
-  } else if (host == extension_misc::kChromeVoxExtensionId) {
-    source = UMATextToSpeechSource::kChromeVox;
-  }
-  UMA_HISTOGRAM_ENUMERATION("TextToSpeech.Utterance.Source", source);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // If we got this far, the arguments were all in the valid format, so
   // send the success response to the callback now - this ensures that
@@ -388,11 +354,6 @@ TtsAPI::TtsAPI(content::BrowserContext* context) {
   registry.RegisterFunction<TtsPauseFunction>();
   registry.RegisterFunction<TtsResumeFunction>();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Ensure we're observing newly added engines for the given context.
-  TtsEngineExtensionObserverChromeOSFactory::GetForProfile(
-      Profile::FromBrowserContext(context));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   content::TtsController::GetInstance()->AddVoicesChangedDelegate(this);
 

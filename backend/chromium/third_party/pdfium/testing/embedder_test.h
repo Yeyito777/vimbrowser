@@ -272,14 +272,6 @@ class EmbedderTest : public ::testing::Test,
   // Simplified form of RenderPageWithFlags() with no handle and no flags.
   static ScopedFPDFBitmap RenderPage(FPDF_PAGE page);
 
-#if BUILDFLAG(IS_WIN)
-  // Convert `page` into EMF with the specified page rendering `flags`.
-  static std::vector<uint8_t> RenderPageWithFlagsToEmf(FPDF_PAGE page,
-                                                       int flags);
-
-  // Get the PostScript data from `emf_data`.
-  static std::string GetPostScriptFromEmf(pdfium::span<const uint8_t> emf_data);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Return bytes for each of the FPDFBitmap_* format types.
   static int BytesPerPixelForFormat(int format);

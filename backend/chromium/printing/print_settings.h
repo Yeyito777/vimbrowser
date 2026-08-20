@@ -31,10 +31,6 @@
 #include "base/values.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/crosapi/mojom/local_printer.mojom.h"
-#include "printing/printing_features.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace printing {
 
@@ -127,23 +123,10 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   void Clear();
 
   void SetCustomMargins(const PageMargins& requested_margins_in_microns);
-#if BUILDFLAG(IS_CHROMEOS)
-  // This sets margins and sets `margin_type` to `kPrecomputedMarginsForBackend`
-  // For more details, see the documentation for `kPrecomputedMarginsForBackend`
-  // in `print.mojom`.
-  void SetCustomMarginsForBackend(
-      const PageMargins& requested_margins_in_microns);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   const PageMargins& requested_custom_margins_in_microns() const {
     return requested_custom_margins_in_microns_;
   }
   void set_margin_type(mojom::MarginType margin_type) {
-#if BUILDFLAG(IS_CHROMEOS)
-    if (base::FeatureList::IsEnabled(features::kApiPrintingMarginsAndScale)) {
-      CHECK_NE(margin_type,
-               printing::mojom::MarginType::kPrecomputedMarginsForBackend);
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     margin_type_ = margin_type;
   }
   mojom::MarginType margin_type() const { return margin_type_; }
@@ -167,11 +150,6 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   void SetPrinterPrintableArea(const gfx::Size& physical_size_device_units,
                                const gfx::Rect& printable_area_device_units,
                                bool landscape_needs_flip);
-#if BUILDFLAG(IS_WIN)
-  // Update the printer printable area for the current media using the
-  // provided area in microns.
-  void UpdatePrinterPrintableArea(const gfx::Rect& printable_area_um);
-#endif
   const PageSetup& page_setup_device_units() const {
     return page_setup_device_units_;
   }
@@ -269,28 +247,6 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   }
   mojom::DuplexMode duplex_mode() const { return duplex_mode_; }
 
-#if BUILDFLAG(IS_WIN)
-  void set_printer_language_type(mojom::PrinterLanguageType type) {
-    printer_language_type_ = type;
-  }
-  mojom::PrinterLanguageType printer_language_type() const {
-    return printer_language_type_;
-  }
-  bool printer_language_is_textonly() const {
-    return printer_language_type_ == mojom::PrinterLanguageType::kTextOnly;
-  }
-  bool printer_language_is_xps() const {
-    return printer_language_type_ == mojom::PrinterLanguageType::kXps;
-  }
-  bool printer_language_is_ps2() const {
-    return printer_language_type_ ==
-           mojom::PrinterLanguageType::kPostscriptLevel2;
-  }
-  bool printer_language_is_ps3() const {
-    return printer_language_type_ ==
-           mojom::PrinterLanguageType::kPostscriptLevel3;
-  }
-#endif
 
   void set_is_modifiable(bool is_modifiable) { is_modifiable_ = is_modifiable; }
   bool is_modifiable() const { return is_modifiable_; }
@@ -307,52 +263,6 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_send_user_info(bool send_user_info) {
-    send_user_info_ = send_user_info;
-  }
-  bool send_user_info() const { return send_user_info_; }
-
-  void set_username(const std::string& username) { username_ = username; }
-  const std::string& username() const { return username_; }
-
-  void set_oauth_token(const std::string& oauth_token) {
-    oauth_token_ = oauth_token;
-  }
-  const std::string& oauth_token() const { return oauth_token_; }
-
-  void set_pin_value(const std::string& pin_value) { pin_value_ = pin_value; }
-  const std::string& pin_value() const { return pin_value_; }
-
-  void set_client_infos(std::vector<mojom::IppClientInfo> client_infos) {
-    client_infos_ = std::move(client_infos);
-  }
-  const std::vector<mojom::IppClientInfo>& client_infos() const {
-    return client_infos_;
-  }
-
-  void set_printer_manually_selected(bool printer_manually_selected) {
-    printer_manually_selected_ = printer_manually_selected;
-  }
-  bool printer_manually_selected() const { return printer_manually_selected_; }
-
-  void set_printer_status_reason(
-      crosapi::mojom::StatusReason::Reason printer_status_reason) {
-    printer_status_reason_ = printer_status_reason;
-  }
-  std::optional<crosapi::mojom::StatusReason::Reason> printer_status_reason()
-      const {
-    return printer_status_reason_;
-  }
-
-  void set_print_scaling(mojom::PrintScalingType print_scaling) {
-    print_scaling_ = print_scaling;
-  }
-  mojom::PrintScalingType print_scaling() const { return print_scaling_; }
-
-  void set_quality(mojom::Quality quality) { quality_ = quality; }
-  mojom::Quality quality() const { return quality_; }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_OOP_PRINTING_NO_OOP_BASIC_PRINT_DIALOG)
   void set_system_print_dialog_data(base::DictValue data) {
@@ -449,9 +359,6 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   // Is the orientation landscape or portrait.
   bool landscape_;
 
-#if BUILDFLAG(IS_WIN)
-  mojom::PrinterLanguageType printer_language_type_;
-#endif
 
   bool is_modifiable_;
 
@@ -466,38 +373,6 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
   AdvancedSettings advanced_settings_;
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Whether to send user info.
-  bool send_user_info_;
-
-  // Username if it's required by the printer.
-  std::string username_;
-
-  // OAuth access token if it's required by the printer.
-  std::string oauth_token_;
-
-  // PIN code entered by the user.
-  std::string pin_value_;
-
-  // Value of the 'client-info' that will be sent to the printer.
-  // Should only be set for printers that support 'client-info'.
-  std::vector<mojom::IppClientInfo> client_infos_;
-
-  // True if the user selects to print to a different printer than the original
-  // destination shown when Print Preview opens.
-  bool printer_manually_selected_ = false;
-
-  // The printer status reason shown for the selected printer at the time print
-  // is requested. Only local CrOS printers set printer statuses.
-  std::optional<crosapi::mojom::StatusReason::Reason> printer_status_reason_;
-
-  // Print scaling type.
-  mojom::PrintScalingType print_scaling_ =
-      mojom::PrintScalingType::kUnknownPrintScalingType;
-
-  // Print qulity for the printer to use.
-  mojom::Quality quality_ = mojom::Quality::kUnknownQuality;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace printing

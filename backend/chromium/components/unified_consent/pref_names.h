@@ -9,16 +9,6 @@
 
 namespace unified_consent::prefs {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Integer indicating the migration state of unified consent, defined in
-// unified_consent::MigrationState.
-//
-// Note: Migration of profiles to unified consent is over on all platforms
-// except on ChromeOS where the user profiles start with sync enabled.
-//
-// TODO(http://crbug.com/1459986): Remove this from ChromeOS Ash as well.
-extern const char kUnifiedConsentMigrationState[];
-#endif
 
 // Boolean indicating whether anonymized URL-keyed data data collection (aka
 // "Make Searches and Browsing Better") is enabled.

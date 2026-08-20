@@ -13,14 +13,8 @@ crash_reporter::CrashKeyString<16> gpu_vendor_id("gpu-venid");
 crash_reporter::CrashKeyString<16> gpu_device_id("gpu-devid");
 crash_reporter::CrashKeyString<16> npu_vendor_id("npu-venid");
 crash_reporter::CrashKeyString<16> npu_device_id("npu-devid");
-#if !BUILDFLAG(IS_ANDROID)
 crash_reporter::CrashKeyString<16> gpu_count("gpu_count");
 crash_reporter::CrashKeyString<16> npu_count("npu_count");
-#endif  // !BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-crash_reporter::CrashKeyString<16> gpu_sub_sys_id("gpu-subid");
-crash_reporter::CrashKeyString<16> gpu_revision("gpu-rev");
-#endif  // BUILDFLAG(IS_WIN)
 crash_reporter::CrashKeyString<64> gpu_driver_version("gpu-driver");
 crash_reporter::CrashKeyString<64> npu_driver_version("npu-driver");
 crash_reporter::CrashKeyString<16> gpu_pixel_shader_version("gpu-psver");
@@ -28,7 +22,7 @@ crash_reporter::CrashKeyString<16> gpu_vertex_shader_version("gpu-vsver");
 crash_reporter::CrashKeyString<16> gpu_generation_intel("gpu-generation-intel");
 #if BUILDFLAG(IS_MAC)
 crash_reporter::CrashKeyString<64> gpu_gl_version("gpu-glver");
-#elif BUILDFLAG(IS_POSIX)
+#else
 crash_reporter::CrashKeyString<256> gpu_vendor("gpu-gl-vendor");
 crash_reporter::CrashKeyString<128> gpu_renderer("gpu-gl-renderer");
 #endif

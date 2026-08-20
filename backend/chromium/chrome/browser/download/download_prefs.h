@@ -123,10 +123,6 @@ class DownloadPrefs {
   // forward - whatever has been passed to SetDownloadPath will be used.
   void SkipSanitizeDownloadTargetPathForTesting();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns whether downloaded pdf from external apps should be auto-opened.
-  bool IsAutoOpenPdfEnabled();
-#endif
  private:
   void SaveAutoOpenState();
   bool CanPlatformEnableAutoOpenForPdf() const;
@@ -142,10 +138,6 @@ class DownloadPrefs {
   raw_ptr<Profile> profile_;
 
   BooleanPrefMember prompt_for_download_;
-#if BUILDFLAG(IS_ANDROID)
-  IntegerPrefMember prompt_for_download_android_;
-  BooleanPrefMember auto_open_pdf_enabled_;
-#endif
 
   FilePathPrefMember download_path_;
   FilePathPrefMember save_file_path_;

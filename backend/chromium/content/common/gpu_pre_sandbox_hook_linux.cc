@@ -49,11 +49,7 @@ namespace content {
 namespace {
 
 inline bool IsChromeOS() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 inline bool UseChromecastSandboxAllowlist() {

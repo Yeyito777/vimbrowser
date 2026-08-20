@@ -128,12 +128,6 @@ class DisplayMediaAccessHandler : public CaptureAccessHandlerBase,
       blink::mojom::StreamDevices devices,
       std::unique_ptr<content::MediaStreamUI> ui);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called back after checking Data Leak Prevention (DLP) restrictions.
-  void OnDlpRestrictionChecked(base::WeakPtr<content::WebContents> web_contents,
-                               const content::DesktopMediaID& media_id,
-                               bool is_dlp_allowed);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void DeletePendingAccessRequest(int render_process_id,
                                   int render_frame_id,

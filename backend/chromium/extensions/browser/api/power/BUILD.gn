@@ -27,15 +27,4 @@ source_set("power") {
   ]
 
   deps = [ "//content/public/browser" ]
-
-  if (is_chromeos) {
-    sources += [
-      "activity_reporter_delegate.cc",
-      "activity_reporter_delegate.h",
-      "activity_reporter_delegate_ash.cc",
-      "activity_reporter_delegate_ash.h",
-    ]
-
-    deps += [ "//ui/base" ]
-  }
 }

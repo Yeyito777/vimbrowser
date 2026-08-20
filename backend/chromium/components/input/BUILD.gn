@@ -103,13 +103,6 @@ component("input") {
     sources += [ "native_web_keyboard_event_aura.cc" ]
   }
 
-  if (is_ios) {
-    sources += [
-      "native_web_keyboard_event_ios.mm",
-      "web_input_event_builders_ios.h",
-      "web_input_event_builders_ios.mm",
-    ]
-  }
   if (is_mac) {
     sources += [
       "native_web_keyboard_event_mac.mm",

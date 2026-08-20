@@ -31,9 +31,6 @@
 #include "base/thread_annotations.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/com_init_check_hook.h"
-#endif
 
 namespace base {
 
@@ -132,16 +129,6 @@ class BASE_EXPORT ThreadPoolImpl : public ThreadPoolInstance,
       const TaskTraits& traits,
       SingleThreadTaskRunnerThreadMode thread_mode);
 
-#if BUILDFLAG(IS_WIN)
-  // Returns a SingleThreadTaskRunner whose PostTask invocations result in
-  // scheduling tasks using |traits| in a COM Single-Threaded Apartment. Tasks
-  // run in the same Single-Threaded Apartment in posting order for the returned
-  // SingleThreadTaskRunner. If |traits| identifies an existing thread,
-  // SingleThreadTaskRunnerThreadMode::SHARED must be used.
-  scoped_refptr<SingleThreadTaskRunner> CreateCOMSTATaskRunner(
-      const TaskTraits& traits,
-      SingleThreadTaskRunnerThreadMode thread_mode);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Returns a task runner whose PostTask invocations result in scheduling tasks
   // using |traits|. The priority in |traits| can be updated at any time via

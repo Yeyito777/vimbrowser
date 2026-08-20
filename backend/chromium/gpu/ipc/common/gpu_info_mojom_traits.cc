@@ -23,15 +23,9 @@ bool StructTraits<gpu::mojom::GpuDeviceDataView, gpu::GPUInfo::GPUDevice>::Read(
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
   out->revision = data.revision();
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_WIN)
-  out->sub_sys_id = data.sub_sys_id();
-#endif  // BUILDFLAG(IS_WIN)
   out->active = data.active();
   return data.ReadVendorString(&out->vendor_string) &&
          data.ReadDeviceString(&out->device_string) &&
-#if BUILDFLAG(IS_WIN)
-         data.ReadLuid(&out->luid) &&
-#endif  // BUILDFLAG(IS_WIN)
          data.ReadDriverVendor(&out->driver_vendor) &&
          data.ReadDriverVersion(&out->driver_version) &&
          data.ReadGpuPreference(&out->gpu_preference);
@@ -351,56 +345,6 @@ bool StructTraits<gpu::mojom::VideoEncodeAcceleratorSupportedProfileDataView,
          data.ReadProfile(&out->profile);
 }
 
-#if BUILDFLAG(IS_WIN)
-// static
-gpu::mojom::OverlaySupport
-EnumTraits<gpu::mojom::OverlaySupport, gpu::OverlaySupport>::ToMojom(
-    gpu::OverlaySupport support) {
-  switch (support) {
-    case gpu::OverlaySupport::kNone:
-      return gpu::mojom::OverlaySupport::NONE;
-    case gpu::OverlaySupport::kDirect:
-      return gpu::mojom::OverlaySupport::DIRECT;
-    case gpu::OverlaySupport::kScaling:
-      return gpu::mojom::OverlaySupport::SCALING;
-    case gpu::OverlaySupport::kSoftware:
-      return gpu::mojom::OverlaySupport::SOFTWARE;
-  }
-  NOTREACHED() << "Invalid OverlaySupport: " << static_cast<int>(support);
-}
-
-bool EnumTraits<gpu::mojom::OverlaySupport, gpu::OverlaySupport>::FromMojom(
-    gpu::mojom::OverlaySupport input,
-    gpu::OverlaySupport* out) {
-  switch (input) {
-    case gpu::mojom::OverlaySupport::NONE:
-      *out = gpu::OverlaySupport::kNone;
-      return true;
-    case gpu::mojom::OverlaySupport::DIRECT:
-      *out = gpu::OverlaySupport::kDirect;
-      return true;
-    case gpu::mojom::OverlaySupport::SCALING:
-      *out = gpu::OverlaySupport::kScaling;
-      return true;
-    case gpu::mojom::OverlaySupport::SOFTWARE:
-      *out = gpu::OverlaySupport::kSoftware;
-      return true;
-  }
-  NOTREACHED() << "Invalid OverlaySupport: " << input;
-}
-
-bool StructTraits<gpu::mojom::OverlayInfoDataView, gpu::OverlayInfo>::Read(
-    gpu::mojom::OverlayInfoDataView data,
-    gpu::OverlayInfo* out) {
-  out->direct_composition = data.direct_composition();
-  out->supports_overlays = data.supports_overlays();
-  return data.ReadYuy2OverlaySupport(&out->yuy2_overlay_support) &&
-         data.ReadNv12OverlaySupport(&out->nv12_overlay_support) &&
-         data.ReadBgra8OverlaySupport(&out->bgra8_overlay_support) &&
-         data.ReadRgb10a2OverlaySupport(&out->rgb10a2_overlay_support) &&
-         data.ReadP010OverlaySupport(&out->p010_overlay_support);
-}
-#endif
 
 bool StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo>::Read(
     gpu::mojom::GpuInfoDataView data,
@@ -419,12 +363,6 @@ bool StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo>::Read(
   out->subpixel_font_rendering = data.subpixel_font_rendering();
   out->visibility_callback_call_count = data.visibility_callback_call_count();
 
-#if BUILDFLAG(IS_WIN)
-  out->directml_feature_level = data.directml_feature_level();
-  out->d3d12_feature_level = data.d3d12_feature_level();
-  out->vulkan_version = data.vulkan_version();
-  out->shared_image_d3d = data.shared_image_d3d();
-#endif
 #if BUILDFLAG(ENABLE_VULKAN)
   out->hardware_supports_vulkan = data.hardware_supports_vulkan();
 #endif
@@ -449,9 +387,6 @@ bool StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo>::Read(
          data.ReadGlWsExtensions(&out->gl_ws_extensions) &&
          data.ReadGlImplementationParts(&out->gl_implementation_parts) &&
          data.ReadDirectRenderingVersion(&out->direct_rendering_version) &&
-#if BUILDFLAG(IS_WIN)
-         data.ReadOverlayInfo(&out->overlay_info) &&
-#endif
          data.ReadVideoDecodeAcceleratorSupportedProfiles(
              &out->video_decode_accelerator_supported_profiles) &&
          data.ReadVideoEncodeAcceleratorSupportedProfiles(

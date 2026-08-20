@@ -316,28 +316,6 @@ component("network_service") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "dhcp_pac_file_fetcher_mojo.cc",
-      "dhcp_pac_file_fetcher_mojo.h",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "broker_helper_win.cc",
-      "broker_helper_win.h",
-      "brokered_client_socket_factory.cc",
-      "brokered_client_socket_factory.h",
-      "brokered_tcp_client_socket.cc",
-      "brokered_tcp_client_socket.h",
-      "brokered_udp_client_socket.cc",
-      "brokered_udp_client_socket.h",
-      "windows_system_proxy_resolver_mojo.cc",
-      "windows_system_proxy_resolver_mojo.h",
-    ]
-  }
-
   if (is_linux) {
     sources += [
       "network_change_notifier_passive_factory.cc",
@@ -345,9 +323,7 @@ component("network_service") {
     ]
   }
 
-  if (!is_fuchsia) {
-    sources += [ "pervasive_resources/shared_resource_checker_patterns.h" ]
-  }
+  sources += [ "pervasive_resources/shared_resource_checker_patterns.h" ]
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
@@ -424,10 +400,6 @@ component("network_service") {
       "//services/network/public/cpp:cpp_p2p",
       "//third_party/webrtc_overrides:webrtc_component",
     ]
-  }
-
-  if (is_win) {
-    deps += [ "//sandbox/win:sandbox" ]
   }
 
   if (is_mac) {
@@ -576,26 +548,11 @@ source_set("tests") {
     ]
   }
 
-  if (is_chromeos) {
-    sources += [ "dhcp_pac_file_fetcher_mojo_unittest.cc" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "broker_helper_win_unittest.cc",
-      "brokered_tcp_client_socket_unittest.cc",
-      "brokered_udp_client_socket_unittest.cc",
-      "windows_system_proxy_resolver_mojo_unittest.cc",
-    ]
-  }
-
   if (enable_device_bound_sessions) {
     sources += [ "device_bound_session_manager_unittest.cc" ]
   }
 
-  if (!is_fuchsia) {
-    sources += [ "pervasive_resources/shared_resource_checker_unittest.cc" ]
-  }
+  sources += [ "pervasive_resources/shared_resource_checker_unittest.cc" ]
 
   deps = [
     ":network_service",
@@ -723,13 +680,6 @@ source_set("test_support") {
     "test/url_loader_context_for_tests.cc",
     "test/url_loader_context_for_tests.h",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "mock_mojo_dhcp_wpad_url_client.cc",
-      "mock_mojo_dhcp_wpad_url_client.h",
-    ]
-  }
 
   public_deps = [
     "//services/network:network_service",

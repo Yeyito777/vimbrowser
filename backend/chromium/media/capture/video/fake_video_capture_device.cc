@@ -950,23 +950,6 @@ void GpuMemoryBufferFrameDeliverer::PaintAndDeliverNextFrame(
         ConvertReservationFailureToFrameDropReason(reserve_result));
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  // On windows the GMBs aren't mappable natively. Instead mapping only copies
-  // data to a shared memory region. So a different mechanism is used for
-  // writable access.
-  auto buffer_access =
-      capture_buffer.handle_provider->GetHandleForInProcessAccess();
-  uint8_t* data_ptr = buffer_access->data().data();
-  UNSAFE_TODO(memset(data_ptr, 0, buffer_access->mapped_size()));
-  frame_painter()->PaintFrame(timestamp_to_paint, data_ptr,
-                              buffer_size.width());
-  // Need to destroy `handle` so that the changes are committed to the GMB.
-  buffer_access.reset();
-  // Premap always just in case the client requests it.
-  if (capture_buffer.handle_provider->DuplicateAsUnsafeRegion().IsValid()) {
-    capture_buffer.is_premapped = true;
-  }
-#else
   auto scoped_mapping = shared_image->Map();
   UNSAFE_TODO(memset(scoped_mapping->GetMemoryForPlane(0).data(), 0,
                      scoped_mapping->Stride(0) * buffer_size.height()));
@@ -975,7 +958,6 @@ void GpuMemoryBufferFrameDeliverer::PaintAndDeliverNextFrame(
   frame_painter()->PaintFrame(timestamp_to_paint,
                               scoped_mapping->GetMemoryForPlane(0).data(),
                               scoped_mapping->Stride(0));
-#endif  // if BUILDFLAG(IS_WIN)
   base::TimeTicks now = base::TimeTicks::Now();
   VideoCaptureFormat modified_format = device_state()->format;
   // When GpuMemoryBuffer is used, the frame data is opaque to the CPU for most

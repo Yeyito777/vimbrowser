@@ -11,9 +11,6 @@
 #include "media/mojo/mojom/cdm_service.mojom-forward.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/mojo/mojom/media_foundation_service.mojom-forward.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -26,16 +23,6 @@ media::mojom::CdmService& GetCdmService(BrowserContext* browser_context,
                                         const GURL& site,
                                         const CdmInfo& cdm_info);
 
-#if BUILDFLAG(IS_WIN)
-// Gets an instance of the MediaFoundationService for the `browser_context` and
-// the `site`. Instances are started lazily as needed. The CDM located at
-// `cdm_path` is loaded in the sandboxed process to be used by the service.
-media::mojom::MediaFoundationService& GetMediaFoundationService(
-    const media::CdmType& cdm_type,
-    BrowserContext* browser_context,
-    const GURL& site,
-    const base::FilePath& cdm_path);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace content
 

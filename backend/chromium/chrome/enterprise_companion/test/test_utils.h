@@ -26,17 +26,6 @@ int WaitForProcess(base::Process&);
     base::FunctionRef<bool()> predicate,
     base::FunctionRef<void()> still_waiting = [] {});
 
-#if BUILDFLAG(IS_WIN)
-// Asserts that the application has been properly registered with the updater.
-void ExpectUpdaterRegistration();
-
-// Sets the given proxy settings via Group Policy.
-void SetLocalProxyPolicies(
-    std::optional<std::string> proxy_mode,
-    std::optional<std::string> pac_url,
-    std::optional<std::string> proxy_server,
-    std::optional<bool> cloud_policy_overrides_platform_policy);
-#endif
 
 #if BUILDFLAG(IS_MAC)
 // Install a fake ksadmin which produces an exit code determined by

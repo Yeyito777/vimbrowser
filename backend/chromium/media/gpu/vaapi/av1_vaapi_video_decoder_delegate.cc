@@ -804,37 +804,6 @@ DecodeStatus AV1VaapiVideoDecoderDelegate::SubmitDecode(
     base::span<const uint8_t> data) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const DecryptConfig* decrypt_config = pic.decrypt_config();
-  if (decrypt_config && !SetDecryptConfig(decrypt_config->Clone()))
-    return DecodeStatus::kFail;
-
-  bool uses_crypto = false;
-  std::vector<VAEncryptionSegmentInfo> encryption_segment_info;
-  VAEncryptionParameters crypto_param{};
-  if (IsEncryptedSession()) {
-    const ProtectedSessionState state = SetupDecryptDecode(
-        /*full_sample=*/false, data.size_bytes(), &crypto_param,
-        &encryption_segment_info,
-        decrypt_config ? decrypt_config->subsamples()
-                       : std::vector<SubsampleEntry>());
-    if (state == ProtectedSessionState::kFailed) {
-      LOG(ERROR)
-          << "SubmitDecode fails because we couldn't setup the protected "
-             "session";
-      return DecodeStatus::kFail;
-    } else if (state != ProtectedSessionState::kCreated) {
-      return DecodeStatus::kTryAgain;
-    }
-    uses_crypto = true;
-    if (!crypto_params_) {
-      crypto_params_ = vaapi_wrapper_->CreateVABuffer(
-          VAEncryptionParameterBufferType, sizeof(crypto_param));
-      if (!crypto_params_)
-        return DecodeStatus::kFail;
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // libgav1 ensures that tile_columns is >= 0 and <= MAX_TILE_COLS.
   DCHECK_LE(0, pic.frame_header.tile_info.tile_columns);
@@ -880,32 +849,6 @@ DecodeStatus AV1VaapiVideoDecoderDelegate::SubmitDecode(
       {{picture_params_->id(),
         {picture_params_->type(), picture_params_->size(), &pic_param}}};
   buffers.reserve(3 + slice_params.size());
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsTranscrypted()) {
-    CHECK(decrypt_config);
-    CHECK_EQ(decrypt_config->subsamples().size(), 2u);
-    if (!protected_params_) {
-      protected_params_ = vaapi_wrapper_->CreateVABuffer(
-          VAProtectedSliceDataBufferType, decrypt_config->key_id().length());
-      if (!protected_params_)
-        return DecodeStatus::kFail;
-    }
-    DCHECK_EQ(decrypt_config->key_id().length(), protected_params_->size());
-    buffers.push_back({protected_params_->id(),
-                       {protected_params_->type(), protected_params_->size(),
-                        decrypt_config->key_id().data()}});
-    encoded_data = vaapi_wrapper_->CreateVABuffer(
-        VASliceDataBufferType,
-        base::strict_cast<size_t>(
-            decrypt_config->subsamples()[0].cypher_bytes));
-    if (!encoded_data)
-      return DecodeStatus::kFail;
-    buffers.push_back(
-        {encoded_data->id(),
-         {encoded_data->type(), encoded_data->size(),
-          data.data() + decrypt_config->subsamples()[0].clear_bytes}});
-  } else {
-#endif  // BUILDFLAG(IS_CHROMEOS)
     encoded_data = vaapi_wrapper_->CreateVABuffer(VASliceDataBufferType,
                                                   data.size_bytes());
     if (!encoded_data)
@@ -913,14 +856,6 @@ DecodeStatus AV1VaapiVideoDecoderDelegate::SubmitDecode(
     buffers.push_back(
         {encoded_data->id(),
          {encoded_data->type(), encoded_data->size(), data.data()}});
-#if BUILDFLAG(IS_CHROMEOS)
-  }
-  if (uses_crypto) {
-    buffers.push_back(
-        {crypto_params_->id(),
-         {crypto_params_->type(), crypto_params_->size(), &crypto_param}});
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   for (size_t i = 0; i < slice_params.size(); ++i) {
     buffers.push_back({slice_params_va_buffers[i]->id(),

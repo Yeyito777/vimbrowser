@@ -21,11 +21,7 @@ action("make_file_types_protobuf") {
 
   # Pick an architecture to generate for. These string match those
   # in the python script.
-  if (is_chromeos) {
-    target_arch = "chromeos"
-  } else if (is_win) {
-    target_arch = "win"
-  } else if (is_mac) {
+  if (is_mac) {
     target_arch = "mac"
   } else if (is_linux) {
     target_arch = "linux"

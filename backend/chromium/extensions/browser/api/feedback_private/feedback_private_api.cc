@@ -40,9 +40,6 @@
 #include "google_apis/gaia/gaia_auth_util.h"
 #include "net/base/network_change_notifier.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/feedback_private/log_source_access_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using extensions::api::feedback_private::LogsMapEntry;
 using feedback::FeedbackData;
@@ -80,13 +77,7 @@ std::string StripFakepath(const std::string& path) {
 // report is successfully sent.
 feedback_private::LandingPageType GetLandingPageType(
     const feedback::FeedbackData& feedback_data) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ExtensionsAPIClient::Get()
-      ->GetFeedbackPrivateDelegate()
-      ->GetLandingPageType(feedback_data);
-#else
   return feedback_private::LandingPageType::kNormal;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool IsGoogleInternalAccountEmail(content::BrowserContext* context) {
@@ -199,12 +190,7 @@ FeedbackPrivateAPI::GetFactoryInstance() {
 
 FeedbackPrivateAPI::FeedbackPrivateAPI(content::BrowserContext* context)
     : browser_context_(context),
-#if !BUILDFLAG(IS_CHROMEOS)
       service_(base::MakeRefCounted<FeedbackService>(context)) {
-#else
-      service_(base::MakeRefCounted<FeedbackService>(context)),
-      log_source_access_manager_(new LogSourceAccessManager(context)){
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 FeedbackPrivateAPI::~FeedbackPrivateAPI() = default;
@@ -213,11 +199,6 @@ scoped_refptr<FeedbackService> FeedbackPrivateAPI::GetService() const {
   return service_;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-LogSourceAccessManager* FeedbackPrivateAPI::GetLogSourceAccessManager() const {
-  return log_source_access_manager_.get();
-}
-#endif
 
 std::unique_ptr<FeedbackInfo> FeedbackPrivateAPI::CreateFeedbackInfo(
     const std::string& description_template,
@@ -243,11 +224,6 @@ std::unique_ptr<FeedbackInfo> FeedbackPrivateAPI::CreateFeedbackInfo(
   info->from_autofill = from_autofill;
   info->autofill_metadata = base::WriteJson(autofill_metadata).value_or("");
   info->ai_metadata = base::WriteJson(ai_metadata).value_or("");
-#if BUILDFLAG(IS_CHROMEOS)
-  info->from_assistant = from_assistant;
-  info->include_bluetooth_logs = include_bluetooth_logs;
-  info->show_questionnaire = show_questionnaire;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Any extra diagnostics information should be added to the sys info.
   if (!extra_diagnostics.empty()) {
@@ -277,15 +253,6 @@ std::unique_ptr<FeedbackInfo> FeedbackPrivateAPI::CreateFeedbackInfo(
     // Use Chrome browser product id for all platforms including ChromeOS by
     // default.
     info->product_id = FeedbackCommon::GetChromeBrowserProductId();
-#if BUILDFLAG(IS_CHROMEOS)
-    if (ai_metadata.contains(feedback::kSeaPenMetadataKey)) {
-      // Use ChromeOS product id for ChromeOS AI wallpaper and VC backgrounds.
-      info->product_id = FeedbackCommon::GetChromeOSProductId();
-    } else if (ai_metadata.contains(feedback::kConchMetadataKey)) {
-      // Use ChromeOS product id for ChromeOS Recorder App.
-      info->product_id = FeedbackCommon::GetChromeOSProductId();
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     if (ai_metadata.contains(feedback::kMahiMetadataKey)) {
       info->product_id = FeedbackCommon::GetMahiProductId();
     }
@@ -342,37 +309,9 @@ void FeedbackPrivateGetSystemInformationFunction::OnCompleted(
 }
 
 ExtensionFunction::ResponseAction FeedbackPrivateReadLogSourceFunction::Run() {
-#if BUILDFLAG(IS_CHROMEOS)
-  using Params = feedback_private::ReadLogSource::Params;
-  std::optional<Params> api_params = Params::Create(args());
-
-  LogSourceAccessManager* log_source_manager =
-      FeedbackPrivateAPI::GetFactoryInstance()
-          ->Get(browser_context())
-          ->GetLogSourceAccessManager();
-
-  if (!log_source_manager->FetchFromSource(
-          api_params->params, extension_id(),
-          base::BindOnce(&FeedbackPrivateReadLogSourceFunction::OnCompleted,
-                         this))) {
-    return RespondNow(Error(base::StringPrintf(
-        "Unable to initiate fetch from log source %s.",
-        feedback_private::ToString(api_params->params.source))));
-  }
-
-  return RespondLater();
-#else
   NOTREACHED() << "API function is not supported on this platform.";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FeedbackPrivateReadLogSourceFunction::OnCompleted(
-    std::unique_ptr<feedback_private::ReadLogSourceResult> result) {
-  Respond(
-      ArgumentList(feedback_private::ReadLogSource::Results::Create(*result)));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 ExtensionFunction::ResponseAction FeedbackPrivateSendFeedbackFunction::Run() {
   std::optional<feedback_private::SendFeedback::Params> params =

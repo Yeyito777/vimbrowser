@@ -34,9 +34,7 @@
 #include "ui/base/interaction/polling_state_observer.h"
 #include "ui/base/interaction/state_observer.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "ui/base/accelerators/accelerator.h"
-#endif
 
 namespace ui::test {
 
@@ -167,13 +165,11 @@ class InteractiveTestApi {
       TextEntryMode mode = TextEntryMode::kReplaceAll);
   [[nodiscard]] StepBuilder ActivateSurface(ElementSpecifier element);
   [[nodiscard]] StepBuilder FocusElement(ElementSpecifier element);
-#if !BUILDFLAG(IS_IOS)
   [[nodiscard]] StepBuilder SendAccelerator(ElementSpecifier element,
                                             Accelerator accelerator);
   [[nodiscard]] StepBuilder SendKeyPress(ElementSpecifier element,
                                          KeyboardCode key,
                                          int flags = EF_NONE);
-#endif
   [[nodiscard]] StepBuilder Confirm(ElementSpecifier element);
 
   // Logs the given arguments, in order, at level INFO.

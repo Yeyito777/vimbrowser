@@ -31,9 +31,6 @@
 #include "ui/gfx/native_ui_types.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#error This file should only be included on desktop.
-#endif
 
 class Browser;
 class BrowserView;
@@ -434,15 +431,10 @@ class BrowserWindow : public ui::BaseWindow {
   ShowSendTabToSelfPromoBubble(content::WebContents* contents,
                                bool show_signin_button) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Toggles the multitask menu on the browser frame size button.
-  virtual void ToggleMultitaskMenu() = 0;
-#else
   // Shows the Sharing Hub bubble. This must only be called as a direct result
   // of user action.
   virtual sharing_hub::SharingHubBubbleView* ShowSharingHubBubble(
       share::ShareAttempt attempt) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns the DownloadBubbleUIController. Returns null if Download Bubble
   // UI is not enabled, or if the download toolbar button does not exist.

@@ -26,9 +26,7 @@ source_set("content_annotator") {
 
 source_set("unit_tests") {
   testonly = true
-  sources = [
-    "content_annotator_service_factory_unittest.cc",
-  ]
+  sources = [ "content_annotator_service_factory_unittest.cc" ]
   deps = [
     ":content_annotator",
     "//base/test:test_support",
@@ -51,8 +49,4 @@ source_set("unit_tests") {
     "//content/test:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/constants" ]
-  }
 }

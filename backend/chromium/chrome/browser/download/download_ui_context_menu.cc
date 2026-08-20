@@ -333,14 +333,6 @@ ui::SimpleMenuModel* DownloadUiContextMenu::GetInterruptedMenuModel(
 
   interrupted_download_menu_model_->AddItem(
       DownloadCommands::RESUME, GetLabelForCommandId(DownloadCommands::RESUME));
-#if BUILDFLAG(IS_WIN)
-  // The Help Center article is currently Windows specific.
-  // TODO(asanka): Enable this for other platforms when the article is expanded
-  // for other platforms.
-  interrupted_download_menu_model_->AddItem(
-      DownloadCommands::LEARN_MORE_INTERRUPTED,
-      GetLabelForCommandId(DownloadCommands::LEARN_MORE_INTERRUPTED));
-#endif
   interrupted_download_menu_model_->AddSeparator(ui::NORMAL_SEPARATOR);
   interrupted_download_menu_model_->AddItem(
       DownloadCommands::CANCEL, GetLabelForCommandId(DownloadCommands::CANCEL));

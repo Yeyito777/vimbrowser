@@ -997,14 +997,6 @@ if (rtc_include_tests) {
     audio_decoder_unittests_resources =
         [ "../../resources/audio_coding/testfile32kHz.pcm" ]
 
-    if (is_ios) {
-      bundle_data("audio_decoder_unittests_bundle_data") {
-        testonly = true
-        sources = audio_decoder_unittests_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
-
     rtc_test("audio_decoder_unittests") {
       testonly = true
       sources = [ "neteq/audio_decoder_unittest.cc" ]
@@ -1027,10 +1019,6 @@ if (rtc_include_tests) {
              ] + audio_coding_deps
 
       data = audio_decoder_unittests_resources
-
-      if (is_ios) {
-        deps += [ ":audio_decoder_unittests_bundle_data" ]
-      }
     }
   }
 
@@ -1094,14 +1082,6 @@ if (rtc_include_tests) {
       "//resources/audio_coding/speech_mono_32_48kHz.pcm",
     ]
 
-    if (is_ios) {
-      bundle_data("audio_codec_speed_tests_data") {
-        testonly = true
-        sources = audio_codec_speed_tests_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
-
     rtc_test("audio_codec_speed_tests") {
       testonly = true
       defines = []
@@ -1116,10 +1096,6 @@ if (rtc_include_tests) {
       ]
 
       data = audio_codec_speed_tests_resources
-
-      if (is_ios) {
-        deps += [ ":audio_codec_speed_tests_data" ]
-      }
 
       deps += [
         ":webrtc_opus",

@@ -191,15 +191,8 @@ test("gin_unittests") {
   data = []
 
   # gin_shell is not an Android/iOS app.
-  if (!is_ios) {
-    sources += [ "shell/gin_shell_unittest.cc" ]
-    deps += [ ":gin_shell" ]
-    data_deps += [ ":gin_shell" ]
-    data += [ "shell/hello_world.js" ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml" ]
-  }
+  sources += [ "shell/gin_shell_unittest.cc" ]
+  deps += [ ":gin_shell" ]
+  data_deps += [ ":gin_shell" ]
+  data += [ "shell/hello_world.js" ]
 }

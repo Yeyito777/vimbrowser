@@ -31,13 +31,8 @@ VideoCaptureErrorOrDevice FileVideoCaptureDeviceFactory::CreateDevice(
   DCHECK(thread_checker_.CalledOnValidThread());
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
-#if BUILDFLAG(IS_WIN)
-  return VideoCaptureErrorOrDevice(std::make_unique<FileVideoCaptureDevice>(
-      base::FilePath(base::SysUTF8ToWide(device_descriptor.display_name()))));
-#else
   return VideoCaptureErrorOrDevice(std::make_unique<FileVideoCaptureDevice>(
       base::FilePath(device_descriptor.display_name())));
-#endif
 }
 
 void FileVideoCaptureDeviceFactory::GetDevicesInfo(
@@ -48,9 +43,7 @@ void FileVideoCaptureDeviceFactory::GetDevicesInfo(
   std::vector<VideoCaptureDeviceInfo> devices_info;
 
   auto api =
-#if BUILDFLAG(IS_WIN)
-      VideoCaptureApi::WIN_DIRECT_SHOW;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       VideoCaptureApi::MACOSX_AVFOUNDATION;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       VideoCaptureApi::LINUX_V4L2_SINGLE_PLANE;

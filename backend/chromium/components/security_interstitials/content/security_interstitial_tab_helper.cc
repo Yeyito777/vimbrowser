@@ -320,12 +320,6 @@ void SecurityInterstitialTabHelper::OpenEnhancedProtectionSettings() {
                     CMD_OPEN_ENHANCED_PROTECTION_SETTINGS);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SecurityInterstitialTabHelper::OpenAndroidAdvancedProtectionSettings() {
-  HandleCommand(security_interstitials::SecurityInterstitialCommand::
-                    CMD_OPEN_ANDROID_ADVANCED_PROTECTION_SETTINGS);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void SecurityInterstitialTabHelper::OpenHelpCenterInNewTab() {
   HandleCommand(security_interstitials::SecurityInterstitialCommand::

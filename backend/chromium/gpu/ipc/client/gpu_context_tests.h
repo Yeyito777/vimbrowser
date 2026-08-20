@@ -39,12 +39,6 @@ class SignalTest : public ContextTestBase {
 };
 
 CONTEXT_TEST_F(SignalTest, BasicSignalSyncTokenTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   gpu::SyncToken sync_token;
   gl_->GenSyncTokenCHROMIUM(sync_token.GetData());
@@ -53,12 +47,6 @@ CONTEXT_TEST_F(SignalTest, BasicSignalSyncTokenTest) {
 }
 
 CONTEXT_TEST_F(SignalTest, EmptySignalSyncTokenTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   // Signalling something that doesn't exist should run the callback
   // immediately.
@@ -67,12 +55,6 @@ CONTEXT_TEST_F(SignalTest, EmptySignalSyncTokenTest) {
 }
 
 CONTEXT_TEST_F(SignalTest, InvalidSignalSyncTokenTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   // Signalling something that doesn't exist should run the callback
   // immediately.
@@ -83,12 +65,6 @@ CONTEXT_TEST_F(SignalTest, InvalidSignalSyncTokenTest) {
 }
 
 CONTEXT_TEST_F(SignalTest, BasicSignalQueryTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   unsigned query;
   gl_->GenQueriesEXT(1, &query);
@@ -100,12 +76,6 @@ CONTEXT_TEST_F(SignalTest, BasicSignalQueryTest) {
 }
 
 CONTEXT_TEST_F(SignalTest, SignalQueryUnboundTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   GLuint query;
   gl_->GenQueriesEXT(1, &query);
@@ -114,12 +84,6 @@ CONTEXT_TEST_F(SignalTest, SignalQueryUnboundTest) {
 }
 
 CONTEXT_TEST_F(SignalTest, InvalidSignalQueryUnboundTest) {
-#if BUILDFLAG(IS_WIN)
-  // The IPC version of ContextTestBase::SetUpOnMainThread does not succeed on
-  // some platforms.
-  if (!gl_)
-    return;
-#endif
 
   // Signalling something that doesn't exist should run the callback
   // immediately.

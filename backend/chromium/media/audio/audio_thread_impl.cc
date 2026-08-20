@@ -18,13 +18,6 @@ AudioThreadImpl::AudioThreadImpl()
     : thread_("AudioThread"),
       hang_monitor_(nullptr, base::OnTaskRunnerDeleter(nullptr)) {
   base::Thread::Options thread_options;
-#if BUILDFLAG(IS_WIN)
-  thread_.init_com_with_mta(true);
-#elif BUILDFLAG(IS_FUCHSIA)
-  // FIDL-based APIs require async_t, which is initialized on IO thread.
-  thread_options.message_pump_type = base::MessagePumpType::IO;
-  thread_options.thread_type = base::ThreadType::kRealtimeAudio;
-#endif
   CHECK(thread_.StartWithOptions(std::move(thread_options)));
 
 #if BUILDFLAG(IS_MAC)

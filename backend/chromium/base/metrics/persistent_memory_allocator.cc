@@ -28,15 +28,8 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/winbase_shim.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <sys/mman.h>
-#if BUILDFLAG(IS_ANDROID)
-#include <sys/prctl.h>
-#endif
 #endif
 
 #define PMA "PMA-DBG"
@@ -1081,25 +1074,12 @@ LocalPersistentMemoryAllocator::AllocateLocalMemory(size_t size,
                                                     std::string_view name) {
   void* address;
 
-#if BUILDFLAG(IS_WIN)
-  address =
-      ::VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  if (address) {
-    return Memory(address, MEM_VIRTUAL);
-  }
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // MAP_ANON is deprecated on Linux but MAP_ANONYMOUS is not universal on Mac.
   // MAP_SHARED is not available on Linux <2.4 but required on Mac.
   address = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED,
                    -1, 0);
   if (address != MAP_FAILED) {
-#if BUILDFLAG(IS_ANDROID)
-    // Allow the anonymous memory region allocated by mmap(MAP_ANON) to be
-    // identified in /proc/$PID/smaps.  This helps improve visibility into
-    // Chrome's memory usage on Android.
-    const std::string arena_name = base::StrCat({"persistent:", name});
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, address, size, arena_name.c_str());
-#endif
     return Memory(address, MEM_VIRTUAL);
   }
 #else
@@ -1126,10 +1106,7 @@ void LocalPersistentMemoryAllocator::DeallocateLocalMemory(void* memory,
   }
 
   DCHECK_EQ(MEM_VIRTUAL, type);
-#if BUILDFLAG(IS_WIN)
-  BOOL success = ::VirtualFree(memory, 0, MEM_DECOMMIT);
-  DCHECK(success);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int result = ::munmap(memory, size);
   DCHECK_EQ(0, result);
 #else
@@ -1249,12 +1226,7 @@ void FilePersistentMemoryAllocator::FlushPartial(size_t length, bool sync) {
     scoped_blocking_call.emplace(FROM_HERE, base::BlockingType::MAY_BLOCK);
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Windows doesn't support asynchronous flush.
-  scoped_blocking_call.emplace(FROM_HERE, base::BlockingType::MAY_BLOCK);
-  BOOL success = ::FlushViewOfFile(data(), length);
-  DPCHECK(success);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   // On OSX, "invalidate" removes all cached pages, forcing a re-read from
   // disk. That's not applicable to "flush" so omit it.
   int result =

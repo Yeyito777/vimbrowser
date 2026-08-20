@@ -643,10 +643,8 @@ const char kSandboxIPCProcess[]             = "sandbox-ipc";
 
 // Enables shared array buffer on desktop, gated by an Enterprise Policy.
 // TODO(crbug.com/40155376) Remove when migration to COOP+COEP is complete.
-#if !BUILDFLAG(IS_ANDROID)
 const char kSharedArrayBufferUnrestrictedAccessAllowed[] =
     "shared-array-buffer-unrestricted-access-allowed";
-#endif
 
 // Describes the file descriptors passed to a child process in the following
 // list format:
@@ -877,48 +875,6 @@ const char kWebXrRuntimeArCore[] = "arcore";
 const char kWebXrRuntimeCardboard[] = "cardboard";
 const char kWebXrRuntimeOpenXr[] = "openxr";
 
-#if BUILDFLAG(IS_ANDROID)
-// Disable Media Session API
-const char kDisableMediaSessionAPI[] = "disable-media-session-api";
-
-// Disable the locking feature of the screen orientation API.
-const char kDisableScreenOrientationLock[]  = "disable-screen-orientation-lock";
-
-// Just like kDisableSiteIsolation, but doesn't show the "stability and security
-// will suffer" butter bar warning.
-const char kDisableSiteIsolationForPolicy[] =
-    "disable-site-isolation-for-policy";
-
-// Disable timeouts that may cause the browser to die when running slowly. This
-// is useful if running with profiling (such as debug malloc).
-const char kDisableTimeoutsForProfiling[] = "disable-timeouts-for-profiling";
-
-// Enable inverting of selection handles so that they are not clipped by the
-// viewport boundaries.
-const char kEnableAdaptiveSelectionHandleOrientation[] =
-    "enable-adaptive-selection-handle-orientation";
-
-// Enable drag manipulation of longpress-triggered text selections.
-const char kEnableLongpressDragSelection[]  = "enable-longpress-drag-selection";
-
-// Prevent the offline indicator from showing.
-const char kForceOnlineConnectionStateForIndicator[] =
-    "force-online-connection-state-for-indicator";
-
-// Enables remote debug over HTTP on the specified socket name.
-const char kRemoteDebuggingSocketName[]     = "remote-debugging-socket-name";
-
-// Block ChildProcessMain thread of the renderer's ChildProcessService until a
-// Java debugger is attached.
-const char kRendererWaitForJavaDebugger[] = "renderer-wait-for-java-debugger";
-
-// Disables debug crash dumps for OOPR.
-const char kDisableOoprDebugCrashDump[] = "disable-oopr-debug-crash-dump";
-
-// Enables/disables javaless renderers based on value given.
-// "enabled" or "disabled" are valid values.
-const char kJavalessRenderers[] = "javaless-renderers";
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Enable the aggressive flushing of DOM Storage to minimize data loss.
 const char kEnableAggressiveDOMStorageFlushing[] =
@@ -927,18 +883,6 @@ const char kEnableAggressiveDOMStorageFlushing[] =
 // Enable indication that browser is controlled by automation.
 const char kEnableAutomation[] = "enable-automation";
 
-#if BUILDFLAG(IS_IOS)
-// For mobile devices, tests should include a viewport meta tag to specify page
-// dimension adjustments. Omitting the tag can lead to automatic resizing to
-// the standard mobile fallback size (980), which results in content shrinking
-// as it first expands to 980, then scales down to 800 to fit the screen, as
-// observed in the issue at https://crrev.com/c/4615623.
-// This flag is intended for use in tests that do not include a viewport meta
-// tag. When enabled, it ensures the viewport size matches the standard mobile
-// fallback size, thereby helping to prevent content resizing in such tests.
-const char kPreventResizingContentsForTesting[] =
-    "prevent-resizing-contents-for-testing";
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 // Allows sending text-to-speech requests to speech-dispatcher, a common
@@ -947,35 +891,6 @@ const char kPreventResizingContentsForTesting[] =
 const char kEnableSpeechDispatcher[] = "enable-speech-dispatcher";
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Device scale factor passed to certain processes like renderers, etc.
-const char kDeviceScaleFactor[]     = "device-scale-factor";
-
-// Disable the Legacy Window which corresponds to the size of the WebContents.
-const char kDisableLegacyIntermediateWindow[] = "disable-legacy-window";
-
-// DirectWrite FontCache is shared by browser to renderers using shared memory.
-// This switch allows us to pass the shared memory handle to the renderer.
-const char kFontCacheSharedHandle[] = "font-cache-shared-handle";
-
-// Raise the timer interrupt frequency in all Chrome processes, for experimental
-// purposes. This feature is needed because as of Windows 10 2004 the scheduling
-// effects of changing the timer interrupt frequency are not global, and this
-// lets us prove/disprove whether this matters. See https://crbug.com/1128917
-const char kRaiseTimerFrequency[] = "raise-timer-frequency";
-
-// Causes the second GPU process used for gpu info collection to display a
-// dialog on launch.
-const char kGpu2StartupDialog[] = "gpu2-startup-dialog";
-
-// Use high priority for the audio process.
-const char kAudioProcessHighPriority[] = "audio-process-high-priority";
-
-// Specifies pipe names for the incoming and outbound messages on the Windows
-// platform. This is a comma separated list of two pipe handles serialized as
-// unsigned integers, e.g. "--remote-debugging-io-pipes=3,4".
-const char kRemoteDebuggingIoPipes[] = "remote-debugging-io-pipes";
-#endif
 
 #if defined(ENABLE_IPC_FUZZER)
 // Dumps IPC messages sent from renderer processes to the browser process to

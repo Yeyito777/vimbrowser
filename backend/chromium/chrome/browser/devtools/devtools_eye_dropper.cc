@@ -183,20 +183,12 @@ void DevToolsEyeDropper::UpdateCursor() {
   // on the platform. Linux, Mac and Win have large cursors with two circles for
   // original spot and its magnified projection; Ash gets smaller (64 px)
   // magnified projection only with centered hotspot.
-#if BUILDFLAG(IS_CHROMEOS)
-  const float kCursorSize = 63;
-  const float kDiameter = 63;
-  const float kHotspotOffset = 32;
-  const float kHotspotRadius = 0;
-  const float kPixelSize = 9;
-#else
   // Mac Retina requires cursor to be > 120px in order to render smoothly.
   const float kCursorSize = 150;
   const float kDiameter = 110;
   const float kHotspotOffset = 25;
   const float kHotspotRadius = 5;
   const float kPixelSize = 10;
-#endif
 
   float device_scale_factor = host_->GetDeviceScaleFactor();
 

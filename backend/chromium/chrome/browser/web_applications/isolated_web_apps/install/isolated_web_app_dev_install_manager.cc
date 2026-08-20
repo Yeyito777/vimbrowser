@@ -211,28 +211,6 @@ void IsolatedWebAppDevInstallManager::SetProvider(base::PassKey<WebAppProvider>,
 
 void IsolatedWebAppDevInstallManager::Start() {
   MaybeScheduleGarbageCollection();
-#if BUILDFLAG(IS_CHROMEOS)
-  auto& command_line = *base::CommandLine::ForCurrentProcess();
-  if (!are_isolated_web_apps_enabled_ || !HasIwaInstallSwitch(command_line)) {
-    return;
-  }
-
-  if (KeepAliveRegistry::GetInstance()->IsShuttingDown()) {
-    ReportInstallationResult(base::unexpected(
-        "Unable to install IWA due to browser shutting down."));
-    return;
-  }
-  auto keep_alive = std::make_unique<ScopedKeepAlive>(
-      KeepAliveOrigin::ISOLATED_WEB_APP_INSTALL,
-      KeepAliveRestartOption::DISABLED);
-  std::unique_ptr<ScopedProfileKeepAlive> optional_profile_keep_alive;
-  optional_profile_keep_alive = std::make_unique<ScopedProfileKeepAlive>(
-      &*profile_, ProfileKeepAliveOrigin::kIsolatedWebAppInstall);
-
-  InstallFromCommandLine(command_line, std::move(keep_alive),
-                         std::move(optional_profile_keep_alive),
-                         base::TaskPriority::BEST_EFFORT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void IsolatedWebAppDevInstallManager::InstallIsolatedWebAppFromDevModeProxy(

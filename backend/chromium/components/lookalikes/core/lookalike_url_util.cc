@@ -1471,14 +1471,7 @@ LookalikeActionType GetActionForMatchType(
       return LookalikeActionType::kShowSafetyTip;
 
     case LookalikeUrlMatchType::kTargetEmbedding:
-#if BUILDFLAG(IS_IOS)
-      // TODO(crbug.com/40705070): Only enable target embedding on iOS once we
-      // can
-      //    check engaged sites. Otherwise, false positives are too high.
-      return LookalikeActionType::kRecordMetrics;
-#else
       return LookalikeActionType::kShowInterstitial;
-#endif
 
     case LookalikeUrlMatchType::kTargetEmbeddingForSafetyTips:
       return LookalikeActionType::kShowSafetyTip;

@@ -29,11 +29,6 @@
 #include "third_party/abseil-cpp/absl/strings/ascii.h"
 #include "third_party/zlib/zlib.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_type.h"
-#endif
 
 namespace webrtc_event_logging {
 
@@ -1013,22 +1008,6 @@ size_t ExtractRemoteBoundWebRtcEventLogWebAppIdFromPath(
 
 bool DoesProfileDefaultToLoggingEnabled(const Profile* const profile) {
 // For Chrome OS, exclude special profiles and users.
-#if BUILDFLAG(IS_CHROMEOS)
-  const user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  // We do not log an error here since this can happen in several cases,
-  // e.g. for signin profiles or lock screen app profiles.
-  if (!user) {
-    return false;
-  }
-  const user_manager::UserType user_type = user->GetType();
-  if (user_type != user_manager::UserType::kRegular) {
-    return false;
-  }
-  if (ash::ProfileHelper::IsEphemeralUserProfile(profile)) {
-    return false;
-  }
-#endif
 
   // We only want a default of true for regular (i.e. logged-in) profiles
   // receiving cloud-based user-level enterprise policies. Supervised (child)

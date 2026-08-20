@@ -36,29 +36,6 @@ base::ListValue RepeatedFieldptrToList(
   return string_list;
 }
 
-#if BUILDFLAG(IS_WIN)
-base::DictValue AvProductToDict(
-    enterprise_management::AntiVirusProduct av_product) {
-  base::DictValue antivirus_dict;
-  switch (av_product.state()) {
-    case enterprise_management::AntiVirusProduct::ON:
-      antivirus_dict.Set("state", "On");
-      break;
-    case enterprise_management::AntiVirusProduct::OFF:
-      antivirus_dict.Set("state", "Off");
-      break;
-    case enterprise_management::AntiVirusProduct::SNOOZED:
-      antivirus_dict.Set("state", "Snoozed");
-      break;
-    case enterprise_management::AntiVirusProduct::EXPIRED:
-      antivirus_dict.Set("state", "Expired");
-      break;
-  }
-  antivirus_dict.Set("display_name", av_product.display_name());
-
-  return antivirus_dict;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -125,30 +102,6 @@ em::ProfileSignalsReport::SafeBrowsingLevel TranslateSafeBrowsingLevel(
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<em::AntiVirusProduct> TranslateAvProduct(
-    device_signals::AvProduct av_product) {
-  auto av_product_in_report = std::make_unique<em::AntiVirusProduct>();
-  switch (av_product.state) {
-    case device_signals::AvProductState::kOn:
-      av_product_in_report->set_state(em::AntiVirusProduct::ON);
-      break;
-    case device_signals::AvProductState::kOff:
-      av_product_in_report->set_state(em::AntiVirusProduct::OFF);
-      break;
-    case device_signals::AvProductState::kSnoozed:
-      av_product_in_report->set_state(em::AntiVirusProduct::SNOOZED);
-      break;
-    case device_signals::AvProductState::kExpired:
-      av_product_in_report->set_state(em::AntiVirusProduct::EXPIRED);
-      break;
-  }
-
-  av_product_in_report->set_display_name(av_product.display_name);
-
-  return av_product_in_report;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 std::string GetSecuritySignalsInReport(
     const em::ChromeProfileReportRequest& chrome_profile_report_request) {
@@ -184,34 +137,11 @@ std::string GetSecuritySignalsInReport(
                      RepeatedFieldptrToList(os_report.system_dns_servers()));
     signals_dict.Set("os_version", os_report.version());
 
-#if BUILDFLAG(IS_WIN)
-    signals_dict.Set("machine_guid", os_report.machine_guid());
-    signals_dict.Set("secure_boot_mode",
-                     SettingValueToString(os_report.secure_boot_mode()));
-    signals_dict.Set("windows_machine_domain",
-                     os_report.windows_machine_domain());
-    signals_dict.Set("windows_user_domain", os_report.windows_user_domain());
-
-    base::ListValue anti_virus_list;
-    for (auto antivirus_info : os_report.antivirus_info()) {
-      anti_virus_list.Append(AvProductToDict(antivirus_info));
-    }
-
-    signals_dict.Set("antivirus_info", std::move(anti_virus_list));
-
-    signals_dict.Set("hotfixes", RepeatedFieldptrToList(os_report.hotfixes()));
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     if (os_report.has_distribution_version()) {
       signals_dict.Set("distribution_version",
                        os_report.distribution_version());
     }
-#elif BUILDFLAG(IS_ANDROID)
-    signals_dict.Set("has_potentially_harmful_apps",
-                     os_report.has_potentially_harmful_apps());
-    signals_dict.Set("verified_apps_enabled",
-                     os_report.verified_apps_enabled());
-    signals_dict.Set("security_patch_ms",
-                     base::NumberToString(os_report.security_patch_ms()));
 #endif
   }
 

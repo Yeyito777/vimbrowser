@@ -43,46 +43,21 @@ source_set("link_capturing") {
     deps += [ "//extensions/common" ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "chromeos_apps_intent_picker_delegate.cc",
-      "chromeos_apps_intent_picker_delegate.h",
-      "chromeos_link_capturing_delegate.cc",
-      "chromeos_link_capturing_delegate.h",
-      "chromeos_reimpl_navigation_capturing_throttle.cc",
-      "chromeos_reimpl_navigation_capturing_throttle.h",
-      "metrics/intent_handling_metrics.cc",
-      "metrics/intent_handling_metrics.h",
-      "navigation_capturing_settings_cros_impl.cc",
-      "navigation_capturing_settings_cros_impl.h",
-    ]
-    deps += [
-      "//ash/webui/projector_app/public/cpp",
-      "//chrome/browser/apps/app_service",
-      "//chromeos/ash/experiences/arc",
-    ]
-
-    # Needed only to allow circular includes.
-    deps += [ "//chrome/browser/chromeos/arc" ]
-
-    allow_circular_includes_from = [ "//chrome/browser/chromeos/arc" ]
-  } else {
-    sources += [
-      "enable_link_capturing_infobar_delegate.cc",
-      "enable_link_capturing_infobar_delegate.h",
-      "web_app_link_capturing_delegate.cc",
-      "web_app_link_capturing_delegate.h",
-      "web_apps_intent_picker_delegate.cc",
-      "web_apps_intent_picker_delegate.h",
-    ]
-    deps += [
-      "//chrome/app:generated_resources_grit",
-      "//components/infobars/content",
-      "//components/infobars/core",
-      "//components/strings:components_strings_grit",
-      "//components/vector_icons",
-    ]
-  }
+  sources += [
+    "enable_link_capturing_infobar_delegate.cc",
+    "enable_link_capturing_infobar_delegate.h",
+    "web_app_link_capturing_delegate.cc",
+    "web_app_link_capturing_delegate.h",
+    "web_apps_intent_picker_delegate.cc",
+    "web_apps_intent_picker_delegate.h",
+  ]
+  deps += [
+    "//chrome/app:generated_resources_grit",
+    "//components/infobars/content",
+    "//components/infobars/core",
+    "//components/strings:components_strings_grit",
+    "//components/vector_icons",
+  ]
 }
 
 source_set("test_support") {
@@ -121,17 +96,6 @@ source_set("unit_tests") {
     "//ui/display:test_support",
     "//url",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "chromeos_link_capturing_delegate_unittest.cc",
-      "metrics/intent_handling_metrics_unittest.cc",
-    ]
-    deps += [
-      "//chrome/browser/apps/app_service",
-      "//components/prefs:test_support",
-    ]
-  }
 }
 
 # Browser tests which require an Ash process with App Service to be running.

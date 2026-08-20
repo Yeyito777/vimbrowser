@@ -31,11 +31,4 @@ component("cpp") {
     "//ui/strings",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/constants",
-    ]
-  }
 }

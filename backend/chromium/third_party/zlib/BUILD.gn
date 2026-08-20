@@ -78,11 +78,7 @@ use_x86_x64_optimizations =
 config("zlib_adler32_simd_config") {
   if (use_x86_x64_optimizations) {
     defines = [ "ADLER32_SIMD_SSSE3" ]
-    if (is_win) {
-      defines += [ "X86_WINDOWS" ]
-    } else {
-      defines += [ "X86_NOT_WINDOWS" ]
-    }
+    defines += [ "X86_NOT_WINDOWS" ]
   }
 
   if (use_arm_neon_optimizations) {
@@ -126,12 +122,6 @@ if (use_arm_neon_optimizations) {
       defines += [ "ARMV8_OS_LINUX" ]
     } else if (is_mac) {
       defines += [ "ARMV8_OS_MACOS" ]
-    } else if (is_ios) {
-      defines += [ "ARMV8_OS_IOS" ]
-    } else if (is_fuchsia) {
-      defines += [ "ARMV8_OS_FUCHSIA" ]
-    } else if (is_win) {
-      defines += [ "ARMV8_OS_WINDOWS" ]
     } else {
       assert(false, "Unsupported ARM OS")
     }
@@ -287,10 +277,8 @@ config("zlib_warnings") {
 }
 
 component("zlib") {
-  if (!is_win) {
-    # Don't stomp on "libzlib" on other platforms.
-    output_name = "chrome_zlib"
-  }
+  # Don't stomp on "libzlib" on other platforms.
+  output_name = "chrome_zlib"
 
   sources = [
     "adler32.c",
@@ -397,12 +385,10 @@ static_library("minizip") {
     "contrib/minizip/zip.h",
   ]
 
-  if (!is_win) {
-    sources -= [
-      "contrib/minizip/iowin32.c",
-      "contrib/minizip/iowin32.h",
-    ]
-  }
+  sources -= [
+    "contrib/minizip/iowin32.c",
+    "contrib/minizip/iowin32.h",
+  ]
 
   if (is_apple) {
     # Mac, Android and the BSDs don't have fopen64, ftello64, or fseeko64. We
@@ -525,10 +511,6 @@ if (build_with_chromium) {
     ]
 
     data = [ "google/test/data/" ]
-
-    if (is_ios) {
-      bundle_deps = [ "google:zlib_pak_bundle_data" ]
-    }
 
     deps = [
       ":minizip",

@@ -77,12 +77,6 @@ static_library("unrar") {
     "src/unpack.cpp",
     "src/volume.cpp",
   ]
-  if (is_win) {
-    sources += [
-      "src/isnt.cpp",
-      "src/motw.cpp",
-    ]
-  }
 
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [

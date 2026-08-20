@@ -51,9 +51,6 @@ BluezDBusManager::BluezDBusManager(dbus::Bus* bus, bool use_dbus_fakes)
   // On Chrome OS, Bluez might not be ready by the time we initialize the
   // BluezDBusManager so we initialize the clients anyway.
   bool should_check_object_manager = true;
-#if BUILDFLAG(IS_CHROMEOS)
-  should_check_object_manager = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!use_dbus_fakes) {
     // Wait for the Floss Manager to be available
@@ -244,10 +241,6 @@ void BluezDBusManager::InitializeClients() {
                                                    bluetooth_service_name);
   client_bundle_->bluetooth_admin_policy_client()->Init(GetSystemBus(),
                                                         bluetooth_service_name);
-#if BUILDFLAG(IS_CHROMEOS)
-  client_bundle_->bluetooth_advertisement_monitor_manager_client()->Init(
-      GetSystemBus(), bluetooth_service_name);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   client_bundle_->bluetooth_agent_manager_client()->Init(
       GetSystemBus(), bluetooth_service_name);
   client_bundle_->bluetooth_device_client()->Init(GetSystemBus(),

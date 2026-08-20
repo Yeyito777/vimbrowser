@@ -59,9 +59,6 @@
 #endif
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "gpu/vulkan/fuchsia/vulkan_fuchsia_ext.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
@@ -810,7 +807,6 @@ bool ExternalVkImageBacking::CreateGLTexture(bool is_passthrough,
   if (!use_separate_gl_texture()) {
     GrVkImageInfo image_info = vk_texture.GetGrVkImageInfo();
 
-#if BUILDFLAG(IS_POSIX)
     auto memory_fd = vulkan_image->GetMemoryFd();
     if (!memory_fd.is_valid()) {
       return false;
@@ -819,27 +815,6 @@ bool ExternalVkImageBacking::CreateGLTexture(bool is_passthrough,
     api->glImportMemoryFdEXTFn(memory_object->id(), image_info.fAlloc.fSize,
                                GL_HANDLE_TYPE_OPAQUE_FD_EXT,
                                memory_fd.release());
-#elif BUILDFLAG(IS_WIN)
-    auto memory_handle = vulkan_image->GetMemoryHandle();
-    if (!memory_handle.is_valid()) {
-      return false;
-    }
-    memory_object.emplace(api);
-    api->glImportMemoryWin32HandleEXTFn(
-        memory_object->id(), image_info.fAlloc.fSize,
-        GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, memory_handle.Take());
-#elif BUILDFLAG(IS_FUCHSIA)
-    zx::vmo vmo = vulkan_image->GetMemoryZirconHandle();
-    if (!vmo) {
-      return false;
-    }
-    memory_object.emplace(api);
-    api->glImportMemoryZirconHandleANGLEFn(
-        memory_object->id(), image_info.fAlloc.fSize,
-        GL_HANDLE_TYPE_ZIRCON_VMO_ANGLE, vmo.release());
-#else
-#error Unsupported OS
-#endif
   }
 
   GLFormatDesc format_desc =

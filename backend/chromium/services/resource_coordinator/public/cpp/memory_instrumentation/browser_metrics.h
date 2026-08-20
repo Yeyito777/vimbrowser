@@ -30,9 +30,6 @@ enum class HistogramProcessType {
   kCdmService,
   kExtension,
   kGpu,
-#if BUILDFLAG(IS_WIN)
-  kMediaFoundationService,
-#endif
   kNetworkService,
   kPaintPreviewCompositor,
   kRenderer,

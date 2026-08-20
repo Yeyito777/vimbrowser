@@ -2188,10 +2188,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "video_rtp_receiver_unittest.cc",
     ]
 
-    if (is_win) {
-      libs = [ "strmiids.lib" ]
-    }
-
     deps = [
       ":audio_rtp_receiver",
       ":channel",
@@ -3033,14 +3029,6 @@ if (rtc_include_tests && !build_with_chromium) {
     "../resources/web_screenshot_1850_1110.yuv",
   ]
 
-  if (is_ios) {
-    bundle_data("svc_tests_bundle_data") {
-      testonly = true
-      sources = svc_tests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
   rtc_test("svc_tests") {
     sources = [ "test/svc_e2e_tests.cc" ]
     data = svc_tests_resources
@@ -3077,9 +3065,5 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test/pc/e2e/analyzer/video:default_video_quality_analyzer_shared",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-
-    if (is_ios) {
-      deps += [ ":svc_tests_bundle_data" ]
-    }
   }
 }

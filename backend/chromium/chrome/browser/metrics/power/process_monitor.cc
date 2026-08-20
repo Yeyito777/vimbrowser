@@ -39,9 +39,6 @@
 #include "extensions/common/manifest_handlers/background_info.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "sandbox/policy/mojom/sandbox.mojom-shared.h"
-#endif
 
 using content::BrowserThread;
 
@@ -363,14 +360,6 @@ void ProcessMonitor::RenderProcessHostDestroyed(
 void ProcessMonitor::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-#if BUILDFLAG(IS_WIN)
-  // Cannot gather process metrics for elevated process as browser has no
-  // access to them.
-  if (data.sandbox_type.value() ==
-      sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges) {
-    return;
-  }
-#endif
 
   ProcessInfo::Key key =
       GetMonitoredProcessInfoKeyForNonRendererChildProcess(data);
@@ -415,14 +404,6 @@ void ProcessMonitor::OnBrowserChildProcessExited(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-#if BUILDFLAG(IS_WIN)
-  // Cannot gather process metrics for elevated process as browser has no
-  // access to them.
-  if (data.sandbox_type.value() ==
-      sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges) {
-    return;
-  }
-#endif
   auto it = browser_child_process_infos_.find(data.id);
   if (it == browser_child_process_infos_.end()) {
     // It is possible to receive this notification without a launch-and-connect

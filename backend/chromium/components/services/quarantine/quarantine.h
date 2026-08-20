@@ -77,12 +77,6 @@ void QuarantineFile(const base::FilePath& file,
                     const std::string& client_guid,
                     mojom::Quarantine::QuarantineFileCallback callback);
 
-#if BUILDFLAG(IS_WIN)
-QuarantineFileResult SetInternetZoneIdentifierDirectly(
-    const base::FilePath& full_path,
-    const GURL& source_url,
-    const GURL& referrer_url);
-#endif
 
 }  // namespace quarantine
 

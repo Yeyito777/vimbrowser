@@ -10,9 +10,7 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-typedef struct _CONTEXT CONTEXT;
-#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include <sys/ucontext.h>
 #elif BUILDFLAG(IS_APPLE) && \
     (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
@@ -23,11 +21,7 @@ typedef struct _CONTEXT CONTEXT;
 
 namespace base {
 
-#if BUILDFLAG(IS_WIN)
-
-using RegisterContext = ::CONTEXT;
-
-#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
 using RegisterContext = mcontext_t;
 

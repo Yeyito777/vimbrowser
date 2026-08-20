@@ -38,16 +38,7 @@
 #endif  // BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chromeos/ash/components/account_manager/account_manager_factory.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/functional/bind.h"
-#include "chrome/browser/signin/signin_util_win.h"
-#endif
 
 void IdentityManagerFactory::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
@@ -153,20 +144,7 @@ IdentityManagerFactory::BuildServiceInstanceForBrowserContext(
 #endif  // BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #endif  // #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::ProfileHelper::IsUserProfile(profile)) {
-    params.account_manager_facade =
-        ash::AccountManagerFactory::Get()->GetAccountManagerFacade(
-            profile->GetPath().value());
-    params.is_regular_profile = true;
-  }
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  params.reauth_callback =
-      base::BindRepeating(&signin_util::ReauthWithCredentialProviderIfPossible,
-                          base::Unretained(profile));
-#endif
 
   std::unique_ptr<signin::IdentityManager> identity_manager =
       signin::BuildIdentityManager(&params);

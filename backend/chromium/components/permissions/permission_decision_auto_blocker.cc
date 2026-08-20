@@ -16,9 +16,6 @@
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/permissions/features.h"
-#if BUILDFLAG(IS_ANDROID)
-#include "components/permissions/android/permissions_android_feature_map.h"
-#endif
 #include "components/permissions/permission_util.h"
 #include "url/gurl.h"
 
@@ -35,11 +32,6 @@ constexpr int kDefaultDismissalsBeforeBlock = 3;
 // before it is automatically blocked.
 constexpr int kDefaultIgnoresBeforeBlock = 4;
 
-#if BUILDFLAG(IS_ANDROID)
-// The number of times that users may ignore a permission prompt from an origin.
-// before it is automatically blocked. This is used for the Clapper UI.
-constexpr int kClapperIgnoresBeforeBlock = 1;
-#endif
 
 // The number of times that users may dismiss a permission prompt that uses the
 // quiet UI from an origin before it is automatically blocked.
@@ -93,10 +85,6 @@ std::string GetStringForContentType(ContentSettingsType content_type) {
       return "FileSystemWriteGuard";
     case ContentSettingsType::SUB_APP_INSTALLATION_PROMPTS:
       return "SubAppInstallationPrompts";
-#if BUILDFLAG(IS_CHROMEOS)
-    case ContentSettingsType::SMART_CARD_GUARD:
-      return "SmartCard";
-#endif  // BUILDFLAG(IS_CHROMEOS)
     // If you add a new Content Setting here, also add it to
     // IsEnabledForContentSetting.
     default:
@@ -252,9 +240,6 @@ bool PermissionDecisionAutoBlocker::IsEnabledForContentSetting(
              ContentSettingsType::FILE_SYSTEM_ACCESS_RESTORE_PERMISSION ||
          content_setting == ContentSettingsType::FILE_SYSTEM_WRITE_GUARD ||
          content_setting == ContentSettingsType::SUB_APP_INSTALLATION_PROMPTS
-#if BUILDFLAG(IS_CHROMEOS)
-         || content_setting == ContentSettingsType::SMART_CARD_GUARD
-#endif  // BUILDFLAG(IS_CHROMEOS)
       ;
   // If you add a new content setting here, also add it to
   // GetStringForContentType.
@@ -438,13 +423,6 @@ bool PermissionDecisionAutoBlocker::RecordIgnoreAndEmbargo(
           : -1;
 
   int ignores_before_block = kDefaultIgnoresBeforeBlock;
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(
-          permissions::kPermissionsAndroidClapperLoud) &&
-      !ignored_prompt_was_quiet) {
-    ignores_before_block = kClapperIgnoresBeforeBlock;
-  }
-#endif
 
   if (current_ignore_count >= ignores_before_block) {
     PlaceUnderEmbargo(url, permission, kPermissionIgnoreEmbargoKey);

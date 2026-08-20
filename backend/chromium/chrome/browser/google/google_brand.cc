@@ -16,9 +16,6 @@
 #include "build/build_config.h"
 #include "chrome/installer/util/google_update_settings.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/google/google_brand_chromeos.h"
-#endif
 
 namespace google_brand {
 
@@ -26,7 +23,7 @@ const char* g_brand_for_testing = nullptr;
 
 // Global functions -----------------------------------------------------------
 
-#if BUILDFLAG(IS_WIN)
+#if !BUILDFLAG(IS_MAC)
 
 bool GetBrand(std::string* brand) {
   if (g_brand_for_testing) {
@@ -34,46 +31,7 @@ bool GetBrand(std::string* brand) {
     return true;
   }
 
-  // Cache brand code value, since it is queried a lot and registry queries are
-  // slow enough to actually affect top-level metrics like
-  // Omnibox.CharTypedToRepaintLatency.
-  static const base::NoDestructor<std::optional<std::string>> brand_code(
-      []() -> std::optional<std::string> {
-        std::wstring brandw;
-        if (!GoogleUpdateSettings::GetBrand(&brandw)) {
-          return std::nullopt;
-        }
-        return base::WideToASCII(brandw);
-      }());
-  if (!brand_code->has_value()) {
-    return false;
-  }
-  brand->assign(**brand_code);
-  return true;
-}
-
-bool GetReactivationBrand(std::string* brand) {
-  std::wstring brandw;
-  bool ret = GoogleUpdateSettings::GetReactivationBrand(&brandw);
-  if (ret) {
-    brand->assign(base::WideToASCII(brandw));
-  }
-  return ret;
-}
-
-#elif !BUILDFLAG(IS_MAC)
-
-bool GetBrand(std::string* brand) {
-  if (g_brand_for_testing) {
-    brand->assign(g_brand_for_testing);
-    return true;
-  }
-
-#if BUILDFLAG(IS_CHROMEOS)
-  brand->assign(google_brand::chromeos::GetBrand());
-#else
   brand->clear();
-#endif
   return true;
 }
 
@@ -85,12 +43,7 @@ bool GetReactivationBrand(std::string* brand) {
 #endif
 
 bool GetRlzBrand(std::string* brand) {
-#if BUILDFLAG(IS_CHROMEOS)
-  brand->assign(google_brand::chromeos::GetRlzBrand());
-  return true;
-#else
   return GetBrand(brand);
-#endif
 }
 
 bool IsOrganic(const std::string& brand) {

@@ -52,13 +52,8 @@ namespace safe_browsing {
 class ApplicationAdvancedProtectionStatusDetector;
 }  // namespace safe_browsing
 
-#if !BUILDFLAG(IS_ANDROID)
 class ProfileLaunchObserver;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-class StartupLaunchManager;
-#endif
 
 #if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 namespace unexportable_keys {
@@ -134,11 +129,9 @@ class GlobalFeatures {
   glic::GlicProfileManager* glic_profile_manager() {
     return glic_profile_manager_.get();
   }
-#if !BUILDFLAG(IS_ANDROID)
   glic::GlicBackgroundModeManager* glic_background_mode_manager() {
     return glic_background_mode_manager_.get();
   }
-#endif
 
   glic::GlicSyntheticTrialManager* glic_synthetic_trial_manager() {
     return synthetic_trial_manager_.get();
@@ -180,13 +173,11 @@ class GlobalFeatures {
   static ui::UserDataFactoryWithOwner<BrowserProcess>&
   GetUserDataFactoryForTesting();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Prefer using ProfileLaunchObserver::GetInstance() over calling this method
   // directly.
   ProfileLaunchObserver* profile_launch_observer() {
     return profile_launch_observer_.get();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
  protected:
   GlobalFeatures();
@@ -218,10 +209,8 @@ class GlobalFeatures {
 
   std::unique_ptr<glic::GlicGlobalEnabling> glic_global_enabling_;
   std::unique_ptr<glic::GlicProfileManager> glic_profile_manager_;
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<glic::GlicBackgroundModeManager>
       glic_background_mode_manager_;
-#endif
   std::unique_ptr<glic::GlicSyntheticTrialManager> synthetic_trial_manager_;
 
   std::unique_ptr<ApplicationLocaleStorage> application_locale_storage_;
@@ -246,9 +235,6 @@ class GlobalFeatures {
 
   std::unique_ptr<GlobalBrowserCollection> global_browser_collection_;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<StartupLaunchManager> startup_launch_manager_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
   std::unique_ptr<
@@ -256,9 +242,7 @@ class GlobalFeatures {
       unexportable_key_obsolete_profile_garbage_collector_;
 #endif  // BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<ProfileLaunchObserver> profile_launch_observer_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 };
 
 #endif  // CHROME_BROWSER_GLOBAL_FEATURES_H_

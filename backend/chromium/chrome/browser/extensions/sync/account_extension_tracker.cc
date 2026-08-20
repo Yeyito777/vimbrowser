@@ -328,7 +328,6 @@ AccountExtensionTracker::GetAccountExtensionType(
   return static_cast<AccountExtensionType>(type_int);
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void AccountExtensionTracker::OnSignInInitiatedFromExtensionPromo(
     const ExtensionId& extension_id) {
   CHECK(!base::FeatureList::IsEnabled(syncer::kUnoPhase2FollowUp));
@@ -357,7 +356,6 @@ void AccountExtensionTracker::OnSignInInitiatedFromExtensionPromo(
                      weak_factory_.GetWeakPtr(), extension_id),
       kMaxSigninFromExtensionBubbleDelay);
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 bool AccountExtensionTracker::CanUploadAsAccountExtension(
     const Extension& extension) const {

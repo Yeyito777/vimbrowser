@@ -90,7 +90,6 @@ class StubPasswordManagerClient : public PasswordManagerClient {
   void MaybeShowSavePasswordPrimingPromo(const GURL& current_url) override;
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) ||
         // BUILDFLAG(IS_CHROMEOS)
-#if !BUILDFLAG(IS_IOS)
   std::unique_ptr<
       password_manager::PasswordCrossDomainConfirmationPopupController>
   ShowCrossDomainConfirmationPopup(
@@ -100,7 +99,6 @@ class StubPasswordManagerClient : public PasswordManagerClient {
       const std::u16string& password_hostname,
       bool show_warning_text,
       base::OnceClosure confirmation_callback) override;
-#endif  // !BUILDFLAG(IS_IOS)
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(IS_IOS)
   safe_browsing::PasswordProtectionService* GetPasswordProtectionService()
@@ -114,11 +112,6 @@ class StubPasswordManagerClient : public PasswordManagerClient {
 
   ukm::SourceId GetUkmSourceId() override;
   PasswordManagerMetricsRecorder* GetMetricsRecorder() override;
-#if BUILDFLAG(IS_ANDROID)
-  FirstCctPageLoadPasswordsUkmRecorder* GetFirstCctPageLoadUkmRecorder()
-      override;
-  void PotentialSaveFormSubmitted() override;
-#endif
   signin::IdentityManager* GetIdentityManager() override;
   const signin::IdentityManager* GetIdentityManager() const override;
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory() override;

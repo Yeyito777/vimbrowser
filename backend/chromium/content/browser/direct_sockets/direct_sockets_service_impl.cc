@@ -46,18 +46,9 @@
 #include "third_party/blink/public/common/features_generated.h"
 #include "third_party/blink/public/mojom/direct_sockets/direct_sockets.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <winsock2.h>
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_POSIX)
 #include <sys/socket.h>
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "content/browser/direct_sockets/firewall_hole_delegate.h"
-#include "services/network/public/mojom/socket_connection_tracker.mojom.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 
@@ -498,12 +489,6 @@ void DirectSocketsServiceImpl::OpenBoundUDPSocket(
   auto params = network::mojom::RestrictedUDPSocketParams::New();
   params->socket_options = std::move(socket_options);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  mojo::PendingReceiver<network::mojom::SocketConnectionTracker>
-      connection_tracker;
-  params->connection_tracker =
-      connection_tracker.InitWithNewPipeAndPassRemote();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   RequestPrivateNetworkAccessAndCreateSocket(
       context_,
@@ -514,14 +499,7 @@ void DirectSocketsServiceImpl::OpenBoundUDPSocket(
                      std::move(params), std::move(receiver),
                      std::move(listener)),
   /*finish_callback=*/
-#if !BUILDFLAG(IS_CHROMEOS)
       std::move(callback)
-#else   // BUILDFLAG(IS_CHROMEOS)
-      // On ChromeOS the original callback will be invoked after punching a
-      // firewall hole.
-      base::BindOnce(&FirewallHoleDelegate::OpenUDPFirewallHole,
-                     std::move(connection_tracker), std::move(callback))
-#endif  // BUILDFLAG(IS_CHROMEOS)
   );
 }
 
@@ -541,12 +519,6 @@ void DirectSocketsServiceImpl::OpenTCPServerSocket(
   server_options->backlog =
       std::min<uint32_t>(SOMAXCONN, options->backlog.value_or(SOMAXCONN));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  mojo::PendingReceiver<network::mojom::SocketConnectionTracker>
-      connection_tracker;
-  server_options->connection_tracker =
-      connection_tracker.InitWithNewPipeAndPassRemote();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   auto* network_context = GetNetworkContext();
   if (!network_context) {
@@ -557,14 +529,7 @@ void DirectSocketsServiceImpl::OpenTCPServerSocket(
       options->local_addr, std::move(server_options),
       net::MutableNetworkTrafficAnnotationTag(kDirectSocketsTrafficAnnotation),
       std::move(socket),
-#if !BUILDFLAG(IS_CHROMEOS)
       std::move(callback)
-#else   // BUILDFLAG(IS_CHROMEOS)
-      // On ChromeOS the original callback will be invoked after punching a
-      // firewall hole.
-      base::BindOnce(&FirewallHoleDelegate::OpenTCPFirewallHole,
-                     std::move(connection_tracker), std::move(callback))
-#endif  // BUILDFLAG(IS_CHROMEOS)
   );
 }
 

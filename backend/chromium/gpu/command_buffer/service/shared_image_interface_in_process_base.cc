@@ -386,16 +386,6 @@ void SharedImageInterfaceInProcessBase::CreateSharedImageWithBufferOnGpuThread(
   }
 }
 
-#if BUILDFLAG(IS_FUCHSIA)
-void SharedImageInterfaceInProcessBase::RegisterSysmemBufferCollection(
-    zx::eventpair service_handle,
-    zx::channel sysmem_token,
-    const viz::SharedImageFormat& format,
-    gfx::BufferUsage usage,
-    bool register_with_image_pipe) {
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 void SharedImageInterfaceInProcessBase::UpdateSharedImage(
     const SyncToken& sync_token,

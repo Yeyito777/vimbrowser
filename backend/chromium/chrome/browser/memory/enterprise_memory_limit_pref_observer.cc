@@ -10,9 +10,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/memory_pressure/multi_source_memory_pressure_monitor.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/resource_coordinator/tab_lifecycle_unit_source.h"
-#endif
 
 namespace memory {
 
@@ -39,10 +37,8 @@ EnterpriseMemoryLimitPrefObserver::EnterpriseMemoryLimitPrefObserver(
 EnterpriseMemoryLimitPrefObserver::~EnterpriseMemoryLimitPrefObserver() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (evaluator_->IsRunning()) {
-#if !BUILDFLAG(IS_ANDROID)
     resource_coordinator::GetTabLifecycleUnitSource()
         ->SetMemoryLimitEnterprisePolicyFlag(false);
-#endif
     evaluator_->Stop();
   }
 }
@@ -76,10 +72,8 @@ void EnterpriseMemoryLimitPrefObserver::GetPref() {
     evaluator_->Stop();
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   resource_coordinator::GetTabLifecycleUnitSource()
       ->SetMemoryLimitEnterprisePolicyFlag(pref->IsManaged());
-#endif
 }
 
 }  // namespace memory

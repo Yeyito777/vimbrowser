@@ -31,11 +31,7 @@ using BuiltCallback = PredictionModelOverrides::Entry::BuiltCallback;
 
 // The ":" character is reserved in Windows as part of an absolute file path,
 // e.g.: C:\model.tflite, so we use a different separator.
-#if BUILDFLAG(IS_WIN)
-const char kModelOverrideSeparator[] = "|";
-#else
 const char kModelOverrideSeparator[] = ":";
-#endif
 
 std::unique_ptr<proto::PredictionModel> ProcessModelOverrideOnBGThread(
     proto::OptimizationTarget optimization_target,

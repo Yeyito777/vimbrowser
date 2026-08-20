@@ -123,10 +123,6 @@ source_set("impl") {
     "//chrome/browser/web_applications/app_service",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/app_list/search/essential_search" ]
-  }
-
   if (enable_extensions_core) {
     sources += [
       "keyword_extensions_delegate_impl.cc",

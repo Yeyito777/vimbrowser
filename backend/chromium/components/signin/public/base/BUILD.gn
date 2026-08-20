@@ -76,11 +76,6 @@ static_library("base") {
     "//google_apis",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//components/user_manager" ]
-    public_deps += [ "//components/account_manager_core" ]
-  }
 }
 
 static_library("test_support") {

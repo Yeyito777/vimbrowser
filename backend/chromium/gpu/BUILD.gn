@@ -121,12 +121,6 @@ static_library("test_support") {
     "//ui/gl:test_support",
   ]
 
-  if (is_fuchsia) {
-    deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.sysmem2:fuchsia.sysmem2_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
-  }
   deps += [ "//third_party/angle:translator" ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
@@ -328,19 +322,6 @@ test("gl_tests") {
   if (is_apple) {
     frameworks = [ "IOSurface.framework" ]
     sources += [ "command_buffer/service/shared_image/iosurface_image_backing_factory_unittest.cc" ]
-  } else if (is_win) {
-    libs += [ "d3d12.lib" ]
-    libs += [ "d3d11.lib" ]
-    deps += [
-      "//third_party/microsoft_dxheaders:dxguids",
-      "//ui/platform_window",
-      "//ui/platform_window:platform_impls",
-    ]
-    sources += [
-      "command_buffer/service/dxgi_shared_handle_manager_unittest.cc",
-      "command_buffer/service/shared_image/d3d_image_backing_factory_unittest.cc",
-      "command_buffer/service/shared_image/dcomp_image_backing_factory_unittest.cc",
-    ]
   } else if (is_linux) {
     # Simply loading the Vulkan driver leaks crbug.com/1134681
     # CFI error in third_party/vulkan_memory_allocator crbug.com/1139916
@@ -369,10 +350,6 @@ test("gl_tests") {
   }
 
   data_deps = [ "//testing/buildbot/filters:gl_tests_filters" ]
-
-  if (is_chromeos) {
-    deps += [ "//ui/gfx/linux:gbm" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
@@ -545,11 +522,6 @@ test("gpu_unittests") {
     sources += [ "command_buffer/client/internal/mappable_buffer_native_pixmap_unittest.cc" ]
   }
 
-  if (is_win) {
-    sources +=
-        [ "command_buffer/client/internal/mappable_buffer_dxgi_unittest.cc" ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [ "command_buffer/service/gpu_fence_manager_unittest.cc" ]
   }
@@ -569,11 +541,9 @@ test("gpu_unittests") {
       "ipc/service/gpu_channel_unittest.cc",
     ]
 
-    if (!is_ios) {
-      # This test depends on the test trace processor which is not currently
-      # a dependency on iOS. See //base/test:test_support.
-      sources += [ "ipc/service/gpu_channel_manager_unittest.cc" ]
-    }
+    # This test depends on the test trace processor which is not currently
+    # a dependency on iOS. See //base/test:test_support.
+    sources += [ "ipc/service/gpu_channel_manager_unittest.cc" ]
   }
 
   if (use_dawn) {
@@ -649,11 +619,6 @@ test("gpu_unittests") {
 
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-
-  if (is_ios) {
-    bundle_deps =
-        [ "//testing/buildbot/filters:gpu_unittests_filters_bundle_data" ]
   }
 
   if (is_apple) {

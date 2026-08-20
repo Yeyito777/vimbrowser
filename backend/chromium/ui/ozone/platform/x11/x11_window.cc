@@ -1242,15 +1242,7 @@ void X11Window::SetWorkspaceExtensionDelegate(
 }
 
 bool X11Window::IsSyncExtensionAvailable() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome for ChromeOS can be run with X11 on a Linux desktop. In this case,
-  // NotifySwapAfterResize is never called as the compositor does not notify
-  // about swaps after resize. Thus, simply disable usage of XSyncCounter on
-  // ChromeOS builds.
-  return false;
-#else
   return connection_->sync_version() > std::pair<uint32_t, uint32_t>{0, 0};
-#endif
 }
 
 bool X11Window::IsWmTiling() const {
@@ -1762,10 +1754,6 @@ void X11Window::QuitDragLoop() {
 
 gfx::Size X11Window::AdjustSizeForDisplay(
     const gfx::Size& requested_size_in_pixels) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // We do not need to apply the workaround for the ChromeOS.
-  return requested_size_in_pixels;
-#else
   auto* screen = display::Screen::Get();
   if (screen && !UseTestConfigForPlatformWindows()) {
     std::vector<display::Display> displays = screen->GetAllDisplays();
@@ -1783,7 +1771,6 @@ gfx::Size X11Window::AdjustSizeForDisplay(
   gfx::Size size_in_pixels = requested_size_in_pixels;
   size_in_pixels.SetToMax(gfx::Size(1, 1));
   return size_in_pixels;
-#endif
 }
 
 void X11Window::CreateXWindow(const PlatformWindowInitProperties& properties) {
@@ -1828,9 +1815,6 @@ void X11Window::CreateXWindow(const PlatformWindowInitProperties& properties) {
     req.override_redirect = x11::Bool32(true);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  req.override_redirect = x11::Bool32(UseTestConfigForPlatformWindows());
-#endif
 
   override_redirect_ = req.override_redirect.has_value();
 

@@ -71,11 +71,5 @@ bool VirtualFidoDiscoveryFactory::IsTestOverride() {
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<device::FidoDiscoveryBase>
-VirtualFidoDiscoveryFactory::MaybeCreateWinWebAuthnApiDiscovery() {
-  return nullptr;
-}
-#endif
 
 }  // namespace content

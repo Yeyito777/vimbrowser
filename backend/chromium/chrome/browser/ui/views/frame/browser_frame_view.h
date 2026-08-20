@@ -246,13 +246,6 @@ class BrowserFrameView : public views::FrameView {
           BrowserFrameActiveState::kUseCurrent) const;
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // ui::EventHandler:
-  void OnGestureEvent(ui::GestureEvent* event) override;
-
-  // views::FrameView:
-  int GetSystemMenuY() const override;
-#endif  // BUILDFLAG(IS_WIN)
 
   // The BrowserWidget that owns this view.
   const raw_ptr<BrowserWidget, DanglingUntriaged> browser_widget_;

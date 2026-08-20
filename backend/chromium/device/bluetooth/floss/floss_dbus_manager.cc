@@ -36,9 +36,6 @@
 #include "device/bluetooth/floss/floss_socket_manager.h"
 #include "floss_dbus_manager.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/floss/floss_admin_client.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace floss {
 
@@ -79,17 +76,6 @@ FlossDBusManager::FlossDBusManager(dbus::Bus* bus, bool use_stubs) : bus_(bus) {
 
   BLUETOOTH_LOG(EVENT) << "FlossDBusManager checking for object manager";
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Floss is always available on ChromeOS but could not yet be available right
-  // after boot. Always init the manager client here, which allows
-  // |BluetoothAdapterFloss| to register its observers right now. The client
-  // will be init-ed later by |WaitForServiceToBeAvailable|.
-  object_manager_supported_ = true;
-  object_manager_support_known_ = true;
-  mgmt_client_present_ = true;
-  client_bundle_ = std::make_unique<FlossClientBundle>(/*use_stubs=*/false);
-  instance_created_time_ = base::Time::Now();
-#endif
 
   // Wait for the Floss Manager to be available
   GetSystemBus()
@@ -129,16 +115,6 @@ void FlossDBusManager::ObjectAdded(const dbus::ObjectPath& object_path,
     }
     adapter_logging_interface_present_ = true;
     InitAdapterLoggingClientsIfReady();
-#if BUILDFLAG(IS_CHROMEOS)
-  } else if (interface_name == kAdminInterface) {
-    if (admin_interface_present_) {
-      DVLOG(1) << kAdminInterface
-               << " has already been added. Not initializing the client!";
-      return;
-    }
-    admin_interface_present_ = true;
-    InitAdminClientsIfReady();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   } else if (interface_name == kBatteryManagerInterface) {
     if (battery_interface_present_) {
       DVLOG(1) << kBatteryManagerInterface
@@ -186,10 +162,6 @@ void FlossDBusManager::ObjectRemoved(const dbus::ObjectPath& object_path,
     adapter_interface_present_ = false;
   } else if (interface_name == kAdapterLoggingInterface) {
     adapter_logging_interface_present_ = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  } else if (interface_name.compare(std::string(kAdminInterface)) == 0) {
-    admin_interface_present_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   } else if (interface_name == kBatteryManagerInterface) {
     battery_interface_present_ = false;
   } else if (interface_name == kBluetoothTelephonyInterface) {
@@ -220,15 +192,6 @@ void FlossDBusManager::InitAdapterLoggingClientsIfReady() {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FlossDBusManager::InitAdminClientsIfReady() {
-  if (admin_interface_present_ && HasActiveAdapter() && client_on_ready_ &&
-      !client_on_ready_->Finished()) {
-    GetAdminClient()->Init(GetSystemBus(), kAdapterService, active_adapter_,
-                           version_, client_on_ready_->CreateReadyClosure());
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void FlossDBusManager::InitBatteryClientsIfReady() {
   if (battery_interface_present_ && HasActiveAdapter() && client_on_ready_) {
@@ -288,9 +251,6 @@ void FlossDBusManager::SetAllClientsPresentForTesting() {
   mgmt_client_present_ = true;
   adapter_interface_present_ = true;
   adapter_logging_interface_present_ = true;
-#if BUILDFLAG(IS_CHROMEOS)
-  admin_interface_present_ = true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   battery_interface_present_ = true;
   telephony_interface_present_ = true;
   gatt_interface_present_ = true;
@@ -371,9 +331,6 @@ void FlossDBusManager::OnObjectManagerSupported(dbus::Response* response) {
       GetSystemBus()->GetObjectManager(kAdapterService, dbus::ObjectPath("/"));
   object_manager_->RegisterInterface(kAdapterInterface, this);
   object_manager_->RegisterInterface(kAdapterLoggingInterface, this);
-#if BUILDFLAG(IS_CHROMEOS)
-  object_manager_->RegisterInterface(kAdminInterface, this);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   object_manager_->RegisterInterface(kBatteryManagerInterface, this);
   object_manager_->RegisterInterface(kBluetoothTelephonyInterface, this);
   object_manager_->RegisterInterface(kGattInterface, this);
@@ -383,10 +340,6 @@ void FlossDBusManager::OnObjectManagerSupported(dbus::Response* response) {
 void FlossDBusManager::OnManagerServiceAvailable(bool is_available) {
   BLUETOOTH_LOG(EVENT) << "Floss Manager is available: " << is_available;
   if (!is_available) {
-#if BUILDFLAG(IS_CHROMEOS)
-    device::RecordFlossManagerClientInit(
-        false, base::Time::Now() - instance_created_time_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
     if (!object_manager_support_known_) {
       object_manager_support_known_ = true;
       if (object_manager_support_known_callback_) {
@@ -412,10 +365,6 @@ void FlossDBusManager::OnManagerServiceAvailable(bool is_available) {
 void FlossDBusManager::OnObjectManagerNotSupported(
     dbus::ErrorResponse* response) {
   BLUETOOTH_LOG(ERROR) << "Floss Bluetooth not supported.";
-#if BUILDFLAG(IS_CHROMEOS)
-  device::RecordFlossManagerClientInit(
-      false, base::Time::Now() - instance_created_time_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   object_manager_supported_ = false;
 
   // Don't initialize any clients since they need ObjectManager.
@@ -439,10 +388,6 @@ void FlossDBusManager::OnObjectManagerResponse(
 void FlossDBusManager::OnManagerClientInitComplete() {
   mgmt_client_present_ = client_bundle_->manager_client()->IsInitialized();
   DVLOG(1) << "Floss manager client initialized: " << mgmt_client_present_;
-#if BUILDFLAG(IS_CHROMEOS)
-  device::RecordFlossManagerClientInit(
-      mgmt_client_present_, base::Time::Now() - instance_created_time_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   object_manager_support_known_ = true;
   if (object_manager_support_known_callback_) {
     std::move(object_manager_support_known_callback_).Run();
@@ -507,11 +452,6 @@ FlossLoggingClient* FlossDBusManager::GetLoggingClient() {
   return client_bundle_->logging_client();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-FlossAdminClient* FlossDBusManager::GetAdminClient() {
-  return client_bundle_->admin_client();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void FlossDBusManager::InitializeAdapterClients(int adapter,
                                                 base::OnceClosure on_ready) {
@@ -541,19 +481,12 @@ void FlossDBusManager::InitializeAdapterClients(int adapter,
   // period, we will time out and send the ready signal anyway.
   client_on_ready_ = ClientInitializer::CreateWithTimeout(
       std::move(on_ready),
-#if BUILDFLAG(IS_CHROMEOS)
-      /*client_count=*/9,
-#else
       /*client_count=*/8,
-#endif
       base::Milliseconds(kClientReadyTimeoutMs));
 
   // Adapter is set. Try to init clients if the interface present.
   InitAdapterClientsIfReady();
   InitAdapterLoggingClientsIfReady();
-#if BUILDFLAG(IS_CHROMEOS)
-  InitAdminClientsIfReady();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   InitBatteryClientsIfReady();
   InitTelephonyClientsIfReady();
   InitGattClientsIfReady();
@@ -609,12 +542,6 @@ void FlossDBusManagerSetter::SetFlossLoggingClient(
   FlossDBusManager::Get()->client_bundle_->logging_client_ = std::move(client);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FlossDBusManagerSetter::SetFlossAdminClient(
-    std::unique_ptr<FlossAdminClient> client) {
-  FlossDBusManager::Get()->client_bundle_->admin_client_ = std::move(client);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 FlossClientBundle::FlossClientBundle(bool use_stubs) : use_stubs_(use_stubs) {
 #if defined(USE_REAL_DBUS_CLIENTS)
@@ -648,9 +575,6 @@ void FlossClientBundle::ResetAdapterClients() {
     battery_manager_client_ = FlossBatteryManagerClient::Create();
     bluetooth_telephony_client_ = FlossBluetoothTelephonyClient::Create();
     logging_client_ = FlossLoggingClient::Create();
-#if BUILDFLAG(IS_CHROMEOS)
-    admin_client_ = FlossAdminClient::Create();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   } else {
     adapter_client_ = std::make_unique<FakeFlossAdapterClient>();
     gatt_manager_client_ = std::make_unique<FakeFlossGattManagerClient>();
@@ -661,9 +585,6 @@ void FlossClientBundle::ResetAdapterClients() {
     bluetooth_telephony_client_ =
         std::make_unique<FakeFlossBluetoothTelephonyClient>();
     logging_client_ = std::make_unique<FakeFlossLoggingClient>();
-#if BUILDFLAG(IS_CHROMEOS)
-    admin_client_ = std::make_unique<FakeFlossAdminClient>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 }
 

@@ -23,17 +23,9 @@
 #include "services/preferences/tracked/pref_hash_filter.h"
 #include "services/preferences/tracked/tracked_persistent_pref_store_factory.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/install_static/install_util.h"
-#endif
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// Forces a different registry key to be used for storing preference validation
-// MACs. See |SetPreferenceValidationRegistryPathForTesting|.
-const std::wstring* g_preference_validation_registry_path_for_testing = nullptr;
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -69,14 +61,6 @@ void ProfilePrefStoreManager::ClearResetTime(PrefService* pref_service) {
   PrefHashFilter::ClearResetTime(pref_service);
 }
 
-#if BUILDFLAG(IS_WIN)
-// static
-void ProfilePrefStoreManager::SetPreferenceValidationRegistryPathForTesting(
-    const std::wstring* path) {
-  DCHECK(!path->empty());
-  g_preference_validation_registry_path_for_testing = path;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 PersistentPrefStore* ProfilePrefStoreManager::CreateProfilePrefStore(
     std::vector<prefs::mojom::TrackedPreferenceMetadataPtr>
@@ -147,12 +131,6 @@ ProfilePrefStoreManager::CreateTrackedPrefStoreConfiguration(
       profile_path_.Append(chrome::kSecurePreferencesFilename),
       std::move(tracking_configuration), reporting_ids_count, seed_,
       "ChromeRegistryHashStoreValidationSeed",
-#if BUILDFLAG(IS_WIN)
-      base::AsString16(g_preference_validation_registry_path_for_testing
-                           ? *g_preference_validation_registry_path_for_testing
-                           : install_static::GetRegistryPath()),
-#else
       std::u16string(),
-#endif
       std::move(validation_delegate), std::move(reset_on_load_observer));
 }

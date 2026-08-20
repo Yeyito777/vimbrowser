@@ -18,9 +18,6 @@
 
 namespace feature_engagement {
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ConfigurationProvider;
-#endif
 
 // Max number of days for storing client side event data, ~10 years.
 constexpr uint32_t kMaxStoragePeriod = 365 * 10;
@@ -327,16 +324,6 @@ class Configuration {
   // Returns the list of the names of all registered groups.
   virtual const std::vector<std::string> GetRegisteredGroups() const = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Updates the config of a specific feature. The new config will replace the
-  // existing cofig.
-  virtual void UpdateConfig(const base::Feature& feature,
-                            const ConfigurationProvider* provider) = 0;
-
-  // Returns the allowed set of prefixes for the events which can be stored and
-  // kept, regardless of whether or not they are used in a config.
-  virtual const EventPrefixSet& GetRegisteredAllowedEventPrefixes() const = 0;
-#endif
 
  protected:
   Configuration() = default;

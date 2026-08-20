@@ -36,12 +36,10 @@ source_set("content") {
   # until the iOS-specific implementation of PolicyBlocklistService is resolved.
   # The PolicyBlocklistService is currently duplicated in
   # `ios/chrome/browser/policy_url_blocking/model/policy_url_blocking_service.h`.
-  if (!is_ios) {
-    sources = [
-      "policy_blocklist_navigation_throttle.cc",
-      "policy_blocklist_navigation_throttle.h",
-    ]
-  }
+  sources = [
+    "policy_blocklist_navigation_throttle.cc",
+    "policy_blocklist_navigation_throttle.h",
+  ]
 
   deps = [
     ":safe_sites_navigation_throttle",
@@ -61,9 +59,7 @@ source_set("unit_tests") {
   # as well until the iOS-specific implementation of PolicyBlocklistService is
   # resolved. The PolicyBlocklistService is currently duplicated in
   # `ios/chrome/browser/policy_url_blocking/model/policy_url_blocking_service.h`.
-  if (!is_ios) {
-    sources += [ "policy_blocklist_navigation_throttle_unittest.cc" ]
-  }
+  sources += [ "policy_blocklist_navigation_throttle_unittest.cc" ]
 
   deps = [
     ":content",

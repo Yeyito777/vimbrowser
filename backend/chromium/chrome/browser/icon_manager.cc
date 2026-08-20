@@ -35,16 +35,6 @@ gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_path,
                                                 float scale) {
   // Since loading the icon is synchronous on Chrome OS (and doesn't require
   // disk access), if it hasn't already been loaded, load immediately.
-#if BUILDFLAG(IS_CHROMEOS)
-  gfx::Image* image = DoLookupIconFromFilepath(file_path, size, scale);
-  if (image)
-    return image;
-
-  IconLoader::LoadIcon(
-      file_path, size, scale,
-      base::BindOnce(&IconManager::OnIconLoaded, weak_factory_.GetWeakPtr(),
-                     base::DoNothing(), file_path, size, scale));
-#endif
   return DoLookupIconFromFilepath(file_path, size, scale);
 }
 

@@ -63,15 +63,6 @@ class COMPONENT_EXPORT(MANTA) MantaService : public KeyedService {
   // is called.
   std::unique_ptr<AnchovyProvider> CreateAnchovyProvider();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Virtual for testing.
-  virtual std::unique_ptr<MahiProvider> CreateMahiProvider();
-  virtual std::unique_ptr<WalrusProvider> CreateWalrusProvider();
-
-  std::unique_ptr<OrcaProvider> CreateOrcaProvider();
-  std::unique_ptr<ScannerProvider> CreateScannerProvider();
-  virtual std::unique_ptr<SnapperProvider> CreateSnapperProvider();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Determines whether the profile for this KeyedService support Orca feature.
   FeatureSupportStatus SupportsOrca();

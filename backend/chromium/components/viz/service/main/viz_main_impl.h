@@ -25,10 +25,6 @@
 #include "services/viz/privileged/mojom/viz_main.mojom.h"
 #include "ui/gfx/font_render_params.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/gl/info_collection_gpu_service_impl.h"
-#include "services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom.h"
-#endif
 
 namespace base {
 class PowerMonitorSource;
@@ -47,9 +43,6 @@ class MojoUkmRecorder;
 }
 
 namespace viz {
-#if BUILDFLAG(IS_WIN)
-class InfoCollectionGpuServiceImpl;
-#endif
 
 class VizMainImpl : public mojom::VizMain {
  public:
@@ -96,16 +89,6 @@ class VizMainImpl : public mojom::VizMain {
     raw_ptr<base::WaitableEvent> shutdown_event = nullptr;
     scoped_refptr<base::SingleThreadTaskRunner> io_thread_task_runner;
     std::unique_ptr<ukm::MojoUkmRecorder> ukm_recorder;
-#if BUILDFLAG(IS_ANDROID)
-    // GpuServiceImpl normally creates the below objects internally. However,
-    // on Android WebView it is created by the embedder.
-    raw_ptr<gpu::SyncPointManager> sync_point_manager = nullptr;
-    raw_ptr<gpu::SharedImageManager> shared_image_manager = nullptr;
-    raw_ptr<gpu::Scheduler> scheduler = nullptr;
-    raw_ptr<VizCompositorThreadRunner> viz_compositor_thread_runner = nullptr;
-    raw_ptr<const gpu::SharedContextState::GrContextOptionsProvider>
-        gr_context_options_provider = nullptr;
-#endif
   };
 
   VizMainImpl(Delegate* delegate,
@@ -134,15 +117,6 @@ class VizMainImpl : public mojom::VizMain {
       gfx::FontRenderParams::SubpixelRendering subpixel_rendering,
       float text_contrast,
       float text_gamma) override;
-#if BUILDFLAG(IS_WIN)
-  void CreateInfoCollectionGpuService(
-      mojo::PendingReceiver<mojom::InfoCollectionGpuService> pending_receiver)
-      override;
-#endif
-#if BUILDFLAG(IS_ANDROID)
-  void SetHostProcessId(int32_t pid) override;
-  void NotifyWorkloadIncrease() override;
-#endif
   void CreateFrameSinkManager(mojom::FrameSinkManagerParamsPtr params) override;
 #if BUILDFLAG(USE_VIZ_DEBUGGER)
   void FilterDebugStream(base::DictValue filter_data) override;
@@ -185,9 +159,6 @@ class VizMainImpl : public mojom::VizMain {
 
   std::unique_ptr<gpu::GpuInit> gpu_init_;
   std::unique_ptr<GpuServiceImpl> gpu_service_;
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<InfoCollectionGpuServiceImpl> info_collection_gpu_service_;
-#endif
 
   // If the gpu service is not yet ready then we stash pending
   // FrameSinkManagerParams.

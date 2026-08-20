@@ -91,17 +91,13 @@ class LoginUIService : public KeyedService {
   void DisplayLoginResult(BrowserWindowFeatures& browser_window_features,
                           const SigninUIError& error);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Gets the last error set through |DisplayLoginResult|.
   const SigninUIError& GetLastLoginError() const;
-#endif
 
  private:
   // Weak pointers to the recently opened UIs, with the most recent in front.
   std::list<raw_ptr<LoginUI, CtnExperimental>> ui_list_;
-#if !BUILDFLAG(IS_CHROMEOS)
   SigninUIError last_login_error_ = SigninUIError::Ok();
-#endif
 
   // List of observers.
   base::ObserverList<Observer>::Unchecked observer_list_;

@@ -193,13 +193,6 @@ static_library("update_client") {
     frameworks = [ "Foundation.framework" ]
     deps += [ ":background_downloader_delegate" ]
   }
-
-  if (is_win) {
-    sources += [
-      "background_downloader_win.cc",
-      "background_downloader_win.h",
-    ]
-  }
 }
 
 if (is_mac) {
@@ -323,10 +316,6 @@ source_set("unit_tests") {
 
   if (!disable_file_support) {
     sources += [ "crx_downloader_unittest.cc" ]
-
-    if (is_win) {
-      sources += [ "background_downloader_win_unittest.cc" ]
-    }
 
     if (is_mac) {
       sources += [ "background_downloader_mac_unittest.cc" ]

@@ -285,16 +285,7 @@
 #include "third_party/blink/renderer/platform/wtf/hash_map.h"
 #include "ui/gfx/geometry/size_conversions.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "third_party/blink/public/web/win/web_font_family_names.h"
-#include "third_party/blink/renderer/core/layout/layout_font_accessor_win.h"
-#include "third_party/blink/renderer/platform/wtf/text/line_ending.h"
-#endif
 
-#if BUILDFLAG(IS_IOS)
-#include "third_party/blink/renderer/core/editing/dom_selection.h"
-#include "third_party/blink/renderer/core/page/autoscroll_controller.h"
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace blink {
 
@@ -751,17 +742,6 @@ bool WebLocalFrameImpl::LastActivationWasRestricted() const {
   return GetFrame()->LastActivationWasRestricted();
 }
 
-#if BUILDFLAG(IS_WIN)
-WebFontFamilyNames WebLocalFrameImpl::GetWebFontFamilyNames() const {
-  FontFamilyNames font_family_names;
-  GetFontsUsedByFrame(*GetFrame(), font_family_names);
-  WebFontFamilyNames result;
-  for (const String& font_family_name : font_family_names.font_names) {
-    result.font_names.push_back(font_family_name);
-  }
-  return result;
-}
-#endif
 
 WebLocalFrame* WebLocalFrame::FrameForContext(v8::Local<v8::Context> context) {
   return WebLocalFrameImpl::FromFrame(ToLocalFrameIfNotDetached(context));
@@ -1486,9 +1466,6 @@ WebString WebLocalFrameImpl::SelectionAsText() const {
     text = GetFrame()->Selection().SelectedText(
         TextIteratorBehavior::EmitsObjectReplacementCharacterBehavior());
   }
-#if BUILDFLAG(IS_WIN)
-  text = NormalizeLineEndingsToCRLF(text);
-#endif
   ReplaceNBSPWithSpace(text);
   return text;
 }
@@ -1661,33 +1638,6 @@ void WebLocalFrameImpl::MoveCaretSelection(
   GetFrame()->Selection().MoveCaretSelection(point_in_contents);
 }
 
-#if BUILDFLAG(IS_IOS)
-void WebLocalFrameImpl::StartAutoscrollForSelectionToPoint(
-    const gfx::PointF& point_in_viewport) {
-  TRACE_EVENT0("blink",
-               "WebLocalFrameImpl::StartAutoscrollForSelectionToPoint");
-  if (!ViewImpl() || !ViewImpl()->GetPage()) {
-    return;
-  }
-  auto* element = GetFrame()->GetDocument()->GetSelection()->baseNode();
-  if (!element) {
-    return;
-  }
-  ViewImpl()
-      ->GetPage()
-      ->GetAutoscrollController()
-      .StartAutoscrollForSelectionToPoint(element->GetLayoutObject(),
-                                          point_in_viewport);
-}
-
-void WebLocalFrameImpl::StopAutoscroll() {
-  TRACE_EVENT0("blink", "WebLocalFrameImpl::StopAutoscroll");
-  if (!ViewImpl() || !ViewImpl()->GetPage()) {
-    return;
-  }
-  ViewImpl()->GetPage()->GetAutoscrollController().StopAutoscroll();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 bool WebLocalFrameImpl::SetEditableSelectionOffsets(int start, int end) {
   TRACE_EVENT0("blink", "WebLocalFrameImpl::setEditableSelectionOffsets");

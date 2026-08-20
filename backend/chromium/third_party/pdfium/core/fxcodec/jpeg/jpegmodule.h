@@ -16,10 +16,6 @@
 #include "build/build_config.h"
 #include "core/fxcrt/span.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "core/fxcrt/compiler_specific.h"
-#include "core/fxcrt/retain_ptr.h"
-#endif
 
 class CFX_DIBBase;
 
@@ -47,12 +43,6 @@ class JpegModule {
   static std::optional<ImageInfo> LoadInfo(
       pdfium::span<const uint8_t> src_span);
 
-#if BUILDFLAG(IS_WIN)
-  UNSAFE_BUFFER_USAGE static bool JpegEncode(
-      const RetainPtr<const CFX_DIBBase>& pSource,
-      uint8_t** dest_buf,
-      size_t* dest_size);
-#endif  // BUILDFLAG(IS_WIN)
 
   JpegModule() = delete;
   JpegModule(const JpegModule&) = delete;

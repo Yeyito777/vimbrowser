@@ -38,10 +38,6 @@ void DefaultDnsOverHttpsConfigSource::RegisterPrefs(
   registry->RegisterStringPref(prefs::kDnsOverHttpsTemplates, std::string());
   registry->RegisterBooleanPref(prefs::kDnsOverHttpsAutomaticModeFallbackToDoh,
                                 false);
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterStringPref(prefs::kDnsOverHttpsEffectiveTemplatesChromeOS,
-                               std::string());
-#endif
 }
 
 std::string DefaultDnsOverHttpsConfigSource::GetDnsOverHttpsMode() const {

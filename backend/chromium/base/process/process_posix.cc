@@ -33,9 +33,6 @@
 #include "base/test/clang_profiling.h"
 #endif
 
-#if BUILDFLAG(IS_IOS)
-#include "TargetConditionals.h"
-#endif
 
 namespace {
 
@@ -287,14 +284,12 @@ void Process::Close() {
   // end up w/ a zombie when it does finally exit.
 }
 
-#if !BUILDFLAG(IS_IOS)
 bool Process::Terminate(int exit_code, bool wait) const {
   // exit_code isn't supportable.
   DCHECK(IsValid());
   CHECK_GT(process_, 0);
   return TerminateInternal(exit_code, wait);
 }
-#endif
 
 #if !BUILDFLAG(IS_IOS) || (BUILDFLAG(USE_BLINK) && TARGET_OS_SIMULATOR)
 bool Process::TerminateInternal(int exit_code, bool wait) const {
@@ -329,7 +324,6 @@ bool Process::WaitForExit(int* exit_code) const {
   return WaitForExitWithTimeout(TimeDelta::Max(), exit_code);
 }
 
-#if !BUILDFLAG(IS_IOS)
 bool Process::WaitForExitWithTimeout(TimeDelta timeout, int* exit_code) const {
   timeout = std::max(timeout, TimeDelta());
   if (!timeout.is_zero()) {
@@ -350,7 +344,6 @@ bool Process::WaitForExitWithTimeout(TimeDelta timeout, int* exit_code) const {
   }
   return exited;
 }
-#endif
 
 #if !BUILDFLAG(IS_IOS) || (BUILDFLAG(USE_BLINK) && TARGET_OS_SIMULATOR)
 bool Process::WaitForExitWithTimeoutImpl(base::ProcessHandle handle,

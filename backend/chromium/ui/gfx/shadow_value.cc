@@ -128,31 +128,5 @@ ShadowValues ShadowValue::MakeMdShadowValues(int elevation,
   return shadow_values;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-ShadowValues ShadowValue::MakeChromeOSSystemUIShadowValues(int elevation,
-                                                           SkColor color) {
-  // To see what this looks like for elevation 24, try this CSS:
-  //   box-shadow: 0 24px 24px rgba(0, 0, 0, .24),
-  //               0 0 24px rgba(0, 0, 0, .10);
-  return MakeChromeOSSystemUIShadowValues(elevation, SkColorSetA(color, 0x3d),
-                                          SkColorSetA(color, 0x1a));
-}
-
-// static
-ShadowValues ShadowValue::MakeChromeOSSystemUIShadowValues(
-    int elevation,
-    SkColor key_shadow_color,
-    SkColor ambient_shadow_color) {
-  ShadowValues shadow_values;
-  // "Key shadow": y offset is elevation and blur equals to the elevation.
-  shadow_values.emplace_back(Vector2d(0, elevation),
-                             kBlurCorrection * elevation, key_shadow_color);
-  // "Ambient shadow": no offset and blur matches the elevation.
-  shadow_values.emplace_back(Vector2d(), kBlurCorrection * elevation,
-                             ambient_shadow_color);
-  return shadow_values;
-}
-#endif
 
 }  // namespace gfx

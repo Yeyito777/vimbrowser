@@ -60,8 +60,6 @@ void SuccessfulPasswordChangeBubbleController::AuthenticateUser(
 #if BUILDFLAG(IS_MAC)
   message = l10n_util::GetStringUTF16(
       IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT);
 #endif
   if (delegate_) {
     delegate_->AuthenticateUserWithMessage(message, std::move(auth_callback));

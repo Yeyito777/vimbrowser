@@ -70,14 +70,8 @@ constexpr char kImeWindowMissingPermission[] =
     "Extensions require the \"app.window.ime\" permission to create windows.";
 constexpr char kImeOptionIsNotSupported[] =
     "The \"ime\" option is not supported for platform app.";
-#if !BUILDFLAG(IS_CHROMEOS)
 constexpr char kImeWindowUnsupportedPlatform[] =
     "The \"ime\" option can only be used on ChromeOS.";
-#else
-constexpr char kImeWindowMustBeImeWindow[] =
-    "IME extensions must create an IME window ( with \"ime: true\" and "
-    "\"frame: 'none'\"). Panels are no longer supported for IME extensions.";
-#endif
 constexpr char kShowInShelfWindowKeyNotSet[] =
     "The \"showInShelf\" option requires the \"id\" option to be set.";
 constexpr char kInvalidIconUrlParameter[] = "The icon URL is invalid.";
@@ -251,21 +245,9 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
             Error(app_window_constants::kImeWindowMissingPermission));
       }
 
-#if !BUILDFLAG(IS_CHROMEOS)
       // IME window is only supported on ChromeOS.
       return RespondNow(
           Error(app_window_constants::kImeWindowUnsupportedPlatform));
-#else
-      // IME extensions must create ime window (with "ime: true" and
-      // "frame: none").
-      if (options->ime.value_or(false) &&
-          create_params.frame == AppWindow::FRAME_NONE) {
-        create_params.is_ime_window = true;
-      } else {
-        return RespondNow(
-            Error(app_window_constants::kImeWindowMustBeImeWindow));
-      }
-#endif  // IS_CHROMEOS
     } else {
       if (options->ime) {
         return RespondNow(
@@ -275,12 +257,6 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
 
     if (options->alpha_enabled) {
       static constexpr const char* kAllowlist[] = {
-#if BUILDFLAG(IS_CHROMEOS)
-          "B58B99751225318C7EB8CF4688B5434661083E07",  // http://crbug.com/41130065
-          "06BE211D5F014BAB34BC22D9DDA09C63A81D828E",  // http://crbug.com/41138491
-          "F94EE6AB36D6C6588670B2B01EB65212D9C64E33",
-          "B9EF10DDFEA11EF77873CC5009809E5037FC4C7A",  // http://crbug.com/40394927
-#endif
           "0F42756099D914A026DADFA182871C015735DD95",  // http://crbug.com/40342962
           "2D22CDB6583FD0A13758AEBE8B15E45208B4E9A7",
           "A07A5B743CD82A1C2579DB77D353C98A23201EEF",  // http://crbug.com/40384256

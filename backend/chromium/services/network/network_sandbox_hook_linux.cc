@@ -86,29 +86,9 @@ std::vector<BrokerFilePermission> GetNetworkFilePermissions(
   return perms;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void LoadNetworkLibraries() {
-  const std::string libraries[]{
-      // On ChromeOS DNS resolution will occur in process, so load the libraries
-      // now. Note that depending on the glibc version, these libraries may have
-      // been built directly into libc.so, so it's not an error if they fail to
-      // load.
-      "libnss_files.so.2", "libnss_dns.so.2"};
-  for (const auto& library_name : libraries) {
-    if (!dlopen(library_name.c_str(),
-                RTLD_LAZY | RTLD_GLOBAL | RTLD_NODELETE)) {
-      VLOG(1) << "LoadNetworkLibraries() dlopen() of " << library_name
-              << " failed with error: " << dlerror();
-    }
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool NetworkPreSandboxHook(std::vector<std::string> network_context_parent_dirs,
                            sandbox::policy::SandboxLinux::Options options) {
-#if BUILDFLAG(IS_CHROMEOS)
-  LoadNetworkLibraries();
-#endif
 
   auto* instance = sandbox::policy::SandboxLinux::GetInstance();
 

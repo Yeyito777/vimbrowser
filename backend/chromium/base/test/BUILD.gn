@@ -9,10 +9,6 @@ import("//build/rust/rust_static_library.gni")
 import("//build_overrides/build.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_ios) {
-  import("//build/config/ios/rules.gni")
-}
-
 import("//third_party/perfetto/gn/perfetto_cc_proto_descriptor.gni")
 
 static_library("test_config") {
@@ -222,37 +218,6 @@ static_library("test_support") {
       ":amalgamated_perfetto_sql_stdlib",
       ":gen_cc_chrome_track_event_descriptor",
     ]
-    if (is_ios) {
-      deps += [
-        ":test_trace_processor+bundle",
-        ":test_trace_processor+link",
-      ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "async_results_test_values_win.h",
-      "fake_iasync_operation_win.h",
-      "file_path_reparse_point_win.cc",
-      "file_path_reparse_point_win.h",
-      "scoped_os_info_override_win.cc",
-      "scoped_os_info_override_win.h",
-      "test_file_util_win.cc",
-      "test_reg_util_win.cc",
-      "test_reg_util_win.h",
-      "test_shortcut_win.cc",
-      "test_shortcut_win.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "scoped_chromeos_version_info.cc",
-      "scoped_chromeos_version_info.h",
-      "scoped_running_on_chromeos.cc",
-      "scoped_running_on_chromeos.h",
-    ]
   }
 
   if (is_linux || is_chromeos) {
@@ -276,48 +241,11 @@ static_library("test_support") {
     ]
   }
 
-  if (is_ios) {
-    sources += [
-      "ios/wait_util.h",
-      "ios/wait_util.mm",
-      "test_file_util_mac.cc",
-      "test_listener_ios.h",
-      "test_listener_ios.mm",
-      "test_support_ios.h",
-      "test_support_ios.mm",
-    ]
-    deps += [
-      ":google_test_runner_shared_headers",
-      "//build:blink_buildflags",
-      "//build:ios_buildflags",
-    ]
-
-    # With blink, we use the standard unit_test_launcher.cc.
-    if (!use_blink) {
-      sources += [ "launcher/unit_test_launcher_ios.cc" ]
-    }
-  }
-
   if (is_posix || is_fuchsia) {
     sources += [
       "scoped_locale.cc",
       "scoped_locale.h",
       "test_file_util_posix.cc",
-    ]
-  }
-
-  if (is_fuchsia) {
-    deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.io:fuchsia.io_cpp_hlcpp_conversion",
-      "//third_party/fuchsia-sdk/sdk/pkg/zx",
-    ]
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp" ]
-    sources += [
-      "../fuchsia/test_component_context_for_process.cc",
-      "../fuchsia/test_component_context_for_process.h",
-      "fidl_matchers.h",
-      "scoped_dev_zero_fuchsia.cc",
-      "scoped_dev_zero_fuchsia.h",
     ]
   }
 
@@ -435,16 +363,6 @@ shared_library("test_shared_library") {
   sources = [ "test_shared_library.cc" ]
 }
 
-if (is_ios) {
-  ios_framework_bundle("test_shared_library_ios") {
-    testonly = true
-    output_name = "test_shared_library_ios"
-    info_plist = "ios/native-library-Info.plist"
-
-    sources = [ "test_shared_library.cc" ]
-  }
-}
-
 if (is_fuchsia || is_linux || is_chromeos) {
   shared_library("malloc_wrapper") {
     testonly = true
@@ -452,19 +370,6 @@ if (is_fuchsia || is_linux || is_chromeos) {
       "malloc_wrapper.cc",
       "malloc_wrapper.h",
     ]
-  }
-}
-
-if (is_ios) {
-  source_set("google_test_runner_shared_headers") {
-    sources = [ "ios/google_test_runner_delegate.h" ]
-  }
-
-  source_set("google_test_runner") {
-    sources = [ "ios/google_test_runner.mm" ]
-    deps = [ ":google_test_runner_shared_headers" ]
-    frameworks = [ "UIKit.framework" ]
-    configs += [ "//build/config/ios:xctest_config" ]
   }
 }
 
@@ -506,9 +411,6 @@ action("amalgamated_perfetto_sql_stdlib") {
 # different implementations, so we need to hide dev_sqlite in this shared
 # library even in non-component builds to prevent duplicate symbols.
 _target_type = "component"
-if (is_ios) {
-  _target_type = "ios_framework_bundle"
-}
 
 target(_target_type, "test_trace_processor") {
   defines = [ "TEST_TRACE_PROCESSOR_IMPL" ]
@@ -524,12 +426,6 @@ target(_target_type, "test_trace_processor") {
     "//third_party/abseil-cpp:absl",
     "//third_party/perfetto:libtrace_processor",
   ]
-
-  if (is_ios) {
-    info_plist = "test_trace_processor_impl.plist"
-    output_name = "TestTraceProcessor"
-    bundle_deps_filter = [ "//third_party/icu:icudata" ]
-  }
 }
 
 source_set("fuzztest_support") {

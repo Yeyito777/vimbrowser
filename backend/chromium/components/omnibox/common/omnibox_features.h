@@ -163,15 +163,6 @@ BASE_DECLARE_FEATURE(kOmniboxDebugLogs);
 // Thinking Pro model when multiple Pro models are available.
 BASE_DECLARE_FEATURE(kThinkingModelIconUpdate);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_DECLARE_FEATURE(kDiagnostics);
-BASE_DECLARE_FEATURE(kJumpStartOmnibox);
-BASE_DECLARE_FEATURE(kSuppressIntermediateACUpdatesOnLowEndDevices);
-// Delay focusTab to prioritize navigation (https://crbug.com/374852568).
-BASE_DECLARE_FEATURE(kPostDelayedTaskFocusTab);
-BASE_DECLARE_FEATURE(kAndroidHubSearchTabGroups);
-BASE_DECLARE_FEATURE(kOmniboxImprovementForLFF);
-#endif  // BUILDFLAG(IS_ANDROID)
 // Note: no new flags beyond this point.
 
 namespace flag_descriptions {

@@ -33,9 +33,6 @@
 #include "gpu/ipc/common/surface_handle.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display_embedder/software_output_device_win.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "components/viz/service/display_embedder/software_output_device_mac.h"
@@ -54,9 +51,6 @@
 #include "ui/ozone/public/surface_ozone_canvas.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/viz/service/display_embedder/output_surface_unified.h"
-#endif
 
 namespace viz {
 
@@ -96,10 +90,6 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
     const RendererSettings& renderer_settings,
     const DebugRendererSettings* debug_settings,
     bool use_proxy_output_device) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (surface_handle == gpu::kNullSurfaceHandle)
-    return std::make_unique<OutputSurfaceUnified>();
-#endif
 
   if (!gpu_compositing) {
     return std::make_unique<SoftwareOutputSurface>(
@@ -116,14 +106,6 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
           gpu_dependency, renderer_settings, debug_settings);
     }
 
-#if BUILDFLAG(IS_ANDROID)
-    // As with non-skia-renderer case, communicate the creation result to
-    // CompositorImplAndroid so that it can attempt to recreate the surface on
-    // failure.
-    display_client->OnContextCreationResult(
-        output_surface ? gpu::ContextResult::kSuccess
-                       : gpu::ContextResult::kSurfaceFailure);
-#endif  // BUILDFLAG(IS_ANDROID)
 
     if (!output_surface) {
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_CASTOS)
@@ -131,7 +113,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
       // devices, so we should never encounter fatal context error. This could
       // be an unrecoverable hardware error or a bug.
       LOG(FATAL) << "Unexpected fatal context error";
-#elif !BUILDFLAG(IS_ANDROID)
+#else
       gpu_service_impl_->DisableGpuCompositing();
 #endif
     }
@@ -157,19 +139,8 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
         std::move(layered_window_updater));
   }
 
-#if BUILDFLAG(IS_WIN)
-  HWND child_hwnd;
-  auto device = CreateSoftwareOutputDeviceWin(
-      surface_handle, &output_device_backing_, display_client, child_hwnd);
-  if (child_hwnd) {
-    display_client->AddChildWindowToBrowser(child_hwnd);
-  }
-  return device;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return std::make_unique<SoftwareOutputDeviceMac>(task_runner_);
-#elif BUILDFLAG(IS_ANDROID)
-  // Android does not do software compositing, so we can't get here.
-  NOTREACHED();
 #elif BUILDFLAG(IS_OZONE)
   ui::SurfaceFactoryOzone* factory =
       ui::OzonePlatform::GetInstance()->GetSurfaceFactoryOzone();

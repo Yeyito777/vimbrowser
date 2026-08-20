@@ -49,15 +49,6 @@
 #include "chrome/browser/global_keyboard_shortcuts_mac.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/window_properties.h"
-#include "base/functional/callback.h"
-#include "base/scoped_observation.h"
-#include "ui/aura/client/aura_constants.h"
-#include "ui/aura/window.h"
-#include "ui/aura/window_observer.h"
-#include "ui/gfx/native_ui_types.h"
-#endif
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 #include "chrome/browser/safe_browsing/chrome_password_reuse_detection_manager_client.h"
@@ -65,52 +56,6 @@
 
 using content::WebContents;
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Observes the NativeWindow hosting the receiver view to look for fullscreen
-// state changes.  This helps monitor fullscreen changes that don't go through
-// the normal key accelerator to display and hide the location bar.
-class FullscreenWindowObserver : public aura::WindowObserver {
- public:
-  FullscreenWindowObserver(aura::Window* observed_window,
-                           base::RepeatingClosure on_fullscreen_change)
-      : on_fullscreen_change_(on_fullscreen_change) {
-    window_observation_.Observe(observed_window);
-  }
-
-  FullscreenWindowObserver(const FullscreenWindowObserver&) = delete;
-  FullscreenWindowObserver& operator=(const FullscreenWindowObserver&) = delete;
-
-  ~FullscreenWindowObserver() override = default;
-
- private:
-  // aura::WindowObserver overrides.
-  void OnWindowPropertyChanged(aura::Window* window,
-                               const void* key,
-                               intptr_t old) override {
-    if (key == aura::client::kShowStateKey) {
-      ui::mojom::WindowShowState new_state =
-          window->GetProperty(aura::client::kShowStateKey);
-      ui::mojom::WindowShowState old_state =
-          static_cast<ui::mojom::WindowShowState>(old);
-      if (old_state == ui::mojom::WindowShowState::kFullscreen ||
-          new_state == ui::mojom::WindowShowState::kFullscreen) {
-        on_fullscreen_change_.Run();
-      }
-    }
-  }
-
-  void OnWindowDestroying(aura::Window* window) override {
-    DCHECK(window_observation_.IsObserving());
-    window_observation_.Reset();
-  }
-
-  base::RepeatingClosure on_fullscreen_change_;
-
-  base::ScopedObservation<aura::Window, aura::WindowObserver>
-      window_observation_{this};
-};
-
-#endif
 
 PresentationReceiverWindowView::PresentationReceiverWindowView(
     PresentationReceiverWindowFrame* frame,
@@ -205,12 +150,6 @@ void PresentationReceiverWindowView::Init() {
 
   location_bar_view_->Init();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  window_observer_ = std::make_unique<FullscreenWindowObserver>(
-      GetWidget()->GetNativeWindow(),
-      base::BindRepeating(&PresentationReceiverWindowView::OnFullscreenChanged,
-                          base::Unretained(this)));
-#endif
 }
 
 void PresentationReceiverWindowView::Close() {
@@ -297,18 +236,14 @@ void PresentationReceiverWindowView::EnterFullscreen(
     ExclusiveAccessBubbleType bubble_type,
     FullscreenTabParams fullscreen_tab_params) {
   frame_->SetFullscreen(true);
-#if !BUILDFLAG(IS_CHROMEOS)
   OnFullscreenChanged();
-#endif
   UpdateExclusiveAccessBubble({.origin = origin, .type = bubble_type},
                               base::NullCallback());
 }
 
 void PresentationReceiverWindowView::ExitFullscreen() {
   frame_->SetFullscreen(false);
-#if !BUILDFLAG(IS_CHROMEOS)
   OnFullscreenChanged();
-#endif
 }
 
 void PresentationReceiverWindowView::UpdateExclusiveAccessBubble(
@@ -317,16 +252,6 @@ void PresentationReceiverWindowView::UpdateExclusiveAccessBubble(
   bool should_hide_bubble =
       !params.has_download && params.type == EXCLUSIVE_ACCESS_BUBBLE_TYPE_NONE;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, we will not show the toast for the normal browser fullscreen
-  // mode.  The 'F11' text is confusing since how to access F11 on a Chromebook
-  // is not common knowledge and there is also a dedicated fullscreen toggle
-  // button available.
-  if (params.type ==
-      EXCLUSIVE_ACCESS_BUBBLE_TYPE_BROWSER_FULLSCREEN_EXIT_INSTRUCTION) {
-    should_hide_bubble = true;
-  }
-#endif
 
   if (should_hide_bubble) {
     // |exclusive_access_bubble_.reset()| will trigger callback for current

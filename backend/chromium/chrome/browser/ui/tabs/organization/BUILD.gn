@@ -95,13 +95,6 @@ source_set("impl") {
     "//services/metrics/public/cpp:ukm_builders",
     "//url",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/ownership",
-      "//chrome/browser/ash/settings",
-      "//chrome/browser/ui/browser_window",
-    ]
-  }
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 

@@ -32,11 +32,6 @@
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/static_constants.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "base/mac/mac_util.h"
@@ -846,19 +841,6 @@ bool StackSamplingProfiler::IsSupportedForCurrentPlatform() {
       (defined(ARCH_CPU_ARM64)))) ||                                        \
     (BUILDFLAG(IS_CHROMEOS) &&                                              \
      (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64)))
-#if BUILDFLAG(IS_WIN)
-  // Do not start the profiler when Application Verifier is in use; running them
-  // simultaneously can cause crashes and has no known use case.
-  if (GetModuleHandleA(base::win::kApplicationVerifierDllName)) {
-    return false;
-  }
-  // Checks if Trend Micro DLLs are loaded in process, so we can disable the
-  // profiler to avoid hitting their performance bug. See
-  // https://crbug.com/1018291 and https://crbug.com/1113832.
-  if (GetModuleHandleA("tmmon64.dll") || GetModuleHandleA("tmmonmgr64.dll")) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return true;
 #else
   return false;

@@ -29,18 +29,10 @@
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/base/models/image_model.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/content_relationship_verification/digital_asset_links_handler.h"  // nogncheck
-#endif
 
 class Browser;
 class SkBitmap;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash {
-class SystemWebAppDelegate;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content_relationship_verification {
 class DigitalAssetLinksHandler;
@@ -68,9 +60,6 @@ class WebAppBrowserController : public AppBrowserController,
   WebAppBrowserController(WebAppProvider& provider,
                           Browser* browser,
                           webapps::AppId app_id,
-#if BUILDFLAG(IS_CHROMEOS)
-                          const ash::SystemWebAppDelegate* system_app,
-#endif  // BUILDFLAG(IS_CHROMEOS)
                           bool has_tab_strip);
   WebAppBrowserController(const WebAppBrowserController&) = delete;
   WebAppBrowserController& operator=(const WebAppBrowserController&) = delete;
@@ -122,13 +111,8 @@ class WebAppBrowserController : public AppBrowserController,
   bool HasPendingUpdateNotIgnoredByUser() const override;
   void TriggerAppUpdateOrMigrationDialog(
       base::TimeTicks start_time) const override;
-#if BUILDFLAG(IS_CHROMEOS)
-  const ash::SystemWebAppDelegate* system_app() const override;
-  bool ShouldShowCustomTabBar() const override;
-#else
   bool HasProfileMenuButton() const override;
   bool IsProfileMenuButtonVisible() const override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
   bool AlwaysShowToolbarInFullscreen() const override;
@@ -190,13 +174,6 @@ class WebAppBrowserController : public AppBrowserController,
                                const WebAppIdentityUpdate& identity_update,
                                WebAppIdentityUpdateResult result) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void CheckDigitalAssetLinkRelationshipForAndroidApp(
-      const std::string& package_name,
-      const std::string& fingerprint);
-  void OnRelationshipCheckComplete(
-      content_relationship_verification::RelationshipCheckResult result);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Helper function to return the resolved background color from the manifest
   // given the current state of dark/light mode.
@@ -210,9 +187,6 @@ class WebAppBrowserController : public AppBrowserController,
   DisplayMode effective_display_mode_ = DisplayMode::kUndefined;
   bool is_isolated_web_app_for_testing_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const raw_ptr<const ash::SystemWebAppDelegate> system_app_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   mutable std::optional<ui::ImageModel> app_icon_;
 
   // Save this at launch time in case it changes with a manifest update while
@@ -224,14 +198,6 @@ class WebAppBrowserController : public AppBrowserController,
   // Initialized from the app-level default when the window is created.
   bool per_window_wco_enabled_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The result of digital asset link verification of the web app.
-  // Only used for web-only TWAs installed through the Play Store.
-  std::optional<bool> is_verified_;
-
-  std::unique_ptr<content_relationship_verification::DigitalAssetLinksHandler>
-      asset_link_handler_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::ScopedObservation<WebAppInstallManager, WebAppInstallManagerObserver>
       install_manager_observation_{this};

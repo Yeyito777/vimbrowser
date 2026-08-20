@@ -39,13 +39,6 @@ if (build_with_chromium) {
     ]
     public_deps = [ ":compression_utils_portable" ]
   }
-
-  if (is_ios) {
-    bundle_data_from_filelist("zlib_pak_bundle_data") {
-      testonly = true
-      filelist_name = "test_data.filelist"
-    }
-  }
 }
 
 # This allows other users of Chromium's zlib library, but don't use Chromium's

@@ -27,12 +27,8 @@ config("libwebp_config") {
     "WEBP_DISABLE_STATS",
     "WEBP_USE_THREAD",
   ]
-  if (!is_chromeos) {
-    defines += [ "WEBP_REDUCE_SIZE" ]
-  }
-  if (!is_ios) {
-    defines += [ "WEBP_REDUCE_CSP" ]
-  }
+  defines += [ "WEBP_REDUCE_SIZE" ]
+  defines += [ "WEBP_REDUCE_CSP" ]
 }
 
 set_opt_level =

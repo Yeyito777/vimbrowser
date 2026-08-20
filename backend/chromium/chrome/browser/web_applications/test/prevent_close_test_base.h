@@ -14,10 +14,6 @@
 #include "components/policy/core/common/mock_configuration_policy_provider.h"
 #include "components/webapps/common/web_app_id.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/base_paths_win.h"
-#include "base/test/scoped_path_override.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 class Browser;
 class GURL;

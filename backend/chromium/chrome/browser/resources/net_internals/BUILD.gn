@@ -27,10 +27,6 @@ build_webui("build") {
     "view.js",
   ]
 
-  if (is_chromeos) {
-    ts_files += [ "chromeos_view.js" ]
-  }
-
   ts_deps = [ "//ui/webui/resources/js:build_ts" ]
   webui_context_type = "trusted"
 }

@@ -68,23 +68,6 @@ bool HostedAppBrowserController::HasMinimalUiButtons() const {
 ui::ImageModel HostedAppBrowserController::GetWindowAppIcon() const {
   // TODO(calamity): Use the app name to retrieve the app icon without using the
   // extensions tab helper to make icon load more immediate.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (apps::AppServiceProxyFactory::IsAppServiceAvailableForProfile(
-          browser()->profile())) {
-    if (!app_icon_.isNull()) {
-      return ui::ImageModel::FromImageSkia(app_icon_);
-    }
-
-    const Extension* extension = GetExtension();
-    if (extension &&
-        apps::AppServiceProxyFactory::GetForProfile(browser()->profile())
-                ->AppRegistryCache()
-                .GetAppType(extension->id()) != apps::AppType::kUnknown) {
-      LoadAppIcon(true /* allow_placeholder_icon */);
-      return GetFallbackAppIcon();
-    }
-  }
-#endif
 
   content::WebContents* contents =
       browser()->tab_strip_model()->GetActiveWebContents();

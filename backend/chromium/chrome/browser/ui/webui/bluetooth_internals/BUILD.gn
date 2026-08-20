@@ -28,15 +28,6 @@ source_set("bluetooth_internals") {
     "//device/bluetooth",
     "//ui/webui",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//ash/public/cpp",
-      "//chrome/browser/ash/bluetooth",
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//chromeos/ash/services/bluetooth_config/public/mojom",
-    ]
-  }
 }
 
 mojom("mojo_bindings") {

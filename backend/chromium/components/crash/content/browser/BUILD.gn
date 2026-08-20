@@ -17,19 +17,6 @@ source_set("browser") {
   ]
 
   public_deps = [ "//content/public/browser" ]
-
-  if (is_castos) {
-    sources += [
-      "crash_handler_host_linux.cc",
-      "crash_handler_host_linux.h",
-    ]
-  }
-
-  if (is_castos) {
-    configs += [ "//third_party/breakpad:client_config" ]
-    public_configs = [ "//third_party/breakpad:client_config" ]
-    deps += [ "//third_party/breakpad:client" ]
-  }
 }
 
 source_set("unit_tests") {

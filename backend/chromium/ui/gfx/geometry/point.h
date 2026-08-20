@@ -14,10 +14,7 @@
 #include "build/build_config.h"
 #include "ui/gfx/geometry/vector2d.h"
 
-#if BUILDFLAG(IS_WIN)
-typedef unsigned long DWORD;
-typedef struct tagPOINT POINT;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 typedef struct CGPoint CGPoint;
 #endif
 
@@ -28,20 +25,11 @@ class COMPONENT_EXPORT(GEOMETRY) Point {
  public:
   constexpr Point() : x_(0), y_(0) {}
   constexpr Point(int x, int y) : x_(x), y_(y) {}
-#if BUILDFLAG(IS_WIN)
-  // |point| is a DWORD value that contains a coordinate.  The x-coordinate is
-  // the low-order short and the y-coordinate is the high-order short.  This
-  // value is commonly acquired from GetMessagePos/GetCursorPos.
-  explicit Point(DWORD point);
-  explicit Point(const POINT& point);
-  Point& operator=(const POINT& point);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   explicit Point(const CGPoint& point);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  POINT ToPOINT() const;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   CGPoint ToCGPoint() const;
 #endif
 

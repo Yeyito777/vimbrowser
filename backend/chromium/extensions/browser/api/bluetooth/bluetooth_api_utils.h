@@ -10,9 +10,6 @@
 #include "device/bluetooth/bluetooth_device.h"
 #include "extensions/common/api/bluetooth.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/chromeos/bluetooth_utils.h"
-#endif
 
 namespace extensions {
 namespace api {
@@ -27,9 +24,6 @@ void BluetoothDeviceToApiDevice(
 void PopulateAdapterState(const device::BluetoothAdapter& adapter,
                           AdapterState* out);
 
-#if BUILDFLAG(IS_CHROMEOS)
-device::BluetoothFilterType ToBluetoothDeviceFilterType(FilterType type);
-#endif
 
 }  // namespace bluetooth
 }  // namespace api

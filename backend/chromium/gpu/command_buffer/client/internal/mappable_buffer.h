@@ -73,12 +73,6 @@ class GPU_COMMAND_BUFFER_CLIENT_EXPORT MappableBuffer {
   // caller takes ownership of the returned handle.
   virtual gfx::GpuMemoryBufferHandle CloneHandle() const = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Used to set the use_premapped_memory flag in the MappableBufferDXGI to
-  // indicate whether to use the premapped memory or not. It is only used with
-  // MappableSI. See MappableBufferDXGI override for more details.
-  virtual void SetUsePreMappedMemory(bool use_premapped_memory) = 0;
-#endif
 
  protected:
   MappableBuffer() = default;

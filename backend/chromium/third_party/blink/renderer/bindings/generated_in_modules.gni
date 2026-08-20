@@ -3411,12 +3411,10 @@ generated_union_sources_in_modules = [
 
 # Installed App (getInstalledRelatedApps) is excluded on iOS because the
 # webapp infrastructure required for this API is not yet implemented.
-if (!is_ios) {
-  generated_dictionary_sources_in_modules += [
-    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_related_application.cc",
-    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_related_application.h",
-  ]
-}
+generated_dictionary_sources_in_modules += [
+  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_related_application.cc",
+  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_related_application.h",
+]
 
 # Direct Sockets
 # This uses target_os rather than current_os (which is what is_android is set

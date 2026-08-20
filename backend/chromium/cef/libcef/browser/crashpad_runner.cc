@@ -29,21 +29,15 @@ int RunAsCrashpadHandler(const base::CommandLine& command_line) {
                      }),
       argv.end());
 
-#if BUILDFLAG(IS_POSIX)
   // HandlerMain on POSIX uses the system version of getopt_long which expects
   // the first argument to be the program name.
   argv.insert(argv.begin(), command_line.GetProgram().value());
-#endif
 
   auto argv_as_utf8 = std::make_unique<char*[]>(argv.size() + 1);
   std::vector<std::string> storage;
   storage.reserve(argv.size());
   for (size_t i = 0; i < argv.size(); ++i) {
-#if BUILDFLAG(IS_WIN)
-    storage.push_back(base::WideToUTF8(argv[i]));
-#else
     storage.push_back(argv[i]);
-#endif
     argv_as_utf8[i] = &storage[i][0];
   }
   argv_as_utf8[argv.size()] = nullptr;

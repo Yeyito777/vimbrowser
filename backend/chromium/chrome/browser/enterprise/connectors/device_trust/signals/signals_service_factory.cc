@@ -33,11 +33,6 @@
 #include "components/policy/core/common/cloud/machine_level_user_cloud_policy_manager.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome/browser/enterprise/connectors/device_trust/signals/ash/ash_signals_filterer.h"
-#include "chrome/browser/enterprise/connectors/device_trust/signals/decorators/ash/ash_signals_decorator.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace enterprise_connectors {
 
@@ -82,24 +77,9 @@ std::unique_ptr<SignalsService> CreateSignalsService(Profile* profile) {
       enterprise_signals::SignalsAggregatorFactory::GetForProfile(profile)));
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* platform_part = g_browser_process->platform_part();
-  if (platform_part) {
-    auto* policy_connector_ash = platform_part->browser_policy_connector_ash();
-    if (policy_connector_ash) {
-      decorators.push_back(
-          std::make_unique<AshSignalsDecorator>(policy_connector_ash, profile));
-    }
-  }
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::unique_ptr<SignalsFilterer> signals_filterer;
-#if BUILDFLAG(IS_CHROMEOS)
-  signals_filterer = std::make_unique<AshSignalsFilterer>();
-#else
   signals_filterer = std::make_unique<SignalsFilterer>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return std::make_unique<SignalsServiceImpl>(std::move(decorators),
                                               std::move(signals_filterer));

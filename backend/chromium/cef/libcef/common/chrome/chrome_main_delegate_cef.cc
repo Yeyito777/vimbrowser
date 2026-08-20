@@ -40,7 +40,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "cef/libcef/common/util_mac.h"
-#elif BUILDFLAG(IS_POSIX)
+#else
 #include "cef/libcef/common/util_linux.h"
 #endif
 
@@ -162,10 +162,8 @@ std::optional<int> ChromeMainDelegateCef::BasicStartupComplete() {
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
 
-#if BUILDFLAG(IS_POSIX)
   // Read the crash configuration file. On Windows this is done from chrome_elf.
   crash_reporting::BasicStartupComplete(command_line);
-#endif
 
   const std::string& process_type =
       command_line->GetSwitchValueASCII(switches::kProcessType);
@@ -191,11 +189,6 @@ std::optional<int> ChromeMainDelegateCef::BasicStartupComplete() {
         command_line->AppendSwitchPath(switches::kBrowserSubprocessPath,
                                        file_path);
 
-#if BUILDFLAG(IS_WIN)
-        // The sandbox is not supported when using a separate subprocess
-        // executable on Windows.
-        no_sandbox = true;
-#endif
       }
     }
 
@@ -345,12 +338,6 @@ std::optional<int> ChromeMainDelegateCef::BasicStartupComplete() {
       DisableFeatureByDefault(base::kEnableHangWatcher, disable_features);
     }
 
-#if BUILDFLAG(IS_WIN)
-    // Disable TcpSocketIoCompletionPortWin which breaks embedded test servers.
-    // See https://crbug.com/40287434#comment36
-    DisableFeatureByDefault(net::features::kTcpSocketIoCompletionPortWin,
-                            disable_features);
-#endif  // BUILDFLAG(IS_WIN)
 
     // Disable features that crash during Chrome browser initialization.
     // -- "Gemini in Chrome" Actor UI support. See issue #3982.
@@ -407,7 +394,7 @@ void ChromeMainDelegateCef::PreSandboxStartup() {
   if (process_type.empty()) {
 #if BUILDFLAG(IS_MAC)
     util_mac::PreSandboxStartup();
-#elif BUILDFLAG(IS_POSIX)
+#else
     util_linux::PreSandboxStartup();
 #endif
   }
@@ -444,22 +431,15 @@ void ChromeMainDelegateCef::PreSandboxStartup() {
   // chrome::DIR_CRASH_DUMPS must be configured before calling this function.
   crash_reporting::PreSandboxStartup(*command_line, process_type);
 
-#if !BUILDFLAG(IS_WIN)
   // Call after InitLogging() potentially changes values in
   // chrome/app/chrome_main_delegate.cc.
   InitLogging(command_line);
-#endif
 }
 
 void ChromeMainDelegateCef::SandboxInitialized(
     const std::string& process_type) {
   ChromeMainDelegate::SandboxInitialized(process_type);
 
-#if BUILDFLAG(IS_WIN)
-  // Call after InitLogging() potentially changes values in
-  // chrome/app/chrome_main_delegate.cc.
-  InitLogging(base::CommandLine::ForCurrentProcess());
-#endif
 }
 
 std::optional<int> ChromeMainDelegateCef::PreBrowserMain() {

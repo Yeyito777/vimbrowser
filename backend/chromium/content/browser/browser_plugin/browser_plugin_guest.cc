@@ -127,9 +127,6 @@ void BrowserPluginGuest::DidFinishNavigation(
 void BrowserPluginGuest::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
   switch (status) {
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-#endif
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
       RecordAction(base::UserMetricsAction("BrowserPlugin.Guest.Killed"));
       break;

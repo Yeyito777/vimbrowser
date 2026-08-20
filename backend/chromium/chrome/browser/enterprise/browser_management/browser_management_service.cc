@@ -40,9 +40,6 @@ GetManagementStatusProviders(Profile* profile) {
       std::make_unique<LocalTestPolicyUserManagementProvider>(profile));
   providers.emplace_back(
       std::make_unique<LocalTestPolicyBrowserManagementProvider>(profile));
-#if BUILDFLAG(IS_CHROMEOS)
-  providers.emplace_back(std::make_unique<DeviceManagementStatusProvider>());
-#endif
   return providers;
 }
 

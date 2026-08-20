@@ -184,19 +184,11 @@ std::optional<base::FilePath> StringToFilePath(const std::string& str_path) {
     return std::nullopt;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::UTF8ToWide(str_path));
-#else
   return base::FilePath(str_path);
-#endif
 }
 
 std::string FilePathToString(const base::FilePath& file_path) {
-#if BUILDFLAG(IS_WIN)
-  return base::WideToUTF8(file_path.value());
-#else
   return file_path.value();
-#endif
 }
 
 base::FilePath GetBaseFileNameForModels() {

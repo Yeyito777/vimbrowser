@@ -40,12 +40,7 @@ bool BertSafetyModel::InitTextSafetyModel(
                                            ->mutable_model_file()
                                            ->mutable_file_descriptor_meta();
   base::File& model_file = assets->model;
-#if BUILDFLAG(IS_WIN)
-  mutable_file_descriptor_meta->set_handle(
-      reinterpret_cast<uint64_t>(model_file.GetPlatformFile()));
-#else
   mutable_file_descriptor_meta->set_fd(model_file.GetPlatformFile());
-#endif
 
   options.mutable_base_options()
       ->mutable_compute_settings()

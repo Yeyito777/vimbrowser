@@ -4,10 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 component("devices") {
   sources = [
     "device_data_manager.cc",
@@ -37,13 +33,6 @@ component("devices") {
     sources += [
       "device_util_linux.cc",
       "device_util_linux.h",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "input_device_observer_win.cc",
-      "input_device_observer_win.h",
     ]
   }
 

@@ -34,18 +34,6 @@ source_set("commands") {
     "//third_party/abseil-cpp:absl",
   ]
 
-  if (is_win) {
-    sources += [
-      "win_key_rotation_command.cc",
-      "win_key_rotation_command.h",
-    ]
-    deps += [
-      "//chrome/browser/google",
-      "//chrome/install_static:install_static_util",
-      "//chrome/installer/util:with_no_strings",
-      "//chrome/updater/app/server/win:updater_legacy_idl",
-    ]
-  }
   if (is_linux) {
     sources += [
       "linux_key_rotation_command.cc",
@@ -115,15 +103,6 @@ source_set("unit_tests") {
     "//components/policy/core/common:test_support",
     "//testing/gtest",
   ]
-
-  if (is_win) {
-    sources += [ "win_key_rotation_command_unittest.cc" ]
-
-    deps += [
-      "//chrome/install_static/test:test_support",
-      "//chrome/installer/util:constants",
-    ]
-  }
 
   if (is_linux) {
     sources += [ "linux_key_rotation_command_unittest.cc" ]

@@ -41,16 +41,6 @@ void RegisterUserProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
 void RegisterUserProfilePrefs(user_prefs::PrefRegistrySyncable* registry,
                               const std::string& locale);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Register all prefs that will be used via a PrefService attached to the
-// sign-in profile using the locale of |g_browser_process|. |country| should be
-// the permanent country code stored for this client in lowercase ISO 3166-1
-// alpha-2. It can be used to pick country specific default values. May be
-// empty May be empty in which case country specific preferences will be unable
-// to be set.
-void RegisterSigninProfilePrefs(user_prefs::PrefRegistrySyncable* registry,
-                                std::string_view country);
-#endif
 
 // Migrate/cleanup deprecated prefs in |local_state|. Over time, long deprecated
 // prefs should be removed as new ones are added, but this call should never go

@@ -24,9 +24,6 @@
 #include "ui/views/layout/table_layout.h"
 #include "ui/views/view_utils.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/aura/window.h"
-#endif
 
 using content::DesktopMediaID;
 
@@ -35,26 +32,6 @@ namespace {
 constexpr int kDesktopMediaSourceViewGroupId = 1;
 constexpr int kItemSpacing = 4;
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Here we are going to display default app icon for app windows without an
-// icon, and display product logo for chrome browser windows.
-gfx::ImageSkia LoadDefaultIcon(aura::Window* window) {
-  BrowserView* browser_view =
-      BrowserView::GetBrowserViewForNativeWindow(window);
-  Browser* browser = browser_view ? browser_view->browser() : nullptr;
-
-  // Apps could be launched in a view other than BrowserView, so we count those
-  // windows without Browser association as apps.
-  // Technically dev tool is actually a special app, but we would like to
-  // display product logo for it, because intuitively it is internal to browser.
-  bool is_app =
-      !browser || browser->is_type_app() || browser->is_type_app_popup();
-  int idr = is_app ? IDR_APP_DEFAULT_ICON : IDR_PRODUCT_LOGO_32;
-
-  ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
-  return *rb.GetImageSkiaNamed(idr);
-}
-#endif
 
 DesktopMediaSourceView* AsDesktopMediaSourceView(views::View* view) {
   DCHECK(views::IsViewClass<DesktopMediaSourceView>(view));
@@ -167,16 +144,6 @@ void DesktopMediaListView::OnSourceAdded(size_t index) {
   source_view->SetGroup(kDesktopMediaSourceViewGroupId);
   if (source.id.type == DesktopMediaID::TYPE_WINDOW) {
     gfx::ImageSkia icon_image = GetWindowIcon(source.id);
-#if BUILDFLAG(IS_CHROMEOS)
-    // Empty icons are used to represent default icon for aura windows. By
-    // detecting this, we load the default icon from resource.
-    if (icon_image.isNull()) {
-      aura::Window* window = DesktopMediaID::GetNativeWindowById(source.id);
-      if (window) {
-        icon_image = LoadDefaultIcon(window);
-      }
-    }
-#endif
     source_view->SetIcon(icon_image);
   }
   AddChildViewAt(source_view, index);

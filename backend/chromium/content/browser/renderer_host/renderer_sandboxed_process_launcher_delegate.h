@@ -32,31 +32,6 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
   sandbox::mojom::Sandbox GetSandboxType() override;
 };
 
-#if BUILDFLAG(IS_WIN)
-// NOTE: changes to this class need to be reviewed by the security team.
-class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegateWin
-    : public RendererSandboxedProcessLauncherDelegate {
- public:
-  RendererSandboxedProcessLauncherDelegateWin(const base::CommandLine& cmd_line,
-                                              bool is_pdf_renderer,
-                                              bool is_jit_disabled);
-  // sandbox::policy::SandboxDelegate:
-  std::string GetSandboxTag() override;
-  bool InitializeConfig(sandbox::TargetConfig* config) override;
-  void PostSpawnTarget(base::ProcessHandle process) override;
-  bool CetCompatible() override;
-
-  // SandboxedProcessLauncherDelegate:
-  bool ShouldUseUntrustedMojoInvitation() override;
-  bool RestrictCoreSharing() override;
-
- private:
-  const bool renderer_app_container_disabled_;
-  const bool is_pdf_renderer_ = false;
-  const bool restrict_core_sharing_ = false;
-  bool dynamic_code_can_be_disabled_ = false;
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace content
 

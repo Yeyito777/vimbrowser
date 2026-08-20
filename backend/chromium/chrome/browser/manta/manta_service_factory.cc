@@ -23,10 +23,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/storage_partition.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/channel/channel_info.h"
-#include "chromeos/ash/components/demo_mode/utils/demo_session_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace manta {
 
@@ -59,13 +55,8 @@ MantaServiceFactory::~MantaServiceFactory() = default;
 std::unique_ptr<KeyedService>
 MantaServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* const context) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  bool is_demo_mode = ash::demo_mode::IsDeviceInDemoMode();
-  version_info::Channel chrome_channel = ash::GetChannel();
-#else
   bool is_demo_mode = false;
   version_info::Channel chrome_channel = version_info::Channel::UNKNOWN;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   Profile* const profile = Profile::FromBrowserContext(context);
   auto* identity_manager = IdentityManagerFactory::GetForProfile(profile);
@@ -76,14 +67,7 @@ MantaServiceFactory::BuildServiceInstanceForBrowserContext(
 
   std::string chrome_version = version_info::GetVersion().GetString();
   std::string locale;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (PrefService* pref_service = profile->GetPrefs()) {
-    // Check to make sure that the locale pref is set before accessing.
-    locale = pref_service->GetString(language::prefs::kApplicationLocale);
-  }
-#else
   locale = g_browser_process->GetApplicationLocale();
-#endif
 
   return std::make_unique<MantaService>(
       profile->GetDefaultStoragePartition()

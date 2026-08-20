@@ -27,10 +27,8 @@ enum class StartupType {
   kMaxValue = kOverridden,
 };
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Exposed for testing.
 BASE_DECLARE_FEATURE(kForceEnabled);
-#endif
 
 bool IsEnabled();
 
@@ -42,14 +40,12 @@ void LogStartupType(StartupType type);
 // redirect if it fails. Most tests don't expect redirects to occur.
 void DisableRemoteContentForTests();
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Whether loading remote content has been disabled via
 // DisableRemoteContentForTests().
 bool IsRemoteContentDisabled();
 
 // Allow setting the CHROME_VERSION_MAJOR for tests
 void SetChromeVersionForTests(int chrome_version);
-#endif
 
 // Returns true if the user has not yet seen the What's New page for the
 // current major milestone. When returning true, sets the pref in |local_state|

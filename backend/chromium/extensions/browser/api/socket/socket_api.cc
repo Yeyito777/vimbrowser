@@ -40,17 +40,11 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/socket/app_firewall_hole_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using extensions::mojom::APIPermissionID;
 
 namespace extensions {
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char kCrOSTerminal[] = "chrome-untrusted://terminal";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -74,9 +68,6 @@ const char kSocketNotConnectedError[] = "Socket not connected";
 const char kWildcardAddress[] = "*";
 const uint16_t kWildcardPort = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char kFirewallFailure[] = "Failed to open firewall port";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool IsPortValid(int port) {
   return port >= 0 && port <= 65535;
@@ -141,28 +132,6 @@ void SocketApiFunction::OpenFirewallHole(const std::string& address,
                                          int socket_id,
                                          Socket* socket) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!net::HostStringIsLocalhost(address)) {
-    net::IPEndPoint local_address;
-    if (!socket->GetLocalAddress(&local_address)) {
-      NOTREACHED() << "Cannot get address of recently bound socket.";
-    }
-
-    AppFirewallHoleManager* manager =
-        AppFirewallHoleManager::Get(browser_context());
-    std::unique_ptr<AppFirewallHole> hole =
-        manager->Open(socket->GetSocketType() == Socket::TYPE_TCP
-                          ? chromeos::FirewallHole::PortType::kTcp
-                          : chromeos::FirewallHole::PortType::kUdp,
-                      local_address.port(), GetOriginId());
-    if (!hole) {
-      Respond(ErrorWithCode(-1, kFirewallFailure));
-      return;
-    }
-
-    socket->set_firewall_hole(std::move(hole));
-  }
-#endif
 }
 
 ExtensionFunction::ResponseAction SocketApiFunction::Run() {
@@ -180,39 +149,17 @@ ExtensionFunction::ResponseValue SocketApiFunction::ErrorWithCode(
 }
 
 std::string SocketApiFunction::GetOriginId() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Terminal app is the only non-extension to use sockets (crbug.com/1350479).
-  if (!extension()) {
-    auto origin = url::Origin::Create(source_url()).Serialize();
-    CHECK_EQ(origin, kCrOSTerminal);
-    return origin;
-  }
-#endif
   return extension_id();
 }
 
 bool SocketApiFunction::CheckPermission(
     const APIPermission::CheckParam& param) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Terminal app is the only non-extension to use sockets (crbug.com/1350479).
-  if (!extension()) {
-    CHECK_EQ(url::Origin::Create(source_url()).Serialize(), kCrOSTerminal);
-    return true;
-  }
-#endif
   return extension()->permissions_data()->CheckAPIPermissionWithParam(
       APIPermissionID::kSocket, &param);
 }
 
 bool SocketApiFunction::CheckRequest(
     const content::SocketPermissionRequest& param) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Terminal app is the only non-extension to use sockets (crbug.com/1350479).
-  if (!extension()) {
-    CHECK_EQ(url::Origin::Create(source_url()).Serialize(), kCrOSTerminal);
-    return true;
-  }
-#endif
   return SocketsManifestData::CheckRequest(extension(), param);
 }
 

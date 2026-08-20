@@ -216,11 +216,6 @@ class MetricsLog {
       std::optional<ChromeUserMetricsExtension::RealLocalTime> close_time,
       std::string* encoded_log);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Assigns a user ID to the log. This should be called immediately after
-  // consotruction if it should be applied.
-  void SetUserId(const std::string& user_id);
-#endif
 
   LogType log_type() const { return log_type_; }
 

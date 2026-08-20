@@ -30,11 +30,6 @@
 #include "device/bluetooth/floss/floss_lescan_client.h"
 #include "device/bluetooth/floss/floss_manager_client.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/bluetooth_low_energy_scan_filter.h"
-#include "device/bluetooth/bluetooth_low_energy_scan_session.h"
-#include "device/bluetooth/floss/floss_admin_client.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace floss {
 
@@ -55,9 +50,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothAdapterFloss final
       public floss::FlossAdapterClient::Observer,
       public floss::FlossBatteryManagerClient::
           FlossBatteryManagerClientObserver,
-#if BUILDFLAG(IS_CHROMEOS)
-      public FlossAdminClientObserver,
-#endif  // BUILDFLAG(IS_CHROMEOS)
       public ScannerClientObserver {
  public:
   static scoped_refptr<BluetoothAdapterFloss> CreateAdapter();
@@ -115,9 +107,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothAdapterFloss final
       CreateAdvertisementCallback callback,
       AdvertisementErrorCallback error_callback) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool IsExtendedAdvertisementsAvailable() const override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void SetAdvertisingInterval(
       const base::TimeDelta& min,
@@ -170,32 +159,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothAdapterFloss final
   bool SendValueChanged(BluetoothLocalGattCharacteristicFloss* characteristic,
                         const std::vector<uint8_t>& value);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetServiceAllowList(const UUIDList& uuids,
-                           base::OnceClosure callback,
-                           ErrorCallback error_callback) override;
-
-  void SetSimpleSecurePairingEnabled(bool enabled,
-                                     base::OnceClosure callback,
-                                     ErrorCallback error_callback) override;
-
-  LowEnergyScanSessionHardwareOffloadingStatus
-  GetLowEnergyScanSessionHardwareOffloadingStatus() override;
-
-  std::unique_ptr<device::BluetoothLowEnergyScanSession>
-  StartLowEnergyScanSession(
-      std::unique_ptr<device::BluetoothLowEnergyScanFilter> filter,
-      base::WeakPtr<device::BluetoothLowEnergyScanSession::Delegate> delegate)
-      override;
-
-  std::vector<BluetoothRole> GetSupportedRoles() override;
-
-  // Set the adapter name to one chosen from the system information.
-  void SetStandardChromeOSAdapterName() override;
-  // Enable telephony feature for floss.
-  void ConfigureBluetoothTelephony(bool enabled);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // ScannerClientObserver overrides
   void ScannerRegistered(device::BluetoothUUID uuid,
@@ -316,14 +279,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothAdapterFloss final
   // override.
   void BatteryInfoUpdated(std::string remote_address,
                           BatterySet battery_set) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  // floss::FlossAdminClientObserver override.
-  void DevicePolicyEffectChanged(
-      const FlossDeviceId& device_id,
-      const std::optional<PolicyEffect>& effect) override;
-  void ServiceAllowlistChanged(
-      const std::vector<device::BluetoothUUID>& allowlist) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // BluetoothAdapter:
   base::WeakPtr<BluetoothAdapter> GetWeakPtr() override;

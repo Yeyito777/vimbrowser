@@ -24,11 +24,7 @@ BASE_FEATURE(kPdfBufferedPaintManager, base::FEATURE_DISABLED_BY_DEFAULT);
 // TODO(crbug.com/40123601): Remove this once incremental loading is fixed.
 BASE_FEATURE(kPdfIncrementalLoading, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_CHROMEOS)
-BASE_FEATURE(kPdfOopif, base::FEATURE_DISABLED_BY_DEFAULT);
-#else
 BASE_FEATURE(kPdfOopif, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // "Partial loading" refers to loading only specific parts of the PDF.
 // TODO(crbug.com/40123601): Remove this once partial loading is fixed.
@@ -70,13 +66,8 @@ const base::FeatureParam<bool> kPdfInk2TextHighlighting{
 #endif  // BUILDFLAG(ENABLE_PDF_INK2)
 
 #if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
-#if BUILDFLAG(IS_CHROMEOS)
-// Saves the PDF file to Google Drive.
-BASE_FEATURE(kPdfSaveToDrive, base::FEATURE_DISABLED_BY_DEFAULT);
-#else
 // Saves the PDF file to Google Drive.
 BASE_FEATURE(kPdfSaveToDrive, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Enables the survey for saving PDF to Google Drive.
 BASE_FEATURE(kPdfSaveToDriveSurvey, base::FEATURE_DISABLED_BY_DEFAULT);

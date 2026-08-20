@@ -22,10 +22,6 @@ DISPLAY_EXPORT extern const char kScreenConfig[];
 DISPLAY_EXPORT extern const char kSecondaryDisplayLayout[];
 DISPLAY_EXPORT extern const char kUseFirstDisplayAsInternal[];
 
-#if BUILDFLAG(IS_CHROMEOS)
-DISPLAY_EXPORT extern const char kDisplayProperties[];
-DISPLAY_EXPORT extern const char kEnableUnifiedDesktop[];
-#endif
 
 }  // namespace switches
 

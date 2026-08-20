@@ -23,21 +23,12 @@
 #include "ui/accessibility/ax_mode.h"
 #include "ui/accessibility/ax_node_id_forward.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/callback_list.h"
-#else
 #include "base/scoped_observation.h"
 #include "ui/accessibility/platform/ax_mode_observer.h"
 #include "ui/accessibility/platform/ax_platform.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class Profile;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash {
-struct AccessibilityStatusEventDetails;
-}  // namespace ash
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 class WebContents;
@@ -66,10 +57,8 @@ class AXTreeFixingServicesRouter
           HeadingsIdentificationDelegate,
       public AXTreeFixingScreenAIService::MainNodeIdentificationDelegate,
       public AXTreeFixingScreenshotter::ScreenshotDelegate
-#if !BUILDFLAG(IS_CHROMEOS)
     ,
       public ui::AXModeObserver
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 {
  public:
   class AXTreeFixingWebContentsObserver : public content::WebContentsObserver {
@@ -124,10 +113,8 @@ class AXTreeFixingServicesRouter
                         const raw_ptr<content::WebContents> web_contents,
                         HeadingsIdentificationCallback callback);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // ui::AXModeObserver:
   void OnAXModeAdded(ui::AXMode mode) override;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
  private:
   // AXTreeFixingScreenAIService::MainNodeIdentificationDelegate overrides:
@@ -182,16 +169,9 @@ class AXTreeFixingServicesRouter
   const raw_ptr<Profile> profile_;
   PrefChangeRegistrar pref_change_registrar_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnAccessibilityStatusEvent(
-      const ash::AccessibilityStatusEventDetails& details);
-
-  base::CallbackListSubscription accessibility_status_subscription_;
-#else
   ui::AXMode current_ax_mode_;
   base::ScopedObservation<ui::AXPlatform, ui::AXModeObserver>
       ax_mode_observation_{this};
-#endif  // BUILDFLAG(IS_CHROMEOS)
   base::WeakPtrFactory<AXTreeFixingServicesRouter> weak_ptr_factory_{this};
 };
 

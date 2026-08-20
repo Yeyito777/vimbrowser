@@ -44,11 +44,7 @@ MediaRouterDialogControllerViews::~MediaRouterDialogControllerViews() {
 
 bool MediaRouterDialogControllerViews::ShowMediaRouterDialogForPresentation(
     std::unique_ptr<StartPresentationContext> context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ShowGlobalMediaControlsDialog(std::move(context));
-#else
   ShowGlobalMediaControlsDialogAsync(std::move(context));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return true;
 }
 
@@ -168,15 +164,6 @@ void MediaRouterDialogControllerViews::DestroyMediaRouterUI() {
   ui_.reset();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void MediaRouterDialogControllerViews::ShowGlobalMediaControlsDialog(
-    std::unique_ptr<StartPresentationContext> context) {
-  Profile* const profile =
-      Profile::FromBrowserContext(initiator()->GetBrowserContext());
-  MediaNotificationServiceFactory::GetForProfile(profile)->ShowDialogAsh(
-      std::move(context));
-}
-#else
 void MediaRouterDialogControllerViews::ShowGlobalMediaControlsDialogAsync(
     std::unique_ptr<StartPresentationContext> context) {
   // Show the WebContents requesting a dialog.
@@ -233,7 +220,6 @@ void MediaRouterDialogControllerViews::ShowGlobalMediaControlsDialog() {
                 kPresentation));
   }
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 MediaToolbarButtonView* MediaRouterDialogControllerViews::GetMediaButton() {
   if (hide_media_button_for_testing_) {

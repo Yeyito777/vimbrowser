@@ -174,14 +174,6 @@ class NET_EXPORT FileStream {
   // This method should not be called if the stream was opened READ_ONLY.
   virtual int Flush(ErrorCallback callback);
 
-#if BUILDFLAG(IS_WIN)
-  // Waits for a client to connect to the named pipe provided to the two-arg
-  // constructor. Returns `OK` if the client has already connected,
-  // `ERR_IO_PENDING` if `callback` will be run later with the result of the
-  // operation once the client connects, or another `Error` value in case of
-  // failure.
-  int ConnectNamedPipe(ErrorCallback callback);
-#endif  // BUILDFLAG(IS_WIN)
 
  private:
   class Context;

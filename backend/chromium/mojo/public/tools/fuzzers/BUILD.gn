@@ -39,18 +39,16 @@ fuzzer_test("mojo_parse_message_fuzzer") {
 }
 
 # MessageDumper is not meant to work on Windows.
-if (!is_win) {
-  executable("mojo_fuzzer_message_dump") {
-    sources = [
-      "fuzz_impl.cc",
-      "mojo_fuzzer_message_dump.cc",
-    ]
-    deps = [
-      ":fuzz_mojom",
-      "//base",
-      "//mojo/core/embedder",
-    ]
-  }
+executable("mojo_fuzzer_message_dump") {
+  sources = [
+    "fuzz_impl.cc",
+    "mojo_fuzzer_message_dump.cc",
+  ]
+  deps = [
+    ":fuzz_mojom",
+    "//base",
+    "//mojo/core/embedder",
+  ]
 }
 
 fuzzer_test("mojo_parse_message_proto_fuzzer") {

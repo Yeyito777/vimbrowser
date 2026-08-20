@@ -49,13 +49,6 @@
 #include "ui/gl/gl_implementation.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11_4.h>
-
-#include "third_party/dawn/include/dawn/native/D3D11Backend.h"
-#include "ui/gl/direct_composition_support.h"
-#include "ui/gl/gl_angle_util_win.h"
-#endif
 
 #if BUILDFLAG(DAWN_ENABLE_BACKEND_OPENGLES)
 #include "third_party/dawn/include/dawn/native/OpenGLBackend.h"
@@ -87,25 +80,6 @@ void SetDawnErrorCrashKey(std::string_view message) {
 // Different versions of DumpWithoutCrashing for different reasons.
 // Deliberately prevent inlining so that the crash report's call stack can
 // distinguish between them.
-#if BUILDFLAG(IS_WIN)
-NOINLINE NOOPT void DumpWithoutCrashingOnDXGIError(wgpu::ErrorType error_type,
-                                                   std::string_view message) {
-  LOG(ERROR) << "DXGI Error: " << message;
-
-  if (features::kSkiaGraphiteDawnDumpWCOnD3DError.Get()) {
-    base::debug::DumpWithoutCrashing();
-  }
-}
-
-NOINLINE NOOPT void DumpWithoutCrashingOnD3D11DebugLayerError(
-    wgpu::ErrorType error_type,
-    std::string_view message) {
-  LOG(ERROR) << message;
-  if (features::kSkiaGraphiteDawnDumpWCOnD3DError.Get()) {
-    base::debug::DumpWithoutCrashing();
-  }
-}
-#endif
 
 NOINLINE NOOPT void DumpWithoutCrashingOnGenericError(
     wgpu::ErrorType error_type,
@@ -117,13 +91,6 @@ NOINLINE NOOPT void DumpWithoutCrashingOnGenericError(
 void DumpWithoutCrashingOnError(wgpu::ErrorType error_type,
                                 std::string_view message) {
   SetDawnErrorCrashKey(message);
-#if BUILDFLAG(IS_WIN)
-  if (message.find("DXGI_ERROR") != std::string_view::npos) {
-    DumpWithoutCrashingOnDXGIError(error_type, message);
-  } else if (message.find("The D3D11 debug layer") != std::string_view::npos) {
-    DumpWithoutCrashingOnD3D11DebugLayerError(error_type, message);
-  } else
-#endif
   {
     DumpWithoutCrashingOnGenericError(error_type, message);
   }
@@ -174,36 +141,8 @@ std::vector<const char*> GetEnabledToggles(
   enabled_toggles.push_back("disable_lazy_clear_for_mapped_at_creation_buffer");
   enabled_toggles.push_back("dump_shaders_on_failure");
 
-#if BUILDFLAG(IS_WIN)
-  if (backend_type == wgpu::BackendType::D3D11) {
-    // Use packed D24_UNORM_S8_UINT DXGI format for Depth24PlusStencil8
-    // format.
-    enabled_toggles.push_back("use_packed_depth24_unorm_stencil8_format");
-
-    if (features::kSkiaGraphiteDawnD3D11DelayFlush.Get()) {
-      // Tell Dawn to defer sending commands to GPU until swapchain's Present.
-      // This will batch the commands better.
-      enabled_toggles.push_back("d3d11_delay_flush_to_gpu");
-    }
-  }
-
-  if (backend_type == wgpu::BackendType::D3D11 ||
-      backend_type == wgpu::BackendType::D3D12) {
-    if (features::kSkiaGraphiteDawnDisableD3DShaderOptimizations.Get()) {
-      enabled_toggles.push_back("d3d_skip_shader_optimizations");
-    }
-  }
-#endif
 
   if (backend_type == wgpu::BackendType::Vulkan) {
-#if BUILDFLAG(IS_ANDROID)
-    // Enable this toggle for all Android devices suspecting vulkan image size
-    // mismatch causing SharedTextureMemory creation failures, leading to
-    // promise image creation failures. See https://crbug.com/377935752 for
-    // details.
-    enabled_toggles.push_back(
-        "ignore_imported_ahardwarebuffer_vulkan_image_size");
-#endif
 
     // Use a single VkPipelineCache inside dawn.
     enabled_toggles.push_back("vulkan_monolithic_pipeline_cache");
@@ -228,24 +167,12 @@ std::vector<wgpu::FeatureName> GetRequiredFeatures(
   std::vector<wgpu::FeatureName> features = {
       wgpu::FeatureName::DawnInternalUsages,
       wgpu::FeatureName::ImplicitDeviceSynchronization,
-#if BUILDFLAG(IS_ANDROID)
-      wgpu::FeatureName::TextureCompressionETC2,
-#endif
   };
 
   if (backend_type == wgpu::BackendType::Vulkan) {
-#if BUILDFLAG(IS_ANDROID)
-    features.push_back(wgpu::FeatureName::StaticSamplers);
-    features.push_back(wgpu::FeatureName::YCbCrVulkanSamplers);
-#endif
     features.push_back(wgpu::FeatureName::DawnDeviceAllocatorControl);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (backend_type == wgpu::BackendType::D3D11) {
-    features.push_back(wgpu::FeatureName::D3D11MultithreadProtected);
-  }
-#endif
 
   if (backend_type == wgpu::BackendType::OpenGLES &&
       gl::GetANGLEImplementation() == gl::ANGLEImplementation::kOpenGL) {
@@ -324,57 +251,6 @@ class Platform : public webgpu::DawnPlatform {
   }
 };
 
-#if BUILDFLAG(IS_WIN)
-bool GetANGLED3D11DeviceLUID(LUID* luid) {
-  // On Windows, query the LUID of ANGLE's adapter.
-  Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device =
-      gl::QueryD3D11DeviceObjectFromANGLE();
-  if (!d3d11_device) {
-    LOG(ERROR) << "Failed to query ID3D11Device from ANGLE.";
-    return false;
-  }
-
-  Microsoft::WRL::ComPtr<IDXGIDevice> dxgi_device;
-  HRESULT hr = d3d11_device.As(&dxgi_device);
-  CHECK_EQ(hr, S_OK);
-
-  Microsoft::WRL::ComPtr<IDXGIAdapter> dxgi_adapter;
-  hr = dxgi_device->GetAdapter(&dxgi_adapter);
-  CHECK_EQ(hr, S_OK);
-
-  DXGI_ADAPTER_DESC adapter_desc;
-  if (!SUCCEEDED(dxgi_adapter->GetDesc(&adapter_desc))) {
-    LOG(ERROR) << "Failed to get DXGI_ADAPTER_DESC from ANGLE.";
-    return false;
-  }
-
-  *luid = adapter_desc.AdapterLuid;
-  return true;
-}
-
-bool IsD3D11DebugLayerEnabled(
-    const Microsoft::WRL::ComPtr<ID3D11Device>& d3d11_device) {
-  Microsoft::WRL::ComPtr<ID3D11Debug> d3d11_debug;
-  return SUCCEEDED(d3d11_device.As(&d3d11_debug));
-}
-
-const char* HRESULTToString(HRESULT result) {
-  switch (result) {
-#define ERROR_CASE(E) \
-  case E:             \
-    return #E;
-    ERROR_CASE(DXGI_ERROR_DEVICE_HUNG)
-    ERROR_CASE(DXGI_ERROR_DEVICE_REMOVED)
-    ERROR_CASE(DXGI_ERROR_DEVICE_RESET)
-    ERROR_CASE(DXGI_ERROR_DRIVER_INTERNAL_ERROR)
-    ERROR_CASE(DXGI_ERROR_INVALID_CALL)
-    ERROR_CASE(S_OK)
-#undef ERROR_CASE
-    default:
-      return nullptr;
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 const char* BackendTypeToString(wgpu::BackendType backend_type) {
   switch (backend_type) {
@@ -418,11 +294,7 @@ wgpu::BackendType DawnContextProvider::GetDefaultBackendType() {
   if (gl::GetANGLEImplementation() == gl::ANGLEImplementation::kSwiftShader) {
     return wgpu::BackendType::Vulkan;
   }
-#if BUILDFLAG(IS_WIN)
-  return base::FeatureList::IsEnabled(features::kSkiaGraphiteDawnUseD3D12)
-             ? wgpu::BackendType::D3D12
-             : wgpu::BackendType::D3D11;
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   return wgpu::BackendType::Vulkan;
 #elif BUILDFLAG(IS_APPLE)
   return wgpu::BackendType::Metal;
@@ -472,37 +344,6 @@ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
 
   webgpu::DawnPlatform* GetDawnPlatform() { return &platform_; }
 
-#if BUILDFLAG(IS_WIN)
-  Microsoft::WRL::ComPtr<ID3D11Device> GetD3D11Device() const {
-    if (backend_type() == wgpu::BackendType::D3D11) {
-      return dawn::native::d3d11::GetD3D11Device(device_.Get());
-    }
-    return nullptr;
-  }
-
-  void FlushD3D11CommandsIfDelayed() const {
-    if (backend_type() != wgpu::BackendType::D3D11) {
-      return;
-    }
-
-    // This function is meant for delayed flush option.
-    if (!features::kSkiaGraphiteDawnD3D11DelayFlush.Get()) {
-      return;
-    }
-
-    TRACE_EVENT0("gpu", "DawnSharedContext::FlushD3D11Commands");
-
-    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device =
-        dawn::native::d3d11::GetD3D11Device(device_.Get());
-    if (!d3d11_device) {
-      return;
-    }
-
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
-    d3d11_device->GetImmediateContext(&context);
-    context->Flush();
-  }
-#endif
 
   std::optional<error::ContextLostReason> GetResetStatus() const;
   void MarkContextLost(error::ContextLostReason reason);
@@ -620,12 +461,7 @@ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
   ~DawnSharedContext() override;
 
   GraphiteSharedContext::FlushCallback GetBackendFlushCallback() {
-#if BUILDFLAG(IS_WIN)
-    return base::BindRepeating(&DawnSharedContext::FlushD3D11CommandsIfDelayed,
-                               base::Unretained(this));
-#else
     return {};
-#endif
   }
 
   void OnError(wgpu::ErrorType error_type, wgpu::StringView message);
@@ -791,45 +627,6 @@ bool DawnSharedContext::Initialize(
   }
   adapter_options.nextInChain = &toggles_desc;
 
-#if BUILDFLAG(IS_WIN)
-  dawn::native::d3d::RequestAdapterOptionsLUID adapter_options_luid;
-  if ((adapter_options.backendType == wgpu::BackendType::D3D11 ||
-       adapter_options.backendType == wgpu::BackendType::D3D12) &&
-      GetANGLED3D11DeviceLUID(&adapter_options_luid.adapterLUID)) {
-    // Request the GPU that ANGLE is using if possible.
-    adapter_options_luid.nextInChain = adapter_options.nextInChain;
-    adapter_options.nextInChain = &adapter_options_luid;
-  }
-
-  // Share D3D11 device with ANGLE to reduce synchronization overhead.
-  dawn::native::d3d11::RequestAdapterOptionsD3D11Device
-      adapter_options_d3d11_device;
-  if (adapter_options.backendType == wgpu::BackendType::D3D11) {
-    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device =
-        gl::QueryD3D11DeviceObjectFromANGLE();
-    CHECK(d3d11_device) << "Query d3d11 device from ANGLE failed.";
-
-    static crash_reporter::CrashKeyString<16> feature_level_key(
-        "d3d11-feature-level");
-    std::string feature_level =
-        D3DFeatureLevelToString(d3d11_device->GetFeatureLevel());
-    feature_level_key.Set(feature_level.c_str());
-
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_device_context;
-    d3d11_device->GetImmediateContext(&d3d11_device_context);
-
-    Microsoft::WRL::ComPtr<ID3D11Multithread> d3d11_multithread;
-    HRESULT hr = d3d11_device_context.As(&d3d11_multithread);
-    CHECK(SUCCEEDED(hr)) << "Query ID3D11Multithread interface failed: 0x"
-                         << std::hex << hr;
-
-    // Dawn requires enable multithread protection for d3d11 device.
-    d3d11_multithread->SetMultithreadProtected(TRUE);
-    adapter_options_d3d11_device.device = std::move(d3d11_device);
-    adapter_options_d3d11_device.nextInChain = adapter_options.nextInChain;
-    adapter_options.nextInChain = &adapter_options_d3d11_device;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(DAWN_ENABLE_BACKEND_OPENGLES)
   dawn::native::opengl::RequestAdapterOptionsGetGLProc
@@ -985,14 +782,6 @@ bool DawnSharedContext::Initialize(
   is_vulkan_swiftshader_adapter_ =
       backend_type == wgpu::BackendType::Vulkan && force_fallback_adapter;
 
-#if BUILDFLAG(IS_WIN)
-  if (auto d3d11_device = GetD3D11Device()) {
-    static auto* crash_key = base::debug::AllocateCrashKeyString(
-        "d3d11-debug-layer", base::debug::CrashKeySize::Size32);
-    const bool enabled = IsD3D11DebugLayerEnabled(d3d11_device);
-    base::debug::SetCrashKeyString(crash_key, enabled ? "enabled" : "disabled");
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (base::SingleThreadTaskRunner::HasCurrentDefault()) {
     base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
@@ -1036,22 +825,6 @@ void DawnSharedContext::MarkContextLost(error::ContextLostReason reason) {
 
 void DawnSharedContext::OnError(wgpu::ErrorType error_type,
                                 wgpu::StringView message) {
-#if BUILDFLAG(IS_WIN)
-  if (auto d3d11_device = GetD3D11Device()) {
-    static crash_reporter::CrashKeyString<64> reason_message_key(
-        "d3d11-device-removed-reason");
-    HRESULT result = d3d11_device->GetDeviceRemovedReason();
-
-    if (const char* result_string = HRESULTToString(result)) {
-      LOG(ERROR) << "Device removed reason: " << result_string;
-      SetCrashKeyThreadSafe(reason_message_key, result_string);
-    } else {
-      auto unknown_error = base::StringPrintf("Unknown error(0x%08lX)", result);
-      LOG(ERROR) << "Device removed reason: " << unknown_error;
-      SetCrashKeyThreadSafe(reason_message_key, unknown_error.c_str());
-    }
-  }
-#endif
 
   DumpWithoutCrashingOnError(error_type,
                              static_cast<std::string_view>(message));
@@ -1290,12 +1063,6 @@ void DawnContextProvider::SetCachingInterface(
   dawn_shared_context_->SetCachingInterface(std::move(persistent_cache));
 }
 
-#if BUILDFLAG(IS_WIN)
-Microsoft::WRL::ComPtr<ID3D11Device> DawnContextProvider::GetD3D11Device()
-    const {
-  return dawn_shared_context_->GetD3D11Device();
-}
-#endif
 
 bool DawnContextProvider::SupportsFeature(wgpu::FeatureName feature) {
   return dawn_shared_context_->GetDevice().HasFeature(feature);

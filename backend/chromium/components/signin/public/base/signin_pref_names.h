@@ -11,10 +11,6 @@
 
 namespace prefs {
 
-#if BUILDFLAG(IS_CHROMEOS)
-COMPONENT_EXPORT(SIGNIN_SWITCHES)
-extern const char kAccountIdMigrationState[];
-#endif
 COMPONENT_EXPORT(SIGNIN_SWITCHES)
 extern const char kAccountInfo[];
 COMPONENT_EXPORT(SIGNIN_SWITCHES)
@@ -53,14 +49,6 @@ COMPONENT_EXPORT(SIGNIN_SWITCHES)
 extern const char kHistoryPageHistorySyncPromoShownAfterDismissal[];
 COMPONENT_EXPORT(SIGNIN_SWITCHES)
 extern const char kHistoryPageHistorySyncPromoShownCount[];
-#if BUILDFLAG(IS_IOS)
-COMPONENT_EXPORT(SIGNIN_SWITCHES)
-extern const char kRestrictAccountsToPatterns[];
-COMPONENT_EXPORT(SIGNIN_SWITCHES)
-extern const char kSigninAllowedOnDevice[];
-COMPONENT_EXPORT(SIGNIN_SWITCHES)
-extern const char kBrowserSigninPolicy[];
-#endif  // BUILDFLAG(IS_IOS)
 COMPONENT_EXPORT(SIGNIN_SWITCHES)
 extern const char kSignedInWithCredentialProvider[];
 COMPONENT_EXPORT(SIGNIN_SWITCHES)

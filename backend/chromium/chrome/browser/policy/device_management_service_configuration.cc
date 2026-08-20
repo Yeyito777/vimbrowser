@@ -16,9 +16,6 @@
 #include "components/policy/core/browser/browser_policy_connector.h"
 #include "components/version_info/version_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/system/statistics_provider.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) ||           \
     ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && \
@@ -54,18 +51,6 @@ std::string DeviceManagementServiceConfiguration::GetPlatformParameter() const {
   std::string os_name = base::SysInfo::OperatingSystemName();
   std::string os_hardware = base::SysInfo::OperatingSystemArchitecture();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::system::StatisticsProvider* provider =
-      ash::system::StatisticsProvider::GetInstance();
-
-  const std::optional<std::string_view> hwclass =
-      provider->GetMachineStatistic(ash::system::kHardwareClassKey);
-  if (!hwclass) {
-    LOG(ERROR) << "Failed to get machine information";
-  }
-  os_name += ",CrOS," + base::SysInfo::GetLsbReleaseBoard();
-  os_hardware += "," + std::string(hwclass.value_or(""));
-#endif
 
   std::string os_version("-");
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)

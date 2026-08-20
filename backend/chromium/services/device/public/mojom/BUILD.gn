@@ -6,10 +6,6 @@ import("//build/config/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 import("//services/device/public/cpp/compute_pressure/buildflags.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-}
-
 mojom("mojom") {
   sources = [
     "battery_monitor.mojom",
@@ -49,14 +45,6 @@ mojom("mojom") {
     "//url/mojom:url_mojom_gurl",
     "//url/mojom:url_mojom_origin",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "mtp_file_entry.mojom",
-      "mtp_manager.mojom",
-      "mtp_storage_info.mojom",
-    ]
-  }
 
   if (is_ios && target_platform == "iphoneos") {
     enabled_features = [ "is_ios_iphoneos" ]

@@ -22,9 +22,6 @@
 #include <vulkan/vulkan_core.h>
 #endif  // BUILDFLAG(ENABLE_VULKAN)
 
-#if BUILDFLAG(IS_WIN)
-#include <dxgi.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace skgpu::graphite {
 class TextureInfo;
@@ -133,10 +130,6 @@ GPU_GLES2_EXPORT VkFormat ToVkFormat(viz::SharedImageFormat format,
                                      int plane_index);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Formats supported with no GpuMemoryBufferHandle.
-GPU_GLES2_EXPORT DXGI_FORMAT ToDXGIFormat(viz::SharedImageFormat format);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Following functions return the appropriate Dawn format for a
 // SharedImageFormat. Returns wgpu::TextureFormat format for given `format`.

@@ -45,12 +45,6 @@
 #include "services/viz/privileged/mojom/gl/gpu_service.mojom.h"
 #include "third_party/skia/include/core/SkGraphics.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/services/font/public/cpp/font_loader.h"  // nogncheck
-#include "components/services/font/public/mojom/font_service.mojom.h"  // nogncheck
-#include "third_party/skia/include/core/SkRefCnt.h"
-#include "third_party/skia/include/ports/SkFontConfigInterface.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/sandboxed_process_thread_type_handler.h"
@@ -83,18 +77,6 @@ viz::VizMainImpl::ExternalDependencies CreateVizMainDependencies() {
         std::make_unique<base::PowerMonitorDeviceSource>();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (GetContentClient()->gpu()) {
-    deps.sync_point_manager = GetContentClient()->gpu()->GetSyncPointManager();
-    deps.shared_image_manager =
-        GetContentClient()->gpu()->GetSharedImageManager();
-    deps.scheduler = GetContentClient()->gpu()->GetScheduler();
-    deps.viz_compositor_thread_runner =
-        GetContentClient()->gpu()->GetVizCompositorThreadRunner();
-    deps.gr_context_options_provider =
-        GetContentClient()->gpu()->GetGrContextOptionsProvider();
-  }
-#endif
 
   auto* process = ChildProcess::current();
   deps.shutdown_event = process->GetShutDownEvent();
@@ -148,21 +130,7 @@ void GpuChildThread::Init(const base::TimeTicks& process_start_time) {
 
   // When running in in-process mode, this has been set in the browser at
   // ChromeBrowserMainPartsAndroid::PreMainMessageLoopRun().
-#if BUILDFLAG(IS_ANDROID)
-  if (!in_process_gpu()) {
-    media::SetMediaDrmBridgeClient(
-        GetContentClient()->GetMediaDrmBridgeClient());
-  }
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!in_process_gpu()) {
-    mojo::PendingRemote<font_service::mojom::FontService> font_service;
-    BindHostReceiver(font_service.InitWithNewPipeAndPassReceiver());
-    SkFontConfigInterface::SetGlobal(
-        sk_make_sp<font_service::FontLoader>(std::move(font_service)));
-  }
-#endif
 }
 
 bool GpuChildThread::in_process_gpu() const {

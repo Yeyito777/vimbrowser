@@ -57,7 +57,6 @@
 #include "ui/accessibility/platform/inspect/ax_tree_formatter.h"
 #include "ui/base/webui/web_ui_util.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_window.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"  // nogncheck crbug.com/40147906
@@ -65,11 +64,7 @@
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/accessibility/platform/ax_platform_node_win.h"
-#endif
 
 static const char kTargetsDataFile[] = "targets-data.json";
 
@@ -179,7 +174,6 @@ base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                rvh->GetRoutingID(), accessibility_mode);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 base::DictValue BuildTargetDescriptor(BrowserWindowInterface* browser) {
   base::DictValue target_data;
   target_data.Set(kSessionIdField, browser->GetSessionID().id());
@@ -188,7 +182,6 @@ base::DictValue BuildTargetDescriptor(BrowserWindowInterface* browser) {
   target_data.Set(kTypeField, kBrowser);
   return target_data;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
   return path == kTargetsDataFile;
@@ -206,15 +199,6 @@ void SetProcessModeBools(ui::AXMode ax_mode, base::DictValue& data) {
   data.Set(kScreenReader, ax_mode.has_mode(ui::AXMode::kScreenReader));
 }
 
-#if BUILDFLAG(IS_WIN)
-// Sets values in `data` for the platform node counts in `counts`.
-void SetNodeCounts(const ui::AXPlatformNodeWin::Counts& counts,
-                   base::DictValue& data) {
-  data.Set("dormantCount", base::NumberToString(counts.dormant_nodes));
-  data.Set("liveCount", base::NumberToString(counts.live_nodes));
-  data.Set("ghostCount", base::NumberToString(counts.ghost_nodes));
-}
-#endif
 
 void HandleAccessibilityRequestCallback(
     content::BrowserContext* current_context,
@@ -355,18 +339,13 @@ void HandleAccessibilityRequestCallback(
   data.Set(kPagesField, std::move(page_list));
 
   base::ListValue browser_list;
-#if !BUILDFLAG(IS_ANDROID)
   ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
       [&browser_list](BrowserWindowInterface* browser) {
         browser_list.Append(BuildTargetDescriptor(browser));
         return true;
       });
-#endif  // !BUILDFLAG(IS_ANDROID)
   data.Set(kBrowsersField, std::move(browser_list));
 
-#if BUILDFLAG(IS_WIN)
-  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
-#endif
 
   std::string json_string = base::WriteJson(data).value_or("");
 
@@ -921,7 +900,6 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
 
   AllowJavascript();
 
-#if !BUILDFLAG(IS_ANDROID)
   std::vector<AXPropertyFilter> property_filters;
   AddPropertyFilters(property_filters, allow, AXPropertyFilter::ALLOW);
   AddPropertyFilters(property_filters, allow_empty,
@@ -948,7 +926,6 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
   if (found) {
     return;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   // No browser with the specified |session_id| was found.
   base::DictValue result;
   result.Set(kSessionIdField, session_id);
@@ -1088,9 +1065,6 @@ void AccessibilityUIMessageHandler::OnUpdateDisplayTimer() {
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode(),
       data);
 
-#if BUILDFLAG(IS_WIN)
-  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Compute the delta from the last transmission.
   for (auto scan = data.begin(); scan != data.end();) {

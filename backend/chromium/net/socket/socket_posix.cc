@@ -28,18 +28,11 @@
 #include "net/base/trace_constants.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <poll.h>
-#include <sys/ioctl.h>
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 #if BUILDFLAG(IS_APPLE)
 #include "net/socket/socket_apple.h"
 #endif  // BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "net/android/network_library.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace net {
 
@@ -60,22 +53,6 @@ int MapAcceptError(int os_error) {
 }
 
 int MapConnectError(int os_error, SocketDescriptor fd) {
-#if BUILDFLAG(IS_ANDROID)
-  // Android local network permission errors are surfaced as
-  // EPERM/EACCESS/EINPROGRESS/ETIMEDOUT when connecting (or reading/writing
-  // from) a TCP socket
-  // (https://developer.android.com/privacy-and-security/local-network-permission).
-  // Note that these errors are not unique to LNP. So, before returning the
-  // LNP-specific ERR_LOCAL_NETWORK_PERMISSION_MISSING, we must check whether
-  // LNP was really the cause.
-  if (os_error == EINPROGRESS || os_error == EPERM || os_error == EACCES ||
-      os_error == ETIMEDOUT) {
-    if (android::GetNetworkBlockedReason(fd) ==
-        android::NetworkBlockedReason::kLnp) {
-      return ERR_LOCAL_NETWORK_PERMISSION_MISSING;
-    }
-  }
-#endif
   switch (os_error) {
     case EINPROGRESS:
       return ERR_IO_PENDING;

@@ -99,13 +99,6 @@ component("wm") {
     "//ui/lottie",
     "//ui/resources",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "core/ime_util_chromeos.cc",
-      "core/ime_util_chromeos.h",
-    ]
-  }
 }
 
 static_library("test_support") {
@@ -114,13 +107,6 @@ static_library("test_support") {
     "test/testing_cursor_client_observer.cc",
     "test/testing_cursor_client_observer.h",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "test/wm_test_helper.cc",
-      "test/wm_test_helper.h",
-    ]
-  }
 
   public_deps = [ "//ui/base/cursor" ]
 
@@ -192,16 +178,5 @@ test("wm_unittests") {
 
   if (enable_hidpi) {
     data_deps += [ "//ui/resources:ui_test_pak_data_200_percent" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "core/ime_util_chromeos_unittest.cc" ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
   }
 }

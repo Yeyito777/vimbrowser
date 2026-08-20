@@ -25,11 +25,6 @@
 #include "components/metrics/metrics_service_client.h"
 #include "components/metrics/metrics_upload_scheduler.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/background_task_scheduler/background_task_scheduler.h"
-#include "components/background_task_scheduler/background_task_scheduler_factory.h"
-#include "components/background_task_scheduler/task_info.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace metrics {
 
@@ -101,18 +96,6 @@ void ReportingService::DisableReporting() {
   Stop();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void ReportingService::SendNextLogNow(base::PassKey<BackgroundUploadTask>,
-                                      base::OnceClosure done_callback) {
-  CHECK(background_upload_task_scheduled_);
-  CHECK(background_upload_task_scheduled_time_.has_value());
-  background_upload_task_scheduled_ = false;
-  LogBackgroundUploadTaskPendingTime(base::TimeTicks::Now() -
-                                     *background_upload_task_scheduled_time_);
-  background_upload_task_scheduled_time_ = std::nullopt;
-  SendNextLogImpl(std::move(done_callback));
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool ReportingService::reporting_active() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -127,47 +110,6 @@ void ReportingService::OnAppEnterBackground() {
 void ReportingService::OnAppEnterForeground() {
   is_in_foreground_ = true;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Starting from Android 15, network requests initiated outside of a valid
-  // process lifecycle (e.g. in our case, while the app is in the background)
-  // will receive an exception:
-  // https://developer.android.com/about/versions/15/behavior-changes-all#background-network-access
-  // From our side, this manifests as the uploads failing with various errors
-  // (105 NAME_NOT_RESOLVED, 103 CONNECTION_ABORTED, 118 CONNECTION_TIMED_OUT,
-  // etc.). We have backoff logic to retry the uploads at increasingly long
-  // intervals when such errors are encountered -- with the assumption that
-  // something is currently wrong with the server -- but this is not true in
-  // this case. We should instead retry when the user foregrounds. Otherwise,
-  // the next upload attempt may unnecessarily get scheduled very far in the
-  // future (up to 24h) if the user leaves the app in the background for a long
-  // time, e.g. overnight. This has the side effect that when they actually
-  // start using Chrome again, logs don't get created periodically anymore. And
-  // although logs may be created through other means (e.g. upon backgrounding
-  // or foregrounding), they don't get uploaded because the next attempt is
-  // scheduled far in the future, which in turn results in an accumulation of
-  // logs on the device, which in turn results in logs being trimmed, which in
-  // turn results in data loss. See crbug.com/420459511.
-  // TODO: crbug.com/420459511 - This strategy mitigates data loss, but doesn't
-  // fix the underlying issue where periodic ongoing logs stop being created and
-  // uploaded while in the background (which is supposed to be controlled by the
-  // `UMABackgroundSessions` feature). The proper solution would be to integrate
-  // with JobScheduler (see b/417198480#comment139).
-
-  // There are two scenarios of interest when the user foregrounds.
-  // First, the user foregrounds while we're waiting for the next scheduled
-  // upload (which may be far in the future because of the backoff logic). This
-  // is handled here -- we trigger the upload right away instead.
-  // Second, the user foregrounds while an upload initiated from the background
-  // is in progress (it can take a while before the request fails). In those
-  // cases, when the upload eventually fails, the upload will be re-scheduled,
-  // but we don't want it to use backoff interval logic since uploads should now
-  // start succeeding -- this is handled in OnLogUploadComplete() below.
-  if (upload_scheduler_ && upload_scheduler_->IsRunning() &&
-      !upload_scheduler_->IsCallbackPending() &&
-      failures_started_from_background_.value_or(false)) {
-    upload_scheduler_->RestartWithUnsentLogsInterval();
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
@@ -176,44 +118,6 @@ void ReportingService::OnAppEnterForeground() {
 //------------------------------------------------------------------------------
 
 void ReportingService::SendNextLogWhenPossible() {
-#if BUILDFLAG(IS_ANDROID)
-  // If possible, schedule the upload of the next log with the OS through a
-  // JobScheduler. See metrics::BackgroundUploadTask for implementation of the
-  // background task.
-  if (client_->IsJobSchedulerSupported()) {
-    // There should not be two upload tasks scheduled simultaneously. Note that
-    // the following fields are intentionally set *before* we call Schedule() in
-    // case that function can in-line the execution of the task immediately.
-    CHECK(!background_upload_task_scheduled_);
-    CHECK(!background_upload_task_scheduled_time_.has_value());
-    background_upload_task_scheduled_ = true;
-    background_upload_task_scheduled_time_ = base::TimeTicks::Now();
-    // For consistency with other platforms, we use OneOffInfo (rather than
-    // PeriodicInfo), as we have our own scheduling mechanisms. When the task
-    // is finished, another upload will be scheduled if necessary.
-    background_task::OneOffInfo one_off;
-    // Note: it is possible to specify requirements, e.g. what kind of network
-    // connectivity is needed for the task, such that the Android OS will only
-    // run the task when the requirements are met. We don't specify such
-    // requirements here however (we have our own backoff logic for when there
-    // is no connectivity, which we want to exercise for consistency with other
-    // platforms).
-    background_task::TaskInfo task_info(background_upload_task_id_, one_off);
-    bool success =
-        background_task::BackgroundTaskSchedulerFactory::GetScheduler()
-            ->Schedule(task_info);
-    if (success) {
-      return;
-    }
-
-    // If we couldn't schedule the task for whatever reason, fall back to
-    // uploading without JobScheduler (though the network request may fail if
-    // the browser is currently in the background). Clear the "pending" fields
-    // first.
-    background_upload_task_scheduled_ = false;
-    background_upload_task_scheduled_time_ = std::nullopt;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   SendNextLogImpl(base::DoNothing());
 }
 
@@ -286,12 +190,6 @@ void ReportingService::SendStagedLog() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   CHECK(log_store()->has_staged_log());
 
-#if BUILDFLAG(IS_ANDROID)
-  // Keep track of whether the upload was initiated from the background for the
-  // backoff reset logic (see feature kResetMetricsUploadBackoffOnForeground).
-  CHECK(!log_upload_initiated_from_background_.has_value());
-  log_upload_initiated_from_background_ = !is_in_foreground_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (!log_uploader_) {
     log_uploader_ = client_->CreateUploader(
@@ -420,31 +318,6 @@ void ReportingService::OnLogUploadComplete(
     upload_scheduler_->Stop();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // When `server_is_healthy` is false, representing a failure with the upload,
-  // then we will start using the backoff logic in `upload_scheduler_`. Keep
-  // track of if these failures only started happening while in the background.
-  // TODO: crbug.com/420459511: `server_is_healthy` is not accurate anymore,
-  // rename it here and other places.
-  if (!server_is_healthy) {
-    if (!failures_started_from_background_.has_value()) {
-      failures_started_from_background_ = log_upload_initiated_from_background_;
-    }
-    // Since Android 15, network requests initiated from the background will
-    // fail (see comment in `OnAppEnterForeground()` above for more details),
-    // even if the user foregrounds during the request. Don't use the backoff
-    // logic in this case since there's probably nothing wrong with the server
-    // (but only if the failures started happening from the background --
-    // otherwise, something wrong is probably going on).
-    if (*failures_started_from_background_ && is_in_foreground_) {
-      server_is_healthy = true;
-    }
-  } else {
-    failures_started_from_background_ = std::nullopt;
-  }
-  CHECK(log_upload_initiated_from_background_.has_value());
-  log_upload_initiated_from_background_ = std::nullopt;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   upload_scheduler_->UploadFinished(server_is_healthy);
 }

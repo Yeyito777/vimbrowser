@@ -8,9 +8,7 @@
 #include "base/process/process_handle.h"
 #include "build/buildflag.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <bsm/libbsm.h>
 #elif BUILDFLAG(IS_LINUX)
 #include <sys/socket.h>

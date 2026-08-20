@@ -901,53 +901,20 @@ static_library("browser") {
   sources += get_target_outputs(":regex_patterns_inl_h")
   sources += get_target_outputs(":entity_schema_enums_and_functions")
 
-  if (!is_ios) {
-    sources += [
-      "metrics/payments/credit_card_save_metrics_desktop.cc",
-      "metrics/payments/credit_card_save_metrics_desktop.h",
-      "payments/desktop_bnpl_strategy.cc",
-      "payments/desktop_bnpl_strategy.h",
-    ]
-  }
+  sources += [
+    "metrics/payments/credit_card_save_metrics_desktop.cc",
+    "metrics/payments/credit_card_save_metrics_desktop.h",
+    "payments/desktop_bnpl_strategy.cc",
+    "payments/desktop_bnpl_strategy.h",
+  ]
 
-  if (is_ios) {
-    sources += [
-      "form_import/addresses/autofill_save_update_address_profile_delegate_ios.cc",
-      "form_import/addresses/autofill_save_update_address_profile_delegate_ios.h",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [
-      "payments/autofill_save_card_delegate.cc",
-      "payments/autofill_save_card_delegate.h",
-      "payments/autofill_save_card_infobar_delegate_mobile.cc",
-      "payments/autofill_save_card_infobar_delegate_mobile.h",
-      "payments/autofill_save_card_infobar_mobile.h",
-      "payments/autofill_save_card_ui_info.cc",
-      "payments/autofill_save_card_ui_info.h",
-      "payments/autofill_virtual_card_enrollment_bottom_sheet_delegate_mobile.cc",
-      "payments/autofill_virtual_card_enrollment_bottom_sheet_delegate_mobile.h",
-      "ui/payments/card_expiration_date_fix_flow_controller.h",
-      "ui/payments/card_expiration_date_fix_flow_controller_impl.cc",
-      "ui/payments/card_expiration_date_fix_flow_controller_impl.h",
-      "ui/payments/card_expiration_date_fix_flow_view.h",
-      "ui/payments/card_name_fix_flow_controller.h",
-      "ui/payments/card_name_fix_flow_controller_impl.cc",
-      "ui/payments/card_name_fix_flow_controller_impl.h",
-      "ui/payments/card_name_fix_flow_view.h",
-    ]
-  }
-
-  if (!is_ios) {
-    sources += [
-      "payments/credit_card_fido_authenticator.cc",
-      "payments/credit_card_fido_authenticator.h",
-      "permissions/autofill_policy_handler.cc",
-      "permissions/autofill_policy_handler.h",
-      "strike_databases/payments/fido_authentication_strike_database.h",
-    ]
-  }
+  sources += [
+    "payments/credit_card_fido_authenticator.cc",
+    "payments/credit_card_fido_authenticator.h",
+    "permissions/autofill_policy_handler.cc",
+    "permissions/autofill_policy_handler.h",
+    "strike_databases/payments/fido_authentication_strike_database.h",
+  ]
 
   sources += [
     "ui/autofill_image_fetcher.cc",
@@ -1072,9 +1039,7 @@ static_library("browser") {
     "//ui/accessibility",
   ]
 
-  if (!is_fuchsia) {
-    deps += [ "//components/variations/service" ]
-  }
+  deps += [ "//components/variations/service" ]
 
   if (use_blink) {
     deps += [
@@ -1083,21 +1048,11 @@ static_library("browser") {
     ]
   }
 
-  if (is_ios) {
-    deps += [ "//components/strings" ]
-  }
-
-  if (!is_ios) {
-    sources += [
-      "crowdsourcing/server_prediction_overrides.cc",
-      "crowdsourcing/server_prediction_overrides.h",
-    ]
-    deps += [ "//ui/native_theme" ]
-  }
-
-  if (is_ios) {
-    deps += [ "//components/autofill/ios/common" ]
-  }
+  sources += [
+    "crowdsourcing/server_prediction_overrides.cc",
+    "crowdsourcing/server_prediction_overrides.h",
+  ]
+  deps += [ "//ui/native_theme" ]
 }
 
 static_library("legal_message_line") {
@@ -1739,27 +1694,12 @@ source_set("unit_tests") {
     "webdata/web_data_service_unittest.cc",
   ]
 
-  if (is_ios) {
-    sources += [ "form_import/addresses/autofill_save_update_address_profile_delegate_ios_unittest.cc" ]
-  }
+  sources += [
+    "permissions/autofill_policy_handler_unittest.cc",
 
-  if (is_ios) {
-    sources += [
-      "payments/autofill_save_card_delegate_unittest.cc",
-      "payments/autofill_save_card_ui_info_unittest.cc",
-      "ui/payments/card_expiration_date_fix_flow_controller_impl_unittest.cc",
-      "ui/payments/card_name_fix_flow_controller_impl_unittest.cc",
-    ]
-  }
-
-  if (!is_ios) {
-    sources += [
-      "permissions/autofill_policy_handler_unittest.cc",
-
-      # Not included on iOS because the files need to be bundled specially.
-      "heuristic_classification_unittest.cc",
-    ]
-  }
+    # Not included on iOS because the files need to be bundled specially.
+    "heuristic_classification_unittest.cc",
+  ]
 
   sources += [
     "ui/autofill_image_fetcher_unittest.cc",
@@ -1780,12 +1720,10 @@ source_set("unit_tests") {
         [ "payments/credit_card_access_manager_mandatory_reauth_unittest.cc" ]
   }
 
-  if (!is_ios) {
-    sources += [
-      "crowdsourcing/server_prediction_overrides_unittest.cc",
-      "payments/desktop_bnpl_strategy_unittest.cc",
-    ]
-  }
+  sources += [
+    "crowdsourcing/server_prediction_overrides_unittest.cc",
+    "payments/desktop_bnpl_strategy_unittest.cc",
+  ]
 
   if (build_with_tflite_lib) {
     sources += [
@@ -1882,23 +1820,13 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (is_ios) {
-    deps += [ "//build:branding_buildflags" ]
-  }
-
-  if (!is_ios) {
-    deps += [ "//ui/native_theme" ]
-  }
+  deps += [ "//ui/native_theme" ]
 
   if (use_blink) {
     deps += [
       "//content/test:test_support",
       "//third_party/blink/public/common",
     ]
-  }
-
-  if (is_ios) {
-    deps += [ "//components/autofill/ios/common" ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

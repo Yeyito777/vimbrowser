@@ -62,22 +62,7 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/dialog_client_view.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/shelf_item.h"
-#include "ash/public/cpp/window_properties.h"
-#include "chrome/browser/apps/icon_standardizer.h"
-#include "chrome/grit/theme_resources.h"
-#include "ui/aura/window.h"
-#include "ui/base/resource/resource_bundle.h"
-#include "ui/gfx/image/image_skia.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/shell_integration_win.h"
-#include "ui/base/win/shell.h"
-#include "ui/views/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace task_manager {
 namespace {
@@ -94,13 +79,8 @@ const auto kTabDefinitions = std::to_array<TaskManagerView::FilterTab>({
     },
     {
         .associated_category = DisplayCategory::kSystem,
-#if BUILDFLAG(IS_CHROMEOS)
-        .title_id = IDS_TASK_MANAGER_CATEGORY_SYSTEM_NAME,
-        .icon = &kLaptopIcon,
-#else
         .title_id = IDS_TASK_MANAGER_CATEGORY_BROWSER_NAME,
         .icon = &kBrowserLogoIcon,
-#endif
     },
     {
         .associated_category = DisplayCategory::kAll,
@@ -140,17 +120,6 @@ task_manager::TaskManagerTableModel* TaskManagerView::Show(
       kColorTaskManagerBackground);
   g_task_manager_view->InitAlwaysOnTopState();
 
-#if BUILDFLAG(IS_WIN)
-  // Set the app id for the task manager to the app id of its parent browser. If
-  // no parent is specified, the app id will default to that of the initial
-  // process.
-  if (browser) {
-    ui::win::SetAppIdForWindow(
-        shell_integration::win::GetAppUserModelIdForBrowser(
-            browser->profile()->GetPath()),
-        views::HWNDForWidget(g_task_manager_view->GetWidget()));
-  }
-#endif
 
   g_task_manager_view->SelectTaskOfActiveTab(browser);
   g_task_manager_view->GetWidget()->Show();
@@ -162,17 +131,6 @@ task_manager::TaskManagerTableModel* TaskManagerView::Show(
     // for rtl).
     g_task_manager_view->tabs_->GetSelectedTab()->RequestFocus();
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  aura::Window* window = g_task_manager_view->GetWidget()->GetNativeWindow();
-  // An app id for task manager windows, also used to identify the shelf item.
-  // Generated as crx_file::id_util::GenerateId("org.chromium.taskmanager")
-  static constexpr char kTaskManagerId[] = "ijaigheoohcacdnplfbdimmcfldnnhdi";
-  const ash::ShelfID shelf_id(kTaskManagerId);
-  window->SetProperty(ash::kShelfIDKey, shelf_id.Serialize());
-  window->SetProperty(ash::kAppIDKey, shelf_id.app_id);
-  window->SetProperty<int>(ash::kShelfItemTypeKey, ash::TYPE_DIALOG);
-  window->SetTitle(l10n_util::GetStringUTF16(IDS_TASK_MANAGER_TITLE));
-#endif
   return g_task_manager_view->table_model_.get();
 }
 
@@ -240,11 +198,6 @@ bool TaskManagerView::AcceleratorPressed(const ui::Accelerator& accelerator) {
     case ui::EF_CONTROL_DOWN | ui::EF_SHIFT_DOWN:
       CHECK_EQ(ui::VKEY_W, accelerator.key_code());
       break;
-#if BUILDFLAG(IS_WIN)
-    case ui::EF_ALT_DOWN:
-      CHECK_EQ(ui::VKEY_F4, accelerator.key_code());
-      break;
-#endif
     default:
       NOTREACHED();
   }
@@ -265,15 +218,7 @@ bool TaskManagerView::ExecuteWindowsCommand(int command_id) {
 
 ui::ImageModel TaskManagerView::GetWindowIcon() {
   TRACE_EVENT0("ui", "TaskManagerView::GetWindowIcon");
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/40739545): Move apps::CreateStandardIconImage to some
-  // where lower in the stack.
-  return ui::ImageModel::FromImageSkia(apps::CreateStandardIconImage(
-      *ui::ResourceBundle::GetSharedInstance().GetImageSkiaNamed(
-          IDR_ASH_SHELF_ICON_TASK_MANAGER)));
-#else
   return views::DialogDelegateView::GetWindowIcon();
-#endif
 }
 
 std::string TaskManagerView::GetWindowName() const {
@@ -377,10 +322,8 @@ TaskManagerView::TaskManagerView(StartAction start_action)
   task_manager::RecordNewOpenEvent(start_action);
   set_use_custom_frame(false);
   SetHasWindowSizeControls(true);
-#if !BUILDFLAG(IS_CHROMEOS)
   // On Chrome OS, the widget's frame should not show the window title.
   SetTitle(IDS_TASK_MANAGER_TITLE);
-#endif
 
   // Avoid calling Accept() when closing the dialog, since Accept() here means
   // "kill task" (!).
@@ -712,9 +655,6 @@ void TaskManagerView::Init() {
   AddAccelerator(ui::Accelerator(ui::VKEY_W, ui::EF_CONTROL_DOWN));
   AddAccelerator(
       ui::Accelerator(ui::VKEY_W, ui::EF_CONTROL_DOWN | ui::EF_SHIFT_DOWN));
-#if BUILDFLAG(IS_WIN)
-  AddAccelerator(ui::Accelerator(ui::VKEY_F4, ui::EF_ALT_DOWN));
-#endif
 }
 
 void TaskManagerView::InitAlwaysOnTopState() {

@@ -12,10 +12,6 @@
 namespace floss {
 namespace features {
 
-#if BUILDFLAG(IS_CHROMEOS)
-DEVICE_BLUETOOTH_EXPORT BASE_DECLARE_FEATURE(kFlossEnabled);
-DEVICE_BLUETOOTH_EXPORT BASE_DECLARE_FEATURE(kLLPrivacyIsAvailable);
-#endif
 
 bool DEVICE_BLUETOOTH_EXPORT IsFlossEnabled();
 

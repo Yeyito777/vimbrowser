@@ -18,52 +18,6 @@ js_files = [
   "iron-scroll-target-behavior/iron-scroll-target-behavior.js",
 ]
 
-if (is_chromeos_ash) {
-  js_files += [
-    "iron-a11y-announcer/iron-a11y-announcer.js",
-    "iron-a11y-keys/iron-a11y-keys.js",
-    "iron-behaviors/iron-control-state.js",
-    "iron-collapse/iron-collapse.js",
-    "iron-dropdown/iron-dropdown.js",
-    "iron-dropdown/iron-dropdown-scroll-manager.js",
-    "iron-flex-layout/iron-flex-layout-classes.js",
-    "iron-fit-behavior/iron-fit-behavior.js",
-    "iron-icon/iron-icon.js",
-    "iron-iconset-svg/iron-iconset-svg.js",
-    "iron-location/iron-location.js",
-    "iron-location/iron-query-params.js",
-    "iron-media-query/iron-media-query.js",
-    "iron-meta/iron-meta.js",
-    "iron-overlay-behavior/iron-focusables-helper.js",
-    "iron-overlay-behavior/iron-overlay-backdrop.js",
-    "iron-overlay-behavior/iron-overlay-behavior.js",
-    "iron-overlay-behavior/iron-overlay-manager.js",
-    "iron-overlay-behavior/iron-scroll-manager.js",
-    "iron-pages/iron-pages.js",
-    "iron-range-behavior/iron-range-behavior.js",
-    "iron-scroll-threshold/iron-scroll-threshold.js",
-    "iron-selector/iron-multi-selectable.js",
-    "iron-selector/iron-selectable.js",
-    "iron-selector/iron-selection.js",
-    "iron-selector/iron-selector.js",
-    "iron-test-helpers/mock-interactions.js",
-    "neon-animation/animations/fade-in-animation.js",
-    "neon-animation/animations/fade-out-animation.js",
-    "neon-animation/neon-animatable-behavior.js",
-    "neon-animation/neon-animatable.js",
-    "neon-animation/neon-animated-pages.js",
-    "neon-animation/neon-animation-behavior.js",
-    "neon-animation/neon-animation-runner-behavior.js",
-    "paper-behaviors/paper-ripple-mixin.js",
-    "paper-progress/paper-progress.js",
-    "paper-ripple/paper-ripple.js",
-    "paper-spinner/paper-spinner-behavior.js",
-    "paper-spinner/paper-spinner-lite.js",
-    "paper-spinner/paper-spinner-styles.js",
-    "paper-tooltip/paper-tooltip.js",
-  ]
-}
-
 if (optimize_webui) {
   minify_js("build_min_js") {
     in_files = js_files
@@ -142,22 +96,6 @@ ts_library("library") {
     "//ui/webui/resources/cr_elements:build_ts",
   ]
 
-  if (is_win) {
-    visibility += [ "//chrome/browser/resources/conflicts:build_ts" ]
-  }
-
-  if (is_chromeos_ash) {
-    visibility += [
-      "//ash/webui/*",
-      "//chrome/browser/resources/ash/*",
-      "//chrome/browser/resources/chromeos/*",
-      "//chrome/test/data/webui/chromeos/*",
-      "//chrome/test/data/webui/cr_components/chromeos:build_ts",
-      "//chromeos/ash/components/*",
-      "//ui/file_manager/*",
-    ]
-  }
-
   tsconfig_base = "tsconfig_base.json"
   composite = true
   definitions = [
@@ -219,52 +157,4 @@ ts_library("library") {
 
   # Also needed on LaCros for Print Preview. Remove once CrOS Print Preview
   # launches.
-  if (is_chromeos) {
-    definitions +=
-        [ "components-chromium/iron-fit-behavior/iron-fit-behavior.d.ts" ]
-  }
-
-  if (is_chromeos_ash) {
-    definitions += [
-      "components-chromium/iron-a11y-announcer/iron-a11y-announcer.d.ts",
-      "components-chromium/iron-a11y-keys/iron-a11y-keys.d.ts",
-      "components-chromium/iron-collapse/iron-collapse.d.ts",
-      "components-chromium/iron-dropdown/iron-dropdown.d.ts",
-      "components-chromium/iron-dropdown/iron-dropdown-scroll-manager.d.ts",
-      "components-chromium/iron-flex-layout/iron-flex-layout-classes.d.ts",
-      "components-chromium/iron-icon/iron-icon.d.ts",
-      "components-chromium/iron-iconset-svg/iron-iconset-svg.d.ts",
-      "components-chromium/iron-location/iron-location.d.ts",
-      "components-chromium/iron-location/iron-query-params.d.ts",
-      "components-chromium/iron-media-query/iron-media-query.d.ts",
-      "components-chromium/iron-meta/iron-meta.d.ts",
-      "components-chromium/iron-overlay-behavior/iron-focusables-helper.d.ts",
-      "components-chromium/iron-overlay-behavior/iron-overlay-backdrop.d.ts",
-      "components-chromium/iron-overlay-behavior/iron-overlay-behavior.d.ts",
-      "components-chromium/iron-overlay-behavior/iron-overlay-manager.d.ts",
-      "components-chromium/iron-overlay-behavior/iron-scroll-manager.d.ts",
-      "components-chromium/iron-pages/iron-pages.d.ts",
-      "components-chromium/iron-range-behavior/iron-range-behavior.d.ts",
-      "components-chromium/iron-scroll-threshold/iron-scroll-threshold.d.ts",
-      "components-chromium/iron-selector/iron-multi-selectable.d.ts",
-      "components-chromium/iron-selector/iron-selectable.d.ts",
-      "components-chromium/iron-selector/iron-selection.d.ts",
-      "components-chromium/iron-selector/iron-selector.d.ts",
-      "components-chromium/iron-test-helpers/mock-interactions.d.ts",
-      "components-chromium/neon-animation/animations/fade-in-animation.d.ts",
-      "components-chromium/neon-animation/animations/fade-out-animation.d.ts",
-      "components-chromium/neon-animation/neon-animatable-behavior.d.ts",
-      "components-chromium/neon-animation/neon-animatable.d.ts",
-      "components-chromium/neon-animation/neon-animated-pages.d.ts",
-      "components-chromium/neon-animation/neon-animation-behavior.d.ts",
-      "components-chromium/neon-animation/neon-animation-runner-behavior.d.ts",
-      "components-chromium/paper-behaviors/paper-ripple-mixin.d.ts",
-      "components-chromium/paper-progress/paper-progress.d.ts",
-      "components-chromium/paper-ripple/paper-ripple.d.ts",
-      "components-chromium/paper-spinner/paper-spinner-behavior.d.ts",
-      "components-chromium/paper-spinner/paper-spinner-lite.d.ts",
-      "components-chromium/paper-spinner/paper-spinner-styles.d.ts",
-      "components-chromium/paper-tooltip/paper-tooltip.d.ts",
-    ]
-  }
 }

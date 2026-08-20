@@ -85,27 +85,7 @@ config("icu_code") {
     "U_CHARSET_IS_UTF8=1",
   ]
 
-  if (is_win) {
-    # Disable some compiler warnings.
-    cflags += [
-      "/wd4005",  # Macro redefinition.
-      "/wd4068",  # Unknown pragmas.
-      "/wd4267",  # Conversion from size_t on 64-bits.
-      "/utf-8",  # ICU source files are in UTF-8.
-    ]
-    if (!is_clang) {
-      cflags += [
-        # Ignore some msvc warnings here because V8 still supports msvc.
-        "/wd4244",  # Conversion: possible loss of data.
-      ]
-      defines += [
-        # https://crbug.com/1274247
-        # <ctgmath> is deprecated in C++17, but ICU still uses it, so we should
-        # silence the warning for now.
-        "_SILENCE_CXX17_C_HEADER_DEPRECATION_WARNING",
-      ]
-    }
-  } else if (is_linux || is_chromeos || icu_is_in_fuchsia) {
+  if (is_linux || is_chromeos || icu_is_in_fuchsia) {
     cflags += [ "-Wno-unused-function" ]
   }
   if (is_clang) {
@@ -240,18 +220,7 @@ template("generate_icu_component") {
         output_dir = target_out_dir
       }
 
-      if (is_fuchsia) {
-        base_output_name = target_name
-        if (defined(invoker.output_name)) {
-          base_output_name = invoker.output_name
-        }
-
-        # Fuchsia puts its own libicu*.so in /system/lib where we need to put our
-        # .so when doing component builds, so we need to give this a different name.
-        output_name = "${base_output_name}_cr${fuchsia_output_name_postfix}"
-      } else {
-        assert(fuchsia_output_name_postfix == "")
-      }
+      assert(fuchsia_output_name_postfix == "")
 
       # ICU uses RTTI, replace the default "no rtti" config (if applied).
       configs += [
@@ -423,8 +392,6 @@ generate_icuuc("icuuc_private_hidden_visibility") {
 
 if (is_ios && !use_blink) {
   data_dir = "ios"
-} else if (is_chromeos) {
-  data_dir = "chromeos"
 } else if (current_cpu == "wasm") {
   data_dir = "flutter"
 } else if (icu_is_in_fuchsia && icu_fuchsia_override_data_dir != "") {
@@ -460,19 +427,12 @@ if (icu_copy_icudata_to_root_build_dir) {
 }
 
 if (icu_use_data_file) {
-  if (is_ios) {
-    bundle_data("icudata") {
-      sources = [ "$data_dir/$data_bundle" ]
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  } else {
-    group("icudata") {
-      if (icu_copy_icudata_to_root_build_dir) {
-        # Guarded by a flag, to avoid name clashes if other build processes
-        # also happen to generate the output file by the same name.
-        # See README.fuchsia for details.
-        public_deps = [ ":copy_icudata" ]
-      }
+  group("icudata") {
+    if (icu_copy_icudata_to_root_build_dir) {
+      # Guarded by a flag, to avoid name clashes if other build processes
+      # also happen to generate the output file by the same name.
+      # See README.fuchsia for details.
+      public_deps = [ ":copy_icudata" ]
     }
   }
 } else {
@@ -502,49 +462,22 @@ if (icu_use_data_file) {
       ]
       if (is_mac || is_ios) {
         args += [ "--mac" ]
-      } else if (is_win) {
-        if (target_cpu == "arm64" || target_cpu == "x64") {
-          args += [ "--win64" ]
-        } else if (target_cpu == "arm" || target_cpu == "x86") {
-          args += [ "--win32" ]
-        } else {
-          assert(false)
-        }
       }
     }
   }
 
-  if (is_win) {
-    action("make_inline_data_assembly") {
-      deps = [ ":make_data_assembly" ]
-      script = "scripts/asm_to_inline_asm.py"
-      inputs = [ data_assembly ]
-      outputs = [ inline_data_assembly ]
-      args = rebase_path([
-                           data_assembly,
-                           inline_data_assembly,
-                         ],
-                         root_build_dir)
-    }
-  } else {
-    not_needed([ "inline_data_assembly" ])
-  }
+  not_needed([ "inline_data_assembly" ])
 
   source_set("icudata") {
     defines = [ "U_HIDE_DATA_SYMBOL" ]
-    if (is_win) {
-      sources = [ inline_data_assembly ]
-      deps = [ ":make_inline_data_assembly" ]
-    } else {
-      sources = [ data_assembly ]
-      deps = [ ":make_data_assembly" ]
-      asmflags = []
-      if (current_cpu == "arm64") {
-        import("//build/config/arm.gni")
-        if (arm_control_flow_integrity == "standard" ||
-            arm_control_flow_integrity == "bti+pac") {
-          asmflags += [ "-mmark-bti-property" ]
-        }
+    sources = [ data_assembly ]
+    deps = [ ":make_data_assembly" ]
+    asmflags = []
+    if (current_cpu == "arm64") {
+      import("//build/config/arm.gni")
+      if (arm_control_flow_integrity == "standard" ||
+          arm_control_flow_integrity == "bti+pac") {
+        asmflags += [ "-mmark-bti-property" ]
       }
     }
   }

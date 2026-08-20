@@ -26,9 +26,7 @@
 #include "ui/accessibility/ax_tree_id.h"
 #include "url/origin.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "components/webauthn/core/browser/internal_authenticator.h"
-#endif
 
 namespace autofill {
 
@@ -91,11 +89,7 @@ class TestAutofillDriverTemplate : public T {
   std::optional<net::IsolationInfo> GetIsolationInfo() override {
     // In AutofillDriverIOS, we always return std::nullopt here. That behavior
     // should be reflected in iOS tests.
-#if BUILDFLAG(IS_IOS)
-    return std::nullopt;
-#else
     return isolation_info_;
-#endif
   }
   void TriggerFormExtractionInDriverFrame(
       AutofillDriver::AutofillDriverRouterAndFormForestPassKey pass_key)
@@ -187,11 +181,9 @@ class TestAutofillDriverTemplate : public T {
   void SetSharedURLLoaderFactory(
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
 
-#if !BUILDFLAG(IS_IOS)
   void SetAuthenticator(webauthn::InternalAuthenticator* authenticator_) {
     test_authenticator_.reset(authenticator_);
   }
-#endif
 
  private:
   LocalFrameToken frame_token_;
@@ -205,9 +197,7 @@ class TestAutofillDriverTemplate : public T {
   base::RepeatingCallback<bool(const url::Origin&, FieldGlobalId, FieldType)>
       field_type_map_filter_;
 
-#if !BUILDFLAG(IS_IOS)
   std::unique_ptr<webauthn::InternalAuthenticator> test_authenticator_;
-#endif
 };
 
 // A simple `AutofillDriver` for tests. Consider `TestContentAutofillDriver` as

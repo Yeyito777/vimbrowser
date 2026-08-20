@@ -26,9 +26,6 @@
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace autofill {
 
@@ -120,9 +117,6 @@ struct Suggestion {
     PaymentsPayload& operator=(PaymentsPayload&&);
     ~PaymentsPayload();
 
-#if BUILDFLAG(IS_ANDROID)
-    base::android::ScopedJavaLocalRef<jobject> CreateJavaObject() const;
-#endif  // BUILDFLAG(IS_ANDROID)
 
     friend bool operator==(const PaymentsPayload&,
                            const PaymentsPayload&) = default;
@@ -153,9 +147,6 @@ struct Suggestion {
     AutofillProfilePayload& operator=(AutofillProfilePayload&&);
     ~AutofillProfilePayload();
 
-#if BUILDFLAG(IS_ANDROID)
-    base::android::ScopedJavaLocalRef<jobject> CreateJavaObject() const;
-#endif  // BUILDFLAG(IS_ANDROID)
 
     friend bool operator==(const AutofillProfilePayload&,
                            const AutofillProfilePayload&) = default;
@@ -528,19 +519,11 @@ struct Suggestion {
   // The children of this suggestion. If present, the autofill popup will have
   // submenus.
   std::vector<Suggestion> children;
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/346469807): Remove once strings are passed directly.
-  std::u16string iph_description_text;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // This is the icon which is shown on the side of a suggestion.
   // If |custom_icon| is empty, the fallback built-in icon.
   Icon icon = Icon::kNoIcon;
 
-#if BUILDFLAG(IS_IOS)
-  // Indicates whether the suggestion has a custom card art image.
-  bool has_custom_card_art_image = false;
-#endif  // BUILDFLAG(IS_IOS)
 
   // An icon that appears after the suggestion in the suggestion view. For
   // passwords, this icon string shows whether the suggestion originates from

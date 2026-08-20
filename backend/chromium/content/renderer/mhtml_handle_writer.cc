@@ -52,13 +52,6 @@ MHTMLFileHandleWriter::MHTMLFileHandleWriter(
     : MHTMLHandleWriter(std::move(main_thread_task_runner),
                         std::move(callback)),
       file_(std::move(file)) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // TODO(crbug.com/42050414): Remove the Seek call.
-  // On fuchsia, fds do not share state. As the fd has been duped and sent from
-  // the browser process, it must be seeked to the end to ensure the data is
-  // appended.
-  file_.Seek(base::File::FROM_END, 0);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 MHTMLFileHandleWriter::~MHTMLFileHandleWriter() {}

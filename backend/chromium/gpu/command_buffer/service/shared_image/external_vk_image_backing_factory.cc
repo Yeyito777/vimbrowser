@@ -105,13 +105,11 @@ bool IsFormatSupported(viz::SharedImageFormat format,
   // to zero on Fuchsia and checking it everywhere necessary).
   // TODO(crbug.com/40219694): Enable ImageBackingOzone to be used for all
   // planes in Fuchsia and enable this check for Fuchsia.
-#if !BUILDFLAG(IS_FUCHSIA)
   if (HasGLES2ReadOrWriteUsage(usage)) {
     if (format.PrefersExternalSampler()) {
       return false;
     }
   }
-#endif
 
   if (format.is_multi_plane()) {
     if (gmb_type != gfx::GpuMemoryBufferType::EMPTY_BUFFER) {
@@ -158,9 +156,6 @@ SharedImageUsageSet SupportedUsage() {
       SHARED_IMAGE_USAGE_CPU_WRITE_ONLY |
       SHARED_IMAGE_USAGE_RASTER_COPY_SOURCE | SHARED_IMAGE_USAGE_CPU_READ;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  supported_usage |= SHARED_IMAGE_USAGE_SCANOUT;
-#endif
 
   return supported_usage;
 }

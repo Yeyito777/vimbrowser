@@ -13,9 +13,6 @@
 #include "base/threading/thread_id_name_manager.h"
 #include "base/trace_event/trace_event.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/scheduler.h"
-#endif
 
 namespace base {
 namespace {
@@ -57,15 +54,6 @@ ThreadType PlatformThreadBase::GetCurrentThreadType() {
 
 // static
 std::optional<TimeDelta> PlatformThreadBase::GetThreadLeewayOverride() {
-#if BUILDFLAG(IS_FUCHSIA)
-  // On Fuchsia, all audio threads run with the CPU scheduling profile that uses
-  // an interval of |kAudioSchedulingPeriod|. Using the default leeway may lead
-  // to some tasks posted to audio threads to be executed too late (see
-  // http://crbug.com/1368858).
-  if (GetCurrentThreadType() == ThreadType::kRealtimeAudio) {
-    return kAudioSchedulingPeriod;
-  }
-#endif
   return std::nullopt;
 }
 

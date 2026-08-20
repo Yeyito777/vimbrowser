@@ -88,13 +88,8 @@ using FrameToken = std::variant<RemoteFrameToken, LocalFrameToken>;
 
 namespace internal {
 
-#if BUILDFLAG(IS_IOS)
-using FormRendererIdType = ::base::IdTypeU32<class FormRendererIdMarker>;
-using FieldRendererIdType = ::base::IdTypeU32<class FieldRendererIdMarker>;
-#else
 using FormRendererIdType = ::base::IdTypeU64<class FormRendererIdMarker>;
 using FieldRendererIdType = ::base::IdTypeU64<class FieldRendererIdMarker>;
-#endif
 
 }  // namespace internal
 

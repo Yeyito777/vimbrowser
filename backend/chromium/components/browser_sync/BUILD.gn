@@ -67,13 +67,6 @@ static_library("browser_sync") {
     "//ui/base",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//components/desks_storage",
-    ]
-  }
-
   if (enable_supervised_users) {
     deps += [ "//components/supervised_user/core/browser" ]
   }

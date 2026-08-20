@@ -126,29 +126,25 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (!is_fuchsia) {
-    sources += [ "search_content_sharing_policy_handler_unittest.cc" ]
-    deps += [
-      ":policy_handler",
-      ":prefs",
-    ]
-  }
+  sources += [ "search_content_sharing_policy_handler_unittest.cc" ]
+  deps += [
+    ":policy_handler",
+    ":prefs",
+  ]
 }
 
-if (!is_fuchsia) {
-  source_set("policy_handler") {
-    sources = [
-      "search_content_sharing_policy_handler.cc",
-      "search_content_sharing_policy_handler.h",
-    ]
+source_set("policy_handler") {
+  sources = [
+    "search_content_sharing_policy_handler.cc",
+    "search_content_sharing_policy_handler.h",
+  ]
 
-    deps = [
-      ":prefs",
-      "//components/policy:generated",
-      "//components/policy/core/browser",
-      "//components/prefs",
-    ]
-  }
+  deps = [
+    ":prefs",
+    "//components/policy:generated",
+    "//components/policy/core/browser",
+    "//components/prefs",
+  ]
 }
 
 source_set("prefs") {

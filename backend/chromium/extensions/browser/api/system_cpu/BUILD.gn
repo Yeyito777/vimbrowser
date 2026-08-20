@@ -28,20 +28,11 @@ source_set("system_cpu") {
 
   libs = []
 
-  if (is_chromeos) {
-    deps = [ "//chromeos/system" ]
-  }
-
   if (is_mac) {
     sources += [ "cpu_info_provider_mac.cc" ]
   }
 
   if (is_linux || is_chromeos) {
     sources += [ "cpu_info_provider_linux.cc" ]
-  }
-
-  if (is_win) {
-    sources += [ "cpu_info_provider_win.cc" ]
-    libs += [ "ntdll.lib" ]
   }
 }

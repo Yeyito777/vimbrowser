@@ -35,42 +35,11 @@
 #include "base/apple/foundation_util.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/event_router.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace extensions {
 
 namespace file_system = api::file_system;
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-namespace file_system_api {
-
-const char kConsentImpossible[] =
-    "Impossible to ask for user consent as there is no app window visible.";
-const char kNotSupportedOnNonKioskSessionError[] =
-    "Operation only supported for kiosk apps running in a kiosk session.";
-const char kRequiresFileSystemWriteError[] =
-    "Operation requires fileSystem.write permission";
-const char kSecurityError[] = "Security error.";
-const char kVolumeNotFoundError[] = "Volume not found.";
-
-// Returns error message, or null if none.
-const char* ConsentResultToError(ConsentProvider::Consent result) {
-  switch (result) {
-    case ConsentProvider::CONSENT_REJECTED:
-      return kSecurityError;
-    case ConsentProvider::CONSENT_IMPOSSIBLE:
-      return kConsentImpossible;
-    case ConsentProvider::CONSENT_GRANTED:
-      return nullptr;
-  }
-  NOTREACHED();
-}
-
-}  // namespace file_system_api
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 /******** ChromeFileSystemDelegate ********/
 
@@ -169,22 +138,6 @@ int ChromeFileSystemDelegate::GetDescriptionIdForAcceptType(
   return 0;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ChromeFileSystemDelegate::RequestFileSystem(
-    content::BrowserContext* browser_context,
-    scoped_refptr<ExtensionFunction> requester,
-    ConsentProvider* consent_provider,
-    const Extension& extension,
-    std::string volume_id,
-    bool writable,
-    FileSystemCallback success_callback,
-    ErrorCallback error_callback) {}
-
-void ChromeFileSystemDelegate::GetVolumeList(
-    content::BrowserContext* browser_context,
-    VolumeListCallback success_callback,
-    ErrorCallback error_callback) {}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 SavedFilesServiceInterface* ChromeFileSystemDelegate::GetSavedFilesService(
     content::BrowserContext* browser_context) {

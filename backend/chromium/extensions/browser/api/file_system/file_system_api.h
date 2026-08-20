@@ -21,9 +21,6 @@
 #include "extensions/common/extension_id.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/file_system/consent_provider.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace extensions {
 class ExtensionPrefs;
@@ -226,49 +223,6 @@ class FileSystemRestoreEntryFunction : public FileSystemEntryFunction {
   ResponseAction Run() override;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Requests a file system for the specified volume id.
-class FileSystemRequestFileSystemFunction : public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("fileSystem.requestFileSystem",
-                             FILESYSTEM_REQUESTFILESYSTEM)
-  FileSystemRequestFileSystemFunction();
-
- protected:
-  ~FileSystemRequestFileSystemFunction() override;
-
-  // ExtensionFunction overrides.
-  ExtensionFunction::ResponseAction Run() override;
-
- private:
-  // Called when a user grants or rejects permissions for the file system
-  // access.
-  void OnGotFileSystem(const std::string& id, const std::string& path);
-  void OnError(const std::string& error);
-
-  std::unique_ptr<ConsentProvider> consent_provider_;
-};
-
-// Requests a list of available volumes.
-class FileSystemGetVolumeListFunction : public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("fileSystem.getVolumeList",
-                             FILESYSTEM_GETVOLUMELIST)
-  FileSystemGetVolumeListFunction();
-
- protected:
-  ~FileSystemGetVolumeListFunction() override;
-
-  // ExtensionFunction overrides.
-  ExtensionFunction::ResponseAction Run() override;
-
- private:
-  void OnGotVolumeList(const std::vector<api::file_system::Volume>& volumes);
-  void OnError(const std::string& error);
-
-  std::unique_ptr<ConsentProvider> consent_provider_;
-};
-#else   // BUILDFLAG(IS_CHROMEOS)
 // Stub for non Chrome OS operating systems.
 class FileSystemRequestFileSystemFunction : public ExtensionFunction {
  public:
@@ -294,7 +248,6 @@ class FileSystemGetVolumeListFunction : public ExtensionFunction {
   // ExtensionFunction overrides.
   ExtensionFunction::ResponseAction Run() override;
 };
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace extensions
 

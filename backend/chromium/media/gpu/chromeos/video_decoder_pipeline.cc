@@ -495,11 +495,6 @@ VideoDecoderPipeline::~VideoDecoderPipeline() {
   // instead.
   frame_converter_.reset();
   main_frame_pool_.reset();
-#if BUILDFLAG(IS_CHROMEOS)
-  // We must release |buffer_transcryptor_| before the decoder because it holds
-  // a raw pointer to |decoder_|.
-  buffer_transcryptor_.reset();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   decoder_.reset();
 }
 
@@ -740,41 +735,12 @@ void VideoDecoderPipeline::OnInitializeDone(InitCB init_cb,
         << "VideoDecoderPipeline |decoder_| Initialize() failed, status: "
         << static_cast<int>(status.code());
     frame_converter_->set_get_original_frame_cb(base::NullCallback());
-#if BUILDFLAG(IS_CHROMEOS)
-    // We always need to destroy |buffer_transcryptor_| if it exists before
-    // |decoder_|.
-    buffer_transcryptor_.reset();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     decoder_.reset();
   } else {
     MEDIA_LOG(INFO, media_log_)
         << "VideoDecoderPipeline |decoder_| Initialize() successful";
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (decoder_ && decoder_->NeedsTranscryption()) {
-    if (!cdm_context) {
-      VLOGF(1) << "CdmContext required for transcryption";
-      frame_converter_->set_get_original_frame_cb(base::NullCallback());
-      // We always need to destroy |buffer_transcryptor_| if it exists before
-      // |decoder_|.
-      buffer_transcryptor_.reset();
-      decoder_.reset();
-      status = DecoderStatus::Codes::kUnsupportedEncryptionMode;
-    } else {
-      // We need to enable transcryption for protected content.
-      buffer_transcryptor_ = std::make_unique<DecoderBufferTranscryptor>(
-          cdm_context, *decoder_, decryption_needs_vp9_superframe_splitting_,
-          base::BindRepeating(&VideoDecoderPipeline::OnBufferTranscrypted,
-                              decoder_weak_this_),
-          base::BindRepeating(&VideoDecoderPipeline::OnDecoderWaiting,
-                              decoder_weak_this_));
-    }
-  } else {
-    // In case this was created on a prior initialization but no longer needed.
-    buffer_transcryptor_.reset();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   client_task_runner_->PostTask(FROM_HERE,
                                 base::BindOnce(std::move(init_cb), status));
@@ -793,9 +759,6 @@ void VideoDecoderPipeline::ResetTask(base::OnceClosure reset_cb) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(decoder_sequence_checker_);
   DVLOGF(3);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  drop_transcrypted_buffers_ = true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   need_apply_new_resolution = false;
   decoder_->Reset(base::BindOnce(&VideoDecoderPipeline::OnResetDone,
                                  decoder_weak_this_, std::move(reset_cb)));
@@ -809,10 +772,6 @@ void VideoDecoderPipeline::OnResetDone(base::OnceClosure reset_cb) {
     image_processor_->Reset();
   frame_converter_->AbortPendingFrames();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (buffer_transcryptor_)
-    buffer_transcryptor_->Reset(DecoderStatus::Codes::kAborted);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   CallFlushCbIfNeeded(/*override_status=*/DecoderStatus::Codes::kAborted);
 
@@ -824,9 +783,6 @@ void VideoDecoderPipeline::OnResetDone(base::OnceClosure reset_cb) {
       auxiliary_frame_pool_->ReleaseAllFrames();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  drop_transcrypted_buffers_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   client_task_runner_->PostTask(FROM_HERE, std::move(reset_cb));
 }
@@ -862,15 +818,6 @@ void VideoDecoderPipeline::DecodeTask(scoped_refptr<DecoderBuffer> buffer,
   }
 
   const bool is_flush = buffer->end_of_stream();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (buffer_transcryptor_) {
-    buffer_transcryptor_->EnqueueBuffer(
-        std::move(buffer),
-        base::BindOnce(&VideoDecoderPipeline::OnDecodeDone, decoder_weak_this_,
-                       is_flush, std::move(decode_cb)));
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   decoder_->Decode(
       std::move(buffer),
@@ -905,11 +852,6 @@ void VideoDecoderPipeline::OnFrameDecoded(scoped_refptr<FrameResource> frame) {
   TRACE_EVENT1("media,gpu", "VideoDecoderPipeline::OnFrameDecoded", "timestamp",
                (frame ? frame->timestamp().InMicroseconds() : 0));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (buffer_transcryptor_) {
-    buffer_transcryptor_->SecureBuffersMayBeAvailable();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (uses_oop_video_decoder_) {
     oop_decoder_can_read_without_stalling_.store(
@@ -1004,10 +946,6 @@ void VideoDecoderPipeline::OnError(const std::string& msg) {
     image_processor_->Reset();
   frame_converter_->AbortPendingFrames();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (buffer_transcryptor_)
-    buffer_transcryptor_->Reset(DecoderStatus::Codes::kFailed);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   CallFlushCbIfNeeded(/*override_status=*/DecoderStatus::Codes::kFailed);
 }
@@ -1157,10 +1095,6 @@ VideoDecoderPipeline::PickDecoderOutputFormat(
     main_frame_pool_.reset();
     return *viable_candidate;
   }
-#elif BUILDFLAG(IS_CHROMEOS)
-  // Ash Chrome can use any type of frame pool (because it may get requests from
-  // ARC++/ARCVM) but never a custom allocator.
-  CHECK(!allocator.has_value());
 #else
 #error "Unsupported platform"
 #endif
@@ -1382,25 +1316,5 @@ VideoDecoderPipeline::PickDecoderOutputFormat(
                               gfx::NativePixmapHandle::kNoModifier};
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void VideoDecoderPipeline::OnBufferTranscrypted(
-    scoped_refptr<DecoderBuffer> transcrypted_buffer,
-    DecodeCB decode_callback) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(decoder_sequence_checker_);
-  DCHECK(!has_error_);
-  if (!transcrypted_buffer) {
-    OnError("Error in buffer transcryption");
-    std::move(decode_callback).Run(DecoderStatus::Codes::kFailed);
-    return;
-  }
-
-  if (drop_transcrypted_buffers_) {
-    std::move(decode_callback).Run(DecoderStatus::Codes::kAborted);
-    return;
-  }
-
-  decoder_->Decode(std::move(transcrypted_buffer), std::move(decode_callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace media

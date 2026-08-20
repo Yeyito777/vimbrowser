@@ -30,16 +30,11 @@ namespace {
 // Note that quota assignment is the same for on-disk filesystem and the
 // assigned quota is not guaranteed to be allocatable later.
 bool IsMemoryAvailable(size_t required_memory) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // This function is not implemented on FUCHSIA, yet. (crbug.com/986608)
-  return true;
-#else
   uint64_t max_allocatable =
       std::min(base::SysInfo::AmountOfAvailablePhysicalMemory().InBytes(),
                static_cast<uint64_t>(partition_alloc::MaxDirectMapped()));
 
   return max_allocatable >= required_memory;
-#endif
 }
 
 }  // namespace
@@ -381,14 +376,6 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CopyOrMoveFile(
     if (dest_dp->entry->type != src_dp->entry->type)
       return base::File::FILE_ERROR_INVALID_OPERATION;
 
-#if BUILDFLAG(IS_WIN)
-    // Overwriting an empty directory with another directory isn't
-    // supported natively on Windows.
-    // To keep the behavior indistinguishable from on-disk operation,
-    // in-memory implementation also fails.
-    if (src_is_directory)
-      return base::File::FILE_ERROR_NOT_A_FILE;
-#endif
   }
 
   switch (mode) {
@@ -557,7 +544,6 @@ int ObfuscatedFileUtilMemoryDelegate::WriteFile(
 // See crbug.com/1043914 for more context.
 // |MaxDirectMapped| function is not implemented on FUCHSIA, yet.
 // (crbug.com/986608)
-#if !BUILDFLAG(IS_FUCHSIA)
     if (last_position >= partition_alloc::MaxDirectMapped() / 2) {
       // TODO(crbug.com/40669351): Allocated memory is rounded up to
       // 100MB blocks to reduce memory allocation delays. Switch to a more
@@ -568,7 +554,6 @@ int ObfuscatedFileUtilMemoryDelegate::WriteFile(
         return net::ERR_FILE_NO_SPACE;
       dp->entry->file_content.reserve(rounded_up);
     }
-#endif
   }
 
   const auto data_to_append = buf->first(base::checked_cast<size_t>(buf_len));

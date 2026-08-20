@@ -21,9 +21,6 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/cdm_factory_daemon/remote_cdm_context.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace media {
 
@@ -139,14 +136,6 @@ class MEDIA_MOJO_EXPORT OOPVideoDecoderService
   mojo::Remote<mojom::VideoDecoder> dst_video_decoder_remote_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Used for registering the |remote_cdm_context_| so that it can be resolved
-  // from the |cdm_id_| later.
-  const raw_ptr<MojoCdmServiceContext> cdm_service_context_
-      GUARDED_BY_CONTEXT(sequence_checker_);
-  scoped_refptr<chromeos::RemoteCdmContext> remote_cdm_context_
-      GUARDED_BY_CONTEXT(sequence_checker_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::optional<base::UnguessableToken> cdm_id_
       GUARDED_BY_CONTEXT(sequence_checker_);

@@ -25,10 +25,6 @@ source_set("simdutf") {
   if (!allow_avx512) {
     defines += [ "SIMDUTF_IMPLEMENTATION_ICELAKE=0" ]
   }
-  if (is_win) {
-    # Supress dllexports when included in chrome.exe.
-    defines += [ "SIMDUTF_DLLIMPORTEXPORT=" ]
-  }
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]
   if (!is_debug) {

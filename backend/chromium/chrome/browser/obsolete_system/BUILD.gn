@@ -10,16 +10,7 @@ source_set("impl") {
   sources = []
   deps = [ ":obsolete_system" ]
 
-  if (is_win) {
-    sources += [ "obsolete_system_win.cc" ]
-    deps += [
-      "//base",
-      "//chrome/app:branded_strings",
-      "//chrome/common",
-      "//chrome/common:version_header",
-      "//ui/base",
-    ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [ "obsolete_system_mac.cc" ]
     deps += [
       "//base",

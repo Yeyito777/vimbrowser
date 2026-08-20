@@ -22,9 +22,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/storage_partition.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/password_manager/android/shared_preferences_delegate_android.h"
-#endif
 
 namespace {
 
@@ -105,9 +102,6 @@ PasswordReuseManagerFactory::BuildServiceInstanceForBrowserContext(
   std::unique_ptr<password_manager::SharedPreferencesDelegate>
       shared_pref_delegate;
 
-#if BUILDFLAG(IS_ANDROID)
-  shared_pref_delegate = std::make_unique<SharedPreferencesDelegateAndroid>();
-#endif
   auto reuse_manager =
       std::make_unique<password_manager::PasswordReuseManagerImpl>(
           g_browser_process->os_crypt_async());

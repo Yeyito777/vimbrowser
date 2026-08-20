@@ -24,11 +24,6 @@ bool IsPolicyTestingEnabled(PrefService* pref_service,
   }
 
 // Enable on iOS Beta because Canary and Dev are not easily accessible.
-#if BUILDFLAG(IS_IOS)
-  if (channel == version_info::Channel::BETA) {
-    return true;
-  }
-#endif
 
 #if !defined(NDEBUG)
   // The page should be available in debug builds.

@@ -133,17 +133,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothRemoteGattCharacteristic
   // BluetoothGattNotifySession object that you received in |callback|.
   virtual void StartNotifySession(NotifySessionCallback callback,
                                   ErrorCallback error_callback);
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/40579213): This method should also be implemented on
-  // Android and Windows.
-  // macOS does not support specifying a notification type. According to macOS
-  // documentation if the characteristic supports both notify and indicate, only
-  // notifications will be enabled.
-  // https://developer.apple.com/documentation/corebluetooth/cbperipheral/1518949-setnotifyvalue?language=objc#discussion
-  virtual void StartNotifySession(NotificationType notification_type,
-                                  NotifySessionCallback callback,
-                                  ErrorCallback error_callback);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Sends a read request to a remote characteristic to read its value.
   // |callback| is called to return the read value or error.
@@ -169,18 +158,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothRemoteGattCharacteristic
       base::OnceClosure callback,
       ErrorCallback error_callback) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Sends a prepare write request to a remote characteristic with the value
-  // |value|. |callback| is called to signal success and |error_callback| for
-  // failures. This method only applies to remote characteristics and will fail
-  // for those that are locally hosted.
-  // Callers should use BluetoothDevice::ExecuteWrite() to commit or
-  // BluetoothDevice::AbortWrite() to abort the change.
-  virtual void PrepareWriteRemoteCharacteristic(
-      base::span<const uint8_t> value,
-      base::OnceClosure callback,
-      ErrorCallback error_callback) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  protected:
   using DescriptorMap =
@@ -193,22 +170,10 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothRemoteGattCharacteristic
   // notifications/indications. This method is meant to be called from
   // StartNotifySession and should contain only the code necessary to start
   // listening to characteristic notifications on a particular platform.
-#if BUILDFLAG(IS_CHROMEOS)
-  // |notification_type| specifies the type of notifications that will be
-  // enabled: notifications or indications.
-  // TODO(crbug.com/40579213): This method should also be implemented on
-  // Android and Windows.
-  virtual void SubscribeToNotifications(
-      BluetoothRemoteGattDescriptor* ccc_descriptor,
-      NotificationType notification_type,
-      base::OnceClosure callback,
-      ErrorCallback error_callback) = 0;
-#else
   virtual void SubscribeToNotifications(
       BluetoothRemoteGattDescriptor* ccc_descriptor,
       base::OnceClosure callback,
       ErrorCallback error_callback) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Writes to the Client Characteristic Configuration descriptor to disable
   // notifications/indications. This method is meant to be called from

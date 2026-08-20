@@ -124,15 +124,7 @@ void WebAppUninstallAndReplaceJob::Start() {
 void WebAppUninstallAndReplaceJob::MigrateUiAndUninstallApp(
     const webapps::AppId& from_app,
     base::OnceClosure on_complete) {
-#if BUILDFLAG(IS_CHROMEOS)
-  to_app_lock_->ui_manager().MigrateLauncherState(
-      from_app, to_app_,
-      base::BindOnce(&WebAppUninstallAndReplaceJob::OnMigrateLauncherState,
-                     weak_ptr_factory_.GetWeakPtr(), from_app,
-                     std::move(on_complete)));
-#else
   OnMigrateLauncherState(from_app, std::move(on_complete));
-#endif
 }
 
 void WebAppUninstallAndReplaceJob::OnMigrateLauncherState(

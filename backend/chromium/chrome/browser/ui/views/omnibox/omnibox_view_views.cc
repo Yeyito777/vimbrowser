@@ -142,9 +142,6 @@
 #include "ui/base/cocoa/appkit_utils.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/browser_process.h"
-#endif
 
 namespace {
 
@@ -308,10 +305,6 @@ OmniboxViewViews::OmniboxViewViews(bool popup_window_mode,
 }
 
 OmniboxViewViews::~OmniboxViewViews() {
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::input_method::InputMethodManager::Get()->RemoveCandidateWindowObserver(
-      this);
-#endif
 }
 
 void OmniboxViewViews::Init() {
@@ -337,10 +330,6 @@ void OmniboxViewViews::Init() {
   constexpr gfx::Insets kTextfieldInsets(0);
   SetBorder(views::CreateEmptyBorder(kTextfieldInsets));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::input_method::InputMethodManager::Get()->AddCandidateWindowObserver(
-      this);
-#endif
   UpdateAccessibleTextSelection();
 }
 
@@ -783,28 +772,9 @@ void OmniboxViewViews::ShowContextMenuForViewImplComplete(
 }
 
 void OmniboxViewViews::OnInputMethodChanged() {
-#if BUILDFLAG(IS_WIN)
-  // Update the input type with the input method on Windows for CJK.
-  SetTextInputType(GetPreferredTextInputType());
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 ui::TextInputType OmniboxViewViews::GetPreferredTextInputType() const {
-#if BUILDFLAG(IS_WIN)
-  // We'd like to set the text input type to TEXT_INPUT_TYPE_URL, because this
-  // triggers URL-specific layout in software keyboards, e.g. adding top-level
-  // "/" and ".com" keys for English.  However, this also causes IMEs to default
-  // to Latin character mode, which makes entering search queries difficult for
-  // IME users. Therefore, we try to guess whether an IME will be used based on
-  // the input language, and set the input type accordingly.
-  if (location_bar_view_) {
-    ui::InputMethod* input_method =
-        location_bar_view_->GetWidget()->GetInputMethod();
-    if (input_method && input_method->IsInputLocaleCJK()) {
-      return ui::TEXT_INPUT_TYPE_SEARCH;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return ui::TEXT_INPUT_TYPE_URL;
 }
 
@@ -1302,11 +1272,7 @@ int OmniboxViewViews::GetWidth() const {
 }
 
 bool OmniboxViewViews::IsImeShowingPopup() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ime_candidate_window_open_;
-#else
   return GetInputMethod() && GetInputMethod()->IsCandidatePopupOpen();
-#endif
 }
 
 void OmniboxViewViews::ShowVirtualKeyboardIfEnabled() {
@@ -2021,17 +1987,6 @@ void OmniboxViewViews::UpdateAccessibleValue() {
 #endif  // BUILDFLAG(SUPPORTS_AX_TEXT_OFFSETS)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void OmniboxViewViews::CandidateWindowOpened(
-    ash::input_method::InputMethodManager* manager) {
-  ime_candidate_window_open_ = true;
-}
-
-void OmniboxViewViews::CandidateWindowClosed(
-    ash::input_method::InputMethodManager* manager) {
-  ime_candidate_window_open_ = false;
-}
-#endif
 
 void OmniboxViewViews::ContentsChanged(views::Textfield* sender,
                                        const std::u16string& new_contents) {

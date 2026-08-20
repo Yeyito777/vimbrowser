@@ -169,17 +169,6 @@ source_set("fxcrt") {
       "mapped_data_bytes.h",
     ]
   }
-  if (is_win) {
-    sources += [
-      "cfx_fileaccess_windows.cpp",
-      "cfx_fileaccess_windows.h",
-      "code_point_view.cpp",
-      "fx_folder_windows.cpp",
-      "win/scoped_select_object.h",
-      "win/win_util.cc",
-      "win/win_util.h",
-    ]
-  }
   if (pdf_enable_xfa) {
     sources += [
       "cfx_memorystream.cpp",

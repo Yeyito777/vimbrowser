@@ -362,11 +362,7 @@
 //   }
 // ```
 #if !defined(DISABLE_CFI_ICALL)
-#if BUILDFLAG(IS_WIN)
-#define DISABLE_CFI_ICALL NO_SANITIZE("cfi-icall") __declspec(guard(nocf))
-#else
 #define DISABLE_CFI_ICALL NO_SANITIZE("cfi-icall")
-#endif
 #endif
 
 // Annotates a function disabling Control Flow Integrity indirect call checks if
@@ -384,11 +380,7 @@
 //   }
 // ```
 #if !defined(DISABLE_CFI_DLSYM)
-#if BUILDFLAG(IS_WIN)
-#define DISABLE_CFI_DLSYM
-#else
 #define DISABLE_CFI_DLSYM DISABLE_CFI_ICALL
-#endif
 #endif
 
 // Evaluates to a string constant containing the function signature.

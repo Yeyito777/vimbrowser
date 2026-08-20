@@ -180,19 +180,11 @@
 #include "chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_controller.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/views/frame/windows_taskbar_icon_updater.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/boca/on_task/on_task_locked_controller.h"
-#endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/download/bubble/download_bubble_ui_controller.h"
 #include "chrome/browser/download/bubble/download_display_controller.h"
 #include "chrome/browser/ui/views/download/bubble/download_toolbar_ui_controller.h"
-#endif
 
 #if defined(USE_AURA)
 #include "chrome/browser/ui/overscroll_pref_manager.h"
@@ -460,11 +452,6 @@ void BrowserWindowFeatures::Init(BrowserWindowInterface* browser) {
               *browser, browser);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  on_task_locked_controller_ =
-      GetUserDataFactory().CreateInstance<ash::boca::OnTaskLockedController>(
-          *browser, browser);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Initialize embedder features last.
   embedder_browser_window_features_ =
@@ -491,12 +478,10 @@ void BrowserWindowFeatures::InitPostWindowConstruction(Browser* browser) {
       browser->window()->GetExclusiveAccessContext());
 
   // This code needs exclusive access manager to be initialized.
-#if !BUILDFLAG(IS_CHROMEOS)
   if (download_toolbar_ui_controller_) {
     download_toolbar_ui_controller_->display_controller()
         ->ListenToFullScreenChanges();
   }
-#endif
 
   Profile* const profile = browser_->GetProfile();
 
@@ -842,10 +827,8 @@ void BrowserWindowFeatures::InitPostBrowserViewConstruction(
     }
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   download_toolbar_ui_controller_ =
       std::make_unique<DownloadToolbarUIController>(browser_view);
-#endif
 
   if (base::FeatureList::IsEnabled(ntp_features::kNtpFooter)) {
     new_tab_footer_controller_ =
@@ -857,10 +840,6 @@ void BrowserWindowFeatures::InitPostBrowserViewConstruction(
   devtools_ui_controller_ = std::make_unique<DevtoolsUIController>(
       browser_view->GetContentsContainerViews());
 
-#if BUILDFLAG(IS_WIN)
-  windows_taskbar_icon_updater_ =
-      std::make_unique<WindowsTaskbarIconUpdater>(*browser_view);
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS) && (BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC))
   if (base::FeatureList::IsEnabled(
@@ -948,11 +927,9 @@ void BrowserWindowFeatures::TearDownPreBrowserWindowDestruction() {
   contextual_tasks_side_panel_coordinator_.reset();
   contextual_tasks_entry_point_eligibility_manager_.reset();
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (download_toolbar_ui_controller_) {
     download_toolbar_ui_controller_->TearDownPreBrowserWindowDestruction();
   }
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS) && (BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC))
   default_search_extension_controlled_controller_.reset();
@@ -1018,9 +995,6 @@ void BrowserWindowFeatures::TearDownPreBrowserWindowDestruction() {
 
   extension_installed_watcher_.reset();
 
-#if BUILDFLAG(IS_WIN)
-  windows_taskbar_icon_updater_.reset();
-#endif
 
   if (user_education_) {
     user_education_->TearDown();

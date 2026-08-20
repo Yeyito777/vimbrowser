@@ -28,12 +28,6 @@ enum {
   DIR_CRASH_METRICS,      // Directory where crash metrics are written.
   DIR_CRASH_DUMPS,        // Directory where crash dumps are written.
   DIR_LOCAL_TRACES,       // Directory where local traces are written.
-#if BUILDFLAG(IS_WIN)
-  DIR_WATCHER_DATA,       // Directory where the Chrome watcher stores
-                          // data.
-  DIR_ROAMING_USER_DATA,  // Directory where user data is stored that
-                          // needs to be roamed between computers.
-#endif
   DIR_RESOURCES,               // Directory containing separate file resources
                                // used by Chrome at runtime.
   DIR_APP_DICTIONARIES,        // Directory where the global dictionaries are.
@@ -100,11 +94,6 @@ enum {
                                // binary data for internal pages (e.g., html
                                // files and images).
 
-#if BUILDFLAG(IS_CHROMEOS)
-  DIR_CHROMEOS_CRD_DATA,  // Directory where Chrome Remote Desktop can store
-                          // data that must persist a Chrome restart but that
-                          // must be cleared on device reboot.
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE) &&                                   \
     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || \
@@ -114,20 +103,14 @@ enum {
   DIR_USER_NATIVE_MESSAGING,  // Directory with Native Messaging Hosts
                               // installed per-user.
 #endif
-#if !BUILDFLAG(IS_ANDROID)
   DIR_GLOBAL_GCM_STORE,  // Directory where the global GCM instance
                          // stores its data.
-#endif
 
   // Valid only in development environment; TODO(darin): move these
   DIR_GEN_TEST_DATA,  // Directory where generated test data resides.
   DIR_TEST_DATA,      // Directory where unit test data resides.
   DIR_TEST_TOOLS,     // Directory where unit test tools reside.
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // File containing the device refresh_token.
-  FILE_CHROME_OS_DEVICE_REFRESH_TOKEN,
-#endif
 
   DIR_OPTIMIZATION_GUIDE_PREDICTION_MODELS,  // Directory where verified models
                                              // downloaded by the Optimization

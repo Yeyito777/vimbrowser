@@ -8,9 +8,6 @@
 #include <memory>
 #include <ostream>
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/vulkan/win32/vulkan_implementation_win32.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
@@ -32,21 +29,17 @@ std::unique_ptr<VulkanImplementation> CreateVulkanImplementation(
       ->CreateVulkanImplementation(use_swiftshader, allow_protected_memory);
 #else
 
-#if !BUILDFLAG(IS_WIN)
   // TODO(samans): Support Swiftshader on more platforms.
   // https://crbug.com/963988
   DCHECK(!use_swiftshader)
       << "Vulkan Swiftshader is not supported on this platform.";
-#endif  // !BUILDFLAG(IS_WIN)
 
   // Protected memory is supported only on Fuchsia, which uses Ozone, i.e.
   // VulkanImplementation is initialized above.
   DCHECK(!allow_protected_memory)
       << "Protected memory is not supported on this platform.";
 
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<VulkanImplementationWin32>(use_swiftshader);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return std::make_unique<VulkanImplementationMac>(use_swiftshader);
 #else
   NOTREACHED();

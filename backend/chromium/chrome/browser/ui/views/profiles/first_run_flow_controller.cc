@@ -53,11 +53,6 @@
 #include "google_apis/gaia/core_account_id.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/taskbar_manager.h"
-#include "chrome/installer/util/install_util.h"
-#include "chrome/installer/util/shell_util.h"
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "base/check_deref.h"
@@ -118,11 +113,6 @@ bool IsPostIdentityStep(ProfileManagementFlowController::Step step) {
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-void PinToTaskbarResult(bool result) {
-  base::UmaHistogramBoolean("Windows.TaskbarPinFromFRESucceeded", result);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 class IntroStepController : public ProfileManagementStepController {
  public:
@@ -288,14 +278,6 @@ class DefaultBrowserStepController : public ProfileManagementStepController {
       // freed once all its tasks have finished.
       base::MakeRefCounted<shell_integration::DefaultBrowserWorker>()
           ->StartSetAsDefault(base::BindOnce(&MaybeLogSetAsDefaultSuccess));
-#if BUILDFLAG(IS_WIN)
-      if (can_pin_) {
-        browser_util::PinAppToTaskbar(
-            ShellUtil::GetBrowserModelId(InstallUtil::IsPerUserInstall()),
-            browser_util::PinAppToTaskbarChannel::kFirstRunExperience,
-            base::BindOnce(&PinToTaskbarResult));
-      }
-#endif  // BUILDFLAG(IS_WIN)
     }
     base::UmaHistogramEnumeration("ProfilePicker.FirstRun.DefaultBrowser",
                                   choice);
@@ -317,21 +299,6 @@ class DefaultBrowserStepController : public ProfileManagementStepController {
         state == shell_integration::OTHER_MODE_IS_DEFAULT;
 
     if (should_show_default_browser_step) {
-#if BUILDFLAG(IS_WIN)
-      // Check if Chrome can pin to the taskbar, which is an async call. When it
-      // finishes, the result will be recorded and
-      // `show_default_browser_screen_callback_` will be run.
-      if (base::FeatureList::IsEnabled(
-              features::kOfferPinToTaskbarInFirstRunExperience)) {
-        browser_util::ShouldOfferToPin(
-            ShellUtil::GetBrowserModelId(InstallUtil::IsPerUserInstall()),
-            browser_util::PinAppToTaskbarChannel::kFirstRunExperience,
-            base::BindOnce(
-                &DefaultBrowserStepController::OnCanPinToTaskbarResult,
-                weak_ptr_factory_.GetWeakPtr()));
-        return;
-      }
-#endif  // BUILDFLAG(IS_WIN)
       std::move(show_default_browser_screen_callback_).Run();
     } else {
       // Mark that this step was skipped and proceed with the next one.
@@ -383,16 +350,12 @@ class DefaultBrowserStepController : public ProfileManagementStepController {
     // on Windows because we display a dialog before the FRE on MacOS and Linux
     // to ask the user about the default browser. If it's forced, it should be
     // shown on the other platforms for testing.
-#if BUILDFLAG(IS_WIN)
-    return ShowDefaultBrowserStep::kYes;
-#else
     // Non-Windows platforms should not show this unless forced (e.g.
     // command line)
     base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
     return command_line->HasSwitch(switches::kForceFreDefaultBrowserStep)
                ? ShowDefaultBrowserStep::kForce
                : ShowDefaultBrowserStep::kNo;
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   // Callback to be executed when the step is completed.

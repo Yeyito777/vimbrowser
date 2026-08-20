@@ -53,14 +53,6 @@ apps::LaunchContainer GetLaunchContainer(const ExtensionPrefs* prefs,
       // If the pref is set to launch a window (or no pref is set, and
       // window opening is the default), make the container a window.
       result = apps::LaunchContainer::kLaunchContainerWindow;
-#if BUILDFLAG(IS_CHROMEOS)
-    } else if (prefs_launch_type == LaunchType::kFullscreen) {
-      // LaunchType::kFullscreen launches in a maximized app window in ash.
-      // For desktop chrome AURA on all platforms we should open the
-      // application in full screen mode in the current tab, on the same
-      // lines as non AURA chrome.
-      result = apps::LaunchContainer::kLaunchContainerWindow;
-#endif
     } else {
       // All other launch types (tab, pinned, fullscreen) are
       // implemented as tabs in a window.

@@ -130,18 +130,6 @@ inline constexpr char kWaitForDebugger[] = "wait-for-debugger";
 // See flag_descriptions.cc for more details.
 inline constexpr char kEnableBenchmarking[] = "enable-benchmarking";
 
-#if BUILDFLAG(IS_WIN)
-// Disable high-resolution timer on Windows.
-inline constexpr char kDisableHighResTimer[] = "disable-highres-timer";
-
-// Disables the USB keyboard detection for blocking the OSK on Windows.
-inline constexpr char kDisableUsbKeyboardDetect[] =
-    "disable-usb-keyboard-detect";
-
-// Forces the use of QPC for TimeTicks even if cpuid doesn't report the presence
-// of an invariant TSC.
-inline constexpr char kForceHighResTimeTicks[] = "force-high-res-timeticks";
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 // The /dev/shm partition is too small in certain VM environments, causing
@@ -151,52 +139,12 @@ inline constexpr char kForceHighResTimeTicks[] = "force-high-res-timeticks";
 inline constexpr char kDisableDevShmUsage[] = "disable-dev-shm-usage";
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 // Used for turning on Breakpad crash reporting in a debug environment where
 // crash reporting is typically compiled but disabled.
 inline constexpr char kEnableCrashReporterForTesting[] =
     "enable-crash-reporter-for-testing";
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-// For testing, do not initialize child service process but also do not exit
-// (until requested by browser).
-inline constexpr char kAndroidSkipChildServiceInitForTesting[] =
-    "android-skip-child-service-init-for-testing";
 
-// Default country code to be used for search engine localization.
-inline constexpr char kDefaultCountryCodeAtInstall[] = "default-country-code";
-
-// Adds additional thread idle time information into the trace event output.
-inline constexpr char kEnableIdleTracing[] = "enable-idle-tracing";
-
-// When we retrieve the package name within the SDK Runtime, we need to use
-// a bit of a hack to do this by taking advantage of the fact that the pid
-// is the same pid as the application's pid + 10000.
-// see:
-// https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/core/java/android/os/Process.java;l=292;drc=47fffdd53115a9af1820e3f89d8108745be4b55d
-// When the render process is created however, it is just a regular isolated
-// process with no particular association so we can't perform the same hack.
-// When creating minidumps, the package name is retrieved from the process
-// meaning the render process minidumps would end up reporting a generic
-// process name not associated with the app.
-// We work around this by feeding through the host package information to the
-// render process when launching it.
-inline constexpr char kHostPackageName[] = "host-package-name";
-inline constexpr char kHostPackageLabel[] = "host-package-label";
-inline constexpr char kHostVersionCode[] = "host-version-code";
-inline constexpr char kPackageName[] = "package-name";
-inline constexpr char kPackageVersionName[] = "package-version-name";
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-// Override the default scheduling boosting value for urgent tasks.
-// This can be adjusted if a specific chromeos device shows better perf/power
-// ratio (e.g. by running video conference tests).
-// Currently, this values directs to linux scheduler's utilization min clamp.
-// Range is 0(no biased load) ~ 100(mamximum load value).
-inline constexpr char kSchedulerBoostUrgent[] = "scheduler-boost-urgent";
-#endif
 
 }  // namespace switches
 

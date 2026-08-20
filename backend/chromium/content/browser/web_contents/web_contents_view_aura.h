@@ -360,20 +360,6 @@ class CONTENT_EXPORT WebContentsViewAura
     drag_dest_delegate_ = delegate;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Callback for asynchronous retrieval of virtual files.
-  void OnGotVirtualFilesAsTempFiles(
-      OnPerformingDropContext drop_context,
-      const std::vector<std::pair</*temp path*/ base::FilePath,
-                                  /*display name*/ base::FilePath>>&
-          filepaths_and_names);
-
-  class AsyncDropNavigationObserver;
-  std::unique_ptr<AsyncDropNavigationObserver> async_drop_navigation_observer_;
-
-  class AsyncDropTempFileDeleter;
-  std::unique_ptr<AsyncDropTempFileDeleter> async_drop_temp_file_deleter_;
-#endif
   DropCallbackForTesting drop_callback_for_testing_;
 
   // Calls the delegate's OnPerformingDrop() if a delegate is present, otherwise

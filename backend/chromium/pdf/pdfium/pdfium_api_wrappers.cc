@@ -25,9 +25,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/vector2d.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <string.h>  // for memset()
-#endif
 
 using printing::ConvertUnitFloat;
 using printing::kPointsPerInch;
@@ -251,71 +248,5 @@ bool RenderPageToBitmap(FPDF_PAGE page,
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool RenderPageToDC(FPDF_PAGE page,
-                    const PDFiumEngineExports::RenderingSettings& settings,
-                    HDC dc) {
-  if (!page || !dc) {
-    return false;
-  }
-
-  PDFiumEngineExports::RenderingSettings new_settings = settings;
-  // calculate the page size
-  if (new_settings.dpi.width() == -1) {
-    new_settings.dpi.set_width(GetDeviceCaps(dc, LOGPIXELSX));
-  }
-  if (new_settings.dpi.height() == -1) {
-    new_settings.dpi.set_height(GetDeviceCaps(dc, LOGPIXELSY));
-  }
-
-  gfx::Rect dest;
-  int rotate = CalculatePosition(page, new_settings, &dest);
-
-  int save_state = SaveDC(dc);
-  // The caller wanted all drawing to happen within the bounds specified.
-  // Based on scale calculations, our destination rect might be larger
-  // than the bounds. Set the clip rect to the bounds.
-  IntersectClipRect(dc, settings.bounds.x(), settings.bounds.y(),
-                    settings.bounds.x() + settings.bounds.width(),
-                    settings.bounds.y() + settings.bounds.height());
-
-  int flags = GetRenderFlagsFromSettings(settings);
-
-  // A "temporary" hack. Some PDFs seems to render very slowly if
-  // FPDF_RenderPage() is directly used on a printer DC. I suspect it is
-  // because of the code to talk Postscript directly to the printer if
-  // the printer supports this. Need to discuss this with PDFium. For now,
-  // render to a bitmap and then blit the bitmap to the DC if we have been
-  // supplied a printer DC.
-  int device_type = GetDeviceCaps(dc, TECHNOLOGY);
-  if (device_type == DT_RASPRINTER || device_type == DT_PLOTTER) {
-    ScopedFPDFBitmap bitmap(
-        FPDFBitmap_Create(dest.width(), dest.height(), FPDFBitmap_BGRx));
-    // Clear the bitmap
-    FPDFBitmap_FillRect(bitmap.get(), 0, 0, dest.width(), dest.height(),
-                        0xFFFFFFFF);
-    FPDF_RenderPageBitmap(bitmap.get(), page, 0, 0, dest.width(), dest.height(),
-                          rotate, flags);
-    int stride = FPDFBitmap_GetStride(bitmap.get());
-    BITMAPINFO bmi = {};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = dest.width();
-    bmi.bmiHeader.biHeight = -dest.height();  // top-down image
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-    bmi.bmiHeader.biSizeImage = stride * dest.height();
-    StretchDIBits(dc, dest.x(), dest.y(), dest.width(), dest.height(), 0, 0,
-                  dest.width(), dest.height(),
-                  FPDFBitmap_GetBuffer(bitmap.get()), &bmi, DIB_RGB_COLORS,
-                  SRCCOPY);
-  } else {
-    FPDF_RenderPage(dc, page, dest.x(), dest.y(), dest.width(), dest.height(),
-                    rotate, flags);
-  }
-  RestoreDC(dc, save_state);
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace chrome_pdf

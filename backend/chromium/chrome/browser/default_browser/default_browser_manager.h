@@ -50,13 +50,6 @@ class DefaultBrowserManager {
     virtual void StartCheckIsDefault(
         shell_integration::DefaultWebClientWorkerCallback callback) = 0;
 
-#if BUILDFLAG(IS_WIN)
-    // Asynchronously fetches the program ID of the default client for the
-    // given `scheme`.
-    virtual void StartCheckDefaultClientProgId(
-        const GURL& scheme,
-        base::OnceCallback<void(const std::u16string&)> callback) = 0;
-#endif  // BUILDFLAG(IS_WIN)
   };
 
   explicit DefaultBrowserManager(

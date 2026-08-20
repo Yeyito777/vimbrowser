@@ -42,10 +42,6 @@ source_set("user_education") {
     "//content/public/browser",
     "//ui/base",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/components/mgs" ]
-  }
 }
 
 source_set("unit_tests") {

@@ -186,11 +186,6 @@ bool StructTraits<viz::mojom::TransferableResourceDataView,
       !data.ReadResourceSource(&out->resource_source)) {
     return false;
   }
-#if BUILDFLAG(IS_ANDROID)
-  if (!data.ReadYcbcrInfo(&out->ycbcr_info)) {
-    return false;
-  }
-#endif
 
   out->id = id;
   out->set_shared_image(
@@ -200,9 +195,6 @@ bool StructTraits<viz::mojom::TransferableResourceDataView,
   out->is_low_latency_rendering = data.is_low_latency_rendering();
   out->needs_detiling = data.needs_detiling();
 
-#if BUILDFLAG(IS_ANDROID)
-  out->is_backed_by_surface_view = data.is_backed_by_surface_view();
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_WIN)
   out->wants_promotion_hint = data.wants_promotion_hint();

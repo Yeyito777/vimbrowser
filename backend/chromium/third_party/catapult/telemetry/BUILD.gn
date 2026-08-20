@@ -55,10 +55,8 @@ group("telemetry") {
   data_deps = [ "../third_party/typ" ]
 }
 
-if (!is_fuchsia) {
-  executable("bitmaptools") {
-    sources = [ "telemetry/internal/image_processing/bitmaptools.cc" ]
+executable("bitmaptools") {
+  sources = [ "telemetry/internal/image_processing/bitmaptools.cc" ]
 
-    deps = [ "//build/win:default_exe_manifest" ]
-  }
+  deps = [ "//build/win:default_exe_manifest" ]
 }

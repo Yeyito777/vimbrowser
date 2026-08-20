@@ -27,9 +27,6 @@
 #include "ui/message_center/public/cpp/notification_types.h"
 #include "ui/message_center/public/cpp/notifier_id.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/install_static/install_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace default_browser {
 
@@ -38,12 +35,6 @@ DefaultBrowserNotificationObserver::DefaultBrowserNotificationObserver(
     InitialStateCheckCallback initial_state_check_callback,
     DefaultBrowserManager& manager)
     : manager_(manager) {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, some install modes don't support being set as default.
-  if (!install_static::SupportsSetAsDefaultBrowser()) {
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   default_browser_change_subscription_ =
       std::move(register_callback)

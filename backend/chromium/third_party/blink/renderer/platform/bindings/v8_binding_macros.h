@@ -34,15 +34,6 @@
 #include "build/build_config.h"
 #include "v8/include/v8.h"
 
-#if BUILDFLAG(IS_WIN)
-#if !defined(alloca)
-// Windows uses _alloca instead of alloca, but only #define's alloca to _alloca
-// in malloc.h if _CRT_INTERNAL_NONSTDC_NAMES is defined. If that doesn't happen
-// (e.g. on Windows on Arm), fix up the definition.
-#include <malloc.h>
-#define alloca _alloca
-#endif
-#endif
 
 namespace blink {
 

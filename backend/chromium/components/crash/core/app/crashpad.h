@@ -20,19 +20,11 @@
 #include "base/apple/scoped_mach_port.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include <signal.h>
 #endif
 
-#if BUILDFLAG(IS_IOS)
-#include "base/containers/span.h"
-#include "third_party/crashpad/crashpad/client/simple_address_range_bag.h"
-#include "third_party/crashpad/crashpad/handler/user_stream_data_source.h"  // nogncheck
-#endif
 
 namespace base {
 class Time;
@@ -78,36 +70,6 @@ namespace crash_reporter {
 // On iOS, this will return false if Crashpad initialization fails.
 bool InitializeCrashpad(bool initial_client, const std::string& process_type);
 
-#if BUILDFLAG(IS_WIN)
-// This is the same as InitializeCrashpad(), but rather than launching a
-// crashpad_handler executable, relaunches the executable at |exe_path| or the
-// current executable if |exe_path| is empty with a command line argument of
-// --type=crashpad-handler. If |user_data_dir| is non-empty, it is added to the
-// handler's command line for use by Chrome Crashpad extensions. |attachments|,
-// if not empty, indicates a list of files to be attached to a generated report.
-bool InitializeCrashpadWithEmbeddedHandler(
-    bool initial_client,
-    const std::string& process_type,
-    const std::string& user_data_dir,
-    const base::FilePath& exe_path,
-    const std::vector<base::FilePath>& attachments = {});
-
-// This version of InitializeCrashpadWithEmbeddedHandler is used to call an
-// embedded crash handler that comes from an entry point in a DLL. The command
-// line for these kind of embedded handlers is usually:
-// C:\Windows\System32\rundll.exe <path to dll>,<entrypoint> ...
-// In this situation the exe_path is not sufficient to allow spawning a crash
-// handler through the DLL so |initial_arguments| needs to be passed to specify
-// the DLL entry point. |attachments|, if not empty, indicates a list of files
-// to be attached to a generated report.
-bool InitializeCrashpadWithDllEmbeddedHandler(
-    bool initial_client,
-    const std::string& process_type,
-    const std::string& user_data_dir,
-    const base::FilePath& exe_path,
-    const std::vector<std::string>& initial_arguments,
-    const std::vector<base::FilePath>& attachments = {});
-#endif  // BUILDFLAG(IS_WIN)
 
 // Returns the CrashpadClient for this process. This will lazily create it if
 // it does not already exist. This is called as part of InitializeCrashpad.
@@ -124,7 +86,6 @@ void DestroyCrashpadClient();
 
 // ChromeOS has its own, OS-level consent system; Chrome does not maintain a
 // separate Upload Consent on ChromeOS.
-#if !BUILDFLAG(IS_CHROMEOS)
 
 // Enables or disables crash report upload, taking the given consent to upload
 // into account. Consent may be ignored, uploads may not be enabled even with
@@ -136,7 +97,6 @@ void DestroyCrashpadClient();
 // running.
 void SetUploadConsent(bool consent);
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 enum class ReportUploadState {
   NotUploaded,
@@ -165,39 +125,6 @@ void RequestSingleCrashUpload(const std::string& local_id);
 
 void DumpWithoutCrashing();
 
-#if BUILDFLAG(IS_IOS)
-void DumpWithoutCrashAndDeferProcessing();
-void DumpWithoutCrashAndDeferProcessingAtPath(const base::FilePath& path);
-
-// Processes an externally generated dump.
-// An empty minidump is generated and an attachment is created with |dump_data|.
-// |source_name| is used as attachment name and is appended to the product name.
-// |override_annotations| overrides the standard simple annotations sent with
-// the report.
-// Returns whether the external dump was processed successfully.
-bool ProcessExternalDump(
-    const std::string& source_name,
-    base::span<const uint8_t> dump_data,
-    const std::map<std::string, std::string>& override_annotations = {});
-
-// "platform", used to determine device_model, can be overridden.
-void OverridePlatformValue(const std::string& platform_value);
-
-// The simple extra memory ranges SimpleAddressRangeBag object.
-crashpad::SimpleAddressRangeBag* ExtraMemoryRanges();
-
-// Sets the bag of extra memory ranges to be included in the snapshot.
-void SetExtraMemoryRanges(crashpad::SimpleAddressRangeBag* address_range_bag);
-
-// The extra memory ranges SimpleAddressRangeBag object stored in the snapshot
-// but not the minidump.
-crashpad::SimpleAddressRangeBag* IntermediateDumpExtraMemoryRanges();
-
-// Sets the bag of extra memory ranges to be included in the snapshot but not
-// the minidump.
-void SetIntermediateDumpExtraMemoryRanges(
-    crashpad::SimpleAddressRangeBag* address_range_bag);
-#endif  // BUILDFLAG(IS_IOS)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 // Logs message and immediately crashes the current process without triggering a
@@ -227,20 +154,6 @@ base::FilePath::StringType::const_pointer GetCrashpadDatabasePathImpl();
 // The implementation function for ClearReportsBetween.
 void ClearReportsBetweenImpl(time_t begin, time_t end);
 
-#if BUILDFLAG(IS_CHROMEOS_DEVICE)
-// Called late in shutdown to remove the file that tells ChromeOS's
-// crash_reporter "This browser process has crashpad initialized; you don't
-// need to handle the crash reports coming from the kernel".
-//
-// Since crash_reporter will do a lot of unnecessary work if there is a
-// crash after this file is removed, this function should be called as late
-// as possible in the shutdown process, ideally after any code that might crash
-// has executed.
-//
-// Only needed in the browser process; calls in other processes will be
-// ignored. Multiple calls will be ignored as well.
-void DeleteCrashpadIsReadyFile();
-#endif
 
 #if BUILDFLAG(IS_MAC)
 // Captures a minidump for the process named by its |task_port| and stores it
@@ -248,33 +161,7 @@ void DeleteCrashpadIsReadyFile();
 void DumpProcessWithoutCrashing(task_t task_port);
 #endif
 
-#if BUILDFLAG(IS_IOS)
-// Convert intermediate dumps into minidumps and trigger an upload if
-// StartProcessingPendingReports() has been called. Optional |annotations| will
-// merge with any process annotations. These are useful for adding annotations
-// detected on the next run after a crash but before upload.
-void ProcessIntermediateDumps(
-    const std::map<std::string, std::string>& annotations = {},
-    const crashpad::UserStreamDataSources* user_stream_sources = nullptr);
 
-// Convert a single intermediate dump at |file| into a minidump and
-// trigger an upload if StartProcessingPendingReports() has been called.
-// Optional |annotations| will merge with any process annotations. These are
-// useful for adding annotations detected on the next run after a crash but
-// before upload.
-void ProcessIntermediateDump(
-    const base::FilePath& file,
-    const std::map<std::string, std::string>& annotations = {});
-
-// Requests that the handler begin in-process uploading of any pending reports.
-void StartProcessingPendingReports();
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-// If a CrashReporterClient has enabled sanitization, this function specifies
-// regions of memory which are allowed to be collected by Crashpad.
-void AllowMemoryRange(void* begin, size_t size);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 // Install a handler that gets a chance to handle faults before Crashpad. This
@@ -288,25 +175,7 @@ bool GetHandlerSocket(int* sock, pid_t* pid);
 
 namespace internal {
 
-#if BUILDFLAG(IS_WIN)
-// Returns platform specific annotations. This is broken out on Windows only so
-// that it may be reused by GetCrashKeysForKasko.
-void GetPlatformCrashpadAnnotations(
-    std::map<std::string, std::string>* annotations);
 
-// The thread functions that implement the InjectDumpForHungInput in the
-// target process.
-DWORD WINAPI DumpProcessForHungInputThread(void* param);
-
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_ANDROID)
-// Starts the handler process with an initial client connected on fd,
-// the handler will write minidump to database if write_minidump_to_database is
-// true.
-// Returns `true` on success.
-bool StartHandlerForClient(int fd, bool write_minidump_to_database);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // The platform-specific portion of InitializeCrashpad(). On Windows, if
 // |user_data_dir| is non-empty, the user data directory will be passed to the

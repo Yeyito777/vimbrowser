@@ -44,11 +44,6 @@ class SpeechRecognitionClientBrowserInterface
       mojo::PendingRemote<media::mojom::SpeechRecognitionBrowserObserver>
           pending_remote) override;
   void REMOVED_1() override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void REMOVED_2(
-      mojo::PendingRemote<media::mojom::SpeechRecognitionBrowserObserver>
-          pending_remote) override;
-#endif
 
   // SodaInstaller::Observer:
   void OnSodaInstalled(speech::LanguageCode language_code) override;

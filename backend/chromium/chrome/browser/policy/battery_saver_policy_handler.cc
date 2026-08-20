@@ -11,9 +11,6 @@
 #include "components/policy/policy_constants.h"
 #include "components/prefs/pref_value_map.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace policy {
 
@@ -32,9 +29,6 @@ void BatterySaverPolicyHandler::ApplyPolicySettings(const PolicyMap& policies,
   }
   switch (value->GetInt()) {
     case base::strict_cast<int>(BatterySaverModeState::kDisabled):
-#if BUILDFLAG(IS_CHROMEOS)
-      prefs->SetBoolean(ash::prefs::kPowerBatterySaver, false);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
       prefs->SetInteger(
           performance_manager::user_tuning::prefs::kBatterySaverModeState,

@@ -31,9 +31,6 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/webui/webui_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace {
 
@@ -59,12 +56,7 @@ void CreateAndAddComponentsUIHTMLSource(Profile* profile) {
 
   source->AddBoolean(
       "isGuest",
-#if BUILDFLAG(IS_CHROMEOS)
-      user_manager::UserManager::Get()->IsLoggedInAsGuest() ||
-          user_manager::UserManager::Get()->IsLoggedInAsManagedGuestSession()
-#else
       profile->IsOffTheRecord()
-#endif
   );
   source->UseStringsJs();
   source->AddResourcePaths(kComponentsResources);

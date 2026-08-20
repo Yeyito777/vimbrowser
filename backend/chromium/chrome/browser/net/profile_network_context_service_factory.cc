@@ -22,10 +22,6 @@
 #include "chrome/browser/net/nss_service_factory.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/certificate_provider/certificate_provider_service_factory.h"
-#include "chrome/browser/policy/networking/policy_cert_service_factory.h"
-#endif
 
 #if BUILDFLAG(CHROME_ROOT_STORE_CERT_MANAGEMENT_UI)
 #include "chrome/browser/net/server_certificate_database_service_factory.h"  // nogncheck
@@ -71,10 +67,6 @@ ProfileNetworkContextServiceFactory::ProfileNetworkContextServiceFactory()
   // are available and NSS can be used to enumerate client certificates if
   // requested.
   DependsOn(NssServiceFactory::GetInstance());
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  DependsOn(policy::PolicyCertServiceFactory::GetInstance());
-  DependsOn(chromeos::CertificateProviderServiceFactory::GetInstance());
 #endif
 #if BUILDFLAG(CHROME_ROOT_STORE_CERT_MANAGEMENT_UI)
   DependsOn(net::ServerCertificateDatabaseServiceFactory::GetInstance());

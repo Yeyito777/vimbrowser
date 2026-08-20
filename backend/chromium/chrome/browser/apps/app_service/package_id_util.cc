@@ -16,41 +16,9 @@
 #include "components/services/app_service/public/cpp/package_id.h"
 #include "components/services/app_service/public/cpp/types_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/apps/apk_web_app_service.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace apps_util {
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<apps::PackageId> GetPackageIdForApp(
-    Profile* profile,
-    const apps::AppUpdate& update) {
-  if (update.AppType() != apps::AppType::kArc &&
-      update.AppType() != apps::AppType::kWeb) {
-    return std::nullopt;
-  }
-  if (update.PublisherId().empty()) {
-    return std::nullopt;
-  }
-
-  // TWAs should have an ARC package ID despite being a webapp because the
-  // package ID should represent how the app was installed.
-  ash::ApkWebAppService* apk_web_app_service =
-      ash::ApkWebAppService::Get(profile);
-  if (apk_web_app_service && update.AppType() == apps::AppType::kWeb) {
-    // Check whether the app is an installed (or installing) web app apk.
-    std::optional<std::string> package_name =
-        apk_web_app_service->GetPackageNameForWebApp(
-            update.AppId(), /*include_installing_apks=*/true);
-    if (package_name.has_value()) {
-      return apps::PackageId(apps::PackageType::kArc, package_name.value());
-    }
-  }
-  return apps::PackageId(ConvertAppTypeToPackageType(update.AppType()).value(),
-                         update.PublisherId());
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::optional<std::string> GetAppWithPackageId(
     Profile* profile,

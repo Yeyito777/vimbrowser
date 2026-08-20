@@ -17,11 +17,6 @@
 #include "extensions/browser/api/extensions_api_client.h"
 #include "extensions/browser/api/file_handlers/app_file_handler_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/disks/disk_mount_manager.h"
-#include "chromeos/ash/components/policy/external_storage/device_id.h"
-#include "chromeos/ash/components/policy/external_storage/external_storage_policy_controller.h"
-#endif
 
 namespace image_writer_api = extensions::api::image_writer_private;
 
@@ -31,20 +26,7 @@ namespace {
 
 bool IsDeviceWriteable(content::BrowserContext* browser_context,
                        const std::string& storage_unit_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  const Profile* profile = Profile::FromBrowserContext(browser_context);
-  const PrefService& pref_service = *profile->GetPrefs();
-
-  const ash::disks::Disk* disk =
-      ash::disks::DiskMountManager::GetInstance()->FindDiskBySourcePath(
-          storage_unit_id);
-  std::optional<policy::DeviceId> device_id = policy::DeviceId::FromDisk(disk);
-
-  return policy::ExternalStoragePolicyController::IsDeviceWriteable(
-      pref_service, device_id);
-#else
   return true;
-#endif
 }
 
 void MaybeFilterDeviceList(

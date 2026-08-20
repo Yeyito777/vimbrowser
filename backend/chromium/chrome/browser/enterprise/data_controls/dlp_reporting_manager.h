@@ -37,9 +37,6 @@ class DlpPolicyEventBuilder {
 
   // Setters used to define event properties.
   void SetDestinationUrl(const std::string& dst_url);
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetDestinationComponent(Component dst_component);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void SetContentName(const std::string& content_name);
 
   // Stops the creation and returns the created event.
@@ -70,14 +67,6 @@ DlpPolicyEvent CreateDlpPolicyEvent(const std::string& src_url,
                                     const std::string& rule_id,
                                     Rule::Level level);
 
-#if BUILDFLAG(IS_CHROMEOS)
-DlpPolicyEvent CreateDlpPolicyEvent(const std::string& src_url,
-                                    Component dst_component,
-                                    Rule::Restriction restriction,
-                                    const std::string& rule_name,
-                                    const std::string& rule_id,
-                                    Rule::Level level);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 template <typename... Args>
 DlpPolicyEvent CreateDlpPolicyWarningProceededEvent(Args... args) {
@@ -122,14 +111,6 @@ class DlpReportingManager {
                    Rule::Level level,
                    const std::string& rule_name,
                    const std::string& rule_id);
-#if BUILDFLAG(IS_CHROMEOS)
-  void ReportEvent(const std::string& src_url,
-                   Component dst_component,
-                   Rule::Restriction restriction,
-                   Rule::Level level,
-                   const std::string& rule_name,
-                   const std::string& rule_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   template <typename... Args>
   void ReportWarningProceededEvent(Args... args) {

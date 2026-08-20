@@ -29,16 +29,6 @@
 #include "third_party/webrtc_overrides/init_webrtc.h"
 #include "v8/include/v8-trace-categories.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/functional/bind.h"
-#include "base/functional/callback.h"
-#include "base/location.h"
-#include "base/task/thread_pool.h"
-#include "skia/ext/codec_utils.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "third_party/skia/include/core/SkPixmap.h"
-#include "ui/gfx/win/get_elevation_icon.h"
-#endif
 
 namespace content {
 
@@ -456,51 +446,6 @@ void TracesInternalsHandler::MaybeSetupPresetTracingFromFieldTrial() {
       std::move(*tracing_scenarios_config), data_filtering);
 }
 
-#if BUILDFLAG(IS_WIN)
-void TracesInternalsHandler::GetSystemTracingState(
-    GetSystemTracingStateCallback callback) {
-  if (!tracing_delegate_) {
-    std::move(callback).Run(/*service_supported=*/false,
-                            /*service_enabled=*/false);
-    return;
-  }
-  tracing_delegate_->GetSystemTracingState(std::move(callback));
-}
-
-void TracesInternalsHandler::GetSecurityShieldIconUrl(
-    GetSecurityShieldIconUrlCallback callback) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&gfx::win::GetElevationIcon),
-      base::BindOnce(
-          [](GetSecurityShieldIconUrlCallback callback, SkBitmap shield_icon) {
-            if (!shield_icon.empty()) {
-              std::move(callback).Run(
-                  GURL(skia::EncodePngAsDataUri(shield_icon.pixmap())));
-            } else {
-              std::move(callback).Run({});
-            }
-          },
-          std::move(callback)));
-}
-
-void TracesInternalsHandler::EnableSystemTracing(
-    EnableSystemTracingCallback callback) {
-  if (!tracing_delegate_) {
-    std::move(callback).Run(/*success=*/false);
-    return;
-  }
-  tracing_delegate_->EnableSystemTracing(std::move(callback));
-}
-
-void TracesInternalsHandler::DisableSystemTracing(
-    DisableSystemTracingCallback callback) {
-  if (!tracing_delegate_) {
-    std::move(callback).Run(/*success=*/false);
-    return;
-  }
-  tracing_delegate_->DisableSystemTracing(std::move(callback));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 std::unique_ptr<perfetto::TracingSession>
 TracesInternalsHandler::CreateTracingSession() {

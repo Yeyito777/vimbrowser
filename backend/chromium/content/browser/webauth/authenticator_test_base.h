@@ -18,10 +18,6 @@
 #include "third_party/blink/public/mojom/webauthn/authenticator.mojom.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/fake_webauthn_api.h"
-#include "device/fido/win/util.h"
-#endif
 
 namespace device {
 class FidoDiscoveryFactory;
@@ -515,13 +511,6 @@ class AuthenticatorTestBase : public RenderViewHostTestHarness {
 
   raw_ptr<device::test::VirtualFidoDeviceFactory> virtual_device_factory_ =
       nullptr;
-#if BUILDFLAG(IS_WIN)
-  device::FakeWinWebAuthnApi fake_win_webauthn_api_;
-  device::WinWebAuthnApi::ScopedOverride win_webauthn_api_override_{
-      &fake_win_webauthn_api_};
-  std::unique_ptr<device::fido::win::ScopedBiometricsOverride>
-      biometrics_override_;
-#endif
 
  private:
   void OnMojoError(const std::string& error);

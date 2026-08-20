@@ -8,13 +8,11 @@ group("all") {
   testonly = true
   deps = [ ":service_manager" ]
 
-  if (!is_ios) {
-    deps += [
-      # These tests heavily rely on service binaries, which are not supported on
-      # iOS.
-      "//services/service_manager/tests",
-    ]
-  }
+  deps += [
+    # These tests heavily rely on service binaries, which are not supported on
+    # iOS.
+    "//services/service_manager/tests",
+  ]
 }
 
 source_set("service_manager") {
@@ -53,17 +51,15 @@ source_set("service_manager") {
     "//services/service_manager/public/mojom",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "service_process_launcher.cc",
-      "service_process_launcher.h",
-    ]
+  sources += [
+    "service_process_launcher.cc",
+    "service_process_launcher.h",
+  ]
 
-    deps += [
-      "//mojo/core/embedder",
-      "//services/service_manager/public/cpp/service_executable:switches",
-    ]
-  }
+  deps += [
+    "//mojo/core/embedder",
+    "//services/service_manager/public/cpp/service_executable:switches",
+  ]
 
   if (is_linux || is_chromeos) {
     deps += [ "//sandbox/linux:sandbox_services" ]

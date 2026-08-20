@@ -10,42 +10,12 @@
 #include "base/process/process_handle.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <inttypes.h>
-#include <stdio.h>
 
-#include "base/files/file_util.h"
-#include "base/files/scoped_file.h"
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-extern "C" void* __libc_stack_end;
-#endif
 
 namespace base {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-std::optional<uintptr_t> GetAndroidMainThreadStackBaseAddressImpl() {
-  char line[1024];
-  base::ScopedFILE fp(base::OpenFile(base::FilePath("/proc/self/maps"), "r"));
-  uintptr_t stack_addr = reinterpret_cast<uintptr_t>(line);
-  if (!fp) {
-    return std::nullopt;
-  }
-  while (UNSAFE_TODO(fgets(line, sizeof(line), fp.get())) != nullptr) {
-    uintptr_t start, end;
-    if (UNSAFE_TODO(sscanf(line, "%" SCNxPTR "-%" SCNxPTR, &start, &end)) ==
-        2) {
-      if (start <= stack_addr && stack_addr < end) {
-        return end;
-      }
-    }
-  }
-  return std::nullopt;
-}
-#endif
 
 #if !BUILDFLAG(IS_LINUX)
 uintptr_t GetThreadStackBaseAddressImpl(pthread_t pthread_id) {
@@ -86,20 +56,6 @@ std::optional<uintptr_t> GetThreadStackBaseAddress(PlatformThreadId id,
 #else
   const bool is_main_thread = id.raw() == GetCurrentProcId();
   if (is_main_thread) {
-#if BUILDFLAG(IS_ANDROID)
-    // The implementation of pthread_getattr_np() in Bionic reads proc/self/maps
-    // to find the main thread base address, and throws SIGABRT when it fails to
-    // read or parse the file. So, try to read the maps to get the main thread
-    // stack base and cache the result. Other thread base addresses are sourced
-    // from pthread state so are cheap to get.
-    static const std::optional<uintptr_t> main_thread_base_address =
-        GetAndroidMainThreadStackBaseAddressImpl();
-    return main_thread_base_address;
-#elif BUILDFLAG(IS_CHROMEOS)
-    // Similarly, the sandbox will prevent pthread_getattr_np() from working
-    // on the main thread in ChromeOS. Here, we have a simpler solution.
-    return reinterpret_cast<uintptr_t>(__libc_stack_end);
-#endif
   }
   return GetThreadStackBaseAddressImpl(pthread_id);
 #endif  // !BUILDFLAG(IS_LINUX)

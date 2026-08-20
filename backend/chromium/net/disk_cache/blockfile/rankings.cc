@@ -20,9 +20,6 @@
 #include "net/disk_cache/blockfile/errors.h"
 #include "net/disk_cache/blockfile/stress_support.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 using base::Time;
 using base::TimeTicks;

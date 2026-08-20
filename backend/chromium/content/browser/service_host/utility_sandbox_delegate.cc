@@ -14,10 +14,6 @@
 #include "media/gpu/buildflags.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/public/browser/content_browser_client.h"
-#include "content/public/common/content_client.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
 #include "content/common/zygote/zygote_handle_impl_linux.h"
@@ -41,27 +37,12 @@ UtilitySandboxedProcessLauncherDelegate::
         const base::EnvironmentMap& env,
         const base::CommandLine& cmd_line)
     :
-#if BUILDFLAG(IS_POSIX)
       env_(env),
-#endif
       sandbox_type_(sandbox_type),
-#if BUILDFLAG(IS_WIN)
-      app_container_disabled_(
-          GetContentClient()->browser()->IsAppContainerDisabled(sandbox_type)),
-#endif
       cmd_line_(cmd_line) {
 #if DCHECK_IS_ON()
   bool supported_sandbox_type =
       sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-#if BUILDFLAG(IS_WIN)
-      sandbox_type_ ==
-          sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kXrCompositing ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kPdfConversion ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kIconReader ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kMediaFoundationCdm ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kProxyResolver ||
-#endif
 #if BUILDFLAG(IS_MAC)
       sandbox_type_ == sandbox::mojom::Sandbox::kMirroring ||
 #endif
@@ -72,9 +53,6 @@ UtilitySandboxedProcessLauncherDelegate::
       sandbox_type_ == sandbox::mojom::Sandbox::kOnDeviceModelExecution ||
       sandbox_type_ == sandbox::mojom::Sandbox::kCdm ||
       sandbox_type_ == sandbox::mojom::Sandbox::kPrintCompositor ||
-#if BUILDFLAG(IS_FUCHSIA)
-      sandbox_type_ == sandbox::mojom::Sandbox::kVideoCapture ||
-#endif
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       sandbox_type_ == sandbox::mojom::Sandbox::kShapeDetection ||
 #if BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)
@@ -84,11 +62,6 @@ UtilitySandboxedProcessLauncherDelegate::
       sandbox_type_ == sandbox::mojom::Sandbox::kHardwareVideoEncoding ||
 #endif  // BUILDFLAG(USE_LINUX_VIDEO_ACCELERATION)
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS)
-      sandbox_type_ == sandbox::mojom::Sandbox::kIme ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kTts ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kNearby ||
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || \
     BUILDFLAG(IS_WIN)
       sandbox_type_ == sandbox::mojom::Sandbox::kScreenAI ||
@@ -108,11 +81,9 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
   return sandbox_type_;
 }
 
-#if BUILDFLAG(IS_POSIX)
 base::EnvironmentMap UtilitySandboxedProcessLauncherDelegate::GetEnvironment() {
   return env_;
 }
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(USE_ZYGOTE)
 ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
@@ -142,11 +113,6 @@ ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
       sandbox_type_ == sandbox::mojom::Sandbox::kHardwareVideoDecoding ||
       sandbox_type_ == sandbox::mojom::Sandbox::kHardwareVideoEncoding ||
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-      sandbox_type_ == sandbox::mojom::Sandbox::kIme ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kTts ||
-      sandbox_type_ == sandbox::mojom::Sandbox::kNearby ||
-#endif  // BUILDFLAG(IS_CHROMEOS)
       sandbox_type_ == sandbox::mojom::Sandbox::kAudio ||
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
       sandbox_type_ == sandbox::mojom::Sandbox::kShapeDetection ||

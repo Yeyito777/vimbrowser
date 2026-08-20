@@ -454,17 +454,8 @@ void FileSystemAccessDirectoryHandleImpl::ResolveImpl(
 
   std::vector<base::FilePath::StringType> components =
       relative_path.GetComponents();
-#if BUILDFLAG(IS_WIN)
-  std::vector<std::string> result;
-  result.reserve(components.size());
-  for (const auto& component : components) {
-    result.push_back(base::WideToUTF8(component));
-  }
-  std::move(callback).Run(file_system_access_error::Ok(), std::move(result));
-#else
   std::move(callback).Run(file_system_access_error::Ok(),
                           std::move(components));
-#endif
 }
 
 void FileSystemAccessDirectoryHandleImpl::Transfer(

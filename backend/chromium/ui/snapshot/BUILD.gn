@@ -20,14 +20,6 @@ component("snapshot") {
     ]
   }
 
-  if (is_win) {
-    sources += [ "snapshot_win.cc" ]
-  }
-
-  if (is_ios) {
-    sources += [ "snapshot_ios.mm" ]
-  }
-
   defines = [ "SNAPSHOT_IMPLEMENTATION" ]
 
   deps = [
@@ -111,20 +103,6 @@ test("snapshot_unittests") {
       "//ui/compositor",
       "//ui/compositor:test_support",
       "//ui/wm",
-    ]
-  }
-
-  if (is_fuchsia) {
-    # TODO(crbug.com/42050042): Some of these tests use SwiftShader,
-    # which requires ambient VMEX.
-    test_runner_shard = "//build/config/fuchsia/test/elf_test_ambient_exec_runner.shard.test-cml"
-
-    additional_manifest_fragments = [
-      # TODO(crbug.com/40055105): Investigate removing the requirement
-      # for VmexResource.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
     ]
   }
 }

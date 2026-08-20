@@ -40,18 +40,11 @@
 #include "ui/base/ui_base_paths.h"
 
 
-#if BUILDFLAG(IS_IOS)
-#include "ui/base/l10n/l10n_util_ios.h"
-#endif
 
 #if defined(USE_GLIB)
 #include <glib.h>
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/logging.h"
-#include "ui/base/l10n/l10n_util_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace {
 
@@ -427,12 +420,7 @@ std::optional<std::string> CheckAndResolveLocale(std::string_view locale,
     // Spanish locale).
     if (base::EqualsCaseInsensitiveASCII(lang, "es") &&
         !base::EqualsCaseInsensitiveASCII(region, "es")) {
-#if BUILDFLAG(IS_IOS)
-      // iOS uses a different name for es-419 (es-MX).
-      tmp_locale.append("-MX");
-#else
       tmp_locale.append("-419");
-#endif
     } else if (base::EqualsCaseInsensitiveASCII(lang, "pt") &&
                !base::EqualsCaseInsensitiveASCII(region, "br")) {
       // Map pt-RR other than pt-BR to pt-PT. Note that "pt" by itself maps to
@@ -492,22 +480,7 @@ std::string GetApplicationLocaleInternal(std::string_view pref_locale) {
   // to renderer and plugin processes so they know what language the parent
   // process decided to use.
 
-#if BUILDFLAG(IS_WIN)
-  // First, try the preference value.
-  if (!pref_locale.empty())
-    candidates.push_back(base::i18n::GetCanonicalLocale(pref_locale));
-
-  // Next, try the overridden locale.
-  const std::vector<std::string>& languages = l10n_util::GetLocaleOverrides();
-  if (!languages.empty()) {
-    candidates.reserve(candidates.size() + languages.size());
-    std::ranges::transform(languages, std::back_inserter(candidates),
-                           &base::i18n::GetCanonicalLocale);
-  } else {
-    // If no override was set, defer to ICU
-    candidates.push_back(base::i18n::GetConfiguredLocale());
-  }
-#elif defined(USE_GLIB) && !BUILDFLAG(IS_CHROMEOS)
+#if defined(USE_GLIB) && !BUILDFLAG(IS_CHROMEOS)
   // GLib implements correct environment variable parsing with
   // the precedence order: LANGUAGE, LC_ALL, LC_MESSAGES and LANG.
   // We used to use our custom parsing code along with ICU for this purpose.
@@ -612,11 +585,6 @@ std::u16string GetDisplayNameForLocale(std::string_view locale,
   }
 #endif  // BUILDFLAG(ENABLE_PSEUDOLOCALES)
 
-#if BUILDFLAG(IS_IOS)
-  // Use the Foundation API to get the localized display name, removing the need
-  // for the ICU data file to include this data.
-  display_name = GetDisplayNameForLocale(locale_code, display_locale_code);
-#else
   {
     UErrorCode error = U_ZERO_ERROR;
     const int kBufferSize = 1024;
@@ -637,7 +605,6 @@ std::u16string GetDisplayNameForLocale(std::string_view locale,
     DCHECK(U_SUCCESS(error));
     display_name.resize(base::checked_cast<size_t>(actual_size));
   }
-#endif  // BUILDFLAG(IS_IOS)
 
   // Add directional markup so parentheses are properly placed.
   if (is_for_ui && base::i18n::IsRTL())

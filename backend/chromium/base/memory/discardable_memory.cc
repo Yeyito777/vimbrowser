@@ -14,11 +14,9 @@
 namespace base {
 
 namespace features {
-#if BUILDFLAG(IS_POSIX)
 // Feature flag allowing the use of MADV_FREE discardable memory when there are
 // multiple supported discardable memory backings.
 BASE_FEATURE(kMadvFreeDiscardableMemory, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 BASE_FEATURE(kDiscardableMemoryBackingTrial, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -88,13 +86,11 @@ DiscardableMemoryBacking GetDiscardableMemoryBacking() {
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_POSIX)
   if (base::FeatureList::IsEnabled(
           base::features::kMadvFreeDiscardableMemory) &&
       base::GetMadvFreeSupport() == base::MadvFreeSupport::kSupported) {
     return DiscardableMemoryBacking::kMadvFree;
   }
-#endif  // BUILDFLAG(IS_POSIX)
 
   return DiscardableMemoryBacking::kSharedMemory;
 }

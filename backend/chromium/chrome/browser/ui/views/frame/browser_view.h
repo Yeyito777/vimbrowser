@@ -61,9 +61,6 @@
 #include "ui/views/widget/widget_observer.h"
 #include "ui/views/window/client_view.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/compositor/compositor_metrics_tracker.h"
-#endif
 
 // NOTE: For more information about the objects and files in this directory,
 // view: http://dev.chromium.org/developers/design-documents/browser-window
@@ -614,12 +611,8 @@ class BrowserView : public BrowserWindow,
   send_tab_to_self::SendTabToSelfBubbleView* ShowSendTabToSelfPromoBubble(
       content::WebContents* contents,
       bool show_signin_button) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void ToggleMultitaskMenu() override;
-#else
   sharing_hub::SharingHubBubbleView* ShowSharingHubBubble(
       share::ShareAttempt attempt) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   DownloadBubbleUIController* GetDownloadBubbleUIController() override;
   void ConfirmBrowserCloseWithPendingDownloads(
       int download_count,
@@ -803,11 +796,9 @@ class BrowserView : public BrowserWindow,
           tab_search::mojom::TabSearchSection::kSearch) override;
   void CloseTabSearchBubble() override;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   AccessibilityFocusHighlight* GetAccessibilityFocusHighlightForTesting() {
     return accessibility_focus_highlight_.get();
   }
-#endif
 
   views::WebView* GetActiveContentsWebView();
 
@@ -846,12 +837,6 @@ class BrowserView : public BrowserWindow,
   // Returns a `TabDragHandler`, if any available, to handle a tab drag.
   TabDragTarget* GetTabDragTarget(const gfx::Point& point_in_screen);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // This is used only for SWA/PWA scenario.
-  void OnLockedForOnTaskUpdated(bool locked_for_on_task);
-
-  bool IsLockedFullscreen() const;
-#endif
 
   // Called during Toolbar destruction to remove dependent objects that have
   // dangling references.
@@ -945,10 +930,6 @@ class BrowserView : public BrowserWindow,
   void LoadingAnimationTimerCallback();
   void LoadingAnimationCallback(base::TimeTicks timestamp);
 
-#if BUILDFLAG(IS_WIN)
-  // Creates the JumpList.
-  void CreateJumpList();
-#endif
 
   // Helper method, returns if we should show the IPHs anchored on the avatar
   // toolbar.
@@ -1414,17 +1395,10 @@ class BrowserView : public BrowserWindow,
   // The last bounds we notified about in TryNotifyWindowBoundsChanged().
   gfx::Rect last_widget_bounds_;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<AccessibilityFocusHighlight> accessibility_focus_highlight_;
-#endif
 
   OnLinkOpeningFromGestureCallbackList link_opened_from_gesture_callbacks_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // |loading_animation_tracker_| is used to measure animation smoothness for
-  // tab loading animation.
-  std::optional<ui::ThroughputTracker> loading_animation_tracker_;
-#endif
 
   bool window_controls_overlay_enabled_ = false;
   bool should_show_window_controls_overlay_toggle_ = false;

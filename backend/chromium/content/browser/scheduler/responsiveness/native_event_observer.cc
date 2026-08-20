@@ -6,9 +6,6 @@
 #include "build/build_config.h"
 
 // Windows headers must come first.
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 // Proceed with header includes in usual order.
 #include "content/browser/scheduler/responsiveness/native_event_observer.h"
@@ -19,9 +16,6 @@
 #include "ui/events/platform/platform_event_source.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/task/current_thread.h"
-#endif
 
 namespace content {
 namespace responsiveness {
@@ -69,20 +63,6 @@ void NativeEventObserver::PlatformEventSourceDestroying() {
 
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-void NativeEventObserver::RegisterObserver() {
-  base::CurrentUIThread::Get()->AddMessagePumpObserver(this);
-}
-void NativeEventObserver::DeregisterObserver() {
-  base::CurrentUIThread::Get()->RemoveMessagePumpObserver(this);
-}
-void NativeEventObserver::WillDispatchMSG(const MSG& msg) {
-  will_run_event_callback_.Run(&msg);
-}
-void NativeEventObserver::DidDispatchMSG(const MSG& msg) {
-  did_run_event_callback_.Run(&msg);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_IOS)
 void NativeEventObserver::RegisterObserver() {}

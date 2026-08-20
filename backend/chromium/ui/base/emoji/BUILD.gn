@@ -16,10 +16,6 @@ component("emoji") {
   sources = [ "emoji_panel_helper.h" ]
   if (is_mac) {
     sources += [ "emoji_panel_helper_mac.mm" ]
-  } else if (is_win) {
-    sources += [ "emoji_panel_helper_win.cc" ]
-  } else if (is_chromeos) {
-    sources += [ "emoji_panel_helper_chromeos.cc" ]
   } else {
     # Empty implementation for all other platforms.
     sources += [ "emoji_panel_helper.cc" ]
@@ -27,9 +23,6 @@ component("emoji") {
 
   deps = [ "//base" ]
 
-  if (is_win) {
-    deps += [ "//ui/events:events_base" ]
-  }
   if (is_mac) {
     frameworks = [
       "AppKit.framework",

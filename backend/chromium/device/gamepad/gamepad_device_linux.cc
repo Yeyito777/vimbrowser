@@ -31,9 +31,6 @@
 #include "device/gamepad/xbox_hid_controller.h"
 #include "device/udev_linux/udev.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace device {
 
@@ -209,39 +206,6 @@ uint16_t HexStringToUInt16WithDefault(std::string_view input,
   return static_cast<uint16_t>(out);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void OnOpenPathSuccess(
-    chromeos::PermissionBrokerClient::OpenPathCallback callback,
-    scoped_refptr<base::SequencedTaskRunner> polling_runner,
-    base::ScopedFD fd) {
-  polling_runner->PostTask(FROM_HERE,
-                           base::BindOnce(std::move(callback), std::move(fd)));
-}
-
-void OnOpenPathError(
-    chromeos::PermissionBrokerClient::OpenPathCallback callback,
-    scoped_refptr<base::SequencedTaskRunner> polling_runner,
-    const std::string& error_name,
-    const std::string& error_message) {
-  polling_runner->PostTask(
-      FROM_HERE, base::BindOnce(std::move(callback), base::ScopedFD()));
-}
-
-void OpenPathWithPermissionBroker(
-    const std::string& path,
-    chromeos::PermissionBrokerClient::OpenPathCallback callback,
-    scoped_refptr<base::SequencedTaskRunner> polling_runner) {
-  auto* client = chromeos::PermissionBrokerClient::Get();
-  DCHECK(client) << "Could not get permission broker client.";
-  auto split_callback = base::SplitOnceCallback(std::move(callback));
-  auto success_callback = base::BindOnce(
-      &OnOpenPathSuccess, std::move(split_callback.first), polling_runner);
-  auto error_callback = base::BindOnce(
-      &OnOpenPathError, std::move(split_callback.second), polling_runner);
-  client->OpenPath(path, std::move(success_callback),
-                   std::move(error_callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Small helper to avoid constructing a std::string_view from nullptr.
 std::string_view ToStringView(const char* str) {
@@ -596,22 +560,6 @@ void GamepadDeviceLinux::OpenHidrawNode(const UdevGamepadLinux& pad_info,
 
   auto fd = base::ScopedFD(open(pad_info.path.c_str(), O_RDWR | O_NONBLOCK));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If we failed to open the device it may be due to insufficient permissions.
-  // Try again using the PermissionBrokerClient.
-  if (!fd.is_valid()) {
-    DCHECK(dbus_runner_);
-    DCHECK(polling_runner_);
-    auto open_path_callback =
-        base::BindOnce(&GamepadDeviceLinux::OnOpenHidrawNodeComplete,
-                       weak_factory_.GetWeakPtr(), std::move(callback));
-    dbus_runner_->PostTask(
-        FROM_HERE,
-        base::BindOnce(&OpenPathWithPermissionBroker, pad_info.path,
-                       std::move(open_path_callback), polling_runner_));
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   OnOpenHidrawNodeComplete(std::move(callback), std::move(fd));
 }

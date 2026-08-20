@@ -10,9 +10,7 @@
 #include "components/lens/ref_counted_lens_overlay_client_logs.h"
 #include "ui/gfx/geometry/size.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "third_party/skia/include/core/SkBitmap.h"
-#endif  // !BUILDFLAG(IS_IOS)
 
 namespace lens {
 
@@ -60,7 +58,6 @@ void AddClientLogsForDownscale(
     const gfx::Size& original_pixel_size,
     const gfx::Size& downscaled_pixel_size);
 
-#if !BUILDFLAG(IS_IOS)
 
 // Outputs image processing data to the client logs for the downscale phase,
 // including the original and downscaled image sizes.
@@ -108,7 +105,6 @@ ImageData DownscaleAndEncodeBitmap(
     scoped_refptr<RefCountedLensOverlayClientLogs> client_logs,
     const ImageEncodingOptions& image_options);
 
-#endif  // !BUILDFLAG(IS_IOS)
 
 }  // namespace lens
 

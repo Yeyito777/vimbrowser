@@ -27,27 +27,17 @@ bool ShouldStartDistillabilityService() {
 
 BASE_FEATURE(kReaderModeUseReadability, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if !BUILDFLAG(IS_IOS)
 constexpr base::FeatureParam<bool> kReaderModeUseReadabilityUseDistiller{
     &kReaderModeUseReadability, /*name=*/"use_distiller",
     /*default_value=*/true};
-#endif
 constexpr base::FeatureParam<int> kReaderModeUseReadabilityHeuristicMinScore{
     &kReaderModeUseReadability, /*name=*/"heuristic_min_score",
-#if BUILDFLAG(IS_IOS)
-    /*default_value=*/50
-#else
     /*default_value=*/100
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 };
 constexpr base::FeatureParam<int>
     kReaderModeUseReadabilityHeuristicMinContentLength{
         &kReaderModeUseReadability, /*name=*/"heuristic_min_content_length",
-#if BUILDFLAG(IS_IOS)
-        /*default_value=*/160
-#else
         /*default_value=*/200
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
     };
 constexpr base::FeatureParam<int> kReaderModeUseReadabilityMinContentLength{
     &kReaderModeUseReadability, /*name=*/"min_content_length",
@@ -55,12 +45,8 @@ constexpr base::FeatureParam<int> kReaderModeUseReadabilityMinContentLength{
 };
 
 bool ShouldUseReadabilityDistiller() {
-#if BUILDFLAG(IS_IOS)
-  return base::FeatureList::IsEnabled(kReaderModeUseReadability);
-#else
   return base::FeatureList::IsEnabled(kReaderModeUseReadability) &&
          kReaderModeUseReadabilityUseDistiller.Get();
-#endif
 }
 
 int GetReadabilityHeuristicMinScore() {
@@ -77,9 +63,6 @@ int GetMinimumAllowableDistilledContentLength() {
              : 0;
 }
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kReaderModeSupportNewFonts, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 
 }  // namespace dom_distiller

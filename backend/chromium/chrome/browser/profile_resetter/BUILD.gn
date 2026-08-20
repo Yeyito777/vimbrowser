@@ -24,10 +24,4 @@ source_set("fake_profile_resetter") {
     "//components/browsing_data/content",
     "//components/language/core/browser",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/dbus/shill:test_support",
-      "//chromeos/ash/components/network",
-    ]
-  }
 }

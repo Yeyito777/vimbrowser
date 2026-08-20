@@ -63,11 +63,7 @@ base::File CreateFileForDrop(base::FilePath* file_path) {
     if (seq == 0) {
       new_file_path = *file_path;
     } else {
-#if BUILDFLAG(IS_WIN)
-      std::wstring suffix = L"-" + base::NumberToWString(seq);
-#else
       std::string suffix = "-" + base::NumberToString(seq);
-#endif
       new_file_path = file_path->InsertBeforeExtension(suffix);
     }
 

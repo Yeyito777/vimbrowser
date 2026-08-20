@@ -16,11 +16,6 @@
 #include "third_party/boringssl/src/pki/trust_store.h"
 #include "third_party/boringssl/src/pki/trust_store_in_memory.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <CoreFoundation/CFArray.h>
-#include <Security/SecTrust.h>
-#include "base/apple/scoped_cftyperef.h"
-#endif
 
 namespace net {
 
@@ -74,12 +69,6 @@ class NET_EXPORT TestRootCerts {
   // Returns true if `der_cert` has been marked as a known root for testing.
   bool IsKnownRoot(base::span<const uint8_t> der_cert) const;
 
-#if BUILDFLAG(IS_IOS)
-  // Modifies the root certificates of |trust_ref| to include the
-  // certificates stored in |temporary_roots_|. If IsEmpty() is true, this
-  // does not modify |trust_ref|.
-  OSStatus FixupSecTrustRef(SecTrustRef trust_ref) const;
-#endif
 
   bssl::TrustStore* test_trust_store() { return &test_trust_store_; }
 
@@ -112,10 +101,6 @@ class NET_EXPORT TestRootCerts {
 
   mutable base::Lock lock_;
 
-#if BUILDFLAG(IS_IOS)
-  base::apple::ScopedCFTypeRef<CFMutableArrayRef> temporary_roots_
-      GUARDED_BY(lock_);
-#endif
 
   std::set<std::string, std::less<>> test_known_roots_ GUARDED_BY(lock_);
 };

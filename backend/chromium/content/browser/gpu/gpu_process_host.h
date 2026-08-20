@@ -36,9 +36,6 @@
 #include "ui/gfx/gpu_extra_info.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom.h"
-#endif
 
 namespace base {
 class Thread;
@@ -117,10 +114,6 @@ class GpuProcessHost final : public BrowserChildProcessHostDelegate,
 
   CONTENT_EXPORT viz::mojom::GpuService* gpu_service();
 
-#if BUILDFLAG(IS_WIN)
-  CONTENT_EXPORT viz::mojom::InfoCollectionGpuService*
-  info_collection_gpu_service();
-#endif
 
   CONTENT_EXPORT int GetIDForTesting() const;
 
@@ -172,10 +165,6 @@ class GpuProcessHost final : public BrowserChildProcessHostDelegate,
   void DidCreateContextSuccessfully() override;
   void MaybeShutdownGpuProcess() override;
   void DidUpdateGPUInfo(const gpu::GPUInfo& gpu_info) override;
-#if BUILDFLAG(IS_WIN)
-  void DidUpdateOverlayInfo(const gpu::OverlayInfo& overlay_info) override;
-  void DidUpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) override;
-#endif
   std::string GetIsolationKey(
       int32_t process_id,
       const blink::WebGPUExecutionContextToken& token) override;

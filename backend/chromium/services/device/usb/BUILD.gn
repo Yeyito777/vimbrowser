@@ -44,28 +44,6 @@ static_library("usb") {
     "//url",
   ]
 
-  if (is_win) {
-    sources += [
-      "scoped_winusb_handle.cc",
-      "scoped_winusb_handle.h",
-      "usb_device_handle_win.cc",
-      "usb_device_handle_win.h",
-      "usb_device_win.cc",
-      "usb_device_win.h",
-      "usb_service_win.cc",
-      "usb_service_win.h",
-    ]
-
-    libs = [
-      "advapi32.lib",
-      "ole32.lib",
-      "setupapi.lib",
-      "winusb.lib",
-    ]
-
-    deps += [ "//third_party/re2" ]
-  }
-
   if (is_mac) {
     # These sources and deps are required for libusb.
     # TODO(crbug.com/40136337) Remove these sources.
@@ -117,13 +95,6 @@ static_library("usb") {
     sources += [
       "usb_interface_detach_allowlist.cc",
       "usb_interface_detach_allowlist.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/dbus/permission_broker",
-      "//dbus",
     ]
   }
 }

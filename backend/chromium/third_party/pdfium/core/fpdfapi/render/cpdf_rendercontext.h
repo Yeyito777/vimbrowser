@@ -57,11 +57,6 @@ class CPDF_RenderContext {
                              const CPDF_PageObject* object,
                              const CPDF_RenderOptions* options,
                              const CFX_Matrix& matrix);
-#if BUILDFLAG(IS_WIN)
-  void GetBackgroundToBitmap(RetainPtr<CFX_DIBitmap> bitmap,
-                             const CPDF_PageObject* object,
-                             const CFX_Matrix& matrix);
-#endif
 
   size_t CountLayers() const { return layers_.size(); }
   Layer* GetLayer(uint32_t index) { return &layers_[index]; }

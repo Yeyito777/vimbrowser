@@ -40,24 +40,6 @@ namespace content {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-
-// This is used as the stack frame to group these timeout crashes, so avoid
-// renaming it or moving the LOG(FATAL) call.
-NOINLINE void TimedOut() {
-  LOG(FATAL) << "Timed out waiting for GPU channel.";
-}
-
-void DumpGpuStackOnProcessThread() {
-  GpuProcessHost* host =
-      GpuProcessHost::Get(GPU_PROCESS_KIND_SANDBOXED, /*force_create=*/false);
-  if (host) {
-    host->DumpProcessStack();
-  }
-  TimedOut();
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -317,12 +299,8 @@ void BrowserGpuChannelHostFactory::EstablishGpuChannel(
 // task on the UI thread first, so we cannot block here.)
 scoped_refptr<gpu::GpuChannelHost>
 BrowserGpuChannelHostFactory::EstablishGpuChannelSync() {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   EstablishGpuChannel(gpu::GpuChannelEstablishedCallback(), true);
   return gpu_channel_;
-#endif
 }
 
 void BrowserGpuChannelHostFactory::EstablishGpuChannel(
@@ -333,9 +311,7 @@ void BrowserGpuChannelHostFactory::EstablishGpuChannel(
 // CrOS and this check failed when tested on an experimental builder. Revert
 // https://crrev.com/c/3174621 to enable it. See go/chrome-dcheck-on-cros
 // or http://crbug.com/1113456 for more details.
-#if !BUILDFLAG(IS_CHROMEOS)
     DCHECK(!pending_request_.get());
-#endif
     // Recreate the channel if it has been lost.
     gpu_channel_->DestroyChannel();
     gpu_channel_ = nullptr;
@@ -425,37 +401,6 @@ void BrowserGpuChannelHostFactory::GpuChannelEstablished(
 void BrowserGpuChannelHostFactory::RestartTimeout() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 // Only implement timeout on Android, which does not have a software fallback.
-#if BUILDFLAG(IS_ANDROID)
-  base::CommandLine* cl = base::CommandLine::ForCurrentProcess();
-  if (cl->HasSwitch(switches::kDisableTimeoutsForProfiling)) {
-    return;
-  }
-  // Only enable it for out of process GPU. In-process generally only has false
-  // positives.
-  if (cl->HasSwitch(switches::kSingleProcess) ||
-      cl->HasSwitch(switches::kInProcessGPU)) {
-    return;
-  }
-
-  // Don't restart the timeout if we aren't visible. This function will be
-  // re-called when we become visible again.
-  if (!pending_request_ || !is_visible_)
-    return;
-
-#if defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER)
-  constexpr int64_t kGpuChannelTimeoutInSeconds = 40;
-#else
-  // This is also monitored by the GPU watchdog (restart or initialization
-  // event) in the GPU process. Make this slightly longer than the GPU watchdog
-  // timeout to give the GPU a chance to crash itself before crashing the
-  // browser.
-  int64_t kGpuChannelTimeoutInSeconds =
-      gpu::kGpuWatchdogTimeout.InSeconds() * gpu::kRestartFactor + 5;
-#endif
-
-  timeout_.Start(FROM_HERE, base::Seconds(kGpuChannelTimeoutInSeconds),
-                 base::BindOnce(&DumpGpuStackOnProcessThread));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace content

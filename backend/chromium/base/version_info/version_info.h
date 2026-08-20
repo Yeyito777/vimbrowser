@@ -54,20 +54,8 @@ constexpr bool IsOfficialBuild() {
 
 // Returns the OS type, e.g. "Windows", "Linux", "FreeBSD", ...
 constexpr std::string_view GetOSType() {
-#if BUILDFLAG(IS_WIN)
-  return "Windows";
-#elif BUILDFLAG(IS_IOS)
-  return "iOS";
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return "Mac OS X";
-#elif BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  return "ChromeOS";
-#else
-  return "ChromiumOS";
-#endif
-#elif BUILDFLAG(IS_ANDROID)
-  return "Android";
 #elif BUILDFLAG(IS_LINUX)
   return "Linux";
 #elif BUILDFLAG(IS_FREEBSD)
@@ -76,8 +64,6 @@ constexpr std::string_view GetOSType() {
   return "OpenBSD";
 #elif BUILDFLAG(IS_SOLARIS)
   return "Solaris";
-#elif BUILDFLAG(IS_FUCHSIA)
-  return "Fuchsia";
 #else
   return "Unknown";
 #endif

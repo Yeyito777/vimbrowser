@@ -55,7 +55,6 @@ std::size_t MaxShmSegmentSize() {
   return max_size;
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 bool IsRemoteHost(const std::string& name) {
   if (name.empty())
     return false;
@@ -93,7 +92,6 @@ bool ShouldUseMitShm(x11::Connection* connection) {
 
   return true;
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -137,10 +135,8 @@ bool XShmImagePool::Resize(const gfx::Size& pixel_size) {
   std::unique_ptr<XShmImagePool, decltype(cleanup_fn)> cleanup{this,
                                                                cleanup_fn};
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (!ShouldUseMitShm(connection_))
     return false;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   if (!ui::QueryShmSupport())
     return false;

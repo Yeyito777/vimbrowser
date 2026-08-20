@@ -227,12 +227,6 @@ source_set("browser_tests") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ui/base",
-      "//ui/aura",
-    ]
-  }
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
   }

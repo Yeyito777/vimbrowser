@@ -22,12 +22,6 @@ inline constexpr char kChromeUIScheme[] = "chrome";  // Used for WebUIs.
 inline constexpr char kChromeNativeScheme[] = "chrome-native";
 inline constexpr char kChromeUIUntrustedScheme[] = "chrome-untrusted";
 inline constexpr char kViewSourceScheme[] = "view-source";
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr char kExternalFileScheme[] = "externalfile";
-#endif
-#if BUILDFLAG(IS_ANDROID)
-inline constexpr char kAndroidAppScheme[] = "android-app";
-#endif
 
 // The `googlechrome:` scheme is registered on several platforms, and is
 // both interesting and dangerous.

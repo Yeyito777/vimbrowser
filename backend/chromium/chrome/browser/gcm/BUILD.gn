@@ -64,8 +64,4 @@ source_set("unit_tests") {
     "//services/network/public/mojom",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/dbus/concierge" ]
-  }
 }

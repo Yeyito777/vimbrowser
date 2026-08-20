@@ -141,13 +141,6 @@ class GPU_IPC_CLIENT_EXPORT GpuChannelHost
                              gfx::BufferUsage buffer_usage,
                              gfx::GpuMemoryBufferHandle* handle);
 
-#if BUILDFLAG(IS_WIN)
-  void CopyToGpuMemoryBufferAsync(
-      const Mailbox& mailbox,
-      std::vector<SyncToken> sync_token_dependencies,
-      uint64_t release_count,
-      base::OnceCallback<void(bool)> callback);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID)
   void CopyNativeGmbToSharedMemoryAsync(

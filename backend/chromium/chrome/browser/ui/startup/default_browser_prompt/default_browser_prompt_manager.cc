@@ -21,11 +21,6 @@
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/taskbar_manager.h"
-#include "chrome/installer/util/install_util.h"
-#include "chrome/installer/util/shell_util.h"
-#endif
 
 namespace {
 
@@ -113,28 +108,8 @@ bool DefaultBrowserPromptManager::MaybeShowPrompt() {
     return false;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // If the experiment to separate the default browser prompt and the pin to
-  // taskbar prompt is enabled, do not offer to pin to taskbar.
-  if (base::FeatureList::IsEnabled(features::kSeparateDefaultAndPinPrompt)) {
-    ShowPrompts(/*can_pin_to_taskbar=*/false);
-    return true;
-  }
-
-  // On Windows, before showing the info bar, determine whether or not to
-  // offer to pin to taskbar, and store that result in `this`.
-  // base::Unretained is safe because DefaultBrowserInfobarManager is owned by
-  // global singleton - DefaultBrowserPromptManager.
-  browser_util::ShouldOfferToPin(
-      ShellUtil::GetBrowserModelId(InstallUtil::IsPerUserInstall()),
-      browser_util::PinAppToTaskbarChannel::kDefaultBrowserInfoBar,
-      base::BindOnce(&DefaultBrowserPromptManager::OnCanPinToTaskbarResult,
-                     base::Unretained(this)));
-  return true;
-#else
   ShowPrompts(/*can_pin_to_taskbar=*/false);
   return true;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void DefaultBrowserPromptManager::OnCanPinToTaskbarResult(

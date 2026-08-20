@@ -195,16 +195,5 @@ int32_t WebRtcAudioDeviceNotImpl::EnableBuiltInNS(bool enable) {
   return 0;
 }
 
-#if BUILDFLAG(IS_IOS)
-int WebRtcAudioDeviceNotImpl::GetPlayoutAudioParameters(
-    webrtc::AudioParameters* params) const {
-  return 0;
-}
-
-int WebRtcAudioDeviceNotImpl::GetRecordAudioParameters(
-    webrtc::AudioParameters* params) const {
-  return 0;
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 }  // namespace blink

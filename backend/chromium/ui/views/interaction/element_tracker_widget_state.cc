@@ -27,7 +27,6 @@ void ElementTrackerWidgetState::OnWidgetVisibilityChanged(Widget* widget,
     return;
   }
 
-#if !BUILDFLAG(IS_WIN)
   // On all platforms but Windows, minimization comes with an automatic hide.
   if (!visible && widget == widget->GetPrimaryWindowWidget()) {
     // This happens *before* the minimized signal is sent, so delay processing
@@ -43,7 +42,6 @@ void ElementTrackerWidgetState::OnWidgetVisibilityChanged(Widget* widget,
     // ignored, since the window will be artificially not-visible in this state.
     return;
   }
-#endif
 
   visible_ = visible;
   delegate_->OnWidgetVisibilityChanged(widget, visible);

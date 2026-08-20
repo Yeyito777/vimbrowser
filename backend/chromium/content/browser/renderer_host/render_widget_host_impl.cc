@@ -2922,17 +2922,6 @@ void RenderWidgetHostImpl::StartDragging(
   gfx::ImageSkia image = gfx::ImageSkia::CreateFromBitmap(bitmap, scale);
   gfx::Vector2d offset = cursor_offset_in_dip;
   gfx::Rect rect = drag_obj_rect_in_dip;
-#if BUILDFLAG(IS_WIN)
-  // Scale the offset by device scale factor, otherwise the drag
-  // image location doesn't line up with the drop location (drag destination).
-  // TODO(crbug.com/40859305): this conversion should not be necessary.
-  gfx::Vector2dF scaled_offset = static_cast<gfx::Vector2dF>(offset);
-  scaled_offset.Scale(scale);
-  offset = gfx::ToRoundedVector2d(scaled_offset);
-  gfx::RectF scaled_rect = static_cast<gfx::RectF>(rect);
-  scaled_rect.Scale(scale);
-  rect = gfx::ToRoundedRect(scaled_rect);
-#endif
   view->StartDragging(filtered_data, source_origin, drag_operations_mask, image,
                       offset, rect, *event_info, this);
 }
@@ -3160,18 +3149,12 @@ void RenderWidgetHostImpl::OnUnconfirmedTapConvertedToTap() {
 }
 
 void RenderWidgetHostImpl::UpdateElementFocusForStylusWriting(
-#if BUILDFLAG(IS_WIN)
-    const gfx::Rect& focus_widget_rect_in_dips
-#endif  // BUILDFLAG(IS_WIN)
 ) {
   if (blink_frame_widget_) {
     auto callback = base::BindOnce(
         &RenderWidgetHostImpl::OnUpdateElementFocusForStylusWritingHandled,
         weak_factory_.GetWeakPtr());
     blink_frame_widget_->OnStartStylusWriting(
-#if BUILDFLAG(IS_WIN)
-        focus_widget_rect_in_dips,
-#endif  // BUILDFLAG(IS_WIN)
         std::move(callback));
   }
 }
@@ -3181,19 +3164,6 @@ void RenderWidgetHostImpl::OnUpdateElementFocusForStylusWritingHandled(
   if (!view_) {
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  if (focus_result && focus_result->proximate_bounds) {
-    if (focus_result->proximate_bounds->range.length() !=
-        focus_result->proximate_bounds->widget_bounds_in_dips.size()) {
-      mojo::ReportBadMessage("mismatched range and bounds length received");
-      return;
-    }
-    if (focus_result->proximate_bounds->range.is_reversed()) {
-      mojo::ReportBadMessage("unexpected reversed range");
-      return;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   view_->OnEditElementFocusedForStylusWriting(std::move(focus_result));
 }
 

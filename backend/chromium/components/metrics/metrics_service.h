@@ -214,64 +214,6 @@ class MetricsService {
   // be included in the next log.
   void MarkCurrentHistogramsAsReported();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Binds a user log store to store unsent logs. This log store will be
-  // fully managed by MetricsLogStore. This will no-op if another log store has
-  // already been set.
-  //
-  // If this is called before initial logs are recorded, then histograms
-  // recorded before user log store is set will be included with user histograms
-  // when initial logs are recorded.
-  //
-  // If this is called after initial logs are recorded, then this will flush all
-  // logs recorded before swapping to |user_log_store|.
-  void SetUserLogStore(std::unique_ptr<UnsentLogStore> user_log_store);
-
-  // Unbinds the user log store. If there was no user log store, then this does
-  // nothing.
-  //
-  // If this is called before initial logs are recorded, then histograms and the
-  // current log will be discarded.
-  //
-  // If called after initial logs are recorded, then this will flush all logs
-  // before the user log store is unset.
-  void UnsetUserLogStore();
-
-  // Returns true if a user log store has been bound.
-  bool HasUserLogStore();
-
-  // Initializes per-user metrics collection. Logs recorded during a user
-  // session will be stored within each user's directory and consent to send
-  // these logs will be controlled by each user. Logs recorded before any user
-  // logs in or during guest sessions (given device owner has consented) will be
-  // stored in local_state.
-  //
-  // This is in its own function because the MetricsService is created very
-  // early on and a user metrics service may have dependencies on services that
-  // are created happen after MetricsService is initialized.
-  void InitPerUserMetrics();
-
-  // Returns the current user metrics consent if it should be applied to
-  // determine metrics reporting state.
-  //
-  // See comments at MetricsServiceClient::GetCurrentUserMetricsConsent() for
-  // more details.
-  std::optional<bool> GetCurrentUserMetricsConsent() const;
-
-  // Returns the current logged in user id. See comments at
-  // MetricsServiceClient::GetCurrentUserId() for more details.
-  std::optional<std::string> GetCurrentUserId() const;
-
-  // Updates the current user metrics consent. No-ops if no user has logged in.
-  void UpdateCurrentUserMetricsConsent(bool user_metrics_consent);
-
-  // Forces the client ID to be reset and generates a new client ID. This will
-  // be called when a user re-consents to metrics collection and the user had
-  // consented in the past.
-  //
-  // This is to preserve the pseudo-anonymous identifier <client_id, user_id>.
-  void ResetClientId();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   variations::SyntheticTrialRegistry* GetSyntheticTrialRegistry();
 

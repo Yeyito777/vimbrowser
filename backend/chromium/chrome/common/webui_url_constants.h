@@ -88,12 +88,10 @@ inline constexpr char kChromeUIConstrainedHTMLTestHost[] = "constrained-test";
 inline constexpr char kChromeUIConstrainedHTMLTestURL[] =
     "chrome://constrained-test/";
 inline constexpr char kChromeUIContactInfoPath[] = "/contactInfo";
-#if !BUILDFLAG(IS_ANDROID)
 inline constexpr char kChromeUIContentAnnotatorInternalsHost[] =
     "content-annotator-internals";
 inline constexpr char kChromeUIContentAnnotatorInternalsURL[] =
     "chrome://content-annotator-internals/";
-#endif
 inline constexpr char kChromeUIContextualTasksHost[] = "contextual-tasks";
 inline constexpr char kChromeUIContextualTasksURL[] =
     "chrome://contextual-tasks/";
@@ -343,17 +341,6 @@ inline constexpr char kChromeUIWebNNInternalsHost[] = "webnn-internals";
 inline constexpr char kChromeUIWebNNInternalsURL[] =
     "chrome://webnn-internals/";
 
-#if BUILDFLAG(IS_ANDROID)
-inline constexpr char kChromeUIJavaCrashURL[] = "chrome://java-crash/";
-inline constexpr char kChromeUINativeBookmarksURL[] =
-    "chrome-native://bookmarks/";
-inline constexpr char kChromeUINativeExploreURL[] = "chrome-native://explore";
-inline constexpr char kChromeUINativeNewTabURL[] = "chrome-native://newtab/";
-inline constexpr char kChromeUINotificationsInternalsHost[] =
-    "notifications-internals";
-inline constexpr char kChromeUISnippetsInternalsHost[] = "snippets-internals";
-inline constexpr char kChromeUIWebApksHost[] = "webapks";
-#else
 inline constexpr char kAdPrivacySubPagePath[] = "/adPrivacy";
 inline constexpr char kChromeUIAppServiceInternalsHost[] =
     "app-service-internals";
@@ -416,14 +403,7 @@ inline constexpr char kChromeUIWebUIJsErrorHost[] = "webuijserror";
 inline constexpr char kChromeUIWebUIJsErrorURL[] = "chrome://webuijserror/";
 inline constexpr char kChromeUIYourSavedInfoPath[] = "/yourSavedInfo";
 inline constexpr char kCookiesSubPagePath[] = "/cookies";
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns true if this web UI is part of the "system UI". Generally this is
-// UI that opens in a window (not a browser tab) and that on other operating
-// systems would be considered part of the OS or window manager.
-bool IsSystemWebUIHost(std::string_view host);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 inline constexpr char kChromeUIDiscardsHost[] = "discards";
@@ -570,9 +550,6 @@ inline constexpr char kSyncSetupAdvancedSubPage[] = "syncSetup/advanced";
 inline constexpr char kTriggeredResetProfileSettingsSubPage[] =
     "triggeredResetProfileSettings";
 
-#if BUILDFLAG(IS_WIN)
-inline constexpr char kCleanupSubPage[] = "cleanup";
-#endif
 
 #if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 inline constexpr char kChromeUICastFeedbackHost[] = "cast-feedback";

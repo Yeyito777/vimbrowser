@@ -19,9 +19,6 @@
 #include "ui/base/clipboard/file_info.h"
 #include "ui/base/data_transfer_policy/data_transfer_endpoint.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/time/time.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class SkBitmap;
 
@@ -169,12 +166,6 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardData {
     src_ = std::move(src);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<base::Time> commit_time() const { return commit_time_; }
-  void set_commit_time(std::optional<base::Time> commit_time) {
-    commit_time_ = commit_time;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // Unique identifier for the clipboard state at the time of data creation.
@@ -225,10 +216,6 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardData {
   // The source of the data.
   std::optional<DataTransferEndpoint> src_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // If present, the time at which this data was committed to the clipboard.
-  std::optional<base::Time> commit_time_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace ui

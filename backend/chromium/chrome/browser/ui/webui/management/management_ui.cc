@@ -29,19 +29,8 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/webui/webui_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome/browser/chromeos/policy/dlp/dlp_rules_manager.h"
-#include "chrome/browser/chromeos/policy/dlp/dlp_rules_manager_factory.h"
-#include "chrome/browser/enterprise/data_controls/dlp_reporting_manager.h"
-#include "chrome/grit/branded_strings.h"
-#include "ui/chromeos/devicetype_utils.h"
-#else  // BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/policy/chrome_browser_policy_connector.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -58,28 +47,6 @@ content::WebUIDataSource* CreateAndAddManagementUIHtmlSource(Profile* profile) {
 
   source->SetDefaultResource(IDR_MANAGEMENT_MANAGEMENT_HTML);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  source->AddString("managementDeviceLearnMoreUrl",
-                    chrome::kLearnMoreEnterpriseURL);
-  source->AddString("managementAccountLearnMoreUrl",
-                    chrome::kManagedUiLearnMoreUrl);
-
-  const size_t dlp_events_count =
-      policy::DlpRulesManagerFactory::GetForPrimaryProfile() &&
-              policy::DlpRulesManagerFactory::GetForPrimaryProfile()
-                  ->GetReportingManager()
-          ? policy::DlpRulesManagerFactory::GetForPrimaryProfile()
-                ->GetReportingManager()
-                ->events_reported()
-          : 0;
-  source->AddString(kManagementReportDlpEvents,
-                    l10n_util::GetPluralStringFUTF16(
-                        IDS_MANAGEMENT_REPORT_DLP_EVENTS, dlp_events_count));
-  source->AddString("pluginVmDataCollection",
-                    l10n_util::GetStringFUTF16(
-                        IDS_MANAGEMENT_REPORT_PLUGIN_VM,
-                        l10n_util::GetStringUTF16(IDS_PLUGIN_VM_APP_NAME)));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   webui::SetupWebUIDataSource(source, kManagementResources,
                               IDR_MANAGEMENT_MANAGEMENT_HTML);
@@ -97,34 +64,9 @@ base::RefCountedMemory* ManagementUI::GetFaviconResourceBytes(
 
 // static
 std::u16string ManagementUI::GetManagementPageSubtitle(Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  policy::BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  const auto device_type = ui::GetChromeOSDeviceTypeResourceId();
-  if (!connector->IsDeviceEnterpriseManaged() &&
-      !profile->GetProfilePolicyConnector()->IsManaged()) {
-    return l10n_util::GetStringFUTF16(IDS_MANAGEMENT_NOT_MANAGED_SUBTITLE,
-                                      l10n_util::GetStringUTF16(device_type));
-  }
-
-  std::string account_manager = connector->GetEnterpriseDomainManager();
-
-  if (account_manager.empty()) {
-    account_manager =
-        GetAccountManagerIdentity(profile).value_or(std::string());
-  }
-  if (account_manager.empty()) {
-    return l10n_util::GetStringFUTF16(IDS_MANAGEMENT_SUBTITLE_MANAGED,
-                                      l10n_util::GetStringUTF16(device_type));
-  }
-  return l10n_util::GetStringFUTF16(IDS_MANAGEMENT_SUBTITLE_MANAGED_BY,
-                                    l10n_util::GetStringUTF16(device_type),
-                                    base::UTF8ToUTF16(account_manager));
-#else   // BUILDFLAG(IS_CHROMEOS)
   // Call the global function explicitly to avoid a conflict with
   // the static method ManagementUI::GetManagementPageSubtitle().
   return ::GetManagementPageSubtitle(profile);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // static
@@ -132,58 +74,6 @@ void ManagementUI::GetLocalizedStrings(
     std::vector<webui::LocalizedString>& strings,
     bool remove_links) {
   static constexpr webui::LocalizedString kLocalizedStrings[] = {
-#if BUILDFLAG(IS_CHROMEOS)
-      {"learnMore", IDS_LEARN_MORE},
-      {"localTrustRoots", IDS_MANAGEMENT_LOCAL_TRUST_ROOTS},
-      {"filesCloudUpload", IDS_MANAGEMENT_FILES_CLOUD_UPLOAD},
-      {"managementTrustRootsConfigured", IDS_MANAGEMENT_TRUST_ROOTS_CONFIGURED},
-      {"deviceConfiguration", IDS_MANAGEMENT_DEVICE_CONFIGURATION},
-      {"deviceReporting", IDS_MANAGEMENT_DEVICE_REPORTING},
-      {"updateRequiredEolAdminMessageTitle",
-       IDS_MANAGEMENT_UPDATE_REQUIRED_EOL_ADMIN_MESSAGE_TITLE},
-      {kManagementReportActivityTimes,
-       IDS_MANAGEMENT_REPORT_DEVICE_ACTIVITY_TIMES},
-      {kManagementReportNetworkData, IDS_MANAGEMENT_REPORT_DEVICE_NETWORK_DATA},
-      {kManagementReportHardwareData,
-       IDS_MANAGEMENT_REPORT_DEVICE_HARDWARE_DATA},
-      {kManagementReportUsers, IDS_MANAGEMENT_REPORT_DEVICE_USERS},
-      {kManagementReportCrashReports,
-       IDS_MANAGEMENT_REPORT_DEVICE_CRASH_REPORTS},
-      {kManagementReportAppInfoAndActivity,
-       IDS_MANAGEMENT_REPORT_APP_INFO_AND_ACTIVITY},
-      {kManagementPrinting, IDS_MANAGEMENT_REPORT_PRINTING},
-      {kManagementReportDeviceAudioStatus,
-       IDS_MANAGEMENT_REPORT_DEVICE_AUDIO_STATUS},
-      {kManagementReportDeviceGraphicsStatus,
-       IDS_MANAGEMENT_REPORT_DEVICE_GRAPHICS_STATUS},
-      {kManagementReportDevicePeripherals,
-       IDS_MANAGEMENT_REPORT_DEVICE_PERIPHERALS},
-      {kManagementReportPrintJobs, IDS_MANAGEMENT_REPORT_PRINT_JOBS},
-      {kManagementReportLoginLogout, IDS_MANAGEMENT_REPORT_LOGIN_LOGOUT},
-      {kManagementReportCRDSessions, IDS_MANAGEMENT_REPORT_CRD_SESSIONS},
-      {kManagementReportAllWebsiteInfoAndActivity,
-       IDS_MANAGEMENT_REPORT_ALL_WEBSITE_INFO_AND_ACTIVITY},
-      {kManagementReportWebsiteInfoAndActivity,
-       IDS_MANAGEMENT_REPORT_WEBSITE_INFO_AND_ACTIVITY},
-      {kManagementCrostini, IDS_MANAGEMENT_CROSTINI},
-      {kManagementCrostiniContainerConfiguration,
-       IDS_MANAGEMENT_CROSTINI_CONTAINER_CONFIGURATION},
-      {kManagementReportExtensions, IDS_MANAGEMENT_REPORT_EXTENSIONS},
-      {kManagementReportAndroidApplications,
-       IDS_MANAGEMENT_REPORT_ANDROID_APPLICATIONS},
-      {"proxyServerPrivacyDisclosure",
-       IDS_MANAGEMENT_PROXY_SERVER_PRIVACY_DISCLOSURE},
-      {"deskSync", IDS_MANAGEMENT_DESK_SYNC_TITLE},
-      {"deskSyncDescription", IDS_MANAGEMENT_DESK_SYNC_DESCRIPTION},
-      {"windowSync", IDS_MANAGEMENT_DESK_SYNC_WINDOWS_NOTICE},
-      {"cookieSync", IDS_MANAGEMENT_DESK_SYNC_COOKIES_NOTICE},
-      {"deskSyncOptOut", IDS_MANAGEMENT_DESK_SYNC_OPT_OUT},
-      {"deskSyncLearnMore", IDS_MANAGEMENT_DESK_SYNC_LEARN_MORE},
-      {kManagementOnFileTransferEvent, IDS_MANAGEMENT_FILE_TRANSFER_EVENT},
-      {kManagementOnFileTransferVisibleData,
-       IDS_MANAGEMENT_FILE_TRANSFER_VISIBLE_DATA},
-      {kManagementReportFileEvents, IDS_MANAGEMENT_REPORT_FILE_EVENTS},
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
       {kManagementScreenCaptureEvent, IDS_MANAGEMENT_SCREEN_CAPTURE_EVENT},
       {kManagementScreenCaptureData, IDS_MANAGEMENT_SCREEN_CAPTURE_DATA},
@@ -274,17 +164,11 @@ void ManagementUI::GetLocalizedStrings(
   }
 
   static constexpr webui::LocalizedString kDeviceDisclosuresLinks[] = {
-#if BUILDFLAG(IS_CHROMEOS)
-      {kManagementLogUploadEnabled, IDS_MANAGEMENT_LOG_UPLOAD_ENABLED},
-#endif  // BUILDFLAG(IS_CHROMEOS)
       {kManagementLegacyTechReport, IDS_MANAGEMENT_LEGACY_TECH_REPORT}};
 
   // Disclosures that are device-wide (not profile dependent) with links
   // removed.
   static constexpr webui::LocalizedString kDeviceDisclosuresLinksRemoved[] = {
-#if BUILDFLAG(IS_CHROMEOS)
-      {kManagementLogUploadEnabled, IDS_MANAGEMENT_LOG_UPLOAD_ENABLED_NO_LINK},
-#endif  // BUILDFLAG(IS_CHROMEOS)
       {kManagementLegacyTechReport, IDS_MANAGEMENT_LEGACY_TECH_REPORT_NO_LINK}};
 
   if (remove_links) {

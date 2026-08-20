@@ -54,19 +54,6 @@ AslrMask(uintptr_t bits) {
       return AslrAddress(0x7e8000000000ULL);
     }
 
-  #elif PA_BUILDFLAG(IS_WIN)
-
-    // Windows 8.10 and newer support the full 48 bit address range. Since
-    // ASLROffset() is non-zero and may cause a carry, use 47 bit masks. See
-    // http://www.alex-ionescu.com/?p=246
-    PA_ALWAYS_INLINE constexpr uintptr_t ASLRMask() {
-      return AslrMask(47);
-    }
-    // Try not to map pages into the range where Windows loads DLLs by default.
-    PA_ALWAYS_INLINE constexpr uintptr_t ASLROffset() {
-      return 0x80000000ULL;
-    }
-
   #elif PA_BUILDFLAG(IS_APPLE)
     PA_ALWAYS_INLINE PAGE_ALLOCATOR_CONSTANTS_DECLARE_CONSTEXPR uintptr_t
     ASLRMask() {
@@ -85,18 +72,6 @@ AslrMask(uintptr_t bits) {
       // TODO(crbug.com/40528509): Remove this limitation if/when the macOS
       // behavior changes.
       return AslrMask(38);
-#elif PA_BUILDFLAG(IS_IOS)
-      // As of iOS/Xcode 26.4, Apple unified the Swift runtime's SWIFT_ISA_MASK
-      // across physical devices and the macOS-backed Simulator, strictly
-      // limiting class metadata pointers (like class_ro_t) to 36 bits (64 GiB).
-      // Physical iOS devices inherently restrict mmap allocations to this range
-      // anyway. However, the underlying macOS kernel on the Simulator will
-      // happily map pools above this boundary. If that happens, the Swift
-      // runtime silently truncates the upper bits, causing an EXC_BAD_ACCESS.
-      // We clamp the ASLR mask to 35 bits (32 GiB) to guarantee all hints
-      // remain safely below the 36-bit hardware ceiling on both device and
-      // simulator.
-      return AslrMask(35);
 #endif
     }
     PA_ALWAYS_INLINE PAGE_ALLOCATOR_CONSTANTS_DECLARE_CONSTEXPR uintptr_t
@@ -110,8 +85,6 @@ AslrMask(uintptr_t bits) {
       // which is reserved on ARM64. See these constants in XNU's source code
       // for details (xnu-8019.80.24/osfmk/mach/arm/vm_param.h).
       return AslrAddress(0x10000000000ULL);
-#elif PA_BUILDFLAG(IS_IOS)
-      return AslrAddress(0x300000000ULL);
 #endif
     }
 

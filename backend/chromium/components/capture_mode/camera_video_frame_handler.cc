@@ -31,9 +31,6 @@
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/geometry/size.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/common/shared_image_capabilities.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "media/capture/video/apple/video_capture_device_factory_apple.h"
@@ -54,43 +51,6 @@ viz::SharedImageFormat GetSharedImageFormat() {
              : viz::MultiPlaneFormat::kNV12;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Adjusts the requested video capture `params` depending on whether we're
-// running on an actual device or the linux-chromeos build.
-void AdjustParamsForCurrentConfig(media::VideoCaptureParams* params) {
-  DCHECK(params);
-
-  // The default params are good enough when running on linux-chromeos.
-  if (!base::SysInfo::IsRunningOnChromeOS() &&
-      !g_force_use_gpu_memory_buffer_for_test) {
-    DCHECK_EQ(params->buffer_type,
-              media::VideoCaptureBufferType::kSharedMemory);
-    return;
-  }
-
-  // On an actual device, the camera HAL only supports NV12 pixel formats in a
-  // GPU memory buffer.
-  params->requested_format.pixel_format = media::PIXEL_FORMAT_NV12;
-  params->buffer_type = media::VideoCaptureBufferType::kGpuMemoryBuffer;
-}
-
-bool IsFatalError(media::VideoCaptureError error) {
-  switch (error) {
-    case media::VideoCaptureError::kCrosHalV3FailedToStartDeviceThread:
-    case media::VideoCaptureError::kCrosHalV3DeviceDelegateMojoConnectionError:
-    case media::VideoCaptureError::
-        kCrosHalV3DeviceDelegateFailedToOpenCameraDevice:
-    case media::VideoCaptureError::
-        kCrosHalV3DeviceDelegateFailedToInitializeCameraDevice:
-    case media::VideoCaptureError::
-        kCrosHalV3DeviceDelegateFailedToConfigureStreams:
-    case media::VideoCaptureError::kCrosHalV3BufferManagerFatalDeviceError:
-      return true;
-    default:
-      return false;
-  }
-}
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 bool IsGpuRasterizationSupported(ui::ContextFactory* context_factory) {
@@ -109,30 +69,6 @@ bool IsGpuRasterizationSupported(ui::ContextFactory* context_factory) {
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-bool IsD3DSharedImageSupported(ui::ContextFactory* context_factory) {
-  DCHECK(context_factory);
-  if (auto provider =
-          context_factory->SharedMainThreadRasterContextProvider()) {
-    auto* shared_image_interface = provider->SharedImageInterface();
-    return shared_image_interface &&
-           shared_image_interface->GetCapabilities().shared_image_d3d;
-  }
-  return false;
-}
-
-void AdjustWinParamsForCurrentConfig(media::VideoCaptureParams* params,
-                                     ui::ContextFactory* context_factory) {
-  if (media::IsMediaFoundationD3D11VideoCaptureEnabled() &&
-      params->requested_format.pixel_format == media::PIXEL_FORMAT_NV12) {
-    if (IsGpuRasterizationSupported(context_factory)) {
-      params->buffer_type = media::VideoCaptureBufferType::kGpuMemoryBuffer;
-    } else {
-      params->requested_format.pixel_format = media::PIXEL_FORMAT_I420;
-    }
-  }
-}
-#endif
 
 #if BUILDFLAG(IS_MAC)
 void AdjustMacParamsForCurrentConfig(media::VideoCaptureParams* params,
@@ -161,9 +97,6 @@ class SharedMemoryBufferHandleHolder : public BufferHandleHolder {
       media::mojom::VideoBufferHandlePtr buffer_handle)
       : SharedMemoryBufferHandleHolder(
             buffer_handle->get_unsafe_shmem_region()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    DCHECK(!base::SysInfo::IsRunningOnChromeOS());
-#endif
   }
   SharedMemoryBufferHandleHolder(const SharedMemoryBufferHandleHolder&) =
       delete;
@@ -354,11 +287,9 @@ class GpuMemoryBufferHandleHolder : public BufferHandleHolder,
       return {};
     }
 
-#if !BUILDFLAG(IS_WIN)
     // The camera GpuMemoryBuffer is backed by a DMA-buff, and doesn't use a
     // pre-mapped shared memory region.
     DCHECK(!frame_info->is_premapped);
-#endif
 
     CHECK(shared_image_);
     auto frame = media::VideoFrame::WrapSharedImage(
@@ -463,66 +394,6 @@ class MacGpuMemoryBufferHandleHolder : public BufferHandleHolder {
 };
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// -----------------------------------------------------------------------------
-// WinGpuMemoryBufferHandleHolder:
-
-// Defines an implementation for a `BufferHandleHolder` that can extract a video
-// frame that is backed by a `kGpuMemoryBuffer` buffer type on Win. It allows
-// the possibility to map the memory and produce a software video frame.
-class WinGpuMemoryBufferHandleHolder : public BufferHandleHolder {
- public:
-  explicit WinGpuMemoryBufferHandleHolder(
-      base::RepeatingClosure require_mapped_frame_callback,
-      media::mojom::VideoBufferHandlePtr buffer_handle,
-      ui::ContextFactory* context_factory)
-      : context_factory_(context_factory),
-        gmb_holder_(std::move(buffer_handle), context_factory),
-        sh_mem_holder_(
-            gmb_holder_.GetGpuMemoryBufferHandle().dxgi_handle().region()),
-        require_mapped_frame_callback_(
-            std::move(require_mapped_frame_callback)) {
-    CHECK_EQ(gmb_holder_.GetGpuMemoryBufferHandle().type,
-             gfx::DXGI_SHARED_HANDLE);
-    CHECK(require_mapped_frame_callback_);
-  }
-  WinGpuMemoryBufferHandleHolder(const WinGpuMemoryBufferHandleHolder&) =
-      delete;
-  WinGpuMemoryBufferHandleHolder& operator=(
-      const WinGpuMemoryBufferHandleHolder&) = delete;
-  ~WinGpuMemoryBufferHandleHolder() override = default;
-
-  // BufferHandleHolder:
-  scoped_refptr<media::VideoFrame> OnFrameReadyInBuffer(
-      video_capture::mojom::ReadyFrameInBufferPtr buffer) override {
-    // TODO: This isn't required to be checked every frame and only changes
-    // after context loss.
-    if (IsGpuRasterizationSupported(context_factory_) &&
-        IsD3DSharedImageSupported(context_factory_)) {
-      return gmb_holder_.OnFrameReadyInBuffer(std::move(buffer));
-    }
-    if (buffer->frame_info->is_premapped) {
-      return sh_mem_holder_.OnFrameReadyInBuffer(std::move(buffer));
-    }
-    require_mapped_frame_callback_.Run();
-    return {};
-  }
-
- private:
-  const raw_ptr<ui::ContextFactory> context_factory_;
-
-  // A GMB handle holder used to extract and return the video frame when both
-  // Gpu rasterization and D3dSharedImage are supported.
-  GpuMemoryBufferHandleHolder gmb_holder_;
-
-  // A shared memory handle holder used to extract and return the video frame
-  // when frame is pre-mapped.
-  SharedMemoryBufferHandleHolder sh_mem_holder_;
-
-  // A callback that is used to request pre-mapped frames.
-  const base::RepeatingClosure require_mapped_frame_callback_;
-};
-#endif
 
 // Notifies the passed `VideoFrameAccessHandler` that the handler is done using
 // the buffer.
@@ -554,10 +425,6 @@ std::unique_ptr<BufferHandleHolder> BufferHandleHolder::Create(
 #if BUILDFLAG(IS_MAC)
   return std::make_unique<MacGpuMemoryBufferHandleHolder>(
       std::move(buffer_handle), context_factory);
-#elif BUILDFLAG(IS_WIN)
-  return std::make_unique<WinGpuMemoryBufferHandleHolder>(
-      std::move(require_mapped_frame_callback), std::move(buffer_handle),
-      context_factory);
 #else
   return std::make_unique<GpuMemoryBufferHandleHolder>(std::move(buffer_handle),
                                                        context_factory);
@@ -582,11 +449,7 @@ CameraVideoFrameHandler::CameraVideoFrameHandler(
 
   media::VideoCaptureParams capture_params;
   capture_params.requested_format = capture_format;
-#if BUILDFLAG(IS_CHROMEOS)
-  AdjustParamsForCurrentConfig(&capture_params);
-#elif BUILDFLAG(IS_WIN)
-  AdjustWinParamsForCurrentConfig(&capture_params, context_factory_);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   AdjustMacParamsForCurrentConfig(&capture_params, device_id);
 #endif
 
@@ -695,11 +558,6 @@ void CameraVideoFrameHandler::OnError(media::VideoCaptureError error) {
   if (delegate_) {
     delegate_->OnError(error);
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsFatalError(error)) {
-    OnFatalErrorOrDisconnection();
-  }
-#endif
 }
 
 void CameraVideoFrameHandler::OnFrameDropped(
@@ -769,14 +627,6 @@ void CameraVideoFrameHandler::OnFatalErrorOrDisconnection() {
 }
 
 void CameraVideoFrameHandler::RequireMappedFrame() {
-#if BUILDFLAG(IS_WIN)
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  if (camera_video_stream_subsciption_remote_.is_bound()) {
-    media::VideoCaptureFeedback feedback;
-    feedback.require_mapped_frame = true;
-    camera_video_stream_subsciption_remote_->ProcessFeedback(feedback);
-  }
-#endif
 }
 
 }  // namespace capture_mode

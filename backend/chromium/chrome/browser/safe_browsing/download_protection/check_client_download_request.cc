@@ -42,20 +42,15 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/download_item_utils.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/safe_browsing/android/download_protection_metrics_data.h"
-#else
 #include "chrome/browser/safe_browsing/cloud_content_scanning/deep_scanning_utils.h"
 #include "chrome/browser/safe_browsing/download_protection/download_feedback.h"
 #include "chrome/browser/safe_browsing/download_protection/download_feedback_service.h"
 #include "components/enterprise/connectors/core/cloud_content_scanning/binary_upload_service.h"
-#endif
 
 namespace safe_browsing {
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ShouldUploadToDownloadFeedback(DownloadCheckResult result) {
   switch (result) {
     case DownloadCheckResult::DANGEROUS_HOST:
@@ -85,7 +80,6 @@ bool ShouldUploadToDownloadFeedback(DownloadCheckResult result) {
       return false;
   }
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -131,7 +125,6 @@ void CheckClientDownloadRequest::OnDownloadUpdated(
       (download->GetState() == download::DownloadItem::COMPLETE ||
        download->GetState() == download::DownloadItem::CANCELLED)) {
     auto settings = ShouldUploadBinaryForDeepScanning(item_);
-#if !BUILDFLAG(IS_ANDROID)
     if (settings.has_value()) {
       RecordDeepScanMetrics(
           settings->cloud_or_local_settings.is_cloud_analysis(),
@@ -141,9 +134,6 @@ void CheckClientDownloadRequest::OnDownloadUpdated(
           /*result=*/"BypassedByUser",
           /*failure=*/true);
     }
-#else
-    CHECK(!settings.has_value());
-#endif
   }
 }
 
@@ -186,11 +176,7 @@ CheckClientDownloadRequest::~CheckClientDownloadRequest() {
 MayCheckDownloadResult CheckClientDownloadRequest::IsSupportedDownload(
     DownloadCheckResultReason* reason) {
   return IsSupportedDownload(*item_,
-#if BUILDFLAG(IS_ANDROID)
-                             /*file_name=*/item_->GetFileNameToReportUser(),
-#else
                              /*file_name=*/item_->GetTargetFilePath(),
-#endif
                              reason);
 }
 
@@ -218,11 +204,6 @@ void CheckClientDownloadRequest::NotifySendRequest(
   UMA_HISTOGRAM_COUNTS_100(
       "SafeBrowsing.ReferrerURLChainSize.DownloadAttribution",
       request->referrer_chain().size());
-#if BUILDFLAG(IS_ANDROID)
-  DownloadProtectionMetricsData::SetOutcome(
-      item_, DownloadProtectionMetricsData::AndroidDownloadProtectionOutcome::
-                 kClientDownloadRequestSent);
-#endif
 }
 
 void CheckClientDownloadRequest::SetDownloadProtectionData(
@@ -234,7 +215,6 @@ void CheckClientDownloadRequest::SetDownloadProtectionData(
                                                        tailored_verdict);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void CheckClientDownloadRequest::MaybeBeginFeedbackForDownload(
     DownloadCheckResult result,
     bool upload_requested,
@@ -254,7 +234,6 @@ void CheckClientDownloadRequest::MaybeBeginFeedbackForDownload(
                                              response_body);
   }
 }
-#endif
 
 void CheckClientDownloadRequest::LogDeepScanningPrompt(bool did_prompt) const {
   if (did_prompt) {
@@ -310,7 +289,6 @@ void CheckClientDownloadRequest::UploadBinary(
     DownloadCheckResult result,
     DownloadCheckResultReason reason,
     enterprise_connectors::AnalysisSettings settings) {
-#if !BUILDFLAG(IS_ANDROID)
   auto metadata = std::make_unique<DownloadItemMetadata>(item_);
   metadata->SetCallback(callback_);
   auto weak_metadata = metadata->GetWeakPtr();
@@ -322,7 +300,6 @@ void CheckClientDownloadRequest::UploadBinary(
       DownloadItemWarningData::DeepScanTrigger::TRIGGER_POLICY, result,
       std::move(settings),
       /*password=*/std::nullopt);
-#endif
 }
 
 void CheckClientDownloadRequest::NotifyRequestFinished(
@@ -334,9 +311,6 @@ void CheckClientDownloadRequest::NotifyRequestFinished(
   DVLOG(2) << "SafeBrowsing download verdict for: " << item_->DebugString(true)
            << " verdict:" << reason << " result:" << static_cast<int>(result);
 
-#if BUILDFLAG(IS_ANDROID)
-  DownloadProtectionMetricsData::GetOrCreate(item_)->LogToHistogram();
-#endif
 
   item_->RemoveObserver(this);
 }
@@ -382,7 +356,6 @@ bool CheckClientDownloadRequest::ShouldPromptForDeepScanning(
     return false;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   // Too large uploads would fail immediately, so don't prompt in this case.
   if (static_cast<size_t>(item_->GetTotalBytes()) >=
       enterprise_connectors::BinaryUploadService::kMaxUploadSizeBytes) {
@@ -406,7 +379,6 @@ bool CheckClientDownloadRequest::ShouldPromptForDeepScanning(
       IsEnhancedProtectionEnabled(*profile->GetPrefs())) {
     return true;
   }
-#endif
 
   return false;
 }

@@ -57,25 +57,6 @@ source_set("screen_ai") {
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
-if (is_chromeos) {
-  test("screen_ai_ocr_perf_test") {
-    sources = [ "screen_ai_ocr_perf_test.cc" ]
-
-    deps = [
-      ":screen_ai",
-      "//base/test:test_support",
-      "//services/screen_ai/buildflags",
-      "//services/screen_ai/public/cpp:utilities",
-      "//skia",
-      "//ui/gfx/codec",
-    ]
-
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-  }
-}
-
 if (is_linux || is_chromeos) {
   source_set("screen_ai_sandbox_hook") {
     sources = [

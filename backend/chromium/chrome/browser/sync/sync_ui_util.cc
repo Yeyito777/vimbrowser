@@ -28,22 +28,16 @@
 #include "net/base/url_util.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/search_engines/ui_thread_search_terms_data.h"
 #include "chrome/browser/trusted_vault/trusted_vault_encryption_keys_tab_helper.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_navigator.h"
 #include "chrome/browser/ui/singleton_tabs.h"
 #include "content/public/browser/navigation_handle.h"
-#endif
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 
 void OpenTabForSyncTrustedVaultUserAction(
     Browser* browser,
@@ -67,14 +61,12 @@ void OpenTabForSyncTrustedVaultUserAction(
   }
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
 const char kBookmarksLimitExceededHelpCenter[] =
     "https://support.google.com/chrome?p=manage_bookmarks_desktop";
 
-#if !BUILDFLAG(IS_ANDROID)
 SyncStatusLabels GetSyncStatusLabelsForSettings(
     const syncer::SyncService* service) {
   // Check to see if sync has been disabled via the dashboard and needs to be
@@ -86,14 +78,6 @@ SyncStatusLabels GetSyncStatusLabelsForSettings(
             SyncStatusActionType::kNoAction};
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (service->GetUserSettings()->IsSyncFeatureDisabledViaDashboard()) {
-    return {SyncStatusMessageType::kSyncError,
-            IDS_SIGNED_IN_WITH_SYNC_STOPPED_VIA_DASHBOARD,
-            IDS_SYNC_EMPTY_STRING, IDS_SYNC_EMPTY_STRING,
-            SyncStatusActionType::kNoAction};
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // If first setup is in progress, show an "in progress" message.
   if (service->IsSetupInProgress()) {
@@ -280,7 +264,6 @@ std::u16string GetAvatarSyncErrorDescription(
           IDS_SYNC_ERROR_BOOKMARKS_LIMIT_EXCEEDED_DESCRIPTION);
   }
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool ShouldRequestSyncConfirmation(const syncer::SyncService* service) {
   // This method mainly handles the situation where the initial Sync setup was
@@ -323,7 +306,6 @@ void ShowSyncPassphraseDialogAndDecryptData(Browser& browser) {
 }
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
 void OpenTabForSyncKeyRetrieval(
     Browser* browser,
     trusted_vault::TrustedVaultUserActionTriggerForUMA trigger) {
@@ -365,4 +347,3 @@ void ShowBookmarksLimitExceededHelp(
   params.disposition = WindowOpenDisposition::NEW_FOREGROUND_TAB;
   Navigate(&params);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)

@@ -42,11 +42,7 @@ source_set("importer_unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_ios) {
-    deps += [ "//components/password_manager/services/csv_password/ios:fake_password_parser_service" ]
-  } else {
-    deps += [ "//components/password_manager/services/csv_password:fake_password_parser_service" ]
-  }
+  deps += [ "//components/password_manager/services/csv_password:fake_password_parser_service" ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

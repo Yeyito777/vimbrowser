@@ -32,9 +32,7 @@ component("util") {
     "//ui/gfx/geometry",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//ui/display/types" ]
-  } else if (is_mac) {
+  if (is_mac) {
     frameworks = [ "IOSurface.framework" ]
   }
 }

@@ -32,9 +32,6 @@
 #include "base/test/clang_profiling.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/common/android/cpu_time_metrics.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/sandboxed_process_thread_type_handler.h"
@@ -57,10 +54,6 @@ class ChildIOThread : public base::Thread {
   void Run(base::RunLoop* run_loop) override {
     mojo::InterfaceEndpointClient::SetThreadNameSuffixForMetrics(
         "ChildIOThread");
-#if BUILDFLAG(IS_ANDROID)
-    base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(
-        "IOThread");
-#endif  // BUILDFLAG(IS_ANDROID)
     base::ScopedClosureRunner unregister_thread_closure;
     if (base::HangWatcher::IsIOThreadHangWatchingEnabled()) {
       unregister_thread_closure = base::HangWatcher::RegisterThread(
@@ -118,19 +111,11 @@ ChildProcess::ChildProcess(base::ThreadType io_thread_type,
   // Ensure the visibility tracker is created on the main thread.
   ProcessPriorityTracker::GetInstance();
 
-#if BUILDFLAG(IS_ANDROID)
-  SetupCpuTimeMetrics();
-#endif
 
   // We can't recover from failing to start the IO thread.
   base::Thread::Options thread_options(base::MessagePumpType::IO, 0);
   thread_options.thread_type = io_thread_type;
 // TODO(crbug.com/40226692): Figure out whether IS_ANDROID can be lifted here.
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(reveman): Remove this in favor of setting it explicitly for each type
-  // of process.
-  thread_options.thread_type = base::ThreadType::kPresentation;
-#endif
 
   if (base::FeatureList::IsEnabled(features::kIOThreadInteractiveThreadType)) {
     thread_options.thread_type = base::ThreadType::kAudioProcessing;

@@ -227,15 +227,13 @@ source_set("browser_tests") {
     ]
   }
 
-  if (!is_chromeos) {
-    sources += [
-      "account_settings_page_pixel_browsertest.cc",
-      "chrome_signout_confirmation_prompt_browsertest.cc",
-    ]
+  sources += [
+    "account_settings_page_pixel_browsertest.cc",
+    "chrome_signout_confirmation_prompt_browsertest.cc",
+  ]
 
-    deps += [
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/browser/profiles/batch_upload:test_support",
-    ]
-  }
+  deps += [
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/profiles/batch_upload:test_support",
+  ]
 }

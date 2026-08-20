@@ -104,9 +104,7 @@ std::string AudioDeviceDescription::GetDefaultDeviceName() {
 
 // static
 std::string AudioDeviceDescription::GetCommunicationsDeviceName() {
-#if BUILDFLAG(IS_WIN)
-  return GetLocalizedStringUTF8(COMMUNICATIONS_AUDIO_DEVICE_NAME);
-#elif BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
+#if BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
   // TODO(crbug.com/1336055): Re-evaluate if this is still needed now that CMA
   // is deprecated.
   return "";

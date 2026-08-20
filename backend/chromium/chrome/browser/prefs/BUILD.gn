@@ -175,128 +175,10 @@ source_set("impl") {
     deps += [ "//chrome/browser/background/extensions" ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//ash",
-      "//chrome/browser/apps/app_discovery_service",
-      "//chrome/browser/apps/app_preload_service",
-      "//chrome/browser/apps/app_service",
-      "//chrome/browser/ash/account_manager",
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/app_mode",
-      "//chrome/browser/ash/app_restore",
-      "//chrome/browser/ash/apps",
-      "//chrome/browser/ash/apps/webapk:prefs",
-      "//chrome/browser/ash/arc/boot_phase_monitor",
-      "//chrome/browser/ash/arc/policy",
-      "//chrome/browser/ash/arc/session",
-      "//chrome/browser/ash/bluetooth",
-      "//chrome/browser/ash/borealis",
-      "//chrome/browser/ash/bruschetta",
-      "//chrome/browser/ash/cert_provisioning",
-      "//chrome/browser/ash/child_accounts",
-      "//chrome/browser/ash/child_accounts/parent_access_code",
-      "//chrome/browser/ash/child_accounts/time_limits",
-      "//chrome/browser/ash/crostini",
-      "//chrome/browser/ash/cryptauth",
-      "//chrome/browser/ash/customization",
-      "//chrome/browser/ash/extensions",
-      "//chrome/browser/ash/file_manager",
-      "//chrome/browser/ash/file_system_provider",
-      "//chrome/browser/ash/first_run",
-      "//chrome/browser/ash/floating_workspace:utils",
-      "//chrome/browser/ash/guest_os",
-      "//chrome/browser/ash/kerberos",
-      "//chrome/browser/ash/login",
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ash/login/quick_unlock",
-      "//chrome/browser/ash/login/reporting",
-      "//chrome/browser/ash/login/saml",
-      "//chrome/browser/ash/login/screens",
-      "//chrome/browser/ash/login/session",
-      "//chrome/browser/ash/login/signin",
-      "//chrome/browser/ash/login/users/avatar",
-      "//chrome/browser/ash/net",
-      "//chrome/browser/ash/performance",
-      "//chrome/browser/ash/platform_keys/key_permissions",
-      "//chrome/browser/ash/plugin_vm",
-      "//chrome/browser/ash/policy/core",
-      "//chrome/browser/ash/policy/enrollment",
-      "//chrome/browser/ash/policy/external_data/handlers",
-      "//chrome/browser/ash/policy/handlers",
-      "//chrome/browser/ash/policy/networking",
-      "//chrome/browser/ash/policy/remote_commands/crd",
-      "//chrome/browser/ash/policy/reporting",
-      "//chrome/browser/ash/policy/reporting/metrics_reporting",
-      "//chrome/browser/ash/policy/scheduled_task_handler",
-      "//chrome/browser/ash/policy/status_collector",
-      "//chrome/browser/ash/power",
-      "//chrome/browser/ash/power/auto_screen_brightness",
-      "//chrome/browser/ash/preferences",
-      "//chrome/browser/ash/printing",
-      "//chrome/browser/ash/printing/enterprise",
-      "//chrome/browser/ash/release_notes",
-      "//chrome/browser/ash/scanning",
-      "//chrome/browser/ash/settings",
-      "//chrome/browser/ash/system",
-      "//chrome/browser/ash/system_web_apps/apps/help_app",
-      "//chrome/browser/ash/system_web_apps/apps/media_app",
-      "//chrome/browser/ash/wallpaper_handlers",
-      "//chrome/browser/chromeos/enterprise/cloud_storage:cloud_storage_pref_utils",
-      "//chrome/browser/chromeos/extensions/echo_private:echo_private_api_util",
-      "//chrome/browser/chromeos/extensions/login_screen/login",
-      "//chrome/browser/chromeos/policy/dlp",
-      "//chrome/browser/chromeos/reporting",
-      "//chrome/browser/chromeos/upload_office_to_cloud",
-      "//chrome/browser/extensions/api/document_scan:profile_prefs_registry_util",
-      "//chrome/browser/extensions/api/enterprise_platform_keys:enterprise_platform_keys_registry_util",
-      "//chrome/browser/nearby_sharing/common",
-      "//chrome/browser/policy:onc",
-      "//chrome/browser/policy:system_features_disable_list",
-      "//chrome/browser/ui/ash/projector",
-      "//chrome/browser/ui/ash/shelf",
-      "//chrome/browser/ui/webui/ash/edu_coexistence",
-      "//chrome/browser/ui/webui/ash/login",
-      "//chrome/browser/ui/webui/ash/settings",
-      "//chrome/browser/ui/webui/signin/ash",
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/boca/babelorca",
-      "//chromeos/ash/components/boca/on_task",
-      "//chromeos/ash/components/carrier_lock",
-      "//chromeos/ash/components/demo_mode",
-      "//chromeos/ash/components/local_search_service",
-      "//chromeos/ash/components/network",
-      "//chromeos/ash/components/policy",
-      "//chromeos/ash/components/quickoffice",
-      "//chromeos/ash/components/report",
-      "//chromeos/ash/components/scheduler_config",
-      "//chromeos/ash/components/timezone",
-      "//chromeos/ash/experiences/arc:prefs",
-      "//chromeos/ash/services/assistant/public/cpp",
-      "//chromeos/ash/services/auth_factor_config",
-      "//chromeos/ash/services/bluetooth_config",
-      "//chromeos/ash/services/device_sync/public/cpp:prefs",
-      "//chromeos/ash/services/multidevice_setup",
-      "//chromeos/components/quick_answers/public/cpp:prefs",
-      "//chromeos/constants",
-      "//chromeos/ui/wm",
-      "//components/onc",
-      "//components/quirks",
-    ]
-  }
-
   if (is_win || is_mac || is_linux) {
     deps += [
       "//chrome/browser/browser_switcher",
       "//chrome/browser/ui/webui/whats_new",
-    ]
-  }
-
-  if (is_win) {
-    deps += [
-      "//chrome/browser/os_crypt",
-      "//chrome/browser/webnn",
     ]
   }
 
@@ -358,9 +240,7 @@ source_set("impl") {
     deps += [ "//chrome/browser/web_applications" ]
   }
 
-  if (!is_chromeos) {
-    deps += [ "//chrome/browser/ui/startup/default_browser_prompt" ]
-  }
+  deps += [ "//chrome/browser/ui/startup/default_browser_prompt" ]
 }
 
 # There are users of this util such as //c/b/ash/app_restore. If it's part of

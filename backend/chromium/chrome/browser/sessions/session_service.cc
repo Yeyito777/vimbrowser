@@ -63,10 +63,6 @@
 #include "content/public/browser/session_storage_namespace.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/crostini/crostini_util.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/app_controller_mac.h"
@@ -161,49 +157,10 @@ bool SessionService::IsRelevantWindowType(
 }
 
 bool SessionService::ShouldRestore(Browser* browser) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not restore browser window in the kiosk session.
-  if (chromeos::IsKioskSession()) {
-    return false;
-  }
-#endif
 
   // ChromeOS and OSX have different ideas of application lifetime than
   // the other platforms.
   // On ChromeOS opening a new window should never start a new session.
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, sessions are restored (or not) based on the startup setting.
-
-  // If there are other browser windows, or during the restoring process, or
-  // restore from crash, or should not restore for `browser`, sessions should
-  // not be restored.
-  if (SessionRestore::IsRestoring(profile()) || has_open_trackable_browsers_ ||
-      HasPendingUncleanExit(profile()) ||
-      (browser && !browser->should_trigger_session_restore())) {
-    return false;
-  }
-
-  // If the on startup setting is not restore, sessions should not be
-  // restored.
-  SessionStartupPref pref =
-      SessionStartupPref::GetStartupPref(profile()->GetPrefs());
-  if (!pref.ShouldRestoreLastSession()) {
-    return false;
-  }
-
-  if (!browser)
-    return true;
-
-  // App windows should not be restored.
-  auto window_type = WindowTypeForBrowserType(browser->type());
-  if (window_type == sessions::SessionWindow::TYPE_APP ||
-      window_type == sessions::SessionWindow::TYPE_APP_POPUP) {
-    return false;
-  }
-
-  // If the browser does not have a `restore_id`, then we restore the session.
-  return browser->create_params().restore_id == Browser::kDefaultRestoreId;
-#else
   if (!has_open_trackable_browsers_ &&
       !StartupBrowserCreator::InSynchronousProfileLaunch() &&
       !SessionRestore::IsRestoring(profile())
@@ -216,7 +173,6 @@ bool SessionService::ShouldRestore(Browser* browser) {
     return true;
   }
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool SessionService::RestoreIfNecessary(const StartupTabs& startup_tabs,
@@ -577,26 +533,6 @@ bool SessionService::RestoreIfNecessary(const StartupTabs& startup_tabs,
           startup_tabs);
       return true;
     }
-#if BUILDFLAG(IS_CHROMEOS)
-  } else if (HasPendingUncleanExit(profile())) {
-    if (!browser) {
-      // If 'browser' is null, call StartupBrowserCreator to create a new
-      // browser instance.
-      base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-      StartupBrowserCreator browser_creator;
-      browser_creator.LaunchBrowser(*command_line, profile(), base::FilePath(),
-                                    chrome::startup::IsProcessStartup::kYes,
-                                    chrome::startup::IsFirstRun::kNo,
-                                    /*restore_tabbed_browser=*/true);
-      return true;
-    } else {
-      // If 'browser' is not null, show the crash bubble in the current browser
-      // instance.
-      SessionCrashedBubble::ShowIfNotOffTheRecordProfile(
-          browser, /*skip_tab_checking=*/true);
-      ProfileLaunchObserver::AddLaunched(profile());
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   return false;
 }

@@ -29,9 +29,6 @@
 #include "ui/views/painter.h"
 #include "ui/views/view.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "skia/ext/skia_utils_win.h"
-#endif
 
 namespace views {
 

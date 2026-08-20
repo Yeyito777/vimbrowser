@@ -318,13 +318,11 @@ constexpr auto kCommonSyncablePrefsAllowlist =
           PrefSensitivity::kNone, MergeBehavior::kNone}},
 // For Ash, the OS_PRIORITY_PREFERENCES equivalent is defined in
 // chrome/browser/sync/prefs/chrome_syncable_prefs_database.cc instead.
-#if !BUILDFLAG(IS_CHROMEOS)
         {variations::kDogfoodGroupsSyncPrefName,
          {syncable_prefs_ids::kDogfoodGroupsSyncPrefName,
           syncer::PRIORITY_PREFERENCES,
           PrefSensitivity::kExemptFromUserControlWhileSignedIn,
           MergeBehavior::kNone}},
-#endif
         {kSyncablePrefForTesting,
          {syncable_prefs_ids::kSyncablePrefForTesting, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
@@ -359,23 +357,6 @@ constexpr auto kCommonSyncablePrefsAllowlist =
         {prefs::kSafeBrowsingEnhanced,
          {syncable_prefs_ids::kSafeBrowsingEnhanced, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
-#if BUILDFLAG(IS_ANDROID)
-        {autofill::prefs::kFacilitatedPaymentsPix,
-         {syncable_prefs_ids::kFacilitatedPaymentsPix, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsEwallet,
-         {syncable_prefs_ids::kFacilitatedPaymentsEwallet, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsPixAccountLinking,
-         {syncable_prefs_ids::kFacilitatedPaymentsPixAccountLinking,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsA2AEnabled,
-         {syncable_prefs_ids::kFacilitatedPaymentsA2AEnabled,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsA2ATriggeredOnce,
-         {syncable_prefs_ids::kFacilitatedPaymentsA2ATriggeredOnce,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-#endif  // BUILDFLAG(IS_ANDROID)
         {autofill::prefs::kAutofillBnplEnabled,
          {syncable_prefs_ids::kAutofillBnplEnabled, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},

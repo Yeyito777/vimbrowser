@@ -53,12 +53,6 @@ class ContentSettingImageModel {
     STORAGE_ACCESS = 19,
     // MIDI = 20, // Deprecated.
     NOTIFICATIONS = 21,
-#if BUILDFLAG(IS_CHROMEOS)
-    SMART_CARD = 22,
-#endif
-#if BUILDFLAG(IS_WIN)
-    PROTECTED_MEDIA_IDENTIFIER = 23,
-#endif
 
     NUM_IMAGE_TYPES
   };

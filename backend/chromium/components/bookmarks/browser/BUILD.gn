@@ -103,10 +103,6 @@ static_library("browser") {
       "Foundation.framework",
     ]
   }
-
-  if (is_ios) {
-    sources += [ "bookmark_node_data_ios.cc" ]
-  }
 }
 
 static_library("test_support") {

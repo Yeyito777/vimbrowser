@@ -48,9 +48,6 @@
 #include "third_party/skia/include/core/SkColor.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_data.h"
-#endif
 
 namespace webapps {
 enum class WebappInstallSource;
@@ -154,9 +151,6 @@ class WebApp {
     ClientData(const ClientData& client_data);
     base::Value AsDebugValue() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    std::optional<ash::SystemWebAppData> system_web_app_data;
-#endif
   };
 
   const ClientData& client_data() const { return client_data_; }

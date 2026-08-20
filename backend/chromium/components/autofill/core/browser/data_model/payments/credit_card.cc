@@ -1095,18 +1095,6 @@ std::u16string CreditCard::CardNameForAutofillDisplay(
   return NetworkForDisplay();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-std::u16string CreditCard::CardIdentifierStringForManualFilling() const {
-  std::u16string obfuscated_number =
-      ObfuscatedNumberWithVisibleLastFourDigits();
-  if (record_type_ == RecordType::kVirtualCard) {
-    return l10n_util::GetStringUTF16(
-               IDS_AUTOFILL_VIRTUAL_CARD_SUGGESTION_OPTION_VALUE) +
-           u" " + obfuscated_number;
-  }
-  return obfuscated_number;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::u16string CreditCard::CardIdentifierStringAndDescriptiveExpiration(
     const std::string& app_locale,

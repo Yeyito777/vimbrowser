@@ -84,31 +84,11 @@
 #include "base/strings/string_util.h"
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/files/file_path.h"
-#include "base/path_service.h"
-#include "base/win/hardware_check.h"
-#include "base/win/registry.h"
-#include "base/win/scoped_handle.h"
-#include "base/win/windows_version.h"
-#include "chrome/browser/metrics/key_credential_manager_support_reporter_win.h"
-#include "chrome/browser/shell_integration_win.h"
-#include "chrome/browser/win/cloud_synced_folder_checker.h"
-#include "chrome/installer/util/taskbar_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
 #include "chrome/browser/metrics/pressure/pressure_metrics_reporter.h"
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/files/file_util.h"
-#include "base/strings/string_util.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_helper.h"
-#include "components/user_manager/user_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "components/power_metrics/system_power_monitor.h"
@@ -728,121 +708,6 @@ void RecordLinuxGlibcVersion() {
 #endif
 }
 
-#if BUILDFLAG(IS_WIN)
-// Record the UMA histogram when a response is received.
-void OnIsPinnedToTaskbarResult(bool succeeded, bool is_pinned_to_taskbar) {
-  // Used for histograms; do not reorder.
-  enum Result { kNotPinned = 0, kPinned = 1, kFailure = 2, kNumResults };
-
-  Result result = kFailure;
-  if (succeeded) {
-    result = is_pinned_to_taskbar ? kPinned : kNotPinned;
-  }
-
-  base::UmaHistogramEnumeration("Windows.IsPinnedToTaskbar", result,
-                                kNumResults);
-
-  // If Chrome is not pinned to taskbar, clear the recording that the installer
-  // pinned Chrome to the taskbar, so that if the user pins Chrome back to the
-  // taskbar, we don't count launches as coming from an installer-pinned
-  // shortcut.  TODO(crbug.com/40235395): We currently only check if
-  // Chrome is pinned to the taskbar 1 out every 100 launches, which makes this
-  // less meaningful, so if keeping track of whether the installer pinned Chrome
-  // to the taskbar is important, we need to deal with that.
-
-  // Record whether or not the user unpinned an installer pin of Chrome. Records
-  // true if the installer pinned Chrome, and it's not pinned on this startup,
-  // false if the installer pinned Chrome, and it's still pinned.
-  if (GetInstallerPinnedChromeToTaskbar().value_or(false)) {
-    if (result == kNotPinned) {
-      SetInstallerPinnedChromeToTaskbar(false);
-    }
-    if (result != kFailure) {
-      base::UmaHistogramBoolean("Windows.InstallerPinUnpinned",
-                                result == kNotPinned);
-    }
-  }
-}
-
-// Records the pinned state of the current executable into a histogram. Should
-// be called on a background thread, with low priority, to avoid slowing down
-// startup.
-void RecordIsPinnedToTaskbarHistogram() {
-  shell_integration::win::GetIsPinnedToTaskbarState(
-      base::BindOnce(&OnIsPinnedToTaskbarResult));
-}
-
-// This registry key is not fully documented but there is information on it
-// here:
-// https://blogs.blackberry.com/en/2017/10/windows-10-parallel-loading-breakdown.
-bool IsParallelDllLoadingEnabled() {
-  base::FilePath exe_path;
-  if (!base::PathService::Get(base::FILE_EXE, &exe_path)) {
-    return false;
-  }
-  const wchar_t kIFEOKey[] =
-      L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution "
-      L"Options\\";
-  std::wstring browser_process_key = kIFEOKey + exe_path.BaseName().value();
-
-  base::win::RegKey key;
-  if (ERROR_SUCCESS != key.Open(HKEY_LOCAL_MACHINE, browser_process_key.c_str(),
-                                KEY_QUERY_VALUE)) {
-    return true;
-  }
-
-  const wchar_t kMaxLoaderThreads[] = L"MaxLoaderThreads";
-  DWORD max_loader_threads = 0;
-  if (ERROR_SUCCESS !=
-      key.ReadValueDW(kMaxLoaderThreads, &max_loader_threads)) {
-    return true;
-  }
-
-  // Note: If LoaderThreads is 0, it will be set to the default value of 4.
-  return max_loader_threads != 1;
-}
-
-// Records the presence (bad) or absence (good) of AcLayers.dll in the browser
-// process.
-void RecordAppCompatMetrics() {
-  HMODULE mod = ::GetModuleHandleW(L"AcLayers.dll");
-  base::UmaHistogramBoolean("Windows.AcLayersLoaded", !!mod);
-}
-
-void RecordWin11HardwareRequirementsMetrics(
-    const base::win::HardwareEvaluationResult& result) {
-  base::UmaHistogramBoolean("Windows.Win11UpgradeEligible",
-                            result.IsEligible());
-  base::UmaHistogramBoolean("Windows.Win11HardwareRequirements.CPUCheck",
-                            result.cpu);
-  base::UmaHistogramBoolean("Windows.Win11HardwareRequirements.MemoryCheck",
-                            result.memory);
-  base::UmaHistogramBoolean("Windows.Win11HardwareRequirements.DiskCheck",
-                            result.disk);
-  base::UmaHistogramBoolean("Windows.Win11HardwareRequirements.FirmwareCheck",
-                            result.firmware);
-  base::UmaHistogramBoolean("Windows.Win11HardwareRequirements.TPMCheck",
-                            result.tpm);
-}
-
-void MaybeRecordOneDriveSyncMetrics() {
-  if (!base::FeatureList::IsEnabled(
-          cloud_synced_folder_checker::features::kCloudSyncedFolderChecker)) {
-    return;
-  }
-
-  cloud_synced_folder_checker::CloudSyncStatus status =
-      cloud_synced_folder_checker::EvaluateOneDriveSyncStatus();
-
-  base::UmaHistogramBoolean("Windows.OneDriveSyncState.Synced",
-                            status.synced());
-  base::UmaHistogramBoolean("Windows.OneDriveSyncState.DesktopSynced",
-                            status.desktop_synced());
-  base::UmaHistogramBoolean("Windows.OneDriveSyncState.DocumentsSynced",
-                            status.documents_synced());
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 void RecordDisplayHDRStatus(const display::Display& display) {
   base::UmaHistogramBoolean("Hardware.Display.SupportsHDR",
@@ -855,9 +720,6 @@ void RecordDefaultPdfViewerState() {
 #if BUILDFLAG(IS_MAC)
   auto is_default_callback = base::BindOnce(
       &shell_integration::IsDefaultHandlerForUTType, "com.adobe.pdf");
-#elif BUILDFLAG(IS_WIN)
-  auto is_default_callback = base::BindOnce(
-      &shell_integration::IsDefaultHandlerForFileExtension, ".pdf");
 #else
 #error Unsupported platform
 #endif
@@ -877,50 +739,6 @@ void RecordDefaultPdfViewerState() {
 // Called on a background thread, with low priority to avoid slowing down
 // startup with metrics that aren't trivial to compute.
 void RecordStartupMetrics() {
-#if BUILDFLAG(IS_WIN)
-  const base::win::OSInfo& os_info = *base::win::OSInfo::GetInstance();
-  int patch = os_info.version_number().patch;
-  int build = os_info.version_number().build;
-  int patch_level = 0;
-
-  if (patch < 65536 && build < 65536) {
-    patch_level = MAKELONG(patch, build);
-  }
-  DCHECK(patch_level) << "Windows version too high!";
-  base::UmaHistogramSparse("Windows.PatchLevel", patch_level);
-
-  int kernel32_patch = os_info.Kernel32VersionNumber().patch;
-  int kernel32_build = os_info.Kernel32VersionNumber().build;
-  int kernel32_patch_level = 0;
-  if (kernel32_patch < 65536 && kernel32_build < 65536) {
-    kernel32_patch_level = MAKELONG(kernel32_patch, kernel32_build);
-  }
-  DCHECK(kernel32_patch_level) << "Windows kernel32.dll version too high!";
-  base::UmaHistogramSparse("Windows.PatchLevelKernel32", kernel32_patch_level);
-
-  base::UmaHistogramBoolean("Windows.HasHighResolutionTimeTicks",
-                            base::TimeTicks::IsHighResolution());
-  base::UmaHistogramBoolean("Windows.HasThreadTicks",
-                            base::ThreadTicks::IsSupported());
-
-  // Determine whether parallel DLL loading is enabled for the browser process
-  // executable. This is disabled by default on fresh Windows installations, but
-  // the registry key that controls this might have been removed. Having the
-  // parallel DLL loader enabled might affect both sandbox and early startup
-  // behavior.
-  base::UmaHistogramBoolean("Windows.ParallelDllLoadingEnabled",
-                            IsParallelDllLoadingEnabled());
-  RecordAppCompatMetrics();
-
-  MaybeRecordOneDriveSyncMetrics();
-
-  if (base::win::OSInfo::Kernel32Version() < base::win::Version::WIN11) {
-    base::win::HardwareEvaluationResult result =
-        base::win::EvaluateWin11HardwareRequirements();
-    RecordWin11HardwareRequirementsMetrics(result);
-  }
-  key_credential_manager_support::ReportKeyCredentialManagerSupport();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if !BUILDFLAG(ENABLE_CEF)
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
@@ -999,20 +817,6 @@ void ChromeBrowserMainExtraPartsMetrics::PreBrowserStart() {
   );
 
   // Records whether or not the Segment heap is in use.
-#if BUILDFLAG(IS_WIN)
-  if (base::win::GetVersion() >= base::win::Version::WIN10_20H1) {
-    ChromeMetricsServiceAccessor::RegisterSyntheticFieldTrial("WinSegmentHeap",
-#if BUILDFLAG(ENABLE_SEGMENT_HEAP)
-                                                              "OptedIn"
-#else
-                                                              "OptedOut"
-#endif
-    );
-  } else {
-    ChromeMetricsServiceAccessor::RegisterSyntheticFieldTrial("WinSegmentHeap",
-                                                              "NotSupported");
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // Register synthetic Finch trials proposed by PartitionAlloc.
   auto pa_trials = base::allocator::ProposeSyntheticFinchTrials();
@@ -1036,32 +840,9 @@ void ChromeBrowserMainExtraPartsMetrics::PostBrowserStart() {
                              base::BindOnce(&RecordLinuxDistro));
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // RecordStartupMetrics calls into shell_integration::GetDefaultBrowser(),
-  // which requires a COM thread on Windows.
-  base::ThreadPool::CreateCOMSTATaskRunner(kBestEffortTaskTraits)
-      ->PostTask(FROM_HERE, base::BindOnce(&RecordStartupMetrics));
-#else
   base::ThreadPool::PostTask(FROM_HERE, kBestEffortTaskTraits,
                              base::BindOnce(&RecordStartupMetrics));
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_WIN)
-  // TODO(isherman): The delay below is currently needed to avoid (flakily)
-  // breaking some tests, including all of the ProcessMemoryMetricsEmitterTest
-  // tests. Figure out why there is a dependency and fix the tests.
-  auto background_task_runner =
-      base::ThreadPool::CreateSequencedTaskRunner(kBestEffortTaskTraits);
-
-  // The PinnedToTaskbar histogram is CPU intensive and can trigger a crashing
-  // bug in Windows or in shell extensions so just sample the data to reduce the
-  // cost.
-  if (base::RandGenerator(100) == 0) {
-    background_task_runner->PostDelayedTask(
-        FROM_HERE, base::BindOnce(&RecordIsPinnedToTaskbarHistogram),
-        base::Seconds(45));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if defined(ARCH_CPU_X86_FAMILY) && \
     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS))
@@ -1087,9 +868,7 @@ void ChromeBrowserMainExtraPartsMetrics::PostBrowserStart() {
 // crash (which has no login screen) requires the user to click a notification
 // prompt before browser windows are restored, so the `BrowserList` is also
 // empty in this case.
-#if !BUILDFLAG(IS_CHROMEOS)
   metrics::BeginFirstWebContentsProfiling();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // Instantiate the power-related metrics reporters.
 
@@ -1202,19 +981,6 @@ void ChromeBrowserMainExtraPartsMetrics::HandleEnableBenchmarkingCountdown(
 void ChromeBrowserMainExtraPartsMetrics::
     HandleEnableBenchmarkingCountdownAsync() {
   Profile* profile = nullptr;
-#if BUILDFLAG(IS_CHROMEOS)
-  // This logic is subtle. There are two ways for PostBrowserStart to be called
-  // on ChromeOS. The first is when the device first shows the login screen. In
-  // this case the profile is the login profile. The second is after the user
-  // logs in. If any flags have been changed from the login profile's flags,
-  // then all of ash is restarted. We only care about invoking this logic in the
-  // second case. Thus we check if IsUserLoggedIn() to guard the logic.
-  if (!user_manager::UserManager::IsInitialized() ||
-      !user_manager::UserManager::Get()->IsUserLoggedIn()) {
-    return;
-  }
-  profile = g_browser_process->profile_manager()->GetPrimaryUserProfile();
-#endif
   about_flags::GetStorage(profile,
                           base::BindOnce(&HandleEnableBenchmarkingCountdown,
                                          g_browser_process->local_state()));

@@ -758,11 +758,6 @@ void TaskQueueImpl::SetQueuePriority(TaskQueue::QueuePriority priority) {
   sequence_manager_->main_thread_only().selector.SetQueuePriority(this,
                                                                   priority);
 
-#if BUILDFLAG(IS_WIN)
-  // Updating queue priority can change whether high resolution timer is needed.
-  LazyNow lazy_now(sequence_manager_->main_thread_clock());
-  UpdateWakeUp(&lazy_now);
-#endif
 
   if (priority > DefaultPriority()) {
     // |priority| is now lower than the default, so update accordingly.

@@ -24,12 +24,6 @@ struct GPU_IPC_COMMON_EXPORT StructTraits<
     return input.supports_scanout_shared_images;
   }
 
-#if BUILDFLAG(IS_WIN)
-  static bool supports_scanout_shared_images_for_software_video_frames(
-      const gpu::SharedImageCapabilities& input) {
-    return input.supports_scanout_shared_images_for_software_video_frames;
-  }
-#endif
 
   static bool supports_luminance_shared_images(
       const gpu::SharedImageCapabilities& input) {

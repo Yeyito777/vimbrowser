@@ -12,14 +12,7 @@ namespace base {
 
 #if !BUILDFLAG(HAS_BATTERY_LEVEL_PROVIDER_IMPL)
 std::unique_ptr<BatteryLevelProvider> BatteryLevelProvider::Create() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/40871810): ChromeOS doesn't define
-  // `HAS_BATTERY_LEVEL_PROVIDER_IMPL` but still supplies its own
-  // `BatteryLevelProvider`
-  NOTREACHED();
-#else
   return nullptr;
-#endif
 }
 #endif
 
@@ -40,10 +33,6 @@ BatteryLevelProvider::BatteryState BatteryLevelProvider::MakeBatteryState(
     state.full_charged_capacity = battery_details.front().full_charged_capacity;
     state.voltage_mv = battery_details.front().voltage_mv;
     state.charge_unit = battery_details.front().charge_unit;
-#if BUILDFLAG(IS_WIN)
-    state.battery_discharge_granularity =
-        battery_details.front().battery_discharge_granularity;
-#endif  // BUILDFLAG(IS_WIN)
   }
   state.capture_time = base::TimeTicks::Now();
 

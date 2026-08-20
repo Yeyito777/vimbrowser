@@ -24,27 +24,13 @@ source_set("time_zone_monitor") {
 
   public_deps = [ "//services/device/public/mojom" ]
 
-  if (is_win) {
-    sources += [ "time_zone_monitor_win.cc" ]
-    deps += [ "//ui/gfx" ]
-  }
-
   if (is_linux) {
     sources += [ "time_zone_monitor_linux.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "time_zone_monitor_ash.cc" ]
-    deps += [ "//chromeos/ash/components/settings" ]
   }
 
   if (is_apple) {
     sources += [ "time_zone_monitor_mac.mm" ]
     frameworks = [ "Foundation.framework" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "time_zone_monitor_fuchsia.cc" ]
   }
 }
 

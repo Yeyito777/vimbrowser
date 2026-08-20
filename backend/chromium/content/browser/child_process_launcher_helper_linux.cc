@@ -113,13 +113,6 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
                                                : LAUNCH_RESULT_FAILURE;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  process_id_ = process.process.Pid();
-  if (GetProcessType() == switches::kRendererProcess ||
-      base::FeatureList::IsEnabled(features::kSchedQoSOnResourcedForChrome)) {
-    process.process.InitializePriority();
-  }
-#endif
 
   return process;
 }

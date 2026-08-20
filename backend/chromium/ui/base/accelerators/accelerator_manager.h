@@ -15,9 +15,6 @@
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/accelerator_map.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/base/ui_base_features.h"
-#endif
 
 namespace ui {
 
@@ -89,12 +86,6 @@ class COMPONENT_EXPORT(UI_BASE) AcceleratorManager {
   // Returns true if there are no accelerators registered.
   bool IsEmpty() const { return accelerators_.empty(); }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetUsePositionalLookup(bool use_positional_lookup) {
-    DCHECK(::features::IsImprovedKeyboardShortcutsEnabled());
-    accelerators_.set_use_positional_lookup(use_positional_lookup);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // Private helper class to manage the accelerator targets and priority. Each

@@ -259,7 +259,6 @@ int BubbleFrameView::NonClientHitTest(const gfx::Point& point) {
   if (hit_test_transparent_) {
     return HTTRANSPARENT;
   }
-#if !BUILDFLAG(IS_WIN)
   // Windows will automatically create a tooltip for the button based on
   // the HTCLOSE or the HTMINBUTTON
   if (close_->GetVisible() && close_->GetMirroredBounds().Contains(point)) {
@@ -269,7 +268,6 @@ int BubbleFrameView::NonClientHitTest(const gfx::Point& point) {
       minimize_->GetMirroredBounds().Contains(point)) {
     return HTMINBUTTON;
   }
-#endif
 
   // Convert to RRectF to accurately represent the rounded corners of the
   // dialog and allow events to pass through the shadows.
@@ -536,13 +534,6 @@ gfx::Size BubbleFrameView::GetMinimumSize() const {
 }
 
 gfx::Size BubbleFrameView::GetMaximumSize() const {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, this causes problems, so do not set a maximum size (it doesn't
-  // take the drop shadow area into account, resulting in a too-small window;
-  // see http://crbug.com/506206). This isn't necessary on Windows anyway, since
-  // the OS doesn't give the user controls to resize a bubble.
-  return gfx::Size();
-#else
 #if BUILDFLAG(IS_MAC)
   // Allow BubbleFrameView dialogs to be resizable on Mac.
   if (GetWidget()->widget_delegate()->CanResize()) {
@@ -556,7 +547,6 @@ gfx::Size BubbleFrameView::GetMaximumSize() const {
   // Non-dialog bubbles should be non-resizable, so its max size is its
   // preferred size.
   return GetPreferredSize({});
-#endif
 }
 
 void BubbleFrameView::Layout(PassKey) {

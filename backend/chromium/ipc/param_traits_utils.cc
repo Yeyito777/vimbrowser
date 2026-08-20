@@ -35,19 +35,11 @@
 #include "ipc/mach_port_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <tchar.h>
-
-#include "ipc/handle_win.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include "base/file_descriptor_posix.h"
 #include "ipc/ipc_platform_file_attachment_posix.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/fuchsia_logging.h"
-#include "ipc/handle_attachment_fuchsia.h"
-#endif
 
 
 namespace IPC {
@@ -324,19 +316,6 @@ bool ParamTraits<double>::Read(const base::Pickle* m,
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool ParamTraits<std::wstring>::Read(const base::Pickle* m,
-                                     base::PickleIterator* iter,
-                                     param_type* r) {
-  std::u16string_view piece16;
-  if (!iter->ReadStringPiece16(&piece16)) {
-    return false;
-  }
-
-  *r = base::AsWString(piece16);
-  return true;
-}
-#endif
 
 void ParamTraits<std::vector<char>>::Write(base::Pickle* m,
                                            const param_type& p) {
@@ -501,134 +480,7 @@ bool ParamTraits<base::ScopedFD>::Read(const base::Pickle* m,
 }
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-void ParamTraits<base::win::ScopedHandle>::Write(base::Pickle* m,
-                                                 const param_type& p) {
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-  if (!valid) {
-    return;
-  }
 
-  HandleWin handle(p.Get());
-  WriteParam(m, handle);
-}
-
-bool ParamTraits<base::win::ScopedHandle>::Read(const base::Pickle* m,
-                                                base::PickleIterator* iter,
-                                                param_type* r) {
-  r->Close();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-  if (!valid) {
-    return true;
-  }
-
-  HandleWin handle;
-  if (!ReadParam(m, iter, &handle)) {
-    return false;
-  }
-
-  r->Set(handle.get_handle());
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_FUCHSIA)
-void ParamTraits<zx::vmo>::Write(base::Pickle* m, const param_type& p) {
-  // This serialization must be kept in sync with
-  // nacl_message_scanner.cc:WriteHandle().
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-
-  if (!valid) {
-    return;
-  }
-
-  if (!m->WriteAttachment(new internal::HandleAttachmentFuchsia(
-          std::move(const_cast<param_type&>(p))))) {
-    NOTREACHED();
-  }
-}
-
-bool ParamTraits<zx::vmo>::Read(const base::Pickle* m,
-                                base::PickleIterator* iter,
-                                param_type* r) {
-  r->reset();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-
-  if (!valid) {
-    return true;
-  }
-
-  scoped_refptr<base::Pickle::Attachment> attachment;
-  if (!m->ReadAttachment(iter, &attachment)) {
-    return false;
-  }
-
-  if (static_cast<MessageAttachment*>(attachment.get())->GetType() !=
-      MessageAttachment::Type::FUCHSIA_HANDLE) {
-    return false;
-  }
-
-  *r = zx::vmo(static_cast<internal::HandleAttachmentFuchsia*>(attachment.get())
-                   ->Take());
-  return true;
-}
-
-void ParamTraits<zx::channel>::Write(base::Pickle* m, const param_type& p) {
-  // This serialization must be kept in sync with
-  // nacl_message_scanner.cc:WriteHandle().
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-
-  if (!valid) {
-    return;
-  }
-
-  if (!m->WriteAttachment(new internal::HandleAttachmentFuchsia(
-          std::move(const_cast<param_type&>(p))))) {
-    NOTREACHED();
-  }
-}
-
-bool ParamTraits<zx::channel>::Read(const base::Pickle* m,
-                                    base::PickleIterator* iter,
-                                    param_type* r) {
-  r->reset();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-
-  if (!valid) {
-    return true;
-  }
-
-  scoped_refptr<base::Pickle::Attachment> attachment;
-  if (!m->ReadAttachment(iter, &attachment)) {
-    return false;
-  }
-
-  if (static_cast<MessageAttachment*>(attachment.get())->GetType() !=
-      MessageAttachment::Type::FUCHSIA_HANDLE) {
-    return false;
-  }
-
-  *r = zx::channel(
-      static_cast<internal::HandleAttachmentFuchsia*>(attachment.get())
-          ->Take());
-  return true;
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 
 void ParamTraits<base::ReadOnlySharedMemoryRegion>::Write(base::Pickle* m,
@@ -710,19 +562,12 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Write(
   WriteParam(m, static_cast<uint64_t>(p.GetSize()));
   WriteParam(m, p.GetGUID());
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedHandle h = const_cast<param_type&>(p).PassPlatformHandle();
-  HandleWin handle_win(h.Get());
-  WriteParam(m, handle_win);
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::vmo vmo = const_cast<param_type&>(p).PassPlatformHandle();
-  WriteParam(m, vmo);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   base::apple::ScopedMachSendRight h =
       const_cast<param_type&>(p).PassPlatformHandle();
   MachPortMac mach_port_mac(h.get());
   WriteParam(m, mach_port_mac);
-#elif BUILDFLAG(IS_POSIX)
+#else
   base::subtle::ScopedFDPair h =
       const_cast<param_type&>(p).PassPlatformHandle();
   m->WriteAttachment(new internal::PlatformFileAttachment(std::move(h.fd)));
@@ -757,21 +602,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
   }
   size_t size = static_cast<size_t>(shm_size);
 
-#if BUILDFLAG(IS_WIN)
-  HandleWin handle_win;
-  if (!ReadParam(m, iter, &handle_win)) {
-    return false;
-  }
-  *r = base::subtle::PlatformSharedMemoryRegion::Take(
-      base::win::ScopedHandle(handle_win.get_handle()), mode, size, guid);
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::vmo vmo;
-  if (!ReadParam(m, iter, &vmo)) {
-    return false;
-  }
-  *r = base::subtle::PlatformSharedMemoryRegion::Take(std::move(vmo), mode,
-                                                      size, guid);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   MachPortMac mach_port_mac;
   if (!ReadParam(m, iter, &mach_port_mac)) {
     return false;
@@ -779,7 +610,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
   *r = base::subtle::PlatformSharedMemoryRegion::Take(
       base::apple::ScopedMachSendRight(mach_port_mac.get_mach_port()), mode,
       size, guid);
-#elif BUILDFLAG(IS_POSIX)
+#else
   scoped_refptr<base::Pickle::Attachment> attachment;
   if (!m->ReadAttachment(iter, &attachment)) {
     return false;
@@ -1011,41 +842,5 @@ bool ParamTraits<Message>::Read(const base::Pickle* m,
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Note that HWNDs/HANDLE/HCURSOR/HACCEL etc are always 32 bits, even on 64
-// bit systems. That's why we use the Windows macros to convert to 32 bits.
-void ParamTraits<HANDLE>::Write(base::Pickle* m, const param_type& p) {
-  m->WriteInt(HandleToLong(p));
-}
-
-bool ParamTraits<HANDLE>::Read(const base::Pickle* m,
-                               base::PickleIterator* iter,
-                               param_type* r) {
-  int32_t temp;
-  if (!iter->ReadInt(&temp)) {
-    return false;
-  }
-  *r = LongToHandle(temp);
-  return true;
-}
-
-void ParamTraits<MSG>::Write(base::Pickle* m, const param_type& p) {
-  m->WriteData(reinterpret_cast<const char*>(&p), sizeof(MSG));
-}
-
-bool ParamTraits<MSG>::Read(const base::Pickle* m,
-                            base::PickleIterator* iter,
-                            param_type* r) {
-  std::string_view data;
-  bool result = iter->ReadStringPiece(&data);
-  if (result && data.size() == sizeof(MSG)) {
-    UNSAFE_TODO(memcpy(r, data.data(), data.size()));
-  } else {
-    NOTREACHED();
-  }
-
-  return result;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace IPC

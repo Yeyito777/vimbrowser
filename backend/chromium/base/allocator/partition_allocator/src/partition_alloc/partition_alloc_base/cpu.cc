@@ -196,10 +196,6 @@ void CPU::Initialize() {
   has_bti_ = hwcap2 & HWCAP2_BTI;
 #endif
 
-#elif PA_BUILDFLAG(IS_WIN)
-  // Windows makes high-resolution thread timing information available in
-  // user-space.
-  has_non_stop_time_stamp_counter_ = true;
 #endif
 #endif
 }

@@ -19,23 +19,15 @@
 #include "partition_alloc/partition_alloc_config.h"
 #include "partition_alloc/yield_processor.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/windows_types.h"
-#endif
 
-#if PA_BUILDFLAG(IS_POSIX)
 #include <pthread.h>
 
 #include <cerrno>
-#endif
 
 #if PA_BUILDFLAG(IS_APPLE)
 #include <os/lock.h>
 #endif  // PA_BUILDFLAG(IS_APPLE)
 
-#if PA_BUILDFLAG(IS_FUCHSIA)
-#include <lib/sync/mutex.h>
-#endif
 
 #if PA_CONFIG(HAS_LINUX_KERNEL) && \
     PA_BUILDFLAG(ENABLE_PARTITION_LOCK_PRIORITY_INHERITANCE)
@@ -136,16 +128,10 @@ class PA_LOCKABLE PA_COMPONENT_EXPORT(PARTITION_ALLOC) SpinningMutex {
   PA_ALWAYS_INLINE static bool ShouldUsePriorityInheritance();
   PA_ALWAYS_INLINE bool IsLockMigrated() const;
 #endif  // PA_BUILDFLAG(ENABLE_PARTITION_LOCK_PRIORITY_INHERITANCE)
-#elif PA_BUILDFLAG(IS_WIN)
-  PA_CHROME_SRWLOCK lock_ = SRWLOCK_INIT;
 #elif PA_BUILDFLAG(IS_APPLE)
   os_unfair_lock unfair_lock_ = OS_UNFAIR_LOCK_INIT;
-#elif PA_BUILDFLAG(IS_POSIX)
-  pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-  sync_mutex lock_;
 #else
-  std::atomic<bool> lock_{false};
+  pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
 #endif
 };
 
@@ -260,16 +246,6 @@ PA_ALWAYS_INLINE void SpinningMutex::Release() {
   }
 }
 
-#elif PA_BUILDFLAG(IS_WIN)
-
-PA_ALWAYS_INLINE bool SpinningMutex::Try() {
-  return !!::TryAcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&lock_));
-}
-
-PA_ALWAYS_INLINE void SpinningMutex::Release() {
-  ::ReleaseSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&lock_));
-}
-
 #elif PA_BUILDFLAG(IS_APPLE)
 
 PA_ALWAYS_INLINE bool SpinningMutex::Try() {
@@ -280,7 +256,7 @@ PA_ALWAYS_INLINE void SpinningMutex::Release() {
   return os_unfair_lock_unlock(&unfair_lock_);
 }
 
-#elif PA_BUILDFLAG(IS_POSIX)
+#else
 
 PA_ALWAYS_INLINE bool SpinningMutex::Try() {
   int retval = pthread_mutex_trylock(&lock_);
@@ -291,29 +267,6 @@ PA_ALWAYS_INLINE bool SpinningMutex::Try() {
 PA_ALWAYS_INLINE void SpinningMutex::Release() {
   int retval = pthread_mutex_unlock(&lock_);
   PA_DCHECK(retval == 0);
-}
-
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-
-PA_ALWAYS_INLINE bool SpinningMutex::Try() {
-  return sync_mutex_trylock(&lock_) == ZX_OK;
-}
-
-PA_ALWAYS_INLINE void SpinningMutex::Release() {
-  sync_mutex_unlock(&lock_);
-}
-
-#else
-
-PA_ALWAYS_INLINE bool SpinningMutex::Try() {
-  // Possibly faster than CAS. The theory is that if the cacheline is shared,
-  // then it can stay shared, for the contended case.
-  return !lock_.load(std::memory_order_relaxed) &&
-         !lock_.exchange(true, std::memory_order_acquire);
-}
-
-PA_ALWAYS_INLINE void SpinningMutex::Release() {
-  lock_.store(false, std::memory_order_release);
 }
 
 #endif

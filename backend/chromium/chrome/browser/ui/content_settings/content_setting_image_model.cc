@@ -199,42 +199,6 @@ class ContentSettingMediaImageModel : public ContentSettingImageModel {
   PageSpecificContentSettings::MicrophoneCameraState state_;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Image model for displaying media icons in the location bar.
-class ContentSettingSmartCardImageModel
-    : public ContentSettingSimpleImageModel {
- public:
-  ContentSettingSmartCardImageModel()
-      : ContentSettingSimpleImageModel(ImageType::SMART_CARD,
-                                       ContentSettingsType::SMART_CARD_GUARD) {}
-
-  ContentSettingSmartCardImageModel(const ContentSettingSmartCardImageModel&) =
-      delete;
-  ContentSettingSmartCardImageModel& operator=(
-      const ContentSettingSmartCardImageModel&) = delete;
-
-  bool UpdateAndGetVisibility(WebContents* web_contents) override {
-    PageSpecificContentSettings* content_settings =
-        PageSpecificContentSettings::GetForFrame(
-            web_contents->GetPrimaryMainFrame());
-    if (!content_settings) {
-      return false;
-    }
-    // This should never appear when the permission is blocked.
-    SetIcon(ContentSettingsType::SMART_CARD_GUARD, /*blocked=*/false);
-    set_tooltip(l10n_util::GetStringUTF16(IDS_ACCESSED_SMART_CARD_READER_BODY));
-    return content_settings->ShouldShowDeviceInUseIndicator(
-        ContentSettingsType::SMART_CARD_GUARD);
-  }
-
-  std::unique_ptr<ContentSettingBubbleModel> CreateBubbleModelImpl(
-      ContentSettingBubbleModel::Delegate* delegate,
-      WebContents* web_contents) override {
-    return std::make_unique<ContentSettingSimpleBubbleModel>(
-        delegate, web_contents, ContentSettingsType::SMART_CARD_GUARD);
-  }
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class ContentSettingSensorsImageModel : public ContentSettingSimpleImageModel {
  public:
@@ -294,20 +258,6 @@ class ContentSettingStorageAccessImageModel
   bool UpdateAndGetVisibility(WebContents* web_contents) override;
 };
 
-#if BUILDFLAG(IS_WIN)
-class ContentSettingProtectedMediaIdentifierImageModel
-    : public ContentSettingSimpleImageModel {
- public:
-  ContentSettingProtectedMediaIdentifierImageModel();
-
-  ContentSettingProtectedMediaIdentifierImageModel(
-      const ContentSettingProtectedMediaIdentifierImageModel&) = delete;
-  ContentSettingProtectedMediaIdentifierImageModel& operator=(
-      const ContentSettingProtectedMediaIdentifierImageModel&) = delete;
-
-  bool UpdateAndGetVisibility(WebContents* web_contents) override;
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace {
 
@@ -411,19 +361,6 @@ void GetIconChromeRefresh(ContentSettingsType type,
       *icon =
           blocked ? &vector_icons::kIframeOffIcon : &vector_icons::kIframeIcon;
       return;
-#if BUILDFLAG(IS_CHROMEOS)
-    case ContentSettingsType::SMART_CARD_GUARD:
-      // Indicator shows only when at least one connection is active, hence no
-      // need for the off icon.
-      *icon = &vector_icons::kSmartCardReaderIcon;
-      return;
-#endif
-#if BUILDFLAG(IS_WIN)
-    case ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER:
-      *icon = blocked ? &vector_icons::kSyncSavedLocallyOffIcon
-                      : &vector_icons::kSyncSavedLocallyIcon;
-      return;
-#endif  // BUILDFLAG(IS_WIN)
     default:
       NOTREACHED();
   }
@@ -506,15 +443,6 @@ ContentSettingImageModel::CreateForContentType(ImageType image_type) {
       return std::make_unique<ContentSettingStorageAccessImageModel>();
     case ImageType::NOTIFICATIONS:
       return std::make_unique<ContentSettingNotificationsImageModel>();
-#if BUILDFLAG(IS_CHROMEOS)
-    case ImageType::SMART_CARD:
-      return std::make_unique<ContentSettingSmartCardImageModel>();
-#endif
-#if BUILDFLAG(IS_WIN)
-    case ImageType::PROTECTED_MEDIA_IDENTIFIER:
-      return std::make_unique<
-          ContentSettingProtectedMediaIdentifierImageModel>();
-#endif  // BUILDFLAG(IS_WIN)
 
     case ImageType::NUM_IMAGE_TYPES:
       break;
@@ -1277,42 +1205,6 @@ ContentSettingNotificationsImageModel::CreateBubbleModelImpl(
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-// Protected media identifiers
-// -------------------------------------------------------------------
-
-ContentSettingProtectedMediaIdentifierImageModel::
-    ContentSettingProtectedMediaIdentifierImageModel()
-    : ContentSettingSimpleImageModel(
-          ImageType::PROTECTED_MEDIA_IDENTIFIER,
-          ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER,
-          /*image_type_should_notify_accessibility=*/true) {}
-
-bool ContentSettingProtectedMediaIdentifierImageModel::UpdateAndGetVisibility(
-    WebContents* web_contents) {
-  PageSpecificContentSettings* content_settings =
-      PageSpecificContentSettings::GetForFrame(
-          web_contents->GetPrimaryMainFrame());
-  if (!content_settings) {
-    return false;
-  }
-  ContentSettingsType content_type =
-      ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER;
-  bool blocked = content_settings->IsContentBlocked(content_type);
-  bool allowed = content_settings->IsContentAllowed(content_type);
-  if (!blocked && !allowed) {
-    return false;
-  }
-
-  SetIcon(ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER,
-          /*blocked=*/!allowed);
-  auto message_id = allowed ? IDS_ALLOWED_PROTECTED_CONTENT_IDENTIFIERS_MESSAGE
-                            : IDS_BLOCKED_PROTECTED_CONTENT_IDENTIFIERS_MESSAGE;
-  set_tooltip(l10n_util::GetStringUTF16(message_id));
-  set_accessibility_string_id(message_id);
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Base class ------------------------------------------------------------------
 
@@ -1374,23 +1266,10 @@ ContentSettingImageModel::GenerateContentSettingImageModels() {
       ImageType::CLIPBOARD_READ_WRITE,
       ImageType::NOTIFICATIONS,
       ImageType::STORAGE_ACCESS,
-#if BUILDFLAG(IS_CHROMEOS)
-      ImageType::SMART_CARD,
-#endif
-#if BUILDFLAG(IS_WIN)
-      ImageType::PROTECTED_MEDIA_IDENTIFIER,
-#endif
   };
 
   std::vector<std::unique_ptr<ContentSettingImageModel>> result;
   for (auto type : kContentSettingImageOrder) {
-#if BUILDFLAG(IS_WIN)
-    if (type == ImageType::PROTECTED_MEDIA_IDENTIFIER &&
-        !base::FeatureList::IsEnabled(
-            media::kProtectedMediaIdentifierIndicator)) {
-      continue;
-    }
-#endif
     result.push_back(CreateForContentType(type));
   }
 

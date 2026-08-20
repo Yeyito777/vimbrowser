@@ -69,12 +69,6 @@ ui::Shadow::ElevationToColorsMap ShadowElevationToColorsMap(
             color_provider->GetColor(
                 ui::kColorShadowValueAmbientShadowElevationSixteen));
         break;
-#if BUILDFLAG(IS_CHROMEOS)
-      case BubbleBorder::Shadow::CHROMEOS_SYSTEM_UI_SHADOW:
-        colors_map =
-            wm::ShadowController::GenerateShadowColorsMap(color_provider);
-        break;
-#endif
       default:
         NOTREACHED() << "Invalid bubble border shadow type.";
     }
@@ -170,18 +164,6 @@ const gfx::ShadowValues& GetShadowValues(
                                                      key_ambient_colors.first,
                                                      key_ambient_colors.second);
         break;
-#if BUILDFLAG(IS_CHROMEOS)
-      case BubbleBorder::CHROMEOS_SYSTEM_UI_SHADOW:
-        if (key_ambient_colors.first == key_ambient_colors.second) {
-          shadows = gfx::ShadowValue::MakeChromeOSSystemUIShadowValues(
-              elevation.value(), key_ambient_colors.first);
-        } else {
-          shadows = gfx::ShadowValue::MakeChromeOSSystemUIShadowValues(
-              elevation.value(), key_ambient_colors.first,
-              key_ambient_colors.second);
-        }
-        break;
-#endif
       default:
         NOTREACHED() << "Invalid bubble border shadow type";
     }
@@ -481,9 +463,6 @@ gfx::Insets BubbleBorder::GetInsets() const {
 
   switch (shadow_) {
     case STANDARD_SHADOW:
-#if BUILDFLAG(IS_CHROMEOS)
-    case CHROMEOS_SYSTEM_UI_SHADOW:
-#endif
       insets = GetBorderAndShadowInsets(md_shadow_elevation_,
                                         draw_border_stroke_, shadow_);
       break;

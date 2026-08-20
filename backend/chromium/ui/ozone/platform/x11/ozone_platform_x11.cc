@@ -52,13 +52,8 @@
 #include "ui/platform_window/platform_window.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/base/dragdrop/os_exchange_data_provider_non_backed.h"
-#include "ui/base/ime/ash/input_method_ash.h"
-#else
 #include "ui/base/ime/linux/input_method_auralinux.h"
 #include "ui/ozone/platform/x11/os_exchange_data_provider_x11.h"
-#endif
 
 namespace ui {
 
@@ -136,12 +131,8 @@ class OzonePlatformX11 : public OzonePlatform,
   std::unique_ptr<InputMethod> CreateInputMethod(
       ImeKeyEventDispatcher* ime_key_event_dispatcher,
       gfx::AcceleratedWidget widget) override {
-#if BUILDFLAG(IS_CHROMEOS)
-    return std::make_unique<ash::InputMethodAsh>(ime_key_event_dispatcher);
-#else
     return std::make_unique<InputMethodAuraLinux>(ime_key_event_dispatcher,
                                                   widget);
-#endif
   }
 
   PlatformMenuUtils* GetPlatformMenuUtils() override {
@@ -174,11 +165,7 @@ class OzonePlatformX11 : public OzonePlatform,
   }
 
   std::unique_ptr<OSExchangeDataProvider> CreateProvider() override {
-#if BUILDFLAG(IS_CHROMEOS)
-    return std::make_unique<OSExchangeDataProviderNonBacked>();
-#else
     return std::make_unique<OSExchangeDataProviderX11>();
-#endif
   }
 
   const PlatformProperties& GetPlatformProperties() override {

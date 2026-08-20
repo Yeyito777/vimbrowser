@@ -24,18 +24,10 @@ namespace blink {
 namespace {
 
 String GetReducedNavigatorPlatform() {
-#if BUILDFLAG(IS_ANDROID)
-  return "Linux armv81";
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return "MacIntel";
-#elif BUILDFLAG(IS_WIN)
-  return "Win32";
-#elif BUILDFLAG(IS_FUCHSIA)
-  return "";
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   return "Linux x86_64";
-#elif BUILDFLAG(IS_IOS)
-  return "iPhone";
 #else
 #error Unsupported platform
 #endif
@@ -52,13 +44,6 @@ String NavigatorBase::userAgent() const {
 }
 
 String NavigatorBase::platform() const {
-#if BUILDFLAG(IS_ANDROID)
-  // We need to check the ReduceUserAgentMinorVersion feature flag for
-  // Android WebView, which does not currently ship a reduced User-Agent.
-  if (!RuntimeEnabledFeatures::ReduceUserAgentMinorVersionEnabled()) {
-    return NavigatorID::platform();
-  }
-#endif
   return GetReducedNavigatorPlatform();
 }
 

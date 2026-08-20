@@ -24,9 +24,6 @@
 #include "google_apis/gaia/gaia_auth_util.h"
 #include "google_apis/gaia/gaia_id.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 class AccountCapabilities;
 class PrefRegistrySimple;
@@ -59,21 +56,6 @@ class AccountTrackerService {
   typedef base::RepeatingCallback<void(const AccountInfo& info)>
       AccountInfoCallback;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Possible values for the kAccountIdMigrationState preference.
-  // Keep in sync with OAuth2LoginAccountRevokedMigrationState histogram enum.
-  // These values are persisted to logs. Entries should not be renumbered and
-  // numeric values should never be reused.
-  //
-  // TODO(crbug.com/40268200): Remove the migration code after enough users
-  // have migrated.
-  enum AccountIdMigrationState {
-    MIGRATION_NOT_STARTED = 0,
-    MIGRATION_IN_PROGRESS = 1,
-    MIGRATION_DONE = 2,
-    NUM_MIGRATION_STATES
-  };
-#endif
 
   AccountTrackerService();
 
@@ -132,10 +114,6 @@ class AccountTrackerService {
 
   void RemoveAccount(const CoreAccountId& account_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  AccountIdMigrationState GetMigrationState() const;
-  void SetMigrationDone();
-#endif
 
   // If set, this callback will be invoked whenever the details of a tracked
   // account changes (e.g. account's info, image, |is_child_account|...).
@@ -220,23 +198,6 @@ class AccountTrackerService {
   // be the case when the migration state is set to MIGRATION_DONE.
   bool AreAllAccountsMigrated() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Migrate accounts to be keyed by gaia id instead of normalized email.
-  // Requires that the migration state is set to MIGRATION_IN_PROGRESS.
-  void MigrateToGaiaId();
-
-  // Computes the new migration state. The state is saved to preference
-  // before performing the migration in order to support resuming the
-  // migration if necessary during the next load.
-  AccountIdMigrationState ComputeNewMigrationState() const;
-
-  // Updates the migration state in the preferences.
-  void SetMigrationState(AccountIdMigrationState state);
-
-  // Returns the saved migration state in the preferences.
-  static AccountIdMigrationState GetMigrationState(
-      const PrefService* pref_service);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Update the child status on the provided account.
   // This does not notify observers, or persist updates to disk - the caller

@@ -62,10 +62,6 @@ static_library("media_router_feature") {
     "//media",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/browser_context_helper" ]
-  }
 }
 
 static_library("router") {
@@ -181,15 +177,6 @@ static_library("router") {
     "//services/metrics/public/cpp:ukm_builders",
     "//third_party/openscreen/src/cast/common/channel/proto:channel_proto",
   ]
-
-  if (is_win) {
-    sources += [
-      "mojo/media_route_provider_util_win.cc",
-      "mojo/media_route_provider_util_win.h",
-    ]
-
-    deps += [ "//chrome/installer/util:with_no_strings" ]
-  }
 
   if (enable_openscreen_protocol) {
     sources += [
@@ -380,9 +367,6 @@ source_set("unittests") {
     "providers/dial/dial_media_route_provider_unittest.cc",
     "providers/wired_display/wired_display_media_route_provider_unittest.cc",
   ]
-  if (is_win) {
-    sources += [ "discovery/discovery_network_list_win_unittest.cc" ]
-  }
   deps += [
     ":logger_list",
     ":test_support",
@@ -417,16 +401,14 @@ source_set("unittests") {
 
 # TODO(issuetracker.google.com/236160471): CDDL compiler doesn't build
 # on Windows.
-if (!is_win) {
-  test("openscreen_unittests") {
-    deps = [
-      "//base/test:run_all_unittests",
-      "//components/media_router/common/providers/cast/certificate:openscreen_certificate_verifier",
-      "//components/openscreen_platform",
-      "//testing/gmock",
-      "//third_party/openscreen/src:openscreen_unittests_all",
-    ]
-  }
+test("openscreen_unittests") {
+  deps = [
+    "//base/test:run_all_unittests",
+    "//components/media_router/common/providers/cast/certificate:openscreen_certificate_verifier",
+    "//components/openscreen_platform",
+    "//testing/gmock",
+    "//third_party/openscreen/src:openscreen_unittests_all",
+  ]
 }
 
 # This fuzzer targets DialInternalMessage defined in "providers/dial/dial_internal_message_util.h."

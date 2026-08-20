@@ -26,9 +26,6 @@
 #include "ui/base/models/dialog_model.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/installer/util/google_update_util.h"
-#endif
 
 namespace {
 
@@ -55,24 +52,6 @@ void OnDialogAccepted(content::PageNavigator* navigator,
                                WindowOpenDisposition::NEW_FOREGROUND_TAB,
                                ui::PAGE_TRANSITION_LINK, false),
         /*navigation_handle_callback=*/{});
-#if BUILDFLAG(IS_WIN)
-  } else {
-    DCHECK(UpgradeDetector::GetInstance()->is_outdated_install_no_au());
-    base::RecordAction(
-        base::UserMetricsAction("OutdatedUpgradeBubble.EnableAU"));
-    // Record that the autoupdate flavour of the dialog has been shown.
-    if (g_browser_process->local_state()) {
-      g_browser_process->local_state()->SetBoolean(
-          prefs::kAttemptedToEnableAutoupdate, true);
-    }
-
-    // Re-enable updates by shelling out to setup.exe asynchronously.
-    base::ThreadPool::PostTask(
-        FROM_HERE,
-        {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-         base::TaskShutdownBehavior::BLOCK_SHUTDOWN},
-        base::BindOnce(&google_update::ElevateIfNeededToReenableUpdates));
-#endif  // BUILDFLAG(IS_WIN)
   }
 }
 

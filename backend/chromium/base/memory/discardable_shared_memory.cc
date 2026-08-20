@@ -24,24 +24,11 @@
 #include "partition_alloc/page_allocator.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 // For madvise() which is available on all POSIX compatible systems.
 #include <sys/mman.h>
-#endif
 
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include "base/win/windows_version.h"
-#endif
-
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmar.h>
-#include <zircon/types.h>
-
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 #include "base/trace_event/memory_allocator_dump.h"
 #include "base/trace_event/process_memory_dump.h"
@@ -403,7 +390,6 @@ bool DiscardableSharedMemory::Purge(Time current_time) {
 // Note: this memory will not be accessed again.  The segment will be
 // freed asynchronously at a later time, so just do the best
 // immediately.
-#if BUILDFLAG(IS_POSIX)
 // Linux and Android provide MADV_REMOVE which is preferred as it has a
 // behavior that can be verified in tests. Other POSIX flavors (MacOSX, BSDs),
 // provide MADV_FREE which has the same result but memory is purged lazily.
@@ -424,30 +410,6 @@ bool DiscardableSharedMemory::Purge(Time current_time) {
   if (madvise(map.data(), AlignToPageSize(map.size()), MADV_PURGE_ARGUMENT)) {
     DPLOG(ERROR) << "madvise() failed";
   }
-#elif BUILDFLAG(IS_WIN)
-  // On Windows, discarded pages are not returned to the system immediately and
-  // not guaranteed to be zeroed when returned to the application.
-  base::span<uint8_t> mapped = mapped_memory();
-  uint8_t* address = mapped.data();
-  size_t length = AlignToPageSize(mapped.size());
-
-  DWORD ret = DiscardVirtualMemory(address, length);
-  // DiscardVirtualMemory is buggy in Win10 SP0, so fall back to MEM_RESET on
-  // failure.
-  if (ret != ERROR_SUCCESS) {
-    void* ptr = VirtualAlloc(address, length, MEM_RESET, PAGE_READWRITE);
-    CHECK(ptr);
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  // De-commit via our VMAR, rather than relying on the VMO handle, since the
-  // handle may have been closed after the memory was mapped into this process.
-  base::span<uint8_t> mapped = mapped_memory();
-  uint64_t address_int = reinterpret_cast<uint64_t>(mapped.data());
-  zx_status_t status = zx::vmar::root_self()->op_range(
-      ZX_VMO_OP_DECOMMIT, address_int, AlignToPageSize(mapped.size()), nullptr,
-      0);
-  ZX_DCHECK(status == ZX_OK, status) << "zx_vmo_op_range(ZX_VMO_OP_DECOMMIT)";
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   last_known_usage_ = Time();
   return true;

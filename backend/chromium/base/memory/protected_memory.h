@@ -91,31 +91,7 @@
 #include "build/build_config.h"
 
 #if BUILDFLAG(PROTECTED_MEMORY_ENABLED)
-#if BUILDFLAG(IS_WIN)
-// Define a read-write prot section. The $a, $mem, and $z 'sub-sections' are
-// merged alphabetically so $a and $z are used to define the start and end of
-// the protected memory section, and $mem holds protected variables.
-// (Note: Sections in Portable Executables are equivalent to segments in other
-// executable formats, so this section is mapped into its own pages.)
-#pragma section("prot$a", read, write)
-#pragma section("prot$mem", read, write)
-#pragma section("prot$z", read, write)
-
-// We want the protected memory section to be read-only, not read-write so we
-// instruct the linker to set the section read-only at link time. We do this
-// at link time instead of compile time, because defining the prot section
-// read-only would cause mis-compiles due to optimizations assuming that the
-// section contents are constant.
-#pragma comment(linker, "/SECTION:prot,R")
-
-__declspec(allocate("prot$a"))
-__declspec(selectany) char __start_protected_memory;
-__declspec(allocate("prot$z"))
-__declspec(selectany) char __stop_protected_memory;
-
-#define DECLARE_PROTECTED_DATA constinit
-#define DEFINE_PROTECTED_DATA constinit __declspec(allocate("prot$mem"))
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID)
 // This value is used to align the writers variable. That variable needs to be
 // aligned to ensure that the protected memory section starts on a page
 // boundary.
@@ -395,9 +371,6 @@ class BASE_EXPORT AutoWritableMemoryBase {
 class BASE_EXPORT AutoWritableMemoryInitializer
     : public AutoWritableMemoryBase {
  public:
-#if BUILDFLAG(IS_WIN)
-  AutoWritableMemoryInitializer() { CHECK(IsSectionStartPageAligned()); }
-#else
   AutoWritableMemoryInitializer() LOCKS_EXCLUDED(WriterData::writers_lock()) {
     CHECK(IsSectionStartPageAligned());
     // This doesn't need to be run on Windows, because the linker can pre-set
@@ -414,7 +387,6 @@ class BASE_EXPORT AutoWritableMemoryInitializer
     WriterData::protected_memory_section_buffer = true;
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID)
   }
-#endif  // BUILDFLAG(IS_WIN)
 };
 #endif  // BUILDFLAG(PROTECTED_MEMORY_ENABLED)
 

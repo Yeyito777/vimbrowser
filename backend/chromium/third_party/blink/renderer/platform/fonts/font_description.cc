@@ -326,12 +326,6 @@ FontCacheKey FontDescription::CacheKey(
                          device_scale_factor_for_key, size_adjust_,
                          variation_settings_, font_palette_,
                          font_variant_alternates_, is_unique_match);
-#if BUILDFLAG(IS_ANDROID)
-  if (const LayoutLocale* locale = Locale()) {
-    if (FontCache::GetLocaleSpecificFamilyName(creation_params.Family()))
-      cache_key.SetLocale(AtomicString(locale->LocaleForSkFontMgr()));
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   return cache_key;
 }
 

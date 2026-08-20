@@ -49,10 +49,6 @@ SettingValue GetScreenlockSecured();
 SettingValue GetDiskEncrypted();
 std::vector<std::string> GetMacAddresses();
 
-#if BUILDFLAG(IS_WIN)
-SettingValue GetSecureBootEnabled();
-std::optional<std::string> GetWindowsMachineDomain();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 // Return the distribution VERSION_ID contained in

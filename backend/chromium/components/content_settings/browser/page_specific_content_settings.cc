@@ -76,11 +76,6 @@ constexpr auto kMediaIndicatorMinimumHoldDurationPhase2 = base::Seconds(4);
 // A delay before blocked media indicator disappears.
 constexpr auto kBlockedMediaIndicatorDismissDelay = base::Minutes(1);
 constexpr auto kBlockedMediaIndicatorDismissDelayPhase2 = base::Seconds(4);
-#if BUILDFLAG(IS_CHROMEOS)
-// A delay before in-use indicator for device (currently only smart cards)
-// disappears.
-constexpr auto kDeviceInUseIndicatorHideDelay = base::Seconds(15);
-#endif
 
 // Determines which taxonomy is used to generate sample topics for the Topics
 // API.
@@ -476,7 +471,6 @@ void WebContentsHandler::ReadyToCommitNavigation(
       map_->GetContentSetting(primary_url, secondary_url,
                               ContentSettingsType::POPUPS) ==
       CONTENT_SETTING_ALLOW;
-#if !BUILDFLAG(IS_IOS)
   content_settings->allow_mixed_content =
       map_->GetContentSetting(primary_url, secondary_url,
                               ContentSettingsType::MIXEDSCRIPT) ==
@@ -489,7 +483,6 @@ void WebContentsHandler::ReadyToCommitNavigation(
       map_->GetContentSetting(primary_url, secondary_url,
                               ContentSettingsType::CONTROLLED_FRAME) ==
       CONTENT_SETTING_ALLOW;
-#endif
 
   navigation_handle->SetContentSettings(std::move(content_settings));
 }
@@ -879,9 +872,6 @@ bool PageSpecificContentSettings::IsContentBlocked(
       content_type == ContentSettingsType::SENSORS ||
       content_type == ContentSettingsType::GEOLOCATION ||
       content_type == ContentSettingsType::GEOLOCATION_WITH_OPTIONS ||
-#if BUILDFLAG(IS_WIN)
-      content_type == ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER ||
-#endif
       content_type == ContentSettingsType::NOTIFICATIONS) {
     const auto& it = content_settings_status_.find(content_type);
     if (it != content_settings_status_.end()) {
@@ -909,9 +899,6 @@ bool PageSpecificContentSettings::IsContentAllowed(
       content_type != ContentSettingsType::SENSORS &&
       content_type != ContentSettingsType::GEOLOCATION &&
       content_type != ContentSettingsType::GEOLOCATION_WITH_OPTIONS &&
-#if BUILDFLAG(IS_WIN)
-      content_type != ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER &&
-#endif
       content_type != ContentSettingsType::NOTIFICATIONS) {
     return false;
   }
@@ -995,14 +982,6 @@ void PageSpecificContentSettings::OnContentAllowed(ContentSettingsType type) {
     must_reset_blocked_status = true;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // content_settings_status_[type].allowed is always set to true in
-  // OnContentBlocked, so we have to use
-  // content_settings_status_[type].blocked to detect whether the protected
-  // media setting has changed.
-  if (type == ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER)
-    must_reset_blocked_status = true;
-#endif
 
   if (must_reset_blocked_status && status.blocked) {
     status.blocked = false;
@@ -1429,9 +1408,6 @@ void PageSpecificContentSettings::OnContentSettingChanged(
     case ContentSettingsType::ADS:
     case ContentSettingsType::SOUND:
     case ContentSettingsType::CLIPBOARD_READ_WRITE:
-#if BUILDFLAG(IS_WIN)
-    case ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER:
-#endif
     case ContentSettingsType::SENSORS: {
       // Geolocation and Notification falls through to this logic.
       PermissionSetting setting =
@@ -1627,46 +1603,11 @@ void PageSpecificContentSettings::OnCapturingStateChanged(
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void PageSpecificContentSettings::OnDeviceUsed(ContentSettingsType type) {
-  // For now, only smart card permissions are supported.
-  CHECK_EQ(ContentSettingsType::SMART_CARD_GUARD, type);
-  last_used_time_[type] = base::Time::Now();
-  if (in_use_.insert(type).second) {
-    MaybeUpdateLocationBar();
-  }
-}
-
-void PageSpecificContentSettings::OnLastDeviceConnectionLost(
-    ContentSettingsType type) {
-  // For now, only smart card permissions are supported.
-  CHECK_EQ(mojom::ContentSettingsType::SMART_CARD_GUARD, type);
-  in_use_.erase(type);
-
-  // The indicator should remain for `kDeviceInUseIndicatorHideDelay` seconds
-  // after the connection has died in order to also make user aware of very
-  // rapid connections.
-  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
-      FROM_HERE,
-      base::BindOnce(&PageSpecificContentSettings::MaybeUpdateLocationBar,
-                     weak_factory_.GetWeakPtr()),
-      kDeviceInUseIndicatorHideDelay);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool PageSpecificContentSettings::IsInUse(ContentSettingsType type) const {
   return in_use_.contains(type);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool PageSpecificContentSettings::ShouldShowDeviceInUseIndicator(
-    ContentSettingsType type) const {
-  return IsInUse(type) ||
-         GetLastUsedTime(type) >
-             base::Time::Now() - kDeviceInUseIndicatorHideDelay;
-  ;
-}
-#endif
 
 void PageSpecificContentSettings::OnCapturingStateChangedInternal(
     ContentSettingsType type,

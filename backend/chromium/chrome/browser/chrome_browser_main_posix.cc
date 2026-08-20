@@ -127,12 +127,7 @@ void ExitHandler::OnSessionRestoreDone(Profile* profile, int /* num_tabs */) {
 
 // static
 void ExitHandler::Exit() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, exiting on signal should be always clean.
-  chrome::ExitIgnoreUnloadHandlers();
-#else
   chrome::AttemptExit();
-#endif
 }
 
 }  // namespace
@@ -168,9 +163,7 @@ void ChromeBrowserMainPartsPosix::PostCreateMainMessageLoop() {
 }
 
 void ChromeBrowserMainPartsPosix::ShowMissingLocaleMessageBox() {
-#if BUILDFLAG(IS_CHROMEOS)
-  NOTREACHED();  // Should not ever happen on ChromeOS.
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Not called on Mac because we load the locale files differently.
   NOTREACHED();
 #elif defined(USE_AURA)

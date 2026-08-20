@@ -130,137 +130,6 @@ component("gpu") {
     ]
   }
 
-  if (is_fuchsia) {
-    public_deps += [ "//media/fuchsia/video" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "windows/av1_guids.h",
-      "windows/av1_video_rate_control_wrapper.cc",
-      "windows/av1_video_rate_control_wrapper.h",
-      "windows/d3d11_av1_accelerator.cc",
-      "windows/d3d11_av1_accelerator.h",
-      "windows/d3d11_copying_texture_wrapper.cc",
-      "windows/d3d11_copying_texture_wrapper.h",
-      "windows/d3d11_decoder_configurator.cc",
-      "windows/d3d11_decoder_configurator.h",
-      "windows/d3d11_h264_accelerator.cc",
-      "windows/d3d11_h264_accelerator.h",
-      "windows/d3d11_picture_buffer.cc",
-      "windows/d3d11_picture_buffer.h",
-      "windows/d3d11_status.h",
-      "windows/d3d11_texture_selector.cc",
-      "windows/d3d11_texture_selector.h",
-      "windows/d3d11_texture_wrapper.cc",
-      "windows/d3d11_texture_wrapper.h",
-      "windows/d3d11_video_decoder.cc",
-      "windows/d3d11_video_decoder.h",
-      "windows/d3d11_video_decoder_client.h",
-      "windows/d3d11_video_decoder_wrapper.cc",
-      "windows/d3d11_video_decoder_wrapper.h",
-      "windows/d3d11_video_device_format_support.cc",
-      "windows/d3d11_video_device_format_support.h",
-      "windows/d3d11_video_frame_mailbox_release_helper.cc",
-      "windows/d3d11_video_frame_mailbox_release_helper.h",
-      "windows/d3d11_video_processor_proxy.cc",
-      "windows/d3d11_video_processor_proxy.h",
-      "windows/d3d11_vp9_accelerator.cc",
-      "windows/d3d11_vp9_accelerator.h",
-      "windows/d3d11_vp9_picture.cc",
-      "windows/d3d11_vp9_picture.h",
-      "windows/d3d12_copy_command_list_wrapper.cc",
-      "windows/d3d12_copy_command_list_wrapper.h",
-      "windows/d3d12_fence.cc",
-      "windows/d3d12_fence.h",
-      "windows/d3d12_helpers.cc",
-      "windows/d3d12_helpers.h",
-      "windows/d3d12_video_decode_task.cc",
-      "windows/d3d12_video_decode_task.h",
-      "windows/d3d12_video_decoder_wrapper.cc",
-      "windows/d3d12_video_decoder_wrapper.h",
-      "windows/d3d12_video_encode_accelerator.cc",
-      "windows/d3d12_video_encode_accelerator.h",
-      "windows/d3d12_video_encode_av1_delegate.cc",
-      "windows/d3d12_video_encode_av1_delegate.h",
-      "windows/d3d12_video_encode_delegate.cc",
-      "windows/d3d12_video_encode_delegate.h",
-      "windows/d3d12_video_encode_h264_delegate.cc",
-      "windows/d3d12_video_encode_h264_delegate.h",
-      "windows/d3d12_video_encoder_wrapper.cc",
-      "windows/d3d12_video_encoder_wrapper.h",
-      "windows/d3d12_video_helpers.cc",
-      "windows/d3d12_video_helpers.h",
-      "windows/d3d12_video_processor_wrapper.cc",
-      "windows/d3d12_video_processor_wrapper.h",
-      "windows/d3d_com_defs.h",
-      "windows/d3d_video_decoder_wrapper.cc",
-      "windows/d3d_video_decoder_wrapper.h",
-      "windows/format_utils.cc",
-      "windows/format_utils.h",
-      "windows/h264_video_rate_control_wrapper.cc",
-      "windows/h264_video_rate_control_wrapper.h",
-      "windows/init_guid.cc",
-      "windows/media_foundation_video_encode_accelerator_win.cc",
-      "windows/media_foundation_video_encode_accelerator_win.h",
-      "windows/mf_audio_encoder.cc",
-      "windows/mf_audio_encoder.h",
-      "windows/mf_video_encoder_shared_state.cc",
-      "windows/mf_video_encoder_shared_state.h",
-      "windows/mf_video_encoder_switches.cc",
-      "windows/mf_video_encoder_switches.h",
-      "windows/mf_video_encoder_util.cc",
-      "windows/mf_video_encoder_util.h",
-      "windows/mf_video_processor_accelerator.cc",
-      "windows/mf_video_processor_accelerator.h",
-      "windows/scoped_d3d_buffers.cc",
-      "windows/scoped_d3d_buffers.h",
-      "windows/supported_profile_helpers.cc",
-      "windows/supported_profile_helpers.h",
-      "windows/video_rate_control_wrapper.cc",
-      "windows/video_rate_control_wrapper.h",
-      "windows/vp9_video_rate_control_wrapper.cc",
-      "windows/vp9_video_rate_control_wrapper.h",
-    ]
-    if (enable_hevc_parser_and_hw_decoder) {
-      sources += [
-        "windows/d3d11_h265_accelerator.cc",
-        "windows/d3d11_h265_accelerator.h",
-        "windows/d3d12_video_encode_h265_delegate.cc",
-        "windows/d3d12_video_encode_h265_delegate.h",
-      ]
-    }
-    deps += [
-      "//gpu/ipc/common",
-      "//media/base/win:color_space_util_win",
-      "//third_party/angle:includes",
-      "//third_party/libaom:libaomrc",
-      "//third_party/libvpx:libvpxrc",
-      "//ui/display",
-    ]
-    libs += [
-      "d3d9.lib",
-      "d3d11.lib",
-      "d3d12.lib",
-      "dxgi.lib",
-      "dxva2.lib",
-      "dxgi.lib",
-      "strmiids.lib",
-      "mf.lib",
-      "mfplat.lib",
-      "mfuuid.lib",
-    ]
-    ldflags += [
-      "/DELAYLOAD:d3d9.dll",
-      "/DELAYLOAD:d3d11.dll",
-      "/DELAYLOAD:d3d12.dll",
-      "/DELAYLOAD:dxva2.dll",
-      "/DELAYLOAD:dxgi.dll",
-      "/DELAYLOAD:mf.dll",
-      "/DELAYLOAD:mfplat.dll",
-    ]
-  }
-
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
   }
@@ -520,41 +389,6 @@ source_set("unit_tests") {
     deps += [ "//third_party/ffmpeg" ]
   }
 
-  if (is_win) {
-    sources += [
-      "windows/d3d11_copying_texture_wrapper_unittest.cc",
-      "windows/d3d11_decoder_configurator_unittest.cc",
-      "windows/d3d11_picture_buffer_unittest.cc",
-      "windows/d3d11_texture_selector_unittest.cc",
-      "windows/d3d11_texture_wrapper_unittest.cc",
-      "windows/d3d11_video_decoder_unittest.cc",
-      "windows/d3d11_video_device_format_support_unittest.cc",
-      "windows/d3d11_video_processor_proxy_unittest.cc",
-      "windows/d3d12_helpers_unittest.cc",
-      "windows/d3d12_video_encode_accelerator_unittest.cc",
-      "windows/d3d12_video_encode_av1_delegate_unittest.cc",
-      "windows/d3d12_video_encode_delegate_unittest.cc",
-      "windows/d3d12_video_encode_delegate_unittest.h",
-      "windows/d3d12_video_encode_h264_delegate_unittest.cc",
-      "windows/mf_audio_encoder_unittest.cc",
-      "windows/mf_video_processor_accelerator_unittest.cc",
-      "windows/scoped_d3d_buffers_unittest.cc",
-      "windows/supported_profile_helpers_unittest.cc",
-    ]
-    deps += [ "//gpu:test_support" ]
-    libs = [
-      "dxguid.lib",
-      "d3d12.lib",
-    ]
-
-    if (enable_hevc_parser_and_hw_decoder) {
-      sources += [
-        "h265_builder_unittest.cc",
-        "windows/d3d12_video_encode_h265_delegate_unittest.cc",
-      ]
-    }
-  }
-
   if (is_apple) {
     deps += [ "//media/gpu/mac:unit_tests" ]
   }
@@ -614,20 +448,6 @@ if (use_av1_hw_decoder) {
       ":common",
       "//base",
       "//media:test_support",
-    ]
-  }
-}
-
-if (is_win) {
-  fuzzer_test("media_d3d12_video_encode_delegate_fuzzer") {
-    sources = [ "windows/d3d12_video_encode_delegate_fuzzer.cc" ]
-    deps = [
-      ":gpu",
-      "//base",
-      "//media:test_support",
-      "//media/base/win:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
     ]
   }
 }

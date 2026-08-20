@@ -48,9 +48,6 @@ void DrawFallbackIconLetter(Canvas* canvas,
 
   Font::Weight font_weight = Font::Weight::NORMAL;
 
-#if BUILDFLAG(IS_WIN)
-  font_weight = Font::Weight::SEMIBOLD;
-#endif
 
   // TODO(https://crbug.com/41395192): Adjust the text color according to the
   // background color.

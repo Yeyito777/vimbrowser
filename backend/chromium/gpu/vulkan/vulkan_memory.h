@@ -13,13 +13,7 @@
 #include "base/types/pass_key.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#endif
 
 namespace gpu {
 
@@ -45,18 +39,9 @@ class COMPONENT_EXPORT(VULKAN) VulkanMemory {
 
   void Destroy();
 
-#if BUILDFLAG(IS_POSIX)
   base::ScopedFD GetMemoryFd(VkExternalMemoryHandleTypeFlagBits handle_type);
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedHandle GetMemoryHandle(
-      VkExternalMemoryHandleTypeFlagBits handle_type);
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_FUCHSIA)
-  zx::vmo GetMemoryZirconHandle();
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   VulkanDeviceQueue* device_queue() const { return device_queue_; }
   VkDeviceSize size() const { return size_; }

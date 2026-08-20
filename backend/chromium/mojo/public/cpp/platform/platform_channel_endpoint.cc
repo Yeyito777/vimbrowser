@@ -21,28 +21,16 @@
 
 #include "base/apple/mach_port_rendezvous.h"
 #include "base/apple/scoped_mach_port.h"
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/handle.h>
-#elif BUILDFLAG(IS_POSIX)
+#else
 #include "base/files/scoped_file.h"
 #include "base/posix/global_descriptors.h"
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/scoped_handle.h"
 #endif
 
 namespace mojo {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-// Leave room for any other descriptors defined in content for example.
-// TODO(crbug.com/40499227): Consider changing base::GlobalDescriptors to
-// generate a key when setting the file descriptor.
-constexpr int kAndroidClientHandleDescriptor =
-    base::GlobalDescriptors::kBaseDescriptor + 10000;
-#elif BUILDFLAG(IS_POSIX) && !BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
 bool IsTargetDescriptorUsed(const base::FileHandleMappingVector& mapping,
                             int target_fd) {
   for (auto& [i, fd] : mapping) {
@@ -89,20 +77,7 @@ void PlatformChannelEndpoint::PrepareToPass(HandlePassingInfo& info,
 void PlatformChannelEndpoint::PrepareToPass(HandlePassingInfo& info,
                                             std::string& value) {
   DCHECK(is_valid());
-#if BUILDFLAG(IS_WIN)
-  info.push_back(platform_handle().GetHandle().Get());
-  value =
-      base::NumberToString(HandleToLong(platform_handle().GetHandle().Get()));
-#elif BUILDFLAG(IS_FUCHSIA)
-  const uint32_t id = base::LaunchOptions::AddHandleToTransfer(
-      &info, platform_handle().GetHandle().get());
-  value = base::NumberToString(id);
-#elif BUILDFLAG(IS_ANDROID)
-  int fd = platform_handle().GetFD().get();
-  int mapped_fd = kAndroidClientHandleDescriptor + info.size();
-  info.emplace_back(fd, mapped_fd);
-  value = base::NumberToString(mapped_fd);
-#elif BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
+#if BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
   DCHECK(platform_handle().is_mach_receive());
   base::apple::ScopedMachReceiveRight receive_right =
       TakePlatformHandle().TakeMachReceiveRight();
@@ -114,7 +89,7 @@ void PlatformChannelEndpoint::PrepareToPass(HandlePassingInfo& info,
       rendezvous_key, base::MachRendezvousPort(std::move(receive_right))));
   DCHECK(it.second) << "Failed to insert port for rendezvous.";
   value = base::NumberToString(rendezvous_key);
-#elif BUILDFLAG(IS_POSIX)
+#else
   // Arbitrary sanity check to ensure the loop below terminates reasonably
   // quickly.
   CHECK_LT(info.size(), 1000u);
@@ -142,60 +117,22 @@ void PlatformChannelEndpoint::PrepareToPass(base::LaunchOptions& options,
 std::string PlatformChannelEndpoint::PrepareToPass(
     base::LaunchOptions& options) {
   std::string value;
-#if BUILDFLAG(IS_WIN)
-  PrepareToPass(options.handles_to_inherit, value);
-#elif BUILDFLAG(IS_FUCHSIA)
-  PrepareToPass(options.handles_to_transfer, value);
-#elif BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
+#if BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
   PrepareToPass(options.mach_ports_for_rendezvous, value);
-#elif BUILDFLAG(IS_POSIX)
-  PrepareToPass(options.fds_to_remap, value);
 #else
-#error "Platform not supported."
+  PrepareToPass(options.fds_to_remap, value);
 #endif
   return value;
 }
 
 void PlatformChannelEndpoint::ProcessLaunchAttempted() {
-#if BUILDFLAG(IS_FUCHSIA)
-  // Unlike other platforms, Fuchsia transfers handle ownership to the new
-  // process, rather than duplicating it. For consistency the process-launch
-  // call will have consumed the handle regardless of whether launch succeeded.
-  DCHECK(platform_handle().is_valid_handle());
-  std::ignore = TakePlatformHandle().ReleaseHandle();
-#else
   reset();
-#endif
 }
 
 // static
 PlatformChannelEndpoint PlatformChannelEndpoint::RecoverFromString(
     std::string_view value) {
-#if BUILDFLAG(IS_WIN)
-  int handle_value = 0;
-  if (value.empty() || !base::StringToInt(value, &handle_value)) {
-    DLOG(ERROR) << "Invalid PlatformChannel endpoint string.";
-    return PlatformChannelEndpoint();
-  }
-  return PlatformChannelEndpoint(
-      PlatformHandle(base::win::ScopedHandle(LongToHandle(handle_value))));
-#elif BUILDFLAG(IS_FUCHSIA)
-  unsigned int handle_value = 0;
-  if (value.empty() || !base::StringToUint(value, &handle_value)) {
-    DLOG(ERROR) << "Invalid PlatformChannel endpoint string.";
-    return PlatformChannelEndpoint();
-  }
-  return PlatformChannelEndpoint(PlatformHandle(zx::handle(
-      zx_take_startup_handle(base::checked_cast<uint32_t>(handle_value)))));
-#elif BUILDFLAG(IS_ANDROID)
-  base::GlobalDescriptors::Key key = -1;
-  if (value.empty() || !base::StringToUint(value, &key)) {
-    DLOG(ERROR) << "Invalid PlatformChannel endpoint string.";
-    return PlatformChannelEndpoint();
-  }
-  return PlatformChannelEndpoint(PlatformHandle(
-      base::ScopedFD(base::GlobalDescriptors::GetInstance()->Get(key))));
-#elif BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
+#if BUILDFLAG(MOJO_USE_APPLE_CHANNEL)
   auto* client = base::MachPortRendezvousClient::GetInstance();
   if (!client) {
     DLOG(ERROR) << "Mach rendezvous failed.";
@@ -212,7 +149,7 @@ PlatformChannelEndpoint PlatformChannelEndpoint::RecoverFromString(
     return PlatformChannelEndpoint();
   }
   return PlatformChannelEndpoint(PlatformHandle(std::move(receive)));
-#elif BUILDFLAG(IS_POSIX)
+#else
   int fd = -1;
   if (value.empty() || !base::StringToInt(value, &fd) ||
       fd < base::GlobalDescriptors::kBaseDescriptor) {

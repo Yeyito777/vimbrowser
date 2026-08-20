@@ -15,12 +15,6 @@
 #include "mojo/public/cpp/platform/platform_handle.h"
 #include "third_party/ipcz/include/ipcz/ipcz.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/fdio/fd.h>
-#include <lib/zx/handle.h>
-
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include <mach/mach.h>
@@ -73,29 +67,7 @@ struct IPCZ_ALIGN(8) WrappedPlatformHandleHeader {
 static_assert(sizeof(WrappedPlatformHandleHeader) == 8,
               "Invalid WrappedPlatformHandleHeader size");
 
-#if BUILDFLAG(IS_FUCHSIA)
-PlatformHandle MakeFDTransmissible(base::ScopedFD fd) {
-  zx::handle result;
-  const zx_status_t status =
-      fdio_fd_transfer_or_clone(fd.release(), result.reset_and_get_address());
-  if (status != ZX_OK) {
-    ZX_DLOG(ERROR, status) << "fdio_fd_transfer_or_clone";
-    return {};
-  }
-  return PlatformHandle(std::move(result));
-}
-
-base::ScopedFD RecoverFDFromTransmissible(PlatformHandle handle) {
-  base::ScopedFD fd;
-  zx_status_t status = fdio_fd_create(handle.ReleaseHandle(),
-                                      base::ScopedFD::Receiver(fd).get());
-  if (status != ZX_OK) {
-    ZX_DLOG(ERROR, status) << "fdio_fd_create";
-    return {};
-  }
-  return fd;
-}
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 
 PlatformHandle MakeFDTransmissible(base::ScopedFD fd) {
   base::apple::ScopedMachSendRight port;

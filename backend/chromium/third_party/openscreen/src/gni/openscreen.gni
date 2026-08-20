@@ -102,62 +102,29 @@ template("openscreen_header_set") {
 }
 
 template("openscreen_executable") {
-  if (is_ios) {
-    import("//build/config/ios/rules.gni")
-
-    ios_app_bundle(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "remove_configs",
-                             ])
-      configs -= openscreen_remove_configs
-      configs += openscreen_add_configs
-      if (defined(invoker.remove_configs)) {
-        configs -= invoker.remove_configs
-      }
-      configs += invoker.configs
-
-      public_configs = openscreen_add_public_configs
-      if (defined(invoker.public_configs)) {
-        public_configs += invoker.public_configs
-      }
-
-      # Provide sensible defaults in case invoker did not define any of those
-      # required variables.
-      if (!defined(info_plist) && !defined(info_plist_target)) {
-        info_plist = openscreen_path_prefix + "/gni/Info.plist"
-      }
-
-      bundle_identifier = "$ios_app_bundle_id_prefix.chrome.unittests.dev"
+  executable(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "configs",
+                             "public_configs",
+                             "remove_configs",
+                           ])
+    configs -= openscreen_remove_configs
+    configs += openscreen_add_configs
+    if (defined(invoker.remove_configs)) {
+      configs -= invoker.remove_configs
     }
-  } else {
-    executable(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "remove_configs",
-                             ])
-      configs -= openscreen_remove_configs
-      configs += openscreen_add_configs
-      if (defined(invoker.remove_configs)) {
-        configs -= invoker.remove_configs
-      }
-      if (defined(invoker.configs)) {
-        configs += invoker.configs
-      }
-      public_configs = openscreen_add_public_configs
-      if (defined(invoker.public_configs)) {
-        public_configs += invoker.public_configs
-      }
-      if (is_linux || is_chromeos) {
-        # For enabling ASLR.
-        ldflags = [ "-pie" ]
-      }
+    if (defined(invoker.configs)) {
+      configs += invoker.configs
+    }
+    public_configs = openscreen_add_public_configs
+    if (defined(invoker.public_configs)) {
+      public_configs += invoker.public_configs
+    }
+    if (is_linux || is_chromeos) {
+      # For enabling ASLR.
+      ldflags = [ "-pie" ]
     }
   }
 }

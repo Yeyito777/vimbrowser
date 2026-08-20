@@ -21,10 +21,6 @@ import("//third_party/webrtc/webrtc.gni")
 import("//ui/gl/features.gni")
 import("//v8/gni/v8.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 # Most targets in this file are private actions so use that as the default.
 visibility = [
   ":*",
@@ -243,11 +239,6 @@ group("blink_platform_public_deps") {
     "//v8",
   ]
   public_configs = [ "//third_party/blink/renderer:features" ]
-
-  if (is_win) {
-    public_deps +=
-        [ "//third_party/blink/public/common:font_unique_name_table_proto" ]
-  }
 }
 
 declare_args() {
@@ -289,21 +280,7 @@ config("blink_platform_pch") {
   visibility = []
   visibility = [ "./*" ]
   if (enable_precompiled_headers) {
-    if (is_win) {
-      # This is a string rather than a file GN knows about. It has to match
-      # exactly what's in the /FI flag below, and what might appear in the
-      # source code in quotes for an #include directive.
-      precompiled_header = rebase_path("precompile_platform.h", root_build_dir)
-
-      # This is a file that GN will compile with the above header. It will be
-      # implicitly added to the sources (potentially multiple times, with one
-      # variant for each language used in the target).
-      precompiled_source =
-          "//third_party/blink/renderer/platform/win/precompile_platform.cc"
-
-      # Force include the header.
-      cflags = [ "/FI$precompiled_header" ]
-    } else if (is_mac || is_linux) {
+    if (is_mac || is_linux) {
       precompiled_source =
           "//third_party/blink/renderer/platform/precompile_platform.h"
     }
@@ -1723,29 +1700,11 @@ component("platform") {
     ]
   }
 
-  if (is_ios) {
-    sources += [ "fonts/ios/font_cache_ios.mm" ]
-  }
   if (is_linux || is_chromeos) {
     sources += [
       "fonts/linux/font_cache_linux.cc",
       "fonts/linux/font_unique_name_lookup_linux.cc",
       "fonts/linux/font_unique_name_lookup_linux.h",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "fonts/win/dwrite_font_format_support.cc",
-      "fonts/win/dwrite_font_format_support.h",
-      "fonts/win/font_cache_skia_win.cc",
-      "fonts/win/font_fallback_win.cc",
-      "fonts/win/font_fallback_win.h",
-      "fonts/win/font_platform_data_win.cc",
-      "fonts/win/font_unique_name_lookup_win.cc",
-      "fonts/win/font_unique_name_lookup_win.h",
-      "text/locale_win.cc",
-      "text/locale_win.h",
     ]
   }
 
@@ -1899,27 +1858,6 @@ component("platform") {
       "Carbon.framework",
       "Foundation.framework",
     ]
-  }
-
-  if (is_win) {
-    sources -= [
-      # Uses LocaleWin instead.
-      "text/locale_icu.cc",
-      "text/locale_icu.h",
-    ]
-    cflags = [
-      "/wd4334",  # Result of 32-bit shift implicitly converted to 64 bits.
-      "/wd4724",  # Modulo by 0.
-    ]
-
-    # TODO(crbug.com/40915226): Remove the need to ignore this warning.
-    if (is_component_build) {
-      ldflags = [ "/IGNORE:4217" ]
-    }
-  }
-
-  if (is_fuchsia) {
-    sources += [ "fonts/fuchsia/font_cache_fuchsia.cc" ]
   }
 
   if (use_minikin_hyphenation) {
@@ -2107,10 +2045,6 @@ static_library("test_support") {
   ]
   allow_circular_includes_from =
       [ "//third_party/blink/renderer/platform/loader:test_support" ]
-
-  if (is_win) {
-    cflags = [ "/wd4267" ]  # Truncation from size_t to int.
-  }
 }
 
 test("blink_platform_unittests") {
@@ -2118,21 +2052,6 @@ test("blink_platform_unittests") {
 
   if (enable_nocompile_tests) {
     deps += [ ":blink_platform_nocompile_tests" ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/test_fonts.shard.test-cml",
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-    ]
-  }
-
-  if (is_ios) {
-    bundle_deps = [
-      ":blink_platform_unittests_bundle_data",
-      "//media:unit_tests_bundle_data",
-      "//testing/buildbot/filters:blink_platform_unittests_filters_bundle_data",
-    ]
   }
 }
 
@@ -2400,9 +2319,7 @@ source_set("blink_platform_unittests_sources") {
     sources += [ "peerconnection/h265_parameter_sets_tracker_unittest.cc" ]
   }
 
-  if (is_win) {
-    sources += [ "text/locale_win_test.cc" ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [
       "fonts/mac/character_fallback_cache_test.mm",
       "fonts/mac/font_cache_mac_test.mm",
@@ -2517,13 +2434,6 @@ source_set("bridge_ice_controller_tests") {
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }
 
-if (is_ios) {
-  bundle_data_from_filelist("blink_platform_unittests_bundle_data") {
-    testonly = true
-    filelist_name = "blink_platform_unittests_bundle_data.filelist"
-  }
-}
-
 executable("image_decode_bench") {
   visibility = []  # Allow re-assignment of list.
   visibility = [ "*" ]
@@ -2631,11 +2541,7 @@ if (current_cpu == "x86" || current_cpu == "x64") {
       "//third_party/blink/renderer:non_test_config",
     ]
     public_deps = [ ":blink_platform_public_deps" ]
-    if (is_win) {
-      cflags = [ "/arch:AVX" ]
-    } else {
-      cflags = [ "-mavx" ]
-    }
+    cflags = [ "-mavx" ]
   }
 }
 
@@ -2654,13 +2560,6 @@ test("blink_fuzzer_unittests") {
   if (is_linux || is_chromeos || is_fuchsia) {
     deps += [
       "//third_party/blink/renderer/platform/scheduler:scheduler_fuzzer_tests",
-    ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/test_fonts.shard.test-cml",
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
     ]
   }
 }

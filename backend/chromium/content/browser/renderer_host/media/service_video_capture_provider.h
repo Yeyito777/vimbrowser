@@ -35,15 +35,6 @@ class CONTENT_EXPORT ServiceVideoCaptureProvider
   explicit ServiceVideoCaptureProvider(
       base::RepeatingCallback<void(const std::string&)> emit_log_message_cb);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  using CreateAcceleratorFactoryCallback = base::RepeatingCallback<
-      std::unique_ptr<video_capture::mojom::AcceleratorFactory>()>;
-  // Lets clients provide a custom factory method for creating instances of
-  // viz::mojom::Gpu.
-  ServiceVideoCaptureProvider(
-      CreateAcceleratorFactoryCallback create_accelerator_factory_cb,
-      base::RepeatingCallback<void(const std::string&)> emit_log_message_cb);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ~ServiceVideoCaptureProvider() override;
 
@@ -87,9 +78,6 @@ class CONTENT_EXPORT ServiceVideoCaptureProvider
   void OnLostConnectionToSourceProvider();
   void OnServiceConnectionClosed(ReasonForDisconnect reason);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  CreateAcceleratorFactoryCallback create_accelerator_factory_cb_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   base::RepeatingCallback<void(const std::string&)> emit_log_message_cb_;
 
   base::WeakPtr<RefCountedVideoSourceProvider> weak_service_connection_;

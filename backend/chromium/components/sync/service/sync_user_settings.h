@@ -22,7 +22,6 @@ class Nigori;
 // GENERATED_JAVA_ENUM_PACKAGE: org.chromium.components.sync
 // These values are persisted to logs. Entries should not be renumbered and
 // numeric values should never be reused.
-#if !BUILDFLAG(IS_CHROMEOS)
 enum class SyncFirstSetupCompleteSource {
   BASIC_FLOW = 0,
   ADVANCED_FLOW_CONFIRM = 1,
@@ -32,7 +31,6 @@ enum class SyncFirstSetupCompleteSource {
   ANDROID_BACKUP_RESTORE = 5,
   kMaxValue = ANDROID_BACKUP_RESTORE,
 };
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // This class encapsulates all the user-configurable bits of Sync.
 class SyncUserSettings {
@@ -55,10 +53,8 @@ class SyncUserSettings {
   // anything.
   virtual bool IsInitialSyncFeatureSetupComplete() const = 0;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   virtual void SetInitialSyncFeatureSetupComplete(
       SyncFirstSetupCompleteSource source) = 0;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // Getting selected types, for both Sync-the-feature and Sync-the-transport
   // users.
@@ -102,26 +98,6 @@ class SyncUserSettings {
   // A UserSelectableType is registered if any of its DataTypes is registered.
   virtual UserSelectableTypeSet GetRegisteredSelectableTypes() const = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Relevant only on ChromeOS (Ash), since the state is unreachable otherwise.
-  // Returns if sync-the-feature is disabled because the user cleared data from
-  // the Sync dashboard.
-  virtual bool IsSyncFeatureDisabledViaDashboard() const = 0;
-
-  // Causes `IsSyncFeatureDisabledViaDashboard()` above to return false,
-  // usually representing that the user took some action to confirm it is OK
-  // to resume Sync.
-  virtual void ClearSyncFeatureDisabledViaDashboard() = 0;
-
-  // As above, but for Chrome OS-specific data types. These are controlled by
-  // toggles in the OS Settings UI.
-  virtual bool IsSyncAllOsTypesEnabled() const = 0;
-  virtual UserSelectableOsTypeSet GetSelectedOsTypes() const = 0;
-  virtual bool IsOsTypeManagedByPolicy(UserSelectableOsType type) const = 0;
-  virtual void SetSelectedOsTypes(bool sync_all_os_types,
-                                  UserSelectableOsTypeSet types) = 0;
-  virtual UserSelectableOsTypeSet GetRegisteredSelectableOsTypes() const = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Encryption state.
 

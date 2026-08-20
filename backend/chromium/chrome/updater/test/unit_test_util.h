@@ -76,18 +76,6 @@ base::FilePath GetLogDestinationDir();
 // created, because `base::TestSuite` initializes logging too.
 void InitLoggingForUnitTest(const base::FilePath& log_base_path);
 
-#if BUILDFLAG(IS_WIN)
-// Starts procmon logging if admin and procmon exists at
-// `C:\\tools\\Procmon.exe`. Returns the path to the PML file if procmon could
-// be successfully started.
-base::FilePath StartProcmonLogging();
-
-// Stops procmon logging and exports the PML file to a CSV file at the same
-// location as `pml_file`. Caller needs to be admin, procmon needs to exist at
-// `C:\\tools\\Procmon.exe`, and `pml_file` needs to be a valid path to a
-// procmon PML file returned from `StartProcmonLogging`.
-void StopProcmonLogging(const base::FilePath& pml_file);
-#endif
 
 // Returns a list of processes matching `executable_name` and optional `filter`.
 const base::ProcessIterator::ProcessEntries FindProcesses(

@@ -63,9 +63,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/view_utils.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/chromeos/devicetype_utils.h"
-#endif
 
 namespace {
 

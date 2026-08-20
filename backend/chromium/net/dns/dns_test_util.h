@@ -37,11 +37,6 @@
 #include "net/socket/socket_test_util.h"
 #include "url/scheme_host_port.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <iphlpapi.h>
-
-#include "base/containers/heap_array.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace net {
 
@@ -574,20 +569,6 @@ class MockHostResolverProc : public HostResolverProc {
   base::ConditionVariable slots_available_;
 };
 
-#if BUILDFLAG(IS_WIN)
-
-struct AdapterInfo {
-  IFTYPE if_type;
-  IF_OPER_STATUS oper_status;
-  const WCHAR* dns_suffix;
-  std::string dns_server_addresses[4];  // Empty string indicates end.
-  uint16_t ports[4];
-};
-
-std::unique_ptr<IP_ADAPTER_ADDRESSES, base::FreeDeleter> CreateAdapterAddresses(
-    const std::vector<AdapterInfo>& infos);
-
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace net
 

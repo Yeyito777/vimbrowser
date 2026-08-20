@@ -164,13 +164,6 @@ void ScreenshotFlow::RemoveUIOverlay() {
   event_capture_mac_.reset();
 #else
   const gfx::NativeWindow& native_window = web_contents_->GetNativeView();
-#if BUILDFLAG(IS_WIN)
-  // This handles cases where the overlay is removed while a drag is still in
-  // progress, including if ScreenshotFlow is destroyed. It is safe to call
-  // ReleaseCapture() even if the capture has not been set or has already been
-  // released.
-  native_window->ReleaseCapture();
-#endif  // BUILDFLAG(IS_WIN)
   event_capture_.Reset();
   ui::Layer* content_layer = native_window->layer();
 #endif  // else
@@ -445,14 +438,6 @@ void ScreenshotFlow::SetCursor(ui::mojom::CursorType cursor_type) {
 
 void ScreenshotFlow::SetIsDragging(bool value) {
   is_dragging_ = value;
-#if BUILDFLAG(IS_WIN)
-  const gfx::NativeWindow& native_window = web_contents_->GetNativeView();
-  if (value) {
-    native_window->SetCapture();
-  } else {
-    native_window->ReleaseCapture();
-  }
-#endif
 }
 
 bool ScreenshotFlow::IsCaptureModeActive() {

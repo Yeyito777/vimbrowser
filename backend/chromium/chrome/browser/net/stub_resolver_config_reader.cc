@@ -42,87 +42,13 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 
 
-#if BUILDFLAG(IS_WIN)
-#include "base/enterprise_util.h"
-#include "base/scoped_native_library.h"
-#include "base/win/win_util.h"
-#include "base/win/windows_version.h"
-#include "chrome/browser/win/parental_controls.h"
-#endif
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-bool ShouldDisableDohForWindowsParentalControls() {
-  return GetWinParentalControls().web_filter;
-}
-
-// Defines the base::Feature for controlling the ZTDNS check.
-BASE_FEATURE(kZeroTrustDNS, base::FEATURE_ENABLED_BY_DEFAULT);
-
-// DnsIsZtEnabled returns a BOOL value that specifies whether Zero
-// Trust DNS (ZTDNS) is enabled on the current device.
-using DnsIsZtEnabledFunc = BOOL (*)();
-
-// Applicable to Windows OS.
-// Returns true if Zero Trust DNS is enabled at the OS level.
-// Returns false if Zero Trust DNS is either not enabled or unsupported.
-bool IsZTDNSEnabled() {
-  if (StubResolverConfigReader::IsZTDNSEnabledForTesting()) {
-    return true;
-  }
-
-  if (!base::FeatureList::IsEnabled(kZeroTrustDNS)) {
-    return false;
-  }
-
-  // DnsIsZtEnabled returns a BOOL value that specifies whether Zero
-  // Trust DNS (ZTDNS) is enabled on the current device.
-  // There is no import library for this function, thus using native
-  // dnsapi.dll library.
-  const wchar_t* dll_name = L"dnsapi.dll";
-  const char* function_name = "DnsIsZtEnabled";
-  auto dns_api_dll = base::ScopedNativeLibrary(base::FilePath(dll_name));
-
-  if (!dns_api_dll.is_valid()) {
-    return false;
-  }
-
-  auto dns_is_zt_enabled_func = reinterpret_cast<DnsIsZtEnabledFunc>(
-      dns_api_dll.GetFunctionPointer(function_name));
-
-  if (!dns_is_zt_enabled_func) {
-    const base::win::OSInfo* os_info = base::win::OSInfo::GetInstance();
-    auto os_info_version = os_info->version();
-    auto os_info_version_number = os_info->version_number();
-
-    DCHECK(!(os_info_version > base::win::Version::WIN11_24H2 ||
-             (os_info_version == base::win::Version::WIN11_24H2 &&
-              os_info_version_number.build >= 27766)))
-        << function_name
-        << " not found, but it was expected on this OS version: "
-        << "Major: " << os_info_version_number.major
-        << ", Minor: " << os_info_version_number.minor
-        << ", Build: " << os_info_version_number.build
-        << " (Comparing against > WIN11_24H2 or WIN11_24H2 with build >= "
-           "27766)";
-    return false;
-  }
-  return dns_is_zt_enabled_func();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Check the AsyncDns field trial and return true if it should be enabled. On
 // Android this includes checking the Android version in the field trial.
 bool ShouldEnableAsyncDns() {
-#if BUILDFLAG(IS_WIN)
-  // On Windows if Zero Trust DNS is enabled on current device,
-  // we should not use built-in resolver (async dns). It should
-  // always use system (OS) resolver.
-  if (IsZTDNSEnabled()) {
-    return false;
-  }
-#endif
   bool feature_can_be_enabled = true;
   return feature_can_be_enabled &&
          base::FeatureList::IsEnabled(net::features::kAsyncDns);
@@ -172,10 +98,6 @@ bool ShouldUseDohFallback(net::SecureDnsMode secure_dns_mode,
 
 }  // namespace
 
-#if BUILDFLAG(IS_WIN)
-// static
-bool StubResolverConfigReader::is_ztdns_enabled_for_testing_ = false;
-#endif
 
 // static
 constexpr base::TimeDelta StubResolverConfigReader::kParentalControlsCheckDelay;
@@ -241,19 +163,8 @@ void StubResolverConfigReader::UpdateNetworkService(bool record_metrics) {
 
 bool StubResolverConfigReader::ShouldDisableDohForManaged() {
 // This function ignores cloud policies which are loaded on a per-profile basis.
-#if BUILDFLAG(IS_WIN)
-  // TODO(crbug.com/40229843): What is the correct function to use here? (This
-  // may or may not obsolete the following TODO)
-  // TODO(crbug.com/40223626): For legacy compatibility, this uses
-  // IsEnterpriseDevice() which effectively equates to a domain join check.
-  // Consider whether this should use IsManagedDevice() instead.
-  if (base::win::IsEnrolledToDomain())
-    return true;
-#endif
-#if !BUILDFLAG(IS_CHROMEOS)
   if (g_browser_process->browser_policy_connector()->HasMachineLevelPolicies())
     return true;
-#endif
   return false;
 }
 
@@ -261,11 +172,7 @@ bool StubResolverConfigReader::ShouldDisableDohForParentalControls() {
   if (parental_controls_testing_override_.has_value())
     return parental_controls_testing_override_.value();
 
-#if BUILDFLAG(IS_WIN)
-  return ShouldDisableDohForWindowsParentalControls();
-#else
   return false;
-#endif
 }
 
 void StubResolverConfigReader::SetOverrideDnsOverHttpsConfigSource(

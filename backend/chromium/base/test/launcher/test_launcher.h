@@ -114,13 +114,7 @@ class TestLauncher {
 
     int flags = 0;
     // These mirror values in base::LaunchOptions, see it for details.
-#if BUILDFLAG(IS_WIN)
-    base::LaunchOptions::Inherit inherit_mode =
-        base::LaunchOptions::Inherit::kSpecific;
-    base::HandlesToInheritVector handles_to_inherit;
-#else
     FileHandleMappingVector fds_to_remap;
-#endif
   };
 
   // Constructor. |parallel_jobs| is the limit of simultaneous parallel test
@@ -160,12 +154,8 @@ class TestLauncher {
   // Returns true if child test processes should have dedicated temporary
   // directories.
   static constexpr bool SupportsPerChildTempDirs() {
-#if BUILDFLAG(IS_WIN)
-    return true;
-#else
     // TODO(crbug.com/40666527): Enable for macOS, Linux, and Fuchsia.
     return false;
-#endif
   }
 
  private:
@@ -207,9 +197,7 @@ class TestLauncher {
   // Rest counters, retry tests list, and test result tracker.
   void OnTestIterationStart();
 
-#if BUILDFLAG(IS_POSIX)
   void OnShutdownPipeReadable();
-#endif
 
   // Saves test results summary as JSON if requested from command line.
   void MaybeSaveSummaryAsJSON(const std::vector<std::string>& additional_tags);

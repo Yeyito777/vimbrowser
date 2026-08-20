@@ -27,13 +27,6 @@ namespace features {
 // alongside the definition of their values in the .cc file.
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kAggressiveShaderCacheLimits);
 
-#if BUILDFLAG(IS_ANDROID)
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kAndroidSurfaceControl);
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebViewSurfaceControl);
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebViewSurfaceControlForTV);
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kLimitAImageReaderMaxSizeToOne);
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebViewThreadSafeMediaDefault);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kDefaultEnableGpuRasterization);
 
@@ -44,9 +37,6 @@ GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kUseCompoundImageBackingAsDefault);
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kEnableMSAAOnNewIntelGPUs);
 
-#if BUILDFLAG(IS_WIN)
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kNoUndamagedOverlayPromotion);
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS)
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kAdjustGpuProcessPriority);
@@ -80,16 +70,6 @@ GPU_CONFIG_EXPORT extern const base::FeatureParam<bool>
 GPU_CONFIG_EXPORT extern const base::FeatureParam<bool>
     kSkiaGraphiteEnableMSAAOnNewerIntel;
 
-#if BUILDFLAG(IS_WIN)
-GPU_CONFIG_EXPORT extern const base::FeatureParam<bool>
-    kSkiaGraphiteDawnDumpWCOnD3DError;
-GPU_CONFIG_EXPORT extern const base::FeatureParam<bool>
-    kSkiaGraphiteDawnDisableD3DShaderOptimizations;
-GPU_CONFIG_EXPORT extern const base::FeatureParam<bool>
-    kSkiaGraphiteDawnD3D11DelayFlush;
-
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kSkiaGraphiteDawnUseD3D12);
-#endif
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kSkiaGraphiteSmallPathAtlas);
 GPU_CONFIG_EXPORT extern const base::FeatureParam<int>
@@ -118,9 +98,6 @@ GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebGPUEnableRangeAnalysisForRobustness);
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebGPUAndroidOpenGLES);
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebGPUUseSpirv14);
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebGPUDecomposeUniformBuffers);
-#if BUILDFLAG(IS_WIN)
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kWebGPUQualcommWindows);
-#endif
 GPU_CONFIG_EXPORT extern const base::FeatureParam<std::string>
     kWebGPUDisabledToggles;
 GPU_CONFIG_EXPORT extern const base::FeatureParam<std::string>
@@ -136,9 +113,6 @@ GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kIncreasedCmdBufferParseSlice);
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kDeferredOverlaysRelease);
 
-#if BUILDFLAG(IS_WIN)
-GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kD3DBackingUploadWithUpdateSubresource);
-#endif
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kGPUBlockListTestGroup);
 GPU_CONFIG_EXPORT extern const base::FeatureParam<int> kGPUBlockListTestGroupId;
@@ -160,12 +134,6 @@ GPU_CONFIG_EXPORT bool EnablePurgeGpuImageDecodeCache();
 GPU_CONFIG_EXPORT bool EnablePruneOldTransferCacheEntries();
 GPU_CONFIG_EXPORT bool IsLegacyIpcDisabled();
 
-#if BUILDFLAG(IS_ANDROID)
-GPU_CONFIG_EXPORT bool IsAndroidSurfaceControlEnabled();
-GPU_CONFIG_EXPORT bool LimitAImageReaderMaxSizeToOne();
-GPU_CONFIG_EXPORT bool IncreaseBufferCountForHighFrameRate();
-GPU_CONFIG_EXPORT bool IncreaseBufferCountForWebViewOverlays();
-#endif
 
 GPU_CONFIG_EXPORT BASE_DECLARE_FEATURE(kSyncPointGraphValidation);
 

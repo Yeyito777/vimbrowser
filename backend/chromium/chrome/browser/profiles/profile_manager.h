@@ -31,18 +31,10 @@
 #include "chrome/browser/profiles/profile_shortcut_manager.h"
 #include "chrome/common/buildflags.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/profiles/delete_profile_helper.h"
 #include "chrome/browser/ui/browser_list_observer.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/location.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-class ProfileManagerAndroid;
-#endif
 
 class DeleteProfileHelper;
 class ProfileAttributesStorage;
@@ -131,9 +123,6 @@ class ProfileManager : public Profile::Delegate {
   // location. It should be always called FROM_HERE as default value.
   // TODO(crbug.com/40227502): Remove this.
   static Profile* GetPrimaryUserProfile(
-#if BUILDFLAG(IS_CHROMEOS)
-      const base::Location& location = FROM_HERE
-#endif
   );
 
   // Get the profile for the currently active user.
@@ -151,9 +140,6 @@ class ProfileManager : public Profile::Delegate {
   // location. It should be always called FROM_HERE as default value.
   // TODO(crbug.com/40227502): Remove this.
   static Profile* GetActiveUserProfile(
-#if BUILDFLAG(IS_CHROMEOS)
-      const base::Location& location = FROM_HERE
-#endif
   );
 #endif
 
@@ -247,7 +233,6 @@ class ProfileManager : public Profile::Delegate {
   // otherwise return null.
   Profile* GetProfileByPath(const base::FilePath& path) const;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Asynchronously creates a new profile in the next available multiprofile
   // directory. Directories are named "profile_1", "profile_2", etc., in
   // sequence of creation. (Because directories can be deleted, however, it may
@@ -269,7 +254,6 @@ class ProfileManager : public Profile::Delegate {
       bool is_hidden,
       base::OnceCallback<void(Profile*)> initialized_callback,
       base::OnceCallback<void(Profile*)> created_callback = {});
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Returns the full path to be used for guest profiles.
   static base::FilePath GetGuestProfilePath();
@@ -301,7 +285,6 @@ class ProfileManager : public Profile::Delegate {
   // profile specfic desktop shortcuts.
   ProfileShortcutManager* profile_shortcut_manager();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Searches for the latest active profile that respects |predicate|, already
   // loaded preferably. Returns nullopt if no existing profile respects all the
   // conditions.
@@ -309,7 +292,6 @@ class ProfileManager : public Profile::Delegate {
       base::RepeatingCallback<bool(ProfileAttributesEntry*)> predicate);
 
   DeleteProfileHelper& GetDeleteProfileHelper();
-#endif
 
   // Autoloads profiles if they are running background apps.
   void AutoloadProfiles();
@@ -545,7 +527,6 @@ class ProfileManager : public Profile::Delegate {
 
   void SaveActiveProfiles();
 
-#if !BUILDFLAG(IS_ANDROID)
   void OnBrowserOpened(Browser* browser);
   void OnBrowserClosed(Browser* browser);
 
@@ -566,7 +547,6 @@ class ProfileManager : public Profile::Delegate {
   };
 
   void OnClosingAllBrowsersChanged(bool closing);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Destroy after |profile_attributes_storage_| since Profile destruction may
   // trigger some observers to unregister themselves.
@@ -585,10 +565,6 @@ class ProfileManager : public Profile::Delegate {
   // to an access to this member.
   std::unique_ptr<ProfileAttributesStorage> profile_attributes_storage_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Handles the communication with the Java ProfileManager.
-  std::unique_ptr<ProfileManagerAndroid> profile_manager_android_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   base::CallbackListSubscription closing_all_browsers_subscription_;
 
@@ -600,11 +576,9 @@ class ProfileManager : public Profile::Delegate {
   // default.
   bool logged_in_ = false;
 
-#if !BUILDFLAG(IS_ANDROID)
   BrowserListObserver browser_list_observer_{this};
 
   std::unique_ptr<DeleteProfileHelper> delete_profile_helper_;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Maps profile path to `ProfileInfo` (if profile has been loaded). Use
   // `RegisterProfile()` to add into this map. This map owns all loaded profile

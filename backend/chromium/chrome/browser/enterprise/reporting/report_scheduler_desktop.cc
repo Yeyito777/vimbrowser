@@ -37,11 +37,7 @@ namespace {
 // TODO(crbug.com/40703888): Get rid of this function after Chrome OS reporting
 // logic has been split to its own delegates.
 constexpr bool ShouldReportUpdates() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 PrefService* LocalState() {
@@ -56,16 +52,12 @@ ReportSchedulerDesktop::ReportSchedulerDesktop()
 ReportSchedulerDesktop::ReportSchedulerDesktop(Profile* profile)
     : profile_(profile), prefs_(profile->GetPrefs()) {
   if (profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-    NOTREACHED();
-#else
     if (enterprise_signals::features::IsProfileSignalsReportingEnabled()) {
       user_security_signals_service_ =
           std::make_unique<UserSecuritySignalsService>(
               prefs_, this,
               profile->GetProfilePolicyConnector()->policy_service());
     }
-#endif
   }
 }
 

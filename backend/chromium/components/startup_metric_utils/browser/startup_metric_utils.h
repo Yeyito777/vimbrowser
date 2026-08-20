@@ -163,18 +163,6 @@ class COMPONENT_EXPORT(STARTUP_METRIC_UTILS)
   // Returns a null TimeTicks if a value has not been recorded yet.
   base::TimeTicks GetApplicationStartTicksForStartup() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the time at which the first browser window is opened may not
-  // match the application start time mainly because the login screen is often
-  // shown first and the user must log in before a browser window can be opened.
-  // ChromeOS code can call this if it knows a browser window is being opened to
-  // mark the start time for all `Startup.FirstWebContents.*` metrics. This is
-  // a no-op if a start time has already been recorded.
-  //
-  // For all other platforms, `application_start_ticks_` is used for
-  // `Startup.FirstWebContents.*` metrics.
-  void RecordWebContentsStartTime(base::TimeTicks ticks);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // Returns the globally unique `BrowserStartupMetricRecorder`.
@@ -184,11 +172,6 @@ class COMPONENT_EXPORT(STARTUP_METRIC_UTILS)
   // Only permit construction from within GetBrowser().
   BrowserStartupMetricRecorder() = default;
 
-#if BUILDFLAG(IS_WIN)
-  // Returns the hard fault count of the current process, or nullopt if it can't
-  // be determined.
-  std::optional<uint32_t> GetHardFaultCountForCurrentProcess();
-#endif
 
   void RecordMessageLoopStartTicks(base::TimeTicks ticks);
 

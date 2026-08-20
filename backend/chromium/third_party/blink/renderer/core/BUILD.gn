@@ -91,10 +91,6 @@ import("//third_party/blink/renderer/core/yeyito_hints/build.gni")
 import("//third_party/blink/renderer/platform/platform_generated.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 visibility = [
   "//third_party/blink/public/*",
   "//third_party/blink/renderer/*",
@@ -148,21 +144,7 @@ config("blink_core_pch") {
   # Add precompiled header (pch) support when enabled, possible and
   # making sense.
   if (enable_precompiled_headers) {
-    if (is_win) {
-      # This is a string rather than a file GN knows about. It has to match
-      # exactly what's in the /FI flag below, and what might appear in the
-      # source code in quotes for an #include directive.
-      precompiled_header = rebase_path("precompile_core.h", root_build_dir)
-
-      # This is a file that GN will compile with the above header. It will be
-      # implicitly added to the sources (potentially multiple times, with one
-      # variant for each language used in the target).
-      precompiled_source =
-          "//third_party/blink/renderer/core/win/precompile_core.cc"
-
-      # Force include the header.
-      cflags = [ "/FI$precompiled_header" ]
-    } else if (is_mac || is_linux) {
+    if (is_mac || is_linux) {
       precompiled_source = "//third_party/blink/renderer/core/precompile_core.h"
     }
   }
@@ -391,10 +373,6 @@ component("core") {
     public_deps += [ "//ui/gfx" ]
   }
 
-  if (is_win) {
-    public_deps += [ "//third_party/re2" ]
-  }
-
   deps = [
     ":generate_eventhandler_names",
     ":make_deprecation_info",
@@ -442,10 +420,6 @@ component("core") {
 
   if (is_mac) {
     deps += [ "//ui/base/mojom" ]
-  }
-
-  if (is_win) {
-    deps += [ "//components/stylus_handwriting/win" ]
   }
 
   if (enable_printing || enable_printing_tests) {
@@ -634,21 +608,6 @@ source_set("testing") {
   ]
 
   public_deps = [ "//testing/gmock" ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("core_test_bundle_data") {
-    testonly = true
-    filelist_name = "testing/data/core_test_bundle_data.filelist"
-  }
-  bundle_data_from_filelist("animation_test_bundle_data") {
-    testonly = true
-    filelist_name = "animation/test_data/animation_test_bundle_data.filelist"
-  }
-  bundle_data_from_filelist("paint_test_bundle_data") {
-    testonly = true
-    filelist_name = "paint/test_data/paint_test_bundle_data.filelist"
-  }
 }
 
 # generate_event_interfaces ----------------------------------------------------
@@ -1398,17 +1357,6 @@ target(core_generated_target_type, "core_generated") {
     defines += [ "USING_V8_SHARED" ]
   }
 
-  if (is_win) {
-    cflags += [
-      # In generated bindings code: "switch contains default but no case".
-      # 4701 and 4702 are disabled because of issues in Bison-generated
-      # XPathGrammar.cpp.
-      "/wd4065",
-      "/wd4701",
-      "/wd4702",
-    ]
-  }
-
   if (is_debug || dcheck_always_on) {
     deps += [ "//components/crash/core/common:crash_key" ]
   }
@@ -1581,10 +1529,6 @@ source_set("unit_tests") {
     "//ui/base/mojom:ui_base_types_blink",
     "//ui/gfx:test_support",
   ]
-
-  if (is_win) {
-    deps += [ "//components/stylus_handwriting/win" ]
-  }
 
   if (enable_nocompile_tests) {
     deps += [ "//third_party/blink/renderer/core/probe:probe_nocompile_tests" ]

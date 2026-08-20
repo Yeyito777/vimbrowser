@@ -25,51 +25,6 @@ import("//testing/test.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/repack.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-  import("//ios/build/config.gni")
-}
-
-if (is_ios) {
-  bundle_data("components_tests_pak_bundle_data") {
-    testonly = true
-    public_deps = [
-      ":components_tests_pak",
-      "//ui/resources:ui_test_pak",
-    ]
-    sources = [
-      "$root_out_dir/components_tests_resources.pak",
-      "$root_out_dir/ui_test.pak",
-    ]
-    if (use_blink) {
-      public_deps += [ "//content/shell:pak" ]
-      sources += [ "$root_out_dir/content_shell.pak" ]
-    }
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-  }
-
-  if (use_blink) {
-    bundle_data("components_tests_distiller_bundle_data") {
-      testonly = true
-      public_deps =
-          [ "//components/dom_distiller/core:dom_distiller_viewer_js" ]
-      sources = [
-        "$root_gen_dir/components/dom_distiller/core/javascript/dom_distiller_viewer.js",
-        "//third_party/dom_distiller_js/dist/test/data/out/domdistillerjstest.js",
-        "//third_party/dom_distiller_js/dist/test/data/war/test.html",
-        "//third_party/node/node_modules/chai/index.js",
-        "//third_party/node/node_modules/mocha/mocha.js",
-        "dom_distiller/core/javascript/domdistiller.js",
-        "dom_distiller/core/javascript/extract_features.js",
-        "dom_distiller/core/javascript/readability_distiller.js",
-        "dom_distiller/core/javascript/readability_triggering.js",
-      ]
-      outputs = [ "{{bundle_resources_dir}}/" +
-                  "{{source_root_relative_dir}}/{{source_file_part}}" ]
-    }
-  }
-}
-
 disallowed_extension_deps_ = [
   # Components should largely not depend on //extensions. Since // extensions
   # is not a component target and is linked with //chrome, depending on most
@@ -157,19 +112,6 @@ test("components_unittests") {
       "test/data/web_package/",
       "test/data/webp_transcode/",
       "test/data/web_view/",
-    ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-
-      # TODO(crbug.com/40055105): Investigate removing the requirement
-      # for VmexResource.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/network.shard.test-cml",
-      "//build/config/fuchsia/test/present_view.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
     ]
   }
 
@@ -388,16 +330,14 @@ test("components_unittests") {
     "//components/webui/flags:unit_tests",
   ]
 
-  if (!is_fuchsia) {
-    deps += [
-      "//components/enterprise:unit_tests",
-      "//components/enterprise/common:unit_tests",
-      "//components/enterprise/connectors/core:cloud_content_scanning_unittests",
-      "//components/enterprise/connectors/core:unit_tests",
-      "//components/enterprise/data_protection:unit_tests",
-      "//components/enterprise/obfuscation/core:unit_tests",
-    ]
-  }
+  deps += [
+    "//components/enterprise:unit_tests",
+    "//components/enterprise/common:unit_tests",
+    "//components/enterprise/connectors/core:cloud_content_scanning_unittests",
+    "//components/enterprise/connectors/core:unit_tests",
+    "//components/enterprise/data_protection:unit_tests",
+    "//components/enterprise/obfuscation/core:unit_tests",
+  ]
 
   if (enable_supervised_users) {
     deps += [
@@ -430,21 +370,14 @@ test("components_unittests") {
     deps += [ "//components/ui_devtools/views:unit_tests" ]
   }
 
-  if (is_fuchsia) {
-    deps += [
-      "//components/fuchsia_component_support:unit_tests",
-      "//components/fuchsia_legacymetrics:unit_tests",
-    ]
-  } else {
-    # TODO(crbug.com/40818181): Enable all relevant tests on Fuchsia too.
-    deps += [
-      "//components/browser_sync:unit_tests",
-      "//components/send_tab_to_self:unit_tests",
-      "//components/sync_sessions:unit_tests",
-      "//components/update_client:unit_tests",
-      "//components/visited_url_ranking/internal:unit_tests",
-    ]
-  }
+  # TODO(crbug.com/40818181): Enable all relevant tests on Fuchsia too.
+  deps += [
+    "//components/browser_sync:unit_tests",
+    "//components/send_tab_to_self:unit_tests",
+    "//components/sync_sessions:unit_tests",
+    "//components/update_client:unit_tests",
+    "//components/visited_url_ranking/internal:unit_tests",
+  ]
 
   if (use_blink) {
     deps += [
@@ -566,76 +499,43 @@ test("components_unittests") {
     deps += [ "//components/named_system_lock:unit_tests" ]
   }
 
-  if (is_ios) {
-    bundle_deps = [ ":components_tests_pak_bundle_data" ]
-    if (use_blink) {
-      bundle_deps += [ "//testing/buildbot/filters:components_unittests_use_blink_filters_bundle_data" ]
-    }
-    deps += [
-      "//components/autofill/ios/browser:unit_tests",
-      "//components/autofill/ios/form_util:unit_tests",
-      "//components/commerce/ios/browser:unit_tests",
-      "//components/contextual_search/internal/ios:unit_tests",
-      "//components/crash/core/app:unit_tests",
-      "//components/dom_distiller/ios:unit_tests",
-      "//components/feed/core/v2/public/ios:feed_ios_unit_tests",
-      "//components/image_fetcher/ios:unit_tests",
-      "//components/language/ios/browser:unit_tests",
-      "//components/password_manager/core/common:unit_tests",
-      "//components/password_manager/ios:unit_tests",
-      "//components/previous_session_info:unit_tests",
-      "//components/safe_browsing/ios/browser:unit_tests",
-      "//components/security_state/ios:unit_tests",
-      "//components/shared_highlighting/ios:unit_tests",
-      "//components/signin/ios/browser:unit_tests",
-      "//components/signin/public/identity_manager/objc:unit_tests",
-      "//components/ukm/ios:unit_tests",
-      "//components/webauthn/ios:unit_tests",
-    ]
-    if (use_blink) {
-      deps += [ ":components_tests_distiller_bundle_data" ]
-    }
-  } else {  #!is_ios
-    deps += [
-      "//components/autofill/content/renderer:unit_tests",
-      "//components/background_sync:unit_tests",
-      "//components/blocked_content:unit_tests",
-      "//components/browser_apis/browser_controls:unit_tests",
-      "//components/browser_apis/tab_strip:unit_tests",
-      "//components/content_settings/browser/ui:unit_tests",
-      "//components/headless/test:unit_tests",
-      "//components/media_router/browser:unit_tests",
-      "//components/media_router/common:unit_tests",
-      "//components/media_router/common/providers/cast/channel:unit_tests",
-      "//components/one_time_tokens/core/browser:unit_tests",
-      "//components/page_info:unit_tests",
-      "//components/permissions/prediction_service:unit_tests",
-      "//components/privacy_sandbox/privacy_sandbox_attestations:unit_tests",
-      "//components/safety_check:unit_tests",
-      "//components/security_interstitials/content:unit_tests",
-      "//components/services/quarantine:unit_tests",
-      "//components/site_engagement/content:unit_tests",
-      "//components/site_isolation:unit_tests",
-      "//components/tabs:unit_tests",
-      "//components/user_data_importer/content:unit_tests",
-    ]
+  deps += [
+    "//components/autofill/content/renderer:unit_tests",
+    "//components/background_sync:unit_tests",
+    "//components/blocked_content:unit_tests",
+    "//components/browser_apis/browser_controls:unit_tests",
+    "//components/browser_apis/tab_strip:unit_tests",
+    "//components/content_settings/browser/ui:unit_tests",
+    "//components/headless/test:unit_tests",
+    "//components/media_router/browser:unit_tests",
+    "//components/media_router/common:unit_tests",
+    "//components/media_router/common/providers/cast/channel:unit_tests",
+    "//components/one_time_tokens/core/browser:unit_tests",
+    "//components/page_info:unit_tests",
+    "//components/permissions/prediction_service:unit_tests",
+    "//components/privacy_sandbox/privacy_sandbox_attestations:unit_tests",
+    "//components/safety_check:unit_tests",
+    "//components/security_interstitials/content:unit_tests",
+    "//components/services/quarantine:unit_tests",
+    "//components/site_engagement/content:unit_tests",
+    "//components/site_isolation:unit_tests",
+    "//components/tabs:unit_tests",
+    "//components/user_data_importer/content:unit_tests",
+  ]
 
-    if (!is_fuchsia) {  #!iOS and!Fuchsia
-      deps += [
-        "//components/crash/content/browser:unit_tests",
-        "//components/crash/core/app:unit_tests",
-        "//components/enterprise/content:unit_tests",
-        "//components/history_embeddings/content:unit_tests",
-        "//components/page_content_annotations/content:unit_tests",
-      ]
-    }
+  deps += [
+    "//components/crash/content/browser:unit_tests",
+    "//components/crash/core/app:unit_tests",
+    "//components/enterprise/content:unit_tests",
+    "//components/history_embeddings/content:unit_tests",
+    "//components/page_content_annotations/content:unit_tests",
+  ]
 
-    data_deps += [
-      ":components_tests_pak",
-      "//third_party/angle:includes",
-      "//ui/resources:ui_test_pak_data",
-    ]
-  }  # iOS / !iOS
+  data_deps += [
+    ":components_tests_pak",
+    "//third_party/angle:includes",
+    "//ui/resources:ui_test_pak_data",
+  ]
 
   if (is_mac || is_linux || is_chromeos) {
     data_deps += [ "//content/shell:pak" ]
@@ -648,22 +548,20 @@ test("components_unittests") {
   ]
 
   # Desktop - only deps.
-  if (!is_ios) {
-    deps += [
-      "//components/access_code_cast/common:unit_tests",
-      "//components/headless/console_message_logger:unit_tests",
-      "//components/headless/screen_info:unit_tests",
-      "//components/live_caption:unit_tests",
-      "//components/private_ai:unit_tests",
+  deps += [
+    "//components/access_code_cast/common:unit_tests",
+    "//components/headless/console_message_logger:unit_tests",
+    "//components/headless/screen_info:unit_tests",
+    "//components/live_caption:unit_tests",
+    "//components/private_ai:unit_tests",
 
-      # TODO(crbug.com/470475787): Enable this test on Android.
-      "//components/password_manager/core/browser/actor_login/internal:unit_tests",
-      "//components/soda:unit_tests",
-      "//components/storage_monitor:unit_tests",
-      "//components/web_modal:unit_tests",
-      "//components/zoom:unit_tests",
-    ]
-  }
+    # TODO(crbug.com/470475787): Enable this test on Android.
+    "//components/password_manager/core/browser/actor_login/internal:unit_tests",
+    "//components/soda:unit_tests",
+    "//components/storage_monitor:unit_tests",
+    "//components/web_modal:unit_tests",
+    "//components/zoom:unit_tests",
+  ]
 
   if (!is_ios && !is_fuchsia && !is_castos) {
     deps += [ "//components/accessibility_annotator/content/content_annotator:unit_tests" ]
@@ -696,19 +594,6 @@ test("components_unittests") {
     deps += [ "//components/rlz:unit_tests" ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//components/account_manager_core:unit_tests",
-      "//components/cross_device/nearby:unit_tests",
-      "//components/desks_storage:unit_tests",
-      "//components/guest_os:unit_tests",
-      "//components/ownership:unit_tests",
-      "//components/peripherals/logging:unit_tests",
-      "//components/reporting/health:unit_tests",
-      "//components/user_manager:unit_tests",
-    ]
-  }
-
   if (toolkit_views && !is_castos) {
     deps += [ "//components/constrained_window:unit_tests" ]
   }
@@ -722,10 +607,6 @@ test("components_unittests") {
 
   if (is_win || is_linux || is_chromeos) {
     deps += [ "//components/services/font_data:unit_tests" ]
-  }
-
-  if (is_win) {
-    deps += [ "//components/winhttp:unit_tests" ]
   }
 
   if (enterprise_watermark) {
@@ -870,11 +751,6 @@ test("components_unittests") {
   # extensions targets.
   assert_no_deps = [ "//chrome/*" ]
   assert_no_deps += disallowed_extension_deps_
-
-  if (is_ios) {
-    assert_no_deps += ios_assert_no_deps
-    assert_no_deps += [ "//ios/chrome/*" ]
-  }
 
   fuzztests = [
     "CurrencyFormatterFuzzTest.FormatDoesNotCrash",
@@ -1030,28 +906,6 @@ if (use_blink) {
       deps += [ "//components/constrained_window:browser_tests" ]
     }
 
-    if (is_ios) {
-      bundle_deps = [
-        ":components_tests_distiller_bundle_data",
-        ":components_tests_pak_bundle_data",
-        "test:dom_distiller_test_bundle_data",
-        "test:url_rewrite_test_bundle_data",
-        "//content/test:content_test_bundle_data",
-        "//testing/buildbot/filters:components_browsertests_use_blink_filters_bundle_data",
-      ]
-
-      deps += [ "//components/test:optimization_guide_test_bundle_data" ]
-
-      if (target_platform == "iphoneos") {
-        entitlements_path = "//content/app/ios/appex/app.entitlements"
-        deps += [
-          "//content/test/ios/appex:test_content_process_bundle",
-          "//content/test/ios/appex:test_gpu_process_bundle",
-          "//content/test/ios/appex:test_network_process_bundle",
-        ]
-      }
-    }
-
     if (enable_pdf) {
       sources += [
         "pdf/browser/pdf_document_helper_browsertest.cc",
@@ -1089,33 +943,11 @@ if (use_blink) {
       ]
     }
 
-    if (is_chromeos) {
-      sources += [ "feedback/content/content_tracing_manager_browsertest.cc" ]
-      deps += [
-        "//base",
-        "//base/test:test_support",
-        "//components/feedback",
-        "//components/feedback/content",
-        "//services/network:test_support",
-        "//testing/gmock",
-        "//testing/gtest",
-      ]
-    }
-
     # No components should depend on Chrome.
     # Since //chrome depends on //extensions, we also only assert_no_deps on
     # extensions targets.
     assert_no_deps = [ "//chrome/*" ]
     assert_no_deps += disallowed_extension_deps_
-
-    if (is_fuchsia) {
-      additional_manifest_fragments = [
-        "//build/config/fuchsia/test/present_view.shard.test-cml",
-        "//build/config/fuchsia/test/fonts.shard.test-cml",
-        "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-        "//build/config/fuchsia/test/network.shard.test-cml",
-      ]
-    }
 
     # This test won't work as-is on POSIX platforms, where fork()+exec() is
     # used to launch child processes, failure does not happen until exec().
@@ -1197,9 +1029,7 @@ if (use_blink) {
       ]
     }
 
-    if (!is_fuchsia) {
-      deps += [ "//components/persistent_cache:perf_tests" ]
-    }
+    deps += [ "//components/persistent_cache:perf_tests" ]
 
     # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
     # enable the diagnostic by removing this line.

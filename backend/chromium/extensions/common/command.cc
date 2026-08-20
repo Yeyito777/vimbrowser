@@ -110,12 +110,8 @@ Command::Command(std::string_view command_name,
 
 // static
 std::string Command::CommandPlatform() {
-#if BUILDFLAG(IS_WIN)
-  return ui::kKeybindingPlatformWin;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return ui::kKeybindingPlatformMac;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return ui::kKeybindingPlatformChromeOs;
 #elif BUILDFLAG(IS_LINUX)
   return ui::kKeybindingPlatformLinux;
 #else

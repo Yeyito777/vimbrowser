@@ -18,25 +18,21 @@ source_set("browser") {
     "//url",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "immediate_request_rate_limiter.cc",
-      "immediate_request_rate_limiter.h",
-      "passkey_change_quota_tracker.cc",
-      "passkey_change_quota_tracker.h",
-      "rate_limiter_slide_window.cc",
-      "rate_limiter_slide_window.h",
-    ]
-  }
+  sources += [
+    "immediate_request_rate_limiter.cc",
+    "immediate_request_rate_limiter.h",
+    "passkey_change_quota_tracker.cc",
+    "passkey_change_quota_tracker.h",
+    "rate_limiter_slide_window.cc",
+    "rate_limiter_slide_window.h",
+  ]
 
-  if (!is_ios) {
-    sources += [ "internal_authenticator.h" ]
+  sources += [ "internal_authenticator.h" ]
 
-    deps += [
-      "//third_party/blink/public/common",
-      "//url",
-    ]
-  }
+  deps += [
+    "//third_party/blink/public/common",
+    "//url",
+  ]
 
   sources += [
     "passkey_sync_bridge.cc",
@@ -110,17 +106,15 @@ source_set("unit_tests") {
   ]
 
   sources += [ "passkey_model_utils_unittest.cc" ]
-  if (!is_ios) {
-    sources += [
-      "immediate_request_rate_limiter_unittest.cc",
-      "passkey_change_quota_tracker_unittest.cc",
-      "rate_limiter_slide_window_unittest.cc",
-    ]
-    deps += [
-      "//base/test:test_support",
-      "//device/fido",
-    ]
-  }
+  sources += [
+    "immediate_request_rate_limiter_unittest.cc",
+    "passkey_change_quota_tracker_unittest.cc",
+    "rate_limiter_slide_window_unittest.cc",
+  ]
+  deps += [
+    "//base/test:test_support",
+    "//device/fido",
+  ]
   deps += [
     ":passkey_model",
     "//components/sync/protocol",
@@ -128,12 +122,10 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-  if (!is_ios) {
-    deps += [
-      ":browser",
-      "//url",
-    ]
-  }
+  deps += [
+    ":browser",
+    "//url",
+  ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

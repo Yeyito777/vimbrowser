@@ -17,7 +17,6 @@
 
 namespace performance_manager::features {
 
-#if !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX)
 #define URGENT_DISCARDING_FROM_PERFORMANCE_MANAGER() false
@@ -26,9 +25,6 @@ namespace performance_manager::features {
 #endif
 
 // When enabled removes the rate limit on reporting tab processes to resourced.
-#if BUILDFLAG(IS_CHROMEOS)
-BASE_DECLARE_FEATURE(kUnthrottledTabProcessReporting);
-#endif
 
 // Make the Battery Saver Modes available to users. If this is enabled, it
 // doesn't mean the mode is enabled, just that the user has the option of
@@ -98,7 +94,6 @@ BASE_DECLARE_FEATURE(kPerformanceInterventionNotificationStringImprovements);
 // The version string that is used on the performance detection dialog.
 BASE_DECLARE_FEATURE_PARAM(int, kNotificationStringVersion);
 
-#endif
 
 // Enable best effort task inhibiting based on performance scenario information.
 BASE_DECLARE_FEATURE(kEnableBestEffortTaskInhibitingPolicy);
@@ -234,9 +229,6 @@ BASE_DECLARE_FEATURE_PARAM(size_t, kTransientKeepAlivePolicyMaxCount);
 // USER_BLOCKING.
 BASE_DECLARE_FEATURE(kExtensionServiceWorkerVoter);
 
-#if BUILDFLAG(IS_WIN)
-BASE_DECLARE_FEATURE(kBrowserProcessAboveNormalPriority);
-#endif
 
 BASE_DECLARE_FEATURE(kDisableTabDiscarding);
 

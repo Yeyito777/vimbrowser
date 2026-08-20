@@ -15,16 +15,6 @@ component("internal") {
     "mappable_buffer_shared_memory.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "mappable_buffer_dxgi.cc",
-      "mappable_buffer_dxgi.h",
-    ]
-    libs = [
-      "d3d11.lib",
-      "dxguid.lib",
-    ]
-  }
   if (use_ozone) {
     sources += [
       "mappable_buffer_native_pixmap.cc",

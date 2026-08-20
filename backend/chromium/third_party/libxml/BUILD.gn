@@ -8,8 +8,6 @@ if (is_linux || is_chromeos || is_fuchsia) {
   os_include = "linux"
 } else if (is_apple) {
   os_include = "mac"
-} else if (is_win) {
-  os_include = "win32"
 }
 
 import("//third_party/libxml/libxml_visibility.gni")
@@ -27,13 +25,6 @@ config("libxml_config") {
 }
 
 config("libxml_warnings") {
-  if (is_win) {
-    cflags_c = [
-      "/wd4018",  # Signed/unsigned mismatch in comparison.
-      "/wd4267",  # TODO(brucedawson): http://crbug.com/554200 fix C4267
-      "/wd4311",  # and C4311 warnings.
-    ]
-  }
   if (is_clang) {
     cflags = [
       # libxml passes `const unsigned char*` through `const char*`.
@@ -87,9 +78,6 @@ static_library("xml_reader") {
     "//components/trusted_vault",
     "//services/data_decoder:*",
   ]
-  if (is_win) {
-    visibility += [ "//components/wifi" ]
-  }
   sources = [
     "chromium/xml_reader.cc",
     "chromium/xml_reader.h",
@@ -151,11 +139,6 @@ static_library("libxml") {
     "//third_party/libxslt",
     "//third_party/maldoca/*",
   ]
-  if (is_ios) {
-    foreach(tgt, ios_libxml_visibility_additions) {
-      visibility += [ "//ios_internal/$tgt" ]
-    }
-  }
 
   output_name = "libxml2"
 
@@ -283,16 +266,6 @@ static_library("libxml") {
       "mac/config.h",
       "mac/include/libxml/xmlversion.h",
     ]
-  }
-
-  if (is_win) {
-    sources += [
-      "win32/config.h",
-      "win32/include/libxml/xmlversion.h",
-    ]
-
-    # libxml2 already defines WIN32_LEAN_AND_MEAN.
-    configs -= [ "//build/config/win:lean_and_mean" ]
   }
 
   sources += [ "chromium/disabled_libxml_features.cc" ]

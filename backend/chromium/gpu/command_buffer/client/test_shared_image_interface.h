@@ -107,13 +107,6 @@ class TestSharedImageInterface : public SharedImageInterface {
   void RemoveGpuChannelLostObserver(GpuChannelLostObserver* observer) override {
   }
 
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      const viz::SharedImageFormat& format,
-                                      gfx::BufferUsage usage,
-                                      bool register_with_image_pipe) override;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   SyncToken GenVerifiedSyncToken() override;
   SyncToken GenUnverifiedSyncToken() override;
@@ -222,10 +215,6 @@ class TestSharedImageInterface : public SharedImageInterface {
   absl::flat_hash_set<Mailbox> shared_images_;
   bool emulate_client_provided_native_buffer_ = false;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  absl::flat_hash_map<zx_koid_t, std::unique_ptr<TestBufferCollection>>
-      sysmem_buffer_collections_;
-#endif
   SharedImageCapabilities shared_image_capabilities_;
   bool fail_shared_image_creation_with_buffer_usage_ = false;
 

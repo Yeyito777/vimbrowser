@@ -82,12 +82,6 @@
 #include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/window_properties.h"  // nogncheck
-#include "chrome/browser/ash/boca/on_task/on_task_locked_controller.h"
-#include "chromeos/ui/base/window_properties.h"
-#include "chromeos/ui/base/window_state_type.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/debug/dump_without_crashing.h"
@@ -123,30 +117,11 @@ constexpr char kTabDraggingPresentationTimeMaxHistogram[] =
 constexpr char kDragToNewBrowserPresentationTimeHistogram[] =
     "Browser.TabDragging.DragToNewBrowserPresentationTime";
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-// Returns the aura::Window which stores the window properties for tab-dragging.
-aura::Window* GetWindowForTabDraggingProperties(const TabDragContext* context) {
-  return context ? context->GetWidget()->GetNativeWindow() : nullptr;
-}
-
-// Returns true if `context` browser window is snapped.
-bool IsSnapped(const TabDragContext* context) {
-  DCHECK(context);
-  chromeos::WindowStateType type =
-      GetWindowForTabDraggingProperties(context)->GetProperty(
-          chromeos::kWindowStateTypeKey);
-  return type == chromeos::WindowStateType::kPrimarySnapped ||
-         type == chromeos::WindowStateType::kSecondarySnapped;
-}
-
-#else
 
 bool IsSnapped(const TabDragContext* context) {
   return false;
 }
 
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 gfx::Rect GetTabstripScreenBounds(const TabDragContext* context) {
   const views::View* view = context;
@@ -420,21 +395,6 @@ TabDragController::Liveness TabDragController::Init(
     ref->detach_behavior_ = DetachBehavior::kNotDetachable;
   }
 #else
-#if BUILDFLAG(IS_CHROMEOS)
-  // Tabs should not be detachable from the window if any of the following are
-  // true:
-  // 1. The app window is locked for OnTask. Not applicable for web browser
-  //    scenarios.
-  // 2. The dragged tab strip exists in a PWA, and any of the dragged views
-  //    are the Pinned Home tab.
-  Browser* source_browser = BrowserView::GetBrowserViewForNativeWindow(
-                                source_context->GetWidget()->GetNativeWindow())
-                                ->browser();
-  if (ash::boca::OnTaskLockedController::From(source_browser)
-          ->is_locked_for_on_task()) {
-    ref->detach_behavior_ = DetachBehavior::kNotDetachable;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   for (TabSlotView* dragging_view : dragging_views) {
     if (!source_context->IsTabDetachable(dragging_view)) {
       ref->detach_behavior_ = DetachBehavior::kNotDetachable;
@@ -985,10 +945,6 @@ TabDragController::Liveness TabDragController::DragBrowserToNewTabStrip(
     // ReleaseCapture() is going to result in calling back to us (because it
     // results in a move). That'll cause all sorts of problems.  Reset the
     // observer so we don't get notified and process the event.
-#if BUILDFLAG(IS_CHROMEOS)
-    widget_observation_.Reset();
-    move_loop_widget_ = nullptr;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     views::Widget* browser_widget = GetAttachedBrowserWidget();
     // Disable animations so that we don't see a close animation on aero.
     browser_widget->SetVisibilityChangedAnimationsEnabled(false);
@@ -1565,22 +1521,9 @@ TabDragController::DetachIntoNewBrowserAndRunMoveLoop(
   }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  dragged_widget->GetNativeWindow()->SetProperty(
-      ash::kTabDraggingSourceWindowKey,
-      attached_context_->GetWidget()->GetNativeWindow());
-
-  // On ChromeOS, Detach should release capture; `can_release_capture_` is
-  // false on ChromeOS because it can cancel touches, but for this cases
-  // the touches are already transferred, so releasing is fine. Without
-  // releasing, the capture remains and further touch events can be sent to a
-  // wrong target.
-  const ReleaseCapture release_capture = ReleaseCapture::kReleaseCapture;
-#else
   const ReleaseCapture release_capture =
       can_release_capture_ ? ReleaseCapture::kReleaseCapture
                            : ReleaseCapture::kDontReleaseCapture;
-#endif
   TabDragContext* new_context =
       attached_context_->GetContextForNewBrowser(dragged_browser_view);
   DetachAndAttachToNewContext(release_capture, new_context);
@@ -2249,19 +2192,6 @@ void TabDragController::MaximizeAttachedWindow() {
     GetAttachedBrowserWidget()->SetFullscreen(true);
   }
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  if (was_source_fullscreen_) {
-    // In fullscreen mode it is only possible to get here if the source
-    // was in "immersive fullscreen" mode, so toggle it back on.
-    BrowserView* browser_view = BrowserView::GetBrowserViewForNativeWindow(
-        GetAttachedBrowserWidget()->GetNativeWindow());
-    DCHECK(browser_view);
-    if (!browser_view->IsFullscreen()) {
-      chrome::ToggleFullscreenMode(browser_view->browser(),
-                                   /*user_initiated=*/false);
-    }
-  }
-#endif
 }
 
 void TabDragController::BringWindowUnderPointToFront(
@@ -2288,37 +2218,7 @@ void TabDragController::BringWindowUnderPointToFront(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(varkha): The code below ensures that the phantom drag widget
-  // is shown on top of browser windows. The code should be moved to ash/
-  // and the phantom should be able to assert its top-most state on its own.
-  // One strategy would be for DragWindowController to
-  // be able to observe stacking changes to the phantom drag widget's
-  // siblings in order to keep it on top. One way is to implement a
-  // notification that is sent to a window parent's observers when a
-  // stacking order is changed among the children of that same parent.
-  // Note that OnWindowStackingChanged is sent only to the child that is the
-  // argument of one of the Window::StackChildX calls and not to all its
-  // siblings affected by the stacking change.
-  aura::Window* browser_window = widget_window->GetNativeView();
-  // Find a topmost non-popup window and stack the recipient browser above
-  // it in order to avoid stacking the browser window on top of the phantom
-  // drag widget created by DragWindowController in a second display.
-  for (aura::Window* window :
-       base::Reversed(browser_window->parent()->children())) {
-    // If the iteration reached the recipient browser window then it is
-    // already topmost and it is safe to return with no stacking change.
-    if (window == browser_window) {
-      return;
-    }
-    if (window->GetType() != aura::client::WINDOW_TYPE_POPUP) {
-      widget_window->StackAbove(window);
-      break;
-    }
-  }
-#else
   widget_window->StackAtTop();
-#endif
 
   // The previous call made the window appear on top of the dragged window,
   // move the dragged window to the front.
@@ -2526,17 +2426,6 @@ Browser* TabDragController::CreateBrowserForDrag(TabDragContext* source,
   }
   create_params.user_gesture = true;
   create_params.in_tab_dragging = true;
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not copy attached window's restore id as this will cause Full Restore to
-  // restore the newly created browser using the original browser's stored data.
-  // See crbug.com/1208923 and crbug.com/1333562 for details.
-  create_params.restore_id = Browser::kDefaultRestoreId;
-
-  // Open the window in the same display.
-  display::Display display = display::Screen::Get()->GetDisplayNearestWindow(
-      source->GetWidget()->GetNativeWindow());
-  create_params.display_id = display.id();
-#endif
   // Do not copy attached window's show state as the attached window might be a
   // maximized or fullscreen window and we do not want the newly created browser
   // window is a maximized or fullscreen window since it will prevent window
@@ -2563,29 +2452,18 @@ Browser* TabDragController::CreateBrowserForDrag(TabDragContext* source,
       ->GetWidget()
       ->SetCanAppearInExistingFullscreenSpaces(true);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // If the window is created maximized then the bounds we supplied are ignored.
   // We need to reset them again so they are honored. On ChromeOS, this is
   // handled in NativeWidgetAura.
   if (!open_as_web_app) {
     browser->window()->SetBounds(gfx::Rect(initial_size));
   }
-#endif
 
   return browser;
 }
 
 gfx::Point TabDragController::GetCursorScreenPoint() {
-#if BUILDFLAG(IS_CHROMEOS)
-  views::Widget* widget = GetAttachedBrowserWidget();
-  DCHECK(widget);
-  aura::Window* widget_window = widget->GetNativeWindow();
-  DCHECK(widget_window->GetRootWindow());
-  return aura::Env::GetInstance()->GetLastPointerPoint(
-      event_source_, widget_window, /*fallback=*/last_point_in_screen_);
-#else
   return display::Screen::Get()->GetCursorScreenPoint();
-#endif
 }
 
 gfx::Vector2d TabDragController::CalculateWindowDragOffset() {
@@ -2648,14 +2526,6 @@ bool TabDragController::CanAttachTo(gfx::NativeWindow window) {
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/447246798): Don't allow dragging into an overview item as
-  // the implementation is buggy. Triggering this appears to require drag by
-  // touch, as drag by click causes the overview session to end immediately.
-  if (window->GetProperty(chromeos::kIsShowingInOverviewKey)) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Return false if `other_browser_view` is null or already closed. The latter
   // check is required since the widget may still alive on asynchronous
@@ -2873,10 +2743,6 @@ void TabDragController::OnContextStartedDragging(
     source_browser_view->browser_widget()->SetTabDragKind(TabDragKind::kTab);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  attached_browser_view->GetWidget()->GetNativeWindow()->SetProperty(
-      ash::kIsDraggingTabsKey, true);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   attached_context_->StartedDragging(views);
 }
 
@@ -2905,20 +2771,6 @@ void TabDragController::UpdateBrowserViewsForDragEnd() {
     source_browser_view->browser_widget()->SetTabDragKind(TabDragKind::kNone);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Clear the drag properties unless the drag browser's tabs got merged into
-  // another browser, in which case SplitViewController::TabDragWindowObserver
-  // still needs to read the properties. We detect this case by checking if the
-  // tab strip model is now empty. Since it was non-empty originally and the
-  // drag browser can't have any pending downloads. we know that it's about to
-  // get destroyed anyways.
-  if (!attached_context_->GetTabStripModel()->empty()) {
-    attached_browser_view->GetWidget()->GetNativeWindow()->ClearProperty(
-        ash::kIsDraggingTabsKey);
-    attached_browser_view->GetWidget()->GetNativeWindow()->ClearProperty(
-        ash::kTabDraggingSourceWindowKey);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 #if defined(USE_AURA)

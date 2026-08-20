@@ -89,22 +89,6 @@ component("service") {
   ]
   libs = []
   ldflags = []
-  if (is_win) {
-    sources += [
-      "dcomp_texture_win.cc",
-      "dcomp_texture_win.h",
-      "image_transport_surface_win.cc",
-    ]
-    libs += [
-      "d3d11.lib",
-      "dcomp.lib",
-      "dxguid.lib",
-    ]
-
-    if (enable_ml_internal) {
-      deps += [ "//services/webnn/public/mojom:features" ]
-    }
-  }
   if (is_apple) {
     sources += [
       "image_transport_surface_overlay_mac.h",
@@ -126,25 +110,12 @@ component("service") {
       ]
       defines += [ "GL_SILENCE_DEPRECATION" ]
     }
-    if (is_ios) {
-      sources += [ "image_transport_surface_ios.mm" ]
-    }
   }
   if (is_linux || is_chromeos) {
     sources += [ "image_transport_surface_linux.cc" ]
   }
-  if (is_chromeos) {
-    sources += [
-      "arc_shared_image_interface.cc",
-      "arc_shared_image_interface.h",
-    ]
-    deps += [ "//chromeos/ash/experiences/arc:arc_features" ]
-  }
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-  if (is_fuchsia) {
-    sources += [ "image_transport_surface_fuchsia.cc" ]
   }
   if (enable_vulkan) {
     deps += [ "//gpu/vulkan/init" ]

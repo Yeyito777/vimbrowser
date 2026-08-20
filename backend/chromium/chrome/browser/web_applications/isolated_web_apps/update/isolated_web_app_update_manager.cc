@@ -65,10 +65,6 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/app_mode/isolated_web_app/kiosk_iwa_policy_util.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif
 
 namespace web_app {
 
@@ -183,21 +179,6 @@ IwaBundleIdToUpdateOptionsMap GetForceInstalledPolicyIsolatedWebApps(
   return result;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-IwaBundleIdToUpdateOptionsMap GetKioskPolicyIsolatedWebApps() {
-  IwaBundleIdToUpdateOptionsMap result;
-  std::optional<ash::KioskIwaUpdateData> kiosk_iwa_policy_data =
-      ash::GetCurrentKioskIwaUpdateData();
-  if (kiosk_iwa_policy_data) {
-    result[kiosk_iwa_policy_data->web_bundle_id] =
-        IsolatedWebAppUpdateOptions(kiosk_iwa_policy_data->update_manifest_url,
-                                    kiosk_iwa_policy_data->update_channel,
-                                    kiosk_iwa_policy_data->allow_downgrades,
-                                    kiosk_iwa_policy_data->pinned_version);
-  }
-  return result;
-}
-#endif
 
 IwaBundleIdToUpdateOptionsMap GetIsolatedWebAppsWithOnlyUserManagement(
     Profile* profile) {
@@ -221,13 +202,6 @@ IwaBundleIdToUpdateOptionsMap GetIsolatedWebAppsWithOnlyUserManagement(
 
 IwaBundleIdToUpdateOptionsMap GetBundleIdToIsolatedWebAppsUpdateOptionsMap(
     Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // DeviceLocalAccounts policy defines an IWA used in kiosk mode.
-  // IsolatedWebAppInstallForceList is used in other session types.
-  if (chromeos::IsKioskSession()) {
-    return GetKioskPolicyIsolatedWebApps();
-  }
-#endif
   IwaBundleIdToUpdateOptionsMap result =
       GetIsolatedWebAppsWithOnlyUserManagement(profile);
 

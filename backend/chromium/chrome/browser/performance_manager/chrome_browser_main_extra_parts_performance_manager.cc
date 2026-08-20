@@ -59,25 +59,11 @@
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/allocator/buildflags.h"
-#include "chrome/browser/performance_manager/policies/oom_score_policy_chromeos.h"
-#include "chrome/browser/performance_manager/policies/report_page_processes_policy.h"
-#include "chromeos/dbus/power/power_manager_client.h"
-#include "components/performance_manager/power/battery_level_provider_chromeos.h"
-#include "components/performance_manager/power/dbus_power_manager_sampling_event_source.h"
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/performance_manager/extension_watcher.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#include "chrome/browser/performance_manager/policies/discard_page_with_crashed_subframe_policy.h"
-#include "chrome/browser/performance_manager/policies/process_rank_policy_android.h"
-#else
 #include "chrome/browser/performance_manager/policies/memory_saver_mode_policy.h"
 #include "chrome/browser/performance_manager/policies/urgent_page_discarding_policy.h"
 #include "chrome/browser/performance_manager/public/user_tuning/battery_saver_mode_manager.h"
@@ -88,21 +74,12 @@
 #include "components/performance_manager/freezing/freezer.h"
 #include "components/performance_manager/freezing/freezing_policy.h"
 #include "components/performance_manager/public/freezing/freezing.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/path_service.h"
-#include "chrome/browser/performance_manager/policies/priority_boost_browser_network_policy.h"
-#include "chrome/browser/performance_manager/policies/priority_boost_foreground_browser_network_policy.h"
-#include "chrome/browser/performance_manager/policies/priority_boost_gpu_browser_network_policy.h"
-#include "chrome/browser/performance_manager/policies/priority_boost_loading_browser_network_policy.h"
-#endif
 
 namespace {
 
 ChromeBrowserMainExtraPartsPerformanceManager* g_instance = nullptr;
 
-#if !BUILDFLAG(IS_ANDROID)
 // Glue between the `PageDiscardingHelper` which is in
 // //chrome/browser/performance_manager/ and the `FreezingPolicy` which is in
 // `//components/performance_manager/`.
@@ -128,7 +105,6 @@ class FreezingDiscarder : public performance_manager::freezing::Discarder {
   }
 };
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -171,14 +147,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
                            CreatePolicyForPlatform());
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-  graph->PassToGraph(std::make_unique<
-                     performance_manager::policies::OomScorePolicyChromeOS>());
-  graph->PassToGraph(
-      std::make_unique<
-          performance_manager::policies::ReportPageProcessesPolicy>());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   using performance_manager::policies::DiscardEligibilityPolicy;
   auto discard_eligibility_policy =
@@ -187,53 +155,13 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
       discard_eligibility_policy->GetWeakPtr();
   graph->PassToGraph(std::move(discard_eligibility_policy));
 
-#if BUILDFLAG(IS_WIN)
-  // TerminationTargetPolicy is incompatible with --single-process mode.
-  if (base::FeatureList::IsEnabled(
-          performance_manager::features::kTerminationTargetPolicy) &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kSingleProcess)) {
-    graph->PassToGraph(
-        std::make_unique<performance_manager::TerminationTargetPolicy>());
-  }
-  if (base::FeatureList::IsEnabled(features::kDisableBoostPriority)) {
-    switch (features::kDisableBoostPriorityExemption.Get()) {
-      case features::DisableBoostPriorityExemption::kBrowserNetwork:
-        graph->PassToGraph(
-            std::make_unique<performance_manager::policies::
-                                 PriorityBoostBrowserNetworkPolicy>());
-        break;
-      case features::DisableBoostPriorityExemption::kGpuBrowserNetwork:
-        graph->PassToGraph(
-            std::make_unique<performance_manager::policies::
-                                 PriorityBoostGpuBrowserNetworkPolicy>());
-        break;
-      case features::DisableBoostPriorityExemption::kLoadingBrowserNetwork:
-        graph->PassToGraph(
-            std::make_unique<performance_manager::policies::
-                                 PriorityBoostLoadingBrowserNetworkPolicy>());
-        break;
-      case features::DisableBoostPriorityExemption::kForegroundBrowserNetwork:
-        graph->PassToGraph(std::make_unique<
-                           performance_manager::policies::
-                               PriorityBoostForegroundBrowserNetworkPolicy>());
-        break;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-  const bool need_page_discarding_helper =
-      base::FeatureList::IsEnabled(features::kWebContentsDiscard);
-#else
   const bool need_page_discarding_helper = true;
-#endif  // BUILDFLAG(IS_ANDROID)
   if (need_page_discarding_helper) {
     graph->PassToGraph(std::make_unique<
                        performance_manager::policies::PageDiscardingHelper>());
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   using performance_manager::policies::FreezingOptOutChecker;
 
   graph->PassToGraph(FormInteractionTabHelper::CreateGraphObserver());
@@ -270,7 +198,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
 
   graph->PassToGraph(
       std::make_unique<performance_manager::policies::MemorySaverModePolicy>());
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   if (base::FeatureList::IsEnabled(performance_manager::features::
                                        kEnableBestEffortTaskInhibitingPolicy)) {
@@ -288,31 +215,13 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
                        performance_manager::policies::FrameThrottlingPolicy>());
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(
           performance_manager::features::kPMProcessPriorityPolicy)) {
     graph->PassToGraph(std::make_unique<
                        performance_manager::policies::ProcessPriorityPolicy>());
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(
-          chrome::android::kProcessRankPolicyAndroid)) {
-    graph->PassToGraph(
-        std::make_unique<
-            performance_manager::policies::ProcessRankPolicyAndroid>());
-  }
 
-  if (base::FeatureList::IsEnabled(
-          chrome::android::kDiscardPageWithCrashedSubframePolicy)) {
-    graph->PassToGraph(
-        std::make_unique<performance_manager::policies::
-                             DiscardPageWithCrashedSubframePolicy>());
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if !BUILDFLAG(IS_ANDROID)
   if (auto* voting_system = graph->GetRegisteredObjectAs<
                             performance_manager::execution_context_priority::
                                 PriorityVotingSystem>()) {
@@ -322,7 +231,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
         ->AddPriorityVoter<performance_manager::execution_context_priority::
                                SidePanelLoadingVoter>();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   if (base::FeatureList::IsEnabled(performance_manager::features::
                                        kKeepDefaultSearchEngineRendererAlive)) {
@@ -330,14 +238,12 @@ void ChromeBrowserMainExtraPartsPerformanceManager::CreatePoliciesAndDecorators(
         std::make_unique<performance_manager::policies::KeepAliveDSEPolicy>());
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(
           performance_manager::features::kTransientKeepAlivePolicy)) {
     graph->PassToGraph(
         std::make_unique<
             performance_manager::policies::TransientKeepAlivePolicy>());
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 content::FeatureObserverClient*
@@ -359,14 +265,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostCreateThreads() {
 
   g_browser_process->profile_manager()->AddObserver(this);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(chrome::android::kProtectedTabsAndroid)) {
-    // performance_manager::policies::DiscardEligibilityPolicy requires
-    // performance_manager::user_tuning::ProfileDiscardOptOutListHelper.
-    profile_discard_opt_out_list_helper_ = std::make_unique<
-        performance_manager::user_tuning::ProfileDiscardOptOutListHelper>();
-  }
-#else
   profile_discard_opt_out_list_helper_ = std::make_unique<
       performance_manager::user_tuning::ProfileDiscardOptOutListHelper>();
   // Create the UserPerformanceTuningManager and BatterySaverMode here so that
@@ -396,7 +294,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostCreateThreads() {
 
   performance_detection_manager_ = base::WrapUnique(
       new performance_manager::user_tuning::PerformanceDetectionManager());
-#endif
 
   page_load_metrics_observer_ =
       std::make_unique<performance_manager::PageLoadMetricsObserver>();
@@ -418,15 +315,7 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostCreateThreads() {
     // TODO(crbug.com/40871810): All of the battery level machinery should be in
     // the same location, and the ifdefs should be contained to the
     // `BatteryLevelProvider` and SamplingEventSource` instantiation functions.
-#if BUILDFLAG(IS_CHROMEOS)
-    battery_state_sampler_ = std::make_unique<base::BatteryStateSampler>(
-        std::make_unique<
-            performance_manager::power::DbusPowerManagerSamplingEventSource>(
-            chromeos::PowerManagerClient::Get()),
-        std::make_unique<
-            performance_manager::power::BatteryLevelProviderChromeOS>(
-            chromeos::PowerManagerClient::Get()));
-#elif BUILDFLAG(HAS_BATTERY_LEVEL_PROVIDER_IMPL)
+#if BUILDFLAG(HAS_BATTERY_LEVEL_PROVIDER_IMPL)
     battery_state_sampler_ = std::make_unique<base::BatteryStateSampler>();
 #endif
   }
@@ -444,7 +333,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostBrowserStart() {
 }
 
 void ChromeBrowserMainExtraPartsPerformanceManager::PreMainMessageLoopRun() {
-#if !BUILDFLAG(IS_ANDROID)
   // This object requires the host frame sink manager to exist, which is
   // created after all the extra parts have run their PostCreateThreads.
   battery_saver_mode_manager_->Start();
@@ -454,7 +342,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PreMainMessageLoopRun() {
   // needs the UserPerformanceTuningManager to exist. At this point it's
   // instantiated, but still needs to be initialized.
   performance_manager::MetricsProviderDesktop::GetInstance()->Initialize();
-#endif
 }
 
 void ChromeBrowserMainExtraPartsPerformanceManager::PostMainMessageLoopRun() {
@@ -473,9 +360,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostMainMessageLoopRun() {
   page_live_state_data_helper_.reset();
   page_load_metrics_observer_.reset();
 
-#if BUILDFLAG(IS_ANDROID)
-  profile_discard_opt_out_list_helper_.reset();
-#else
   battery_saver_mode_manager_.reset();
   user_performance_tuning_manager_.reset();
   performance_detection_manager_.reset();
@@ -483,7 +367,6 @@ void ChromeBrowserMainExtraPartsPerformanceManager::PostMainMessageLoopRun() {
 
   if (battery_state_sampler_)
     battery_state_sampler_->Shutdown();
-#endif
 
   // Releasing `performance_manager_lifetime_` will tear down the registry and
   // graph safely.
@@ -496,13 +379,7 @@ void ChromeBrowserMainExtraPartsPerformanceManager::OnProfileAdded(
   performance_manager::PerformanceManagerRegistry::GetInstance()
       ->NotifyBrowserContextAdded(profile);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (profile_discard_opt_out_list_helper_) {
-    profile_discard_opt_out_list_helper_->OnProfileAdded(profile);
-  }
-#else
   profile_discard_opt_out_list_helper_->OnProfileAdded(profile);
-#endif
 }
 
 void ChromeBrowserMainExtraPartsPerformanceManager::
@@ -516,11 +393,5 @@ void ChromeBrowserMainExtraPartsPerformanceManager::OnProfileWillBeDestroyed(
   performance_manager::PerformanceManagerRegistry::GetInstance()
       ->NotifyBrowserContextRemoved(profile);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (profile_discard_opt_out_list_helper_) {
-    profile_discard_opt_out_list_helper_->OnProfileWillBeRemoved(profile);
-  }
-#else
   profile_discard_opt_out_list_helper_->OnProfileWillBeRemoved(profile);
-#endif
 }

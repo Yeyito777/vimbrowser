@@ -39,13 +39,9 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/resources/android/theme_resources.h"
-#else
 #include "ui/gfx/color_palette.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(FULL_SAFE_BROWSING)
 #include "components/safe_browsing/content/browser/password_protection/password_protection_service.h"
@@ -155,7 +151,6 @@ base::span<const PageInfoUI::PermissionUIInfo> GetContentSettingsUIInfo() {
       {ContentSettingsType::AUTO_PICTURE_IN_PICTURE,
        IDS_SITE_SETTINGS_TYPE_AUTO_PICTURE_IN_PICTURE,
        IDS_SITE_SETTINGS_TYPE_AUTO_PICTURE_IN_PICTURE_MID_SENTENCE},
-#if !BUILDFLAG(IS_ANDROID)
       // Page Info Permissions that are not defined in Android.
       {ContentSettingsType::CAPTURED_SURFACE_CONTROL,
        IDS_SITE_SETTINGS_TYPE_CAPTURED_SURFACE_CONTROL_SHARED_TABS,
@@ -175,11 +170,6 @@ base::span<const PageInfoUI::PermissionUIInfo> GetContentSettingsUIInfo() {
       {ContentSettingsType::WEB_APP_INSTALLATION,
        IDS_SITE_SETTINGS_TYPE_WEB_APP_INSTALLATION,
        IDS_SITE_SETTINGS_TYPE_WEB_APP_INSTALLATION_MID_SENTENCE},
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-      {ContentSettingsType::WEB_PRINTING, IDS_SITE_SETTINGS_TYPE_WEB_PRINTING,
-       IDS_SITE_SETTINGS_TYPE_WEB_PRINTING_MID_SENTENCE},
-#endif
   };
   return kPermissionUIInfo;
 }
@@ -353,11 +343,6 @@ std::u16string GetPermissionAskStateString(ContentSettingsType type) {
     case ContentSettingsType::WEB_APP_INSTALLATION:
       message_id = IDS_PAGE_INFO_STATE_TEXT_WEB_APP_INSTALLATION_ASK;
       break;
-#if BUILDFLAG(IS_CHROMEOS)
-    case ContentSettingsType::WEB_PRINTING:
-      message_id = IDS_PAGE_INFO_STATE_TEXT_WEB_PRINTING_ASK;
-      break;
-#endif
     default:
       NOTREACHED();
   }
@@ -475,53 +460,6 @@ PageInfoUI::GetSecurityDescription(const IdentityInfo& identity_info) const {
   }
 
   switch (identity_info.identity_status) {
-#if BUILDFLAG(IS_ANDROID)
-    case PageInfo::SITE_IDENTITY_STATUS_INTERNAL_PAGE:
-      return CreateSecurityDescription(SecuritySummaryColor::GREEN, 0,
-                                       IDS_PAGE_INFO_INTERNAL_PAGE,
-                                       SecurityDescriptionType::INTERNAL);
-    case PageInfo::SITE_IDENTITY_STATUS_EV_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_1QWAC_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_CERT:
-      switch (identity_info.connection_status) {
-        case PageInfo::SITE_CONNECTION_STATUS_INSECURE_ACTIVE_SUBRESOURCE:
-          return CreateSecurityDescription(
-              SecuritySummaryColor::RED, IDS_PAGE_INFO_NOT_SECURE_SUMMARY_SHORT,
-              IDS_PAGE_INFO_NOT_SECURE_DETAILS,
-              SecurityDescriptionType::CONNECTION);
-        case PageInfo::SITE_CONNECTION_STATUS_INSECURE_FORM_ACTION:
-          return CreateSecurityDescription(
-              SecuritySummaryColor::RED,
-              IDS_PAGE_INFO_MIXED_CONTENT_SUMMARY_SHORT,
-              IDS_PAGE_INFO_NOT_SECURE_DETAILS,
-              SecurityDescriptionType::CONNECTION);
-        case PageInfo::SITE_CONNECTION_STATUS_INSECURE_PASSIVE_SUBRESOURCE:
-          return CreateSecurityDescription(
-              SecuritySummaryColor::RED,
-              IDS_PAGE_INFO_MIXED_CONTENT_SUMMARY_SHORT,
-              IDS_PAGE_INFO_MIXED_CONTENT_DETAILS,
-              SecurityDescriptionType::CONNECTION);
-        default:
-          // Do not show details for secure connections.
-          int details = 0;
-          if (base::FeatureList::IsEnabled(net::features::kVerifyQWACs)) {
-            // When the QWAC feature is enabled, a UI that more closely matches
-            // desktop is used.
-            details = IDS_PAGE_INFO_SECURE_DETAILS;
-          }
-          return CreateSecurityDescription(
-              SecuritySummaryColor::GREEN, IDS_PAGE_INFO_SECURE_SUMMARY,
-              details, SecurityDescriptionType::CONNECTION);
-      }
-    case PageInfo::SITE_IDENTITY_STATUS_DEPRECATED_SIGNATURE_ALGORITHM:
-    case PageInfo::SITE_IDENTITY_STATUS_UNKNOWN:
-    case PageInfo::SITE_IDENTITY_STATUS_NO_CERT:
-    default:
-      return CreateSecurityDescription(SecuritySummaryColor::RED,
-                                       IDS_PAGE_INFO_NOT_SECURE_SUMMARY_SHORT,
-                                       IDS_PAGE_INFO_NOT_SECURE_DETAILS,
-                                       SecurityDescriptionType::CONNECTION);
-#else
     case PageInfo::SITE_IDENTITY_STATUS_INTERNAL_PAGE:
       // Internal pages on desktop have their own UI implementations which
       // should never call this function.
@@ -560,7 +498,6 @@ PageInfoUI::GetSecurityDescription(const IdentityInfo& identity_info) const {
                                        IDS_PAGE_INFO_NOT_SECURE_SUMMARY,
                                        IDS_PAGE_INFO_NOT_SECURE_DETAILS,
                                        SecurityDescriptionType::CONNECTION);
-#endif
   }
 }
 
@@ -630,22 +567,18 @@ std::u16string PageInfoUI::PermissionStateToUIString(
   const PermissionSetting effective_setting = GetEffectiveSetting(
       permission.type, permission.setting, permission.default_setting);
   if (info->delegate().IsAnyPermissionAllowed(effective_setting)) {
-#if !BUILDFLAG(IS_ANDROID)
     if (permission.type == ContentSettingsType::SOUND &&
         delegate->IsBlockAutoPlayEnabled() && !permission.setting) {
       return l10n_util::GetStringUTF16(
           IDS_PAGE_INFO_BUTTON_TEXT_AUTOMATIC_BY_DEFAULT);
     }
-#endif
     if (!permission.setting) {
       message_id = IDS_PAGE_INFO_STATE_TEXT_ALLOWED_BY_DEFAULT;
-#if !BUILDFLAG(IS_ANDROID)
       } else if (permission.is_one_time) {
         DCHECK_EQ(permission.source, SettingSource::kUser);
         DCHECK(permissions::PermissionUtil::DoesSupportTemporaryGrants(
             permission.type));
         message_id = IDS_PAGE_INFO_STATE_TEXT_ALLOWED_ONCE;
-#endif
       } else {
         message_id = IDS_PAGE_INFO_STATE_TEXT_ALLOWED;
       }
@@ -653,19 +586,15 @@ std::u16string PageInfoUI::PermissionStateToUIString(
     return GetPermissionAskStateString(permission.type);
   } else {
     if (!permission.setting) {
-#if !BUILDFLAG(IS_ANDROID)
         if (permission.type == ContentSettingsType::SOUND) {
           return l10n_util::GetStringUTF16(
               IDS_PAGE_INFO_BUTTON_TEXT_MUTED_BY_DEFAULT);
         }
-#endif
         message_id = IDS_PAGE_INFO_STATE_TEXT_NOT_ALLOWED_BY_DEFAULT;
     } else {
-#if !BUILDFLAG(IS_ANDROID)
         if (permission.type == ContentSettingsType::SOUND) {
           return l10n_util::GetStringUTF16(IDS_PAGE_INFO_STATE_TEXT_MUTED);
         }
-#endif
         message_id = IDS_PAGE_INFO_STATE_TEXT_NOT_ALLOWED;
     }
   }
@@ -897,73 +826,6 @@ SkColor PageInfoUI::GetSecondaryTextColor() {
   return SK_ColorGRAY;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-int PageInfoUI::GetIdentityIconID(PageInfo::SiteIdentityStatus status) {
-  switch (status) {
-    case PageInfo::SITE_IDENTITY_STATUS_INTERNAL_PAGE:
-      if (base::FeatureList::IsEnabled(net::features::kVerifyQWACs)) {
-        return IDR_PAGEINFO_INTERNAL;
-      } else {
-        return IDR_PAGEINFO_GOOD;
-      }
-    case PageInfo::SITE_IDENTITY_STATUS_UNKNOWN:
-    case PageInfo::SITE_IDENTITY_STATUS_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_EV_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_1QWAC_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_ISOLATED_WEB_APP:
-      if (base::FeatureList::IsEnabled(net::features::kVerifyQWACs)) {
-        return IDR_PAGEINFO_GOOD_NEW;
-      } else {
-        return IDR_PAGEINFO_GOOD;
-      }
-    case PageInfo::SITE_IDENTITY_STATUS_NO_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_ERROR:
-    case PageInfo::SITE_IDENTITY_STATUS_DEPRECATED_SIGNATURE_ALGORITHM:
-      return IDR_PAGEINFO_BAD;
-  }
-
-  return 0;
-}
-
-int PageInfoUI::GetIdentityIconColorID(PageInfo::SiteIdentityStatus status) {
-  switch (status) {
-    case PageInfo::SITE_IDENTITY_STATUS_UNKNOWN:
-    case PageInfo::SITE_IDENTITY_STATUS_INTERNAL_PAGE:
-    case PageInfo::SITE_IDENTITY_STATUS_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_EV_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_1QWAC_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_ISOLATED_WEB_APP:
-      return IDR_PAGEINFO_GOOD_COLOR;
-    case PageInfo::SITE_IDENTITY_STATUS_NO_CERT:
-    case PageInfo::SITE_IDENTITY_STATUS_DEPRECATED_SIGNATURE_ALGORITHM:
-      return IDR_PAGEINFO_WARNING_COLOR;
-    case PageInfo::SITE_IDENTITY_STATUS_ERROR:
-      return IDR_PAGEINFO_BAD_COLOR;
-  }
-  return 0;
-}
-
-int PageInfoUI::GetConnectionIconColorID(
-    PageInfo::SiteConnectionStatus status) {
-  switch (status) {
-    case PageInfo::SITE_CONNECTION_STATUS_UNKNOWN:
-    case PageInfo::SITE_CONNECTION_STATUS_INTERNAL_PAGE:
-    case PageInfo::SITE_CONNECTION_STATUS_ENCRYPTED:
-    case PageInfo::SITE_CONNECTION_STATUS_ISOLATED_WEB_APP:
-      return IDR_PAGEINFO_GOOD_COLOR;
-    case PageInfo::SITE_CONNECTION_STATUS_INSECURE_PASSIVE_SUBRESOURCE:
-    case PageInfo::SITE_CONNECTION_STATUS_INSECURE_FORM_ACTION:
-    case PageInfo::SITE_CONNECTION_STATUS_UNENCRYPTED:
-      return IDR_PAGEINFO_WARNING_COLOR;
-    case PageInfo::SITE_CONNECTION_STATUS_INSECURE_ACTIVE_SUBRESOURCE:
-    case PageInfo::SITE_CONNECTION_STATUS_ENCRYPTED_ERROR:
-      return IDR_PAGEINFO_BAD_COLOR;
-  }
-  return 0;
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // static
 bool PageInfoUI::ContentSettingsTypeInPageInfo(ContentSettingsType type) {

@@ -16,11 +16,7 @@
 #include "build/build_config.h"
 #include "content/common/content_export.h"
 
-#if BUILDFLAG(IS_WIN)
-namespace sandbox {
-struct SandboxInterfaceInfo;
-}
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/apple/scoped_nsautorelease_pool.h"
 #include "base/memory/stack_allocated.h"
 #endif
@@ -46,9 +42,7 @@ struct CONTENT_EXPORT MainFunctionParams {
   // TODO(crbug.com/40269737): detect under BRP.
   raw_ptr<const base::CommandLine, DanglingUntriaged> command_line;
 
-#if BUILDFLAG(IS_WIN)
-  raw_ptr<sandbox::SandboxInterfaceInfo> sandbox_info = nullptr;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   STACK_ALLOCATED_IGNORE("https://crbug.com/1424190")
   base::apple::ScopedNSAutoreleasePool* autorelease_pool = nullptr;
 #elif BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)

@@ -25,7 +25,6 @@ namespace url_formatter {
 
 // ElideUrl and Elide host require
 // gfx::GetStringWidthF which is not implemented in Android
-#if !BUILDFLAG(IS_ANDROID)
 // This function takes a GURL object and elides it. It returns a string
 // composed of parts from subdomain, domain, path, filename and query.
 // A "..." is added automatically at the end if the elided string is bigger
@@ -49,7 +48,6 @@ std::u16string ElideUrl(const GURL& url,
 std::u16string ElideHost(const GURL& host_url,
                          const gfx::FontList& font_list,
                          float available_pixel_width);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // GENERATED_JAVA_ENUM_PACKAGE: org.chromium.components.url_formatter
 enum class SchemeDisplay {
@@ -128,11 +126,6 @@ std::u16string FormatUrlForDisplayOmitSchemePathAndTrivialSubdomains(
 //  - "http://www.xn--frgbolaget-q5a.se" -> "färgbolaget.se"
 //  - "http://www.m.google.com" -> "google.com"
 //  - "http://m.google.com" -> "google.com"
-#if BUILDFLAG(IS_IOS)
-std::u16string
-FormatUrlForDisplayOmitSchemePathTrivialSubdomainsAndMobilePrefix(
-    const GURL& url);
-#endif
 
 // Splits the hostname in the `url` into sub-strings for the full hostname,
 // the domain (TLD+1), and the subdomain (everything leading the domain).

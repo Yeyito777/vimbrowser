@@ -14,9 +14,7 @@ source_set("structured") {
     "//components/metrics/structured/lib",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//components/metrics/structured:external_metrics" ]
-  } else if (is_win || is_linux || is_mac) {
+  if (is_win || is_linux || is_mac) {
     sources += [
       "chrome_event_storage.cc",
       "chrome_event_storage.h",

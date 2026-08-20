@@ -286,10 +286,6 @@ struct ServiceWorkerVersionBaseInfo;
 
 class AuthenticatorRequestClientDelegate;
 
-#if BUILDFLAG(IS_CHROMEOS)
-class SmartCardDelegate;
-class TtsControllerDelegate;
-#endif
 
 // Embedder API (or SPI) for participating in browser logic, to be implemented
 // by the client of the content browser. See ChromeContentBrowserClient for the
@@ -1479,10 +1475,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   GetOnDeviceSpeechRecognitionAvailabilityStatus(BrowserContext* context,
                                                  const std::string& language);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Allows the embedder to return a delegate for the TtsController.
-  virtual TtsControllerDelegate* GetTtsControllerDelegate();
-#endif
 
   // Applies policy-dictated changes to the manifest that was loaded from the
   // provided render_frame_host.
@@ -1819,74 +1811,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       content::PosixFileDescriptorInfo* mappings) {}
 #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-  // Defines flags that can be passed to PreSpawnChild.
-  enum ChildSpawnFlags {
-    kChildSpawnFlagNone = 0,
-  };
-
-  // Defines flags that can be passed to GetAppContainerSidForSandboxType.
-  enum AppContainerFlags {
-    kAppContainerFlagNone = 0,
-    kAppContainerFlagDisableAppContainer = 1 << 0,
-  };
-
-  // This may be called on the PROCESS_LAUNCHER thread before the child process
-  // configuration is set. It gives the embedder a chance to modify the sandbox
-  // configuration. Returns false if configuration is invalid and the child
-  // should not spawn. Only use this for embedder-specific policies, since the
-  // bulk of sandbox policies should go inside the relevant
-  // SandboxedProcessLauncherDelegate.
-  virtual bool PreSpawnChild(sandbox::TargetConfig* config,
-                             sandbox::mojom::Sandbox sandbox_type,
-                             ChildSpawnFlags flags);
-
-  // This may be called on the PROCESS_LAUNCHER thread before the child process
-  // is launched. It gives the embedder a chance to indicate that a process will
-  // not be compatible with Hardware-enforced Stack Protection (CET).
-  // |utility_sub_type| should match that provided on the command line to the
-  // child process. Only use this for embedder-specific processes, and prefer to
-  // key off Sandbox in the relevant SandboxedProcessLauncherDelegate.
-  virtual bool IsUtilityCetCompatible(const std::string& utility_sub_type);
-
-  // Returns the AppContainer SID for the specified sandboxed process type, or
-  // empty string if this sandboxed process type does not support living inside
-  // an AppContainer. Called on PROCESS_LAUNCHER thread.
-  // `flags` can signal to the embedder any special behavior that should happen
-  // for the `sandbox_type`.
-  virtual std::wstring GetAppContainerSidForSandboxType(
-      sandbox::mojom::Sandbox sandbox_type,
-      AppContainerFlags flags);
-
-  // Returns true if App Container should be disabled for the specified
-  // `sandbox_type`. This is called on the UI thread.
-  virtual bool IsAppContainerDisabled(sandbox::mojom::Sandbox sandbox_type);
-
-  // Returns the LPAC capability name to use for file data that the network
-  // service needs to access to when running within LPAC sandbox. Embedders
-  // should override this with their own unique name to ensure security of the
-  // network service data.
-  virtual std::wstring GetLPACCapabilityNameForNetworkService();
-
-  // Performs a fast and orderly shutdown of the browser. If present,
-  // `control_type` is a CTRL_* value from a Windows console control handler;
-  // see https://learn.microsoft.com/en-us/windows/console/handlerroutine.
-  virtual void SessionEnding(std::optional<DWORD> control_type) {}
-
-  // Returns true if the audio process should run with high priority. false
-  // otherwise.
-  virtual bool ShouldEnableAudioProcessHighPriority();
-
-  // Returns true if the renderer process should run with the
-  // RestrictCoreSharing mitigation policy. This policy ensures that no other
-  // processes are scheduled on the same CPU core as the renderer process.
-  virtual bool ShouldRestrictCoreSharingOnRenderer();
-
-  // Obtains the name of the security attribute in the browser process token, to
-  // be used in child process tokens, or nullopt if there is no security
-  // attribute.
-  virtual std::optional<std::wstring> GetWindowsSecurityAttributeName() const;
-#endif
 
   // Binds a new media remoter service to |receiver|, if supported by the
   // embedder, for the |source| that lives in the render frame represented
@@ -2405,10 +2329,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   // API.
   virtual FontAccessDelegate* GetFontAccessDelegate();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Allows the embedder to provide an implementation of the Web Smart Card API.
-  virtual SmartCardDelegate* GetSmartCardDelegate();
-#endif
 
   // Attempt to open the Payment Handler window inside its corresponding
   // PaymentRequest UI surface. Returns true if the ContentBrowserClient

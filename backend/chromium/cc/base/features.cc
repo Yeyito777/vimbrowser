@@ -124,17 +124,9 @@ BASE_FEATURE(kInitImageDecodeLastUseTime, base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enabled on Android, after a field trial showed improvements.
 BASE_FEATURE(kThrottleMainFrameTo60Hz,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kThrottleMainFrameTo60HzWebView,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kHighFramerateRequestFromClient,
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -200,11 +192,7 @@ BASE_FEATURE(kProgrammaticScrollAnimationOverride,
                      base::Milliseconds(duration_ms))
 // Default to `gfx::CubicBezierTimingFunction::EaseType::EASE_IN_OUT` on
 // Android. On other platforms, use the tweaked cubic bezier curve.
-#if BUILDFLAG(IS_ANDROID)
-PROGRAMMATIC_SCROLL_ANIMATION_CURVE(0.42, 0.0, 0.58, 1.0, 700);
-#else
 PROGRAMMATIC_SCROLL_ANIMATION_CURVE(0.4, 0.0, 0.0, 1.0, 1500);
-#endif
 #undef PROGRAMMATIC_SCROLL_ANIMATION_CURVE
 
 BASE_FEATURE(kSlimDirectReceiverIpc, base::FEATURE_ENABLED_BY_DEFAULT);

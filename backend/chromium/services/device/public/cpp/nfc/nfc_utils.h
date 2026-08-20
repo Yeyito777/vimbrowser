@@ -8,19 +8,9 @@
 #include "base/component_export.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <CoreNFC/CoreNFC.h>
-
-#include "services/device/public/mojom/nfc.mojom.h"
-#endif
 
 namespace device {
 
-#if BUILDFLAG(IS_IOS)
-// Maps a CoreNFC format to mojom raw format.
-COMPONENT_EXPORT(NFC)
-device::mojom::NSRawTypeNameFormat MapCoreNFCFormat(NFCTypeNameFormat format);
-#endif
 
 }  // namespace device
 

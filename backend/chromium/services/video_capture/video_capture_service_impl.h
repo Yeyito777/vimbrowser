@@ -19,9 +19,6 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "services/video_capture/public/mojom/video_capture_service.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "media/capture/video/chromeos/mojom/camera_app.mojom.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
 #include "services/viz/public/cpp/gpu/gpu.h"
@@ -31,9 +28,6 @@
 #include "media/device_monitors/device_monitor_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "media/device_monitors/system_message_window_win.h"
-#endif
 
 namespace video_capture {
 
@@ -53,20 +47,10 @@ class VideoCaptureServiceImpl : public mojom::VideoCaptureService {
   ~VideoCaptureServiceImpl() override;
 
   // mojom::VideoCaptureService implementation.
-#if BUILDFLAG(IS_CHROMEOS)
-  void InjectGpuDependencies(mojo::PendingRemote<mojom::AcceleratorFactory>
-                                 accelerator_factory) override;
-  void ConnectToCameraAppDeviceBridge(
-      mojo::PendingReceiver<cros::mojom::CameraAppDeviceBridge> receiver)
-      override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void ConnectToVideoSourceProvider(
       mojo::PendingReceiver<mojom::VideoSourceProvider> receiver) override;
   void BindControlsForTesting(
       mojo::PendingReceiver<mojom::TestingControls> receiver) override;
-#if BUILDFLAG(IS_WIN)
-  void OnGpuInfoUpdate(const CHROME_LUID& luid) override;
-#endif
 #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
   void SetVizGpu(std::unique_ptr<viz::Gpu> viz_gpu);
 #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
@@ -86,10 +70,6 @@ class VideoCaptureServiceImpl : public mojom::VideoCaptureService {
 
 #if BUILDFLAG(IS_MAC)
   std::unique_ptr<media::DeviceMonitorMac> video_capture_device_monitor_mac_;
-#endif
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<media::SystemMessageWindowWin>
-      video_capture_system_message_window_win_;
 #endif
 
   mojo::Receiver<mojom::VideoCaptureService> receiver_;

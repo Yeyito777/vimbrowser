@@ -14,12 +14,8 @@
 #include "base/time/time.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <signal.h>
 #define USE_SIGNALS 1
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace blink {
 namespace scheduler {
@@ -69,12 +65,7 @@ std::atomic<int> ThreadCPUThrottler::ThrottlingThread::throttling_rate_percent_;
 std::atomic<bool> ThreadCPUThrottler::ThrottlingThread::thread_exists_;
 
 ThreadCPUThrottler::ThrottlingThread::ThrottlingThread(double rate)
-#ifdef OS_WIN
-    : throttled_thread_handle_(
-          ::OpenThread(THREAD_SUSPEND_RESUME, false, ::GetCurrentThreadId())) {
-#else
     : throttled_thread_handle_(base::PlatformThread::CurrentHandle()) {
-#endif
   SetThrottlingRate(rate);
   CHECK(!thread_exists_.exchange(true, std::memory_order_relaxed));
   Start();
@@ -151,16 +142,6 @@ void ThreadCPUThrottler::ThrottlingThread::Throttle() {
 #ifdef USE_SIGNALS
   pthread_kill(throttled_thread_handle_.platform_handle(), SIGUSR2);
   Sleep(base::Microseconds(quant_time_us));
-#elif BUILDFLAG(IS_WIN)
-  double rate = throttling_rate_percent_.load(std::memory_order_acquire) / 100.;
-  base::TimeDelta run_duration =
-      base::Microseconds(static_cast<int>(quant_time_us / rate));
-  base::TimeDelta sleep_duration =
-      base::Microseconds(quant_time_us) - run_duration;
-  Sleep(run_duration);
-  ::SuspendThread(throttled_thread_handle_.platform_handle());
-  Sleep(sleep_duration);
-  ::ResumeThread(throttled_thread_handle_.platform_handle());
 #endif
 }
 
@@ -178,15 +159,7 @@ void ThreadCPUThrottler::ThrottlingThread::Start() {
 }
 
 void ThreadCPUThrottler::ThrottlingThread::Sleep(base::TimeDelta duration) {
-#if BUILDFLAG(IS_WIN)
-  // We cannot rely on ::Sleep function as it's precision is not enough for
-  // the purpose. Could be up to 16ms jitter.
-  base::TimeTicks wakeup_time = base::TimeTicks::Now() + duration;
-  while (base::TimeTicks::Now() < wakeup_time) {
-  }
-#else
   base::PlatformThread::Sleep(duration);
-#endif
 }
 
 void ThreadCPUThrottler::ThrottlingThread::Stop() {

@@ -17,10 +17,8 @@ namespace {
 
 constexpr int kMediaListMaxHeight = 488;
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Padding for the borders and separators for non-CrOS updated UI.
 constexpr int kMediaListUpdatedPadding = 8;
-#endif
 
 }  // anonymous namespace
 
@@ -40,12 +38,10 @@ MediaItemUIListView::MediaItemUIListView(bool should_clip_height) {
   SetHorizontalScrollBar(std::make_unique<views::OverlayScrollBar>(
       views::ScrollBar::Orientation::kHorizontal));
 
-#if !BUILDFLAG(IS_CHROMEOS)
   auto* layout = static_cast<views::BoxLayout*>(contents()->GetLayoutManager());
   layout->set_inside_border_insets(
       gfx::Insets::VH(kMediaListUpdatedPadding, kMediaListUpdatedPadding));
   layout->set_between_child_spacing(kMediaListUpdatedPadding);
-#endif
 }
 
 MediaItemUIListView::~MediaItemUIListView() = default;

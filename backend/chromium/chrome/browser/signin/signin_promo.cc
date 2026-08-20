@@ -29,9 +29,6 @@
 #include "net/base/url_util.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace signin {
 
@@ -40,7 +37,6 @@ const char kSignInPromoQueryKeyAutoClose[] = "auto_close";
 const char kSignInPromoQueryKeyForceKeepData[] = "force_keep_data";
 const char kSignInPromoQueryKeyReason[] = "reason";
 
-#if !BUILDFLAG(IS_CHROMEOS)
 GURL GetEmbeddedPromoURL(signin_metrics::AccessPoint access_point,
                          signin_metrics::Reason reason,
                          bool auto_close) {
@@ -73,7 +69,6 @@ GURL GetEmbeddedReauthURLWithEmail(signin_metrics::AccessPoint access_point,
   url = net::AppendQueryParameter(url, "validateEmail", "1");
   return net::AppendQueryParameter(url, "readOnlyEmail", "1");
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 GURL GetChromeSyncURLForDice(ChromeSyncUrlArgs args) {

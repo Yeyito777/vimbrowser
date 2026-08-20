@@ -25,9 +25,6 @@ void EnumerateGPUDevice(const gpu::GPUInfo::GPUDevice& device,
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
   enumerator->AddInt("revision", device.revision);
 #endif
-#if BUILDFLAG(IS_WIN)
-  enumerator->AddInt("subSysId", device.sub_sys_id);
-#endif  // BUILDFLAG(IS_WIN)
   enumerator->AddBool("active", device.active);
   enumerator->AddString("vendorString", device.vendor_string);
   enumerator->AddString("deviceString", device.device_string);
@@ -65,45 +62,11 @@ void EnumerateVideoEncodeAcceleratorSupportedProfile(
   enumerator->EndVideoEncodeAcceleratorSupportedProfile();
 }
 
-#if BUILDFLAG(IS_WIN)
-void EnumerateOverlayInfo(const gpu::OverlayInfo& info,
-                          gpu::GPUInfo::Enumerator* enumerator) {
-  enumerator->BeginOverlayInfo();
-  enumerator->AddBool("directComposition", info.direct_composition);
-  enumerator->AddBool("supportsOverlays", info.supports_overlays);
-  enumerator->AddString("yuy2OverlaySupport",
-                        gpu::OverlaySupportToString(info.yuy2_overlay_support));
-  enumerator->AddString("nv12OverlaySupport",
-                        gpu::OverlaySupportToString(info.nv12_overlay_support));
-  enumerator->AddString("bgra8OverlaySupport", gpu::OverlaySupportToString(
-                                                   info.bgra8_overlay_support));
-  enumerator->AddString(
-      "rgb10a2OverlaySupport",
-      gpu::OverlaySupportToString(info.rgb10a2_overlay_support));
-  enumerator->AddString("p010OverlaySupport",
-                        gpu::OverlaySupportToString(info.p010_overlay_support));
-  enumerator->EndOverlayInfo();
-}
-#endif
 
 }  // namespace
 
 namespace gpu {
 
-#if BUILDFLAG(IS_WIN)
-const char* OverlaySupportToString(gpu::OverlaySupport support) {
-  switch (support) {
-    case gpu::OverlaySupport::kNone:
-      return "NONE";
-    case gpu::OverlaySupport::kDirect:
-      return "DIRECT";
-    case gpu::OverlaySupport::kScaling:
-      return "SCALING";
-    case gpu::OverlaySupport::kSoftware:
-      return "SOFTWARE";
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 VideoDecodeAcceleratorCapabilities::VideoDecodeAcceleratorCapabilities()
     : flags(0) {}
@@ -208,17 +171,6 @@ const GPUInfo::GPUDevice* GPUInfo::GetGpuByPreference(
   return nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-GPUInfo::GPUDevice* GPUInfo::FindGpuByLuid(DWORD low_part, LONG high_part) {
-  if (gpu.luid.LowPart == low_part && gpu.luid.HighPart == high_part)
-    return &gpu;
-  for (auto& device : secondary_gpus) {
-    if (device.luid.LowPart == low_part && device.luid.HighPart == high_part)
-      return &device;
-  }
-  return nullptr;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_VULKAN)
 std::vector<uint8_t> GPUInfo::SerializeVulkanInfo() const {
@@ -258,13 +210,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
     bool is_asan;
     bool is_clang_coverage;
     uint32_t target_cpu_bits;
-#if BUILDFLAG(IS_WIN)
-    uint32_t directml_feature_level;
-    uint32_t d3d12_feature_level;
-    uint32_t vulkan_version;
-    OverlayInfo overlay_info;
-    bool shared_image_d3d;
-#endif
 
     VideoDecodeAcceleratorSupportedProfiles
         video_decode_accelerator_supported_profiles;
@@ -329,20 +274,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
   enumerator->AddBool("canSupportThreadedTextureMailbox",
                       can_support_threaded_texture_mailbox);
   // TODO(kbr): add dx_diagnostics on Windows.
-#if BUILDFLAG(IS_WIN)
-  EnumerateOverlayInfo(overlay_info, enumerator);
-  enumerator->AddBool("supportsDirectML", directml_feature_level != 0);
-  enumerator->AddBool("supportsDx12", d3d12_feature_level != 0);
-  enumerator->AddBool("supportsVulkan", vulkan_version != 0);
-  enumerator->AddString(
-      "directMLFeatureLevel",
-      gpu::DirectMLFeatureLevelToString(directml_feature_level));
-  enumerator->AddString("dx12FeatureLevel",
-                        gpu::D3DFeatureLevelToString(d3d12_feature_level));
-  enumerator->AddString("vulkanVersion",
-                        gpu::VulkanVersionToString(vulkan_version));
-  enumerator->AddBool("supportsD3dSharedImages", shared_image_d3d);
-#endif
   for (const auto& profile : video_decode_accelerator_supported_profiles)
     EnumerateVideoDecodeAcceleratorSupportedProfile(profile, enumerator);
   for (const auto& profile : video_encode_accelerator_supported_profiles)

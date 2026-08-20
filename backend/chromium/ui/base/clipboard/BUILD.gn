@@ -7,10 +7,6 @@ import("//build/config/features.gni")
 import("//build/config/ui.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 component("clipboard_types") {
   output_name = "ui_base_clipboard_types"
   sources = [
@@ -25,20 +21,12 @@ component("clipboard_types") {
     sources += [ "clipboard_format_type.h" ]
   }
 
-  if (is_ios) {
-    sources += [ "clipboard_format_type_ios.mm" ]
-  }
-
   if (is_mac) {
     sources += [ "clipboard_format_type_mac.mm" ]
   }
 
   if (is_apple) {
     sources += [ "clipboard_constants_mac.mm" ]
-  }
-
-  if (is_win) {
-    sources += [ "clipboard_format_type_win.cc" ]
   }
 
   if (use_aura && !is_win) {
@@ -142,26 +130,6 @@ component("clipboard") {
     ]
   }
 
-  if (is_ios) {
-    if (target_platform == "tvos") {
-      sources += [ "clipboard_tvos.mm" ]
-    } else {
-      sources += [
-        "clipboard_ios.h",
-        "clipboard_ios.mm",
-      ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "clipboard_util_win.cc",
-      "clipboard_util_win.h",
-      "clipboard_win.cc",
-      "clipboard_win.h",
-    ]
-  }
-
   defines = [ "IS_UI_BASE_CLIPBOARD_IMPL" ]
 
   deps = [
@@ -240,22 +208,10 @@ source_set("clipboard_test") {
   sources = []
   output_name = "ui_base_clipboard_test"
 
-  if (is_ios) {
-    if (use_blink) {
-      # On other OSs, clipboard platform unit tests are run as part of
-      # interactive_ui_tests. However, since interactive_ui_tests is not yet
-      # ready for Blink iOS, we run them here for now.
-      sources += [
-        "clipboard_test_template.h",
-        "clipboard_unittest.cc",
-      ]
-    }
-  } else {
-    sources += [
-      "custom_data_helper_unittest.cc",
-      "test/test_clipboard_unittest.cc",
-    ]
-  }
+  sources += [
+    "custom_data_helper_unittest.cc",
+    "test/test_clipboard_unittest.cc",
+  ]
 
   if (is_linux) {
     sources += [ "clipboard_util_linux_unittest.cc" ]
@@ -268,10 +224,6 @@ source_set("clipboard_test") {
       "url_file_parser_unittest.cc",
     ]
     frameworks = [ "PDFKit.framework" ]
-  }
-
-  if (is_win) {
-    sources += [ "clipboard_util_win_unittest.cc" ]
   }
 
   deps = [

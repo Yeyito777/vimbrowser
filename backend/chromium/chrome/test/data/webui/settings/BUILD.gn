@@ -196,39 +196,32 @@ build_webui_tests("build") {
     "zoom_levels_test.ts",
   ]
 
-  if (is_chromeos) {
-    files += [
-      "people_page_test_cros.ts",
-      "smart_card_readers_page_test.ts",
-    ]
-  } else {
-    files += [
-      "account_page_test.ts",
-      "clear_browsing_data_account_indicator_test.ts",
-      "default_browser_test.ts",
-      "fake_language_settings_private.ts",
-      "google_services_page_test.ts",
-      "import_data_dialog_test.ts",
-      "languages_page_metrics_test_browser.ts",
-      "languages_page_test.ts",
-      "languages_test.ts",
-      "live_caption_test.ts",
-      "live_translate_test.ts",
-      "metrics_reporting_test.ts",
-      "people_page_manage_profile_test.ts",
-      "relaunch_confirmation_dialog_test.ts",
-      "sync_account_control_test.ts",
-      "system_page_test.ts",
-      "test_batch_upload_promo_browser_proxy.ts",
-      "test_captions_browser_proxy.ts",
-      "test_languages_browser_proxy.ts",
-      "test_languages_settings_metrics_proxy.ts",
-      "translate_page_metrics_test_browser.ts",
-      "translate_page_test.ts",
-    ]
-    if (is_chrome_branded) {
-      files += [ "system_page_official_test.ts" ]
-    }
+  files += [
+    "account_page_test.ts",
+    "clear_browsing_data_account_indicator_test.ts",
+    "default_browser_test.ts",
+    "fake_language_settings_private.ts",
+    "google_services_page_test.ts",
+    "import_data_dialog_test.ts",
+    "languages_page_metrics_test_browser.ts",
+    "languages_page_test.ts",
+    "languages_test.ts",
+    "live_caption_test.ts",
+    "live_translate_test.ts",
+    "metrics_reporting_test.ts",
+    "people_page_manage_profile_test.ts",
+    "relaunch_confirmation_dialog_test.ts",
+    "sync_account_control_test.ts",
+    "system_page_test.ts",
+    "test_batch_upload_promo_browser_proxy.ts",
+    "test_captions_browser_proxy.ts",
+    "test_languages_browser_proxy.ts",
+    "test_languages_settings_metrics_proxy.ts",
+    "translate_page_metrics_test_browser.ts",
+    "translate_page_test.ts",
+  ]
+  if (is_chrome_branded) {
+    files += [ "system_page_official_test.ts" ]
   }
 
   if (is_mac) {
@@ -278,10 +271,6 @@ build_webui_tests("build") {
     "//tools/typescript/definitions/pending.d.ts",
     "//tools/typescript/definitions/settings_private.d.ts",
   ]
-  if (is_chromeos) {
-    ts_definitions +=
-        [ "//tools/typescript/definitions/quick_unlock_private.d.ts" ]
-  }
 
   ts_deps = [
     "//chrome/browser/resources/settings:build_ts",

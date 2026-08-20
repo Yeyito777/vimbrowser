@@ -32,9 +32,7 @@
 #include "chrome/browser/safe_browsing/extension_telemetry/tabs_api_signal.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/web_applications/isolated_web_apps/isolated_web_app_url_info.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -60,11 +58,9 @@ namespace user_prefs {
 class PrefRegistrySyncable;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace web_app {
 class IsolatedWebAppUrlInfo;
 }
-#endif
 
 namespace extensions {
 
@@ -205,23 +201,15 @@ class WindowsCreateFunction : public ExtensionFunction {
       const api::windows::Create::Params::CreateData& create_data,
       gfx::Rect& window_bounds);
 
-#if BUILDFLAG(IS_ANDROID)
-  void OnBrowserWindowCreatedAsynchronously(BrowserWindowInterface* new_window);
-#endif
 
   // Handles post-creation window initialization. `new_window` is the newly-
   // created browser window.
   // Returns the response to pass back to the extension.
   ResponseValue OnBrowserWindowCreated(BrowserWindowInterface* new_window);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnBocaWindowCreatedAsynchronously(const SessionID& session_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   // The info for an isolated web app to open, if any.
   std::optional<web_app::IsolatedWebAppUrlInfo> isolated_web_app_url_info_;
-#endif
 
   // The creation data parameters supplied by the extension.
   std::optional<api::windows::Create::Params::CreateData> create_data_;

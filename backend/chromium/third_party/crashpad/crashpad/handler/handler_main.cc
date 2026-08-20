@@ -58,9 +58,6 @@
 #include "util/string/split_string.h"
 #include "util/synchronization/semaphore.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "handler/linux/cros_crash_report_exception_handler.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include <unistd.h>
@@ -80,14 +77,6 @@
 #include "util/mach/child_port_handshake.h"
 #include "util/posix/close_stdio.h"
 #include "util/posix/signals.h"
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "handler/win/crash_report_exception_handler.h"
-#include "util/win/exception_handler_server.h"
-#include "util/win/handle.h"
-#include "util/win/initial_client_data.h"
-#include "util/win/session_end_watcher.h"
 #endif  // BUILDFLAG(IS_APPLE)
 
 #if BUILDFLAG(ENABLE_CEF)
@@ -126,19 +115,6 @@ void Usage(const base::FilePath& me) {
 "      --handshake-fd=FD       establish communication with the client over FD\n"
   // clang-format on
 #endif  // BUILDFLAG(IS_APPLE)
-#if BUILDFLAG(IS_WIN)
-      // clang-format off
-"      --initial-client-data=HANDLE_request_crash_dump,\n"
-"                            HANDLE_request_non_crash_dump,\n"
-"                            HANDLE_non_crash_dump_completed,\n"
-"                            HANDLE_pipe,\n"
-"                            HANDLE_client_process,\n"
-"                            Address_crash_exception_information,\n"
-"                            Address_non_crash_exception_information,\n"
-"                            Address_debug_critical_section\n"
-"                              use precreated data to register initial client\n"
-  // clang-format on
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       // clang-format off
 "      --initial-client-fd=FD  a socket connected to a client.\n"
@@ -164,17 +140,6 @@ void Usage(const base::FilePath& me) {
 "      --no-rate-limit         don't rate limit crash uploads\n"
 "      --no-upload-gzip        don't use gzip compression when uploading\n"
   // clang-format on
-#if BUILDFLAG(IS_ANDROID)
-      // clang-format off
-"      --no-write-minidump-to-database\n"
-"                              don't write minidump to database\n"
-  // clang-format on
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-      // clang-format off
-"      --pipe-name=PIPE        communicate with the client over PIPE\n"
-  // clang-format on
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
       // clang-format off
 "      --reset-own-crash-exception-port-to-system-default\n"
@@ -197,25 +162,6 @@ void Usage(const base::FilePath& me) {
 "      --url=URL               send crash reports to this Breakpad server URL,\n"
 "                              only if uploads are enabled for the database\n"
   // clang-format on
-#if BUILDFLAG(IS_CHROMEOS)
-      // clang-format off
-"      --use-cros-crash-reporter\n"
-"                              pass crash reports to /sbin/crash_reporter\n"
-"                              instead of storing them in the database\n"
-"      --minidump-dir-for-tests=TEST_MINIDUMP_DIR\n"
-"                              causes /sbin/crash_reporter to leave dumps in\n"
-"                              this directory instead of the normal location\n"
-"      --always-allow-feedback\n"
-"                              pass the --always_allow_feedback flag to\n"
-"                              crash_reporter, thus skipping metrics consent\n"
-"                              checks\n"
-  // clang-format on
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-      // clang-format off
-"      --write-minidump-to-log write minidump to log\n"
-  // clang-format on
-#endif  // BUILDFLAG(IS_ANDROID)
       // clang-format off
 "      --help                  display this help and exit\n"
 "      --version               output version information and exit\n",
@@ -240,13 +186,6 @@ struct Options {
   VMAddress sanitization_information_address;
   int initial_client_fd;
   bool shared_client_connection;
-#if BUILDFLAG(IS_ANDROID)
-  bool write_minidump_to_log;
-  bool write_minidump_to_database;
-#endif  // BUILDFLAG(IS_ANDROID)
-#elif BUILDFLAG(IS_WIN)
-  std::string pipe_name;
-  InitialClientData initial_client_data;
 #endif  // BUILDFLAG(IS_APPLE)
   bool identify_client_via_url;
   bool monitor_self;
@@ -256,11 +195,6 @@ struct Options {
   int max_uploads;
   int max_database_size;
   int max_database_age;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool use_cros_crash_reporter = false;
-  base::FilePath minidump_dir_for_tests;
-  bool always_allow_feedback = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if defined(ATTACHMENTS_SUPPORTED)
   std::vector<base::FilePath> attachments;
 #endif  // ATTACHMENTS_SUPPORTED
@@ -416,63 +350,6 @@ void HandleSIGTERM(int sig, siginfo_t* siginfo, void* context) {
 
 #endif  // BUILDFLAG(IS_APPLE)
 
-#elif BUILDFLAG(IS_WIN)
-
-LONG(WINAPI* g_original_exception_filter)(EXCEPTION_POINTERS*) = nullptr;
-
-LONG WINAPI UnhandledExceptionHandler(EXCEPTION_POINTERS* exception_pointers) {
-  MetricsRecordExit(Metrics::LifetimeMilestone::kCrashed);
-  Metrics::HandlerCrashed(exception_pointers->ExceptionRecord->ExceptionCode);
-
-  if (g_original_exception_filter)
-    return g_original_exception_filter(exception_pointers);
-  else
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
-// Handles events like Control-C and Control-Break on a console.
-BOOL WINAPI ConsoleHandler(DWORD console_event) {
-  MetricsRecordExit(Metrics::LifetimeMilestone::kTerminated);
-  return false;
-}
-
-// Handles a WM_ENDSESSION message sent when the user session is ending.
-class TerminateHandler final : public SessionEndWatcher {
- public:
-  TerminateHandler() : SessionEndWatcher() {}
-
-  TerminateHandler(const TerminateHandler&) = delete;
-  TerminateHandler& operator=(const TerminateHandler&) = delete;
-
-  ~TerminateHandler() override {}
-
- private:
-  // SessionEndWatcher:
-  void SessionEnding() override {
-    MetricsRecordExit(Metrics::LifetimeMilestone::kTerminated);
-  }
-};
-
-void ReinstallCrashHandler() {
-  // This is used to re-enable the metrics-recording crash handler after
-  // MonitorSelf() sets up a Crashpad exception handler. The Crashpad handler
-  // takes over the UnhandledExceptionFilter, so reinstall the metrics-recording
-  // one.
-  g_original_exception_filter =
-      SetUnhandledExceptionFilter(&UnhandledExceptionHandler);
-}
-
-void InstallCrashHandler() {
-  ReinstallCrashHandler();
-
-  // These are termination handlers, not crash handlers, but that’s close
-  // enough. Note that destroying the TerminateHandler would wait for its thread
-  // to exit, which isn’t necessary or desirable.
-  SetConsoleCtrlHandler(ConsoleHandler, true);
-  [[maybe_unused]] static TerminateHandler* terminate_handler =
-      new TerminateHandler();
-}
-
 #endif  // BUILDFLAG(IS_APPLE)
 
 void MonitorSelf(const Options& options) {
@@ -509,16 +386,6 @@ void MonitorSelf(const Options& options) {
   // instance of crashpad_handler to be writing metrics at a time, and it should
   // be the primary instance.
   CrashpadClient crashpad_client;
-#if BUILDFLAG(IS_ANDROID)
-  if (!crashpad_client.StartHandlerAtCrash(executable_path,
-                                           options.database,
-                                           base::FilePath(),
-                                           options.url,
-                                           options.annotations,
-                                           extra_arguments)) {
-    return;
-  }
-#else
   if (!crashpad_client.StartHandler(executable_path,
                                     options.database,
                                     base::FilePath(),
@@ -529,7 +396,6 @@ void MonitorSelf(const Options& options) {
                                     false)) {
     return;
   }
-#endif
 
   // Make sure that appropriate metrics will be recorded on crash before this
   // process is terminated.
@@ -559,15 +425,8 @@ class ScopedStoppable {
 
 void InitCrashpadLogging() {
   logging::LoggingSettings settings;
-#if BUILDFLAG(IS_CHROMEOS)
-  settings.logging_dest = logging::LOG_TO_FILE;
-  settings.log_file_path = "/var/log/chrome/chrome";
-#elif BUILDFLAG(IS_WIN)
-  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
-#else
   settings.logging_dest =
       logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-#endif
   logging::InitLogging(settings);
 }
 
@@ -596,9 +455,6 @@ int HandlerMain(int argc,
 #if BUILDFLAG(IS_APPLE)
     kOptionHandshakeFD,
 #endif  // BUILDFLAG(IS_APPLE)
-#if BUILDFLAG(IS_WIN)
-    kOptionInitialClientData,
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     kOptionInitialClientFD,
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
@@ -614,12 +470,6 @@ int HandlerMain(int argc,
     kOptionNoPeriodicTasks,
     kOptionNoRateLimit,
     kOptionNoUploadGzip,
-#if BUILDFLAG(IS_ANDROID)
-    kOptionNoWriteMinidumpToDatabase,
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-    kOptionPipeName,
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
     kOptionResetOwnCrashExceptionPortToSystemDefault,
 #endif  // BUILDFLAG(IS_APPLE)
@@ -632,14 +482,6 @@ int HandlerMain(int argc,
     kOptionMaxUploads,
     kOptionMaxDatabaseSize,
     kOptionMaxDatabaseAge,
-#if BUILDFLAG(IS_CHROMEOS)
-    kOptionUseCrosCrashReporter,
-    kOptionMinidumpDirForTests,
-    kOptionAlwaysAllowFeedback,
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-    kOptionWriteMinidumpToLog,
-#endif  // BUILDFLAG(IS_ANDROID)
 
     // Standard options.
     kOptionHelp = -2,
@@ -654,12 +496,6 @@ int HandlerMain(int argc,
     {"database", required_argument, nullptr, kOptionDatabase},
 #if BUILDFLAG(IS_APPLE)
     {"handshake-fd", required_argument, nullptr, kOptionHandshakeFD},
-#endif  // BUILDFLAG(IS_APPLE)
-#if BUILDFLAG(IS_WIN)
-    {"initial-client-data",
-     required_argument,
-     nullptr,
-     kOptionInitialClientData},
 #endif  // BUILDFLAG(IS_APPLE)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     {"initial-client-fd", required_argument, nullptr, kOptionInitialClientFD},
@@ -685,15 +521,6 @@ int HandlerMain(int argc,
     {"no-periodic-tasks", no_argument, nullptr, kOptionNoPeriodicTasks},
     {"no-rate-limit", no_argument, nullptr, kOptionNoRateLimit},
     {"no-upload-gzip", no_argument, nullptr, kOptionNoUploadGzip},
-#if BUILDFLAG(IS_ANDROID)
-    {"no-write-minidump-to-database",
-     no_argument,
-     nullptr,
-     kOptionNoWriteMinidumpToDatabase},
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-    {"pipe-name", required_argument, nullptr, kOptionPipeName},
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
     {"reset-own-crash-exception-port-to-system-default",
      no_argument,
@@ -716,20 +543,6 @@ int HandlerMain(int argc,
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_ANDROID)
     {"url", required_argument, nullptr, kOptionURL},
-#if BUILDFLAG(IS_CHROMEOS)
-    {"use-cros-crash-reporter",
-     no_argument,
-     nullptr,
-     kOptionUseCrosCrashReporter},
-    {"minidump-dir-for-tests",
-     required_argument,
-     nullptr,
-     kOptionMinidumpDirForTests},
-    {"always-allow-feedback", no_argument, nullptr, kOptionAlwaysAllowFeedback},
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-    {"write-minidump-to-log", no_argument, nullptr, kOptionWriteMinidumpToLog},
-#endif  // BUILDFLAG(IS_ANDROID)
     {"help", no_argument, nullptr, kOptionHelp},
     {"version", no_argument, nullptr, kOptionVersion},
     {"max-uploads", required_argument, nullptr, kOptionMaxUploads},
@@ -749,9 +562,6 @@ int HandlerMain(int argc,
   options.periodic_tasks = true;
   options.rate_limit = true;
   options.upload_gzip = true;
-#if BUILDFLAG(IS_ANDROID)
-  options.write_minidump_to_database = true;
-#endif
 
   int opt;
   while ((opt = getopt_long(argc, argv, "", long_options, nullptr)) != -1) {
@@ -789,16 +599,6 @@ int HandlerMain(int argc,
         break;
       }
 #endif  // BUILDFLAG(IS_APPLE)
-#if BUILDFLAG(IS_WIN)
-      case kOptionInitialClientData: {
-        if (!options.initial_client_data.InitializeFromString(optarg)) {
-          ToolSupport::UsageHint(
-              me, "failed to parse --initial-client-data");
-          return ExitFailure();
-        }
-        break;
-      }
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       case kOptionInitialClientFD: {
         if (!base::StringToInt(optarg, &options.initial_client_fd)) {
@@ -846,18 +646,6 @@ int HandlerMain(int argc,
         options.upload_gzip = false;
         break;
       }
-#if BUILDFLAG(IS_ANDROID)
-      case kOptionNoWriteMinidumpToDatabase: {
-        options.write_minidump_to_database = false;
-        break;
-      }
-#endif  // BUILDFLAG(IS_ANDROID)
-#if BUILDFLAG(IS_WIN)
-      case kOptionPipeName: {
-        options.pipe_name = optarg;
-        break;
-      }
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
       case kOptionResetOwnCrashExceptionPortToSystemDefault: {
         options.reset_own_crash_exception_port_to_system_default = true;
@@ -913,27 +701,6 @@ int HandlerMain(int argc,
         }
         break;
       }
-#if BUILDFLAG(IS_CHROMEOS)
-      case kOptionUseCrosCrashReporter: {
-        options.use_cros_crash_reporter = true;
-        break;
-      }
-      case kOptionMinidumpDirForTests: {
-        options.minidump_dir_for_tests = base::FilePath(
-            ToolSupport::CommandLineArgumentToFilePathStringType(optarg));
-        break;
-      }
-      case kOptionAlwaysAllowFeedback: {
-        options.always_allow_feedback = true;
-        break;
-      }
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-      case kOptionWriteMinidumpToLog: {
-        options.write_minidump_to_log = true;
-        break;
-      }
-#endif  // BUILDFLAG(IS_ANDROID)
       case kOptionHelp: {
         Usage(me);
         MetricsRecordExit(Metrics::LifetimeMilestone::kExitedEarly);
@@ -963,17 +730,6 @@ int HandlerMain(int argc,
         me, "--handshake-fd and --mach-service are incompatible");
     return ExitFailure();
   }
-#elif BUILDFLAG(IS_WIN)
-  if (!options.initial_client_data.IsValid() && options.pipe_name.empty()) {
-    ToolSupport::UsageHint(me,
-                           "--initial-client-data or --pipe-name is required");
-    return ExitFailure();
-  }
-  if (options.initial_client_data.IsValid() && !options.pipe_name.empty()) {
-    ToolSupport::UsageHint(
-        me, "--initial-client-data and --pipe-name are incompatible");
-    return ExitFailure();
-  }
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   if (!options.exception_information_address &&
       options.initial_client_fd == kInvalidFileHandle) {
@@ -994,14 +750,6 @@ int HandlerMain(int argc,
         me, "--shared-client-connection requires --initial-client-fd");
     return ExitFailure();
   }
-#if BUILDFLAG(IS_ANDROID)
-  if (!options.write_minidump_to_log && !options.write_minidump_to_database) {
-    ToolSupport::UsageHint(me,
-                           "--no_write_minidump_to_database is required to use "
-                           "with --write_minidump_to_log.");
-    ExitFailure();
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_APPLE)
 
   if (options.database.empty()) {
@@ -1085,33 +833,6 @@ int HandlerMain(int argc,
   std::unique_ptr<CrashReportExceptionHandler> exception_handler;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (options.use_cros_crash_reporter) {
-    auto cros_handler = std::make_unique<CrosCrashReportExceptionHandler>(
-        database.get(),
-        &options.annotations,
-        user_stream_sources);
-
-    if (!options.minidump_dir_for_tests.empty()) {
-      cros_handler->SetDumpDir(options.minidump_dir_for_tests);
-    }
-
-    if (options.always_allow_feedback) {
-      cros_handler->SetAlwaysAllowFeedback();
-    }
-
-    exception_handler = std::move(cros_handler);
-  } else {
-    exception_handler = std::make_unique<CrashReportExceptionHandler>(
-        database.get(),
-        static_cast<CrashReportUploadThread*>(upload_thread.Get()),
-        &options.annotations,
-        &options.attachments,
-        true,
-        false,
-        user_stream_sources);
-  }
-#else
   exception_handler = std::make_unique<CrashReportExceptionHandler>(
       database.get(),
       static_cast<CrashReportUploadThread*>(upload_thread.Get()),
@@ -1119,16 +840,11 @@ int HandlerMain(int argc,
 #if defined(ATTACHMENTS_SUPPORTED)
       &options.attachments,
 #endif  // ATTACHMENTS_SUPPORTED
-#if BUILDFLAG(IS_ANDROID)
-      options.write_minidump_to_database,
-      options.write_minidump_to_log,
-#endif  // BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_LINUX)
       true,
       false,
 #endif  // BUILDFLAG(IS_LINUX)
       user_stream_sources);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   if (options.exception_information_address) {
@@ -1194,16 +910,6 @@ int HandlerMain(int argc,
   }
 
   RecordFileLimitAnnotation();
-#elif BUILDFLAG(IS_WIN)
-  // Shut down as late as possible relative to programs we're watching.
-  if (!SetProcessShutdownParameters(0x100, SHUTDOWN_NORETRY))
-    PLOG(ERROR) << "SetProcessShutdownParameters";
-
-  ExceptionHandlerServer exception_handler_server(!options.pipe_name.empty());
-
-  if (!options.pipe_name.empty()) {
-    exception_handler_server.SetPipeName(base::UTF8ToWide(options.pipe_name));
-  }
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   ExceptionHandlerServer exception_handler_server;
 #endif  // BUILDFLAG(IS_APPLE)
@@ -1221,12 +927,7 @@ int HandlerMain(int argc,
 
   Metrics::HandlerLifetimeMilestone(Metrics::LifetimeMilestone::kStarted);
 
-#if BUILDFLAG(IS_WIN)
-  if (options.initial_client_data.IsValid()) {
-    exception_handler_server.InitializeWithInheritedDataForInitialClient(
-        options.initial_client_data, exception_handler.get());
-  }
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   if (options.initial_client_fd == kInvalidFileHandle ||
       !exception_handler_server.InitializeWithClient(
           ScopedFileHandle(options.initial_client_fd),

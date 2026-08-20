@@ -52,9 +52,6 @@
 #include "third_party/blink/public/web/web_security_policy.h"
 #include "third_party/blink/public/web/web_view.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/renderer/ash_merge_session_loader_throttle.h"
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #include "chrome/renderer/bound_session_credentials/bound_session_request_throttled_handler_renderer_impl.h"
@@ -65,73 +62,13 @@ using blink::WebCache;
 using blink::WebSecurityPolicy;
 using content::RenderThread;
 
-#if !BUILDFLAG(IS_ANDROID)
 using blink::WebString;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-scoped_refptr<base::SequencedTaskRunner> GetCallbackGroupTaskRunner() {
-  content::ChildThread* child_thread = content::ChildThread::Get();
-  if (child_thread)
-    return child_thread->GetIOTaskRunner();
-
-  // This will happen when running via tests.
-  return base::SequencedTaskRunner::GetCurrentDefault();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-scoped_refptr<ChromeRenderThreadObserver::ChromeOSListener>
-ChromeRenderThreadObserver::ChromeOSListener::Create(
-    mojo::PendingReceiver<chrome::mojom::ChromeOSListener>
-        chromeos_listener_receiver) {
-  scoped_refptr<ChromeOSListener> helper = new ChromeOSListener();
-  content::ChildThread::Get()->GetIOTaskRunner()->PostTask(
-      FROM_HERE, base::BindOnce(&ChromeOSListener::BindOnIOThread, helper,
-                                std::move(chromeos_listener_receiver)));
-  return helper;
-}
-
-bool ChromeRenderThreadObserver::ChromeOSListener::IsMergeSessionRunning()
-    const {
-  base::AutoLock lock(lock_);
-  return merge_session_running_;
-}
-
-void ChromeRenderThreadObserver::ChromeOSListener::RunWhenMergeSessionFinished(
-    DelayedCallbackGroup::Callback callback) {
-  base::AutoLock lock(lock_);
-  DCHECK(merge_session_running_);
-  session_merged_callbacks_->Add(std::move(callback));
-}
-
-void ChromeRenderThreadObserver::ChromeOSListener::MergeSessionComplete() {
-  {
-    base::AutoLock lock(lock_);
-    merge_session_running_ = false;
-  }
-  session_merged_callbacks_->RunAll();
-}
-
-ChromeRenderThreadObserver::ChromeOSListener::ChromeOSListener()
-    : session_merged_callbacks_(base::MakeRefCounted<DelayedCallbackGroup>(
-          AshMergeSessionLoaderThrottle::GetMergeSessionTimeout(),
-          GetCallbackGroupTaskRunner())),
-      merge_session_running_(true) {}
-
-ChromeRenderThreadObserver::ChromeOSListener::~ChromeOSListener() = default;
-
-void ChromeRenderThreadObserver::ChromeOSListener::BindOnIOThread(
-    mojo::PendingReceiver<chrome::mojom::ChromeOSListener>
-        chromeos_listener_receiver) {
-  receiver_.Bind(std::move(chromeos_listener_receiver));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 ChromeRenderThreadObserver::ChromeRenderThreadObserver()
     : visited_link_reader_(new visitedlink::VisitedLinkReader) {
@@ -193,12 +130,6 @@ void ChromeRenderThreadObserver::SetInitialConfiguration(
   if (content_settings_manager)
     content_settings_manager_.Bind(std::move(content_settings_manager));
   process_state::SetIsIncognitoProcess(is_incognito_process);
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos_listener_receiver) {
-    chromeos_listener_ =
-        ChromeOSListener::Create(std::move(chromeos_listener_receiver));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
   if (bound_session_request_throttled_handler) {
@@ -216,7 +147,6 @@ void ChromeRenderThreadObserver::SetConfiguration(
   dynamic_params_ = std::move(params);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromeRenderThreadObserver::SetConfigurationOnProcessLockUpdate(
     chrome::mojom::StaticParamsPtr params) {
   // Ensure static renderer configuration parameters are set once.
@@ -224,7 +154,6 @@ void ChromeRenderThreadObserver::SetConfigurationOnProcessLockUpdate(
   static_renderer_params_set_ = true;
   process_state::SetIsInstantProcess(params->is_instant_process);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void ChromeRenderThreadObserver::OnRendererConfigurationAssociatedRequest(
     mojo::PendingAssociatedReceiver<chrome::mojom::RendererConfiguration>

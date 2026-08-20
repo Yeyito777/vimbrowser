@@ -29,14 +29,7 @@ source_set("battery") {
     "//mojo/public/cpp/bindings",
   ]
 
-  if (is_chromeos) {
-    configs += [ "//build/config/linux/dbus" ]
-    deps += [
-      "//chromeos/dbus/power",
-      "//chromeos/dbus/power:power_manager_proto",
-    ]
-    sources += [ "battery_status_manager_chromeos.cc" ]
-  } else if (is_linux && use_dbus) {
+  if (is_linux && use_dbus) {
     configs += [ "//build/config/linux/dbus" ]
     deps += [
       "//components/dbus",
@@ -49,18 +42,6 @@ source_set("battery") {
     ]
   } else if (is_mac) {
     sources += [ "battery_status_manager_mac.cc" ]
-    frameworks = [
-      "CoreFoundation.framework",
-      "IOKit.framework",
-    ]
-  } else if (is_win) {
-    deps += [ "//ui/gfx" ]
-    sources += [
-      "battery_status_manager_win.cc",
-      "battery_status_manager_win.h",
-    ]
-  } else if (is_ios) {
-    sources += [ "battery_status_manager_ios.mm" ]
     frameworks = [
       "CoreFoundation.framework",
       "IOKit.framework",

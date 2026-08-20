@@ -54,13 +54,6 @@ class UIControlsOzone : public ui_controls::UIControlsAura {
                                      base::OnceClosure closure,
                                      int accelerator_state) override;
   bool SendMouseClick(ui_controls::MouseButton type) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool SendTouchEventsNotifyWhenDone(int action,
-                                     int id,
-                                     int x,
-                                     int y,
-                                     base::OnceClosure task) override;
-#endif
 
   // Use |optional_host| to specify the host.
   // When |optional_host| is not null, event will be sent to |optional_host|.

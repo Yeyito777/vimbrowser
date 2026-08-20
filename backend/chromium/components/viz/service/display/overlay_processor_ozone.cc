@@ -25,11 +25,6 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/size_conversions.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "gpu/config/gpu_finch_features.h"
-#include "ui/display/display_features.h"
-#include "ui/gl/gl_switches.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CAST_OVERLAY_STRATEGY)
 #include "components/viz/service/display/overlay_strategy_underlay_cast.h"
@@ -41,36 +36,6 @@ namespace {
 
 gfx::ColorSpace GetColorSpaceForOzone(SharedImageFormat format,
                                       const gfx::ColorSpace& orig_color_space) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // The goal here is to ensure that the hw overlay path and the compositing
-  // path produce visually identical results. Otherwise, the user would perceive
-  // flickering when a particular resource (like a video) goes in and out of hw
-  // overlays repeatedly (for whatever reason).
-  //
-  // The Vulkan path is able to treat YUV 4:2:0 BT.601 and BT.709 resources
-  // correctly (see gpu::CreateVulkanYcbcrConversionInfo()). The GL path
-  // currently doesn't and just treats YUV 4:2:0 BT.709 resources as if they
-  // were BT.601 (but see the TODO below). Therefore, when Vulkan is enabled,
-  // we allow the overlay path to also distinguish between the two YUV
-  // encodings. Otherwise, we always use BT.601. This should ensure visual
-  // consistency between the compositing and the hw overlays path in both GL
-  // and Vulkan ChromeOS devices.
-  //
-  // TODO(b/233667677): the only reason the GL path treats YUV 4:2:0 BT.709
-  // resources as BT.601 is because of https://crrev.com/c/2336347. If we can
-  // be confident that hw overlays on all platforms can deal with BT.601 and
-  // BT.709 correctly, then we don't need GetColorSpaceForOzone() at all and we
-  // can just the pass the color space as-is to Ozone (and we would also need to
-  // change the GL path to distinguish between BT.601 and BT.709, see
-  // NativePixmapEGLBinding::InitializeFromNativePixmap()).
-  if ((format == MultiPlaneFormat::kNV12) &&
-      (!base::FeatureList::IsEnabled(features::kVulkan) ||
-       !base::FeatureList::IsEnabled(features::kDefaultANGLEVulkan) ||
-       !base::FeatureList::IsEnabled(features::kVulkanFromANGLE))) {
-    return orig_color_space.GetWithMatrixAndRange(
-        gfx::ColorSpace::MatrixID::SMPTE170M, orig_color_space.GetRangeID());
-  }
-#endif
   return orig_color_space;
 }
 
@@ -125,74 +90,6 @@ void ConvertToTiledOzoneOverlaySurface(
   ozone_candidate->overlay_type = overlay_candidate.overlay_type;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsYUVColorSpace(const gfx::ColorSpace& color_space) {
-  SkYUVColorSpace yuv_color_space;
-  return color_space.ToSkYUVColorSpace(&yuv_color_space);
-}
-
-bool AllowColorSpaceCombination(
-    SharedImageFormat source_format,
-    const gfx::ColorSpace& source_color_space,
-    const gfx::ColorSpace& destination_color_space) {
-  // Allow invalid source color spaces because the assumption is that the
-  // compositor won't do a color space conversion in this case anyway, so it
-  // should be consistent with the overlay path.
-  if (!source_color_space.IsValid())
-    return true;
-
-  // Since https://crrev.com/c/2336347, we force BT.601/narrow for the
-  // COLOR_ENCODING and COLOR_RANGE DRM/KMS properties. On the other hand, the
-  // compositor is able to handle different YUV encodings and ranges. Therefore,
-  // in theory, if we don't want to see a difference between overlays and
-  // compositing, we should not promote video frames to overlays unless they
-  // actually use BT.601/narrow.
-  //
-  // In practice, however, we expect to see lots of BT.709 video frames, and we
-  // don't want to reject all of them for overlays because the visual difference
-  // between BT.601/narrow and BT.709/narrow is not expected to be much.
-  // Therefore, in being consistent with the values we provide for
-  // EGL_YUV_COLOR_SPACE_HINT_EXT/EGL_SAMPLE_RANGE_HINT_EXT, we'll only allow
-  // frames that use non-BT.2020 with non-full range. In those cases, the
-  // compositor and the display controller are expected to render the frames
-  // equally (and decently - with the understanding that the final result may
-  // not be fully correct).
-  //
-  // TODO(b/233667677): Remove this when we've plumbed the YUV encoding and
-  // range to DRM/KMS. At that point, we need to ensure that
-  // EGL_YUV_COLOR_SPACE_HINT_EXT/EGL_SAMPLE_RANGE_HINT_EXT would also get the
-  // same values as DRM/KMS.
-  if ((source_format == MultiPlaneFormat::kNV12 ||
-       source_format == MultiPlaneFormat::kYV12 ||
-       source_format == MultiPlaneFormat::kP010) &&
-      (source_color_space.GetMatrixID() ==
-           gfx::ColorSpace::MatrixID::BT2020_NCL ||
-       source_color_space.GetRangeID() == gfx::ColorSpace::RangeID::FULL)) {
-    DCHECK(IsYUVColorSpace(source_color_space));
-    return false;
-  }
-
-  // Do not promote SDR content to overlay if the screen is in HDR10 mode.
-  // TODO(b/367739334): Fix color conversion layer in skia_renderer.cc
-  if (base::FeatureList::IsEnabled(
-          display::features::kEnableExternalDisplayHDR10Mode) &&
-      destination_color_space.GetContentColorUsage() ==
-          gfx::ContentColorUsage::kHDR) {
-    return source_color_space.GetContentColorUsage() ==
-           destination_color_space.GetContentColorUsage();
-  }
-
-  // Allow color space mismatches as long as either a) the source color space is
-  // SRGB; or b) both the source and destination color spaces have the same
-  // color usage. It is possible that case (a) still allows for visible color
-  // inconsistency between overlays and composition, but we'll address that case
-  // if it comes up.
-  return source_color_space.GetContentColorUsage() ==
-             gfx::ContentColorUsage::kSRGB ||
-         source_color_space.GetContentColorUsage() ==
-             destination_color_space.GetContentColorUsage();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -244,11 +141,7 @@ bool OverlayProcessorOzone::NeedsSurfaceDamageRectList() const {
 
 bool OverlayProcessorOzone::SupportsFlipRotateTransform() const {
   // TODO(petermcneeley): Test and enable for ChromeOS.
-#if BUILDFLAG(IS_CASTOS)
   return false;
-#else
-  return false;
-#endif
 }
 
 void OverlayProcessorOzone::NotifyOverlayPromotion(
@@ -290,32 +183,10 @@ void OverlayProcessorOzone::CheckOverlaySupportImpl(
       ConvertToOzoneOverlaySurface(*primary_plane, &(*ozone_surface_iterator));
       // TODO(crbug.com/40153057): Fuchsia claims support for presenting primary
       // plane as overlay, but does not provide a mailbox. Handle this case.
-#if !BUILDFLAG(IS_FUCHSIA)
       if (pixmap_provider_) {
         bool result = SetNativePixmapForCandidate(&(*ozone_surface_iterator),
                                                   primary_plane->mailbox,
                                                   /*is_primary=*/true);
-#if BUILDFLAG(IS_CHROMEOS)
-        if (!result) {
-          // For ChromeOS HW protected content, there's a race condition that
-          // can occur here where the mailbox for the native pixmap isn't
-          // registered yet so we will fail to promote to overlay due to this
-          // check. Allow us to proceed even w/out the native pixmap in that
-          // case as it will still succeed and would otherwise cause black
-          // flashing between frames while the race condition is completing.
-          // We don't know if we have a required overlay yet, so we need to
-          // go through all the candidates to see if one is present.
-          for (auto surface_iterator = surfaces->cbegin();
-               surface_iterator < surfaces->cend(); surface_iterator++) {
-            if (surface_iterator->requires_overlay) {
-              DLOG(WARNING)
-                  << "Allowing required overlay with missing primary pixmap";
-              result = true;
-              break;
-            }
-          }
-        }
-#endif  // BUILDFLAG(IS_CHROMEOS)
         // We cannot validate an overlay configuration without the buffer for
         // primary plane present.
         if (!result) {
@@ -325,7 +196,6 @@ void OverlayProcessorOzone::CheckOverlaySupportImpl(
           return;
         }
       }
-#endif
       ozone_surface_iterator++;
     }
 
@@ -341,38 +211,10 @@ void OverlayProcessorOzone::CheckOverlaySupportImpl(
 
       ConvertToOzoneOverlaySurface(*surface_iterator,
                                    &(*ozone_surface_iterator));
-#if BUILDFLAG(IS_CHROMEOS)
-      // On Chrome OS, skip the candidate if we think a color space combination
-      // might cause visible color differences between compositing and overlays.
-      // The reason is that on Chrome OS, we don't yet have an API to set up
-      // color space conversion per plane. Note however that we should only do
-      // this if the candidate does not require an overlay (e.g., for protected
-      // content, it's better to display it with an incorrect color space than
-      // to not display it at all).
-      // TODO(b/181974042): plumb the color space all the way to the ozone DRM
-      // backend when we get an API for per-plane color management.
-      if (!surface_iterator->requires_overlay &&
-          !AllowColorSpaceCombination(
-              /*source_format=*/surface_iterator->format,
-              /*source_color_space=*/surface_iterator->color_space,
-              /*destination_color_space=*/primary_plane_color_space_)) {
-        *ozone_surface_iterator = ui::OverlaySurfaceCandidate();
-        ozone_surface_iterator->plane_z_order = surface_iterator->plane_z_order;
-        continue;
-      }
-#endif  // BUILDFLAG(IS_CHROMEOS)
       if (pixmap_provider_) {
         bool result = SetNativePixmapForCandidate(&(*ozone_surface_iterator),
                                                   surface_iterator->mailbox,
                                                   /*is_primary=*/false);
-#if BUILDFLAG(IS_CHROMEOS)
-        if (!result && surface_iterator->requires_overlay) {
-          // For ChromeOS HW protected content, same condition as above
-          // regarding missing pixmaps.
-          result = true;
-          DLOG(WARNING) << "Allowing required overlay with missing pixmap";
-        }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
         // Skip the candidate if the corresponding NativePixmap is not found.
         if (!result) {
@@ -383,30 +225,6 @@ void OverlayProcessorOzone::CheckOverlaySupportImpl(
       }
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Some platforms (e.g. AMD) do not provide a dedicated cursor plane, and
-    // the display hardware will need to blit the cursor to the topmost plane.
-    // If the topmost plane is scaled/translated, the cursor will then be
-    // transformed along with it. Thus, we need to reject the topmost candidate
-    // if the buffer size is transformed at all.
-    if (!has_independent_cursor_plane_) {
-      auto highest_zindex_surface =
-          std::max_element(ozone_surface_list.begin(), ozone_surface_list.end(),
-                           [](const auto& a, const auto& b) {
-                             return a.plane_z_order < b.plane_z_order;
-                           });
-      if (highest_zindex_surface != ozone_surface_list.end()) {
-        gfx::RectF display_rect = highest_zindex_surface->display_rect;
-        gfx::Size buffer_size = highest_zindex_surface->buffer_size;
-        if (!display_rect.origin().IsOrigin() ||
-            buffer_size != gfx::ToFlooredSize(display_rect.size())) {
-          int zindex = highest_zindex_surface->plane_z_order;
-          *highest_zindex_surface = ui::OverlaySurfaceCandidate();
-          highest_zindex_surface->plane_z_order = zindex;
-        }
-      }
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   overlay_candidates_->CheckOverlaySupport(&ozone_surface_list);
 
@@ -499,11 +317,7 @@ void OverlayProcessorOzone::InsertPrimaryPlane(
 }
 
 bool OverlayProcessorOzone::ShouldCreatePrimaryPlane() const {
-#if BUILDFLAG(IS_CASTOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 bool OverlayProcessorOzone::SetNativePixmapForCandidate(

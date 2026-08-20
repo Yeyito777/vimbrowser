@@ -11,9 +11,6 @@
 #include "base/base_export.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 namespace base {
 class FilePath;
@@ -40,17 +37,10 @@ class BASE_EXPORT FileVersionInfo {
       const base::FilePath& file_path);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_WIN)
-  // Creates a FileVersionInfo for the specified module. Returns nullptr in
-  // case of error.
-  static std::unique_ptr<FileVersionInfo> CreateFileVersionInfoForModule(
-      HMODULE module);
-#else
   // Creates a FileVersionInfo for the current module. Returns nullptr in case
   // of error.
   static std::unique_ptr<FileVersionInfo>
   CreateFileVersionInfoForCurrentModule();
-#endif  // BUILDFLAG(IS_WIN)
 
   // Accessors to the different version properties.
   // Returns an empty string if the property is not found.

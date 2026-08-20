@@ -41,13 +41,6 @@ component("ozone") {
 
   defines = [ "IS_EVENTS_OZONE_IMPL" ]
 
-  if (is_chromeos) {
-    sources += [
-      "chromeos/cursor_controller.cc",
-      "chromeos/cursor_controller.h",
-    ]
-  }
-
   if (use_udev) {
     sources += [
       "device/udev/device_manager_udev.cc",
@@ -72,13 +65,6 @@ source_set("unittests") {
     "//ui/gfx:native_ui_types",
     "//ui/gfx/geometry",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "chromeos/cursor_controller_unittest.cc",
-      "keyboard/slow_keys_handler_unittest.cc",
-    ]
-  }
 
   if (is_linux || is_chromeos) {
     deps += [ "//ui/events/ozone/evdev:unittests" ]

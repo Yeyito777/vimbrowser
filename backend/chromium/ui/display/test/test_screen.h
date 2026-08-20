@@ -41,17 +41,10 @@ class TestScreen : public ScreenBase {
   Display GetDisplayNearestWindow(gfx::NativeWindow window) const override;
   void SetCursorScreenPointForTesting(const gfx::Point& point) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  TabletState GetTabletState() const override;
-  void OverrideTabletStateForTesting(TabletState state);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   gfx::Point cursor_screen_point_;
   bool register_screen_ = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  TabletState state_ = TabletState::kInClamshellMode;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace display::test

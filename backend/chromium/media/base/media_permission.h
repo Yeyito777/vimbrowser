@@ -15,9 +15,6 @@ namespace media {
 class MEDIA_EXPORT MediaPermission {
  public:
   using PermissionStatusCB = base::OnceCallback<void(bool)>;
-#if BUILDFLAG(IS_WIN)
-  using IsHardwareSecureDecryptionAllowedCB = base::OnceCallback<void(bool)>;
-#endif  // BUILDFLAG(IS_WIN)
 
   enum class Type {
     kProtectedMediaIdentifier,
@@ -48,11 +45,6 @@ class MEDIA_EXPORT MediaPermission {
   // the spec.
   virtual bool IsEncryptedMediaEnabled() = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Whether to allow the use of hardware secure decryption.
-  virtual void IsHardwareSecureDecryptionAllowed(
-      IsHardwareSecureDecryptionAllowedCB cb) = 0;
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace media

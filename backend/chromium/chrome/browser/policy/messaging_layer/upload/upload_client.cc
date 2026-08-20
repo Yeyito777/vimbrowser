@@ -26,16 +26,10 @@ namespace reporting {
 namespace {
 
 FileUploadJob::Delegate::SmartPtr CreateFileUploadDelegate() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return FileUploadJob::Delegate::SmartPtr(
-      new FileUploadDelegate(),
-      base::OnTaskRunnerDeleter(::content::GetUIThreadTaskRunner({})));
-#else   // !BUILDFLAG(IS_CHROMEOS)
   // No file uploads for all other configurations.
   return FileUploadJob::Delegate::SmartPtr(
       nullptr, base::OnTaskRunnerDeleter(
                    base::SequencedTaskRunner::GetCurrentDefault()));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 }  // namespace
 

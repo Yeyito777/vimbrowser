@@ -37,10 +37,6 @@
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#include "ash/webui/settings/public/constants/routes.mojom.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using extensions::EventRouter;
 using extensions::Extension;
@@ -226,39 +222,13 @@ content::LanguageInstallStatus VoicePackInstallStatusFromString(
   return content::LanguageInstallStatus::UNKNOWN;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-bool CanUseEnhancedNetworkVoices(const GURL& source_url, Profile* profile) {
-  // Currently only Select-to-speak and its settings page can use Enhanced
-  // Network voices.
-  if (source_url.GetHost() != extension_misc::kSelectToSpeakExtensionId &&
-      source_url != chromeos::settings::GetOSSettingsUrl(
-                        chromeos::settings::mojom::kSelectToSpeakSubpagePath)) {
-    return false;
-  }
-
-  // Check if these voices are disallowed by policy.
-  if (!profile->GetPrefs()->GetBoolean(
-          ash::prefs::
-              kAccessibilityEnhancedNetworkVoicesInSelectToSpeakAllowed)) {
-    return false;
-  }
-
-  // Return true if they were enabled by the user.
-  return profile->GetPrefs()->GetBoolean(
-      ash::prefs::kAccessibilitySelectToSpeakEnhancedNetworkVoices);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
-#if !BUILDFLAG(IS_CHROMEOS)
 TtsExtensionEngine* TtsExtensionEngine::GetInstance() {
   static base::NoDestructor<TtsExtensionEngine> tts_extension_engine;
   return tts_extension_engine.get();
 }
-#endif
 
 TtsExtensionEngine::TtsExtensionEngine() = default;
 
@@ -296,12 +266,6 @@ void TtsExtensionEngine::GetVoices(
     if (!tts_voices)
       continue;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Only authorized sources can use Enhanced Network voices.
-    if (extension->id() == extension_misc::kEnhancedNetworkTtsExtensionId &&
-        !CanUseEnhancedNetworkVoices(source_url, profile))
-      continue;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     for (size_t i = 0; i < tts_voices->size(); ++i) {
       const extensions::TtsVoice& voice = tts_voices->at(i);
@@ -654,48 +618,6 @@ ExtensionTtsEngineSendTtsEventFunction::Run() {
 
 ExtensionFunction::ResponseAction
 ExtensionTtsEngineSendTtsAudioFunction::Run() {
-#if BUILDFLAG(IS_CHROMEOS)
-  EXTENSION_FUNCTION_VALIDATE(args().size() >= 2);
-
-  const auto& utterance_id_value = args()[0];
-  EXTENSION_FUNCTION_VALIDATE(utterance_id_value.is_int());
-  int utterance_id = utterance_id_value.GetInt();
-
-  const base::DictValue* audio = args()[1].GetIfDict();
-  EXTENSION_FUNCTION_VALIDATE(audio);
-
-  const std::vector<uint8_t>* audio_buffer_blob =
-      audio->FindBlob(tts_extension_api_constants::kAudioBufferKey);
-  if (!audio_buffer_blob)
-    return RespondNow(Error("No audio buffer found."));
-
-  if (audio_buffer_blob->size() % 4 != 0)
-    return RespondNow(Error("Invalid audio buffer format."));
-
-  // Interpret the audio buffer as a sequence of float samples.
-  size_t sample_count = audio_buffer_blob->size() / 4;
-  std::vector<float> audio_buffer(sample_count);
-  const float* view = reinterpret_cast<const float*>(&(*audio_buffer_blob)[0]);
-  for (size_t i = 0; i < sample_count; i++, UNSAFE_TODO(view++)) {
-    audio_buffer[i] = *view;
-  }
-
-  int char_index = 0;
-  const base::Value* char_index_value =
-      audio->Find(tts_extension_api_constants::kCharIndexKey);
-  EXTENSION_FUNCTION_VALIDATE(char_index_value);
-  EXTENSION_FUNCTION_VALIDATE(char_index_value->is_int());
-  char_index = char_index_value->GetInt();
-
-  std::optional<bool> is_last_buffer =
-      audio->FindBool(tts_extension_api_constants::kIsLastBufferKey);
-  EXTENSION_FUNCTION_VALIDATE(is_last_buffer);
-
-  TtsExtensionEngine::GetInstance()->SendAudioBuffer(
-      utterance_id, audio_buffer, char_index, *is_last_buffer);
-  return RespondNow(NoArguments());
-#else
   // Given tts engine json api definition, we should never get here.
   NOTREACHED();
-#endif
 }

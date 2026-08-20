@@ -91,11 +91,9 @@ signin::Tribool AccountCapabilities::can_fetch_family_member_info() const {
   return GetCapabilityByName(kCanFetchFamilyMemberInfoCapabilityName);
 }
 
-#if !BUILDFLAG(IS_IOS)
 signin::Tribool AccountCapabilities::can_have_email_address_displayed() const {
   return GetCapabilityByName(kCanHaveEmailAddressDisplayedCapabilityName);
 }
-#endif
 
 signin::Tribool
 AccountCapabilities::can_make_chrome_search_engine_choice_screen_choice()
@@ -103,12 +101,10 @@ AccountCapabilities::can_make_chrome_search_engine_choice_screen_choice()
   return GetCapabilityByName(kCanMakeChromeSearchEngineChoiceScreenChoice);
 }
 
-#if !BUILDFLAG(IS_IOS)
 signin::Tribool AccountCapabilities::can_run_chrome_privacy_sandbox_trials()
     const {
   return GetCapabilityByName(kCanRunChromePrivacySandboxTrialsCapabilityName);
 }
-#endif
 
 signin::Tribool AccountCapabilities::
     can_show_history_sync_opt_ins_without_minor_mode_restrictions() const {
@@ -116,74 +112,29 @@ signin::Tribool AccountCapabilities::
       kCanShowHistorySyncOptInsWithoutMinorModeRestrictionsCapabilityName);
 }
 
-#if BUILDFLAG(IS_IOS)
-signin::Tribool AccountCapabilities::can_sign_in_to_chrome() const {
-  return GetCapabilityByName(kCanSignInToChromeCapabilityName);
-}
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-signin::Tribool AccountCapabilities::can_toggle_auto_updates() const {
-  return GetCapabilityByName(kCanToggleAutoUpdatesName);
-}
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-signin::Tribool AccountCapabilities::can_use_chromeos_generative_ai() const {
-  return GetCapabilityByName(kCanUseChromeOSGenerativeAi);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_IOS)
 signin::Tribool AccountCapabilities::can_use_devtools_generative_ai_features()
     const {
   return GetCapabilityByName(kCanUseDevToolsGenerativeAiFeaturesCapabilityName);
 }
-#endif
 
-#if !BUILDFLAG(IS_IOS)
 signin::Tribool AccountCapabilities::can_use_edu_features() const {
   return GetCapabilityByName(kCanUseEduFeaturesCapabilityName);
 }
-#endif
 
 signin::Tribool AccountCapabilities::can_use_gemini_in_chrome() const {
   return GetCapabilityByName(kCanUseGeminiInChromeCapabilityName);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-signin::Tribool AccountCapabilities::can_use_generative_ai_in_recorder_app()
-    const {
-  return GetCapabilityByName(kCanUseGenerativeAiInRecorderApp);
-}
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-signin::Tribool AccountCapabilities::can_use_generative_ai_photo_editing()
-    const {
-  return GetCapabilityByName(kCanUseGenerativeAiPhotoEditing);
-}
-#endif
 
 signin::Tribool AccountCapabilities::can_use_manta_service() const {
   return GetCapabilityByName(kCanUseMantaServiceName);
 }
 
 signin::Tribool AccountCapabilities::can_use_model_execution_features() const {
-#if BUILDFLAG(IS_IOS)
-  // If the flag is enabled, read the contextual capability. If the contextual
-  // capability is unknown, fall back to the non-contextual capability - this
-  // is because when the flag is first enabled the new capability may not yet
-  // have been fetched.
-  // TODO(crbug.com/481654422): Remove the unknown fallback once contextual
-  // capabilities are fully rolled out.
-  if (base::FeatureList::IsEnabled(
-          switches::kReadContextualAccountCapabilities) &&
-      GetCapabilityByName(kCanContextuallyUseModelExecutionFeaturesName) !=
-          signin::Tribool::kUnknown) {
-    return GetCapabilityByName(kCanContextuallyUseModelExecutionFeaturesName);
-  }
-#endif
   return GetCapabilityByName(kCanUseModelExecutionFeaturesName);
 }
 
@@ -253,10 +204,3 @@ bool AccountCapabilities::operator==(const AccountCapabilities& other) const {
 AccountCapabilities::AccountCapabilities(
     base::flat_map<std::string, bool> capabilities)
     : capabilities_map_(std::move(capabilities)) {}
-
-#if BUILDFLAG(IS_IOS)
-const base::flat_map<std::string, bool>&
-AccountCapabilities::ConvertToAccountCapabilitiesIOS() {
-  return capabilities_map_;
-}
-#endif

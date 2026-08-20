@@ -79,19 +79,7 @@ bool ViewsDelegate::ShouldCloseMenuIfMouseCaptureLost() const {
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-HICON ViewsDelegate::GetDefaultWindowIcon() const {
-  return nullptr;
-}
-
-HICON ViewsDelegate::GetSmallWindowIcon() const {
-  return nullptr;
-}
-
-bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
-  return false;
-}
-#elif BUILDFLAG(ENABLE_DESKTOP_AURA) && \
+#if BUILDFLAG(ENABLE_DESKTOP_AURA) && \
     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS))
 gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
   return nullptr;
@@ -130,12 +118,6 @@ std::string ViewsDelegate::GetApplicationName() {
   return program.BaseName().AsUTF8Unsafe();
 }
 
-#if BUILDFLAG(IS_WIN)
-int ViewsDelegate::GetAppbarAutohideEdges(HMONITOR monitor,
-                                          base::OnceClosure callback) {
-  return EDGE_BOTTOM;
-}
-#endif
 
 #if defined(USE_AURA)
 void ViewsDelegate::SetTouchSelectionMenuRunner(

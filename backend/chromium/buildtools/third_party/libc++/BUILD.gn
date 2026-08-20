@@ -26,29 +26,12 @@ config("extra_flags") {
     "-fstrict-aliasing",
     "-Wundef",
   ]
-  if (is_win) {
-    cflags += [
-      # libc++ wants to redefine the macros WIN32_LEAN_AND_MEAN and _CRT_RAND_S
-      # in its implementation.
-      "-Wno-macro-redefined",
-    ]
-  } else {
-    cflags += [ "-fPIC" ]
-  }
+  cflags += [ "-fPIC" ]
   defines = [ "_LIBCPP_BUILDING_LIBRARY" ]
 }
 
 config("stdver") {
-  if (is_win) {
-    cflags_cc = [
-      # We want to use a uniform C++ version across all of chromium, but
-      # upstream libc++ requires C++23 so we have to make an exception here.
-      # No other target should override the default -std= flag.
-      "-std:c++23preview",
-    ]
-  } else {
-    cflags_cc = [ "-std=c++23" ]
-  }
+  cflags_cc = [ "-std=c++23" ]
 }
 
 # Explicitly set version macros to Windows 7 to prevent libc++ from adding a
@@ -578,23 +561,6 @@ target(libcxx_target_type, "libc++") {
   }
 
   include_dirs = [ "//third_party/libc++/src/src" ]
-  if (is_win) {
-    sources += [
-      "//third_party/libc++/src/src/support/win32/locale_win32.cpp",
-      "//third_party/libc++/src/src/support/win32/support.cpp",
-      "//third_party/libc++/src/src/support/win32/thread_win32.cpp",
-    ]
-    configs -= [ "//build/config/win:winver" ]
-    configs += [ ":winver" ]
-    if (libcxx_natvis_include) {
-      inputs += [
-        # libc++.natvis listed as an input here instead of in
-        # //build/config/c++:runtime_library to prevent unnecessary size
-        # increase in generated build files.
-        "//build/config/c++/libc++.natvis",
-      ]
-    }
-  }
 
   # Enable exceptions and rtti for libc++, but disable them in modules targets
   # so that modules can be used for other chromium targets which don't enable
@@ -663,11 +629,9 @@ target(libcxx_target_type, "libc++") {
     }
   }
 
-  if (!is_win) {
-    defines += [ "LIBCXX_BUILDING_LIBCXXABI" ]
-    if (!export_libcxxabi_from_executables) {
-      deps += [ "//buildtools/third_party/libc++abi" ]
-    }
+  defines += [ "LIBCXX_BUILDING_LIBCXXABI" ]
+  if (!export_libcxxabi_from_executables) {
+    deps += [ "//buildtools/third_party/libc++abi" ]
   }
 
   # Disabling -Wexit-time-destructors, as libc++ uses `static string` objects

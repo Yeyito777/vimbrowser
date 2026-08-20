@@ -138,9 +138,6 @@ declare_args() {
 
 if (use_reclient) {
   rewrapper_path = "${reclient_bin_dir}/rewrapper"
-  if (is_win) {
-    rewrapper_path = "${reclient_bin_dir}/rewrapper.exe"
-  }
   assert(path_exists(rewrapper_path),
          "use_reclient=true requires reclient binary. " +
              "need '\"download_reclient\": True' in .gclient custom_vars.")

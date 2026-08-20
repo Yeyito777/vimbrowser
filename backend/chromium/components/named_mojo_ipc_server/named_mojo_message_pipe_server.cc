@@ -25,12 +25,6 @@
 #include "mojo/public/cpp/system/isolated_connection.h"
 #include "mojo/public/cpp/system/message_pipe.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/strings/stringprintf.h"
-#include "base/win/win_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace named_mojo_ipc_server {
 
@@ -123,17 +117,8 @@ void NamedMojoMessagePipeServer::OnClientConnected(
   // yet, so we only open the peer process if the connection is non-isolated, or
   // MojoIpcz is enabled.
   if (!is_isolated || mojo::core::IsMojoIpczEnabled()) {
-#if BUILDFLAG(IS_WIN)
-    // Open process with minimum permissions since the client process might have
-    // restricted its access with DACL.
-    peer_process = base::Process::OpenWithAccess(peer_pid, PROCESS_DUP_HANDLE);
-// Windows opens the process with a system call so we use PLOG to extract more
-// info. Other OSes (i.e. POSIX) don't do that.
-#define INVALID_PROCESS_LOG PLOG
-#else
     peer_process = base::Process::Open(peer_pid);
 #define INVALID_PROCESS_LOG LOG
-#endif
     if (!peer_process.IsValid()) {
       // With MojoIpcz, connections can be made without a process handle to the
       // client, as long as the client has a process handle to the server, so we

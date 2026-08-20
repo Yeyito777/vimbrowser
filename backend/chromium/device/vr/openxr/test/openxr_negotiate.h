@@ -5,9 +5,6 @@
 #ifndef DEVICE_VR_OPENXR_TEST_OPENXR_NEGOTIATE_H_
 #define DEVICE_VR_OPENXR_TEST_OPENXR_NEGOTIATE_H_
 
-#if BUILDFLAG(IS_WIN)
-#include <unknwn.h>
-#endif
 
 #include "device/vr/openxr/openxr_platform.h"
 #include "third_party/openxr/src/include/openxr/openxr.h"

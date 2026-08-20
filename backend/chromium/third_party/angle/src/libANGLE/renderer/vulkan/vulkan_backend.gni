@@ -166,15 +166,6 @@ if (is_linux || is_chromeos) {
   vulkan_backend_sources += vulkan_backend_dma_buf_sources
 }
 
-if (is_win) {
-  vulkan_backend_sources += [
-    "win32/DisplayVkWin32.cpp",
-    "win32/DisplayVkWin32.h",
-    "win32/WindowSurfaceVkWin32.cpp",
-    "win32/WindowSurfaceVkWin32.h",
-  ]
-}
-
 if (angle_use_x11) {
   vulkan_backend_sources += [
     "linux/xcb/DisplayVkXcb.cpp",
@@ -188,15 +179,6 @@ if (angle_has_build && angle_use_gbm) {
   vulkan_backend_sources += [
     "linux/gbm/DisplayVkGbm.cpp",
     "linux/gbm/DisplayVkGbm.h",
-  ]
-}
-
-if (is_fuchsia) {
-  vulkan_backend_sources += [
-    "fuchsia/DisplayVkFuchsia.cpp",
-    "fuchsia/DisplayVkFuchsia.h",
-    "fuchsia/WindowSurfaceVkFuchsia.cpp",
-    "fuchsia/WindowSurfaceVkFuchsia.h",
   ]
 }
 

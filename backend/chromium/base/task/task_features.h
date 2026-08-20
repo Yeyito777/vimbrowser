@@ -23,11 +23,7 @@ BASE_EXPORT BASE_DECLARE_FEATURE(kUseHighPriorityThreadGroup);
 // Under this feature, a non-zero leeway is added to delayed tasks. Along with
 // DelayPolicy, this affects the time at which a delayed task runs.
 BASE_EXPORT BASE_DECLARE_FEATURE(kAddTaskLeewayFeature);
-#if BUILDFLAG(IS_WIN)
-constexpr TimeDelta kDefaultLeeway = Milliseconds(16);
-#else
 constexpr TimeDelta kDefaultLeeway = Milliseconds(8);
-#endif  // #if !BUILDFLAG(IS_WIN)
 BASE_EXPORT BASE_DECLARE_FEATURE_PARAM(TimeDelta, kTaskLeewayParam);
 
 // We consider that delayed tasks above |kMaxPreciseDelay| never need

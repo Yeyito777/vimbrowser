@@ -65,9 +65,7 @@
 #endif
 
 
-#if !BUILDFLAG(IS_IOS)
 #include <grp.h>
-#endif
 
 // We need to do this on AIX due to some inconsistencies in how AIX
 // handles XOPEN_SOURCE and ALL_SOURCE.
@@ -260,8 +258,6 @@ bool DoCopyDirectory(const FilePath& from_path,
     // set of permissions than it does on other POSIX platforms.
 #if BUILDFLAG(IS_APPLE)
     mode_t mode = 0600 | (stat_at_use.st_mode & 0177);
-#elif BUILDFLAG(IS_CHROMEOS)
-    mode_t mode = 0644;
 #else
     mode_t mode = 0600;
 #endif
@@ -415,37 +411,6 @@ bool PreReadFileSlow(const FilePath& file_path, int64_t max_bytes) {
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-// Checks if the given path is under ~/MyFiles or /media.
-// Recognizes the following patterns:
-// - "/home/chronos/user/MyFiles/<dir>[/...]"
-// - "/home/chronos/u-<id>/MyFiles/<dir>[/...]"
-// - "/media/<dir>[/...]"
-bool IsVisibleToUser(const FilePath& path) {
-  if (!path.IsAbsolute()) {
-    return false;
-  }
-
-  const std::vector parts = path.GetComponents();
-
-  // Since the path is absolute, the first part should be the root directory.
-  DCHECK(!parts.empty());
-  DCHECK_EQ(parts[0], "/");
-
-  // Is path under /media?
-  if (parts.size() > 2 && parts[1] == "media" && !parts[2].empty()) {
-    return true;
-  }
-
-  // Is path under ~/MyFiles?
-  return parts.size() > 5 && parts[1] == "home" && parts[2] == "chronos" &&
-         (parts[3] == "user" ||
-          (parts[3].starts_with("u-") && parts[3].size() > 2)) &&
-         parts[4] == "MyFiles" && !parts[5].empty();
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -661,7 +626,6 @@ ScopedFD CreateAndOpenFdForTemporaryFileInDir(const FilePath& directory,
   return ScopedFD(HANDLE_EINTR(mkstemp(buffer)));
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 bool CreateSymbolicLink(const FilePath& target_path,
                         const FilePath& symlink_path) {
   DCHECK(!symlink_path.empty());
@@ -764,7 +728,6 @@ bool ExecutableExistsInPath(Environment* env,
   return false;
 }
 
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 #if !BUILDFLAG(IS_APPLE)
 // This is implemented in file_util_apple.mm for Mac.
@@ -782,13 +745,6 @@ bool GetTempDir(FilePath* path) {
 
 #if !BUILDFLAG(IS_APPLE) // Mac implementation is in file_util_apple.mm.
 FilePath GetHomeDir() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (SysInfo::IsRunningOnChromeOS()) {
-    // On Chrome OS chrome::DIR_USER_DATA is overridden with a primary user
-    // homedir once it becomes available. Return / as the safe option.
-    return FilePath("/");
-  }
-#endif
 
   const char* home_dir = getenv("HOME");
   if (home_dir && home_dir[0]) {
@@ -914,11 +870,6 @@ bool CreateDirectoryAndGetError(const FilePath& full_path, File::Error* error) {
   for (const FilePath& subpath : base::Reversed(missing_subpaths)) {
     mode_t mode = S_IRWXU;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (IsVisibleToUser(subpath)) {
-      mode |= S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     if (File::Mkdir(subpath, mode) == 0) {
       continue;
@@ -1303,24 +1254,16 @@ bool VerifyPathControlledByAdmin(const FilePath& path) {
 #endif  // BUILDFLAG(IS_MAC)
 
 int GetMaximumPathComponentLength(const FilePath& path) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // Return a value we do not expect anyone ever to reach, but which is small
-  // enough to guard against e.g. bugs causing multi-megabyte paths.
-  return 1024;
-#else
   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
   return saturated_cast<int>(pathconf(path.value().c_str(), _PC_NAME_MAX));
-#endif
 }
 
 // This is implemented in file_util_android.cc for that platform.
 bool GetShmemTempDir(bool executable, FilePath* path) {
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX)
   bool disable_dev_shm = false;
-#if !BUILDFLAG(IS_CHROMEOS)
   disable_dev_shm = CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kDisableDevShmUsage);
-#endif
   bool use_dev_shm = true;
   if (executable) {
     static const bool s_dev_shm_executable =

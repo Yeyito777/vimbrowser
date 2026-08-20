@@ -50,10 +50,6 @@ if (enable_vulkan) {
     ]
 
     public_deps = [ "//third_party/vulkan-headers/src:vulkan_headers" ]
-
-    if (is_fuchsia) {
-      sources += [ "fuchsia/vulkan_fuchsia_ext.h" ]
-    }
   }
 
   source_set("vma_wrapper") {
@@ -150,37 +146,6 @@ if (enable_vulkan) {
       }
     }
 
-    if (is_fuchsia) {
-      sources += [ "vulkan_util_fuchsia.cc" ]
-    }
-
-    if (is_win) {
-      sources += [
-        "vulkan_image_win.cc",
-        "vulkan_util_win32.cc",
-      ]
-    }
-
-    if (is_chromeos) {
-      deps += [ "//ui/gfx/linux:drm" ]
-    }
-
-    if (is_fuchsia) {
-      sources += [ "vulkan_image_fuchsia.cc" ]
-
-      public_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/zx" ]
-
-      data_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/vulkan" ]
-
-      # VulkanInstance enables validation layer in Debug builds and when DCHECKs
-      # are enabled in Release builds. In these cases the validation layer
-      # libraries and configs need to be included in the generated Fuchsia
-      # package.
-      if (is_debug || dcheck_always_on) {
-        data_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/vulkan_layers:VkLayer_khronos_validation" ]
-      }
-    }
-
     if (is_apple) {
       sources += [ "vulkan_image_mac.cc" ]
     }
@@ -202,10 +167,6 @@ if (enable_vulkan) {
         "//ui/ozone",
         "//ui/platform_window",
       ]
-    }
-
-    if (is_win) {
-      sources += [ "tests/native_window_win.cc" ]
     }
 
     # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

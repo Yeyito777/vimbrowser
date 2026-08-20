@@ -34,10 +34,6 @@ source_set("headless") {
       "//ui/ozone",
     ]
   }
-
-  if (is_win) {
-    deps += [ "//chrome/chrome_elf:chrome_elf_main_include" ]
-  }
 }
 
 source_set("metrics") {
@@ -98,10 +94,6 @@ source_set("browser_tests") {
 
   if (is_linux) {
     sources += [ "headless_mode_browsertest_linux.cc" ]
-  }
-
-  if (is_win) {
-    sources += [ "headless_mode_browsertest_win.cc" ]
   }
 
   if (is_mac) {

@@ -15,11 +15,7 @@ class PrefRegistrySyncable;
 namespace chrome_labs_prefs {
 
 extern const char kBrowserLabsEnabledEnterprisePolicy[];
-#if BUILDFLAG(IS_CHROMEOS)
-extern const char kChromeLabsNewBadgeDictAshChrome[];
-#else
 extern const char kChromeLabsNewBadgeDict[];
-#endif
 
 extern const char kChromeLabsActivationThreshold[];
 

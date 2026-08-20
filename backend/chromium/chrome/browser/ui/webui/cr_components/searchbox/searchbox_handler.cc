@@ -165,9 +165,6 @@ const char* kTrendingUpIconResourceName =
 #if BUILDFLAG(IS_MAC)
 const char* kMacShareIconResourceName =
     "//resources/cr_components/searchbox/icons/mac_share.svg";
-#elif BUILDFLAG(IS_WIN)
-const char* kWinShareIconResourceName =
-    "//resources/cr_components/searchbox/icons/win_share.svg";
 #elif BUILDFLAG(IS_LINUX)
 const char* kLinuxShareIconResourceName =
     "//resources/cr_components/searchbox/icons/share.svg";
@@ -223,9 +220,6 @@ static void DefineChromeRefreshRealboxIcons() {
 #if BUILDFLAG(IS_MAC)
   kMacShareIconResourceName =
       "//resources/cr_components/searchbox/icons/mac_share_cr23.svg";
-#elif BUILDFLAG(IS_WIN)
-  kWinShareIconResourceName =
-      "//resources/cr_components/searchbox/icons/win_share_cr23.svg";
 #elif BUILDFLAG(IS_LINUX)
   kLinuxShareIconResourceName =
       "//resources/cr_components/searchbox/icons/share_cr23.svg";
@@ -595,10 +589,6 @@ std::string SearchboxHandler::AutocompleteIconToResourceName(
 #if BUILDFLAG(IS_MAC)
   if (icon.name == omnibox::kShareMacChromeRefreshIcon.name) {
     return kMacShareIconResourceName;
-  }
-#elif BUILDFLAG(IS_WIN)
-  if (icon.name == omnibox::kShareWinChromeRefreshIcon.name) {
-    return kWinShareIconResourceName;
   }
 #elif BUILDFLAG(IS_LINUX)
   if (icon.name == omnibox::kShareLinuxChromeRefreshIcon.name) {

@@ -49,9 +49,6 @@ void SetJSModuleDefaults(content::WebUIDataSource* source) {
         "img-src chrome://resources chrome://theme chrome://image "
         "chrome://favicon2 chrome://app-icon chrome://extension-icon "
         "chrome://fileicon "
-#if BUILDFLAG(IS_CHROMEOS)
-        "chrome://chromeos-asset chrome://userimage "
-#endif
         "blob: data: 'self';");
   }
 

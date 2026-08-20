@@ -87,9 +87,7 @@ RelaunchNotificationController::RelaunchNotificationController(
   // Need to register with the UpgradeDetector right at the start to observe any
   // calls to override the preference value controlling the notification style.
   StartObservingUpgrades();
-#if !BUILDFLAG(IS_CHROMEOS)
   StartObservingAPStatus();
-#endif
   // Synchronize the instance with the current state of the preference and
   // Advanced Protection status.
   HandleCurrentStyle();
@@ -386,11 +384,7 @@ void RelaunchNotificationController::DoNotifyRelaunchRequired(
     base::Time relaunch_deadline,
     base::OnceCallback<base::Time()> on_visible) {
   platform_impl_.NotifyRelaunchRequired(relaunch_deadline,
-#if BUILDFLAG(IS_CHROMEOS)
-                                        notification_type_required_overridden_,
-#else
                                         is_notification_style_ap_required,
-#endif
                                         std::move(on_visible));
 }
 

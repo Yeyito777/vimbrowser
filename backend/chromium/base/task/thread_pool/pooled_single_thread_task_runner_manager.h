@@ -81,15 +81,6 @@ class BASE_EXPORT PooledSingleThreadTaskRunnerManager final {
       const TaskTraits& traits,
       SingleThreadTaskRunnerThreadMode thread_mode);
 
-#if BUILDFLAG(IS_WIN)
-  // Creates a SingleThreadTaskRunner which runs tasks with |traits| on a COM
-  // STA thread named "ThreadPoolSingleThreadCOMSTA[Shared]" +
-  // kEnvironmentParams[GetEnvironmentIndexForTraits(traits)].name_suffix +
-  // index.
-  scoped_refptr<SingleThreadTaskRunner> CreateCOMSTATaskRunner(
-      const TaskTraits& traits,
-      SingleThreadTaskRunnerThreadMode thread_mode);
-#endif  // BUILDFLAG(IS_WIN)
 
   void JoinForTesting();
 
@@ -152,10 +143,6 @@ class BASE_EXPORT PooledSingleThreadTaskRunnerManager final {
   WorkerThread* shared_worker_threads_[ENVIRONMENT_COUNT]
                                       [CONTINUE_ON_SHUTDOWN_COUNT] GUARDED_BY(
                                           lock_) = {};
-#if BUILDFLAG(IS_WIN)
-  WorkerThread* shared_com_worker_threads_
-      [ENVIRONMENT_COUNT][CONTINUE_ON_SHUTDOWN_COUNT] GUARDED_BY(lock_) = {};
-#endif  // BUILDFLAG(IS_WIN)
 
   // Set to true when Start() is called.
   bool started_ GUARDED_BY(lock_) = false;

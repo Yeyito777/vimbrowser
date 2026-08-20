@@ -20,8 +20,4 @@ source_set("app_service") {
     "//components/services/app_service/public/cpp:preferred_apps",
     "//components/services/app_service/public/cpp:protocol_handling",
   ]
-
-  if (is_chromeos) {
-    public_deps += [ "//components/services/app_service/public/cpp/shortcut" ]
-  }
 }

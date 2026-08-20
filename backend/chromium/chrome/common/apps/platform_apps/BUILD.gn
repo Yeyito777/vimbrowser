@@ -23,13 +23,4 @@ source_set("platform_apps") {
     "//chrome/common/apps/platform_apps/api:apps_features",
     "//extensions/common",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "media_galleries_permission.cc",
-      "media_galleries_permission.h",
-      "media_galleries_permission_data.cc",
-      "media_galleries_permission_data.h",
-    ]
-  }
 }

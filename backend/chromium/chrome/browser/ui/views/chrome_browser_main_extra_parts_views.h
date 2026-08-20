@@ -16,11 +16,9 @@ class ViewsDelegate;
 }
 
 #if defined(USE_AURA)
-#if !BUILDFLAG(IS_CHROMEOS)
 namespace display {
 class Screen;
 }
-#endif
 namespace wm {
 class WMState;
 }
@@ -57,9 +55,7 @@ class ChromeBrowserMainExtraPartsViews : public ChromeBrowserMainExtraParts {
   std::unique_ptr<views::LayoutProvider> layout_provider_;
 
 #if defined(USE_AURA)
-#if !BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<display::Screen> screen_;
-#endif
   std::unique_ptr<wm::WMState> wm_state_;
 #endif
 

@@ -655,13 +655,6 @@ source_set("browser_sources") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/constants",
-      "//extensions/browser/api/clipboard:clipboard_types",
-    ]
-  }
-
   if (enable_rlz) {
     deps += [ "//rlz:rlz_lib" ]
   }
@@ -804,19 +797,11 @@ source_set("browser_sources") {
     ]
 
     deps += [ "//services/device/public/cpp/hid" ]
-
-    if (is_chromeos) {
-      deps += [ "//chromeos/dbus/permission_broker" ]
-    }
   }
 
   if (is_mac) {
     # For LSCopyDisplayNameForURL, path_util.cc.
     frameworks = [ "CoreServices.framework" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/constants" ]
   }
 
   if (enable_pdf) {
@@ -854,10 +839,6 @@ source_set("crx_installer") {
     "//extensions/common",
     "//extensions/strings",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//components/user_manager" ]
-  }
 }
 
 source_set("test_support") {
@@ -936,17 +917,6 @@ source_set("test_support") {
     "//testing/gtest",
     "//ui/base/idle",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "api/feedback_private/mock_feedback_service.cc",
-      "api/feedback_private/mock_feedback_service.h",
-    ]
-    deps += [
-      "//components/crash/core/app",
-      "//net:test_support",
-    ]
-  }
 
   if (safe_browsing_mode == 1 || safe_browsing_mode == 2) {
     sources += [
@@ -1144,49 +1114,6 @@ source_set("unit_tests") {
     sources += [ "app_window/app_window_geometry_cache_unittest.cc" ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "api/audio/audio_device_id_calculator_unittest.cc",
-      "api/feedback_private/access_rate_limiter_chromeos_unittest.cc",
-      "api/feedback_private/feedback_private_api_chromeos_unittest.cc",
-      "api/feedback_private/feedback_private_api_unittest_base_chromeos.cc",
-      "api/feedback_private/feedback_private_api_unittest_base_chromeos.h",
-      "api/feedback_private/log_source_access_manager_chromeos_unittest.cc",
-      "api/media_perception_private/conversion_utils_unittest.cc",
-      "api/media_perception_private/media_perception_api_manager_unittest.cc",
-      "api/networking_private/networking_private_chromeos_unittest.cc",
-      "api/virtual_keyboard_private/virtual_keyboard_private_api_unittest.cc",
-      "api/webcam_private/visca_webcam_unittest.cc",
-    ]
-
-    deps += [
-      "//ash/constants",
-      "//chrome/common:constants",
-      "//chromeos:test_support",
-      "//chromeos/ash/components/dbus:test_support",
-      "//chromeos/ash/components/dbus/audio",
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//chromeos/ash/components/dbus/media_analytics",
-      "//chromeos/ash/components/dbus/media_analytics:media_perception_proto",
-      "//chromeos/ash/components/dbus/shill",
-      "//chromeos/ash/components/dbus/upstart",
-      "//chromeos/ash/components/login/login_state",
-      "//chromeos/ash/components/network:test_support",
-      "//chromeos/constants",
-      "//chromeos/crosapi/mojom",
-      "//chromeos/dbus/permission_broker",
-      "//chromeos/dbus/power",
-      "//components/account_id",
-      "//components/feedback",
-      "//components/prefs",
-      "//components/prefs:test_support",
-      "//components/user_manager",
-      "//components/user_manager:test_support",
-      "//extensions/shell:app_shell_lib",
-      "//google_apis",
-    ]
-  }
-
   if (safe_browsing_mode == 1) {
     sources += [ "../browser/blocklist_unittest.cc" ]
     deps +=
@@ -1266,32 +1193,6 @@ if (enable_extensions) {
     ]
 
     public_deps = [ "//content/test:test_support" ]
-
-    if (is_chromeos) {
-      sources += [
-        "api/audio/audio_apitest_chromeos.cc",
-        "api/cec_private/cec_private_ash_apitest.cc",
-        "api/media_perception_private/media_perception_private_apitest.cc",
-        "api/virtual_keyboard/virtual_keyboard_apitest.cc",
-      ]
-
-      deps += [
-        "//chromeos/ash/components/audio",
-        "//chromeos/ash/components/dbus:test_support",
-        "//chromeos/ash/components/dbus/audio",
-        "//chromeos/ash/components/dbus/cec_service",
-        "//chromeos/ash/components/dbus/media_analytics",
-        "//chromeos/ash/components/dbus/media_analytics:media_perception_proto",
-        "//chromeos/ash/components/dbus/upstart",
-        "//chromeos/ash/components/login/login_state",
-        "//chromeos/ash/components/network",
-        "//chromeos/dbus/permission_broker",
-        "//chromeos/dbus/power",
-        "//chromeos/dbus/power:power_manager_proto",
-        "//components/crash/content/browser/error_reporting:mock_crash_endpoint",
-        "//extensions/common:mojom",
-      ]
-    }
   }
 
   fuzzer_test("extension_file_highlighter_fuzzer") {

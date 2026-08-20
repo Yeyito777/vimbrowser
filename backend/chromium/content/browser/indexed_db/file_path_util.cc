@@ -107,11 +107,7 @@ bool IsPathTooLong(const base::FilePath& path) {
     DPLOG(WARNING) << "GetMaximumPathComponentLength returned -1 for "
                    << path.DirName();
 // In limited testing, ChromeOS returns 143, other OSes 255.
-#if BUILDFLAG(IS_CHROMEOS)
-    limit = 143;
-#else
     limit = 255;
-#endif
   }
   return path.BaseName().value().length() > static_cast<uint32_t>(limit);
 }

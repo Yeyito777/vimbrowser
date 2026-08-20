@@ -20,9 +20,6 @@
 #if BUILDFLAG(ENABLE_BUILTIN_SEARCH_PROVIDER_ASSETS)
 #include "third_party/search_engines_data/search_engines_scaled_resources_map.h"
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/chromeos/resources/grit/ui_chromeos_resources_map.h"
-#endif
 
 namespace {
 
@@ -38,9 +35,6 @@ class ThemeMap {
                           std::size(kThemeResources) + std::size(kUiResources);
 #if BUILDFLAG(ENABLE_BUILTIN_SEARCH_PROVIDER_ASSETS)
     storage_size += std::size(kSearchEnginesScaledResources);
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-    storage_size += std::size(kUiChromeosResources);
 #endif
 
     // Construct in one-shot from a moved vector.
@@ -58,11 +52,6 @@ class ThemeMap {
     }
 #if BUILDFLAG(ENABLE_BUILTIN_SEARCH_PROVIDER_ASSETS)
     for (const auto& resource : kSearchEnginesScaledResources) {
-      storage.emplace_back(resource.path, resource.id);
-    }
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-    for (const auto& resource : kUiChromeosResources) {
       storage.emplace_back(resource.path, resource.id);
     }
 #endif

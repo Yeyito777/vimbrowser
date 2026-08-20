@@ -32,10 +32,8 @@ enum class LocatorStyle {
 enum class CenterImage {
   kNoCenterImage,
   kDino,
-#if !BUILDFLAG(IS_IOS)
   kPasskey,
   kProductLogo,
-#endif
 };
 
 // Whether `GenerateBitmap` will include the necessary quiet zone around the

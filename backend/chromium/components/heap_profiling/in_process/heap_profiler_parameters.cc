@@ -33,14 +33,7 @@ constexpr int kDefaultSamplingRateBytes = 10'000'000;
 
 // The chance that this client will report heap samples through a metrics
 // provider if it's on the stable channel.
-#if BUILDFLAG(IS_ANDROID)
-// With stable-probability 0.01 we get about 4x as many records as before
-// https://crrev.com/c/3309878 landed in 98.0.4742.0, even with ARM64
-// disabled. This is too high a volume to process.
-constexpr double kDefaultStableProbability = 0.0025;
-#else
 constexpr double kDefaultStableProbability = 0.01;
-#endif
 
 // The chance that this client will report heap samples through a metrics
 // provider if it's on a non-stable channel.
@@ -65,14 +58,7 @@ constexpr base::FeatureParam<int> kNetworkSnapshotProbability{
 // 10% is an easy default between 1/18 and 1/8.
 constexpr base::FeatureParam<int> kRendererSnapshotProbability{
     &kHeapProfilerReporting, "renderer-prob-pct",
-#if BUILDFLAG(IS_CHROMEOS)
-    // base::debug::TraceStackFramePointers is crashing in ChromeOS rendererer
-    // processes. Disable heap profiling there for now.
-    // TODO(crbug.com/402542102): Find the root cause and re-enable.
-    0
-#else
     10
-#endif
 };
 
 // Sample 50% of utility processes by default, because last time this was

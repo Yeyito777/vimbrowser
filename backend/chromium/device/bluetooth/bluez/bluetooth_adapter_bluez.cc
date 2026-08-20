@@ -37,9 +37,6 @@
 #include "device/bluetooth/bluez/bluetooth_pairing_bluez.h"
 #include "device/bluetooth/bluez/bluetooth_socket_bluez.h"
 #include "device/bluetooth/bluez/bluez_features.h"
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/chromeos_platform_features.h"
-#endif // BUILDFLAG(IS_CHROMEOS)
 #include "device/bluetooth/dbus/bluetooth_adapter_client.h"
 #include "device/bluetooth/dbus/bluetooth_admin_policy_client.h"
 #include "device/bluetooth/dbus/bluetooth_agent_manager_client.h"
@@ -56,17 +53,6 @@
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "third_party/cros_system_api/dbus/service_constants.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/devicetype.h"
-#include "base/unguessable_token.h"
-#include "chromeos/ash/services/nearby/public/cpp/nearby_client_uuids.h"
-#include "device/bluetooth/bluetooth_adapter_factory.h"
-#include "device/bluetooth/bluez/ble_scan_parser/ble_scan_parser.h"
-#include "device/bluetooth/bluez/bluetooth_low_energy_scan_session_bluez.h"
-#include "device/bluetooth/dbus/bluetooth_advertisement_monitor_application_service_provider.h"
-#include "device/bluetooth/dbus/bluetooth_advertisement_monitor_manager_client.h"
-#include "device/bluetooth/dbus/bluetooth_advertisement_monitor_service_provider.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using device::BluetoothAdapter;
 using device::BluetoothDevice;
@@ -87,12 +73,6 @@ const char kGattApplicationObjectPath[] = "/gatt_application";
 
 const char kDeviceNameArcTouch[] = "Arc Touch BT Mouse";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// This root path identifies the application registering low energy scanners
-// through D-Bus.
-constexpr char kAdvertisementMonitorApplicationObjectPath[] =
-    "/org/chromium/bluetooth_advertisement_monitor";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void OnUnregisterAgentError(const std::string& error_name,
                             const std::string& error_message) {
@@ -184,17 +164,6 @@ void ResetAdvertisingErrorCallbackConnector(
       .Run(device::BluetoothAdvertisement::ErrorCode::ERROR_RESET_ADVERTISING);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SetServiceAllowListErrorCallback(
-    BluetoothAdapterBlueZ::ErrorCallback error_callback,
-    const std::string& error_name,
-    const std::string& error_message) {
-  BLUETOOTH_LOG(ERROR) << "Error while settting service allow list."
-                          " error_name = "
-                       << error_name << ", error_message = " << error_message;
-  std::move(error_callback).Run();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -238,9 +207,6 @@ void BluetoothAdapterBlueZ::Shutdown() {
   if (IsPresent())
     RemoveAdapter();  // Also deletes devices_.
   DCHECK(devices_.empty());
-#if BUILDFLAG(IS_CHROMEOS)
-  is_advertisement_monitor_application_provider_registered_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // profiles_ must be empty because all BluetoothSockets have been notified
   // that this adapter is disappearing.
@@ -279,11 +245,6 @@ void BluetoothAdapterBlueZ::Shutdown() {
   bluez::BluezDBusManager::Get()
       ->GetBluetoothAgentManagerClient()
       ->RemoveObserver(this);
-#if BUILDFLAG(IS_CHROMEOS)
-  bluez::BluezDBusManager::Get()
-      ->GetBluetoothAdvertisementMonitorManagerClient()
-      ->RemoveObserver(this);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   BLUETOOTH_LOG(EVENT) << "Unregistering pairing agent";
   bluez::BluezDBusManager::Get()
@@ -323,11 +284,6 @@ void BluetoothAdapterBlueZ::Init() {
   bluez::BluezDBusManager::Get()->GetBluetoothInputClient()->AddObserver(this);
   bluez::BluezDBusManager::Get()->GetBluetoothAgentManagerClient()->AddObserver(
       this);
-#if BUILDFLAG(IS_CHROMEOS)
-  bluez::BluezDBusManager::Get()
-      ->GetBluetoothAdvertisementMonitorManagerClient()
-      ->AddObserver(this);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Register the pairing agent.
   dbus::Bus* system_bus = bluez::BluezDBusManager::Get()->GetSystemBus();
@@ -335,12 +291,6 @@ void BluetoothAdapterBlueZ::Init() {
       system_bus, dbus::ObjectPath(kAgentPath), this));
   DCHECK(agent_.get());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  advertisement_monitor_application_provider_ =
-      BluetoothAdvertisementMonitorApplicationServiceProvider::Create(
-          system_bus,
-          dbus::ObjectPath(kAdvertisementMonitorApplicationObjectPath));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::vector<dbus::ObjectPath> object_paths = bluez::BluezDBusManager::Get()
                                                    ->GetBluetoothAdapterClient()
@@ -350,9 +300,6 @@ void BluetoothAdapterBlueZ::Init() {
   if (!object_paths.empty()) {
     BLUETOOTH_LOG(EVENT) << "BlueZ Adapters available: " << object_paths.size();
     SetAdapter(object_paths[0]);
-#if BUILDFLAG(IS_CHROMEOS)
-    RegisterAdvertisementMonitorApplicationServiceProvider();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   initialized_ = true;
 
@@ -609,29 +556,6 @@ void BluetoothAdapterBlueZ::RegisterAdvertisement(
   advertisements_.emplace_back(advertisement);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool BluetoothAdapterBlueZ::IsExtendedAdvertisementsAvailable() const {
-  if (!IsPresent()) {
-    return false;
-  }
-
-  BluetoothLEAdvertisingManagerClient::Properties* properties =
-      bluez::BluezDBusManager::Get()
-          ->GetBluetoothLEAdvertisingManagerClient()
-          ->GetProperties(object_path_);
-
-  if (!properties) {
-    return false;
-  }
-
-  // Based on the implementation of kernel bluez, if the controller supports Ext
-  // Advertisement, it must support HardwareOffload.
-  // (net/bluetooth/mgmt.c:get_supported_adv_flags)
-  return std::ranges::contains(
-      properties->supported_features.value(),
-      bluetooth_advertising_manager::kSupportedFeaturesHardwareOffload);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothAdapterBlueZ::SetAdvertisingInterval(
     const base::TimeDelta& min,
@@ -731,9 +655,6 @@ void BluetoothAdapterBlueZ::AdapterAdded(const dbus::ObjectPath& object_path) {
   if (!IsPresent())
     SetAdapter(object_path);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  RegisterAdvertisementMonitorApplicationServiceProvider();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterBlueZ::AdapterRemoved(
@@ -897,9 +818,6 @@ void BluetoothAdapterBlueZ::DevicePropertyChanged(
       property_name == properties->address.name() ||
       property_name == properties->name.name() ||
       property_name == properties->paired.name() ||
-#if BUILDFLAG(IS_CHROMEOS)
-      property_name == properties->bonded.name() ||
-#endif
       property_name == properties->trusted.name() ||
       property_name == properties->connected.name() ||
       property_name == properties->uuids.name() ||
@@ -942,14 +860,6 @@ void BluetoothAdapterBlueZ::DevicePropertyChanged(
 // user does not need to approve every incoming connection
 // This is not for other OS because,for non-CrOS, Chrome is not part of the OS.
 // Leave the decision to the real OS
-#if BUILDFLAG(IS_CHROMEOS)
-  if (property_name == properties->bonded.name()) {
-    if (properties->bonded.value() && !properties->trusted.value()) {
-      device_bluez->SetTrusted();
-    }
-    NotifyDeviceBondedChanged(device_bluez, properties->bonded.value());
-  }
-#endif
 
   // UMA connection counting
   if (property_name == properties->connected.name()) {
@@ -1000,12 +910,6 @@ void BluetoothAdapterBlueZ::AgentManagerAdded(
 void BluetoothAdapterBlueZ::AgentManagerRemoved(
     const dbus::ObjectPath& object_path) {}
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapterBlueZ::SupportedAdvertisementMonitorFeaturesChanged() {
-  NotifyLowEnergyScanSessionHardwareOffloadingStatusChanged(
-      GetLowEnergyScanSessionHardwareOffloadingStatus());
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothAdapterBlueZ::Released() {
   BLUETOOTH_LOG(EVENT) << "Released";
@@ -1127,23 +1031,6 @@ void BluetoothAdapterBlueZ::AuthorizeService(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // For CrOS, we always set trusted when a device becomes bonded, so the only
-  // reason that this method call would ever be called is in the case of a
-  // race condition where our "Set('Trusted', true)" method call is still
-  // pending in the Bluetooth daemon because it's busy handling the incoming
-  // connection.
-  if (device_bluez->IsBonded()) {
-    std::move(callback).Run(SUCCESS);
-    return;
-  }
-
-  // Allow nearby connection from unbonded devices.
-  if (ash::nearby::IsNearbyClientUuid(BluetoothUUID(uuid))) {
-    std::move(callback).Run(SUCCESS);
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // TODO(keybuk): reject service authorizations when not paired, determine
   // whether this is acceptable long-term.
@@ -1277,9 +1164,6 @@ void BluetoothAdapterBlueZ::SetAdapter(const dbus::ObjectPath& object_path) {
 
   BLUETOOTH_LOG(EVENT) << object_path_.value() << ": using adapter.";
 
-#if BUILDFLAG(IS_CHROMEOS)
-  SetStandardChromeOSAdapterName();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bluez::BluetoothAdapterClient::Properties* properties =
       bluez::BluezDBusManager::Get()
@@ -1332,9 +1216,6 @@ void BluetoothAdapterBlueZ::RemoveAdapter() {
   ClearAllDevices();
   PresentChanged(false);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  is_advertisement_monitor_application_provider_registered_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterBlueZ::DiscoverableChanged(bool discoverable) {
@@ -1386,25 +1267,6 @@ void BluetoothAdapterBlueZ::NotifyDeviceAdvertisementReceived(
   for (auto& observer : observers_)
     observer.DeviceAdvertisementReceived(this, device, rssi, eir);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::optional<ScanRecord> record = ParseBleScan(eir);
-  if (!record) {
-    // Ignore the packet if it could not be parsed successfully.
-    return;
-  }
-
-  const std::string device_address = device->GetAddress();
-  const std::string device_name = device->GetName().value_or("");
-  const uint16_t device_appearance = device->GetAppearance();
-  for (auto& observer : observers_) {
-    observer.DeviceAdvertisementReceived(
-        device_address, device_name, record->advertisement_name, rssi,
-        record->tx_power, device_appearance, record->service_uuids,
-        record->service_data_map, record->manufacturer_data_map);
-  }
-
-  device->SetAdvertisedUUIDs(record->service_uuids);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void BluetoothAdapterBlueZ::NotifyDeviceConnectedStateChanged(
@@ -1413,14 +1275,6 @@ void BluetoothAdapterBlueZ::NotifyDeviceConnectedStateChanged(
   DCHECK_EQ(device->adapter_, this);
   DCHECK_EQ(device->IsConnected(), is_now_connected);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_now_connected) {
-    device::BluetoothConnectionLogger::RecordDeviceConnected(
-        device->GetIdentifier(), device->GetDeviceType());
-  } else {
-    device::RecordDeviceDisconnect(device->GetDeviceType());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   BluetoothAdapter::NotifyDeviceConnectedStateChanged(device, is_now_connected);
 }
@@ -1584,131 +1438,6 @@ bool BluetoothAdapterBlueZ::SendValueChanged(
   return true;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapterBlueZ::SetServiceAllowList(const UUIDList& uuids,
-                                                base::OnceClosure callback,
-                                                ErrorCallback error_callback) {
-  bluez::BluezDBusManager::Get()
-      ->GetBluetoothAdminPolicyClient()
-      ->SetServiceAllowList(object_path_, uuids, std::move(callback),
-                            base::BindOnce(&SetServiceAllowListErrorCallback,
-                                           std::move(error_callback)));
-}
-
-void BluetoothAdapterBlueZ::SetSimpleSecurePairingEnabled(
-    bool enabled,
-    base::OnceClosure callback,
-    ErrorCallback error_callback) {
-  // TODO(b/428178579) - Implement DBUS changes and wire them up the bluetooth
-  // stack.
-  std::move(error_callback).Run();
-}
-
-std::unique_ptr<device::BluetoothLowEnergyScanSession>
-BluetoothAdapterBlueZ::StartLowEnergyScanSession(
-    std::unique_ptr<device::BluetoothLowEnergyScanFilter> filter,
-    base::WeakPtr<device::BluetoothLowEnergyScanSession::Delegate> delegate) {
-  DCHECK(filter);
-
-  dbus::ObjectPath monitor_path = dbus::ObjectPath(
-      static_cast<std::string>(kAdvertisementMonitorApplicationObjectPath) +
-      "/" + base::UnguessableToken::Create().ToString());
-  BLUETOOTH_LOG(EVENT) << __func__ << ": session_id = " << monitor_path.value();
-
-  // Client will take ownership of |low_energy_scan_session|.
-  // OnLowEnergyScanSessionDestroyed removes the session from the D-Bus
-  // application. |low_energy_scan_session| forwards callbacks from D-Bus to the
-  // client-owned |delegate|.
-  auto low_energy_scan_session =
-      std::make_unique<BluetoothLowEnergyScanSessionBlueZ>(
-          monitor_path.value(), weak_ptr_factory_.GetWeakPtr(), delegate,
-          base::BindOnce(
-              &BluetoothAdapterBlueZ::OnLowEnergyScanSessionDestroyed,
-              weak_ptr_factory_.GetWeakPtr()));
-
-  // Implements the advertisement monitor interface and forwards dbus callbacks
-  // to the |low_energy_scan_session|.
-  auto advertisement_monitor =
-      BluetoothAdvertisementMonitorServiceProvider::Create(
-          bluez::BluezDBusManager::Get()->GetSystemBus(), monitor_path,
-          std::move(filter), low_energy_scan_session->GetWeakPtr());
-
-  if (advertisement_monitor_application_provider_ &&
-      is_advertisement_monitor_application_provider_registered_) {
-    // Signals D-Bus that a new advertisement monitor is added.
-    advertisement_monitor_application_provider_->AddMonitor(
-        std::move(advertisement_monitor));
-  } else {
-    BLUETOOTH_LOG(EVENT) << __func__
-                         << ": Advertisement monitor application not yet "
-                            "registered. Queuing low energy scan session.";
-
-    pending_advertisement_monitors_.push(std::move(advertisement_monitor));
-  }
-
-  return low_energy_scan_session;
-}
-
-BluetoothAdapter::LowEnergyScanSessionHardwareOffloadingStatus
-BluetoothAdapterBlueZ::GetLowEnergyScanSessionHardwareOffloadingStatus() {
-  if (!IsPresent())
-    return LowEnergyScanSessionHardwareOffloadingStatus::kUndetermined;
-
-  BluetoothAdvertisementMonitorManagerClient::Properties* properties =
-      bluez::BluezDBusManager::Get()
-          ->GetBluetoothAdvertisementMonitorManagerClient()
-          ->GetProperties(object_path_);
-
-  if (!properties) {
-    return LowEnergyScanSessionHardwareOffloadingStatus::kUndetermined;
-  }
-
-  return std::ranges::contains(properties->supported_features.value(),
-                               bluetooth_advertisement_monitor_manager::
-                                   kSupportedFeaturesControllerPatterns)
-             ? LowEnergyScanSessionHardwareOffloadingStatus::kSupported
-             : LowEnergyScanSessionHardwareOffloadingStatus::kNotSupported;
-}
-
-std::vector<BluetoothAdapter::BluetoothRole>
-BluetoothAdapterBlueZ::GetSupportedRoles() {
-  std::vector<BluetoothAdapter::BluetoothRole> roles;
-
-  if (!IsPresent()) {
-    return roles;
-  }
-
-  bluez::BluetoothAdapterClient::Properties* properties =
-      bluez::BluezDBusManager::Get()
-          ->GetBluetoothAdapterClient()
-          ->GetProperties(object_path_);
-  DCHECK(properties);
-
-  for (auto role : properties->roles.value()) {
-    if (role == "central") {
-      roles.push_back(BluetoothAdapter::BluetoothRole::kCentral);
-    } else if (role == "peripheral") {
-      roles.push_back(BluetoothAdapter::BluetoothRole::kPeripheral);
-    } else if (role == "central-peripheral") {
-      roles.push_back(BluetoothAdapter::BluetoothRole::kCentralPeripheral);
-    } else {
-      BLUETOOTH_LOG(EVENT) << __func__ << ": Unknown role: " << role;
-    }
-  }
-
-  return roles;
-}
-
-void BluetoothAdapterBlueZ::SetStandardChromeOSAdapterName() {
-  if (!IsPresent()) {
-    return;
-  }
-
-  std::string alias = ash::GetDeviceBluetoothName(GetAddress());
-  SetName(alias, base::DoNothing(), base::DoNothing());
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 dbus::ObjectPath BluetoothAdapterBlueZ::GetApplicationObjectPath() const {
   return dbus::ObjectPath(object_path_.value() + kGattApplicationObjectPath);
@@ -2135,31 +1864,6 @@ void BluetoothAdapterBlueZ::OnConnectDeviceError(
 
 void BluetoothAdapterBlueZ::UpdateDeviceAdminPolicyFromAdminPolicyClient(
     const dbus::ObjectPath& object_path) {
-#if BUILDFLAG(IS_CHROMEOS)
-  BluetoothDevice* device = GetDeviceWithPath(object_path);
-
-  if (!device) {
-    BLUETOOTH_LOG(DEBUG)
-        << "Trying to update admin policy for nonexistent device, object_path: "
-        << object_path.value();
-    return;
-  }
-
-  bluez::BluetoothAdminPolicyClient::Properties* properties =
-      bluez::BluezDBusManager::Get()
-          ->GetBluetoothAdminPolicyClient()
-          ->GetProperties(object_path);
-
-  if (properties && properties->is_blocked_by_policy.is_valid()) {
-    device->SetIsBlockedByPolicy(properties->is_blocked_by_policy.value());
-    return;
-  }
-
-  // |properties| is null or properties->is_blocked_by_policy is not valid, that
-  // means BlueZ has removed the admin policy from the device and we should
-  // clear our value as well.
-  device->SetIsBlockedByPolicy(false);
-#endif
 }
 
 void BluetoothAdapterBlueZ::UpdateDeviceBatteryLevelFromBatteryClient(
@@ -2197,59 +1901,5 @@ void BluetoothAdapterBlueZ::UpdateDeviceBatteryLevelFromBatteryClient(
   device->RemoveBatteryInfo(BatteryType::kDefault);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothAdapterBlueZ::
-    RegisterAdvertisementMonitorApplicationServiceProvider() {
-  if (is_advertisement_monitor_application_provider_registered_ ||
-      !IsPresent()) {
-    return;
-  }
-  BLUETOOTH_LOG(EVENT) << __func__;
-
-  auto err_callback = [](std::string error_name,
-                         const std::string error_message) {
-    LOG(ERROR) << "Error while registering advertisement monitor application "
-                  "service provider. error_name = "
-               << error_name << ", error_message = " << error_message;
-  };
-
-  // Registers root application path of advertisement monitors/low energy
-  // scanners.
-  bluez::BluezDBusManager::Get()
-      ->GetBluetoothAdvertisementMonitorManagerClient()
-      ->RegisterMonitor(
-          dbus::ObjectPath(kAdvertisementMonitorApplicationObjectPath),
-          object_path_,
-          base::BindOnce(
-              &BluetoothAdapterBlueZ::
-                  OnRegisterAdvertisementMonitorApplicationServiceProvider,
-              weak_ptr_factory_.GetWeakPtr()),
-          base::BindOnce(err_callback));
-}
-
-void BluetoothAdapterBlueZ::
-    OnRegisterAdvertisementMonitorApplicationServiceProvider() {
-  is_advertisement_monitor_application_provider_registered_ = true;
-  BLUETOOTH_LOG(EVENT) << __func__;
-
-  while (!pending_advertisement_monitors_.empty()) {
-    // Signals D-Bus that a new advertisement monitor is added.
-    advertisement_monitor_application_provider_->AddMonitor(
-        std::move(pending_advertisement_monitors_.front()));
-    pending_advertisement_monitors_.pop();
-  }
-}
-
-void BluetoothAdapterBlueZ::OnLowEnergyScanSessionDestroyed(
-    const std::string& session_id) {
-  BLUETOOTH_LOG(EVENT) << __func__ << ": session_id = " << session_id;
-  if (!advertisement_monitor_application_provider_ ||
-      !is_advertisement_monitor_application_provider_registered_) {
-    return;
-  }
-  advertisement_monitor_application_provider_->RemoveMonitor(
-      dbus::ObjectPath(session_id));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace bluez

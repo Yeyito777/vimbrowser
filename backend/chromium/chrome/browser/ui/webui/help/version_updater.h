@@ -11,12 +11,6 @@
 #include "base/functional/callback.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <optional>
-
-#include "chromeos/ash/components/dbus/update_engine/update_engine_client.h"
-#include "third_party/cros_system_api/dbus/update_engine/dbus-constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 class WebContents;
@@ -53,13 +47,6 @@ class VersionUpdater {
 
   // TODO(jhawkins): Use a delegate interface instead of multiple callback
   // types.
-#if BUILDFLAG(IS_CHROMEOS)
-  typedef base::OnceCallback<void(const std::string&)> ChannelCallback;
-  using EolInfoCallback =
-      base::OnceCallback<void(ash::UpdateEngineClient::EolInfo eol_info)>;
-  using IsFeatureEnabledCallback =
-      base::OnceCallback<void(std::optional<bool>)>;
-#endif
 
   // Used to update the client of status changes.
   // |status| is the current state of the update.
@@ -105,36 +92,6 @@ class VersionUpdater {
   virtual void PromoteUpdater() = 0;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  virtual void SetChannel(const std::string& channel,
-                          bool is_powerwash_allowed) = 0;
-  virtual void GetChannel(bool get_current_channel,
-                          ChannelCallback callback) = 0;
-  // Get the End of Life (Auto Update Expiration) Date.
-  virtual void GetEolInfo(EolInfoCallback callback) = 0;
-
-  virtual void ToggleFeature(const std::string& feature, bool enable) = 0;
-  virtual void IsFeatureEnabled(const std::string& feature,
-                                IsFeatureEnabledCallback callback) = 0;
-  virtual bool IsManagedAutoUpdateEnabled() = 0;
-
-  // Sets a one time permission on a certain update in Update Engine.
-  // - update_version: the Chrome OS version we want to update to.
-  // - update_size: the size of that Chrome OS version in bytes.
-  // These two parameters are a failsafe to prevent downloading an update that
-  // the user didn't agree to. They should be set using the version and size we
-  // received from update engine when it broadcasts NEED_PERMISSION_TO_UPDATE.
-  // They are used by update engine to double-check with update server in case
-  // there's a new update available or a delta update becomes a full update with
-  // a larger size.
-  virtual void SetUpdateOverCellularOneTimePermission(
-      StatusCallback callback,
-      const std::string& update_version,
-      int64_t update_size) = 0;
-
-  // If an update is downloaded but deferred, apply the deferred update.
-  virtual void ApplyDeferredUpdateAdvanced() = 0;
-#endif
 };
 
 #endif  // CHROME_BROWSER_UI_WEBUI_HELP_VERSION_UPDATER_H_

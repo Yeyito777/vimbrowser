@@ -43,9 +43,6 @@ class TwoClientWebAppsIntegrationTestBase
   void SetUpOnMainThread() override;
   void TearDownOnMainThread() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::AutoReset<bool> multi_user_window_manager_resetter_;
-#endif  // BUIDLFLAG(IS_CHROMEOS)
 
   base::test::ScopedFeatureList feature_overrides_;
   WebAppIntegrationTestDriver helper_;

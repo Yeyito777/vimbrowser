@@ -48,25 +48,14 @@
 #include "chrome/browser/component_updater/recovery_improved_component_installer.h"
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/component_updater/real_time_url_checks_allowlist_component_installer.h"
-#else
 #include "chrome/browser/component_updater/screen_ai_component_installer.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/component_updater/actor_safety_lists_component_installer.h"
 #include "chrome/browser/component_updater/iwa_key_distribution_component_installer.h"
 #include "chrome/browser/component_updater/zxcvbn_data_component_installer.h"
 #include "chrome/browser/resource_coordinator/tab_manager.h"
 #include "media/base/media_switches.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/system/sys_info.h"
-#include "chrome/browser/apps/app_service/chrome_app_deprecation/chrome_app_deprecation.h"
-#include "chrome/browser/component_updater/smart_dim_component_installer.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_MEDIA_FOUNDATION_WIDEVINE_CDM)
 #include "chrome/browser/component_updater/media_foundation_widevine_cdm_component_installer.h"
@@ -112,13 +101,6 @@ void DeleteOldComponents(const base::FilePath& user_data_dir) {
            FILE_PATH_LITERAL("AutofillStates"),      // Remove in M153+
            FILE_PATH_LITERAL(
                "Fingerprinting Protection Filter"),  // Remove in M156+
-#if BUILDFLAG(IS_CHROMEOS)
-           // TODO(crbug.com/380780352): Remove these after the stepping stone.
-           FILE_PATH_LITERAL("lacros-dogfood-canary"),
-           FILE_PATH_LITERAL("lacros-dogfood-dev"),
-           FILE_PATH_LITERAL("lacros-dogfood-beta"),
-           FILE_PATH_LITERAL("lacros-dogfood-stable"),
-#endif  // BUILDFLAG(IS_CHROMEOS)
        }) {
     base::DeletePathRecursively(user_data_dir.Append(dir));
   }
@@ -157,12 +139,10 @@ void RegisterComponentsForUpdate() {
   RegisterFileTypePoliciesComponent(cus);
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // CRLSetFetcher attempts to load a CRL set from either the local disk or
   // network.
   // For Chrome OS this registration is delayed until user login.
   component_updater::RegisterCRLSetComponent(cus);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   RegisterOriginTrialsComponent(cus);
   RegisterMediaEngagementPreloadComponent(cus, base::OnceClosure());
@@ -172,25 +152,15 @@ void RegisterComponentsForUpdate() {
   RegisterSafetyTipsComponent(cus);
   RegisterCrowdDenyComponent(cus);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  RegisterSmartDimComponent(cus);
-  RegisterAppProvisioningComponent(cus);
-  apps::chrome_app_deprecation::RegisterAllowlistComponentUpdater(cus);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(USE_MINIKIN_HYPHENATION) && !BUILDFLAG(IS_ANDROID)
   RegisterHyphenationComponent(cus);
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
   RegisterIwaKeyDistributionComponent(cus);
   RegisterZxcvbnDataComponent(cus);
   RegisterActorSafetyListsComponent(cus, base::OnceClosure());
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-  RegisterRealTimeUrlChecksAllowlistComponent(cus);
-#endif  // BUIDLFLAG(IS_ANDROID)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
   ManageScreenAIComponentRegistration(cus, g_browser_process->local_state());

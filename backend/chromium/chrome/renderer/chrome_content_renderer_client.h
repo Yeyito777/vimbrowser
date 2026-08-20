@@ -33,9 +33,6 @@
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "v8/include/v8-forward.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/common/conflicts/remote_module_watcher_win.h"
-#endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "chrome/common/plugin.mojom.h"
@@ -247,12 +244,6 @@ class ChromeContentRendererClient
   void BindWebRTCLoggingAgent(
       mojo::PendingReceiver<chrome::mojom::WebRtcLoggingAgent> receiver);
 
-#if BUILDFLAG(IS_WIN)
-  // Observes module load events and notifies the ModuleDatabase in the browser
-  // process. This instance is created on the main thread but then lives on the
-  // IO task runner.
-  RemoteModuleWatcher::UniquePtr remote_module_watcher_;
-#endif
 
   // Used to profile main thread.
   std::unique_ptr<sampling_profiler::ThreadProfiler> main_thread_profiler_;

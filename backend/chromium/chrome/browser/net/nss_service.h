@@ -62,14 +62,6 @@ class NssService : public KeyedService {
       base::OnceCallback<void(net::NSSCertDatabase*)> callback);
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  // Owns and manages access to the net::NSSCertDatabaseChromeOS.
-  class NSSCertDatabaseChromeOSManager;
-
-  // Created on the UI thread, but after that, initialized, accessed, and
-  // destroyed exclusively on the IO thread.
-  std::unique_ptr<NSSCertDatabaseChromeOSManager> nss_cert_database_manager_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_NET_NSS_SERVICE_H_

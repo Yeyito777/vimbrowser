@@ -131,9 +131,6 @@ void FixAccountConsistencyRequestHeader(
     AccountConsistencyMethod account_consistency,
     const GaiaId& gaia_id,
     signin::Tribool is_child_account,
-#if BUILDFLAG(IS_CHROMEOS)
-    bool is_secondary_account_addition_allowed,
-#endif
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
     bool is_sync_enabled,
     const std::string& signin_scoped_device_id,

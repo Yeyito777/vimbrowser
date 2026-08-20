@@ -106,24 +106,6 @@ class VIZ_COMMON_EXPORT AggregatedRenderPass : public RenderPassInternal {
   // TODO(crbug.com/324460866): Used for partially delegated compositing.
   bool is_from_surface_root_pass = false;
 
-#if BUILDFLAG(IS_WIN)
-  // |true| if this render pass backing needs to be read by Viz to be composited
-  // correctly. If |DirectRenderer| will compose this render pass, this must be
-  // set to |true|.
-  //
-  // DComp surfaces on Windows do not allow reading, so this field is overridden
-  // during overlay processing to help us detect when we can back a render pass
-  // with a DComp surface to scanout directly.
-  // TODO(crbug.com/324460866): Used for partially delegated compositing.
-  bool will_backing_be_read_by_viz = true;
-
-  // Windows only: Indicates that the render pass backing's updates need to be
-  // synchronized with tree updates. A swap chain does not synchronize its
-  // presents with DComp commits. This is needed when e.g. the render pass has
-  // video holes that need to line up with other overlays or is itself presented
-  // as an overlay.
-  bool needs_synchronous_dcomp_commit = false;
-#endif
 
   // Indicates whether video capture has been enabled for this render pass.
   //

@@ -15,10 +15,6 @@ source_set("window_sizer") {
     "//ui/base/mojom:ui_base_types",
     "//ui/gfx/geometry",
   ]
-
-  if (is_chromeos) {
-    sources += [ "window_sizer_chromeos.h" ]
-  }
 }
 
 source_set("impl") {
@@ -47,14 +43,6 @@ source_set("impl") {
 
   if (use_aura) {
     sources += [ "window_sizer_aura.cc" ]
-
-    if (is_chromeos) {
-      sources += [ "window_sizer_chromeos.cc" ]
-      deps += [
-        "//chrome/common:constants",
-        "//ui/aura",
-      ]
-    }
   }
 }
 
@@ -82,49 +70,5 @@ source_set("unit_tests") {
 
   if (use_aura) {
     deps += [ "//ui/aura" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "window_sizer_chromeos_unittest.cc" ]
-    deps += [
-      "//ash",
-      "//ash/public/cpp",
-      "//chrome/browser/ui/window_sizer",
-      "//chrome/test:test_support_unit",
-      "//content/test:test_support",
-      "//ui/aura:test_support",
-      "//ui/display:display_manager_test_api",
-      "//ui/display/manager",
-      "//ui/wm/public",
-    ]
-  }
-
-  if (is_win) {
-    deps += [ "//chrome/install_static:install_static_util" ]
-  }
-}
-
-if (is_chromeos) {
-  source_set("browser_tests") {
-    testonly = true
-
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-
-    sources = [ "window_sizer_chromeos_uitest.cc" ]
-
-    deps = [
-      "//ash",
-      "//ash:test_support",
-      "//base",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui:browser_list",
-      "//chrome/test:test_support_ui",
-      "//components/keep_alive_registry",
-      "//content/test:test_support",
-      "//ui/compositor",
-      "//ui/events:test_support",
-      "//ui/views",
-      "//ui/wm",
-    ]
   }
 }

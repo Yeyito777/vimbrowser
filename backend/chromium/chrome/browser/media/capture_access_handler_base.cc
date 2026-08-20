@@ -25,10 +25,6 @@
 #include "ui/aura/window.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/strings/string_number_conversions.h"
-#include "crypto/hash.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using content::BrowserThread;
 
@@ -328,24 +324,7 @@ bool CaptureAccessHandlerBase::IsExtensionAllowedForScreenCapture(
   if (!extension)
     return false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string hex_hash = base::HexEncode(crypto::hash::Sha256(extension->id()));
-
-  // crbug.com/41150882
-  return hex_hash ==
-             "EA4DC6890B3B3EBE6248E7580099D9F44D8E5932D60F09E4335E157149EF552"
-             "1" ||
-         hex_hash ==
-             "8F1F245CCEDCD968DDC092FF36AA79E30644FCAB491A7DD4F2C6F5482344A93"
-             "F" ||
-         hex_hash ==
-             "B84DF148EE6A745982FFB1E868520F44077D9E80BAF191272CAF8F1C06D68EB"
-             "C" ||
-         hex_hash ==
-             "DC019F2EF6680AF54DDDB6B4BC6FAA735F8D21A7DEB79D77FCC8180BD76C6BA8";
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 

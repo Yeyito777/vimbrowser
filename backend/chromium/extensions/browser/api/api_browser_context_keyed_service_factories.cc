@@ -53,19 +53,7 @@
 #include "extensions/browser/api/usb/usb_device_resource.h"
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/clipboard/clipboard_api.h"
-#include "extensions/browser/api/serial/serial_connection.h"
-#include "extensions/browser/api/serial/serial_port_manager.h"
-#include "extensions/browser/api/socket/app_firewall_hole_manager.h"
-#include "extensions/browser/api/webcam_private/webcam_private_api.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/feedback_private/log_source_resource.h"
-#include "extensions/browser/api/media_perception_private/media_perception_api_manager.h"
-#include "extensions/browser/api/virtual_keyboard_private/virtual_keyboard_private_api.h"  // nogncheck
-#endif
 
 namespace extensions {
 
@@ -82,9 +70,6 @@ void EnsureApiBrowserContextKeyedServiceFactoriesBuilt() {
   RuntimeAPI::GetFactoryInstance();
   SessionStorageManager::GetFactory();
   StorageFrontend::GetFactoryInstance();
-#if BUILDFLAG(IS_ANDROID)
-  SystemDisplayAPI::GetFactoryInstance();
-#endif
   WebRequestAPI::GetFactoryInstance();
   WebRequestProxyingURLLoaderFactory::EnsureAssociatedFactoryBuilt();
   WebRequestProxyingWebSocket::EnsureAssociatedFactoryBuilt();
@@ -97,48 +82,26 @@ void EnsureApiBrowserContextKeyedServiceFactoriesBuilt() {
   ApiResourceManager<BluetoothLowEnergyConnection>::GetFactoryInstance();
   ApiResourceManager<BluetoothLowEnergyNotifySession>::GetFactoryInstance();
   ApiResourceManager<HidConnectionResource>::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  ApiResourceManager<LogSourceResource>::GetFactoryInstance();
-#endif
   ApiResourceManager<ResumableTCPServerSocket>::GetFactoryInstance();
   ApiResourceManager<ResumableTCPSocket>::GetFactoryInstance();
   ApiResourceManager<ResumableUDPSocket>::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  ApiResourceManager<SerialConnection>::GetFactoryInstance();
-#endif
   ApiResourceManager<Socket>::GetFactoryInstance();
   ApiResourceManager<UsbDeviceResource>::GetFactoryInstance();
   api::BluetoothSocketEventDispatcher::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  api::SerialPortManager::GetFactoryInstance();
-#endif
   api::TCPServerSocketEventDispatcher::GetFactoryInstance();
   api::TCPSocketEventDispatcher::GetFactoryInstance();
   api::UDPSocketEventDispatcher::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  AppFirewallHoleManager::EnsureFactoryBuilt();
-#endif
   AudioAPI::GetFactoryInstance();
   BluetoothAPI::GetFactoryInstance();
   BluetoothPrivateAPI::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  ClipboardAPI::GetFactoryInstance();
-#endif
   FeedbackPrivateAPI::GetFactoryInstance();
   HidDeviceManager::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  MediaPerceptionAPIManager::GetFactoryInstance();
-#endif
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN) || \
     BUILDFLAG(IS_MAC)
   NetworkingPrivateEventRouterFactory::GetInstance();
 #endif
   SystemInfoAPI::GetFactoryInstance();
   UsbDeviceManager::GetFactoryInstance();
-#if BUILDFLAG(IS_CHROMEOS)
-  VirtualKeyboardAPI::GetFactoryInstance();
-  WebcamPrivateAPI::GetFactoryInstance();
-#endif
   ProtocolHandlersManager::GetFactoryInstance();
   WriteQuotaChecker::GetFactoryInstance();
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)

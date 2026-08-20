@@ -58,12 +58,8 @@ void CastMediaSinkService::Initialize(
       FROM_HERE, base::BindOnce(&CastMediaSinkServiceImpl::Start,
                                 base::Unretained(impl_.get())));
 
-#if BUILDFLAG(IS_WIN)
-  bool should_delay_discovery = true;
-#else
   bool should_delay_discovery =
       base::FeatureList::IsEnabled(media_router::kDelayMediaSinkDiscovery);
-#endif
 
   if (should_delay_discovery) {
     LoggerList::GetInstance()->Log(

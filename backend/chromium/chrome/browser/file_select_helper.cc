@@ -44,10 +44,6 @@
 #include "ui/base/models/dialog_model.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/file_manager/fileapi_util.h"
-#include "content/public/browser/site_instance.h"
-#endif
 
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #include "chrome/browser/picture_in_picture/scoped_disallow_picture_in_picture.h"
@@ -264,26 +260,6 @@ void FileSelectHelper::ConvertToFileChooserFileInfoList(
   if (AbortIfWebContentsDestroyed())
     return;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!files.empty()) {
-    if (!IsValidProfile(profile_)) {
-      RunFileChooserEnd();
-      return;
-    }
-    // Converts |files| into FileChooserFileInfo with handling of non-native
-    // files.
-    content::SiteInstance* site_instance =
-        render_frame_host_->GetSiteInstance();
-    storage::FileSystemContext* file_system_context =
-        profile_->GetStoragePartition(site_instance)->GetFileSystemContext();
-    file_manager::util::ConvertSelectedFileInfoListToFileChooserFileInfoList(
-        file_system_context, render_frame_host_->GetLastCommittedOrigin(),
-        files,
-        base::BindOnce(&FileSelectHelper::PerformContentAnalysisIfNeeded,
-                       this));
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::vector<FileChooserFileInfoPtr> chooser_files;
   for (const auto& file : files) {

@@ -17,9 +17,6 @@
 #include "components/viz/service/viz_service_export.h"
 #include "gpu/ipc/common/surface_handle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display_embedder/output_device_backing.h"
-#endif
 
 namespace gpu {
 class Scheduler;
@@ -69,10 +66,6 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
 
   const raw_ptr<GpuServiceImpl> gpu_service_impl_;
 
-#if BUILDFLAG(IS_WIN)
-  // Used for software compositing output on Windows.
-  OutputDeviceBacking output_device_backing_;
-#endif
 
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 

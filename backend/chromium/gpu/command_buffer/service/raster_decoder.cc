@@ -115,9 +115,6 @@
 #include "gpu/command_buffer/service/drm_modifiers_filter_dawn.h"
 #endif  // BUILDFLAG(SKIA_USE_DAWN) && BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/gfx/linux/drm_util_linux.h"  // nogncheck
-#endif                                    // BUILDFLAG(IS_CHROMEOS)
 
 // Local versions of the SET_GL_ERROR macros
 #define LOCAL_SET_GL_ERROR(error, function_name, msg) \
@@ -1210,37 +1207,7 @@ Capabilities RasterDecoderImpl::GetCapabilities() {
     caps.supports_yuv_readback = true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (shared_context_state_->GrContextIsGL()) {
-    PopulateDRMCapabilities(&caps, feature_info());
-  }
-#if BUILDFLAG(ENABLE_VULKAN)
-  else if (shared_context_state_->GrContextIsVulkan()) {
-    auto* device_queue =
-        shared_context_state_->vk_context_provider()->GetDeviceQueue();
-    caps.drm_device_id = device_queue->drm_device_id();
-    gpu::PopulateVkDrmFormatsAndModifiers(device_queue,
-                                          caps.drm_formats_and_modifiers);
-  }
-#endif  // BUILDFLAG(ENABLE_VULKAN)
-#if BUILDFLAG(SKIA_USE_DAWN) && BUILDFLAG(IS_CHROMEOS)
-  else if (shared_context_state_->IsGraphiteDawnVulkan()) {
-    auto adapter = shared_context_state_->dawn_context_provider()
-                       ->GetDevice()
-                       .GetAdapter();
-    gpu::PopulateDawnDrmFormatsAndModifiers(adapter,
-                                            caps.drm_formats_and_modifiers);
-  }
-#endif  // BUILDFLAG(SKIA_USE_DAWN)
-  else {
-    NOTREACHED();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  gles2::PopulateMappableDrmFormatsForExo(caps.drm_formats_and_modifiers,
-                                          feature_info());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return caps;
 }

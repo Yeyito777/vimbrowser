@@ -81,22 +81,20 @@ source_set("browser_tests") {
   }
 }
 
-if (!is_chromeos_device) {
-  source_set("interactive_ui_tests") {
-    testonly = true
+source_set("interactive_ui_tests") {
+  testonly = true
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    sources = [ "find_bar_host_interactive_uitest.cc" ]
+  sources = [ "find_bar_host_interactive_uitest.cc" ]
 
-    deps = [
-      ":find_bar",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/test:test_support",
-    ]
+  deps = [
+    ":find_bar",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/test:test_support",
+  ]
 
-    if (is_mac) {
-      sources += [ "find_bar_platform_helper_mac_interactive_uitest.mm" ]
-    }
+  if (is_mac) {
+    sources += [ "find_bar_platform_helper_mac_interactive_uitest.mm" ]
   }
 }

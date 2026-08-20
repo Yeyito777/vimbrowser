@@ -194,14 +194,6 @@ void UDPSocketEventDispatcher::DispatchEvent(void* browser_context_id,
       reinterpret_cast<content::BrowserContext*>(browser_context_id);
   EventRouter* router = EventRouter::Get(context);
   if (router) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Terminal app is the only non-extension to use sockets
-    // (crbug.com/1350479).
-    if (extension_id == kCrOSTerminal) {
-      router->DispatchEventToURL(GURL(extension_id), std::move(event));
-      return;
-    }
-#endif
     router->DispatchEventToExtension(extension_id, std::move(event));
   }
 }

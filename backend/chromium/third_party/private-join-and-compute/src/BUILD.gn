@@ -9,9 +9,6 @@ config("library_impl_config") {
 config("private_join_and_compute_config") {
   include_dirs = [ "//third_party/boringssl/src/include" ]
   defines = []
-  if (is_win) {
-    defines += [ "PRIVATE_COMPUTE_WIN" ]
-  }
   if (is_component_build) {
     defines += [
       # Build targets inside private-join-and-compute will need this macro to

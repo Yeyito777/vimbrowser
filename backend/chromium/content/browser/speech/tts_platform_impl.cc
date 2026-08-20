@@ -21,18 +21,7 @@ TtsPlatform* TtsPlatform::GetInstance() {
     return result;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, the platform TTS definition is provided by the content
-  // client.
-  //
-  // If this code is reached in production it implies that somebody is
-  // trying to do TTS on a platform where the content client implementation
-  // is not provided, that's probably not intended. It's not important
-  // if this is hit in something like a content-only unit test.
-  NOTREACHED();
-#else
   return TtsPlatformImpl::GetInstance();
-#endif
 }
 
 void TtsPlatformImpl::LoadBuiltInTtsEngine(BrowserContext* browser_context) {}

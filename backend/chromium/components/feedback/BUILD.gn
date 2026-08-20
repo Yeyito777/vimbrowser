@@ -41,10 +41,6 @@ static_library("feedback") {
     "//third_party/re2",
     "//third_party/zlib/google:zip",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants/" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -55,9 +51,7 @@ source_set("unit_tests") {
     "feedback_uploader_dispatch_unittest.cc",
     "feedback_uploader_unittest.cc",
   ]
-  if (!is_win) {
-    sources += [ "feedback_util_unittest.cc" ]
-  }
+  sources += [ "feedback_util_unittest.cc" ]
 
   deps = [
     ":feedback",
@@ -77,13 +71,11 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_ios) {
-  fuzzer_test("redaction_tool_fuzzer") {
-    sources = [ "redaction_tool_fuzzer.cc" ]
-    deps = [
-      ":feedback",
-      "//components/feedback/redaction_tool",
-    ]
-    dict = "redaction_tool_fuzzer.dict"
-  }
+fuzzer_test("redaction_tool_fuzzer") {
+  sources = [ "redaction_tool_fuzzer.cc" ]
+  deps = [
+    ":feedback",
+    "//components/feedback/redaction_tool",
+  ]
+  dict = "redaction_tool_fuzzer.dict"
 }

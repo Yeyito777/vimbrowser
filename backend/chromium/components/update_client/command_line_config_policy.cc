@@ -11,11 +11,7 @@
 namespace update_client {
 
 bool CommandLineConfigPolicy::BackgroundDownloadsEnabled() const {
-#if BUILDFLAG(IS_WIN)
-  return true;
-#else
   return false;
-#endif
 }
 
 bool CommandLineConfigPolicy::DeltaUpdatesEnabled() const {

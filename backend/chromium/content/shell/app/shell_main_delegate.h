@@ -13,11 +13,9 @@
 #include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace ui {
 class OsSettingsProvider;
 }
-#endif
 
 namespace content {
 class ShellContentClient;
@@ -26,9 +24,7 @@ class ShellContentGpuClient;
 class ShellContentRendererClient;
 class ShellContentUtilityClient;
 
-#if !BUILDFLAG(IS_ANDROID)
 class WebTestBrowserMainRunner;
-#endif
 
 class ShellMainDelegate : public ContentMainDelegate {
  public:
@@ -68,7 +64,6 @@ class ShellMainDelegate : public ContentMainDelegate {
   // |is_content_browsertests_| and |web_test_runner_| are mutually exclusive.
   bool is_content_browsertests_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Only present when running web tests, which run inside Content Shell.
 
   // Web tests should not use the current machine settings for theming, but
@@ -78,7 +73,6 @@ class ShellMainDelegate : public ContentMainDelegate {
   // Web tests are not browser tests, so |is_content_browsertests_| and
   // |web_test_runner_| are mututally exclusive.
   std::unique_ptr<WebTestBrowserMainRunner> web_test_runner_;
-#endif
 
   std::unique_ptr<ShellContentBrowserClient> browser_client_;
   std::unique_ptr<ShellContentGpuClient> gpu_client_;

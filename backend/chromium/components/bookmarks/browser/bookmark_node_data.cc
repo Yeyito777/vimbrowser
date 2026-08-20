@@ -330,11 +330,7 @@ void BookmarkNodeData::WriteToClipboard(bool is_off_the_record) {
     scw.MarkAsOffTheRecord();
   }
 
-#if BUILDFLAG(IS_WIN)
-  const std::u16string kEOL(u"\r\n");
-#else
   const std::u16string kEOL = u"\n";
-#endif
 
   // If there is only one element and it is a URL, write the URL to the
   // clipboard.

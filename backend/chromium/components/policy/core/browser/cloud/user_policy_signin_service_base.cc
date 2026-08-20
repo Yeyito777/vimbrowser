@@ -33,11 +33,7 @@ namespace policy {
 namespace {
 
 em::DeviceRegisterRequest::Type GetCloudPolicyRegistrationType() {
-#if BUILDFLAG(IS_IOS)
-  return em::DeviceRegisterRequest::IOS_BROWSER;
-#else
   return em::DeviceRegisterRequest::BROWSER;
-#endif
 }
 
 }  // namespace

@@ -33,14 +33,6 @@ class StabilityMetricsProvider : public MetricsProvider {
   void LogLaunch();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // This function is virtual for testing. The |last_live_timestamp| is a
-  // time point where the previous browser was known to be alive, and is used
-  // to determine whether the system session embedding that timestamp terminated
-  // uncleanly.
-  virtual bool IsUncleanSystemSession(base::Time last_live_timestamp);
-  void MaybeLogSystemCrash(base::Time last_live_timestamp);
-#endif
   // Increments an Integer pref value specified by |path|.
   void IncrementPrefValue(const char* path);
 

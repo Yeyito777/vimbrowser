@@ -425,13 +425,11 @@ void ExtensionInstallPolicyServiceImpl::OnCloudPolicyManagerReady(
     return;
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (ChromeBrowserCloudManagementController* controller =
           g_browser_process->browser_policy_connector()
               ->chrome_browser_cloud_management_controller()) {
     controller->MaybeStartExtensionInstallPolicyInvalidator();
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void ExtensionInstallPolicyServiceImpl::Shutdown() {
@@ -461,7 +459,6 @@ ExtensionInstallPolicyServiceImpl::GetPolicyManagerInfos() const {
         {raw_ref<CloudPolicyManager>::from_ptr(user_cloud_policy_manager),
          dm_protocol::kChromeExtensionInstallUserCloudPolicyType});
   }
-#if !BUILDFLAG(IS_CHROMEOS)
   if (auto* machine_level_policy_manager =
           g_browser_process->browser_policy_connector()
               ->machine_level_user_cloud_policy_manager()) {
@@ -469,7 +466,6 @@ ExtensionInstallPolicyServiceImpl::GetPolicyManagerInfos() const {
         {raw_ref<CloudPolicyManager>::from_ptr(machine_level_policy_manager),
          dm_protocol::kChromeExtensionInstallMachineLevelCloudPolicyType});
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   return managers;
 }
 

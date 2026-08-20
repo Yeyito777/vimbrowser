@@ -977,10 +977,8 @@ void PartitionAllocSupport::ReconfigureAfterZygoteFork(
 void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
     std::string_view process_type,
     FeatureListConfiguration config) {
-#if !BUILDFLAG(IS_WIN)
   // TODO(mikt): Fix failure on `DelayloadsTest.ChromeElfDllLoadSanityTest`.
   CHECK(process_type == GetProcessType());
-#endif  // !BUILDFLAG(IS_WIN)
 
   // In Death Tests, `FeatureList` is never initialized. Even in these cases
   // we call this method to finalize the allocator configuration.
@@ -1191,15 +1189,6 @@ void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
   }
 #endif  // PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 
-#if BUILDFLAG(IS_WIN)
-  // Browser process only, since this is the one we want to prevent from
-  // crashing the most (as it takes down all the tabs).
-  if (base::FeatureList::IsEnabled(
-          base::features::kPageAllocatorRetryOnCommitFailure) &&
-      process_type.empty()) {
-    partition_alloc::SetRetryOnCommitFailure(true);
-  }
-#endif
 }
 
 void PartitionAllocSupport::ReconfigureAfterTaskRunnerInit(
@@ -1227,14 +1216,6 @@ void PartitionAllocSupport::ReconfigureAfterTaskRunnerInit(
 
   base::allocator::StartThreadCachePeriodicPurge();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Lower thread cache limits to avoid stranding too much memory in the caches.
-  if (SysInfo::IsLowEndDeviceOrPartialLowEndModeEnabled(
-          features::kPartialLowEndModeExcludePartitionAllocSupport)) {
-    ::partition_alloc::ThreadCacheRegistry::Instance().SetThreadCacheMultiplier(
-        ::partition_alloc::ThreadCache::kDefaultMultiplier / 2.);
-  }
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 
   // Renderer processes are more performance-sensitive, increase thread cache
   // limits.

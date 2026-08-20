@@ -29,21 +29,6 @@ class TestVersionUpdater : public VersionUpdater {
 #if BUILDFLAG(IS_MAC)
   void PromoteUpdater() override {}
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetChannel(const std::string& channel,
-                  bool is_powerwash_allowed) override {}
-  void GetChannel(bool get_current_channel, ChannelCallback callback) override {
-  }
-  void GetEolInfo(EolInfoCallback callback) override {}
-  void ToggleFeature(const std::string& feature, bool enable) override {}
-  void IsFeatureEnabled(const std::string& feature,
-                        IsFeatureEnabledCallback callback) override {}
-  bool IsManagedAutoUpdateEnabled() override;
-  void SetUpdateOverCellularOneTimePermission(StatusCallback callback,
-                                              const std::string& update_version,
-                                              int64_t update_size) override {}
-  void ApplyDeferredUpdateAdvanced() override {}
-#endif
 
  private:
   Status status_ = Status::UPDATED;

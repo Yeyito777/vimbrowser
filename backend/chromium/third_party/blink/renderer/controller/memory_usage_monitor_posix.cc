@@ -100,9 +100,6 @@ bool MemoryUsageMonitorPosix::CalculateProcessMemoryFootprint(
 }
 
 void MemoryUsageMonitorPosix::GetProcessMemoryUsage(MemoryUsage& usage) {
-#if BUILDFLAG(IS_ANDROID)
-  ResetFileDescriptors();
-#endif
   if (!statm_fd_.is_valid() || !status_fd_.is_valid())
     return;
   uint64_t private_footprint, swap, vm_size, vm_hwm_size;
@@ -116,19 +113,6 @@ void MemoryUsageMonitorPosix::GetProcessMemoryUsage(MemoryUsage& usage) {
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void MemoryUsageMonitorPosix::ResetFileDescriptors() {
-  if (file_descriptors_reset_)
-    return;
-  file_descriptors_reset_ = true;
-  // See https://goo.gl/KjWnZP For details about why we read these files from
-  // sandboxed renderer. Keep these files open when detection is enabled.
-  if (!statm_fd_.is_valid())
-    statm_fd_.reset(open("/proc/self/statm", O_RDONLY));
-  if (!status_fd_.is_valid())
-    status_fd_.reset(open("/proc/self/status", O_RDONLY));
-}
-#endif
 
 void MemoryUsageMonitorPosix::SetProcFiles(base::File statm_file,
                                            base::File status_file) {

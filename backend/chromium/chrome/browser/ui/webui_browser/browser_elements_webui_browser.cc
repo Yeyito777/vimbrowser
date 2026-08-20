@@ -28,9 +28,7 @@ void BrowserElementsWebUiBrowser::Init(views::Widget* browser_widget) {
   // TODO(webium): Fix ChromeOS. On ChromeOS, browser_widget is null because of
   // a memory issue in WebUIBrowserWindow::GetNativeWindow(). See the comment
   // there.
-#if !BUILDFLAG(IS_CHROMEOS)
   CHECK(browser_widget);
-#endif
   browser_widget_ = browser_widget;
 }
 
@@ -40,11 +38,6 @@ void BrowserElementsWebUiBrowser::TearDown() {
 
 ui::ElementContext BrowserElementsWebUiBrowser::GetContext() {
   // TODO(webium): Remove this after fixing ChromeOS.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!browser_widget_) {
-    return ui::ElementContext();
-  }
-#endif
 
   return views::ElementTrackerViews::GetContextForWidget(browser_widget_);
 }

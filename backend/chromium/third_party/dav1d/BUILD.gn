@@ -11,9 +11,7 @@ import("//third_party/nasm/nasm_assemble.gni")
 # MemorySanitizer can't handle assembly, https://crbug.com/928357.
 enable_nasm = (current_cpu == "x86" || current_cpu == "x64") && !is_msan
 
-if (is_win) {
-  platform_config_root = "config/win/$current_cpu"
-} else if (is_msan) {
+if (is_msan) {
   assert(current_cpu == "x64" && (is_linux || is_chromeos),
          "Only Linux X64 MSAN is supported")
   platform_config_root = "config/linux-noasm/$current_cpu"
@@ -90,29 +88,19 @@ dav1d_copts = [
   "-D_POSIX_C_SOURCE=200112L",
 ]
 
-if (is_win) {
+dav1d_copts += [ "-std=c99" ]
+if (is_apple) {
+  dav1d_copts += [ "-D_DARWIN_C_SOURCE" ]
+}
+if (is_linux || is_chromeos || current_os == "aix") {
   if (!is_clang) {
-    dav1d_copts += [ "/wd4028" ]
-  }
-} else {
-  dav1d_copts += [ "-std=c99" ]
-  if (is_apple) {
-    dav1d_copts += [ "-D_DARWIN_C_SOURCE" ]
-  }
-  if (is_linux || is_chromeos || current_os == "aix") {
-    if (!is_clang) {
-      dav1d_copts += [ "-D_GNU_SOURCE" ]
-    }
+    dav1d_copts += [ "-D_GNU_SOURCE" ]
   }
 }
 
 if (is_clang && (current_cpu == "arm" || current_cpu == "arm64" ||
                  current_cpu == "arm64e")) {
-  if (is_win) {
-    dav1d_copts += [ "/clang:-fno-align-functions" ]
-  } else {
-    dav1d_copts += [ "-fno-align-functions" ]
-  }
+  dav1d_copts += [ "-fno-align-functions" ]
 }
 
 if (enable_nasm) {
@@ -283,9 +271,6 @@ if (current_cpu == "x86" || current_cpu == "x64") {
 
 static_library("dav1d") {
   sources = c_sources
-  if (is_win) {
-    sources += [ "libdav1d/src/win32/thread.c" ]
-  }
 
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [

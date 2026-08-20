@@ -27,11 +27,6 @@
 #include "device/fido/public/features.h"
 #include "device/fido/public/fido_constants.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/authenticator.h"
-#include "device/fido/win/util.h"
-#include "device/fido/win/webauthn_api.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/process/process_info.h"
@@ -192,40 +187,6 @@ void FidoRequestHandlerBase::InitDiscoveries(
     base::flat_set<FidoTransportProtocol> available_transports,
     bool consider_enclave) {
   FIDO_LOG(DEBUG) << "Initializing FIDO discoveries";
-#if BUILDFLAG(IS_WIN)
-  // Try to instantiate the discovery for proxying requests to the native
-  // Windows WebAuthn API; or fall back to using the regular device transport
-  // discoveries if the API is unavailable.
-  auto win_discovery =
-      fido_discovery_factory->MaybeCreateWinWebAuthnApiDiscovery();
-  if (win_discovery) {
-    // The Windows WebAuthn API is available. On this platform, communicating
-    // with authenticator devices directly is blocked by the OS, so we need to
-    // go through the native API instead. No device discoveries may be
-    // instantiated. The embedder will be responsible for dispatch of the
-    // authenticator and whether they display any UI in addition to the one
-    // provided by the OS.
-    FIDO_LOG(DEBUG) << "Adding Windows Hello discovery";
-    win_discovery->set_observer(this);
-    discoveries_.push_back(std::move(win_discovery));
-
-    transport_availability_info_.has_win_native_api_authenticator = true;
-    transport_availability_callback_readiness_->win_is_uvpaa_check_pending =
-        true;
-    WinWebAuthnApiAuthenticator::IsUserVerifyingPlatformAuthenticatorAvailable(
-        device::WinWebAuthnApi::GetDefault(),
-        base::BindOnce(&FidoRequestHandlerBase::OnWinIsUvpaa,
-                       weak_factory_.GetWeakPtr()));
-
-    // Allow caBLE as a potential additional transport if requested by
-    // the implementing class because it is not subject to the OS'
-    // device communication block (only GetAssertionRequestHandler uses
-    // caBLE). Otherwise, do not instantiate any other transports.
-    base::EraseIf(available_transports, [](auto transport) {
-      return transport != FidoTransportProtocol::kHybrid;
-    });
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   transport_availability_info_.available_transports = available_transports;
   for (const auto transport : available_transports) {
@@ -326,24 +287,6 @@ void FidoRequestHandlerBase::InitDiscoveries(
       device::fido::mac::DeviceHasBiometricsAvailable();
   FIDO_LOG(DEBUG) << "MacOS biometrics availability check done";
   MaybeSignalTransportsEnumerated();
-#elif BUILDFLAG(IS_WIN)
-  transport_availability_callback_readiness_
-      ->platform_biometrics_check_pending = true;
-  FIDO_LOG(DEBUG) << "Checking for Windows biometrics availability";
-  device::fido::win::DeviceHasBiometricsAvailable(base::BindOnce(
-      [](base::WeakPtr<FidoRequestHandlerBase> handler,
-         bool biometrics_available) {
-        if (!handler) {
-          return;
-        }
-        handler->transport_availability_info_.platform_has_biometrics =
-            biometrics_available;
-        handler->transport_availability_callback_readiness_
-            ->platform_biometrics_check_pending = false;
-        FIDO_LOG(DEBUG) << "Windows biometric availability check done";
-        handler->MaybeSignalTransportsEnumerated();
-      },
-      GetWeakPtr()));
 #else
   FIDO_LOG(DEBUG) << "No need to check for biometrics on this platform";
   MaybeSignalTransportsEnumerated();
@@ -560,15 +503,6 @@ void FidoRequestHandlerBase::AuthenticatorAdded(
     VLOG(2) << "Embedder controls the dispatch.";
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (authenticator->GetType() == AuthenticatorType::kWinNative) {
-    DCHECK(transport_availability_info_.has_win_native_api_authenticator);
-    transport_availability_info_
-        .win_native_ui_shows_resident_credential_notice =
-        static_cast<WinWebAuthnApiAuthenticator*>(authenticator)
-            ->ShowsResidentCredentialNotice();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void FidoRequestHandlerBase::GetPlatformCredentialStatus(

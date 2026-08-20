@@ -11,13 +11,8 @@
 #include "partition_alloc/partition_alloc_base/compiler_specific.h"
 #include "partition_alloc/partition_alloc_check.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
-#if PA_BUILDFLAG(IS_POSIX)
 #include <pthread.h>
-#endif
 
 #if PA_CONFIG(HAS_LINUX_KERNEL)
 #include <linux/futex.h>
@@ -32,13 +27,8 @@
     !PA_BUILDFLAG(IS_FUCHSIA)
 #include "partition_alloc/partition_alloc_base/threading/platform_thread.h"
 
-#if PA_BUILDFLAG(IS_POSIX)
 #include <sched.h>
 #define PA_YIELD_THREAD sched_yield()
-#else  // Other OS
-#error "Thread yield not supported on this OS."
-#define PA_YIELD_THREAD ((void)0)
-#endif
 
 #endif
 
@@ -297,12 +287,6 @@ void SpinningMutex::LockSlow() {
 
 #endif  // PA_BUILDFLAG(ENABLE_PARTITION_LOCK_PRIORITY_INHERITANCE)
 
-#elif PA_BUILDFLAG(IS_WIN)
-
-void SpinningMutex::LockSlow() {
-  ::AcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&lock_));
-}
-
 #elif PA_BUILDFLAG(IS_APPLE)
 
 // TODO(verwaest): We should use the constants from the header, but they aren't
@@ -334,35 +318,11 @@ void SpinningMutex::LockSlow() {
   }
 }
 
-#elif PA_BUILDFLAG(IS_POSIX)
+#else
 
 void SpinningMutex::LockSlow() {
   int retval = pthread_mutex_lock(&lock_);
   PA_DCHECK(retval == 0);
-}
-
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-
-void SpinningMutex::LockSlow() {
-  sync_mutex_lock(&lock_);
-}
-
-#else
-
-void SpinningMutex::LockSlow() {
-  int yield_thread_count = 0;
-  do {
-    if (yield_thread_count < 10) {
-      PA_YIELD_THREAD;
-      yield_thread_count++;
-    } else {
-      // At this point, it's likely that the lock is held by a lower priority
-      // thread that is unavailable to finish its work because of higher
-      // priority threads spinning here. Sleeping should ensure that they make
-      // progress.
-      base::PlatformThread::Sleep(base::Milliseconds(1));
-    }
-  } while (!Try());
 }
 
 #endif

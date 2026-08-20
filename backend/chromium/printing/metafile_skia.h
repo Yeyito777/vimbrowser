@@ -20,9 +20,6 @@
 #include "third_party/skia/include/core/SkRefCnt.h"
 #include "ui/accessibility/ax_tree_update.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 class SkCanvas;
 class SkPicture;
@@ -69,11 +66,7 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) MetafileSkia : public Metafile {
 
   printing::NativeDrawingContext context() const override;
 
-#if BUILDFLAG(IS_WIN)
-  bool Playback(printing::NativeDrawingContext hdc,
-                const RECT* rect) const override;
-  bool SafePlayback(printing::NativeDrawingContext hdc) const override;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   bool RenderPage(unsigned int page_number,
                   printing::NativeDrawingContext context,
                   const CGRect& rect,
@@ -81,11 +74,7 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) MetafileSkia : public Metafile {
                   bool fit_to_page) const override;
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  bool SaveToFileDescriptor(int fd) const override;
-#else
   bool SaveTo(base::File* file) const override;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Unlike FinishPage() or FinishDocument(), this is for out-of-process
   // subframe printing. It will just serialize the content into SkPicture

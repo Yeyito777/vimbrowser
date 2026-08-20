@@ -27,9 +27,6 @@
 #include "chrome/browser/ui/aura/accessibility/automation_manager_aura.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/arc/accessibility/arc_accessibility_helper_bridge.h"
-#endif
 
 namespace extensions {
 
@@ -57,14 +54,6 @@ bool ChromeAutomationInternalApiDelegate::CanRequestAutomation(
 
 bool ChromeAutomationInternalApiDelegate::EnableTree(
     const ui::AXTreeID& tree_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  arc::ArcAccessibilityHelperBridge* bridge =
-      arc::ArcAccessibilityHelperBridge::GetForBrowserContext(
-          GetActiveUserContext());
-  if (bridge) {
-    return bridge->EnableTree(tree_id);
-  }
-#endif
   return false;
 }
 
@@ -99,11 +88,7 @@ content::BrowserContext*
 ChromeAutomationInternalApiDelegate::GetActiveUserContext() {
   // Use the main profile on ChromeOS. Desktop platforms don't have the concept
   // of a "main" profile, so pick the "last used" profile instead.
-#if BUILDFLAG(IS_CHROMEOS)
-  return profile_util::GetActiveUserProfile();
-#else
   return profile_util::GetLastUsedProfile();
-#endif
 }
 
 }  // namespace extensions

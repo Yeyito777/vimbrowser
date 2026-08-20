@@ -85,17 +85,6 @@ void PopulateLookalikeUrlBlockingPageStrings(base::DictValue& load_time_data,
     load_time_data.Set(
         "primaryButtonText",
         l10n_util::GetStringUTF16(IDS_LOOKALIKE_URL_BACK_TO_SAFETY));
-#if BUILDFLAG(IS_IOS)
-    // On iOS, offer to close the page instead of navigating to NTP when the
-    // safe URL is empty or invalid, and unable to go back.
-    std::optional<bool> maybe_cant_go_back =
-        load_time_data.FindBool("cant_go_back");
-    if (maybe_cant_go_back && *maybe_cant_go_back) {
-      load_time_data.Set(
-          "primaryButtonText",
-          l10n_util::GetStringUTF16(IDS_LOOKALIKE_URL_CLOSE_PAGE));
-    }
-#endif
   }
   load_time_data.Set(
       "lookalikeConsoleMessage",

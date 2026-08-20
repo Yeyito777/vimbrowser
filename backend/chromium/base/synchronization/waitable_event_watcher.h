@@ -11,10 +11,7 @@
 #include "build/blink_buildflags.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/object_watcher.h"
-#include "base/win/scoped_handle.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include <dispatch/dispatch.h>
 
 #include <memory>
@@ -26,9 +23,7 @@
 #include "base/synchronization/waitable_event.h"
 #endif
 
-#if !BUILDFLAG(IS_WIN)
 #include "base/functional/callback.h"
-#endif
 
 namespace base {
 
@@ -73,9 +68,6 @@ class WaitableEvent;
 // right after, the callback may be called with deleted WaitableEvent pointer.
 
 class BASE_EXPORT WaitableEventWatcher
-#if BUILDFLAG(IS_WIN)
-    : public win::ObjectWatcher::Delegate
-#endif
 {
  public:
   using EventCallback = OnceCallback<void(WaitableEvent*)>;
@@ -85,11 +77,7 @@ class BASE_EXPORT WaitableEventWatcher
   WaitableEventWatcher(const WaitableEventWatcher&) = delete;
   WaitableEventWatcher& operator=(const WaitableEventWatcher&) = delete;
 
-#if BUILDFLAG(IS_WIN)
-  ~WaitableEventWatcher() override;
-#else
   ~WaitableEventWatcher();
-#endif
 
   // When |event| is signaled, |callback| is called on the sequence that called
   // StartWatching().
@@ -108,19 +96,7 @@ class BASE_EXPORT WaitableEventWatcher
   void StopWatching();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  void OnObjectSignaled(HANDLE h) override;
-
-  // Duplicated handle of the event passed to StartWatching().
-  win::ScopedHandle duplicated_event_handle_;
-
-  // A watcher for |duplicated_event_handle_|. The handle MUST outlive
-  // |watcher_|.
-  win::ObjectWatcher watcher_;
-
-  EventCallback callback_;
-  raw_ptr<WaitableEvent, AcrossTasksDanglingUntriaged> event_ = nullptr;
-#elif BUILDFLAG(IS_APPLE) && (!BUILDFLAG(IS_IOS) || !BUILDFLAG(USE_BLINK))
+#if BUILDFLAG(IS_APPLE) && (!BUILDFLAG(IS_IOS) || !BUILDFLAG(USE_BLINK))
   // Invokes the callback and resets the source. Must be called on the task
   // runner on which StartWatching() was called.
   void InvokeCallback();

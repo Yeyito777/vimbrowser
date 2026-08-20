@@ -69,11 +69,7 @@ ListInfos GetListInfos() {
   // - The list doesn't have hash prefixes to match. All requests lead to full
   //   hash checks. For instance: GetChromeUrlApiId()
 
-#if BUILDFLAG(IS_IOS)
-  const bool kSyncOnIos = true;
-#else
   const bool kSyncOnIos = false;
-#endif
 
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
   const bool kIsChromeBranded = true;

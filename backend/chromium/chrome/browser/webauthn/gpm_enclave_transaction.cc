@@ -33,12 +33,6 @@ using UserPresentAndVerifiedBits = device::enclave::UserPresentAndVerifiedBits;
 
 void MaybeRecordUserActionForWinUv(device::FidoRequestType request_type,
                                    EnclaveUserVerificationMethod uv_method) {
-#if BUILDFLAG(IS_WIN)
-  if (uv_method == EnclaveUserVerificationMethod::kUVKeyWithSystemUI ||
-      uv_method == EnclaveUserVerificationMethod::kDeferredUVKeyWithSystemUI) {
-    webauthn::user_actions::RecordGpmWinUvShown(request_type);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 base::OnceCallback<void(bool)> UvKeyDeferralCallback(

@@ -254,29 +254,6 @@ if (enable_vr) {
         "//third_party/blink/public:blink_headers",
       ]
 
-      if (is_win) {
-        libs = [
-          "d3d11.lib",
-          "dxgi.lib",
-        ]
-
-        sources += [
-          "openxr/windows/openxr_graphics_binding_d3d11.cc",
-          "openxr/windows/openxr_graphics_binding_d3d11.h",
-          "openxr/windows/openxr_instance_wrapper.cc",
-          "openxr/windows/openxr_instance_wrapper.h",
-          "openxr/windows/openxr_platform_helper_windows.cc",
-          "openxr/windows/openxr_platform_helper_windows.h",
-          "windows/d3d11_texture_helper.cc",
-          "windows/d3d11_texture_helper.h",
-          "windows/flip_pixel_shader.h",
-          "windows/geometry_shader.h",
-          "windows/vertex_shader.h",
-        ]
-
-        deps += [ ":directx_helpers" ]
-      }
-
       deps += [
         ":openxr_data",
         "//components/version_info",
@@ -330,22 +307,6 @@ if (enable_vr) {
       "//testing/gmock",
     ]
   }
-
-  if (is_win) {
-    static_library("directx_helpers") {
-      sources = [
-        "windows/d3d11_device_helpers.cc",
-        "windows/d3d11_device_helpers.h",
-      ]
-
-      libs = [
-        "d3d11.lib",
-        "dxgi.lib",
-      ]
-
-      deps = [ "//base" ]
-    }
-  }
 } else {
   source_set("vr") {
     # We need to include an empty .cc file so that mac and windows don't fall over when trying to
@@ -364,69 +325,7 @@ if (enable_openxr) {
   # folder points to our mock OpenXR runtime.
   copy("json_mock") {
     sources = []
-    if (is_win) {
-      sources += [ "openxr/test/openxr_win.json" ]
-    } else {
-    }
 
     outputs = [ "$root_out_dir/mock_vr_clients/bin/openxr/openxr.json" ]
-  }
-
-  if (is_win) {
-    shared_library("openxr_mock") {
-      testonly = true
-
-      # Not everything seems to respect `output_dir`, so we can't actually use
-      # it on both platforms. Furthermore, on Android if there are directories
-      # in the output_name path, then symbolization on the bots is broken.
-      if (is_win) {
-        output_name = "mock_vr_clients/bin/openxr/openxrruntime"
-      } else {
-      }
-
-      defines = [ "XR_EXTENSION_PROTOTYPES" ]
-
-      include_dirs = [ "//third_party/openxr/src/include" ]
-
-      sources = [
-        "openxr/openxr_interaction_profile_paths.h",
-        "openxr/openxr_platform.h",
-        "openxr/openxr_util.cc",
-        "openxr/openxr_util.h",
-        "openxr/openxr_view_configuration.cc",
-        "openxr/openxr_view_configuration.h",
-        "openxr/test/fake_openxr_impl_api.cc",
-        "openxr/test/openxr_negotiate.h",
-        "openxr/test/openxr_test_helper.cc",
-        "openxr/test/openxr_test_helper.h",
-      ]
-
-      deps = [
-        ":vr_test_hook",
-        "//base",
-        "//components/version_info",
-        "//device/gamepad/public/cpp:shared_with_blink",
-        "//device/vr/public/mojom:vr_service",
-        "//device/vr/public/mojom/test:test_mojom",
-        "//third_party/openxr:openxr_headers",
-      ]
-
-      if (is_win) {
-        sources += [ "openxr/test/openxr.def" ]
-        libs = [
-          "d3d11.lib",
-          "dxgi.lib",
-        ]
-      } else {
-      }
-
-      public_deps = [ ":openxr_data" ]
-
-      data_deps = [ "//device/vr:json_mock" ]
-
-      # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-      # enable the diagnostic by removing this line.
-      configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-    }
   }
 }

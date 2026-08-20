@@ -12,9 +12,6 @@
 #include "build/build_config.h"
 
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/base/shortcut_mapping_pref_delegate.h"
-#endif
 
 namespace features {
 
@@ -30,75 +27,7 @@ BASE_FEATURE_PARAM(bool,
                    "filter_out_empty_updates",
                    false);
 
-#if BUILDFLAG(IS_WIN)
-// If enabled, calculate native window occlusion - Windows-only.
-BASE_FEATURE(kCalculateNativeWinOcclusion, base::FEATURE_ENABLED_BY_DEFAULT);
 
-// Once enabled, the exact behavior is dictated by the field trial param
-// name `kApplyNativeOcclusionToCompositorType`.
-BASE_FEATURE(kApplyNativeOcclusionToCompositor,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// If enabled, native window occlusion tracking will always be used, even if
-// CHROME_HEADLESS is set.
-BASE_FEATURE(kAlwaysTrackNativeWindowOcclusionForTest,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Field trial param name for `kApplyNativeOcclusionToCompositor`.
-const base::FeatureParam<std::string> kApplyNativeOcclusionToCompositorType{
-    &kApplyNativeOcclusionToCompositor, "type", /*default=*/""};
-
-// When the WindowTreeHost is occluded or hidden, resources are released and
-// the compositor is hidden. See WindowTreeHost for specifics on what this
-// does.
-const char kApplyNativeOcclusionToCompositorTypeRelease[] = "release";
-// When the WindowTreeHost is occluded the frame rate is throttled.
-const char kApplyNativeOcclusionToCompositorTypeThrottle[] = "throttle";
-// Release when hidden, throttle when occluded.
-const char kApplyNativeOcclusionToCompositorTypeThrottleAndRelease[] =
-    "throttle_and_release";
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_CHROMEOS)
-// Integrate input method specific settings to Chrome OS settings page.
-// https://crbug.com/895886.
-BASE_FEATURE(kSettingsShowsPerKeyboardSettings,
-             "InputMethodIntegratedSettings",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-BASE_FEATURE(kDeprecateAltClick, base::FEATURE_DISABLED_BY_DEFAULT);
-
-bool IsDeprecateAltClickEnabled() {
-  return base::FeatureList::IsEnabled(kDeprecateAltClick);
-}
-
-BASE_FEATURE(kNotificationsIgnoreRequireInteraction,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
-bool IsNotificationsIgnoreRequireInteractionEnabled() {
-  return base::FeatureList::IsEnabled(kNotificationsIgnoreRequireInteraction);
-}
-
-// Enables settings that allow users to remap the F11 and F12 keys in the
-// "Customize keyboard keys" page.
-BASE_FEATURE(kSupportF11AndF12KeyShortcuts, base::FEATURE_ENABLED_BY_DEFAULT);
-
-bool AreF11AndF12ShortcutsEnabled() {
-  // TODO(crbug.com/40203434): Remove this once kDeviceI18nShortcutsEnabled
-  // policy is deprecated. This policy allows managed users to still be able to
-  // use deprecated legacy shortcuts which some enterprise customers rely on.
-  if (::ui::ShortcutMappingPrefDelegate::IsInitialized()) {
-    ::ui::ShortcutMappingPrefDelegate* instance =
-        ::ui::ShortcutMappingPrefDelegate::GetInstance();
-    if (instance && instance->IsDeviceEnterpriseManaged()) {
-      return instance->IsI18nShortcutPrefEnabled() &&
-             base::FeatureList::IsEnabled(
-                 features::kSupportF11AndF12KeyShortcuts);
-    }
-  }
-  return base::FeatureList::IsEnabled(features::kSupportF11AndF12KeyShortcuts);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_OZONE)
 BASE_FEATURE(kOzoneBubblesUsePlatformWidgets, base::FEATURE_ENABLED_BY_DEFAULT);
@@ -115,11 +44,7 @@ BASE_FEATURE(kWaylandSessionManagement, base::FEATURE_DISABLED_BY_DEFAULT);
 // blink. Currently enabled by default on Windows only.
 // TODO(crbug.com/40845719) - Implement for other platforms.
 BASE_FEATURE(kSystemCursorSizeSupported,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 bool IsSystemCursorSizeSupported() {
@@ -185,32 +110,13 @@ BASE_FEATURE(kFocusFollowsCursor, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kDragDropOnlySynthesizeHttpOrHttpsUrlsFromText,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsImprovedKeyboardShortcutsEnabled() {
-  // TODO(crbug.com/40203434): Remove this once kDeviceI18nShortcutsEnabled
-  // policy is deprecated.
-  if (::ui::ShortcutMappingPrefDelegate::IsInitialized()) {
-    ::ui::ShortcutMappingPrefDelegate* instance =
-        ::ui::ShortcutMappingPrefDelegate::GetInstance();
-    if (instance && instance->IsDeviceEnterpriseManaged()) {
-      return instance->IsI18nShortcutPrefEnabled();
-    }
-  }
-  return true;
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Whether to enable new touch text editing features such as extra touch
 // selection gestures and quick menu options. Planning to release for ChromeOS
 // first, then possibly also enable some parts for other platforms later.
 // TODO(b/262297017): Clean up after touch text editing redesign ships.
 BASE_FEATURE(kTouchTextEditingRedesign,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 bool IsTouchTextEditingRedesignEnabled() {
@@ -367,19 +273,11 @@ bool IsVariableRefreshRateAlwaysOn() {
 
 BASE_FEATURE(kBubbleMetricsApi, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kUseGammaContrastRegistrySettings,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 BASE_FEATURE(kBubbleFrameViewTitleIsHeading, base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kEnableGestureBeginEndTypes,
-#if !BUILDFLAG(IS_CHROMEOS)
              base::FEATURE_ENABLED_BY_DEFAULT
-#else
-             base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 );
 
 BASE_FEATURE(kUseUtf8EncodingForSvgImage, base::FEATURE_ENABLED_BY_DEFAULT);
@@ -401,11 +299,7 @@ BASE_FEATURE(kNonBlockingOsClipboardReads, base::FEATURE_ENABLED_BY_DEFAULT);
 // to be done via corner points. See https://crbug.com/720596 for details.
 BASE_FEATURE(kEnablePixelCanvasRecording,
              "enable-pixel-canvas-recording",
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 bool IsPixelCanvasRecordingEnabled() {

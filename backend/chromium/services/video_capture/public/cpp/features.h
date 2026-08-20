@@ -10,9 +10,6 @@
 
 namespace video_capture::features {
 
-#if BUILDFLAG(IS_WIN)
-BASE_DECLARE_FEATURE(kWinCameraMonitoringInVideoCaptureService);
-#endif
 
 }  // namespace video_capture::features
 

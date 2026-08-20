@@ -47,9 +47,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/widget/native_widget_aura.h"
-#endif
 
 namespace {
 constexpr float kContentCornerRadius = 6;
@@ -211,13 +208,6 @@ void ContentsContainerView::UpdateBorderAndOverlay(bool is_in_split,
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (split_changed) {
-    // Ensures correct window rounded corners after updating contents rounded
-    // corners in UpdateBorderRoundedCorners()/ClearBorderRoundedCorners().
-    GetWidget()->non_client_view()->frame_view()->UpdateWindowRoundedCorners();
-  }
-#endif  //  BUILDFLAG(IS_CHROMEOS)
 }
 
 void ContentsContainerView::UpdateBorderRoundedCorners() {
@@ -449,10 +439,6 @@ void ContentsContainerView::CreateCaptureContentsBorder() {
   // Let events go through to underlying view.
   params.accept_events = false;
   params.activatable = views::Widget::InitParams::Activatable::kNo;
-#if BUILDFLAG(IS_WIN)
-  params.native_widget =
-      new views::NativeWidgetAura(capture_contents_border_widget_.get());
-#endif  // BUILDFLAG(IS_WIN)
 
   capture_contents_border_widget_->Init(std::move(params));
   auto contents_capture_border_view =
@@ -465,15 +451,7 @@ void ContentsContainerView::CreateCaptureContentsBorder() {
 
 void ContentsContainerView::UpdateCaptureContentsBorderLocation() {
   gfx::Point contents_top_left;
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Ash placing the border widget on top of the contents container
-  // does not require an offset -- see crbug.com/1030925.
-  const gfx::Rect bounds_in_browser =
-      views::View::ConvertRectToTarget(this, browser_view_, GetLocalBounds());
-  contents_top_left = gfx::Point(bounds_in_browser.x(), bounds_in_browser.y());
-#else
   views::View::ConvertPointToScreen(this, &contents_top_left);
-#endif
   gfx::Rect rect;
   if (dynamic_capture_content_border_bounds_) {
     rect = gfx::Rect(
@@ -486,18 +464,6 @@ void ContentsContainerView::UpdateCaptureContentsBorderLocation() {
                      height());
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Immersive top container might overlap with the blue border in fullscreen
-  // mode - see crbug.com/1392733. By insetting the bounds rectangle we ensure
-  // that the blue border is always placed below the top container.
-  if (ImmersiveModeController::From(browser_view_->browser())->IsRevealed()) {
-    const int delta =
-        browser_view_->top_container()->bounds().bottom() - rect.y();
-    if (delta > 0) {
-      rect.Inset(gfx::Insets().set_top(delta));
-    }
-  }
-#endif
 
 #if BUILDFLAG(IS_MAC)
   // Zero sized widgets are not supported on mac.

@@ -45,9 +45,6 @@
 #include "ui/gl/gl_switches.h"
 #include "ui/gl/init/gl_factory.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif
 
 namespace gpu {
 
@@ -509,9 +506,6 @@ void CommandBufferStub::OnAsyncFlush(
   if (pre_state.get_offset != post_state.get_offset)
     ReportState();
 
-#if BUILDFLAG(IS_ANDROID)
-  channel_->gpu_channel_manager()->DidAccessGpu();
-#endif
 
   if (!HasUnprocessedCommands()) {
     TRACE_EVENT("gpu,toplevel.flow", "CommandBuffer::FlushComplete",

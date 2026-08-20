@@ -107,13 +107,6 @@ bool PageAllocator::ReleasePages(void* address,
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // On POSIX, we can unmap the trailing pages.
   partition_alloc::FreePages(release_base, release_size);
-#elif BUILDFLAG(IS_WIN)
-  // On Windows, we can only de-commit the trailing pages. FreePages() will
-  // still free all pages in the region including the released tail, so it's
-  // safe to just decommit the tail.
-  partition_alloc::DecommitSystemPages(
-      release_base, release_size,
-      ::partition_alloc::PageAccessibilityDisposition::kRequireUpdate);
 #else
 #error Unsupported platform
 #endif

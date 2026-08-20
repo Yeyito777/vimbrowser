@@ -84,13 +84,8 @@ const char kSodaBinaryInstallationSuccessTimeTaken[] =
 const char kSodaBinaryInstallationFailureTimeTaken[] =
     "SodaInstaller.BinaryInstallationFailureTime";
 
-#if BUILDFLAG(IS_WIN)
-constexpr base::FilePath::CharType kSodaBinaryRelativePath[] =
-    FILE_PATH_LITERAL("SODAFiles/SODA.dll");
-#else
 constexpr base::FilePath::CharType kSodaBinaryRelativePath[] =
     FILE_PATH_LITERAL("SODAFiles/libsoda.so");
-#endif
 
 constexpr base::FilePath::CharType kSodaTestBinaryRelativePath[] =
     FILE_PATH_LITERAL("libsoda.so");

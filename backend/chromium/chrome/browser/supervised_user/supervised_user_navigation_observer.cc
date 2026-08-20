@@ -50,12 +50,7 @@
 #include "services/metrics/public/cpp/ukm_recorder.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/supervised_user/android/supervised_user_web_content_handler_impl.h"
-#include "components/supervised_user/core/browser/android/android_parental_controls.h"
-#elif BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/supervised_user/chromeos/supervised_user_web_content_handler_impl.h"
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
 #include "chrome/browser/supervised_user/linux_mac_windows/supervised_user_web_content_handler_impl.h"
 #endif
 
@@ -67,15 +62,7 @@ std::unique_ptr<supervised_user::WebContentHandler> CreateWebContentHandler(
     Profile* profile,
     content::FrameTreeNodeId frame_id,
     int navigation_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<SupervisedUserWebContentHandlerImpl>(
-      web_contents, url,
-      *LargeIconServiceFactory::GetForBrowserContext(profile), frame_id,
-      navigation_id);
-#elif BUILDFLAG(IS_ANDROID)
-  return std::make_unique<SupervisedUserWebContentHandlerImpl>(
-      web_contents, frame_id, navigation_id);
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
   return std::make_unique<SupervisedUserWebContentHandlerImpl>(
       web_contents, frame_id, navigation_id);
 #endif
@@ -114,14 +101,6 @@ SupervisedUserNavigationObserver::SupervisedUserNavigationObserver(
         SupervisedUserServiceFactory::GetForProfile(profile));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  pref_change_registrar_.Init(profile->GetPrefs());
-  pref_change_registrar_.Add(
-      policy::policy_prefs::kForceGoogleSafeSearch,
-      base::BindRepeating(
-          &SupervisedUserNavigationObserver::OnForceGoogleSafeSearchChanged,
-          base::Unretained(this)));
-#endif
 }
 
 // static
@@ -290,37 +269,6 @@ void SupervisedUserNavigationObserver::OnUrlFilteringServiceChanged() {
       });
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SupervisedUserNavigationObserver::OnForceGoogleSafeSearchChanged(
-    std::string_view safe_search_pref_name) {
-  // Reloads the current page when all conditions hold:
-  // 1. Last committed URL is a Google search URL.
-  // 2. Safe search is forced.
-  // 3. Android parental controls have search settings enabled.
-
-  if (!google_util::IsGoogleSearchUrl(web_contents()->GetLastCommittedURL())) {
-    // Uninteresting navigation (not a search page).
-    return;
-  }
-
-  Profile* profile =
-      Profile::FromBrowserContext(web_contents()->GetBrowserContext());
-  if (!profile->GetPrefs()->GetBoolean(safe_search_pref_name)) {
-    // Safe search is off. We can't undo safe search url params, because they
-    // might've been added by the user as well.
-    return;
-  }
-
-  if (!g_browser_process->device_parental_controls().IsSafeSearchForced()) {
-    // Safe search is forced but for different reason than supervision - do not
-    // step into other features shoes.
-    return;
-  }
-
-  web_contents()->GetController().Reload(content::ReloadType::NORMAL,
-                                         /*check_for_repost=*/false);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void SupervisedUserNavigationObserver::OnInterstitialDone(
     content::FrameTreeNodeId frame_id) {
@@ -508,24 +456,6 @@ void SupervisedUserNavigationObserver::RequestUrlAccessLocal(
   interstitial->RequestUrlAccessLocal(std::move(callback));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SupervisedUserNavigationObserver::LearnMore(LearnMoreCallback callback) {
-  // Learn more can come only from the main frame.
-  if (!receivers_.GetCurrentTargetFrame()->IsInPrimaryMainFrame()) {
-    return;
-  }
-
-  content::FrameTreeNodeId frame_id = frame_tree_node_id();
-  if (!supervised_user_interstitials_.contains(frame_id)) {
-    DLOG(WARNING) << "Interstitial with id not found: " << frame_id;
-    return;
-  }
-
-  supervised_user::SupervisedUserInterstitial* interstitial =
-      supervised_user_interstitials_[frame_id].get();
-  interstitial->LearnMore(std::move(callback));
-}
-#endif
 
 void SupervisedUserNavigationObserver::RequestCreated(
     RequestUrlAccessRemoteCallback callback,

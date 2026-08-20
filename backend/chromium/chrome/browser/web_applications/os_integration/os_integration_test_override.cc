@@ -37,7 +37,6 @@ GetMutableOsIntegrationTestOverrideStateForTesting() {
 
 // static
 void OsIntegrationTestOverride::CheckOsIntegrationAllowed() {
-#if !BUILDFLAG(IS_CHROMEOS)
   // Note: Using OsIntegrationManager::SuppressForTesting disables os
   // integration, even if OsIntegrationTestOverride is specified. In this case,
   // os integration is still not allowed, and anything needing it (like
@@ -53,7 +52,6 @@ void OsIntegrationTestOverride::CheckOsIntegrationAllowed() {
            "unit tests it may be required to call "
            "`FakeWebAppProvider::UseRealOsIntegrationManager()` during set up.";
   }
-#endif
 }
 
 // static

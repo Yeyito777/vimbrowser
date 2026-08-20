@@ -11,7 +11,6 @@
 
 namespace web_app {
 
-#if !BUILDFLAG(IS_WIN)
 
 // This block defines stub implementations of OS specific methods for
 // uninstallation command. Currently, only Windows has its own implementation.
@@ -33,6 +32,5 @@ bool UnregisterUninstallationViaOsSettingsWithOs(
   return true;
 }
 
-#endif  // !BUILDFLAG(IS_WIN)
 
 }  // namespace web_app

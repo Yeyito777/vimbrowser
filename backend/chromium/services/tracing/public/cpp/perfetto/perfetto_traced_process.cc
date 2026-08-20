@@ -336,7 +336,6 @@ void PerfettoTracedProcess::SetupClientLibrary(
   init_args.use_monotonic_clock = true;
   init_args.disallow_merging_with_system_tracks = true;
   init_args.process_uuid = process_track_uuid;
-#if BUILDFLAG(IS_POSIX)
   if (enable_system_backend) {
     init_args.backends |= perfetto::kSystemBackend;
     init_args.tracing_policy = this;
@@ -349,7 +348,6 @@ void PerfettoTracedProcess::SetupClientLibrary(
     }
 #endif
   }
-#endif
   // Proxy perfetto log messages into Chrome logs, so they are retained on all
   // platforms. In particular, on Windows, Perfetto's stderr log messages are
   // not reliable.

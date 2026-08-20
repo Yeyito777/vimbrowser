@@ -29,24 +29,9 @@
 
 // On POSIX, the shared memory handle is a file_descriptor mapped in the
 // GlobalDescriptors table.
-#if BUILDFLAG(IS_POSIX)
 #include "base/posix/global_descriptors.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include "base/types/expected.h"
-#include "base/win/scoped_handle.h"
-#include "base/win/windows_handle_util.h"
-#endif
-
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#include <zircon/process.h>
-
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 // This file supports passing a shared memory region between a parent process
 // and child process. The information about the shared memory region is encoded
@@ -75,25 +60,6 @@ using base::subtle::ScopedPlatformSharedMemoryHandle;
 // slightly larger than the largest shared memory size used in practice.
 constexpr size_t kMaxSharedMemorySize = 8 << 20;  // 8 MiB
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Return a scoped platform shared memory handle for |shmem_region|, possibly
-// with permissions reduced to make the handle read-only.
-// For Fuchsia:
-// * ScopedPlatformSharedMemoryHandle <==> zx::vmo
-zx::vmo GetFuchsiaHandle(ScopedPlatformSharedMemoryHandle shmem_handle,
-                         bool make_read_only) {
-  if (!make_read_only) {
-    return shmem_handle;
-  }
-  zx::vmo scoped_handle;
-  zx_status_t status =
-      shmem_handle.duplicate(ZX_RIGHT_READ | ZX_RIGHT_MAP | ZX_RIGHT_TRANSFER |
-                                 ZX_RIGHT_GET_PROPERTY | ZX_RIGHT_DUPLICATE,
-                             &scoped_handle);
-  ZX_CHECK(status == ZX_OK, status) << "zx_handle_duplicate";
-  return scoped_handle;
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 // Serializes the shared memory region metadata to a string that can be added
 // to the command-line of a child-process.
@@ -121,36 +87,13 @@ std::string Serialize(HandleType shmem_handle,
   std::string serialized;
   serialized.reserve(kSerializedReservedSize);
 
-#if BUILDFLAG(IS_WIN)
-  // If the child is launched in elevated privilege mode, it will query the
-  // parent for the handle. Otherwise, in non-elevated mode, the handle will
-  // be passed via process inheritance.
-  if (!launch_options->elevated) {
-    launch_options->handles_to_inherit.push_back(shmem_handle);
-  }
-
-  // Tell the child process the name of the HANDLE and whether to handle can
-  // be inherited ('i') or must be duplicate from the parent process ('p').
-  StrAppend(&serialized, {NumberToString(win::HandleToUint32(shmem_handle)),
-                          (launch_options->elevated ? ",p," : ",i,")});
-#elif BUILDFLAG(IS_APPLE)
-#if !BUILDFLAG(IS_IOS_TVOS)
+#if BUILDFLAG(IS_APPLE)
   auto& rendezvous_key = shared_memory_switch->rendezvous_key;
   // In the receiving child, the handle is looked up using the rendezvous key.
   launch_options->mach_ports_for_rendezvous.emplace(
       rendezvous_key, MachRendezvousPort(std::move(shmem_handle)));
   StrAppend(&serialized, {NumberToString(rendezvous_key), ",r,"});
-#endif
-#elif BUILDFLAG(IS_FUCHSIA)
-  // The handle is passed via the handles to transfer launch options. The child
-  // will use the returned handle_id to lookup the handle. Ownership of the
-  // handle is transferred to |launch_options|.
-  zx::vmo scoped_handle =
-      GetFuchsiaHandle(std::move(shmem_handle), is_read_only);
-  uint32_t handle_id = LaunchOptions::AddHandleToTransfer(
-      &launch_options->handles_to_transfer, scoped_handle.release());
-  StrAppend(&serialized, {NumberToString(handle_id), ",i,"});
-#elif BUILDFLAG(IS_POSIX)
+#else
   // Serialize the key by which the child can lookup the shared memory handle.
   // Ownership of the handle is transferred, via |descriptor_to_share|, to the
   // caller, who is responsible for updating |launch_options| or the zygote
@@ -162,19 +105,13 @@ std::string Serialize(HandleType shmem_handle,
   // TODO(crbug.com/40109064): Get rid of |descriptor_to_share| and just
   // populate |launch_options|. The caller should be responsible for translating
   // between |launch_options| and zygote parameters as necessary.
-#if BUILDFLAG(IS_ANDROID)
-  shared_memory_switch->out_descriptor_to_share = std::move(shmem_handle);
-#else
   shared_memory_switch->out_descriptor_to_share = std::move(shmem_handle.fd);
-#endif
   DVLOG(1) << "Sharing fd="
            << shared_memory_switch->out_descriptor_to_share.get()
            << " with child process as fd_key="
            << shared_memory_switch->descriptor_key;
   StrAppend(&serialized,
             {NumberToString(shared_memory_switch->descriptor_key), ",i,"});
-#else
-#error "Unsupported OS"
 #endif
 
   StrAppend(&serialized,
@@ -216,44 +153,7 @@ expected<PlatformSharedMemoryRegion, SharedMemoryError> Deserialize(
   // token[1] has a fixed value but is ignored on all platforms except
   // Windows, where it can be 'i' or 'p' to indicate that the handle is
   // inherited or must be obtained from the parent.
-#if BUILDFLAG(IS_WIN)
-  HANDLE handle = win::Uint32ToHandle(checked_cast<uint32_t>(shmem_handle));
-  if (tokens[1] == "p") {
-    DCHECK(IsCurrentProcessElevated());
-    // LaunchProcess doesn't have a way to duplicate the handle, but this
-    // process can since by definition it's not sandboxed.
-    if (ProcessId parent_pid = GetParentProcessId(GetCurrentProcessHandle());
-        parent_pid == kNullProcessId) {
-      return unexpected(SharedMemoryError::kInvalidHandle);
-    } else if (auto parent =
-                   Process::OpenWithAccess(parent_pid, PROCESS_ALL_ACCESS);
-               !parent.IsValid() ||
-               !::DuplicateHandle(parent.Handle(), handle,
-                                  ::GetCurrentProcess(), &handle, 0, FALSE,
-                                  DUPLICATE_SAME_ACCESS)) {
-      return unexpected(SharedMemoryError::kInvalidHandle);
-    }
-  } else if (tokens[1] != "i") {
-    return unexpected(SharedMemoryError::kUnexpectedHandleType);
-  }
-  // Under some situations, the handle value provided on the command line does
-  // not refer to a valid Section object. Fail gracefully rather than wrapping
-  // the value in a ScopedHandle, as that will lead to a crash when CloseHandle
-  // fails; see https://crbug.com/40071993.
-  win::ScopedHandle scoped_handle;
-  if (auto handle_or_error = win::TakeHandleOfType(
-          std::exchange(handle, kNullProcessHandle), L"Section");
-      !handle_or_error.has_value()) {
-    return unexpected(SharedMemoryError::kInvalidHandle);
-  } else {
-    scoped_handle = *std::move(handle_or_error);
-  }
-#elif BUILDFLAG(IS_IOS_TVOS)
-  // Create an empty handle to prevent a build failure when returning a writable
-  // shared memory region at the end of the function.
-  apple::ScopedMachSendRight scoped_handle;
-  TVOS_NOT_YET_IMPLEMENTED();
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   DCHECK_EQ(tokens[1], "r");
   auto* rendezvous = MachPortRendezvousClient::GetInstance();
   if (!rendezvous) {
@@ -268,15 +168,7 @@ expected<PlatformSharedMemoryRegion, SharedMemoryError> Deserialize(
     LOG(ERROR) << "Mach rendezvous failed, terminating process (parent died?)";
     base::Process::TerminateCurrentProcessImmediately(0);
   }
-#elif BUILDFLAG(IS_FUCHSIA)
-  DCHECK_EQ(tokens[1], "i");
-  const uint32_t handle = checked_cast<uint32_t>(shmem_handle);
-  zx::vmo scoped_handle(zx_take_startup_handle(handle));
-  if (!scoped_handle.is_valid()) {
-    LOG(ERROR) << "Invalid shared mem handle: " << handle;
-    return unexpected(SharedMemoryError::kInvalidHandle);
-  }
-#elif BUILDFLAG(IS_POSIX)
+#else
   DCHECK_EQ(tokens[1], "i");
   const int fd = GlobalDescriptors::GetInstance()->MaybeGet(
       checked_cast<GlobalDescriptors::Key>(shmem_handle));
@@ -287,8 +179,6 @@ expected<PlatformSharedMemoryRegion, SharedMemoryError> Deserialize(
   DVLOG(1) << "Opening shared memory handle " << fd << " shared as "
            << shmem_handle;
   ScopedFD scoped_handle(fd);
-#else
-#error Unsupported OS
 #endif
 
   // Together, tokens[2] and tokens[3] encode the shared memory guid.
@@ -316,17 +206,11 @@ void AddToLaunchParametersImpl(const RegionType& memory_region,
                                SharedMemorySwitch* shared_memory_switch,
                                CommandLine* command_line,
                                LaunchOptions* launch_options) {
-#if BUILDFLAG(IS_WIN)
-  auto token = memory_region.GetGUID();
-  auto size = memory_region.GetSize();
-  auto handle = memory_region.GetPlatformHandle();
-#else
   auto region =
       RegionType::TakeHandleForSerialization(memory_region.Duplicate());
   auto token = region.GetGUID();
   auto size = region.GetSize();
   auto handle = region.PassPlatformHandle();
-#endif  // !BUILDFLAG(IS_WIN)
   constexpr bool is_read_only =
       std::is_same<RegionType, ReadOnlySharedMemoryRegion>::value;
   std::string switch_value =

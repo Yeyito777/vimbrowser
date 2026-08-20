@@ -14,10 +14,6 @@ import("//build_overrides/build.gni")
 import("release_branch_toggle.gni")
 import("split_static_library.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`.
-}
-
 declare_args() {
   # Includes files needed for correctness fuzzing.
   v8_correctness_fuzzer = false
@@ -479,55 +475,27 @@ template("v8_header_set") {
 }
 
 template("v8_executable") {
-  if (is_ios) {
-    import("//build/config/ios/rules.gni")
-
-    ios_app_bundle(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "remove_configs",
-                             ])
-      configs -= v8_remove_configs
-      configs += v8_add_configs
-      if (defined(invoker.remove_configs)) {
-        configs -= invoker.remove_configs
-      }
-      configs += invoker.configs
-      deps += [ v8_path_prefix + ":v8_dump_build_config" ]
-
-      # Provide sensible defaults in case invoker did not define any of those
-      # required variables.
-      if (!defined(info_plist) && !defined(info_plist_target)) {
-        info_plist = v8_path_prefix + "/gni/Info.plist"
-      }
-
-      bundle_identifier = "$ios_app_bundle_id_prefix.chrome.unittests.dev"
+  executable(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "configs",
+                             "remove_configs",
+                           ])
+    configs -= v8_remove_configs
+    configs += v8_add_configs
+    if (defined(invoker.remove_configs)) {
+      configs -= invoker.remove_configs
     }
-  } else {
-    executable(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "remove_configs",
-                             ])
-      configs -= v8_remove_configs
-      configs += v8_add_configs
-      if (defined(invoker.remove_configs)) {
-        configs -= invoker.remove_configs
-      }
-      configs += invoker.configs
-      if (is_linux || is_chromeos) {
-        # For enabling ASLR.
-        ldflags = [ "-pie" ]
-      }
-      deps += [ v8_path_prefix + ":v8_dump_build_config" ]
+    configs += invoker.configs
+    if (is_linux || is_chromeos) {
+      # For enabling ASLR.
+      ldflags = [ "-pie" ]
+    }
+    deps += [ v8_path_prefix + ":v8_dump_build_config" ]
 
-      if (is_win && !v8_enable_cet_shadow_stack) {
-        configs -= [ "//build/config/compiler:cet_shadow_stack" ]
-      }
+    if (is_win && !v8_enable_cet_shadow_stack) {
+      configs -= [ "//build/config/compiler:cet_shadow_stack" ]
     }
   }
 }

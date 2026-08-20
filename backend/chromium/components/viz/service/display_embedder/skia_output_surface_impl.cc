@@ -92,9 +92,6 @@
 #include "third_party/skia/include/gpu/vk/VulkanTypes.h"
 #endif  // BUILDFLAG(ENABLE_VULKAN)
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display/dc_layer_overlay.h"
-#endif
 
 namespace viz {
 
@@ -1068,15 +1065,6 @@ void SkiaOutputSurfaceImpl::ScheduleOverlays(
                  /*make_current=*/false, /*need_framebuffer=*/false);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SkiaOutputSurfaceImpl::SetFrameRate(
-    gfx::SurfaceControlFrameRate frame_rate) {
-  auto task = base::BindOnce(&SkiaOutputSurfaceImplOnGpu::SetFrameRate,
-                             base::Unretained(impl_on_gpu_.get()), frame_rate);
-  EnqueueGpuTask(std::move(task), {}, /*make_current=*/false,
-                 /*need_framebuffer=*/false);
-}
-#endif
 
 void SkiaOutputSurfaceImpl::SetCapabilitiesForTesting(
     gfx::SurfaceOrigin output_surface_origin) {
@@ -1565,12 +1553,6 @@ void SkiaOutputSurfaceImpl::SetNeedsSwapSizeNotifications(
   needs_swap_size_notifications_ = needs_swap_size_notifications;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::ScopedClosureRunner SkiaOutputSurfaceImpl::GetCacheBackBufferCb() {
-  // Note, that we call it directly on viz thread to get the callback.
-  return impl_on_gpu_->GetCacheBackBufferCb();
-}
-#endif
 
 void SkiaOutputSurfaceImpl::AddContextLostObserver(
     ContextLostObserver* observer) {
@@ -1692,11 +1674,7 @@ void SkiaOutputSurfaceImpl::SetSharedImagePurgeable(const gpu::Mailbox& mailbox,
 bool SkiaOutputSurfaceImpl::SupportsBGRA() const {
   if (graphite_recorder_) {
     // TODO(crbug.com/40270686): Implement properly for Graphite.
-#if BUILDFLAG(IS_IOS)
-    return false;
-#else
     return true;
-#endif  // BUILDFLAG(IS_IOS)
   }
 
   return gr_context_thread_safe_

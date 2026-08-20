@@ -129,18 +129,6 @@ if (translate_genders) {
   gender_suffixes = [ "" ]
 }
 
-if (is_ios) {
-  # Chrome on iOS uses "es-MX" and "pt" for "es-419" and "pt-BR".
-  all_chrome_locales -= [
-    "es-419",
-    "pt-BR",
-  ]
-  all_chrome_locales += [
-    "es-MX",
-    "pt",
-  ]
-}
-
 # Chrome locales not on Windows, Mac, or Linux.
 # This list is used for all platforms except Android. On Android, this list is
 # modified to exclude locales that are not used on Android, so
@@ -186,73 +174,13 @@ _non_android_locales = [ "cy" ]
 
 # Setup |platform_pak_locales| for each platform.
 platform_pak_locales = all_chrome_locales
-if (is_android) {
-  platform_pak_locales -= _non_android_locales
-  extended_locales -= _non_android_locales
-} else {
-  platform_pak_locales -= extended_locales
-}
+platform_pak_locales -= extended_locales
 
 # The base list for all platforms except Android excludes the extended locales.
 # Add or subtract platform specific locales below.
-if (is_chromeos) {
-  platform_pak_locales += [
-    "cy",
-    "eu",
-    "gl",
-    "is",
-    "mn",
-    "zu",
-  ]
-  platform_pak_locales -= [ "ur" ]
-} else if (is_ios) {
-  platform_pak_locales -= [
-    "af",
-    "am",
-    "bn",
-    "et",
-    "fil",
-    "gu",
-    "kn",
-    "lv",
-    "ml",
-    "mr",
-    "sl",
-    "sw",
-    "ta",
-    "te",
-  ]
-}
 
 # List for Android locale names in .xml exports. Note: needs to stay in sync
 # with |ToAndroidLocaleName| in build/android/gyp/util/resource_utils.py.
-if (is_android) {
-  #  - add r: (e.g. zh-HK -> zh-rHK )
-  android_bundle_locales_as_resources = []
-  foreach(_locale, platform_pak_locales) {
-    android_bundle_locales_as_resources +=
-        [ string_replace(_locale, "-", "-r") ]
-  }
-
-  #  - remove en-US
-  #  - swap: (he, id, en-419, fil) -> (iw, in, es-rUS, tl)
-  #  - sr-rLatn -> -b+sr+Latn
-  android_bundle_locales_as_resources -= [
-    "en-rUS",
-    "es-r419",
-    "fil",
-    "he",
-    "id",
-    "sr-rLatn",
-  ]
-  android_bundle_locales_as_resources += [
-    "b+sr+Latn",
-    "es-rUS",
-    "in",
-    "iw",
-    "tl",
-  ]
-}
 
 locales_without_pseudolocales = platform_pak_locales - pseudolocales
 locales_with_pseudolocales = platform_pak_locales

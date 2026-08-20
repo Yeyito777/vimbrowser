@@ -22,9 +22,6 @@
 #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -105,53 +102,6 @@ const PrefMappingEntry kMappings[] = {
 // feature being controlled exists in ash. They should be kept in sync/in order.
 // If a new extension-controlled pref of this type is added, it should be added
 // to both lists.
-#if BUILDFLAG(IS_CHROMEOS)
-    {"autoclick", ash::prefs::kAccessibilityAutoclickEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"caretHighlight", ash::prefs::kAccessibilityCaretHighlightEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"cursorColor", ash::prefs::kAccessibilityCursorColorEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"cursorHighlight", ash::prefs::kAccessibilityCursorHighlightEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"dictation", ash::prefs::kAccessibilityDictationEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"dockedMagnifier", ash::prefs::kDockedMagnifierEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"focusHighlight", ash::prefs::kAccessibilityFocusHighlightEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"highContrast", ash::prefs::kAccessibilityHighContrastEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"largeCursor", ash::prefs::kAccessibilityLargeCursorEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"screenMagnifier", ash::prefs::kAccessibilityScreenMagnifierEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"selectToSpeak", ash::prefs::kAccessibilitySelectToSpeakEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"spokenFeedback", ash::prefs::kAccessibilitySpokenFeedbackEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"stickyKeys", ash::prefs::kAccessibilityStickyKeysEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"switchAccess", ash::prefs::kAccessibilitySwitchAccessEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-    {"virtualKeyboard", ash::prefs::kAccessibilityVirtualKeyboardEnabled,
-     APIPermissionID::kAccessibilityFeaturesRead,
-     APIPermissionID::kAccessibilityFeaturesModify},
-#endif
 };
 
 class IdentityPrefTransformer : public PrefTransformerInterface {

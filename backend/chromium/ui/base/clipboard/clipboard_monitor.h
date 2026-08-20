@@ -43,10 +43,6 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardMonitor {
   // Notifies all observers for clipboard data change.
   virtual void NotifyClipboardDataChanged();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Notifies all observers for clipboard data read.
-  virtual void NotifyClipboardDataRead();
-#endif
 
  private:
   friend class base::NoDestructor<ClipboardMonitor>;

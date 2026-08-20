@@ -219,12 +219,7 @@ void AddOptimizationTypesForBnplIssuers(
         base::FeatureList::IsEnabled(
             features::kAutofillPreferBuyNowPayLaterBlocklists)
             ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_AFFIRM
-#if BUILDFLAG(IS_ANDROID)
-            : optimization_guide::proto::
-                  BUY_NOW_PAY_LATER_ALLOWLIST_AFFIRM_ANDROID);
-#else
             : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_AFFIRM);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   if (bnpl_issuer_allowlist_can_be_loaded(BnplIssuer::IssuerId::kBnplZip)) {
@@ -232,12 +227,7 @@ void AddOptimizationTypesForBnplIssuers(
         base::FeatureList::IsEnabled(
             features::kAutofillPreferBuyNowPayLaterBlocklists)
             ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_ZIP
-#if BUILDFLAG(IS_ANDROID)
-            : optimization_guide::proto::
-                  BUY_NOW_PAY_LATER_ALLOWLIST_ZIP_ANDROID);
-#else
             : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_ZIP);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   if (bnpl_issuer_allowlist_can_be_loaded(BnplIssuer::IssuerId::kBnplKlarna)) {
@@ -245,12 +235,7 @@ void AddOptimizationTypesForBnplIssuers(
         base::FeatureList::IsEnabled(
             features::kAutofillPreferBuyNowPayLaterBlocklists)
             ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_KLARNA
-#if BUILDFLAG(IS_ANDROID)
-            : optimization_guide::proto::
-                  BUY_NOW_PAY_LATER_ALLOWLIST_KLARNA_ANDROID);
-#else
             : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_KLARNA);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
@@ -486,23 +471,13 @@ bool AutofillOptimizationGuideDecider::IsUrlEligibleForBnplIssuer(
           base::FeatureList::IsEnabled(
               features::kAutofillPreferBuyNowPayLaterBlocklists)
               ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_AFFIRM
-#if BUILDFLAG(IS_ANDROID)
-              : optimization_guide::proto::
-                    BUY_NOW_PAY_LATER_ALLOWLIST_AFFIRM_ANDROID);
-#else
               : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_AFFIRM);
-#endif  // BUILDFLAG(IS_ANDROID)
     case BnplIssuer::IssuerId::kBnplZip:
       return can_apply_optimization(
           base::FeatureList::IsEnabled(
               features::kAutofillPreferBuyNowPayLaterBlocklists)
               ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_ZIP
-#if BUILDFLAG(IS_ANDROID)
-              : optimization_guide::proto::
-                    BUY_NOW_PAY_LATER_ALLOWLIST_ZIP_ANDROID);
-#else
               : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_ZIP);
-#endif  // BUILDFLAG(IS_ANDROID)
     // TODO(crbug.com/408268581): Handle Afterpay issuer enum value when
     // adding Afterpay to the BNPL flow.
     case BnplIssuer::IssuerId::kBnplAfterpay:
@@ -512,12 +487,7 @@ bool AutofillOptimizationGuideDecider::IsUrlEligibleForBnplIssuer(
           base::FeatureList::IsEnabled(
               features::kAutofillPreferBuyNowPayLaterBlocklists)
               ? optimization_guide::proto::BUY_NOW_PAY_LATER_BLOCKLIST_KLARNA
-#if BUILDFLAG(IS_ANDROID)
-              : optimization_guide::proto::
-                    BUY_NOW_PAY_LATER_ALLOWLIST_KLARNA_ANDROID);
-#else
               : optimization_guide::proto::BUY_NOW_PAY_LATER_ALLOWLIST_KLARNA);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
   NOTREACHED();
 }

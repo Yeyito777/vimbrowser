@@ -13,9 +13,6 @@
 #include "components/signin/public/base/signin_buildflags.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/startup/startup_types.h"
-#endif
 
 class Profile;
 class StartupBrowserCreator;
@@ -76,7 +73,6 @@ class StartupTabProvider {
       const base::CommandLine& command_line,
       const base::FilePath& cur_dir) const = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns tabs related to the What's New UI (if applicable).
   virtual StartupTabs GetNewFeaturesTabs(bool whats_new_enabled) const = 0;
 
@@ -86,7 +82,6 @@ class StartupTabProvider {
   virtual StartupTabs GetPrivacySandboxTabs(
       Profile* profile,
       const StartupTabs& other_startup_tabs) const = 0;
-#endif  // !BUILDFLAG(IS_ANDROID)
 };
 
 class StartupTabProviderImpl : public StartupTabProvider {
@@ -129,7 +124,6 @@ class StartupTabProviderImpl : public StartupTabProvider {
   // explicitly specified. Session Restore does not expect the NTP to be passed.
   static StartupTabs GetNewTabPageTabsForState(const SessionStartupPref& pref);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Determines if the what's new page should be shown.
   static StartupTabs GetNewFeaturesTabsForState(bool whats_new_enabled);
 
@@ -140,7 +134,6 @@ class StartupTabProviderImpl : public StartupTabProvider {
       extensions::ExtensionRegistry* extension_registry,
       const GURL& ntp_url,
       const StartupTabs& other_startup_tabs);
-#endif
 
   // Gets the URL for the page which offers to reset the user's profile
   // settings.
@@ -163,12 +156,10 @@ class StartupTabProviderImpl : public StartupTabProvider {
       const base::CommandLine& command_line,
       const base::FilePath& cur_dir) const override;
 
-#if !BUILDFLAG(IS_ANDROID)
   StartupTabs GetNewFeaturesTabs(bool whats_new_enabled) const override;
   StartupTabs GetPrivacySandboxTabs(
       Profile* profile,
       const StartupTabs& other_startup_tabs) const override;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
  private:
   struct ParsedCommandLineTabArg {

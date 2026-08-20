@@ -21,7 +21,6 @@ bool PathProvider(int key, base::FilePath* result) {
 
   base::FilePath cur;
   switch (key) {
-#if !BUILDFLAG(IS_IOS)
     // DIR_LOCALES is unsupported on iOS.
     case DIR_LOCALES: {
 #if BUILDFLAG(IS_MAC)
@@ -44,7 +43,6 @@ bool PathProvider(int key, base::FilePath* result) {
                                  cur.AsUTF8Unsafe());
       break;
     }
-#endif  // !BUILDFLAG(IS_IOS)
     // The following are only valid in the development environment, and
     // will fail if executed from an installed executable (because the
     // generated path won't exist).

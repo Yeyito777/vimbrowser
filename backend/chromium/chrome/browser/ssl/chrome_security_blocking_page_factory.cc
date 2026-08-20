@@ -37,9 +37,6 @@
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "base/enterprise_util.h"
-#elif BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/browser_process_platform_part.h"
 #endif
 
 
@@ -458,13 +455,6 @@ bool ChromeSecurityBlockingPageFactory::IsEnterpriseManaged(Profile* profile) {
   }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  if (connector && connector->IsDeviceEnterpriseManaged()) {
-    return true;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (profile && profile->GetProfilePolicyConnector() &&
       profile->GetProfilePolicyConnector()->IsManaged()) {

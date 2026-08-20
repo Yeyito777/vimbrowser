@@ -27,20 +27,6 @@ component("soda") {
     "//components/prefs",
     "//media",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "soda_installer_impl_chromeos.cc",
-      "soda_installer_impl_chromeos.h",
-    ]
-
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/dbus/dlcservice",
-      "//chromeos/ash/components/dbus/dlcservice:dlcservice_proto",
-      "//ui/base",
-    ]
-  }
 }
 
 source_set("constants") {
@@ -76,29 +62,10 @@ source_set("utils") {
     "//media/mojo/mojom",
     "//ui/base",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 }
 
 source_set("unit_tests") {
   testonly = true
-  if (is_chromeos) {
-    sources = [ "soda_installer_impl_chromeos_unittest.cc" ]
-
-    deps = [
-      ":constants",
-      ":soda",
-      "//ash/constants",
-      "//chromeos/ash/components/dbus/dlcservice",
-      "//components/live_caption:constants",
-      "//components/prefs:test_support",
-      "//content/test:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-    ]
-  }
 }
 
 static_library("test_support") {

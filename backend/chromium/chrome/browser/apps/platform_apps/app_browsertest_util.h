@@ -15,9 +15,6 @@
 #include "chrome/browser/extensions/mixin_based_extension_apitest.h"
 #include "extensions/browser/app_window/app_window.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/media_router/browser/test/mock_media_router.h"
-#endif
 
 namespace base {
 class CommandLine;
@@ -133,9 +130,6 @@ class PlatformAppBrowserTest : public MixinBasedExtensionApiTest {
   NativeAppWindow* GetNativeAppWindowForAppWindow(AppWindow* window);
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<media_router::MockMediaRouter> media_router_;
-#endif
   base::AutoReset<bool> enable_chrome_apps_;
 };
 

@@ -40,12 +40,6 @@ class ProfileOAuth2TokenServiceIOSDelegate
       OAuth2AccessTokenConsumer* consumer,
       const std::string& token_binding_challenge) override;
 
-#if BUILDFLAG(IS_IOS)
-  void GetRefreshTokenFromDevice(
-      const CoreAccountId& account_id,
-      const OAuth2AccessTokenManager::ScopeSet& scopes,
-      signin::AccessTokenFetcher::TokenCallback callback) override;
-#endif
 
   // KeyedService
   void Shutdown() override;

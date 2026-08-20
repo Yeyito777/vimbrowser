@@ -86,9 +86,6 @@
 
 #include "content/browser/network_sandbox.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/browser/network/network_service_process_tracker_win.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/browser/system_dns_resolution/system_dns_resolver.h"
@@ -105,20 +102,11 @@ namespace content {
 
 namespace {
 
-#if BUILDFLAG(IS_POSIX)
 // Environment variable pointing to Kerberos credential cache file.
 constexpr char kKrb5CCEnvName[] = "KRB5CCNAME";
 // Environment variable pointing to Kerberos config file.
 constexpr char kKrb5ConfEnvName[] = "KRB5_CONFIG";
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// File paths to the Kerberos credentials cache and configuration. The `FILE:`
-// prefix describes the type of credentials cache used. The `/home/chronos/user`
-// subpath corresponds to a bind mount of the active user.
-constexpr char kKrb5CCFilePath[] = "FILE:/home/chronos/user/kerberos/krb5cc";
-constexpr char kKrb5ConfFilePath[] = "/home/chronos/user/kerberos/krb5.conf";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool g_force_create_network_service_directly = false;
 bool g_network_service_crashes_on_next_startup = false;
@@ -362,22 +350,6 @@ void CreateNetworkContextInternal(
   // This might recreate g_client if the network service needed to be restarted.
   auto* network_service = GetNetworkService();
 
-#if BUILDFLAG(IS_WIN)
-  // If the browser has started shutting down, it is possible that either a)
-  // `g_client` was never created if shutdown started before the network service
-  // was created, or b) the network service might have crashed meaning
-  // `g_client` is the client for the already-crashed Network Service, and a new
-  // network service never started. It's not safe to bind the socket broker in
-  // either of these cases so skip the binding since the browser is shutting
-  // down anyway.
-  if (!GetContentClient()->browser()->IsShuttingDown() &&
-      GetContentClient()->browser()->ShouldSandboxNetworkService() &&
-      !params->socket_brokers) {
-    params->socket_brokers = network::mojom::SocketBrokerRemotes::New();
-    params->socket_brokers->client = g_client->BindSocketBroker();
-    params->socket_brokers->server = g_client->BindSocketBroker();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   network_service->CreateNetworkContext(std::move(context), std::move(params));
 }
@@ -457,17 +429,6 @@ network::mojom::NetworkServiceParamsPtr CreateNetworkServiceParams() {
   }
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the network service is always out of process (unless
-  // --single-process is set on the command-line). In any case, we set Kerberos
-  // environment variables during the service initialization.
-  network_service_params->environment.push_back(
-      network::mojom::EnvironmentVariable::New(kKrb5CCEnvName,
-                                               kKrb5CCFilePath));
-  network_service_params->environment.push_back(
-      network::mojom::EnvironmentVariable::New(kKrb5ConfEnvName,
-                                               kKrb5ConfFilePath));
-#elif BUILDFLAG(IS_POSIX)
   // Send Kerberos environment variables to the network service, if it's running
   // in another process.
   if (IsOutOfProcessNetworkService()) {
@@ -483,7 +444,6 @@ network::mojom::NetworkServiceParamsPtr CreateNetworkServiceParams() {
           network::mojom::EnvironmentVariable::New(kKrb5ConfEnvName, *value));
     }
   }
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_LINUX)
   if (GetContentClient()
@@ -761,13 +721,7 @@ network::mojom::NetworkService* GetNetworkService() {
         if (env_str.has_value()) {
           UMA_HISTOGRAM_ENUMERATION(kSSLKeyLogFileHistogram,
                                     SSLKeyLogFileAction::kEnvVarFound);
-#if BUILDFLAG(IS_WIN)
-          // base::Environment returns environment variables in UTF-8 on
-          // Windows.
-          ssl_key_log_path = base::FilePath(base::UTF8ToWide(*env_str));
-#else
           ssl_key_log_path = base::FilePath(*env_str);
-#endif
         }
       }
 
@@ -812,11 +766,6 @@ base::CallbackListSubscription RegisterNetworkServiceProcessGoneHandler(
   return GetProcessGoneHandlersList().Add(std::move(handler));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-net::NetworkChangeNotifier* GetNetworkChangeNotifier() {
-  return BrowserMainLoop::GetInstance()->network_change_notifier();
-}
-#endif
 
 void FlushNetworkServiceInstanceForTesting() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));

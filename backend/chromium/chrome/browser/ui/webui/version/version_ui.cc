@@ -49,20 +49,11 @@
 
 #include "chrome/browser/ui/webui/theme_source.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "build/util/LASTCHANGE_commit_position.h"
-#include "chrome/browser/ui/webui/version/version_handler_chromeos.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#include "chrome/browser/ui/webui/version/version_handler_win.h"
-#include "chrome/browser/ui/webui/version/version_util_win.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CEF)
 #include "cef/include/cef_version.h"
@@ -98,14 +89,7 @@ void CreateAndAddVersionUIDataSource(Profile* profile) {
       {version_ui::kCopyVariationsNotice,
        IDS_VERSION_UI_COPY_VARIATIONS_NOTICE},
       {version_ui::kVariationsSeedName, IDS_VERSION_UI_VARIATIONS_SEED_NAME},
-#if BUILDFLAG(IS_CHROMEOS)
-      {version_ui::kARC, IDS_ARC_LABEL},
-      {version_ui::kPlatform, IDS_PLATFORM_LABEL},
-      {version_ui::kCustomizationId, IDS_VERSION_UI_CUSTOMIZATION_ID},
-      {version_ui::kFirmwareVersion, IDS_VERSION_UI_FIRMWARE_VERSION},
-#else
       {version_ui::kOSName, IDS_VERSION_UI_OS},
-#endif  // BUILDFLAG(IS_CHROMEOS)
   };
   html_source->AddLocalizedStrings(kStrings);
 
@@ -150,13 +134,7 @@ VersionUI::VersionUI(content::WebUI* web_ui)
     : content::WebUIController(web_ui) {
   Profile* profile = Profile::FromWebUI(web_ui);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  web_ui->AddMessageHandler(std::make_unique<VersionHandlerChromeOS>());
-#elif BUILDFLAG(IS_WIN)
-  web_ui->AddMessageHandler(std::make_unique<VersionHandlerWindows>());
-#else
   web_ui->AddMessageHandler(std::make_unique<VersionHandler>());
-#endif
 
   // Set up the chrome://theme/ source.
   content::URLDataSource::Add(profile, std::make_unique<ThemeSource>(profile));
@@ -177,23 +155,6 @@ int VersionUI::VersionProcessorVariation() {
     case base::mac::CPUType::kArm:
       return IDS_VERSION_UI_64BIT_ARM;
   }
-#elif BUILDFLAG(IS_WIN)
-#if defined(ARCH_CPU_ARM64)
-  return IDS_VERSION_UI_64BIT_ARM;
-#else
-  bool emulated = base::win::OSInfo::IsRunningEmulatedOnArm64();
-#if defined(ARCH_CPU_X86)
-  if (emulated) {
-    return IDS_VERSION_UI_32BIT_TRANSLATED_INTEL;
-  }
-  return IDS_VERSION_UI_32BIT;
-#else   // defined(ARCH_CPU_X86)
-  if (emulated) {
-    return IDS_VERSION_UI_64BIT_TRANSLATED_INTEL;
-  }
-  return IDS_VERSION_UI_64BIT;
-#endif  // defined(ARCH_CPU_X86)
-#endif  // defined(ARCH_CPU_ARM64)
 #elif defined(ARCH_CPU_64_BITS)
   return IDS_VERSION_UI_64BIT;
 #elif defined(ARCH_CPU_32_BITS)
@@ -249,17 +210,11 @@ void VersionUI::AddVersionDetailStrings(content::WebUIDataSource* html_source) {
 
 #if BUILDFLAG(IS_MAC)
   html_source->AddString(version_ui::kOSType, base::mac::GetOSDisplayName());
-#elif !BUILDFLAG(IS_CHROMEOS)
+#else
   html_source->AddString(version_ui::kOSType, version_info::GetOSType());
 #endif  // BUILDFLAG(IS_MAC)
 
 
-#if BUILDFLAG(IS_WIN)
-  html_source->AddString(
-      version_ui::kCommandLine,
-      base::AsString16(
-          base::CommandLine::ForCurrentProcess()->GetCommandLineString()));
-#else
   std::string command_line;
   using ArgvList = std::vector<std::string>;
   const ArgvList& argv = base::CommandLine::ForCurrentProcess()->argv();
@@ -269,16 +224,11 @@ void VersionUI::AddVersionDetailStrings(content::WebUIDataSource* html_source) {
   // TODO(viettrungluu): |command_line| could really have any encoding, whereas
   // below we assumes it's UTF-8.
   html_source->AddString(version_ui::kCommandLine, command_line);
-#endif
 
 #if BUILDFLAG(IS_MAC)
   html_source->AddString("linker", CHROMIUM_LINKER_NAME);
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-  html_source->AddString(version_ui::kUpdateCohortName,
-                         version_utils::win::GetCohortVersionInfo());
-#endif  // BUILDFLAG(IS_WIN)
 
   html_source->AddString(
       version_ui::kVariationsSeed,

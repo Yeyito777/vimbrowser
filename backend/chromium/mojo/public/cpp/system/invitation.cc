@@ -16,9 +16,6 @@
 #include "mojo/public/c/system/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #if !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_IOS)
 #include "mojo/public/cpp/platform/platform_channel_server.h"
@@ -33,12 +30,7 @@ static constexpr std::string_view kIsolatedPipeName = {"\0\0\0\0", 4};
 void ProcessHandleToMojoProcessHandle(base::ProcessHandle target_process,
                                       MojoPlatformProcessHandle* handle) {
   handle->struct_size = sizeof(*handle);
-#if BUILDFLAG(IS_WIN)
-  handle->value =
-      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(target_process));
-#else
   handle->value = static_cast<uint64_t>(target_process);
-#endif
 }
 
 void PlatformHandleToTransportEndpoint(
@@ -130,22 +122,10 @@ base::Process CloneProcessFromHandle(base::ProcessHandle handle) {
     return base::Process{};
   }
 
-#if BUILDFLAG(IS_WIN)
-  // We can't use the hack below on Windows, because handle verification will
-  // explode when a new Process instance tries to own the already-owned
-  // `handle`.
-  HANDLE new_handle;
-  BOOL ok =
-      ::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(),
-                        &new_handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
-  CHECK(ok);
-  return base::Process(new_handle);
-#else
   base::Process temporary_owner(handle);
   base::Process clone = temporary_owner.Duplicate();
   std::ignore = temporary_owner.Release();
   return clone;
-#endif
 }
 #endif  // !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_IOS)
 

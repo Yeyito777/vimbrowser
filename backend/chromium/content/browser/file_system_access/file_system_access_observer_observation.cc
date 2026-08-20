@@ -31,9 +31,6 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_observer.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom-shared.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -69,16 +66,7 @@ std::vector<std::string> GetRelativePathAsVectorOfStrings(
 
   std::vector<base::FilePath::StringType> components =
       relative_path.GetComponents();
-#if BUILDFLAG(IS_WIN)
-  std::vector<std::string> result;
-  result.reserve(components.size());
-  for (const auto& component : components) {
-    result.push_back(base::WideToUTF8(component));
-  }
-  return result;
-#else
   return components;
-#endif  //  BUILDFLAG(IS_WIN)
 }
 
 blink::mojom::FileSystemAccessEntryPtr CreateEntryForUrl(

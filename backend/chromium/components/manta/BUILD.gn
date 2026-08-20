@@ -33,25 +33,6 @@ component("manta") {
     "//components/signin/public/identity_manager",
     "//net",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "mahi_provider.cc",
-      "mahi_provider.h",
-      "orca_provider.cc",
-      "orca_provider.h",
-      "scanner_provider.cc",
-      "scanner_provider.h",
-      "snapper_provider.cc",
-      "snapper_provider.h",
-      "walrus_provider.cc",
-      "walrus_provider.h",
-    ]
-    deps += [
-      "//chromeos/components/magic_boost/public/cpp",
-      "//chromeos/constants",
-    ]
-  }
 }
 
 source_set("unit_tests") {
@@ -61,15 +42,6 @@ source_set("unit_tests") {
     "base_provider_test_helper.cc",
     "base_provider_test_helper.h",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "orca_provider_unittest.cc",
-      "scanner_provider_unittest.cc",
-      "snapper_provider_unittest.cc",
-      "walrus_provider_unittest.cc",
-    ]
-  }
 
   deps = [
     ":manta",

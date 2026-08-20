@@ -46,13 +46,6 @@ source_set("util") {
     "//base",
     "//net",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/system",
-      "//components/user_manager",
-    ]
-  }
 }
 
 source_set("internal") {
@@ -265,24 +258,6 @@ source_set("internal") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "management/platform_management_status_provider_win.cc",
-      "management/platform_management_status_provider_win.h",
-      "policy_loader_win.cc",
-      "policy_loader_win.h",
-      "scoped_critical_policy_section.cc",
-      "scoped_critical_policy_section.h",
-    ]
-    libs = [
-      "netapi32.lib",
-      "ntdsapi.lib",
-      "secur32.lib",
-      "shlwapi.lib",
-      "userenv.lib",
-    ]
-  }
-
   if (is_win || is_mac || is_linux) {
     sources += [
       "cloud/profile_cloud_policy_manager.cc",
@@ -299,52 +274,7 @@ source_set("internal") {
       "registry_dict.h",
     ]
   }
-  if (is_ios) {
-    sources += [ "cloud/component_cloud_policy_service_stub.cc" ]
-    sources -= [
-      "cloud/cloud_external_data_store.cc",
-      "cloud/cloud_external_data_store.h",
-      "cloud/component_cloud_policy_service.cc",
-      "cloud/component_cloud_policy_store.cc",
-      "cloud/component_cloud_policy_store.h",
-      "cloud/component_cloud_policy_updater.cc",
-      "cloud/component_cloud_policy_updater.h",
-      "cloud/external_policy_data_fetcher.cc",
-      "cloud/external_policy_data_fetcher.h",
-      "cloud/external_policy_data_updater.cc",
-      "cloud/external_policy_data_updater.h",
-      "cloud/resource_cache.cc",
-      "cloud/resource_cache.h",
-      "config_dir_policy_loader.cc",
-      "config_dir_policy_loader.h",
-    ]
-  }
 
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/components/policy/device_local_account",
-      "//chromeos/ash/components/system",
-    ]
-    sources += [
-      "default_chrome_apps_migrator.cc",
-      "default_chrome_apps_migrator.h",
-      "policy_scheduler.cc",
-      "policy_scheduler.h",
-    ]
-    sources -= [
-      "cloud/chrome_browser_cloud_management_metrics.h",
-      "cloud/cloud_policy_client_registration_helper.cc",
-      "cloud/cloud_policy_client_registration_helper.h",
-      "cloud/machine_level_user_cloud_policy_manager.cc",
-      "cloud/machine_level_user_cloud_policy_manager.h",
-      "cloud/machine_level_user_cloud_policy_store.cc",
-      "cloud/machine_level_user_cloud_policy_store.h",
-      "cloud/user_cloud_policy_manager.cc",
-      "cloud/user_cloud_policy_manager.h",
-      "cloud/user_cloud_policy_store.cc",
-      "cloud/user_cloud_policy_store.h",
-    ]
-  }
   if (is_apple) {
     sources += [
       "mac_util.cc",
@@ -360,15 +290,6 @@ source_set("internal") {
         "preferences_mac.mm",
       ]
       frameworks += [ "SystemConfiguration.framework" ]
-    }
-
-    if (is_ios) {
-      sources += [
-        "management/platform_management_status_provider_ios.h",
-        "management/platform_management_status_provider_ios.mm",
-        "policy_loader_ios.h",
-        "policy_loader_ios.mm",
-      ]
     }
   }
 }
@@ -415,13 +336,6 @@ static_library("test_support") {
     "remote_commands/test_support/testing_remote_commands_server.cc",
     "remote_commands/test_support/testing_remote_commands_server.h",
   ]
-
-  if (is_chromeos) {
-    sources -= [
-      "cloud/mock_user_cloud_policy_store.cc",
-      "cloud/mock_user_cloud_policy_store.h",
-    ]
-  }
 
   if (is_mac) {
     sources += [
@@ -484,14 +398,6 @@ source_set("common_constants") {
     "proxy_settings_constants.h",
     "system_features_disable_list_constants.h",
   ]
-
-  if (is_ios) {
-    sources += [
-      "policy_loader_ios_constants.h",
-      "policy_loader_ios_constants.mm",
-    ]
-    frameworks = [ "Foundation.framework" ]
-  }
 }
 
 source_set("policy_path_constants") {
@@ -540,35 +446,24 @@ source_set("unit_tests") {
   ]
 
   # TODO(crbug.com/40205363): Enable these tests on Fuchsia if appropriate.
-  if (!is_fuchsia) {
-    sources += [
-      "cloud/cloud_policy_manager_unittest.cc",
-      "cloud/cloud_policy_validator_unittest.cc",
-    ]
-  }
+  sources += [
+    "cloud/cloud_policy_manager_unittest.cc",
+    "cloud/cloud_policy_validator_unittest.cc",
+  ]
 
   if (is_win || is_linux || is_chromeos) {
     sources += [ "registry_dict_unittest.cc" ]
   }
-  if (is_chromeos) {
-    sources += [
-      "default_chrome_apps_migrator_unittest.cc",
-      "policy_scheduler_unittest.cc",
-    ]
-  } else {
-    sources += [
-      "cloud/machine_level_user_cloud_policy_manager_unittest.cc",
-      "cloud/user_cloud_policy_manager_unittest.cc",
-    ]
+  sources += [
+    "cloud/machine_level_user_cloud_policy_manager_unittest.cc",
+    "cloud/user_cloud_policy_manager_unittest.cc",
+  ]
 
-    # TODO(crbug.com/40205363): Enable these tests on Fuchsia if appropriate.
-    if (!is_fuchsia) {
-      sources += [
-        "cloud/machine_level_user_cloud_policy_store_unittest.cc",
-        "cloud/user_cloud_policy_store_unittest.cc",
-      ]
-    }
-  }
+  # TODO(crbug.com/40205363): Enable these tests on Fuchsia if appropriate.
+  sources += [
+    "cloud/machine_level_user_cloud_policy_store_unittest.cc",
+    "cloud/user_cloud_policy_store_unittest.cc",
+  ]
 
   if (is_win || is_mac) {
     sources += [ "policy_loader_common_unittest.cc" ]
@@ -583,40 +478,28 @@ source_set("unit_tests") {
 
   sources += [ "async_policy_provider_unittest.cc" ]
 
-  if (!is_ios) {
-    sources += [
-      "cloud/cloud_external_data_store_unittest.cc",
-      "cloud/component_cloud_policy_service_unittest.cc",
-      "cloud/component_cloud_policy_store_unittest.cc",
-      "cloud/component_cloud_policy_updater_unittest.cc",
-      "cloud/encrypted_reporting_job_configuration_unittest.cc",
-      "cloud/external_policy_data_fetcher_unittest.cc",
-      "cloud/external_policy_data_updater_unittest.cc",
-      "cloud/realtime_reporting_job_configuration_unittest.cc",
-      "cloud/resource_cache_unittest.cc",
-      "config_dir_policy_loader_unittest.cc",
-    ]
-  }
+  sources += [
+    "cloud/cloud_external_data_store_unittest.cc",
+    "cloud/component_cloud_policy_service_unittest.cc",
+    "cloud/component_cloud_policy_store_unittest.cc",
+    "cloud/component_cloud_policy_updater_unittest.cc",
+    "cloud/encrypted_reporting_job_configuration_unittest.cc",
+    "cloud/external_policy_data_fetcher_unittest.cc",
+    "cloud/external_policy_data_updater_unittest.cc",
+    "cloud/realtime_reporting_job_configuration_unittest.cc",
+    "cloud/resource_cache_unittest.cc",
+    "config_dir_policy_loader_unittest.cc",
+  ]
   if (is_apple) {
     sources += [ "mac_util_unittest.cc" ]
 
     if (is_mac) {
       sources += [ "policy_loader_mac_unittest.cc" ]
     }
-
-    if (is_ios) {
-      sources += [ "policy_loader_ios_unittest.mm" ]
-    }
   }
   if (is_win || is_linux || is_chromeos) {
     # Needed by policy_loader_win_unittest.cc
     data = [ "//chrome/test/data/policy/" ]
-  }
-  if (is_win) {
-    sources += [
-      "policy_loader_win_unittest.cc",
-      "scoped_critical_policy_section_unittest.cc",
-    ]
   }
   deps = [
     ":common_constants",
@@ -641,9 +524,6 @@ source_set("unit_tests") {
     "//third_party/libxml:xml_reader",
     "//ui/base",
   ]
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/system" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

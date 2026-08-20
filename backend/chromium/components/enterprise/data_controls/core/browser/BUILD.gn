@@ -72,14 +72,6 @@ source_set("browser") {
     "//ui/base/clipboard:clipboard_types",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "component.cc",
-      "component.h",
-    ]
-    deps += [ "//chromeos/dbus/dlp:dlp_proto" ]
-  }
-
   if (use_blink) {
     deps += [ "//content/public/browser/" ]
   }

@@ -20,9 +20,6 @@
 #include <cups/cups.h>
 #endif  // BUILDFLAG(USE_CUPS_IPP)
 
-#if BUILDFLAG(IS_WIN)
-#include "printing/mojom/print.mojom.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace printing {
 
@@ -314,22 +311,12 @@ PrintSettings& PrintSettings::operator=(const PrintSettings& settings) {
   rasterize_pdf_ = settings.rasterize_pdf_;
   rasterize_pdf_dpi_ = settings.rasterize_pdf_dpi_;
   landscape_ = settings.landscape_;
-#if BUILDFLAG(IS_WIN)
-  printer_language_type_ = settings.printer_language_type_;
-#endif
   is_modifiable_ = settings.is_modifiable_;
   pages_per_sheet_ = settings.pages_per_sheet_;
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   for (const auto& item : settings.advanced_settings_)
     advanced_settings_.emplace(item.first, item.second.Clone());
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS)
-  send_user_info_ = settings.send_user_info_;
-  username_ = settings.username_;
-  oauth_token_ = settings.oauth_token_;
-  pin_value_ = settings.pin_value_;
-  client_infos_ = settings.client_infos_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(ENABLE_OOP_PRINTING_NO_OOP_BASIC_PRINT_DIALOG)
   system_print_dialog_data_ = settings.system_print_dialog_data_.Clone();
 #endif
@@ -344,20 +331,11 @@ bool PrintSettings::operator==(const PrintSettings& other) const {
                   color_, copies_, duplex_mode_, device_name_, requested_media_,
                   page_setup_device_units_, dpi_, scale_factor_, rasterize_pdf_,
                   rasterize_pdf_dpi_, landscape_,
-#if BUILDFLAG(IS_WIN)
-                  printer_language_type_,
-#endif
                   is_modifiable_, requested_custom_margins_in_microns_,
                   pages_per_sheet_
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
                   ,
                   advanced_settings_
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-                  ,
-                  send_user_info_, username_, oauth_token_, pin_value_,
-                  client_infos_, printer_manually_selected_,
-                  printer_status_reason_
 #endif
                   ) ==
          std::tie(other.ranges_, other.selection_only_, other.margin_type_,
@@ -367,21 +345,12 @@ bool PrintSettings::operator==(const PrintSettings& other) const {
                   other.requested_media_, other.page_setup_device_units_,
                   other.dpi_, other.scale_factor_, other.rasterize_pdf_,
                   other.rasterize_pdf_dpi_, other.landscape_,
-#if BUILDFLAG(IS_WIN)
-                  other.printer_language_type_,
-#endif
                   other.is_modifiable_,
                   other.requested_custom_margins_in_microns_,
                   other.pages_per_sheet_
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
                   ,
                   other.advanced_settings_
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-                  ,
-                  other.send_user_info_, other.username_, other.oauth_token_,
-                  other.pin_value_, other.client_infos_,
-                  other.printer_manually_selected_, other.printer_status_reason_
 #endif
          );
 }
@@ -408,21 +377,11 @@ void PrintSettings::Clear() {
   rasterize_pdf_ = false;
   rasterize_pdf_dpi_ = 0;
   landscape_ = false;
-#if BUILDFLAG(IS_WIN)
-  printer_language_type_ = mojom::PrinterLanguageType::kNone;
-#endif
   is_modifiable_ = true;
   pages_per_sheet_ = 1;
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   advanced_settings_.clear();
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS)
-  send_user_info_ = false;
-  username_.clear();
-  oauth_token_.clear();
-  pin_value_.clear();
-  client_infos_.clear();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(ENABLE_OOP_PRINTING_NO_OOP_BASIC_PRINT_DIALOG)
   system_print_dialog_data_.clear();
 #endif
@@ -481,15 +440,6 @@ void PrintSettings::SetPrinterPrintableArea(
       margins.right = 0;
       break;
     }
-#if BUILDFLAG(IS_CHROMEOS)
-    case mojom::MarginType::kPrecomputedMarginsForBackend: {
-      // Do not setup page setup device units for custom margins for backend,
-      // which doesn't use `page_setup_device_units` either. These margins are
-      // used to send to print jobs in the print backend instead. See details in
-      // print.mojom at the definition of the `MarginType` enum.
-      return;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     case mojom::MarginType::kCustomMargins: {
       margins.header = 0;
       margins.footer = 0;
@@ -522,32 +472,6 @@ void PrintSettings::SetPrinterPrintableArea(
     page_setup_device_units_.FlipOrientation();
 }
 
-#if BUILDFLAG(IS_WIN)
-void PrintSettings::UpdatePrinterPrintableArea(
-    const gfx::Rect& printable_area_um) {
-  // Scale the page size and printable area to device units.
-  // Blink doesn't support different dpi settings in X and Y axis. Because of
-  // this, printers with non-square pixels still scale page size and printable
-  // area using device_units_per_inch() instead of their respective dimensions
-  // in device_units_per_inch_size().
-  float scale = static_cast<float>(device_units_per_inch()) / kMicronsPerInch;
-  gfx::Rect printable_area_device_units =
-      gfx::ScaleToRoundedRect(printable_area_um, scale);
-
-  // Protect against misbehaving drivers.  We have observed some drivers return
-  // incorrect values compared to page size.  E.g., HP Business Inkjet 2300 PS.
-  gfx::Rect physical_size_rect(page_setup_device_units_.physical_size());
-  if (printable_area_device_units.IsEmpty() ||
-      !physical_size_rect.Contains(printable_area_device_units)) {
-    // Invalid printable area!  Default to paper size.
-    printable_area_device_units = physical_size_rect;
-  }
-
-  page_setup_device_units_.Init(page_setup_device_units_.physical_size(),
-                                printable_area_device_units,
-                                page_setup_device_units_.text_height());
-}
-#endif
 
 void PrintSettings::SetCustomMargins(
     const PageMargins& requested_margins_in_microns) {
@@ -555,13 +479,6 @@ void PrintSettings::SetCustomMargins(
   margin_type_ = mojom::MarginType::kCustomMargins;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void PrintSettings::SetCustomMarginsForBackend(
-    const PageMargins& requested_margins_in_microns) {
-  requested_custom_margins_in_microns_ = requested_margins_in_microns;
-  margin_type_ = mojom::MarginType::kPrecomputedMarginsForBackend;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // static
 int PrintSettings::NewCookie() {

@@ -63,10 +63,6 @@
 #include "ui/gfx/switches.h"
 #include "ui/views/controls/webview/webview.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CEF)
 #include "cef/libcef/browser/chrome/extensions/chrome_extension_util.h"
@@ -181,7 +177,6 @@ ChromeDevToolsManagerDelegate::ChromeDevToolsManagerDelegate() {
   DCHECK(!g_instance);
   g_instance = this;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Only create and hold keep alive for automation test for non ChromeOS.
   // ChromeOS automation test (aka tast) manages chrome instance via session
   // manager daemon. The extra keep alive is not needed and makes ChromeOS
@@ -210,7 +205,6 @@ ChromeDevToolsManagerDelegate::ChromeDevToolsManagerDelegate() {
           profile, ProfileKeepAliveOrigin::kRemoteDebugging);
     }
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 ChromeDevToolsManagerDelegate::~ChromeDevToolsManagerDelegate() {

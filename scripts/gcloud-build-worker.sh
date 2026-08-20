@@ -9,6 +9,7 @@ instance=${VIMBROWSER_GCLOUD_INSTANCE:-vimbrowser-build-worker}
 preferred_machine=${VIMBROWSER_GCLOUD_MACHINE:-c2d-highcpu-56}
 remote_repo=${VIMBROWSER_GCLOUD_REPO:-vimbrowser}
 artifact_root=${VIMBROWSER_GCLOUD_ARTIFACT_ROOT:-/home/yeyito/Workspace/vimbrowser-debloat-artifacts}
+detached_tree_file=${VIMBROWSER_GCLOUD_DETACHED_TREE_FILE:-${artifact_root}/.detached-current-tree}
 quota_preference=vimbrowser-build-global-cpu-96
 snapshot_ref=refs/vimbrowser-build/current
 
@@ -25,6 +26,9 @@ Commands:
   sync         Start the worker and transfer/apply the current source snapshot
   bootstrap    Initialize Chromium dependencies on the worker, then stop it
   build        Snapshot, sync, build, fetch, verify, and stop automatically
+  build-detached
+               Snapshot and launch a durable, auto-stopping cloud build
+  build-status Check/resume the current detached cloud build
   fetch        Retrieve the artifact for the currently checked-out remote tree
   ssh          Open an interactive IAP SSH session
 
@@ -233,6 +237,59 @@ case "${1:-}" in
     remote "sudo shutdown -c >/dev/null 2>&1 || true; sudo shutdown -h +360; cd \"\${HOME}/${remote_repo}\" && JOBS=\$(nproc) ./scripts/remote-build-worker.sh build"
     fetch_artifact
     printf '[+] Remote build and fetch complete for tree %s\n' "${tree}"
+    ;;
+  build-detached)
+    sync_output=$(sync_snapshot)
+    printf '%s\n' "${sync_output}" >&2
+    tree=$(tail -n 1 <<<"${sync_output}")
+    mkdir -p "$(dirname "${detached_tree_file}")"
+    printf '%s\n' "${tree}" >"${detached_tree_file}"
+    remote "set -euo pipefail
+      cd \"\${HOME}/${remote_repo}\"
+      test \"\$(git rev-parse 'HEAD^{tree}')\" = \"${tree}\"
+      user=\$(id -un)
+      home=\${HOME}
+      unit=/tmp/vimbrowser-build.service
+      cat >\"\${unit}\" <<UNIT
+[Unit]
+Description=Detached vimbrowser Chromium build ${tree}
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=\${user}
+WorkingDirectory=\${home}/${remote_repo}
+ExecStart=\${home}/${remote_repo}/scripts/remote-detached-build.sh run ${tree}
+RuntimeMaxSec=12h
+TimeoutStopSec=90
+ExecStopPost=/usr/bin/systemctl poweroff
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+      sudo install -m 0644 \"\${unit}\" /etc/systemd/system/vimbrowser-build.service
+      rm -f \"\${unit}\"
+      sudo systemctl daemon-reload
+      sudo systemctl enable vimbrowser-build.service
+      sudo systemctl restart --no-block vimbrowser-build.service
+      printf 'tree=%s\\nunit=vimbrowser-build.service\\n' \"${tree}\""
+    stable_verify
+    printf '[+] Detached build launched for tree %s; the VM powers off when it finishes.\n' "${tree}"
+    ;;
+  build-status)
+    [[ -f "${detached_tree_file}" ]] || {
+      echo "error: no detached build tree is recorded" >&2
+      exit 1
+    }
+    tree=$(cat "${detached_tree_file}")
+    start
+    # Starting an interrupted worker also restarts its enabled systemd unit,
+    # which resumes against the persistent incremental output.
+    status_output=$(remote "cd \"\${HOME}/${remote_repo}\" && ./scripts/remote-detached-build.sh status '${tree}'")
+    printf '%s\n' "${status_output}"
+    if grep -q '^state=finished$' <<<"${status_output}"; then
+      stop
+    fi
     ;;
   fetch)
     start

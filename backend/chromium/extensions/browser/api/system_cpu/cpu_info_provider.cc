@@ -7,9 +7,6 @@
 #include "base/system/sys_info.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/system/cpu_temperature_reader.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace extensions {
 
@@ -45,17 +42,6 @@ bool CpuInfoProvider::QueryInfo() {
     info_.processors.clear();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  using CPUTemperatureInfo =
-      chromeos::system::CPUTemperatureReader::CPUTemperatureInfo;
-  std::vector<CPUTemperatureInfo> cpu_temp_info =
-      chromeos::system::CPUTemperatureReader().GetCPUTemperatures();
-  info_.temperatures.clear();
-  info_.temperatures.reserve(cpu_temp_info.size());
-  for (const CPUTemperatureInfo& info : cpu_temp_info) {
-    info_.temperatures.push_back(info.temp_celsius);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return true;
 }

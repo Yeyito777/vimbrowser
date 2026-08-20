@@ -47,12 +47,6 @@ class BatteryDischargeReporter : public base::BatteryStateSampler::Observer {
       const std::optional<base::BatteryLevelProvider::BatteryState>&
           battery_state);
 
-#if BUILDFLAG(IS_WIN)
-  // Resets the state tracking the ten minutes interval.
-  void StartNewTenMinutesInterval(
-      const std::optional<base::BatteryLevelProvider::BatteryState>&
-          battery_state);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Reports battery discharge histograms for a 1 minute interval.
   void ReportOneMinuteInterval(
@@ -60,19 +54,6 @@ class BatteryDischargeReporter : public base::BatteryStateSampler::Observer {
       const std::optional<base::BatteryLevelProvider::BatteryState>&
           battery_state);
 
-#if BUILDFLAG(IS_WIN)
-  // Reports battery discharge histograms for a 10 minutes interval.
-  //
-  // On Windows, the reported battery discharge over a 1 minute interval is
-  // frequently zero. This could be explained by some systems having a battery
-  // level granularity insufficient to measure the typical discharge over a
-  // 1 minute interval or by a refresh rate lower than once per minute. We'll
-  // verify if using a longer interval alleviates the problem.
-  void ReportTenMinutesInterval(
-      base::TimeDelta interval_duration,
-      const std::optional<base::BatteryLevelProvider::BatteryState>&
-          battery_state);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
   // Records the time delta between two events received from IOPMPowerSource.
@@ -107,20 +88,6 @@ class BatteryDischargeReporter : public base::BatteryStateSampler::Observer {
   std::optional<base::BatteryLevelProvider::BatteryState>
       one_minute_interval_start_battery_state_;
 
-#if BUILDFLAG(IS_WIN)
-  // The number of consecutive samples since the last recording of the 10mins
-  // battery discharge rate.
-  int ten_minutes_sample_count_ = 0;
-
-  // The time passed since the last recording of the 10mins battery discharge
-  // rate.
-  base::TimeDelta ten_minutes_interval_duration_;
-
-  // The battery state at the time the last recording of the 10mins battery
-  // state.
-  std::optional<base::BatteryLevelProvider::BatteryState>
-      ten_minutes_interval_start_battery_state_;
-#endif  // BUILDFLAG(IS_WIN)
 
   // The first battery sample is potentially outdated because it is not taken
   // upon receiving a notification from the OS. This is used to differentiate

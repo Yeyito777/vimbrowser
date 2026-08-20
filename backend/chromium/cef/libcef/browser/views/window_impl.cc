@@ -29,9 +29,6 @@
 #include "ui/aura/window.h"
 #endif  // defined(USE_AURA)
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#endif
 
 namespace {
 

@@ -125,11 +125,7 @@ void EmbeddedA11yExtensionLoader::InstallExtensionWithId(
 #endif
 
   base::FilePath::StringType common_extension_directory;
-#if BUILDFLAG(IS_WIN)
-  common_extension_directory = base::UTF8ToWide(extension_resource_directory);
-#else
   common_extension_directory = extension_resource_directory;
-#endif
 
   auto path = resources_path.Append(common_extension_directory);
 

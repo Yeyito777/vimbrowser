@@ -25,9 +25,7 @@
 #include "content/public/browser/web_contents.h"
 #include "ui/base/mojom/window_show_state.mojom-forward.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/apps/link_capturing/intent_picker_info.h"
-#endif  //  !BUILDFLAG(IS_ANDROID)
 
 class LocationBarTesting;
 class GlobalBrowserCollection;
@@ -169,7 +167,6 @@ class TestBrowserWindow : public BrowserWindow,
       content::WebContents* contents,
       const GURL& url,
       bool show_back_button) override;
-#if !BUILDFLAG(IS_ANDROID)
   sharing_hub::ScreenshotCapturedBubble* ShowScreenshotCapturedBubble(
       content::WebContents* contents,
       const gfx::Image& image) override;
@@ -180,18 +177,13 @@ class TestBrowserWindow : public BrowserWindow,
       apps::IntentPickerBubbleType bubble_type,
       const std::optional<url::Origin>& initiating_origin,
       IntentPickerResponse callback) override {}
-#endif  //  !define(OS_ANDROID)
   send_tab_to_self::SendTabToSelfBubbleView*
   ShowSendTabToSelfDevicePickerBubble(content::WebContents* contents) override;
   send_tab_to_self::SendTabToSelfBubbleView* ShowSendTabToSelfPromoBubble(
       content::WebContents* contents,
       bool show_signin_button) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void ToggleMultitaskMenu() override;
-#else
   sharing_hub::SharingHubBubbleView* ShowSharingHubBubble(
       share::ShareAttempt attempt) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   ShowTranslateBubbleResult ShowTranslateBubble(
       content::WebContents* contents,
       translate::TranslateStep step,

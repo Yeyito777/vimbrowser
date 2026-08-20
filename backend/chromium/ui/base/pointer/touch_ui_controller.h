@@ -18,9 +18,6 @@
 #include "ui/base/pointer/pointer_device.h"
 #endif  // BUILDFLAG(USE_BLINK)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/callback_list.h"
-#endif
 
 namespace ui {
 
@@ -28,9 +25,6 @@ namespace ui {
 class COMPONENT_EXPORT(UI_BASE) TouchUiController {
  public:
   using TouchModeCallbackList = base::RepeatingClosureList;
-#if BUILDFLAG(IS_WIN)
-  using TabletModeCallbackList = base::RepeatingClosureList;
-#endif  // BUILDFLAG(IS_WIN)
 
   enum class TouchUiState {
     kDisabled,
@@ -82,24 +76,12 @@ class COMPONENT_EXPORT(UI_BASE) TouchUiController {
            ((touch_ui_state_ == TouchUiState::kAuto) && tablet_mode_);
   }
 
-#if BUILDFLAG(IS_WIN)
-  bool tablet_mode() const { return tablet_mode_; }
-#endif  // BUILDFLAG(IS_WIN)
 
   base::CallbackListSubscription RegisterCallback(
       const base::RepeatingClosure& closure);
 
-#if BUILDFLAG(IS_WIN)
-  base::CallbackListSubscription RegisterTabletModeCallback(
-      const base::RepeatingClosure& closure);
-#endif  // BUILDFLAG(IS_WIN)
 
   void OnTabletModeToggled(bool enabled);
-#if BUILDFLAG(IS_WIN)
-  // Check whether a device is in tablet or desktop mode in a threadpool thread,
-  // and notify listeners.
-  void RefreshTabletMode();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_BLINK)
   void OnPointerDeviceConnected(PointerDevice::Key key);
@@ -121,12 +103,6 @@ class COMPONENT_EXPORT(UI_BASE) TouchUiController {
 
  private:
   void TouchUiChanged();
-#if BUILDFLAG(IS_WIN)
-  void TabletModeChanged();
-  // Records whether the user has entered touch mode and runs callbacks
-  // if touch mode has initially been detected.
-  void SetInitialTabletMode(bool enabled);
-#endif  // BUILDFLAG(IS_WIN)
   TouchUiState touch_ui_state_;
   bool tablet_mode_ = false;
 
@@ -135,10 +111,6 @@ class COMPONENT_EXPORT(UI_BASE) TouchUiController {
   std::vector<PointerDevice> last_known_pointer_devices_;
 #endif  // BUILDFLAG(USE_BLINK)
 
-#if BUILDFLAG(IS_WIN)
-  base::CallbackListSubscription hwnd_subscription_;
-  TabletModeCallbackList tablet_mode_callback_list_;
-#endif
 
   TouchModeCallbackList touch_mode_callback_list_;
   base::WeakPtrFactory<TouchUiController> weak_factory_{this};

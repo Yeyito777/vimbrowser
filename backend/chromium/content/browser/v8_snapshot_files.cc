@@ -49,29 +49,6 @@ GetV8SnapshotFilesToPreload(base::CommandLine& process_command_line) {
   files[kV8SnapshotDataDescriptor] =
       base::FilePath(FILE_PATH_LITERAL("snapshot_blob.bin"));
 #endif
-#elif BUILDFLAG(IS_ANDROID)
-#if !BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT) || BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-#if BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  if (base::FeatureList::IsEnabled(features::kUseContextSnapshot)) {
-    process_command_line.AppendSwitch(switches::kUseContextSnapshotSwitch);
-    registerContextSnapshotAndroid(files);
-  }
-#endif  // BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  // In 64/32-bit multilib environments, WebView renderers and the browser
-  // process operate in different bitness. Therefore, we need to store both
-  // snapshots in such scenario.
-#if BUILDFLAG(ANDROID_IS_MULTILIB) || defined(__LP64__)
-  files[kV8Snapshot64DataDescriptor] =
-      base::FilePath(FILE_PATH_LITERAL("assets/snapshot_blob_64.bin"));
-#endif
-#if BUILDFLAG(ANDROID_IS_MULTILIB) || !defined(__LP64__)
-  files[kV8Snapshot32DataDescriptor] =
-      base::FilePath(FILE_PATH_LITERAL("assets/snapshot_blob_32.bin"));
-#endif
-#elif BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
-  registerContextSnapshotAndroid(files);
-#endif  // !BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT) ||
-        // BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   return files;
 }

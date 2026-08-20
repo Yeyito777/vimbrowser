@@ -125,9 +125,7 @@ static_library("system_utils") {
     sources += [ "EmptyDebugLogger.cpp" ]
   }
 
-  if (is_win) {
-    sources += [ "WindowsTimer.cpp" ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [
       "OSXTimer.cpp",
       "ObjCUtils.h",

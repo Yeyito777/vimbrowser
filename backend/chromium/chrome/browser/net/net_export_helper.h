@@ -19,9 +19,6 @@ namespace chrome_browser_net {
 
 base::DictValue GetPrerenderInfo(Profile* profile);
 base::ListValue GetExtensionInfo(Profile* profile);
-#if BUILDFLAG(IS_WIN)
-base::DictValue GetWindowsServiceProviders();
-#endif
 
 }  // namespace chrome_browser_net
 

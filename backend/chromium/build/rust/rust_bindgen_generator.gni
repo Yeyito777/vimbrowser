@@ -7,10 +7,6 @@ import("//build/config/rust.gni")
 import("//build/config/sysroot.gni")
 import("//build/rust/rust_static_library.gni")
 
-if (is_win) {
-  import("//build/toolchain/win/win_toolchain_data.gni")
-}
-
 _bindgen_path = "${rust_bindgen_root}/bin/bindgen"
 if (host_os == "win") {
   _bindgen_path = "${_bindgen_path}.exe"
@@ -241,57 +237,12 @@ template("rust_bindgen_generator") {
       clang_resource_dir,
     ]
 
-    if (is_win) {
-      # On Windows we fall back to using system headers from a sysroot from
-      # depot_tools. This is negotiated by python scripts and the result is
-      # available in //build/toolchain/win/win_toolchain_data.gni. From there
-      # we get the `include_flags_imsvc` which point to the system headers.
-      if (host_cpu == "x86") {
-        win_toolchain_data = win_toolchain_data_x86
-      } else if (host_cpu == "x64") {
-        win_toolchain_data = win_toolchain_data_x64
-      } else if (host_cpu == "arm64") {
-        win_toolchain_data = win_toolchain_data_arm64
-      } else {
-        error("Unsupported host_cpu, add it to win_toolchain_data.gni")
-      }
-      args += win_toolchain_data.include_flags_imsvc_list
-    }
-
     # Passes C comments through as rustdoc attributes.
-    if (is_win) {
-      args += [ "/clang:-fparse-all-comments" ]
-    } else {
-      args += [ "-fparse-all-comments" ]
-    }
+    args += [ "-fparse-all-comments" ]
 
     # Default configs include "-fvisibility=hidden", and for some reason this
     # causes bindgen not to emit function bindings. Override it.
-    if (!is_win) {
-      args += [ "-fvisibility=default" ]
-    }
-
-    if (is_win) {
-      # We pass MSVC style flags to clang on Windows, and libclang needs to be
-      # told explicitly to accept them.
-      args += [ "--driver-mode=cl" ]
-
-      # On Windows, libclang adds arguments that it then fails to understand.
-      # -fno-spell-checking
-      # -fallow-editor-placeholders
-      # These should not cause bindgen to fail.
-      args += [ "-Wno-unknown-argument" ]
-
-      # C++ mode makes bindgen pass /TP to libclang (to parse as C++) which
-      # then libclang says is unused.
-      args += [ "-Wno-unused-command-line-argument" ]
-
-      # Replace these two arguments with a version that clang-cl can parse.
-      args += [
-        "/clang:-fno-spell-checking",
-        "/clang:-fallow-editor-placeholders",
-      ]
-    }
+    args += [ "-fvisibility=default" ]
 
     if (is_cfi) {
       # LLVM searches for a default CFI ignorelist at (exactly)

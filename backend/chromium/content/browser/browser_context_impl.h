@@ -162,9 +162,6 @@ class CONTENT_EXPORT BrowserContextImpl {
   // removed.
   base::RunLoop btm_cleanup_loop_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  scoped_refptr<storage::ExternalMountPoints> external_mount_points_;
-#endif
 
   // TODO: crbug.com/40169693 - BrowserContext and BrowserContextImpl both have
   // WeakPtrFactories. Remove one once the inheritance is sorted out.

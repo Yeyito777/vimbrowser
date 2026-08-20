@@ -17,9 +17,6 @@
 #include "components/webapps/common/web_app_id.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#error shell_integration_linux is for desktop linux only.
-#endif
 
 namespace base {
 class CommandLine;

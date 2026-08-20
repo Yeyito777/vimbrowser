@@ -27,11 +27,7 @@ BASE_FEATURE(kPerfettoBackendParams,
 
 // Runs the tracing service as an in-process browser service.
 BASE_FEATURE(kTracingServiceInProcess,
-#if BUILDFLAG(IS_CASTOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // This feature is enabled by default on WebView using

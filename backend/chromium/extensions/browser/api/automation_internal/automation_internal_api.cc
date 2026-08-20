@@ -413,36 +413,6 @@ class AutomationWebContentsObserver
       // On ChromeOS Ash, the automation api is the native accessibility api.
       // For the purposes of tracking web contents accessibility like other
       // desktop platforms, record the same UMA metric as those platforms.
-#if BUILDFLAG(IS_CHROMEOS)
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_WEB_CONTENTS,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_INLINE_TEXT_BOXES,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_SCREEN_READER,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_HTML,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_HTML_METADATA,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_LABEL_IMAGES,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-      UMA_HISTOGRAM_ENUMERATION(
-          "Accessibility.ModeFlag",
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_PDF,
-          ui::AXMode::ModeFlagHistogramValue::UMA_AX_MODE_MAX);
-#endif  // BUILDFLAG(IS_CHROMEOS)
     }
   }
 

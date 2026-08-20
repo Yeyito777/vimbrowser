@@ -66,19 +66,9 @@
 #include "ui/base/models/tree_node_iterator.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/signin/wait_for_network_callback_helper_ash.h"
-#include "chromeos/ash/components/network/network_handler.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/browser.h"
-#endif
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/browser_finder.h"
@@ -86,9 +76,7 @@
 #include "chrome/browser/ui/profiles/profile_picker.h"
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/signin/wait_for_network_callback_helper_chrome.h"
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #include "chrome/browser/signin/bound_session_credentials/bound_session_cookie_refresh_service.h"
@@ -210,12 +198,8 @@ class ChromeOAuthConsumerRegistry : public signin::OAuthConsumerRegistry {
 
 ChromeSigninClient::ChromeSigninClient(Profile* profile)
     : wait_for_network_callback_helper_(
-#if BUILDFLAG(IS_CHROMEOS)
-          std::make_unique<WaitForNetworkCallbackHelperAsh>()
-#else
           std::make_unique<WaitForNetworkCallbackHelperChrome>(
               profile->AsTestingProfile())
-#endif
               ),
       profile_(profile),
       oauth_consumer_registry_(
@@ -452,9 +436,7 @@ void ChromeSigninClient::OnPrimaryAccountChanged(
                                              /*defer_if_no_browser=*/true);
         }
 
-#if !BUILDFLAG(IS_CHROMEOS)
         RecordOpenTabCount(access_point, consent_level);
-#endif
 
         if (access_point == signin_metrics::AccessPoint::kBookmarkBubble) {
           MaybeAddUserToUnoBookmarksSyntheticFieldTrial(
@@ -500,24 +482,13 @@ SigninClient::SignoutDecision ChromeSigninClient::GetSignoutDecision(
     return is_clear_primary_account_allowed_for_testing_.value();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android we do not allow supervised users to sign out.
-  // We also don't allow sign out on ChromeOS, though this is enforced outside
-  // the scope of this method.
-  // Other platforms do not restrict signout of supervised users.
-  if (profile_->IsChild()) {
-    return SigninClient::SignoutDecision::CLEAR_PRIMARY_ACCOUNT_DISALLOWED;
-  }
-#endif
 
 // Android allows signing out of Managed accounts.
-#if !BUILDFLAG(IS_ANDROID)
   // Check if managed user.
   if (enterprise_util::UserAcceptedAccountManagement(profile_)) {
     // Disallow signout regardless of consent level of the primary account.
     return SigninClient::SignoutDecision::CLEAR_PRIMARY_ACCOUNT_DISALLOWED;
   }
-#endif
   return SigninClient::SignoutDecision::ALLOW;
 }
 
@@ -556,23 +527,11 @@ void ChromeSigninClient::OnTokenFetchComplete(bool token_is_valid) {
 }
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void ChromeSigninClient::RecordOpenTabCount(
     signin_metrics::AccessPoint access_point,
     signin::ConsentLevel consent_level) {
   size_t tabs_count = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  for (const TabModel* model : TabModelList::models()) {
-    // Note: Even though on Android only a single regular profile is supported,
-    // there can also be an incognito profile which should be excluded here.
-    if (model->GetProfile() != profile_) {
-      continue;
-    }
-
-    tabs_count += model->GetTabCount();
-  }
-#else   // !BUILDFLAG(IS_ANDROID)
   ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
       [this, &tabs_count](BrowserWindowInterface* browser) {
         if (browser->GetProfile() != profile_) {
@@ -584,23 +543,13 @@ void ChromeSigninClient::RecordOpenTabCount(
         }
         return true;
       });
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   signin_metrics::RecordOpenTabCountOnSignin(consent_level, tabs_count);
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 void ChromeSigninClient::SetURLLoaderFactoryForTest(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory) {
   url_loader_factory_for_testing_ = url_loader_factory;
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not make network requests in unit tests. ash::NetworkHandler should
-  // not be used and is not expected to have been initialized in unit tests.
-  wait_for_network_callback_helper_
-      ->DisableNetworkCallsDelayedForTesting(  // IN-TEST
-          url_loader_factory_for_testing_ &&
-          !ash::NetworkHandler::IsInitialized());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ChromeSigninClient::OnCloseBrowsersSuccess(

@@ -50,11 +50,7 @@ void EnsureProcessTerminated(Process process) {
             if (process.WaitForExitWithTimeout(TimeDelta(), nullptr)) {
               return;
             }
-#if BUILDFLAG(IS_WIN)
-            process.Terminate(win::kProcessKilledExitCode, false);
-#else
             process.Terminate(-1, false);
-#endif
           },
           std::move(process)),
       Seconds(2));

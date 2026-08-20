@@ -102,11 +102,6 @@ gfx::Size NativeThemeAura::GetVerticalScrollbarButtonSize() const {
     size.set_width(kOverlayScrollbarThumbWidthPressed +
                    kOverlayScrollbarStrokeWidth);
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  // CrOS does not draw scrollbar buttons. Be careful to leave the width valid,
-  // however, as that value is also used for the track width.
-  size.set_height(0);
-#endif
   return size;
 }
 

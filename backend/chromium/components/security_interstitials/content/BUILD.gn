@@ -109,10 +109,6 @@ static_library("security_interstitial_page") {
     deps += [ "//components/wifi" ]
   }
 
-  if (is_win) {
-    sources += [ "captive_portal_helper_win.cc" ]
-  }
-
   if (enable_guest_view) {
     deps += [ "//components/guest_view/browser" ]
   }

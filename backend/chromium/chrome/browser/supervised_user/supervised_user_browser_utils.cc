@@ -36,11 +36,7 @@
 #include "google_apis/gaia/core_account_id.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_type.h"
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 #include "chrome/browser/supervised_user/supervised_user_verification_controller_client.h"
 #include "chrome/browser/supervised_user/supervised_user_verification_page_blocked_sites.h"
 #include "chrome/browser/supervised_user/supervised_user_verification_page_youtube.h"
@@ -116,20 +112,11 @@ bool ShouldContentSkipParentAllowlistFiltering(content::WebContents* contents) {
 }
 
 ProfileSelections BuildProfileSelectionsForRegularAndGuest() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ProfileSelections::Builder()
-      .WithRegular(ProfileSelection::kRedirectedToOriginal)
-      .WithGuest(ProfileSelection::kOwnInstance)
-      // TODO(crbug.com/41488885): Check if this is needed for Ash Internals.
-      .WithAshInternals(ProfileSelection::kOriginalOnly)
-      .Build();
-#else
   // Do not create for Incognito profile.
   return ProfileSelections::Builder()
       .WithRegular(ProfileSelection::kOriginalOnly)
       .WithGuest(ProfileSelection::kRedirectedToOriginal)
       .Build();
-#endif
 }
 
 std::string GetAccountGivenName(Profile& profile) {
@@ -145,16 +132,6 @@ std::string GetAccountGivenName(Profile& profile) {
 }
 
 void AssertChildStatusOfTheUser(Profile* profile, bool is_child) {
-#if BUILDFLAG(IS_CHROMEOS)
-  user_manager::User* user =
-      ash::ProfileHelper::Get()->GetUserByProfile(profile);
-  if (user && is_child != (user->GetType() == user_manager::UserType::kChild)) {
-    LOG(FATAL) << "User child flag has changed: " << is_child;
-  }
-  if (!user && ash::ProfileHelper::IsUserProfile(profile)) {
-    LOG(FATAL) << "User instance not found while setting child account flag.";
-  }
-#endif
 }
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)

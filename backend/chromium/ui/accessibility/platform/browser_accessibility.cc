@@ -36,9 +36,7 @@
 // space.
 // TODO(https://crbug.com/358567091): Move this logic outside of
 // BrowserAccessibility to avoid platform-specific code in the base class.
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "ui/strings/grit/ax_strings.h"
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 namespace ui {
 
@@ -1431,7 +1429,6 @@ bool BrowserAccessibility::AccessibilityPerformAction(
 
 // TODO(https://crbug.com/358567091): Move this logic outside of
 // BrowserAccessibility to avoid platform-specific code in the base class.
-#if !BUILDFLAG(IS_FUCHSIA)
 std::u16string BrowserAccessibility::GetLocalizedString(int message_id) const {
   return l10n_util::GetStringUTF16(message_id);
 }
@@ -1921,7 +1918,6 @@ std::u16string BrowserAccessibility::GetStyleNameAttributeAsLocalizedString()
   }
   return {};
 }
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 bool BrowserAccessibility::ShouldIgnoreHoveredStateForTesting() {
   return ignore_hovered_state_for_testing_;

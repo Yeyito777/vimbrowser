@@ -31,9 +31,7 @@
 #include "printing/buildflags/buildflags.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/upgrade_detector/build_state.h"
-#endif
 
 class BackgroundModeManager;
 class NotificationUIManager;
@@ -71,9 +69,6 @@ class ResourceCoordinatorParts;
 }
 
 namespace supervised_user {
-#if BUILDFLAG(IS_ANDROID)
-class AndroidParentalControls;
-#endif
 class DeviceParentalControls;
 }  // namespace supervised_user
 
@@ -148,18 +143,11 @@ class TestingBrowserProcess
   BrowserProcessPlatformPart* platform_part() override;
 
   NotificationUIManager* notification_ui_manager() override;
-#if !BUILDFLAG(IS_ANDROID)
   IntranetRedirectDetector* intranet_redirect_detector() override;
-#endif
   void CreateDevToolsProtocolHandler() override;
   void CreateDevToolsAutoOpener() override;
   bool IsShuttingDown() override;
   supervised_user::DeviceParentalControls& device_parental_controls() override;
-#if BUILDFLAG(IS_ANDROID)
-  // Additional convenience accessor to device_parental_controls() that returns
-  // the value cast to specific implementation.
-  supervised_user::AndroidParentalControls& android_parental_controls();
-#endif
   const std::string& GetApplicationLocale() override;
   void SetApplicationLocale(const std::string& actual_locale) override;
   DownloadStatusUpdater* download_status_updater() override;
@@ -172,25 +160,18 @@ class TestingBrowserProcess
 
   activity_reporter::ActivityReporter* activity_reporter() override;
   component_updater::ComponentUpdateService* component_updater() override;
-#if BUILDFLAG(IS_CHROMEOS)
-  MediaFileSystemRegistry* media_file_system_registry() override;
-#endif
 
   WebRtcLogUploader* webrtc_log_uploader() override;
 
   network_time::NetworkTimeTracker* network_time_tracker() override;
 
-#if !BUILDFLAG(IS_ANDROID)
   gcm::GCMDriver* gcm_driver() override;
-#endif
   resource_coordinator::TabManager* GetTabManager() override;
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
-#if !BUILDFLAG(IS_ANDROID)
   HidSystemTrayIcon* hid_system_tray_icon() override;
   UsbSystemTrayIcon* usb_system_tray_icon() override;
-#endif
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,
@@ -220,7 +201,6 @@ class TestingBrowserProcess
   void SetShuttingDown(bool is_shutting_down);
   TestingBrowserProcessPlatformPart* GetTestPlatformPart();
   void SetStatusTray(std::unique_ptr<StatusTray> status_tray);
-#if !BUILDFLAG(IS_ANDROID)
   void SetComponentUpdater(
       std::unique_ptr<component_updater::ComponentUpdateService>
           component_updater);
@@ -228,7 +208,6 @@ class TestingBrowserProcess
       std::unique_ptr<HidSystemTrayIcon> hid_system_tray_icon);
   void SetUsbSystemTrayIcon(
       std::unique_ptr<UsbSystemTrayIcon> usb_system_tray_icon);
-#endif
 
   // Same as local_state() but provides TestingPrefServiceSimple interface.
   TestingPrefServiceSimple* GetTestingLocalState();
@@ -303,13 +282,8 @@ class TestingBrowserProcess
       origin_trials_settings_storage_;
 
 // TODO(crbug.com/474377651): instead ForTesting(), offer proper fake.
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<supervised_user::AndroidParentalControls>
-      device_parental_controls_;
-#else
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
-#endif
 
   scoped_refptr<safe_browsing::SafeBrowsingService> sb_service_;
   std::unique_ptr<subresource_filter::RulesetService>
@@ -325,9 +299,6 @@ class TestingBrowserProcess
   std::unique_ptr<network::TestNetworkConnectionTracker>
       test_network_connection_tracker_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<MediaFileSystemRegistry> media_file_system_registry_;
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   std::unique_ptr<extensions::ExtensionsBrowserClient>
@@ -339,12 +310,10 @@ class TestingBrowserProcess
 
   std::unique_ptr<SerialPolicyAllowedPorts> serial_policy_allowed_ports_;
   std::unique_ptr<activity_reporter::ActivityReporter> activity_reporter_;
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<HidSystemTrayIcon> hid_system_tray_icon_;
   std::unique_ptr<UsbSystemTrayIcon> usb_system_tray_icon_;
   std::unique_ptr<component_updater::ComponentUpdateService> component_updater_;
   BuildState build_state_;
-#endif
 
   std::unique_ptr<StatusTray> status_tray_;
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;

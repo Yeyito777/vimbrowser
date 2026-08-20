@@ -72,13 +72,9 @@
 #include "ui/gfx/switches.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "mojo/public/cpp/bindings/sync_call_restrictions.h"
-#endif
 
 namespace ui {
 
-#if !BUILDFLAG(IS_IOS)
 Compositor::PendingBeginFrameArgs::PendingBeginFrameArgs(
     const viz::BeginFrameArgs& args,
     bool force,
@@ -86,7 +82,6 @@ Compositor::PendingBeginFrameArgs::PendingBeginFrameArgs(
     : args(args), force(force), callback(std::move(callback)) {}
 
 Compositor::PendingBeginFrameArgs::~PendingBeginFrameArgs() = default;
-#endif
 
 Compositor::Compositor(const viz::FrameSinkId& frame_sink_id,
                        ui::ContextFactory* context_factory,
@@ -197,12 +192,6 @@ Compositor::Compositor(const viz::FrameSinkId& frame_sink_id,
           features::kOverscrollEffectOnNonRootScrollers);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Rasterized tiles must be overlay candidates to be forwarded.
-  // This is very similar to the line above for Apple.
-  settings.use_gpu_memory_buffer_resources =
-      features::IsDelegatedCompositingEnabled();
-#endif
 
   // Set use_gpu_memory_buffer_resources to false to disable delegated
   // compositing, if RawDraw is enabled.
@@ -382,9 +371,6 @@ void Compositor::SetLayerTreeFrameSink(
                                                   vsync_interval_);
     }
     display_private_->SetMaxVSyncAndVrr(max_vsync_interval_, vrr_state_);
-#if BUILDFLAG(IS_CHROMEOS)
-    display_private_->SetSupportedRefreshRates(seamless_refresh_rates_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   MaybeUpdateObserveBeginFrame();
@@ -396,14 +382,9 @@ void Compositor::SetExternalBeginFrameController(
   DCHECK(use_external_begin_frame_control());
   external_begin_frame_controller_ = std::move(external_begin_frame_controller);
   if (pending_begin_frame_args_) {
-#if BUILDFLAG(IS_IOS)
-    external_begin_frame_controller_->IssueExternalBeginFrameNoAck(
-        *pending_begin_frame_args_);
-#else
     external_begin_frame_controller_->IssueExternalBeginFrame(
         pending_begin_frame_args_->args, pending_begin_frame_args_->force,
         std::move(pending_begin_frame_args_->callback));
-#endif
     pending_begin_frame_args_.reset();
   }
 }
@@ -473,30 +454,6 @@ void Compositor::ScheduleRedrawRect(const gfx::Rect& damage_rect) {
   host_->SetNeedsCommit();
 }
 
-#if BUILDFLAG(IS_WIN)
-void Compositor::SetShouldDisableSwapUntilResize(bool should) {
-  should_disable_swap_until_resize_ = should;
-}
-
-void Compositor::DisableSwapUntilResize() {
-  if (should_disable_swap_until_resize_ && display_private_) {
-    // Browser needs to block for Viz to receive and process this message.
-    // Otherwise when we return from WM_WINDOWPOSCHANGING message handler and
-    // receive a WM_WINDOWPOSCHANGED the resize is finalized and any swaps of
-    // wrong size by Viz can cause the swapped content to get scaled.
-    // TODO(crbug.com/40583169): Investigate nonblocking ways for solving.
-    TRACE_EVENT0("viz", "Blocked UI for DisableSwapUntilResize");
-    mojo::SyncCallRestrictions::ScopedAllowSyncCall scoped_allow_sync_call;
-    display_private_->DisableSwapUntilResize();
-    disabled_swap_until_resize_ = true;
-  }
-}
-
-void Compositor::ReenableSwap() {
-  if (should_disable_swap_until_resize_ && display_private_)
-    display_private_->Resize(size_);
-}
-#endif
 
 void Compositor::SetScaleAndSize(float scale,
                                  const gfx::Size& size_in_pixel,
@@ -768,17 +725,6 @@ bool Compositor::HasAnimationObserver(
   return animation_observer_list_.HasObserver(observer);
 }
 
-#if BUILDFLAG(IS_IOS)
-void Compositor::IssueExternalBeginFrameNoAck(const viz::BeginFrameArgs& args) {
-  if (!external_begin_frame_controller_) {
-    // It's ok to call this repeatedly until |external_begin_frame_controller_|
-    // is ready - we'll just update the |pending_begin_frame_args_|.
-    pending_begin_frame_args_.emplace(args);
-    return;
-  }
-  external_begin_frame_controller_->IssueExternalBeginFrameNoAck(args);
-}
-#else
 void Compositor::IssueExternalBeginFrame(
     const viz::BeginFrameArgs& args,
     bool force,
@@ -793,7 +739,6 @@ void Compositor::IssueExternalBeginFrame(
   external_begin_frame_controller_->IssueExternalBeginFrame(
       args, force, std::move(callback));
 }
-#endif
 
 CompositorMetricsTracker Compositor::RequestNewCompositorMetricsTracker() {
   return CompositorMetricsTracker(next_compositor_metrics_tracker_id_++,
@@ -883,13 +828,7 @@ void Compositor::DidCommit(int source_frame_number,
 
 std::unique_ptr<cc::BeginMainFrameMetrics>
 Compositor::GetBeginMainFrameMetrics() {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto metrics_data = std::make_unique<cc::BeginMainFrameMetrics>();
-  metrics_data->should_measure_smoothness = true;
-  return metrics_data;
-#else
   return nullptr;
-#endif
 }
 
 void Compositor::NotifyCompositorMetricsTrackerResults(
@@ -1087,21 +1026,6 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
       host_begin_frame_observer_->GetBoundRemote());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void Compositor::SetSeamlessRefreshRates(
-    const std::vector<float>& seamless_refresh_rates) {
-  seamless_refresh_rates_ = seamless_refresh_rates;
-
-  if (display_private_) {
-    display_private_->SetSupportedRefreshRates(seamless_refresh_rates);
-  }
-}
-
-void Compositor::OnSetPreferredRefreshRate(float refresh_rate) {
-  observer_list_.Notify(&CompositorObserver::OnSetPreferredRefreshRate, this,
-                        refresh_rate);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 Compositor::ScopedKeepSurfaceAliveCallback
 Compositor::TakeScopedKeepSurfaceAliveCallback(

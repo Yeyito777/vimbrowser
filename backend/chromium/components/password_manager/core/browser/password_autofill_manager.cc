@@ -219,13 +219,6 @@ PasswordAutofillManager::~PasswordAutofillManager() {
   manual_fallback_metrics_recorder_.reset();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void PasswordAutofillManager::ShowKeyboardReplacingSurface(
-    const autofill::PasswordSuggestionRequest& request) {
-  password_client_->ShowKeyboardReplacingSurface(password_manager_driver_,
-                                                 request);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::optional<autofill::Suggestion>
 PasswordAutofillManager::GetWebauthnSignInWithAnotherDeviceSuggestion() const {
@@ -491,12 +484,10 @@ void PasswordAutofillManager::DeleteFillData() {
 
 void PasswordAutofillManager::ShowSuggestions(
     const autofill::TriggeringField& field) {
-#if !BUILDFLAG(IS_ANDROID)
   if (password_client_->IsActorTaskActive()) {
     // Disables password suggestions if actor is active on the tab.
     return;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   if (autofill::IsPasswordsAutofillManuallyTriggered(field.trigger_source)) {
     if (!manual_fallback_flow_) {
       manual_fallback_flow_ = std::make_unique<PasswordManualFallbackFlow>(

@@ -103,7 +103,6 @@ bool IbanSaveManager::IsIbanUploadEnabled(
 }
 
 bool IbanSaveManager::AttemptToOfferSave(Iban& import_candidate) {
-#if !BUILDFLAG(IS_IOS)
   UpdateRecordType(import_candidate);
   switch (DetermineHowToSaveIban(import_candidate)) {
     case TypeOfOfferToSave::kDoNotOfferToSave:
@@ -113,10 +112,6 @@ bool IbanSaveManager::AttemptToOfferSave(Iban& import_candidate) {
     case TypeOfOfferToSave::kOfferLocalSave:
       return AttemptToOfferLocalSave(import_candidate);
   }
-#else
-  // IBAN save prompts do not currently exist on iOS.
-  return false;
-#endif
 }
 
 void IbanSaveManager::UpdateRecordType(Iban& import_candidate) {
@@ -202,10 +197,6 @@ bool IbanSaveManager::AttemptToOfferUploadSave(Iban& import_candidate) {
       autofill_metrics::UploadIbanActionMetric::kOffered);
   bool show_save_prompt = !GetIbanSaveStrikeDatabase()->ShouldBlockFeature(
       GetPartialIbanHashString(base::UTF16ToUTF8(import_candidate.value())));
-#if BUILDFLAG(IS_ANDROID)
-  upload_request_details_.client_behavior_signals.push_back(
-      ClientBehaviorConstants::kShowAccountEmailInLegalMessage);
-#endif
   client_->GetPaymentsAutofillClient()
       ->GetPaymentsNetworkInterface()
       ->GetIbanUploadDetails(

@@ -16,18 +16,9 @@ namespace download {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// On Windows, the download code dips into COM and the shell here and there,
-// necessitating the use of a COM single-threaded apartment sequence.
-base::LazyThreadPoolCOMSTATaskRunner g_download_task_runner =
-    LAZY_COM_STA_TASK_RUNNER_INITIALIZER(
-        base::TaskTraits(base::MayBlock(), base::TaskPriority::USER_VISIBLE),
-        base::SingleThreadTaskRunnerThreadMode::SHARED);
-#else
 base::LazyThreadPoolSequencedTaskRunner g_download_task_runner =
     LAZY_THREAD_POOL_SEQUENCED_TASK_RUNNER_INITIALIZER(
         base::TaskTraits(base::MayBlock(), base::TaskPriority::USER_VISIBLE));
-#endif
 
 base::LazyInstance<scoped_refptr<base::SingleThreadTaskRunner>>::
     DestructorAtExit g_io_task_runner = LAZY_INSTANCE_INITIALIZER;

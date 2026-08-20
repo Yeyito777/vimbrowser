@@ -88,13 +88,6 @@ target(link_target_type, "gpu_sources") {
     ]
   }
 
-  if (is_chromeos) {
-    deps += [
-      "//components/services/font/public/cpp",
-      "//components/services/font/public/mojom",
-    ]
-  }
-
   if (mojo_media_host == "gpu") {
     deps += [ "//media/mojo/services" ]
   }

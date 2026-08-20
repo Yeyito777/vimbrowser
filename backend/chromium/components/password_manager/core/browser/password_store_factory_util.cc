@@ -21,15 +21,12 @@
 #include "components/password_manager/core/common/password_manager_pref_names.h"
 #include "components/prefs/pref_service.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "components/password_manager/core/browser/password_store/login_database.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace password_manager {
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 LoginDatabase::DeletingUndecryptablePasswordsEnabled GetPolicyFromPrefs(
     PrefService* prefs) {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
@@ -40,11 +37,9 @@ LoginDatabase::DeletingUndecryptablePasswordsEnabled GetPolicyFromPrefs(
   return LoginDatabase::DeletingUndecryptablePasswordsEnabled(true);
 #endif
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
-#if !BUILDFLAG(IS_ANDROID)
 std::unique_ptr<LoginDatabase> CreateLoginDatabase(
     password_manager::IsAccountStore is_account_store,
     const base::FilePath& db_directory,
@@ -55,7 +50,6 @@ std::unique_ptr<LoginDatabase> CreateLoginDatabase(
   return std::make_unique<LoginDatabase>(login_db_file_path, is_account_store,
                                          GetPolicyFromPrefs(prefs));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // TODO(http://crbug.com/890318): Add unitests to check cleaners are correctly
 // created.
@@ -84,11 +78,9 @@ void SanitizeAndMigrateCredentials(
       std::make_unique<password_manager::OldGoogleCredentialCleaner>(store,
                                                                      prefs));
 
-#if !BUILDFLAG(IS_ANDROID)
   cleaning_tasks_runner->MaybeAddCleaningTask(
       std::make_unique<password_manager::OSCryptAsyncMigrator>(
           store, is_account_store, prefs));
-#endif
 
   cleaning_tasks_runner->MaybeAddCleaningTask(
       std::make_unique<password_manager::PasswordChangeBackupPasswordCleaner>(

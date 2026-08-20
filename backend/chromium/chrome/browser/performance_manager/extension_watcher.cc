@@ -40,10 +40,6 @@ void RecordBackgroundHostCreatedForExtension(
     value = BackgroundHostCreatedForExtensionValue::kDocsOffline;
   } else if (id == extension_misc::kInAppPaymentsSupportAppId) {
     value = BackgroundHostCreatedForExtensionValue::kInAppPaymentSupport;
-#if BUILDFLAG(IS_CHROMEOS)
-  } else if (id == extension_misc::kAssessmentAssistantExtensionId) {
-    value = BackgroundHostCreatedForExtensionValue::kAssessmentAssistant;
-#endif
   }
 
   base::UmaHistogramEnumeration("Extensions.BackgroundHostCreatedForExtension",

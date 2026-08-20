@@ -30,13 +30,6 @@ source_set("global_accelerator_listener") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "global_accelerator_listener_win.cc",
-      "global_accelerator_listener_win.h",
-    ]
-  }
-
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
     sources += [

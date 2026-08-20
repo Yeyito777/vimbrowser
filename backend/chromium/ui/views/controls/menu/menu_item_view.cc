@@ -90,9 +90,6 @@ VerticalSeparator::VerticalSeparator() {
                 config.actionable_submenu_vertical_separator_height));
   SetCanProcessEventsWithinSubtree(false);
   ui::ColorId id = ui::kColorMenuSeparator;
-#if BUILDFLAG(IS_CHROMEOS)
-  id = ui::kColorAshSystemUIMenuSeparator;
-#endif
   SetColorId(id);
 }
 

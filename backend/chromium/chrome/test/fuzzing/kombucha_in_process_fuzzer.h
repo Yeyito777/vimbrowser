@@ -29,9 +29,6 @@ class KombuchaInProcessFuzzer
   void SetUp() override;
   void SetUpOnMainThread() override;
 
-#if BUILDFLAG(IS_WIN)
-  void TearDown() override;
-#endif
 
   using FuzzCase = test::fuzzing::ui_fuzzing::FuzzCase;
   int Fuzz(const uint8_t* data, size_t size) override;
@@ -116,9 +113,6 @@ class KombuchaInProcessFuzzer
   // determinism when trying to reproduce.
   void CleanInProcessBrowserState();
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<base::win::ScopedCOMInitializer> com_initializer_;
-#endif
 
   base::WeakPtrFactory<KombuchaInProcessFuzzer> weak_ptr_factory_{this};
 };

@@ -73,9 +73,6 @@
 #include "base/apple/foundation_util.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/file_handlers/non_native_file_system_delegate.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using storage::IsolatedContext;
 
@@ -97,10 +94,6 @@ const char kRetainEntryError[] = "Could not retain file entry.";
 const char kRetainEntryIncognitoError[] =
     "Could not retain file entry in incognito mode";
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char kNotSupportedOnNonKioskSessionError[] =
-    "Operation only supported for kiosk apps running in a kiosk session.";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace extensions {
 
@@ -145,11 +138,7 @@ bool GetFileTypesFromAcceptOption(
 
   if (accept_option.extensions) {
     for (const auto& item : *accept_option.extensions) {
-#if BUILDFLAG(IS_WIN)
-      extension_set.insert(base::UTF8ToWide(item));
-#else
       extension_set.insert(item);
-#endif
     }
   }
 
@@ -171,11 +160,6 @@ constexpr char kLastChooseEntryDirectory[] = "last_choose_file_directory";
 
 constexpr auto kGraylistedPaths = std::to_array<int>({
     base::DIR_HOME,
-#if BUILDFLAG(IS_WIN)
-    base::DIR_PROGRAM_FILES,
-    base::DIR_PROGRAM_FILESX86,
-    base::DIR_WINDOWS,
-#endif
 });
 
 using FileInfoOptCallback =
@@ -515,12 +499,6 @@ void FileSystemChooseEntryFunction::FilesSelected(
   if (is_directory_) {
     DCHECK_EQ(paths.size(), 1u);
     bool non_native_path = false;
-#if BUILDFLAG(IS_CHROMEOS)
-    NonNativeFileSystemDelegate* delegate =
-        ExtensionsAPIClient::Get()->GetNonNativeFileSystemDelegate();
-    non_native_path = delegate && delegate->IsUnderNonNativeLocalPath(
-                                      browser_context(), paths[0]);
-#endif
 
     base::ThreadPool::PostTask(
         FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
@@ -815,16 +793,6 @@ ExtensionFunction::ResponseAction FileSystemChooseEntryFunction::Run() {
       previous_path, suggested_name, file_type_info, picker_type);
 
 // Check whether the |previous_path| is a non-native directory.
-#if BUILDFLAG(IS_CHROMEOS)
-  NonNativeFileSystemDelegate* delegate =
-      ExtensionsAPIClient::Get()->GetNonNativeFileSystemDelegate();
-  if (delegate &&
-      delegate->IsUnderNonNativeLocalPath(browser_context(), previous_path)) {
-    delegate->IsNonNativeLocalPathDirectory(
-        browser_context(), previous_path, std::move(set_initial_path_callback));
-    return RespondLater();
-  }
-#endif
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
       base::BindOnce(&base::DirectoryExists, previous_path),
@@ -984,91 +952,6 @@ ExtensionFunction::ResponseAction FileSystemRestoreEntryFunction::Run() {
   return RespondNow(NoArguments());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-/******** FileSystemRequestFileSystemFunction ********/
-
-FileSystemRequestFileSystemFunction::FileSystemRequestFileSystemFunction() =
-    default;
-
-FileSystemRequestFileSystemFunction::~FileSystemRequestFileSystemFunction() =
-    default;
-
-ExtensionFunction::ResponseAction FileSystemRequestFileSystemFunction::Run() {
-  using file_system::RequestFileSystem::Params;
-  const std::optional<Params> params = Params::Create(args());
-  EXTENSION_FUNCTION_VALIDATE(params);
-
-  consent_provider_ =
-      ExtensionsAPIClient::Get()->CreateConsentProvider(browser_context());
-
-  FileSystemDelegate* delegate =
-      ExtensionsAPIClient::Get()->GetFileSystemDelegate();
-  DCHECK(delegate);
-  // Only kiosk apps in kiosk sessions can use this API.
-  // Additionally it is enabled for allowlisted component extensions and apps.
-  if (!consent_provider_->IsGrantable(*extension())) {
-    return RespondNow(Error(kNotSupportedOnNonKioskSessionError));
-  }
-
-  delegate->RequestFileSystem(
-      browser_context(), this, consent_provider_.get(), *extension(),
-      params->options.volume_id, params->options.writable.value_or(false),
-      base::BindOnce(&FileSystemRequestFileSystemFunction::OnGotFileSystem,
-                     this),
-      base::BindOnce(&FileSystemRequestFileSystemFunction::OnError, this));
-
-  return did_respond() ? AlreadyResponded() : RespondLater();
-}
-
-void FileSystemRequestFileSystemFunction::OnGotFileSystem(
-    const std::string& id,
-    const std::string& path) {
-  base::DictValue dict;
-  dict.Set("file_system_id", id);
-  dict.Set("file_system_path", path);
-  Respond(WithArguments(std::move(dict)));
-}
-
-void FileSystemRequestFileSystemFunction::OnError(const std::string& error) {
-  Respond(Error(error));
-}
-
-/******** FileSystemGetVolumeListFunction ********/
-
-FileSystemGetVolumeListFunction::FileSystemGetVolumeListFunction() = default;
-
-FileSystemGetVolumeListFunction::~FileSystemGetVolumeListFunction() = default;
-
-ExtensionFunction::ResponseAction FileSystemGetVolumeListFunction::Run() {
-  consent_provider_ =
-      ExtensionsAPIClient::Get()->CreateConsentProvider(browser_context());
-
-  FileSystemDelegate* delegate =
-      ExtensionsAPIClient::Get()->GetFileSystemDelegate();
-  DCHECK(delegate);
-  // Only kiosk apps in kiosk sessions can use this API.
-  // Additionally it is enabled for allowlisted component extensions and apps.
-  if (!consent_provider_->IsGrantable(*extension())) {
-    return RespondNow(Error(kNotSupportedOnNonKioskSessionError));
-  }
-
-  delegate->GetVolumeList(
-      browser_context(),
-      base::BindOnce(&FileSystemGetVolumeListFunction::OnGotVolumeList, this),
-      base::BindOnce(&FileSystemGetVolumeListFunction::OnError, this));
-
-  return did_respond() ? AlreadyResponded() : RespondLater();
-}
-
-void FileSystemGetVolumeListFunction::OnGotVolumeList(
-    const std::vector<file_system::Volume>& volumes) {
-  Respond(ArgumentList(file_system::GetVolumeList::Results::Create(volumes)));
-}
-
-void FileSystemGetVolumeListFunction::OnError(const std::string& error) {
-  Respond(Error(error));
-}
-#else   // BUILDFLAG(IS_CHROMEOS)
 /******** FileSystemRequestFileSystemFunction ********/
 
 FileSystemRequestFileSystemFunction::~FileSystemRequestFileSystemFunction() =
@@ -1091,6 +974,5 @@ ExtensionFunction::ResponseAction FileSystemGetVolumeListFunction::Run() {
   NOTIMPLEMENTED();
   return RespondNow(Error(kNotSupportedOnCurrentPlatformError));
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace extensions

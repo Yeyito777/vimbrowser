@@ -38,15 +38,6 @@
 #include "components/webapps/common/web_app_id.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_notifications.h"
-#include "chrome/browser/apps/app_service/media_requests.h"
-#include "chrome/browser/apps/app_service/paused_apps.h"
-#include "chrome/browser/badging/badge_manager_delegate.h"
-#include "chrome/browser/media/webrtc/media_stream_capture_indicator.h"
-#include "chrome/browser/notifications/notification_common.h"
-#include "chrome/browser/notifications/notification_display_service.h"
-#endif
 
 class Browser;
 class ContentSettingsPattern;
@@ -77,11 +68,6 @@ namespace content {
 class WebContents;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace message_center {
-class Notification;
-}
-#endif
 
 namespace ui {
 enum ResourceScaleFactor : int;
@@ -113,10 +99,6 @@ void UninstallImpl(WebAppProvider* provider,
 
 class WebAppPublisherHelper : public WebAppRegistrarObserver,
                               public WebAppInstallManagerObserver,
-#if BUILDFLAG(IS_CHROMEOS)
-                              public NotificationDisplayService::Observer,
-                              public MediaStreamCaptureIndicator::Observer,
-#endif
                               public content_settings::Observer {
  public:
   class Delegate {
@@ -184,20 +166,6 @@ class WebAppPublisherHelper : public WebAppRegistrarObserver,
 
   void SetIconEffect(const std::string& app_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void PauseApp(const std::string& app_id);
-
-  void UnpauseApp(const std::string& app_id);
-
-  bool IsPaused(const std::string& app_id);
-
-  void StopApp(const std::string& app_id);
-
-  void GetCompressedIconData(const std::string& app_id,
-                             int32_t size_in_dip,
-                             ui::ResourceScaleFactor scale_factor,
-                             apps::LoadIconCallback callback);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void LoadIcon(const std::string& app_id,
                 apps::IconType icon_type,
@@ -285,20 +253,6 @@ class WebAppPublisherHelper : public WebAppRegistrarObserver,
       const web_app::WebApp& app);
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  class BadgeManagerDelegate : public badging::BadgeManagerDelegate {
-   public:
-    explicit BadgeManagerDelegate(
-        const base::WeakPtr<WebAppPublisherHelper>& publisher_helper);
-
-    ~BadgeManagerDelegate() override;
-
-    void OnAppBadgeUpdated(const webapps::AppId& app_id) override;
-
-   private:
-    base::WeakPtr<WebAppPublisherHelper> publisher_helper_;
-  };
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // WebAppInstallManagerObserver:
   void OnWebAppInstalled(const webapps::AppId& app_id) override;
@@ -325,27 +279,7 @@ class WebAppPublisherHelper : public WebAppRegistrarObserver,
       RunOnOsLoginMode run_on_os_login_mode) override;
   void OnWebAppSettingsPolicyChanged() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnWebAppDisabledStateChanged(const webapps::AppId& app_id,
-                                    bool is_disabled) override;
-  void OnWebAppsDisabledModeChanged() override;
 
-  // NotificationDisplayService::Observer overrides.
-  void OnNotificationDisplayed(
-      const message_center::Notification& notification,
-      const NotificationCommon::Metadata* metadata) override;
-  void OnNotificationClosed(const std::string& notification_id) override;
-  void OnNotificationDisplayServiceDestroyed(
-      NotificationDisplayService* service) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_CHROMEOS)
-  // MediaStreamCaptureIndicator::Observer:
-  void OnIsCapturingVideoChanged(content::WebContents* web_contents,
-                                 bool is_capturing_video) override;
-  void OnIsCapturingAudioChanged(content::WebContents* web_contents,
-                                 bool is_capturing_audio) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // content_settings::Observer:
   void OnContentSettingChanged(
@@ -380,20 +314,6 @@ class WebAppPublisherHelper : public WebAppRegistrarObserver,
 
   apps::PackageId GetPackageId(const WebApp& web_app) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Updates app visibility.
-  void UpdateAppDisabledMode(apps::App& app);
-
-  bool MaybeAddNotification(const std::string& app_id,
-                            const std::string& notification_id);
-  void MaybeAddWebPageNotifications(
-      const message_center::Notification& notification,
-      const NotificationCommon::Metadata* metadata);
-
-  // Returns whether the app should show a badge.
-  bool ShouldShowBadge(const std::string& app_id,
-                       bool has_notification_indicator);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Called after the user has allowed or denied an app launch with files.
   void OnFileHandlerDialogCompleted(
@@ -440,23 +360,6 @@ class WebAppPublisherHelper : public WebAppRegistrarObserver,
 
   bool is_shutting_down_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  apps::PausedApps paused_apps_;
-
-  base::ScopedObservation<NotificationDisplayService,
-                          NotificationDisplayService::Observer>
-      notification_display_service_{this};
-
-  apps::AppNotifications app_notifications_;
-
-  raw_ptr<badging::BadgeManager, DanglingUntriaged> badge_manager_ = nullptr;
-
-  base::ScopedObservation<MediaStreamCaptureIndicator,
-                          MediaStreamCaptureIndicator::Observer>
-      media_indicator_observation_{this};
-
-  apps::MediaRequests media_requests_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::map<std::string, WebAppShortcutsMenuItemInfo> shortcut_id_map_;
   ShortcutId::Generator shortcut_id_generator_;

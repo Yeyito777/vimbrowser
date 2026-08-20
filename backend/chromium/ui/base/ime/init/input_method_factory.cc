@@ -12,9 +12,7 @@
 #include "ui/base/ui_base_features.h"
 #include "ui/gfx/switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/ime/win/input_method_win_tsf.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include "ui/base/ime/mac/input_method_mac.h"
 #elif BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
@@ -52,9 +50,7 @@ std::unique_ptr<InputMethod> CreateInputMethod(
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kHeadless))
     return base::WrapUnique(new MockInputMethod(ime_key_event_dispatcher));
 
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<InputMethodWinTSF>(ime_key_event_dispatcher, widget);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return std::make_unique<InputMethodMac>(ime_key_event_dispatcher);
 #elif BUILDFLAG(IS_OZONE)
   return ui::OzonePlatform::GetInstance()->CreateInputMethod(

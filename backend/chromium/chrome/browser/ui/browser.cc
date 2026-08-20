@@ -255,21 +255,7 @@
 #include "url/origin.h"
 #include "url/scheme_host_port.h"
 
-#if BUILDFLAG(IS_WIN)
-// windows.h must be included before shellapi.h
-#include <windows.h>
 
-#include <shellapi.h>
-
-#include "chrome/browser/ui/view_ids.h"
-#include "ui/base/win/shell.h"
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ash/guest_os/guest_os_terminal.h"
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CAPTIVE_PORTAL_DETECTION)
 #include "components/captive_portal/content/captive_portal_tab_helper.h"
@@ -285,9 +271,7 @@
 #include "ui/display/types/display_constants.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/preloading/preview/preview_manager.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/platform_session_manager.h"
@@ -1866,14 +1850,6 @@ bool Browser::TabsNeedBeforeUnloadFired() const {
 bool Browser::CanDragEnter(content::WebContents* source,
                            const content::DropData& data,
                            blink::DragOperationsMask operations_allowed) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Disallow drag-and-drop navigation for Settings windows which do not support
-  // external navigation.
-  if ((operations_allowed & blink::kDragOperationLink) &&
-      chrome::SettingsWindowManager::GetInstance()->IsSettingsBrowser(this)) {
-    return false;
-  }
-#endif
   return true;
 }
 
@@ -1953,11 +1929,7 @@ content::PreloadingEligibility Browser::IsPrerender2Supported(
 }
 
 bool Browser::ShouldShowStaleContentOnEviction(content::WebContents* source) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return source == tab_strip_model_->GetActiveWebContents();
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool Browser::IsPointerLocked() const {
@@ -2535,12 +2507,10 @@ std::unique_ptr<content::EyeDropper> Browser::OpenEyeDropper(
 
 void Browser::InitiatePreview(content::WebContents& web_contents,
                               const GURL& url) {
-#if !BUILDFLAG(IS_ANDROID)
   PreviewManager::CreateForWebContents(&web_contents);
   PreviewManager* manager = PreviewManager::FromWebContents(&web_contents);
   CHECK(manager);
   manager->InitiatePreview(url);
-#endif
 }
 
 bool Browser::ShouldUseInstancedSystemMediaControls() const {
@@ -2628,7 +2598,6 @@ bool Browser::GetCanResize() {
   return window_->GetCanResize();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool Browser::CanUseWindowingControls(
     content::RenderFrameHost* requesting_frame) {
   if (!app_controller()) {
@@ -2655,7 +2624,6 @@ void Browser::RestoreFromWebAPI() {
 void Browser::SetResizableFromWebAPI(bool resizable) {
   GetBrowserView().SetResizableFromWebApi(resizable);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 ui::mojom::WindowShowState Browser::GetWindowShowState() const {
   return window_->GetWindowShowState();

@@ -13,9 +13,6 @@
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif
 
 // static
 ExitTypeService* ExitTypeServiceFactory::GetForProfile(Profile* profile) {
@@ -48,11 +45,6 @@ ExitTypeServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
   Profile* profile = Profile::FromBrowserContext(context);
   // TODO(sky): is this necessary?
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::ProfileHelper::IsSigninProfile(profile)) {
-    return nullptr;
-  }
-#endif
   return std::make_unique<ExitTypeService>(profile);
 }
 

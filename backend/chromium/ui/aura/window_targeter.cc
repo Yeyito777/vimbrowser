@@ -125,25 +125,10 @@ Window* WindowTargeter::FindTargetInRootWindow(Window* root_window,
     if (consumer)
       return static_cast<Window*>(consumer);
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // If the initial touch is outside the window's display, target the root.
-    // This is used for bezel gesture events (eg. swiping in from screen edge).
-    display::Display display =
-        display::Screen::Get()->GetDisplayNearestWindow(root_window);
-    // The window target may be null, so use the root's ScreenPositionClient.
-    gfx::Point screen_location = event.root_location();
-    if (client::GetScreenPositionClient(root_window)) {
-      client::GetScreenPositionClient(root_window)
-          ->ConvertPointToScreen(root_window, &screen_location);
-    }
-    if (!display.bounds().Contains(screen_location))
-      return root_window;
-#else
     // If the initial touch is outside the root window, target the root.
     // TODO(lanwei): this code is likely not necessarily and will be removed.
     if (!root_window->bounds().Contains(event.location()))
       return root_window;
-#endif
   }
 
   return nullptr;
@@ -191,23 +176,6 @@ Window* WindowTargeter::FindTargetForLocatedEvent(Window* window,
     if (target) {
       window->ConvertEventToTarget(target, event);
 
-#if BUILDFLAG(IS_CHROMEOS)
-      if (window->IsRootWindow() && event->HasNativeEvent()) {
-        // If window is root, and the target is in a different host, we need to
-        // convert the native event to the target's host as well. This happens
-        // while a widget is being dragged and when the majority of its bounds
-        // reside in a different display. Setting the widget's bounds at this
-        // point changes the window's root, and the event's target's root, but
-        // the events are still being generated relative to the original
-        // display. crbug.com/714578.
-        ui::LocatedEvent* e =
-            static_cast<ui::LocatedEvent*>(event->native_event());
-        gfx::PointF native_point = e->location_f();
-        aura::Window::ConvertNativePointToTargetHost(window, target,
-                                                     &native_point);
-        e->set_location_f(native_point);
-      }
-#endif
 
       return target;
     }

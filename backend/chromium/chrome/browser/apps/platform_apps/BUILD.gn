@@ -95,17 +95,4 @@ source_set("platform_apps") {
       "//chrome/browser/ui/extensions:extension_enable_flow_delegate",
     ]
   }
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ash/remote_apps",
-      "//chrome/browser/ui/ash/keyboard",
-    ]
-
-    allow_circular_includes_from += [
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ui/ash/keyboard",
-    ]
-  }
 }

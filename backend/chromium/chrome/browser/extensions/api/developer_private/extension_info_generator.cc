@@ -674,15 +674,7 @@ void ExtensionInfoGenerator::FillExtensionInfo(const Extension& extension,
        Manifest::ShouldAlwaysAllowFileAccess(extension.location()));
   info.file_access.is_active =
       util::AllowFileAccess(extension.id(), browser_context_);
-#if BUILDFLAG(IS_CHROMEOS)
-  info.file_access_pending_change =
-      extension_prefs_->HasAllowFileAccessPendingUpdate(extension.id());
-  if (info.file_access_pending_change) {
-    info.file_access.is_active = !info.file_access.is_active;
-  }
-#else
   info.file_access_pending_change = false;
-#endif
 
   // Home page.
   info.home_page.url = ManifestURL::GetHomepageURL(&extension).spec();
@@ -701,15 +693,7 @@ void ExtensionInfoGenerator::FillExtensionInfo(const Extension& extension,
   info.incognito_access.is_enabled = util::CanBeIncognitoEnabled(&extension);
   info.incognito_access.is_active =
       util::IsIncognitoEnabled(extension.id(), browser_context_);
-#if BUILDFLAG(IS_CHROMEOS)
-  info.incognito_access_pending_change =
-      extension_prefs_->HasIncognitoEnabledPendingUpdate(extension.id());
-  if (info.incognito_access_pending_change) {
-    info.incognito_access.is_active = !info.incognito_access.is_active;
-  }
-#else
   info.incognito_access_pending_change = false;
-#endif
 
   // User Scripts toggle.
   info.user_scripts_access.is_enabled =

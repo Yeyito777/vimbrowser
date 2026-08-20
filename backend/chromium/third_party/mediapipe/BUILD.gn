@@ -539,17 +539,13 @@ tflite_static_library("mediapipe_core") {
   # TODO(crbug.com/433386027): Remove this after rolling mediapipe.
   use_libcxx_modules = false
 
-  if (!is_win) {
-    sources += [
-      "src/mediapipe/framework/formats/shared_fd.h",
-      "src/mediapipe/framework/formats/unique_fd.cc",
-      "src/mediapipe/framework/formats/unique_fd.h",
-    ]
-  }
+  sources += [
+    "src/mediapipe/framework/formats/shared_fd.h",
+    "src/mediapipe/framework/formats/unique_fd.cc",
+    "src/mediapipe/framework/formats/unique_fd.h",
+  ]
 
-  if (is_win) {
-    sources += [ "src/mediapipe/util/resource_util_windows.cc" ]
-  } else if (is_apple) {
+  if (is_apple) {
     sources += [ "src/mediapipe/util/resource_util_apple.cc" ]
 
     # TODO: the right solution is for files that use objective-c to use the

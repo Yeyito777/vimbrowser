@@ -17,9 +17,7 @@
 #include "build/blink_buildflags.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include <mach/mach.h>
 
 #include <memory>
@@ -68,12 +66,6 @@ class BASE_EXPORT WaitableEvent {
   WaitableEvent(ResetPolicy reset_policy = ResetPolicy::MANUAL,
                 InitialState initial_state = InitialState::NOT_SIGNALED);
 
-#if BUILDFLAG(IS_WIN)
-  // Create a WaitableEvent from an Event HANDLE which has already been
-  // created. This objects takes ownership of the HANDLE and will close it when
-  // deleted.
-  explicit WaitableEvent(win::ScopedHandle event_handle);
-#endif
 
   WaitableEvent(const WaitableEvent&) = delete;
   WaitableEvent& operator=(const WaitableEvent&) = delete;
@@ -111,9 +103,6 @@ class BASE_EXPORT WaitableEvent {
       TimeDelta wait_delta,
       const Location& location = Location::Current());
 
-#if BUILDFLAG(IS_WIN)
-  HANDLE handle() const { return handle_.get(); }
-#endif
 
   // Declares that this WaitableEvent will only ever be used by a thread that is
   // idle at the bottom of its stack and waiting for work (in particular, it is
@@ -184,9 +173,7 @@ class BASE_EXPORT WaitableEvent {
   bool TimedWaitImpl(TimeDelta wait_delta);
   static size_t WaitManyImpl(base::span<WaitableEvent*> waitables);
 
-#if BUILDFLAG(IS_WIN)
-  win::ScopedHandle handle_;
-#elif BUILDFLAG(IS_APPLE) && (!BUILDFLAG(IS_IOS) || !BUILDFLAG(USE_BLINK))
+#if BUILDFLAG(IS_APPLE) && (!BUILDFLAG(IS_IOS) || !BUILDFLAG(USE_BLINK))
   // iOS which supports blink must use the posix variant since opening
   // mach_ports is prevented inside sandbox profiles.
   //

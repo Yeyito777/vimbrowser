@@ -117,16 +117,8 @@
 #include "extensions/common/permissions/permissions_data.h"
 #include "extensions/common/switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/system/sys_info.h"
-#include "chrome/browser/ash/extensions/install_limiter.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/upgrade_detector/upgrade_detector.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -243,11 +235,9 @@ ExtensionService::ExtensionService(
     profile_manager_observation_.Observe(g_browser_process->profile_manager());
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   // TODO(crbug.com/413455412): Find another way to report Chrome updates to
   // extensions on Android, which uses the Play Store for updates.
   UpgradeDetector::GetInstance()->AddObserver(this);
-#endif
 
   cws_info_service_observation_.Observe(CWSInfoService::Get(profile_));
 
@@ -299,9 +289,7 @@ base::WeakPtr<ExtensionServiceInterface> ExtensionService::AsWeakPtr() {
 }
 
 ExtensionService::~ExtensionService() {
-#if !BUILDFLAG(IS_ANDROID)
   UpgradeDetector::GetInstance()->RemoveObserver(this);
-#endif
 }
 
 void ExtensionService::Shutdown() {
@@ -345,20 +333,6 @@ void ExtensionService::Init() {
   bool load_saved_extensions = true;
   bool load_command_line_extensions =
       extension_registrar_->extensions_enabled();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!ash::ProfileHelper::IsUserProfile(profile_)) {
-    load_saved_extensions = false;
-    load_command_line_extensions = false;
-  }
-
-  const bool load_autotest_ext =
-      command_line_->HasSwitch(switches::kLoadSigninProfileTestExtension);
-  const bool is_signin_profile = ash::ProfileHelper::IsSigninProfile(profile_);
-  if (load_autotest_ext && is_signin_profile) {
-    LoadSigninProfileTestExtension(command_line_->GetSwitchValueASCII(
-        switches::kLoadSigninProfileTestExtension));
-  }
-#endif
   if (load_saved_extensions) {
     InstalledLoader(profile_).LoadAllExtensions();
   }
@@ -462,20 +436,6 @@ void ExtensionService::LoadExtensionsFromCommandLineFlag(
           : ExtensionService::LoadExtensionFlag::kDisableExtensionsExcept);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ExtensionService::LoadSigninProfileTestExtension(const std::string& path) {
-  base::SysInfo::CrashIfChromeOSNonTestImage();
-  std::string extension_id;
-  const bool installing =
-      UnpackedInstaller::Create(profile_)->LoadFromCommandLine(
-          base::FilePath(path), &extension_id, false /*only-allow-apps*/);
-  CHECK(installing);
-  CHECK_EQ(extension_id, extension_misc::kSigninProfileTestExtensionId)
-      << extension_id
-      << " extension not allowed to load from the command line in the "
-         "signin profile";
-}
-#endif
 
 void ExtensionService::PerformActionBasedOnOmahaAttributes(
     const std::string& extension_id,

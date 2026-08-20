@@ -38,9 +38,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -225,13 +222,6 @@ void SadTabView::OnPaint(gfx::Canvas* canvas) {
 
 void SadTabView::EnableHelpLink(views::FlexLayoutView* actions_container,
                                 int help_link_title_id) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not show the help link in the kiosk session to prevent escape from a
-  // kiosk app.
-  if (chromeos::IsKioskSession()) {
-    return;
-  }
-#endif
   auto* help_link =
       actions_container->AddChildView(std::make_unique<views::Link>(
           l10n_util::GetStringUTF16(help_link_title_id)));

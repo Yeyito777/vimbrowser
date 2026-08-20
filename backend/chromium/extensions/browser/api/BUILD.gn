@@ -78,18 +78,6 @@ group("api_implementations") {
       "//extensions/browser/api/system_storage",
       "//extensions/browser/api/virtual_keyboard_private",
     ]
-
-    if (is_chromeos) {
-      public_deps += [
-        "//extensions/browser/api/cec_private",
-        "//extensions/browser/api/clipboard",
-        "//extensions/browser/api/diagnostics",
-        "//extensions/browser/api/media_perception_private",
-        "//extensions/browser/api/serial",
-        "//extensions/browser/api/virtual_keyboard",
-        "//extensions/browser/api/webcam_private",
-      ]
-    }
   }
 
   if (enable_guest_view) {
@@ -168,10 +156,6 @@ source_set("extensions_api_client") {
     "//extensions/browser/api/storage:settings_observer",
     "//extensions/common",
   ]
-
-  if (is_chromeos) {
-    public_deps += [ "//extensions/browser/api/clipboard:clipboard_types" ]
-  }
 
   deps = [
     "//extensions/browser/api/messaging:native_messaging",

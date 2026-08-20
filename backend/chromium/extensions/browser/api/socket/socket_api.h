@@ -49,9 +49,6 @@ class TCPConnectedSocket;
 
 namespace extensions {
 
-#if BUILDFLAG(IS_CHROMEOS)
-extern const char kCrOSTerminal[];
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class Socket;
 

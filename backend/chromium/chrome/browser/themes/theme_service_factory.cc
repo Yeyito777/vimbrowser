@@ -19,9 +19,6 @@
 #include "extensions/browser/extension_registry_factory.h"
 #include "ui/base/mojom/themes.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/themes/theme_helper_win.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "chrome/browser/themes/theme_service_aura_linux.h"
@@ -30,9 +27,6 @@
 namespace {
 
 const ThemeHelper& GetThemeHelper() {
-#if BUILDFLAG(IS_WIN)
-  using ThemeHelper = ThemeHelperWin;
-#endif
 
   static base::NoDestructor<std::unique_ptr<ThemeHelper>> theme_helper(
       std::make_unique<ThemeHelper>());

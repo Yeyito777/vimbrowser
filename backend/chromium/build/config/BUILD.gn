@@ -19,9 +19,6 @@ import("//build/config/pch.gni")
 import("//build/config/rust.gni")
 import("//build/config/sanitizers/sanitizers.gni")
 import("//build/config/ui.gni")
-if (is_android) {
-  import("//build/config/android/abi.gni")
-}
 
 # ==============================================
 #   PLEASE DO NOT ADD MORE THINGS TO THIS LIST
@@ -113,14 +110,8 @@ config("debug") {
     "DYNAMIC_ANNOTATIONS_ENABLED=1",
   ]
 
-  if (is_win) {
-    if (!enable_iterator_debugging && !use_custom_libcxx) {
-      # Iterator debugging is enabled by default by the compiler on debug
-      # builds, and we have to tell it to turn it off.
-      defines += [ "_HAS_ITERATOR_DEBUGGING=0" ]
-    }
-  } else if ((is_linux || is_chromeos) && current_cpu == "x64" &&
-             enable_iterator_debugging) {
+  if ((is_linux || is_chromeos) && current_cpu == "x64" &&
+      enable_iterator_debugging) {
     # Enable libstdc++ debugging facilities to help catch problems early, see
     # http://crbug.com/65151 .
     # TODO(phajdan.jr): Should we enable this for all of POSIX?
@@ -140,72 +131,13 @@ config("release") {
       "DYNAMIC_ANNOTATIONS_ENABLED=0",
     ]
   }
-
-  if (is_ios) {
-    # Disable NSAssert and GTMDevAssert (from Google Toolbox for Mac). This
-    # follows Xcode's default behavior for Release builds.
-    defines += [ "NS_BLOCK_ASSERTIONS=1" ]
-  }
 }
 
 # Default libraries ------------------------------------------------------------
 
 # This config defines the default libraries applied to all targets.
 config("default_libs") {
-  if (is_win) {
-    # TODO(brettw) this list of defaults should probably be smaller, and
-    # instead the targets that use the less common ones (e.g. wininet or
-    # winspool) should include those explicitly.
-    libs = [
-      "advapi32.lib",
-      "comdlg32.lib",
-      "dbghelp.lib",
-      "dnsapi.lib",
-      "gdi32.lib",
-      "msimg32.lib",
-      "odbc32.lib",
-      "odbccp32.lib",
-      "oleaut32.lib",
-      "shell32.lib",
-      "shlwapi.lib",
-      "user32.lib",
-      "usp10.lib",
-      "uuid.lib",
-      "version.lib",
-      "wininet.lib",
-      "winmm.lib",
-      "winspool.lib",
-      "ws2_32.lib",
-
-      # Please don't add more stuff here. We should actually be making this
-      # list smaller, since all common things should be covered. If you need
-      # some extra libraries, please just add a libs = [ "foo.lib" ] to your
-      # target that needs it.
-    ]
-    if (current_os == "winuwp") {
-      # These libraries are needed for Windows UWP (i.e. store apps).
-      libs += [
-        "dloadhelper.lib",
-        "WindowsApp.lib",
-      ]
-    } else {
-      # These libraries are not compatible with Windows UWP (i.e. store apps.)
-      libs += [
-        "delayimp.lib",
-        "kernel32.lib",
-        "ole32.lib",
-      ]
-    }
-  } else if (is_android) {
-    libs = [
-      "dl",
-      "m",
-    ]
-  } else if (is_mac) {
-    # Targets should choose to explicitly link frameworks they require. Since
-    # linking can have run-time side effects, nothing should be listed here.
-    libs = []
-  } else if (is_ios) {
+  if (is_mac) {
     # Targets should choose to explicitly link frameworks they require. Since
     # linking can have run-time side effects, nothing should be listed here.
     libs = []
@@ -243,37 +175,6 @@ group("common_deps_without_libcxx") {
 
   if (is_android && use_order_profiling) {
     public_deps += [ "//base/android/orderfile:orderfile_instrumentation" ]
-  }
-
-  if (is_fuchsia) {
-    public_deps +=
-        [ "//third_party/fuchsia-gn-sdk/src/config:runtime_library_group" ]
-    if (is_asan) {
-      public_deps += [ "//build/config/fuchsia:asan_runtime_library" ]
-    }
-  }
-
-  if (is_win) {
-    if (build_with_chromium && is_component_build) {
-      # To enable allocator_shim for the windows component built chrome,
-      # need to make all shared libraries and also executable(i.e.chrome.exe)
-      # depend on PartitionAlloc.
-      public_deps += [ "//base/allocator/partition_allocator/src/partition_alloc:win_component_build_adapter" ]
-    }
-
-    # The CRT runtime is dynamically linked in component builds and needs to
-    # be present on bots that run exes or load DLLs. This also includes
-    # debugging DLLs in all builds.
-    data_deps = [ "//build/win:runtime_libs" ]
-
-    if (host_os == "win") {
-      # In order to ensure the ACLing is applied to every binary loaded in an
-      # app container sandbox, run the ACL step before any binary is built. We
-      # do this because the tool is subject to race conditions if a binary is
-      # placed in the out folder while it is running.
-      public_deps +=
-          [ "//build/config/win:maybe_set_appcontainer_acls($host_toolchain)" ]
-    }
   }
 }
 
@@ -327,26 +228,13 @@ group("shared_library_deps") {
 # Executable configs -----------------------------------------------------------
 
 # Windows linker setup for EXEs and DLLs.
-if (is_win) {
-  _windows_linker_configs = [
-    "//build/config/win:sdk_link",
-    "//build/config/win:common_linker_setup",
-  ]
-}
 
 # This config defines the configs applied to all executables.
 config("executable_config") {
   configs = []
 
-  if (is_win) {
-    configs += _windows_linker_configs
-  } else if (is_mac) {
+  if (is_mac) {
     configs += [ "//build/config/mac:mac_dynamic_flags" ]
-  } else if (is_ios) {
-    configs += [
-      "//build/config/ios:ios_dynamic_flags",
-      "//build/config/ios:ios_executable_flags",
-    ]
   } else if (is_linux || is_chromeos || is_android || current_os == "aix") {
     configs += [ "//build/config/gcc:executable_config" ]
     if (is_castos || is_cast_android) {
@@ -370,15 +258,8 @@ config("executable_config") {
 config("shared_library_config") {
   configs = []
 
-  if (is_win) {
-    configs += _windows_linker_configs
-  } else if (is_mac) {
+  if (is_mac) {
     configs += [ "//build/config/mac:mac_dynamic_flags" ]
-  } else if (is_ios) {
-    configs += [
-      "//build/config/ios:ios_dynamic_flags",
-      "//build/config/ios:ios_shared_library_flags",
-    ]
   } else if (is_castos || is_cast_android) {
     configs += [ "//build/config/chromecast:shared_library_config" ]
   } else if (is_linux || is_chromeos || current_os == "aix") {
@@ -405,20 +286,7 @@ config("shared_library_config") {
 # Recommend precompiled headers for targets with more than 50 .cc files.
 config("precompiled_headers") {
   if (enable_precompiled_headers) {
-    if (is_win) {
-      # This is a string rather than a file GN knows about. It has to match
-      # exactly what's in the /FI flag below, and what might appear in the
-      # source code in quotes for an #include directive.
-      precompiled_header = "build/precompile.h"
-
-      # This is a file that GN will compile with the above header. It will be
-      # implicitly added to the sources (potentially multiple times, with one
-      # variant for each language used in the target).
-      precompiled_source = "//build/precompile.cc"
-
-      # Force include the header.
-      cflags = [ "/FI$precompiled_header" ]
-    } else if (is_mac || is_linux) {
+    if (is_mac || is_linux) {
       precompiled_source = "//build/precompile.h"
     }
   }

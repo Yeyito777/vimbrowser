@@ -24,10 +24,6 @@ buildflag_header("generate_about_credits_header") {
   flags = [ "GENERATE_ABOUT_CREDITS=$generate_about_credits" ]
 }
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 about_credits_file = "$target_gen_dir/about_credits.html"
 
 group("resources") {
@@ -42,10 +38,6 @@ group("resources") {
     "../signin/core/browser/resources",
     "../webui:resources",
   ]
-
-  if (is_ios) {
-    public_deps += [ "../management/resources" ]
-  }
 }
 
 grit("components_resources") {
@@ -172,15 +164,5 @@ if (generate_about_credits) {
   copy("about_credits") {
     sources = [ "sample_credits.html" ]
     outputs = [ about_credits_file ]
-  }
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("terms_resources") {
-    # On iOS, the terms of service file need to be loaded from the application
-    # bundle, not from a datapack. As GetTermsOfServicePath() returns path to
-    # those files, they are added to the bundle resources dir.
-    filelist_name = "terms_resources.filelist"
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 }

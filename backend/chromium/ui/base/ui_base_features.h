@@ -24,10 +24,6 @@ COMPONENT_EXPORT(UI_BASE_FEATURES) BASE_DECLARE_FEATURE(kFocusFollowsCursor);
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kDragDropOnlySynthesizeHttpOrHttpsUrlsFromText);
 
-#if BUILDFLAG(IS_CHROMEOS)
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kSettingsShowsPerKeyboardSettings);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 COMPONENT_EXPORT(UI_BASE_FEATURES) BASE_DECLARE_FEATURE(kSystemKeyboardLock);
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kUiCompositorScrollWithLayers);
@@ -43,29 +39,7 @@ COMPONENT_EXPORT(UI_BASE_FEATURES) BASE_DECLARE_FEATURE(kElasticOverscroll);
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kLimitScrollDeltaToScrollerSize);
 
-#if BUILDFLAG(IS_WIN)
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kCalculateNativeWinOcclusion);
 
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kApplyNativeOcclusionToCompositor);
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kAlwaysTrackNativeWindowOcclusionForTest);
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const base::FeatureParam<std::string>
-    kApplyNativeOcclusionToCompositorType;
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const char kApplyNativeOcclusionToCompositorTypeRelease[];
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const char kApplyNativeOcclusionToCompositorTypeThrottle[];
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const char kApplyNativeOcclusionToCompositorTypeThrottleAndRelease[];
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_CHROMEOS)
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-bool IsImprovedKeyboardShortcutsEnabled();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kTouchTextEditingRedesign);
@@ -98,23 +72,6 @@ COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltip);
 COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsKeyboardAccessibleTooltipEnabled();
 
-#if BUILDFLAG(IS_CHROMEOS)
-COMPONENT_EXPORT(UI_BASE_FEATURES) BASE_DECLARE_FEATURE(kDeprecateAltClick);
-
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-bool IsDeprecateAltClickEnabled();
-
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kNotificationsIgnoreRequireInteraction);
-
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-bool IsNotificationsIgnoreRequireInteractionEnabled();
-
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kSupportF11AndF12KeyShortcuts);
-
-COMPONENT_EXPORT(UI_BASE_FEATURES) bool AreF11AndF12ShortcutsEnabled();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_OZONE)
 COMPONENT_EXPORT(UI_BASE_FEATURES)
@@ -217,12 +174,6 @@ COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsVariableRefreshRateAlwaysOn();
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kBubbleMetricsApi);
 
-#if BUILDFLAG(IS_WIN)
-// Use font settings for contrast and gamma as specified in system settings.
-// If not set, these values fall back to the pre-defined Skia defaults.
-COMPONENT_EXPORT(UI_BASE_FEATURES)
-BASE_DECLARE_FEATURE(kUseGammaContrastRegistrySettings);
-#endif  // BUILDFLAG(IS_WIN)
 
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 BASE_DECLARE_FEATURE(kBubbleFrameViewTitleIsHeading);

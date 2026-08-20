@@ -14,10 +14,6 @@
 #include "components/feedback/feedback_report.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/dbus/debug_daemon/debug_daemon_client.h"
-#include "content/public/browser/browser_thread.h"
-#endif
 
 namespace system_logs {
 
@@ -60,30 +56,6 @@ void CrashIdsSource::Fetch(SysLogsSourceCallback callback) {
   base::OnceClosure list_available_cb = base::BindOnce(
       &CrashIdsSource::OnUploadListAvailable, weak_ptr_factory_.GetWeakPtr());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Upload recent crashes so that they're shown in the report.
-  // Non-chromeOS systems upload crashes shortly after they happen. ChromeOS is
-  // unique in that it has a separate process (crash_sender) that uploads
-  // crashes periodically (by default every 5 minutes).
-  ash::DebugDaemonClient* debugd_client = ash::DebugDaemonClient::Get();
-  if (debugd_client) {
-    debugd_client->UploadCrashes(base::BindOnce(
-        [](base::OnceClosure load_crash_list_cb, bool success) {
-          if (!success) {
-            LOG(ERROR) << "crash_sender failed; proceeding anyway";
-          }
-          std::move(load_crash_list_cb).Run();
-        },
-        base::BindOnce(&UploadList::Load, crash_upload_list_,
-                       std::move(list_available_cb))));
-
-    // Don't call Load directly; instead let UploadCrashes invoke it via the
-    // callback.
-    return;
-  }
-  // Fall through to Load statement below.
-  LOG(ERROR) << "Failed to create debugd_client. debugd may be down?";
-#endif
 
   crash_upload_list_->Load(std::move(list_available_cb));
 }

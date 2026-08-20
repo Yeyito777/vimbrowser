@@ -71,20 +71,8 @@ const char kLexendCssClass[] = "Lexend";
 // LINT.ThenChange(//components/dom_distiller/core/css/distilledpage_common.css)
 
 std::string GetVersionedCss() {
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(dom_distiller::kReaderModeDistillInApp)) {
-    return ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
-        IDR_DISTILLER_NEW_CSS);
-  }
   return ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
       IDR_DISTILLER_CSS);
-#elif BUILDFLAG(IS_IOS)
-  return ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
-      IDR_DISTILLER_NEW_CSS);
-#else
-  return ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
-      IDR_DISTILLER_CSS);
-#endif
 }
 
 std::string GetPlatformSpecificCss() {
@@ -269,13 +257,9 @@ const std::string GetErrorPageJs() {
 }
 
 const std::string GetSetTitleJs(std::string title) {
-#if BUILDFLAG(IS_IOS)
-  base::Value suffix_value("");
-#else  // Desktop and Android.
   std::string suffix(
       l10n_util::GetStringUTF8(IDS_DOM_DISTILLER_VIEWER_TITLE_SUFFIX));
   base::Value suffix_value(" - " + suffix);
-#endif
   base::Value title_value(title);
   std::string suffix_js = base::WriteJson(suffix_value).value_or("");
   std::string title_js = base::WriteJson(title_value).value_or("");
@@ -337,25 +321,11 @@ const std::string GetLoadingImage() {
 
 static std::string GetMinPinchZoomScale() {
   float min_scale = kMinFontScaleAndroidCCT;
-#if BUILDFLAG(IS_ANDROID)
-  // Make the minimum pinch zoom value to be 1.0 for distillation in app to
-  // align with prefs UI.
-  if (base::FeatureList::IsEnabled(kReaderModeDistillInApp)) {
-    min_scale = kMinFontScaleAndroidInApp;
-  }
-#endif
   return base::NumberToString(min_scale);
 }
 
 static std::string GetMaxPinchZoomScale() {
   float max_scale = kMaxFontScaleAndroidCCT;
-#if BUILDFLAG(IS_ANDROID)
-  // Make the maximum pinch zoom value to be 2.5 for distillation in app to
-  // align with prefs UI.
-  if (base::FeatureList::IsEnabled(kReaderModeDistillInApp)) {
-    max_scale = kMaxFontScaleAndroidInApp;
-  }
-#endif
   return base::NumberToString(max_scale);
 }
 

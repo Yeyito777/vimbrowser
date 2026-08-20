@@ -35,26 +35,13 @@ source_set("test_support") {
     "//components/policy/core/common",
   ]
 
-  if (!is_chromeos) {
-    public += [ "browser/management_context_mixin_browser.h" ]
-    sources += [ "browser/management_context_mixin_browser.cc" ]
+  public += [ "browser/management_context_mixin_browser.h" ]
+  sources += [ "browser/management_context_mixin_browser.cc" ]
 
-    deps += [
-      "//chrome/browser:browser_process",
-      "//chrome/test:test_support",
-      "//components/enterprise",
-      "//components/enterprise:test_support",
-    ]
-  }
-
-  if (is_chromeos) {
-    public += [ "ash/management_context_mixin_ash.h" ]
-    sources += [ "ash/management_context_mixin_ash.cc" ]
-
-    deps += [
-      "//chrome/browser/ash/login/test:test_support",
-      "//chrome/browser/ash/policy/core",
-      "//chrome/browser/ash/policy/core:test_support",
-    ]
-  }
+  deps += [
+    "//chrome/browser:browser_process",
+    "//chrome/test:test_support",
+    "//components/enterprise",
+    "//components/enterprise:test_support",
+  ]
 }

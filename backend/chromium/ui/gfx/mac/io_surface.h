@@ -80,21 +80,9 @@ COMPONENT_EXPORT(GFX)
 ScopedIOSurface CreateIOSurface(const Size& size,
                                 viz::SharedImageFormat format,
                                 bool should_clear = true,
-#if BUILDFLAG(IS_IOS)
-                                bool override_rgba_to_bgra = false
-#else
                                 bool override_rgba_to_bgra = true
-#endif
 );
 
-#if BUILDFLAG(IS_IOS)
-COMPONENT_EXPORT(GFX)
-void ExportIOSurfaceSharedMemoryRegion(
-    IOSurfaceRef io_surface,
-    base::UnsafeSharedMemoryRegion& shared_memory_region,
-    std::array<uint32_t, kMaxIOSurfacePlanes>& plane_strides,
-    std::array<uint32_t, kMaxIOSurfacePlanes>& plane_offsets);
-#endif
 
 // Return true if there exists a value for IOSurfaceColorSpace or
 // IOSurfaceICCProfile that will make CoreAnimation render using |color_space|.

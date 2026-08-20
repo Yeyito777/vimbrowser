@@ -221,13 +221,8 @@
 #include "components/rlz/rlz_tracker.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/printing/print_preview/print_view_manager_common.h"
-#endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/apps/link_capturing/enable_link_capturing_infobar_delegate.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/web_applications/extensions/launch.h"
@@ -239,11 +234,9 @@
 #include "components/lens/lens_features.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/toasts/api/toast_id.h"
 #include "chrome/browser/ui/toasts/toast_controller.h"
 #include "chrome/browser/ui/toasts/toast_features.h"
-#endif
 
 namespace {
 
@@ -1815,7 +1808,6 @@ void MoveTabsToReadLater(Browser* browser,
     return;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (toast_features::IsEnabled(toast_features::kReadingListToast)) {
     // Don't show the reading list toast if the side panel is visible.
     if (browser->GetFeatures().side_panel_ui()->IsSidePanelEntryShowing(
@@ -1831,7 +1823,6 @@ void MoveTabsToReadLater(Browser* browser,
       toast_controller->MaybeShowToast(std::move(params));
     }
   }
-#endif
 }
 
 bool MarkCurrentTabAsReadInReadLater(Browser* browser) {
@@ -2043,22 +2034,9 @@ void Print(BrowserWindowInterface* bwi) {
 
   // Launch ChromeOS print preview only if in a ChromeOS build and
   // `kPrintPreviewCrosPrimary` enabled. Otherwise use browser print preview.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(::features::kPrintPreviewCrosPrimary)) {
-    chromeos::printing::StartPrint(
-        web_contents,
-        /*print_renderer=*/mojo::NullAssociatedRemote(),
-        bwi->GetProfile()->GetPrefs()->GetBoolean(prefs::kPrintPreviewDisabled),
-        /*has_selection=*/false);
-    return;
-  }
-#endif
 
   printing::StartPrint(
       web_contents,
-#if BUILDFLAG(IS_CHROMEOS)
-      /*print_renderer=*/mojo::NullAssociatedRemote(),
-#endif
       bwi->GetProfile()->GetPrefs()->GetBoolean(prefs::kPrintPreviewDisabled),
       /*has_selection=*/false);
 #endif  // BUILDFLAG(ENABLE_PRINTING)
@@ -2251,22 +2229,14 @@ void ToggleDevToolsWindow(BrowserWindowInterface* bwi,
 }
 
 bool CanOpenTaskManager() {
-#if !BUILDFLAG(IS_ANDROID)
   return true;
-#else
-  return false;
-#endif
 }
 
 void OpenTaskManager(BrowserWindowInterface* bwi,
                      task_manager::StartAction start_action) {
-#if !BUILDFLAG(IS_ANDROID)
   base::RecordAction(UserMetricsAction("TaskManager"));
   chrome::ShowTaskManager(bwi ? bwi->GetBrowserForMigrationOnly() : nullptr,
                           start_action);
-#else
-  NOTREACHED();
-#endif
 }
 
 void OpenFeedbackDialog(BrowserWindowInterface* bwi,
@@ -2435,7 +2405,6 @@ void CopyURL(BrowserWindowInterface* bwi, content::WebContents* web_contents) {
   ui::ScopedClipboardWriter scw(ui::ClipboardBuffer::kCopyPaste);
   scw.WriteText(base::UTF8ToUTF16(web_contents->GetVisibleURL().spec()));
 
-#if !BUILDFLAG(IS_ANDROID)
   if (toast_features::IsEnabled(toast_features::kLinkCopiedToast)) {
     ToastController* const toast_controller =
         bwi->GetFeatures().toast_controller();
@@ -2443,7 +2412,6 @@ void CopyURL(BrowserWindowInterface* bwi, content::WebContents* web_contents) {
       toast_controller->MaybeShowToast(ToastParams(ToastId::kLinkCopied));
     }
   }
-#endif
 }
 
 bool CanCopyUrl(BrowserWindowInterface* bwi) {
@@ -2538,11 +2506,6 @@ void PromptToNameWindow(Browser* browser) {
   chrome::ShowWindowNamePrompt(browser);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ToggleMultitaskMenu(Browser* browser) {
-  browser->window()->ToggleMultitaskMenu();
-}
-#endif
 
 #if !defined(TOOLKIT_VIEWS)
 std::optional<int> GetKeyboardFocusedTabIndex(const Browser* browser) {

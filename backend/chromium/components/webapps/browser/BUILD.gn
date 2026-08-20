@@ -170,8 +170,4 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//third_party/blink/public/mojom:mojom_platform_headers",
   ]
-
-  if (is_ios) {
-    deps += [ "//components/test:webapps_test_bundle_data" ]
-  }
 }

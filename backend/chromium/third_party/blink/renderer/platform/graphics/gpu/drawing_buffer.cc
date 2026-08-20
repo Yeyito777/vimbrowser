@@ -154,11 +154,7 @@ class ScopedDrawBuffer {
 
 // Increase cache to avoid reallocation on fuchsia, see
 // https://crbug.com/1087941.
-#if BUILDFLAG(IS_FUCHSIA)
-const size_t DrawingBuffer::kDefaultColorBufferCacheLimit = 2;
-#else
 const size_t DrawingBuffer::kDefaultColorBufferCacheLimit = 1;
-#endif
 
 // Function defined in third_party/blink/public/web/blink.h.
 void ForceNextDrawingBufferCreationToFailForTest() {
@@ -2006,7 +2002,6 @@ scoped_refptr<DrawingBuffer::ColorBuffer> DrawingBuffer::CreateColorBuffer(
                features::kLowLatencyWebGLImageChromium));
     }
     if (should_use_chromium_image) {
-#if !BUILDFLAG(IS_ANDROID)
       // Android's SharedImage backing for ChromiumImage does not support BGRX.
 
       // TODO(b/286417069): BGRX has issues when Vulkan is used for raster and
@@ -2027,7 +2022,6 @@ scoped_refptr<DrawingBuffer::ColorBuffer> DrawingBuffer::CreateColorBuffer(
               viz::SinglePlaneFormat::kBGRX_8888, caps)) {
         color_buffer_format_ = viz::SinglePlaneFormat::kBGRX_8888;
       }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
       if (GraphicsContext3DUtils::IsScanoutSupportedForCanvasWithFormat(
               color_buffer_format_, caps)) {

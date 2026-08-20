@@ -51,10 +51,6 @@ ReportRequestQueueGenerator::ReportRequestQueueGenerator(
     ReportingDelegateFactory* delegate_factory)
     : maximum_report_size_(kMaximumReportSize),
       profile_report_generator_(delegate_factory) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // For Chrome OS, policy information needn't be uploaded to DM server.
-  profile_report_generator_.set_policies_enabled(false);
-#endif
 }
 
 ReportRequestQueueGenerator::~ReportRequestQueueGenerator() = default;

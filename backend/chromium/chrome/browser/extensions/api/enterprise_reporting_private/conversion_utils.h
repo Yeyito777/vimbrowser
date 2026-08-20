@@ -62,23 +62,6 @@ std::optional<ParsedSignalsError> ConvertSettingsResponse(
 
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-
-// Parses and converts the Antivirus signal values from `aggregation_response`
-// into `arg_list`. If any error occurred during signal collection, it will be
-// returned and `arg_list` will remain unchanged.
-std::optional<ParsedSignalsError> ConvertAvProductsResponse(
-    const device_signals::SignalsAggregationResponse& aggregation_response,
-    std::vector<api::enterprise_reporting_private::AntiVirusSignal>* arg_list);
-
-// Parses and converts the Hotfix signal values from `aggregation_response` into
-// `arg_list`. If any error occurred during signal collection,  it will be
-// returned and `arg_list` will remain unchanged.
-std::optional<ParsedSignalsError> ConvertHotfixesResponse(
-    const device_signals::SignalsAggregationResponse& aggregation_response,
-    std::vector<api::enterprise_reporting_private::HotfixSignal>* arg_list);
-
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace extensions
 

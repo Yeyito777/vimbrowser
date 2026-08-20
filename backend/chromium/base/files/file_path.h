@@ -118,31 +118,16 @@
 // enabled and disabled independently, to aid testing.  These #defines are
 // here so that the same setting can be used in both the implementation and
 // in the unit test.
-#if BUILDFLAG(IS_WIN)
-#define FILE_PATH_USES_DRIVE_LETTERS
-#define FILE_PATH_USES_WIN_SEPARATORS
-#endif  // BUILDFLAG(IS_WIN)
 
 // To print path names portably use PRFilePath (based on PRIuS and friends from
 // C99 and format_macros.h) like this:
 // base::StringPrintf("Path is %" PRFilePath ".\n", path.value().c_str());
-#if BUILDFLAG(IS_WIN)
-#define PRFilePath "ls"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #define PRFilePath "s"
 #endif  // BUILDFLAG(IS_WIN)
 
 // Macros for string literal initialization of FilePath::CharType[].
-#if BUILDFLAG(IS_WIN)
-
-// The `FILE_PATH_LITERAL_INTERNAL` indirection allows `FILE_PATH_LITERAL` to
-// work correctly with macro parameters, for example
-// `FILE_PATH_LITERAL(TEST_FILE)` where `TEST_FILE` is a macro #defined as
-// "TestFile".
-#define FILE_PATH_LITERAL_INTERNAL(x) L##x
-#define FILE_PATH_LITERAL(x) FILE_PATH_LITERAL_INTERNAL(x)
-
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #define FILE_PATH_LITERAL(x) x
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -160,11 +145,7 @@ class PickleIterator;
 // pathnames on different platforms.
 class BASE_EXPORT FilePath {
  public:
-#if BUILDFLAG(IS_WIN)
-  // On Windows, for Unicode-aware applications, native pathnames are wchar_t
-  // arrays encoded in UTF-16.
-  using StringType = std::wstring;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // On most platforms, native pathnames are char arrays, and the encoding
   // may or may not be specified.  On Mac OS X, native pathnames are encoded
   // in UTF-8.
@@ -513,22 +494,6 @@ class BASE_EXPORT FilePath {
                                    StringViewType string2);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // On android, file selection dialog can return a file with content uri
-  // scheme(starting with content://). Content uri needs to be opened with
-  // ContentResolver to guarantee that the app has appropriate permissions
-  // to access it.
-  // Returns true if the path is a content uri, or false otherwise.
-  bool IsContentUri() const;
-
-  // Checks whether this path looks like a virtual document path. It is a quick
-  // check by a string matching, meaning that returning true does not guarantee
-  // that resolving it to a content URI will succeed. A virtual document path is
-  // a //base abstraction to transparently represent files and directories
-  // managed by Android's Storage Access Framework (SAF). See
-  // //base/android/virtual_document_path.h for details.
-  bool IsVirtualDocumentPath() const;
-#endif
 
   // NOTE: When adding a new public method, consider adding it to
   // file_path_fuzzer.cc as well.

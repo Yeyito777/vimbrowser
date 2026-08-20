@@ -44,13 +44,6 @@ build_webui("build") {
     "util.ts",
   ]
 
-  if (is_ios) {
-    ts_files += [
-      "ios/mojo_api.js",
-      "ios/web_ui.js",
-    ]
-  }
-
   if (is_chromeos || is_ios) {
     # Used by ChromeOS UIs and ios inspect and omaha UIs
     ts_files += [ "util_deprecated.js" ]

@@ -318,23 +318,3 @@ if (use_linux_video_acceleration) {
     data = [ "//media/test/data/" ]
   }
 }
-
-if (is_chromeos) {
-  static_library("local_gpu_memory_buffer_manager") {
-    testonly = true
-    sources = [
-      "test_gbm_buffer_manager.cc",
-      "test_gbm_buffer_manager.h",
-    ]
-    deps = [
-      "//base",
-      "//build/config/linux/libdrm",
-      "//gpu/command_buffer/client",
-      "//gpu/ipc/common:surface_handle_type",
-      "//third_party/minigbm",
-      "//ui/gfx:memory_buffer",
-      "//ui/gfx/geometry",
-      "//ui/gfx/linux:gbm",
-    ]
-  }
-}

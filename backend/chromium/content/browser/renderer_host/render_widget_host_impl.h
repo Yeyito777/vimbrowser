@@ -77,9 +77,6 @@
 #include "ui/latency/latency_info.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/public/browser/android/child_process_importance.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "services/device/public/mojom/wake_lock.mojom.h"
@@ -489,17 +486,6 @@ class CONTENT_EXPORT RenderWidgetHostImpl
       blink::mojom::RecordContentToVisibleTimeRequestPtr visible_time_request);
   void CancelSuccessfulPresentationTimeRequest();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Set the importance of widget. The importance is passed onto
-  // RenderProcessHost which aggregates importance of all of its widgets.
-  void SetImportance(ChildProcessImportance importance);
-  ChildProcessImportance importance() const { return importance_; }
-
-  void AddImeInputEventObserver(
-      RenderWidgetHost::InputEventObserver* observer) override;
-  void RemoveImeInputEventObserver(
-      RenderWidgetHost::InputEventObserver* observer) override;
-#endif
 
   // Called to notify the RenderWidget that its associated native window
   // got/lost focused.
@@ -837,9 +823,6 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   void OnStartStylusWriting() override;
   void OnUnconfirmedTapConvertedToTap() override;
   void UpdateElementFocusForStylusWriting(
-#if BUILDFLAG(IS_WIN)
-      const gfx::Rect& focus_widget_rect_in_dips
-#endif  // BUILDFLAG(IS_WIN)
       ) override;
   bool IsAutoscrollInProgress() override;
   void SetMouseCapture(bool capture) override;
@@ -1362,10 +1345,6 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   // then keep track of this value to handle passing focus to other frames.
   bool has_lost_focus_ = false;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Tracks the current importance of widget.
-  ChildProcessImportance importance_ = ChildProcessImportance::NORMAL;
-#endif
 
   // True when waiting for visual_properties_ack.
   bool visual_properties_ack_pending_ = false;
@@ -1430,12 +1409,6 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   base::ObserverList<RenderWidgetHost::InputEventObserver>::Unchecked
       input_event_observers_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Ime input event callbacks. This is separated from input_event_observers_,
-  // because not all text events are triggered by input events on Android.
-  base::ObserverList<RenderWidgetHost::InputEventObserver>::Unchecked
-      ime_input_event_observers_;
-#endif
 
   // The observers watching for tracked element changes.
   base::ObserverList<TrackedElementObserver> tracked_element_observers_;

@@ -30,9 +30,6 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/ios/ios_util.h"
-#endif
 
 // This file declares unittest templates that can be used to test common
 // behavior of any CookieStore implementation.
@@ -856,7 +853,6 @@ TYPED_TEST_P(CookieStoreTest, SecureCookieLocalhost) {
 // behavior of most UAs in some cases, which we try to replicate. See
 // https://crbug.com/638389 for more information.
 TYPED_TEST_P(CookieStoreTest, EmptyKeyTest) {
-#if !BUILDFLAG(IS_IOS)
   CookieStore* cs = this->GetCookieStore();
 
   GURL url1("http://foo1.bar.com");
@@ -888,7 +884,6 @@ TYPED_TEST_P(CookieStoreTest, EmptyKeyTest) {
   EXPECT_TRUE(this->SetCookie(cs, url6, "foo"));
   EXPECT_FALSE(this->SetCookie(cs, url6, " "));
   EXPECT_EQ("foo", this->GetCookies(cs, url6));
-#endif
 }
 
 TYPED_TEST_P(CookieStoreTest, DomainTest) {
@@ -1111,7 +1106,6 @@ TYPED_TEST_P(CookieStoreTest, TestIpAddressNoDomainCookies) {
   EXPECT_TRUE(this->SetCookie(cs, url_ip, "b=2; domain=.1.2.3.4"));
   this->MatchCookieLines("b=2", this->GetCookies(cs, url_ip));
 
-#if !BUILDFLAG(IS_IOS)
   // Test a couple of IPv6 addresses
   GURL url_ip6("http://[2606:2800:220:1:248:1893:25c8:1946]");
   EXPECT_FALSE(this->SetCookie(
@@ -1120,7 +1114,6 @@ TYPED_TEST_P(CookieStoreTest, TestIpAddressNoDomainCookies) {
   EXPECT_TRUE(this->SetCookie(
       cs, url_ip6, "d=1; domain=[2606:2800:220:1:248:1893:25c8:1946]"));
   this->MatchCookieLines("d=1", this->GetCookies(cs, url_ip6));
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 // Test a TLD setting cookies on itself.

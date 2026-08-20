@@ -73,9 +73,6 @@ class TriggeredProfileResetter : public KeyedService {
   virtual std::u16string GetResetToolName();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  raw_ptr<Profile> profile_;
-#endif  // BUILDFLAG(IS_WIN)
 
   bool has_reset_trigger_ = false;
   bool activate_called_ = false;

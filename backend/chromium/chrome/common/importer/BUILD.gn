@@ -96,16 +96,6 @@ source_set("importer") {
       "safari_importer_utils.h",
       "safari_importer_utils.mm",
     ]
-  } else if (is_win) {
-    sources += [
-      "edge_importer_utils_win.cc",
-      "edge_importer_utils_win.h",
-      "firefox_importer_utils_win.cc",
-      "ie_importer_utils_win.cc",
-      "ie_importer_utils_win.h",
-      "importer_test_registry_overrider_win.cc",
-      "importer_test_registry_overrider_win.h",
-    ]
   }
   deps = [
     "//base",

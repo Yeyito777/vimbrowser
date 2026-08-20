@@ -93,9 +93,6 @@ class WebUIBrowserExclusiveAccessContext;
 class WebUIBrowserSidePanelUI;
 class ZoomBubbleCoordinator;
 
-#if BUILDFLAG(IS_WIN)
-class WindowsTaskbarIconUpdater;
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 namespace pdf::infobar {
@@ -113,15 +110,8 @@ class SessionRestoreInfobarController;
 }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash::boca {
-class OnTaskLockedController;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_CHROMEOS)
 class DownloadToolbarUIController;
-#endif
 
 #if defined(USE_AURA)
 class OverscrollPrefManager;
@@ -365,11 +355,9 @@ class BrowserWindowFeatures {
     return extension_keybinding_registry_.get();
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   DownloadToolbarUIController* download_toolbar_ui_controller() {
     return download_toolbar_ui_controller_.get();
   }
-#endif
 
   tab_groups::MostRecentSharedTabUpdateStore*
   most_recent_shared_tab_update_store() {
@@ -635,9 +623,7 @@ class BrowserWindowFeatures {
 
   std::unique_ptr<media_router::CastBrowserController> cast_browser_controller_;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<DownloadToolbarUIController> download_toolbar_ui_controller_;
-#endif
 
   std::unique_ptr<ZoomBubbleCoordinator> zoom_bubble_coordinator_;
 
@@ -790,9 +776,6 @@ class BrowserWindowFeatures {
 
   std::unique_ptr<ContentsBorderController> contents_border_controller_;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<WindowsTaskbarIconUpdater> windows_taskbar_icon_updater_;
-#endif
 
   std::unique_ptr<BrowserUserEducationInterface> user_education_;
 
@@ -813,9 +796,6 @@ class BrowserWindowFeatures {
   std::unique_ptr<skills::SkillsUiWindowController>
       skills_ui_window_controller_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ash::boca::OnTaskLockedController> on_task_locked_controller_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::unique_ptr<ContextHighlightWindowFeature>
       context_highlight_window_feature_;

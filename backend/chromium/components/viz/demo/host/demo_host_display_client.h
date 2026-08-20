@@ -20,9 +20,6 @@ class DemoHostDisplayClient : public viz::HostDisplayClient {
 
   ~DemoHostDisplayClient() override = default;
 
-#if BUILDFLAG(IS_WIN)
-  void AddChildWindowToBrowser(gpu::SurfaceHandle child_window) override;
-#endif
 };
 
 }  // namespace demo

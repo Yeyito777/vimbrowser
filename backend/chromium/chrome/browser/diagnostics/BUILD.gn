@@ -42,14 +42,6 @@ source_set("impl") {
     "//sql",
     "//ui/base",
   ]
-
-  if (is_win) {
-    deps += [ "//chrome/installer/util:with_no_strings" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 }
 
 source_set("unit_tests") {

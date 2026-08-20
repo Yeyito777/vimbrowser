@@ -34,12 +34,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <sys/vfs.h>
-#define statvfs statfs  // Android uses a statvfs-like statfs struct and call.
-#else
 #include <sys/statvfs.h>
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include <linux/magic.h>

@@ -1063,9 +1063,6 @@ WebApp::ClientData::ClientData(const ClientData& client_data) = default;
 
 base::Value WebApp::ClientData::AsDebugValue() const {
   base::DictValue root;
-#if BUILDFLAG(IS_CHROMEOS)
-  root.Set("system_web_app_data", OptionalAsDebugValue(system_web_app_data));
-#endif
   return base::Value(std::move(root));
 }
 
@@ -1173,9 +1170,6 @@ bool WebApp::operator==(const WebApp& other) const {
         app.sync_proto_,
         app.manifest_url_,
         app.manifest_id_,
-#if BUILDFLAG(IS_CHROMEOS)
-        app.client_data_.system_web_app_data,
-#endif
         app.file_handler_approval_state_,
         app.window_controls_overlay_enabled_,
         app.launch_handler_,

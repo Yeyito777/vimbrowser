@@ -56,7 +56,6 @@ void ToolSupport::UsageHint(const base::FilePath& me, const char* hint) {
           me.value().c_str());
 }
 
-#if BUILDFLAG(IS_POSIX)
 // static
 void ToolSupport::Version(const std::string& me) {
   Version(base::FilePath(me));
@@ -71,43 +70,18 @@ void ToolSupport::UsageTail(const std::string& me) {
 void ToolSupport::UsageHint(const std::string& me, const char* hint) {
   UsageHint(base::FilePath(me), hint);
 }
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_WIN)
-
-// static
-int ToolSupport::Wmain(int argc, wchar_t* argv[], int (*entry)(int, char* [])) {
-  auto argv_as_utf8 = base::HeapArray<char*>::Uninit(argc + 1);
-  std::vector<std::string> storage;
-  storage.reserve(argc);
-  for (int i = 0; i < argc; ++i) {
-    storage.push_back(base::WideToUTF8(argv[i]));
-    argv_as_utf8[i] = &storage[i][0];
-  }
-  argv_as_utf8[argc] = nullptr;
-  return entry(argc, argv_as_utf8.data());
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // static
 base::FilePath::StringType ToolSupport::CommandLineArgumentToFilePathStringType(
     std::string_view path) {
-#if BUILDFLAG(IS_POSIX)
   return std::string(path.data(), path.size());
-#elif BUILDFLAG(IS_WIN)
-  return base::UTF8ToWide(path);
-#endif  // BUILDFLAG(IS_POSIX)
 }
 
 // static
 std::string ToolSupport::FilePathToCommandLineArgument(
     const base::FilePath& file_path) {
-#if BUILDFLAG(IS_POSIX)
   return file_path.value();
-#elif BUILDFLAG(IS_WIN)
-  return base::WideToUTF8(file_path.value());
-#endif  // BUILDFLAG(IS_POSIX)
 }
 
 }  // namespace crashpad

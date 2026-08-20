@@ -153,30 +153,6 @@
 #include "chrome/browser/ui/webui/settings/languages_handler.h"
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/eche_app_ui/eche_app_manager.h"
-#include "chrome/browser/ash/account_manager/account_apps_availability.h"
-#include "chrome/browser/ash/account_manager/account_apps_availability_factory.h"
-#include "chrome/browser/ash/account_manager/account_manager_util.h"
-#include "chrome/browser/ash/eche_app/eche_app_manager_factory.h"
-#include "chrome/browser/ash/multidevice_setup/multidevice_setup_client_factory.h"
-#include "chrome/browser/ash/phonehub/phone_hub_manager_factory.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome/browser/ui/webui/ash/settings/pages/multidevice/multidevice_handler.h"
-#include "chrome/browser/ui/webui/ash/settings/pages/people/account_manager_ui_handler.h"
-#include "chrome/common/chrome_switches.h"
-#include "chrome/grit/browser_resources.h"
-#include "chromeos/ash/components/account_manager/account_manager_factory.h"
-#include "chromeos/ash/components/login/auth/password_visibility_utils.h"
-#include "chromeos/ash/components/phonehub/phone_hub_manager.h"
-#include "chromeos/ash/experiences/arc/arc_util.h"
-#include "chromeos/constants/chromeos_features.h"
-#include "components/account_manager_core/chromeos/account_manager.h"
-#include "components/user_manager/user.h"
-#include "ui/base/ui_base_features.h"
-#else  // !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/search/background/ntp_custom_background_service_factory.h"
 #include "chrome/browser/signin/account_consistency_mode_manager.h"
 #include "chrome/browser/ui/webui/cr_components/theme_color_picker/theme_color_picker_handler.h"
@@ -188,7 +164,6 @@
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 #include "chrome/browser/ui/webui/settings/on_device_ai_settings_handler.h"
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/ui/webui/settings/mac_system_settings_handler.h"
@@ -229,9 +204,6 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
 
   AddSettingsPageUIHandler(std::make_unique<AppearanceHandler>(web_ui));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  AddSettingsPageUIHandler(std::make_unique<LanguagesHandler>(profile));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   html_source->AddBoolean("axTreeFixingEnabled", base::FeatureList::IsEnabled(
                                                      features::kAXTreeFixing));
 
@@ -246,9 +218,6 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
   AddSettingsPageUIHandler(std::make_unique<ImportDataHandler>());
   AddSettingsPageUIHandler(std::make_unique<HatsHandler>());
 
-#if BUILDFLAG(IS_WIN)
-  AddSettingsPageUIHandler(std::make_unique<LanguagesHandler>());
-#endif  // BUILDFLAG(IS_WIN)
 
   AddSettingsPageUIHandler(
       std::make_unique<MediaDevicesSelectionHandler>(profile));
@@ -279,16 +248,12 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
   AddSettingsPageUIHandler(std::make_unique<PasskeysHandler>());
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  InitBrowserSettingsWebUIHandlers();
-#else
   AddSettingsPageUIHandler(
       std::make_unique<CaptionsHandler>(profile->GetPrefs()));
   AddSettingsPageUIHandler(std::make_unique<DefaultBrowserHandler>());
   AddSettingsPageUIHandler(std::make_unique<ManageProfileHandler>(profile));
   AddSettingsPageUIHandler(std::make_unique<SystemHandler>());
 
-#endif
 
 #if BUILDFLAG(IS_MAC)
   AddSettingsPageUIHandler(std::make_unique<MacSystemSettingsHandler>());
@@ -329,17 +294,6 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
   html_source->AddBoolean("isEeaChoiceCountry",
                           regional_capabilties->IsInEeaCountry());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  html_source->AddBoolean(
-      "userCannotManuallyEnterPassword",
-      !ash::password_visibility::AccountHasUserFacingPassword(
-          g_browser_process->local_state(), ash::ProfileHelper::Get()
-                                                ->GetUserByProfile(profile)
-                                                ->GetAccountId()));
-
-  // This is the browser settings page.
-  html_source->AddBoolean("isOSSettings", false);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool show_privacy_guide =
       base::FeatureList::IsEnabled(features::kPrivacyGuideForceAvailable) ||
@@ -399,11 +353,7 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
           (base::FeatureList::IsEnabled(features::kGlicGeminiInstructions) &&
            !base::FeatureList::IsEnabled(features::kGlicPersonalContext)));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool download_bubble_controlled_by_pref = false;
-#else
   const bool download_bubble_controlled_by_pref = true;
-#endif
   html_source->AddBoolean("downloadBubblePartialViewControlledByPref",
                           download_bubble_controlled_by_pref);
 
@@ -529,14 +479,6 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
       "enableCapturedSurfaceControl",
       base::FeatureList::IsEnabled(blink::features::kCapturedSurfaceControl));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  html_source->AddBoolean(
-      "enableSmartCardReadersContentSetting",
-      base::FeatureList::IsEnabled(blink::features::kSmartCard) &&
-          content::AreIsolatedWebAppsEnabled(profile));
-  html_source->AddBoolean("enableWebPrintingContentSetting",
-                          content::AreIsolatedWebAppsEnabled(profile));
-#endif
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
   // System
@@ -676,51 +618,6 @@ SettingsUI::SettingsUI(content::WebUI* web_ui)
 
 SettingsUI::~SettingsUI() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SettingsUI::InitBrowserSettingsWebUIHandlers() {
-  Profile* profile = Profile::FromWebUI(web_ui());
-
-  // TODO(jamescook): Sort out how account management is split between Chrome OS
-  // and browser settings.
-  if (ash::IsAccountManagerAvailable(profile)) {
-    auto* factory =
-        g_browser_process->platform_part()->GetAccountManagerFactory();
-    auto* account_manager =
-        factory->GetAccountManager(profile->GetPath().value());
-    DCHECK(account_manager);
-    auto* account_manager_facade =
-        ash::AccountManagerFactory::Get()->GetAccountManagerFacade(
-            profile->GetPath().value());
-    DCHECK(account_manager_facade);
-
-    web_ui()->AddMessageHandler(
-        std::make_unique<ash::settings::AccountManagerUIHandler>(
-            account_manager, account_manager_facade,
-            IdentityManagerFactory::GetForProfile(profile),
-            ash::AccountAppsAvailabilityFactory::GetForProfile(profile)));
-  }
-
-  if (!profile->IsGuestSession()) {
-    ash::phonehub::PhoneHubManager* phone_hub_manager =
-        ash::phonehub::PhoneHubManagerFactory::GetForProfile(profile);
-    ash::eche_app::EcheAppManager* eche_app_manager =
-        ash::eche_app::EcheAppManagerFactory::GetForProfile(profile);
-
-    web_ui()->AddMessageHandler(std::make_unique<
-                                ash::settings::MultideviceHandler>(
-        profile->GetPrefs(),
-        ash::multidevice_setup::MultiDeviceSetupClientFactory::GetForProfile(
-            profile),
-        phone_hub_manager
-            ? phone_hub_manager->GetMultideviceFeatureAccessManager()
-            : nullptr,
-        eche_app_manager ? eche_app_manager->GetAppsAccessManager() : nullptr,
-        phone_hub_manager ? phone_hub_manager->GetCameraRollManager() : nullptr,
-        phone_hub_manager ? phone_hub_manager->GetBrowserTabsModelProvider()
-                          : nullptr));
-  }
-}
-#else   // BUILDFLAG(IS_CHROMEOS)
 void SettingsUI::BindInterface(
     mojo::PendingReceiver<
         theme_color_picker::mojom::ThemeColorPickerHandlerFactory>
@@ -731,7 +628,6 @@ void SettingsUI::BindInterface(
   theme_color_picker_handler_factory_receiver_.Bind(
       std::move(pending_receiver));
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 void SettingsUI::BindInterface(
@@ -773,7 +669,6 @@ void SettingsUI::TryShowHatsSurveyWithTimeout() {
   }
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void SettingsUI::CreateThemeColorPickerHandler(
     mojo::PendingReceiver<theme_color_picker::mojom::ThemeColorPickerHandler>
         handler,
@@ -785,7 +680,6 @@ void SettingsUI::CreateThemeColorPickerHandler(
           Profile::FromWebUI(web_ui())),
       web_ui()->GetWebContents());
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 void SettingsUI::CreateBatchUploadPromoHandler(

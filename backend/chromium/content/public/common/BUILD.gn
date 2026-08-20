@@ -234,10 +234,6 @@ source_set("common_sources") {
     "widget_type.h",
   ]
 
-  if (is_win) {
-    sources += [ "font_cache_dispatcher_win.h" ]
-  }
-
   configs += [
     "//build/config:precompiled_headers",
     "//content:content_implementation",
@@ -299,14 +295,6 @@ source_set("common_sources") {
     deps += [ "//ui/aura" ]
   }
 
-  if (is_win) {
-    deps += [ "//sandbox/win:common" ]
-  }
-
-  if (is_chromeos) {
-    public_deps += [ "//media/capture/video/chromeos/public" ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "zygote/sandbox_support_linux.h",
@@ -355,10 +343,6 @@ mojom("interfaces") {
     "webplugininfo.mojom",
     "window_container_type.mojom",
   ]
-
-  if (is_win) {
-    sources += [ "font_cache_win.mojom" ]
-  }
 
   deps = [
     "//mojo/public/mojom/base",

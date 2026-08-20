@@ -19,9 +19,7 @@
 #include "content/public/browser/web_contents.h"
 #include "url/origin.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "content/browser/webauth/authenticator_environment.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace content {
 
@@ -60,7 +58,6 @@ bool WebAuthenticationDelegate::ShouldPermitIndividualAttestation(
 
 bool WebAuthenticationDelegate::SupportsResidentKeys(
     RenderFrameHost* render_frame_host) {
-#if !BUILDFLAG(IS_ANDROID)
   // The testing API supports resident keys, but for real requests //content
   // doesn't by default.
   FrameTreeNode* frame_tree_node =
@@ -69,7 +66,6 @@ bool WebAuthenticationDelegate::SupportsResidentKeys(
           frame_tree_node)) {
     return true;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   return false;
 }
 
@@ -81,7 +77,6 @@ void WebAuthenticationDelegate::
     IsUserVerifyingPlatformAuthenticatorAvailableOverride(
         RenderFrameHost* render_frame_host,
         base::OnceCallback<void(std::optional<bool>)> callback) {
-#if !BUILDFLAG(IS_ANDROID)
   FrameTreeNode* frame_tree_node =
       static_cast<RenderFrameHostImpl*>(render_frame_host)->frame_tree_node();
   if (AuthenticatorEnvironment::GetInstance()->IsVirtualAuthenticatorEnabledFor(
@@ -91,7 +86,6 @@ void WebAuthenticationDelegate::
             ->HasVirtualUserVerifyingPlatformAuthenticator(frame_tree_node));
     return;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   std::move(callback).Run(std::nullopt);
 }
 
@@ -136,12 +130,5 @@ WebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
 }
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-WebAuthenticationDelegate::ChromeOSGenerateRequestIdCallback
-WebAuthenticationDelegate::GetGenerateRequestIdCallback(
-    RenderFrameHost* render_frame_host) {
-  return base::NullCallback();
-}
-#endif
 
 }  // namespace content

@@ -25,11 +25,6 @@
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/settings/public/constants/routes.mojom.h"
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#include "chrome/common/webui_url_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -57,12 +52,6 @@ ChromeBluetoothChooserController::ChromeBluetoothChooserController(
 ChromeBluetoothChooserController::~ChromeBluetoothChooserController() = default;
 
 void ChromeBluetoothChooserController::OpenAdapterOffHelpUrl() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS can directly link to the OS setting to turn on the adapter.
-  chrome::SettingsWindowManager::GetInstance()->ShowOSSettings(
-      GetBrowser()->profile(),
-      chromeos::settings::mojom::kBluetoothDevicesSubpagePath);
-#else
   // For other operating systems, show a help center page in a tab.
   GetBrowser()->OpenURL(
       content::OpenURLParams(GURL(chrome::kBluetoothAdapterOffHelpURL),
@@ -71,7 +60,6 @@ void ChromeBluetoothChooserController::OpenAdapterOffHelpUrl() const {
                              ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
                              false /* is_renderer_initialized */),
       /*navigation_handle_callback=*/{});
-#endif
 }
 
 void ChromeBluetoothChooserController::OpenPermissionPreferences() const {

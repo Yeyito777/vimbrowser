@@ -8,9 +8,6 @@
 #include "base/synchronization/waitable_event.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace base {
 
@@ -26,9 +23,6 @@ class TestWaitableEvent : public WaitableEvent {
   TestWaitableEvent(ResetPolicy reset_policy = ResetPolicy::MANUAL,
                     InitialState initial_state = InitialState::NOT_SIGNALED);
 
-#if BUILDFLAG(IS_WIN)
-  explicit TestWaitableEvent(win::ScopedHandle event_handle);
-#endif
 };
 
 static_assert(sizeof(TestWaitableEvent) == sizeof(WaitableEvent),

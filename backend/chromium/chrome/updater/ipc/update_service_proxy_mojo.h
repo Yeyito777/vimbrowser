@@ -21,9 +21,6 @@
 #include "chrome/updater/updater_scope.h"
 #include "mojo/public/cpp/bindings/remote.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <wrl/client.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace base {
 class FilePath;
@@ -133,14 +130,8 @@ class UpdateServiceProxyMojoImpl : public UpdateServiceProxyImpl {
  private:
   ~UpdateServiceProxyMojoImpl() override;
 
-#if BUILDFLAG(IS_WIN)
-  void OnConnected(mojo::PendingReceiver<mojom::UpdateService> pending_receiver,
-                   std::optional<mojo::PlatformChannelEndpoint> endpoint,
-                   Microsoft::WRL::ComPtr<IUnknown> server);
-#else   // BUILDFLAG(IS_WIN)
   void OnConnected(mojo::PendingReceiver<mojom::UpdateService> pending_receiver,
                    std::optional<mojo::PlatformChannelEndpoint> endpoint);
-#endif  // BUILDFLAG(IS_WIN)
 
   void OnDisconnected();
   void EnsureConnecting();
@@ -153,9 +144,6 @@ class UpdateServiceProxyMojoImpl : public UpdateServiceProxyImpl {
   mojo::Remote<mojom::UpdateService> remote_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
-#if BUILDFLAG(IS_WIN)
-  Microsoft::WRL::ComPtr<IUnknown> server_;
-#endif  // BUILDFLAG(IS_WIN)
 
   base::WeakPtrFactory<UpdateServiceProxyMojoImpl> weak_factory_{this};
 };

@@ -16,9 +16,7 @@
 #include "printing/mojom/print.mojom-forward.h"
 #include "printing/native_drawing_context.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include <CoreGraphics/CoreGraphics.h>
 #endif
 
@@ -41,14 +39,7 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) MetafilePlayer {
   MetafilePlayer& operator=(const MetafilePlayer&) = delete;
   virtual ~MetafilePlayer();
 
-#if BUILDFLAG(IS_WIN)
-  // The slow version of Playback(). It enumerates all the records and play them
-  // back in the HDC. The trick is that it skip over the records known to have
-  // issue with some printers. See Emf::Record::SafePlayback implementation for
-  // details.
-  virtual bool SafePlayback(printing::NativeDrawingContext hdc) const = 0;
-
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   // Renders the given page into `rect` in the given context.
   // Pages use a 1-based index. `autorotate` determines whether the source PDF
   // should be autorotated to fit on the destination page. `fit_to_page`
@@ -83,17 +74,9 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) MetafilePlayer {
   // Identifies the type of encapsulated.
   virtual mojom::MetafileDataType GetDataType() const = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Similar to bool SaveTo(base::File* file) const, but write the data to the
-  // file descriptor directly. This is because Android doesn't allow file
-  // ownership exchange. This function should ONLY be called after the metafile
-  // is closed. Returns true if writing succeeded.
-  virtual bool SaveToFileDescriptor(int fd) const = 0;
-#else
   // Saves the underlying data to the given file. This function should ONLY be
   // called after the metafile is closed. Returns true if writing succeeded.
   virtual bool SaveTo(base::File* file) const = 0;
-#endif  // BUILDFLAG(IS_ANDROID)
 };
 
 // This class creates a graphics context that renders into a data stream
@@ -144,25 +127,11 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) Metafile : public MetafilePlayer {
 
   virtual printing::NativeDrawingContext context() const = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // "Plays" the EMF buffer in a HDC. It is the same effect as calling the
-  // original GDI function that were called when recording the EMF. `rect` is in
-  // "logical units" and is optional. If `rect` is NULL, the natural EMF bounds
-  // are used.
-  // Note: Windows has been known to have stack buffer overflow in its GDI
-  // functions, whether used directly or indirectly through precompiled EMF
-  // data. We have to accept the risk here. Since it is used only for printing,
-  // it requires user intervention.
-  virtual bool Playback(printing::NativeDrawingContext hdc,
-                        const RECT* rect) const = 0;
-#endif  // BUILDFLAG(IS_WIN)
 
   // MetfilePlayer implementation.
   bool GetDataAsVector(std::vector<char>* buffer) const override;
   base::MappedReadOnlyRegion GetDataAsSharedMemoryRegion() const override;
-#if !BUILDFLAG(IS_ANDROID)
   bool SaveTo(base::File* file) const override;
-#endif  // !BUILDFLAG(IS_ANDROID)
 };
 
 }  // namespace printing

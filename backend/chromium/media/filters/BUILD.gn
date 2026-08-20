@@ -205,25 +205,6 @@ source_set("filters") {
       "passthrough_dts_audio_decoder.h",
     ]
   }
-  if (is_win) {
-    sources += [
-      "win/media_foundation_audio_decoder.cc",
-      "win/media_foundation_audio_decoder.h",
-    ]
-    deps += [ "//media/base/win:media_foundation_util" ]
-    if (enable_platform_dts_audio) {
-      ldflags = [
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/concrt140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_1_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_2_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcamp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vccorlib140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcomp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcruntime140_app.dll",
-      ]
-    }
-  }
 
   if (is_win || use_vaapi) {
     sources += [
@@ -326,9 +307,6 @@ source_set("unit_tests") {
 
   # libvpx for running vpx test on chromecast doesn't support high bit depth.
   # This may cause some unit tests failure. See b/65382374 for further context.
-  if (is_castos) {
-    defines = [ "LIBVPX_NO_HIGH_BIT_DEPTH" ]
-  }
 
   if (media_use_ffmpeg) {
     sources += [

@@ -12,9 +12,6 @@
 #include "media/capture/video/video_capture_device.h"
 #include "media/capture/video/video_capture_device_info.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/base/win/dxgi_device_manager.h"
-#endif
 
 namespace media {
 // VideoCaptureErrorOrDevice stores the result of CreateDevice function. This is
@@ -75,18 +72,6 @@ class CAPTURE_EXPORT VideoCaptureDeviceFactory {
       std::vector<VideoCaptureDeviceInfo> devices_info)>;
   virtual void GetDevicesInfo(GetDevicesInfoCallback callback) = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Returns used DXGI device manager.
-  // This is used for testing and to allow sharing the same DXGI device manager
-  // with GpuMemoryBufferTracker in VideoCaptureBufferPool. Default
-  // implementation always returns nullptr. Should be overridden by actual
-  // factory implementation on Windows.
-  virtual scoped_refptr<DXGIDeviceManager> GetDxgiDeviceManager();
-
-  // Default implementation does nothing. Should be overridden by actual
-  // factory implementation on Windows.
-  virtual void OnGpuInfoUpdate(const CHROME_LUID& luid);
-#endif
 
  protected:
   base::ThreadChecker thread_checker_;

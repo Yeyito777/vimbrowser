@@ -128,9 +128,6 @@ class ControllerClient {
 
   virtual void OpenEnhancedProtectionSettings() = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual void OpenAdvancedProtectionSettings() = 0;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   virtual PrefService* GetPrefService() = 0;
 

@@ -23,9 +23,6 @@
 #endif
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/win_cursor.h"
-#endif
 
 namespace cursor_util {
 
@@ -102,12 +99,7 @@ scoped_refptr<ui::PlatformCursor> ToPlatformCursor(
   return platform_cursor;
 }
 
-#if BUILDFLAG(IS_WIN)
-using CursorType = ui::WinCursor;
-inline cef_cursor_handle_t GetCursorHandleImpl(CursorType* cursor) {
-  return cursor->hcursor();
-}
-#elif BUILDFLAG(SUPPORTS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 // See https://crbug.com/1029142 for background.
 using CursorType = ui::X11Cursor;
 inline cef_cursor_handle_t GetCursorHandleImpl(CursorType* cursor) {

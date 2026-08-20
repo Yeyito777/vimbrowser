@@ -129,16 +129,7 @@ bool Zygote::ProcessRequests() {
     bool r = base::UnixDomainSocket::SendMsg(
         kZygoteSocketPairFd, base::as_byte_span(kZygoteHelloMessage),
         std::vector<int>());
-#if BUILDFLAG(IS_CHROMEOS)
-    LOG_IF(WARNING, !r) << "Sending zygote magic failed";
-    // Exit normally on chromeos because session manager may send SIGTERM
-    // right after the process starts and it may fail to send zygote magic
-    // number to browser process.
-    if (!r)
-      _exit(RESULT_CODE_NORMAL_EXIT);
-#else
     PCHECK(r) << "Sending zygote magic failed";
-#endif
   }
 
   sigset_t ppoll_sigmask = orig_sigmask;
@@ -674,43 +665,8 @@ bool Zygote::HandleGetSandboxStatus(int fd, base::PickleIterator iter) {
 
 void Zygote::HandleReinitializeLoggingRequest(base::PickleIterator iter,
                                               std::vector<base::ScopedFD> fds) {
-#if BUILDFLAG(IS_CHROMEOS)
-  uint32_t logging_dest;
-  if (!iter.ReadUInt32(&logging_dest)) {
-    LOG(ERROR) << "Missing logging_dest parameter";
-    return;
-  }
-
-  if (fds.size() != 1) {
-    LOG(ERROR) << "Wrong number of log fds was passed";
-    return;
-  }
-  base::ScopedFD log_fd(std::move(fds.front()));
-
-  if (logging_dest & logging::LOG_TO_STDERR) {
-    int fd = dup2(log_fd.get(), STDERR_FILENO);
-    if (fd == base::kInvalidPlatformFile)
-      PLOG(ERROR) << "Unable to redirect stderr logging";
-  }
-
-  if (logging_dest & logging::LOG_TO_FILE) {
-    logging::LoggingSettings logging_settings;
-    logging_settings.logging_dest = logging_dest;
-    logging_settings.log_file = fdopen(log_fd.get(), "a");
-    if (!logging_settings.log_file) {
-      PLOG(ERROR) << "Failed to open new log file handle";
-      return;
-    }
-    if (!logging::InitLogging(logging_settings)) {
-      LOG(ERROR) << "Unable to reinitialize logging";
-      return;
-    }
-    std::ignore = log_fd.release();
-  }
-#else
   // This method should only be used in ChromeOS.
   NOTREACHED();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace content

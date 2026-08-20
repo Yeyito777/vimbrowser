@@ -98,13 +98,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
   bool HasImages() const { return !shared_images_.empty(); }
   void DestroyAllSharedImages(bool have_context);
 
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      const viz::SharedImageFormat& format,
-                                      gfx::BufferUsage usage,
-                                      bool register_with_image_pipe);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   bool RegisterBacking(std::unique_ptr<SharedImageBacking> backing,
                        std::optional<SharedImagePoolId> pool_id = std::nullopt);
@@ -129,10 +122,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
   bool CopyNativeBufferToSharedMemoryAsync(
       gfx::GpuMemoryBufferHandle buffer_handle,
       base::UnsafeSharedMemoryRegion shared_memory);
-#if BUILDFLAG(IS_WIN)
-  bool CopyToGpuMemoryBufferAsync(const Mailbox& mailbox,
-                                  base::OnceCallback<void(bool)> callback);
-#endif
 
   void SetGpuExtraInfo(const gfx::GpuExtraInfo& gpu_info);
   bool GetGpuMemoryBufferHandleInfo(const Mailbox& mailbox,
@@ -179,9 +168,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
                            gfx::GpuMemoryBufferType gmb_type,
                            const gfx::Size& size,
                            const std::string& debug_label);
-#if BUILDFLAG(IS_WIN)
-  bool IsD3DSharedImageSupported() const;
-#endif
 
   raw_ptr<SharedImageManager> shared_image_manager_;
   const scoped_refptr<SharedContextState> context_state_;

@@ -115,10 +115,6 @@ if (is_mac) {
   grit_predetermined_resource_ids_file =
       "//tools/gritsettings/startup_resources_mac.txt"
 }
-if (is_win) {
-  grit_predetermined_resource_ids_file =
-      "//tools/gritsettings/startup_resources_win.txt"
-}
 
 template("grit") {
   if (defined(invoker.output_dir)) {

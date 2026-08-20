@@ -282,26 +282,6 @@ PDFiumEngineExports::PDFiumEngineExports() = default;
 
 PDFiumEngineExports::~PDFiumEngineExports() = default;
 
-#if BUILDFLAG(IS_WIN)
-bool PDFiumEngineExports::RenderPDFPageToDC(
-    base::span<const uint8_t> pdf_buffer,
-    int page_index,
-    const RenderingSettings& settings,
-    HDC dc) {
-  ScopedUnsupportedFeature scoped_unsupported_feature(
-      ScopedUnsupportedFeature::kNoEngine);
-  ScopedFPDFDocument doc = LoadPdfData(pdf_buffer);
-  if (!doc) {
-    return false;
-  }
-  ScopedFPDFPage page(FPDF_LoadPage(doc.get(), page_index));
-  return RenderPageToDC(page.get(), settings, dc);
-}
-
-void PDFiumEngineExports::SetPDFUsePrintMode(int mode) {
-  FPDF_SetPrintMode(mode);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool PDFiumEngineExports::RenderPDFPageToBitmap(
     base::span<const uint8_t> pdf_buffer,

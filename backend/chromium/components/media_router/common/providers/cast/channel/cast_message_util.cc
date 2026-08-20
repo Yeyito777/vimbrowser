@@ -150,12 +150,8 @@ void FillCommonCastMessageFields(CastMessage* message,
 // request. The value is platform-dependent and is taken from the Platform enum
 // defined in third_party/metrics_proto/cast_logs.proto.
 int GetVirtualConnectPlatformValue() {
-#if BUILDFLAG(IS_WIN)
-  return 3;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return 4;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return 5;
 #elif BUILDFLAG(IS_LINUX)
   return 6;
 #else

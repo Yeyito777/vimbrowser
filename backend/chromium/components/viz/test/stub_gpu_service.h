@@ -43,21 +43,6 @@ class StubGpuService : public mojom::GpuService {
   void StartPeakMemoryMonitor(uint32_t sequence_num) override;
   void GetPeakMemoryUsage(uint32_t sequence_num,
                           GetPeakMemoryUsageCallback callback) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void CreateJpegDecodeAccelerator(
-      mojo::PendingReceiver<chromeos_camera::mojom::MjpegDecodeAccelerator>
-          jda_receiver) override;
-  void CreateJpegEncodeAccelerator(
-      mojo::PendingReceiver<chromeos_camera::mojom::JpegEncodeAccelerator>
-          jea_receiver) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_WIN)
-  void RegisterDCOMPSurfaceHandle(
-      mojo::PlatformHandle surface_handle,
-      RegisterDCOMPSurfaceHandleCallback callback) override;
-  void UnregisterDCOMPSurfaceHandle(
-      const base::UnguessableToken& token) override;
-#endif
   void CreateVideoEncodeAcceleratorProvider(
       mojo::PendingReceiver<media::mojom::VideoEncodeAcceleratorProvider>
           receiver) override;
@@ -68,9 +53,6 @@ class StubGpuService : public mojom::GpuService {
       bool is_incognito) override;
   void GetVideoMemoryUsageStats(
       GetVideoMemoryUsageStatsCallback callback) override;
-#if BUILDFLAG(IS_WIN)
-  void RequestDXGIInfo(RequestDXGIInfoCallback callback) override;
-#endif
   void LoadedBlob(const gpu::GpuDiskCacheHandle& handle,
                   const std::string& key,
                   const std::string& data) override;

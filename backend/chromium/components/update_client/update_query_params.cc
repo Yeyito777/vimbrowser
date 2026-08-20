@@ -12,9 +12,6 @@
 #include "components/update_client/update_query_params_delegate.h"
 #include "components/version_info/version_info.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace update_client {
 
@@ -27,16 +24,8 @@ const char kUnknown[] = "unknown";
 constexpr std::string_view kOs =
 #if BUILDFLAG(IS_APPLE)
     "mac";
-#elif BUILDFLAG(IS_WIN)
-    "win";
-#elif BUILDFLAG(IS_ANDROID)
-    "android";
-#elif BUILDFLAG(IS_CHROMEOS)
-    "cros";
 #elif BUILDFLAG(IS_LINUX)
     "linux";
-#elif BUILDFLAG(IS_FUCHSIA)
-    "fuchsia";
 #elif BUILDFLAG(IS_OPENBSD)
     "openbsd";
 #else

@@ -8,9 +8,6 @@ namespace ui {
 
 void ClipboardObserver::OnClipboardDataChanged() {}
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ClipboardObserver::OnClipboardDataRead() {}
-#endif
 
 ClipboardObserver::~ClipboardObserver() = default;
 

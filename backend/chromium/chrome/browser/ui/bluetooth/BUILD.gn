@@ -33,8 +33,4 @@ source_set("impl") {
     "//components/permissions:permissions_common",
     "//components/strings:components_strings_grit",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/webui/settings/public/constants:mojom" ]
-  }
 }

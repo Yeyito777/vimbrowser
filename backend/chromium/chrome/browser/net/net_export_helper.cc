@@ -21,11 +21,6 @@
 #include "extensions/common/extension_set.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/net/service_providers_win.h"
-#endif
 
 namespace chrome_browser_net {
 
@@ -62,42 +57,5 @@ base::ListValue GetExtensionInfo(Profile* profile) {
   return extension_list;
 }
 
-#if BUILDFLAG(IS_WIN)
-base::DictValue GetWindowsServiceProviders() {
-  base::DictValue service_providers;
-
-  WinsockLayeredServiceProviderList layered_providers;
-  GetWinsockLayeredServiceProviders(&layered_providers);
-  base::ListValue layered_provider_list;
-  for (const auto& provider : layered_providers) {
-    base::DictValue service_dict;
-    service_dict.Set("name", base::AsString16(provider.name));
-    service_dict.Set("version", provider.version);
-    service_dict.Set("chain_length", provider.chain_length);
-    service_dict.Set("socket_type", provider.socket_type);
-    service_dict.Set("socket_protocol", provider.socket_protocol);
-    service_dict.Set("path", base::WideToUTF8(provider.path));
-
-    layered_provider_list.Append(std::move(service_dict));
-  }
-  service_providers.Set("service_providers", std::move(layered_provider_list));
-
-  WinsockNamespaceProviderList namespace_providers;
-  GetWinsockNamespaceProviders(&namespace_providers);
-  base::ListValue namespace_list;
-  for (const auto& provider : namespace_providers) {
-    base::DictValue namespace_dict;
-    namespace_dict.Set("name", base::AsString16(provider.name));
-    namespace_dict.Set("active", provider.active);
-    namespace_dict.Set("version", provider.version);
-    namespace_dict.Set("type", provider.type);
-
-    namespace_list.Append(std::move(namespace_dict));
-  }
-  service_providers.Set("namespace_providers", std::move(namespace_list));
-
-  return service_providers;
-}
-#endif
 
 }  // namespace chrome_browser_net

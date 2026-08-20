@@ -41,9 +41,6 @@
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/cdm/common/android_cdm_registration.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_PLAYREADY)
 #include "base/file_version_info_win.h"
@@ -158,16 +155,7 @@ std::unique_ptr<content::CdmInfo> GetHintedWidevine() {
 void AddSoftwareSecureWidevine(std::vector<content::CdmInfo>* cdms) {
   DVLOG(1) << __func__;
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android Widevine is done by MediaDrm, and should be supported on all
-  // devices. Register Widevine without any capabilities so that it will be
-  // checked the first time some page attempts to play protected content.
-  cdms->emplace_back(
-      kWidevineKeySystem, Robustness::kSoftwareSecure, std::nullopt,
-      /*supports_sub_key_systems=*/false, kWidevineCdmDisplayName,
-      kWidevineCdmType, base::FilePath());
-
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   // The Widevine CDM on Linux/ChromeOS needs to be registered (and loaded)
   // before the zygote is locked down. The CDM can be found from the version
   // bundled with Chrome (if BUNDLE_WIDEVINE_CDM = true) and/or the version
@@ -248,16 +236,7 @@ void AddSoftwareSecureWidevine(std::vector<content::CdmInfo>* cdms) {
 void AddHardwareSecureWidevine(std::vector<content::CdmInfo>* cdms) {
   DVLOG(1) << __func__;
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android Widevine is done by MediaDrm, and should be supported on all
-  // devices. Register Widevine without any capabilities so that it will be
-  // checked the first time some page attempts to play protected content.
-  cdms->emplace_back(
-      kWidevineKeySystem, Robustness::kHardwareSecure, std::nullopt,
-      /*supports_sub_key_systems=*/false, kWidevineCdmDisplayName,
-      kWidevineCdmType, base::FilePath());
-
-#elif BUILDFLAG(USE_CHROMEOS_PROTECTED_MEDIA)
+#if BUILDFLAG(USE_CHROMEOS_PROTECTED_MEDIA)
   media::CdmCapability capability;
 
   // The following audio formats are supported for decrypt-only.
@@ -272,13 +251,7 @@ void AddHardwareSecureWidevine(std::vector<content::CdmInfo>* cdms) {
   capability.video_codecs.emplace(media::VideoCodec::kH264, kAllProfiles);
 #endif
 #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(media::kPlatformHEVCDecoderSupport)) {
-    capability.video_codecs.emplace(media::VideoCodec::kHEVC, kAllProfiles);
-  }
-#else
   capability.video_codecs.emplace(media::VideoCodec::kHEVC, kAllProfiles);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #endif
 #if BUILDFLAG(USE_CHROMEOS_PROTECTED_AV1)
   capability.video_codecs.emplace(media::VideoCodec::kAV1, kAllProfiles);
@@ -339,70 +312,6 @@ void AddExternalClearKey(std::vector<content::CdmInfo>* cdms) {
 }
 #endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
-#if BUILDFLAG(IS_WIN)
-#if BUILDFLAG(ENABLE_PLAYREADY)
-void AddPlayReady(std::vector<content::CdmInfo>* cdms) {
-  DVLOG(1) << __func__;
-  // TODO(crbug.com/423799624): Need to clean up this check logic when
-  // deprecating Widevine hardware secure support on Windows.
-  if (!base::FeatureList::IsEnabled(media::kHardwareSecureDecryption) ||
-      (base::win::GetVersion() < base::win::Version::WIN11) ||
-      !media::SupportMediaFoundationEncryptedPlayback()) {
-    DVLOG(1) << __func__ << ": Not adding PlayReady CdmInfo";
-    return;
-  }
-
-  std::unique_ptr<FileVersionInfoWin> playready_version_info =
-      FileVersionInfoWin::CreateFileVersionInfoWin(base::FilePath(
-          FILE_PATH_LITERAL("Windows.Media.Protection.PlayReady.dll")));
-  if (!playready_version_info) {
-    DVLOG(1) << __func__ << ": Failed to get PlayReady version info. "
-             << "Not adding PlayReady CdmInfo";
-    return;
-  }
-
-  DVLOG(1) << __func__ << ":"
-           << " CdmType=" << kPlayReadyCdmType.ToString()
-           << " Version=" << playready_version_info->GetFileVersion();
-
-  // Add PlayReady hardware secure CdmInfo - its capability will be
-  // filled by `CdmRegistryImpl::LazyInitializeHardwareSecureCapability()`.
-  // Path is empty since the CDM is not in a separate library.
-  cdms->emplace_back(kPlayReadyKeySystemRecommendationDefault,
-                     content::CdmInfo::Robustness::kHardwareSecure,
-                     /*capability=*/std::nullopt,
-                     /*supports_sub_key_systems=*/true,
-                     kPlayReadyCdmDisplayName, kPlayReadyCdmType,
-                     playready_version_info->GetFileVersion(),
-                     /*path=*/base::FilePath());
-}
-#endif  // BUILDFLAG(ENABLE_PLAYREADY)
-
-void AddMediaFoundationClearKey(std::vector<content::CdmInfo>* cdms) {
-  if (!base::FeatureList::IsEnabled(media::kExternalClearKeyForTesting)) {
-    return;
-  }
-
-  // Register MediaFoundation Clear Key CDM if specified in feature list.
-  base::FilePath clear_key_cdm_path = base::FilePath::FromASCII(
-      media::kMediaFoundationClearKeyCdmPathForTesting.Get());
-  if (clear_key_cdm_path.empty() || !base::PathExists(clear_key_cdm_path)) {
-    return;
-  }
-
-  // Supported codecs are hard-coded in ExternalClearKeyKeySystemInfo.
-  media::CdmCapability capability(
-      {}, {}, {media::EncryptionScheme::kCenc, media::EncryptionScheme::kCbcs},
-      {media::CdmSessionType::kTemporary}, base::Version("0.1.0.0"));
-
-  cdms->push_back(content::CdmInfo(
-      media::kMediaFoundationClearKeyKeySystem, Robustness::kHardwareSecure,
-      capability,
-      /*supports_sub_key_systems=*/false,
-      media::kMediaFoundationClearKeyCdmDisplayName,
-      media::kMediaFoundationClearKeyCdmType, clear_key_cdm_path));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -419,16 +328,7 @@ void RegisterCdmInfo(std::vector<content::CdmInfo>* cdms) {
   AddExternalClearKey(cdms);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#if BUILDFLAG(ENABLE_PLAYREADY)
-  AddPlayReady(cdms);
-#endif
-  AddMediaFoundationClearKey(cdms);
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  cdm::AddOtherAndroidCdms(cdms);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   DVLOG(3) << __func__ << " done with " << cdms->size() << " cdms";
 }

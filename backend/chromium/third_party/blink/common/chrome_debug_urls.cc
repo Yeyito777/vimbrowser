@@ -15,14 +15,7 @@
 #include "third_party/blink/common/rust_crash/src/lib.rs.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/debug/invalid_access_win.h"
-#include "base/process/kill.h"
-#elif BUILDFLAG(IS_POSIX)
 #include <signal.h>
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <zircon/syscalls.h>
-#endif
 
 
 namespace blink {
@@ -54,12 +47,6 @@ bool IsRendererDebugURL(const GURL& url) {
   }
 #endif  // defined(ADDRESS_SANITIZER)
 
-#if BUILDFLAG(IS_WIN)
-  if (url == kChromeUICfgViolationCrashURL)
-    return true;
-  if (url == kChromeUIHeapCorruptionCrashURL)
-    return true;
-#endif
 
 #if DCHECK_IS_ON()
   if (url == kChromeUICrashDcheckURL)
@@ -104,16 +91,6 @@ NOINLINE void MaybeTriggerAsanError(const GURL& url) {
     LOG(ERROR) << "Intentionally causing ASAN heap use-after-free"
                << " because user navigated to " << url.spec();
     base::debug::AsanHeapUseAfterFree();
-#if BUILDFLAG(IS_WIN)
-  } else if (url == kChromeUICrashCorruptHeapBlockURL) {
-    LOG(ERROR) << "Intentionally causing ASAN corrupt heap block"
-               << " because user navigated to " << url.spec();
-    base::debug::AsanCorruptHeapBlock();
-  } else if (url == kChromeUICrashCorruptHeapURL) {
-    LOG(ERROR) << "Intentionally causing ASAN corrupt heap"
-               << " because user navigated to " << url.spec();
-    base::debug::AsanCorruptHeap();
-#endif  // BUILDFLAG(IS_WIN)
   } else if (url == kChromeUICrashRustOverflowURL) {
     // Ensure that ASAN works even in Rust code.
     LOG(ERROR) << "Intentionally causing ASAN heap overflow in Rust"
@@ -151,16 +128,7 @@ void HandleChromeDebugURL(const GURL& url) {
                << url.spec();
     // Simulate termination such that the base::GetTerminationStatus() API will
     // return TERMINATION_STATUS_PROCESS_WAS_KILLED.
-#if BUILDFLAG(IS_WIN)
-    base::Process::TerminateCurrentProcessImmediately(
-        base::win::kProcessKilledExitCode);
-#elif BUILDFLAG(IS_POSIX)
     PCHECK(kill(base::Process::Current().Pid(), SIGTERM) == 0);
-#elif BUILDFLAG(IS_FUCHSIA)
-    zx_process_exit(ZX_TASK_RETCODE_SYSCALL_KILL);
-#else
-#error Unsupported platform
-#endif
   } else if (url == kChromeUIHangURL) {
     LOG(ERROR) << "Intentionally hanging ourselves with sleep infinite loop"
                << " because user navigated to " << url.spec();
@@ -182,19 +150,6 @@ void HandleChromeDebugURL(const GURL& url) {
     CHECK(false);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (url == kChromeUICfgViolationCrashURL) {
-    LOG(ERROR) << "Intentionally causing cfg crash because user navigated to "
-               << url.spec();
-    base::debug::win::TerminateWithControlFlowViolation();
-  }
-  if (url == kChromeUIHeapCorruptionCrashURL) {
-    LOG(ERROR)
-        << "Intentionally causing heap corruption because user navigated to "
-        << url.spec();
-    base::debug::win::TerminateWithHeapCorruption();
-  }
-#endif
 
 #if DCHECK_IS_ON()
   if (url == kChromeUICrashDcheckURL) {

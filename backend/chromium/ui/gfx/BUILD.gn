@@ -10,11 +10,6 @@ import("//gpu/vulkan/features.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 import("//testing/test.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 # Used for color generation at build time without importing all the gfx.
 component("color_utils") {
   sources = [
@@ -44,17 +39,6 @@ component("gfx_skia") {
     "//skia",
   ]
   defines = [ "GFX_SKIA_IMPLEMENTATION" ]
-}
-
-if (is_win) {
-  config("gfx_win_linker_flags") {
-    # This is in a separate config so the flags can be applied to dependents.
-    # ldflags in GN aren't automatically inherited.
-    ldflags = [
-      # Linking with OneCore.lib causes the following dlls to load.
-      "/DELAYLOAD:api-ms-win-core-handle-l1-1-0.dll",
-    ]
-  }
 }
 
 # Binds together the `gfx` component.
@@ -249,80 +233,6 @@ component("gfx") {
       "CoreText.framework",
     ]
   }
-  if (is_ios) {
-    sources += [
-      "image/image_ios.mm",
-      "image/image_skia_util_ios.h",
-      "image/image_skia_util_ios.mm",
-      "image/image_util_ios.mm",
-      "ios/NSString+CrStringDrawing.h",
-      "ios/NSString+CrStringDrawing.mm",
-      "platform_font_ios.h",
-      "platform_font_ios.mm",
-      "scoped_cg_context_save_gstate_mac.h",
-      "scoped_ui_graphics_push_context_ios.h",
-      "scoped_ui_graphics_push_context_ios.mm",
-      "text_utils_ios.mm",
-    ]
-    public_deps += [ "//ui/gfx/ios:uikit_util" ]
-
-    if (!use_blink) {
-      sources += [
-        "image/image_skia_rep_ios.cc",
-        "image/image_skia_rep_ios.h",
-      ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "font_fallback_win.cc",
-      "font_fallback_win.h",
-      "font_render_params_win.cc",
-      "font_util_win.cc",
-      "font_util_win.h",
-      "path_win.cc",
-      "path_win.h",
-      "system_fonts_win.cc",
-      "system_fonts_win.h",
-      "win/crash_id_helper.cc",
-      "win/crash_id_helper.h",
-      "win/d3d_shared_fence.cc",
-      "win/d3d_shared_fence.h",
-      "win/direct_write.cc",
-      "win/direct_write.h",
-      "win/gdi_util.cc",
-      "win/gdi_util.h",
-      "win/get_elevation_icon.cc",
-      "win/get_elevation_icon.h",
-      "win/hwnd_util.cc",
-      "win/hwnd_util.h",
-      "win/icon_util.cc",
-      "win/icon_util.h",
-      "win/msg_util.h",
-      "win/physical_size.cc",
-      "win/physical_size.h",
-      "win/rendering_window_manager.cc",
-      "win/rendering_window_manager.h",
-      "win/scoped_set_map_mode.h",
-      "win/singleton_hwnd.cc",
-      "win/singleton_hwnd.h",
-      "win/singleton_hwnd_hot_key_observer.cc",
-      "win/singleton_hwnd_hot_key_observer.h",
-      "win/text_analysis_source.cc",
-      "win/text_analysis_source.h",
-      "win/window_impl.cc",
-      "win/window_impl.h",
-    ]
-    libs = [
-      "setupapi.lib",
-      "dwmapi.lib",
-      "dwrite.lib",
-      "onecore.lib",
-    ]
-    all_dependent_configs = [ ":gfx_win_linker_flags" ]
-    public_deps += [ "//components/crash/core/common" ]
-  }
 
   if (use_blink) {
     sources += [
@@ -405,12 +315,6 @@ component("color_space") {
     "skia_color_space_util.cc",
     "skia_color_space_util.h",
   ]
-  if (is_win) {
-    sources += [
-      "color_space_win.cc",
-      "color_space_win.h",
-    ]
-  }
   deps = [
     "//components/viz/common/resources:shared_image_format",
     "//skia:skcms",
@@ -622,10 +526,6 @@ source_set("memory_buffer_sources") {
     ]
   }
 
-  if (is_win) {
-    public_deps += [ "//ipc:message_support" ]
-  }
-
   if (is_linux || is_chromeos || use_ozone) {
     sources += [
       "native_pixmap_handle.cc",
@@ -747,22 +647,6 @@ test("gfx_unittests") {
       "range/range_mac_unittest.mm",
     ]
   }
-  if (is_win) {
-    sources += [
-      "font_fallback_win_unittest.cc",
-      "win/get_elevation_icon_unittest.cc",
-      "win/hwnd_util_unittest.cc",
-    ]
-  }
-  if (is_ios) {
-    sources += [
-      "image/image_ios_unittest.mm",
-      "ios/uikit_util_unittest.mm",
-    ]
-    if (target_platform == "iphoneos") {
-      sources += [ "ios/NSString+CrStringDrawing_unittest.mm" ]
-    }
-  }
 
   include_dirs = [ "//third_party/skia/include/private" ]
 
@@ -835,10 +719,6 @@ test("gfx_unittests") {
     ]
   }
 
-  if (is_win) {
-    sources += [ "system_fonts_win_unittest.cc" ]
-  }
-
   if (is_linux || is_chromeos || is_fuchsia || is_win) {
     sources += [ "platform_font_skia_unittest.cc" ]
   }
@@ -871,44 +751,8 @@ test("gfx_unittests") {
     deps += [ "//ui/resources:ui_test_pak_bundle_data" ]
   }
 
-  if (is_ios) {
-    deps += [ "//ui/gfx:codec_tests_bundle_data" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "font_fallback_skia_unittest.cc" ]
-  }
-
   if (use_aura || toolkit_views) {
     sources += [ "nine_image_painter_unittest.cc" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "font_render_params_win_unittest.cc",
-      "font_util_win.cc",
-      "path_win_unittest.cc",
-      "win/crash_id_helper_unittest.cc",
-      "win/direct_write_unittest.cc",
-      "win/icon_util_unittest.cc",
-      "win/icon_util_unittests.rc",
-      "win/icon_util_unittests_resource.h",
-      "win/text_analysis_source_unittest.cc",
-    ]
-
-    ldflags = [
-      "/DELAYLOAD:d2d1.dll",
-      "/DELAYLOAD:d3d10_1.dll",
-    ]
-
-    libs = [
-      "d2d1.lib",
-      "d3d10_1.lib",
-      "dwmapi.lib",
-      "dwrite.lib",
-      "imm32.lib",
-      "oleacc.lib",
-    ]
   }
 
   if (use_blink) {
@@ -937,12 +781,6 @@ test("gfx_unittests") {
       "//components/viz/common/resources:shared_image_format",
       "//third_party/fontconfig",
     ]
-  }
-
-  if (is_fuchsia) {
-    deps += [ "//skia:test_fonts" ]
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/test_fonts.shard.test-cml" ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
@@ -978,15 +816,4 @@ fuzzer_test("render_text_api_fuzzer") {
   ]
 
   dict = "test/data/render_text/unicode_text_fuzzer.dict"
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("codec_tests_bundle_data") {
-    testonly = true
-    filelist_name = "test/data/codec/unit_tests_bundle_data.filelist"
-  }
-  bundle_data_from_filelist("compositor_tests_bundle_data") {
-    testonly = true
-    filelist_name = "test/data/compositor/unit_tests_bundle_data.filelist"
-  }
 }

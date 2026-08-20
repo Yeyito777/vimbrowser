@@ -29,10 +29,6 @@ namespace apps {
 
 class PackageId;
 
-#if BUILDFLAG(IS_CHROMEOS)
-struct PromiseApp;
-using PromiseAppPtr = std::unique_ptr<PromiseApp>;
-#endif
 
 // AppPublisher parent class (in the App Service sense) for all app publishers.
 // See components/services/app_service/README.md.
@@ -105,23 +101,6 @@ class AppPublisher : public Publisher {
   void UnblockApp(const std::string& app_id) override;
   void SetResizeLocked(const std::string& app_id, bool locked) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  int DefaultIconResourceId() const override;
-  void SetAppLocale(const std::string& app_id,
-                    const std::string& locale_tag) override;
-
-  // CompressedIconGetter override.
-  void GetCompressedIconData(const std::string& app_id,
-                             int32_t size_in_dip,
-                             ui::ResourceScaleFactor scale_factor,
-                             LoadIconCallback callback) override;
-
-  // Creates and returns a promise app object.
-  static PromiseAppPtr MakePromiseApp(const PackageId& package_id);
-
-  // Publishes a single promise app delta to the Promise App Registry Cache.
-  void PublishPromiseApp(PromiseAppPtr delta);
-#endif
 
  protected:
   // Publish one `app` to AppServiceProxy. Should be called whenever the app

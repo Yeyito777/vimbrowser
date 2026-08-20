@@ -31,10 +31,6 @@
 #include "content/public/browser/frame_rate_throttling.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chromeos/dbus/power/power_manager_client.h"
-#endif
 
 using performance_manager::user_tuning::prefs::kMemorySaverModeState;
 using performance_manager::user_tuning::prefs::MemorySaverModeState;

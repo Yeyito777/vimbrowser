@@ -28,10 +28,6 @@
 #include "media/gpu/buffer_validation.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/ozone/public/client_native_pixmap_factory_ozone.h"  // nogncheck
-#include "ui/ozone/public/ozone_platform.h"                      // nogncheck
-#endif
 
 namespace mojo {
 
@@ -125,32 +121,18 @@ media::mojom::VideoFrameDataPtr MakeVideoFrameData(
     shared_image = input->shared_image()->Export(
         /*with_buffer_handle=*/true);
     sync_token = input->acquire_sync_token();
-#if BUILDFLAG(IS_ANDROID)
-    return media::mojom::VideoFrameData::NewSharedImageData(
-        media::mojom::SharedImageVideoFrameData::New(
-            std::move(shared_image.value()), std::move(sync_token),
-            /*is_mappable=*/true, std::move(input->ycbcr_info())));
-#else
     return media::mojom::VideoFrameData::NewSharedImageData(
         media::mojom::SharedImageVideoFrameData::New(
             std::move(shared_image.value()), std::move(sync_token),
             /*is_mappable=*/true));
-#endif
   }
 
   if (input->HasSharedImage()) {
     gpu::ExportedSharedImage shared_image = input->shared_image()->Export();
-#if BUILDFLAG(IS_ANDROID)
-    return media::mojom::VideoFrameData::NewSharedImageData(
-        media::mojom::SharedImageVideoFrameData::New(
-            std::move(shared_image), input->acquire_sync_token(),
-            /*is_mappable=*/false, std::move(input->ycbcr_info())));
-#else
     return media::mojom::VideoFrameData::NewSharedImageData(
         media::mojom::SharedImageVideoFrameData::New(
             std::move(shared_image), input->acquire_sync_token(),
             /*is_mappable=*/false));
-#endif
   }
 
   if (input->storage_type() == media::VideoFrame::STORAGE_OPAQUE) {
@@ -293,33 +275,8 @@ bool StructTraits<media::mojom::VideoFrameDataView,
     auto mapped_region = mapping.GetMemoryAsSpan<uint8_t>();
 
     if (format == media::PIXEL_FORMAT_MJPEG) {
-#if BUILDFLAG(IS_CHROMEOS)
-      if (offsets[0] >= mapped_region.size()) {
-        DLOG(ERROR) << "Plane's offset is out of bounds for MJPEG. "
-                    << " offset: " << offsets[0]
-                    << " size: " << mapped_region.size();
-        return false;
-      }
-
-      const size_t plane_offset = base::strict_cast<size_t>(offsets[0]);
-      std::vector<media::ColorPlaneLayout> planes = {
-          media::ColorPlaneLayout(/*stride=*/strides[0],
-                                  /*offset=*/plane_offset,
-                                  /*size=*/mapping.size() - plane_offset)};
-
-      auto layout = media::VideoFrameLayout::CreateWithPlanes(
-          format, coded_size, std::move(planes));
-      if (!layout || !layout->FitsInContiguousBufferOfSize(mapping.size())) {
-        DLOG(ERROR) << "Invalid layout for MJPEG";
-        return false;
-      }
-
-      frame = media::VideoFrame::WrapExternalDataWithLayout(
-          *layout, visible_rect, natural_size, mapped_region, timestamp);
-#else
       DLOG(ERROR) << "PIXEL_FORMAT_MJPEG is only supported on ChromeOS";
       return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     } else {
       std::vector<media::ColorPlaneLayout> planes(num_planes);
       for (size_t i = 0; i < num_planes; i++) {
@@ -402,13 +359,6 @@ bool StructTraits<media::mojom::VideoFrameDataView,
           natural_size, timestamp);
     }
 
-#if BUILDFLAG(IS_ANDROID)
-    std::optional<gpu::VulkanYCbCrInfo> ycbcr_info;
-    if (!shared_image_data.ReadYcbcrData(&ycbcr_info)) {
-      return false;
-    }
-    frame->set_ycbcr_info(ycbcr_info);
-#endif
   } else if (data.is_opaque_data()) {
     DCHECK(metadata.tracking_token.has_value());
     frame = media::VideoFrame::WrapTrackingToken(

@@ -39,14 +39,7 @@
 #include "device/fido/mac/authenticator.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/authenticator.h"
-#include "device/fido/win/type_conversions.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/fido/cros/authenticator.h"
-#endif
 
 namespace device {
 
@@ -613,28 +606,6 @@ void GetAssertionRequestHandler::HandleResponse(
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (authenticator->GetType() == AuthenticatorType::kWinNative) {
-    state_ = State::kFinished;
-    CancelActiveAuthenticators(authenticator->GetId());
-    if (status != GetAssertionStatus::kSuccess) {
-      std::move(completion_callback_).Run(status, std::nullopt, authenticator);
-      return;
-    }
-    if (!ResponseValid(*authenticator, request, options_, responses)) {
-      FIDO_LOG(ERROR) << "Failing assertion request due to bad response from "
-                      << authenticator->GetDisplayName();
-      std::move(completion_callback_)
-          .Run(GetAssertionStatus::kAuthenticatorResponseInvalid, std::nullopt,
-               authenticator);
-      return;
-    }
-
-    std::move(completion_callback_)
-        .Run(status, std::move(responses), authenticator);
-    return;
-  }
-#endif
 
   // If we requested UV from an authenticator without uvToken support, UV
   // failed, and the authenticator supports PIN, fall back to that.

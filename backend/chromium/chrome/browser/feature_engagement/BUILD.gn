@@ -25,10 +25,6 @@ source_set("impl") {
 
   deps += [ "//chrome/browser/user_education" ]
 
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/growth:config_provider" ]
-  }
-
   public_deps = [
     "//chrome/browser/profiles",
     "//components/feature_engagement/public",

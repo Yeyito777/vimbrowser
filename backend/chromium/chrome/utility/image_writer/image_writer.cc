@@ -44,13 +44,6 @@ ImageWriter::ImageWriter(ImageWriterHandler* handler,
       handler_(handler) {}
 
 ImageWriter::~ImageWriter() {
-#if BUILDFLAG(IS_WIN)
-  for (std::vector<HANDLE>::const_iterator it = volume_handles_.begin();
-       it != volume_handles_.end();
-       ++it) {
-    CloseHandle(*it);
-  }
-#endif
 }
 
 void ImageWriter::Write() {

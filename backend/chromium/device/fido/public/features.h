@@ -32,11 +32,6 @@ extern const base::FeatureParam<PasskeyUnlockErrorUiExperimentArm>
     kPasskeyUnlockErrorUiExperimentArm;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Controls whether on Windows, U2F/CTAP2 requests are forwarded to the
-// native WebAuthentication API, where available.
-COMPONENT_EXPORT(FIDO_PUBLIC) BASE_DECLARE_FEATURE(kWebAuthUseNativeWinApi);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Support the caBLE extension in assertion requests from any origin.
 COMPONENT_EXPORT(FIDO_PUBLIC)
@@ -77,10 +72,6 @@ COMPONENT_EXPORT(FIDO_PUBLIC)
 BASE_DECLARE_FEATURE(kWebAuthnAmbientSignin);
 
 // Enables publishing prelinking information on Android.
-#if BUILDFLAG(IS_ANDROID)
-COMPONENT_EXPORT(FIDO_PUBLIC)
-BASE_DECLARE_FEATURE(kWebAuthnPublishPrelinkingInfo);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Enables the WebAuthn Signal API for Windows Hello.
 COMPONENT_EXPORT(FIDO_PUBLIC)
@@ -183,11 +174,6 @@ BASE_DECLARE_FEATURE(kFedCmInAuthenticator);
 COMPONENT_EXPORT(FIDO_PUBLIC)
 BASE_DECLARE_FEATURE(kWebAuthnCreatePinWhenSystemUvDisabled);
 
-#if BUILDFLAG(IS_WIN)
-// Enables support for PRF on create on Windows.
-COMPONENT_EXPORT(FIDO_PUBLIC)
-BASE_DECLARE_FEATURE(kWebAuthnWinPrfOnCreate);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace device
 

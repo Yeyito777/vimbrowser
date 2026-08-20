@@ -69,31 +69,6 @@ source_set("task_manager") {
     "//ui/gfx",
   ]
 
-  if (is_win) {
-    sources += [ "sampling/shared_sampler_win_defines.h" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "providers/arc/arc_process_task.h",
-      "providers/arc/arc_process_task_provider.h",
-      "providers/vm/crostini_process_task.h",
-      "providers/vm/plugin_vm_process_task.h",
-      "providers/vm/vm_process_task.h",
-      "providers/vm/vm_process_task_provider.h",
-      "sampling/arc_shared_sampler.h",
-    ]
-    public_deps += [
-      "//chromeos/ash/components/dbus/concierge",
-      "//chromeos/ash/components/dbus/concierge:concierge_proto",
-      "//chromeos/ash/components/process_snapshot",
-      "//chromeos/ash/experiences/arc/intent_helper",
-      "//chromeos/ash/experiences/arc/mojom",
-      "//chromeos/ash/experiences/arc/process",
-      "//chromeos/ash/experiences/arc/session:connection_holder",
-    ]
-  }
-
   sources += [
     "providers/web_contents/background_contents_tag.h",
     "providers/web_contents/background_contents_task.h",
@@ -199,34 +174,7 @@ source_set("impl") {
   if (is_mac || is_win || is_linux || is_chromeos) {
     deps += [ "//components/webapps/isolated_web_apps:scheme" ]
   }
-  if (is_win) {
-    sources += [ "sampling/shared_sampler_win.cc" ]
-    libs += [ "ntdll.lib" ]
-  } else {
-    sources += [ "sampling/shared_sampler_stub.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "providers/arc/arc_process_task.cc",
-      "providers/arc/arc_process_task_provider.cc",
-      "providers/vm/crostini_process_task.cc",
-      "providers/vm/plugin_vm_process_task.cc",
-      "providers/vm/vm_process_task.cc",
-      "providers/vm/vm_process_task_provider.cc",
-      "sampling/arc_shared_sampler.cc",
-    ]
-    deps += [
-      "//chrome/app/theme:chrome_unscaled_resources_grit",
-      "//chrome/browser/ash/crostini",
-      "//chrome/browser/ash/plugin_vm",
-      "//chromeos/ash/components/dbus/concierge",
-      "//chromeos/ash/experiences/arc:arc_base_utils",
-      "//chromeos/ash/experiences/arc/intent_helper",
-      "//chromeos/ash/experiences/arc/process",
-      "//chromeos/ash/experiences/arc/session",
-    ]
-  }
+  sources += [ "sampling/shared_sampler_stub.cc" ]
 
   deps += [ "//chrome/browser/background" ]
   sources += [

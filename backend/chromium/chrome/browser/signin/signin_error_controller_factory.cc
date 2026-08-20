@@ -41,13 +41,9 @@ SigninErrorControllerFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
   Profile* profile = Profile::FromBrowserContext(context);
   SigninErrorController::AccountMode account_mode =
-#if BUILDFLAG(IS_CHROMEOS)
-      SigninErrorController::AccountMode::ANY_ACCOUNT;
-#else
       AccountConsistencyModeManager::IsMirrorEnabledForProfile(profile)
           ? SigninErrorController::AccountMode::ANY_ACCOUNT
           : SigninErrorController::AccountMode::PRIMARY_ACCOUNT;
-#endif
   return std::make_unique<SigninErrorController>(
       account_mode, IdentityManagerFactory::GetForProfile(profile));
 }

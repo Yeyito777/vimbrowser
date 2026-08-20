@@ -105,12 +105,10 @@ source_set("test_support") {
   ]
 
   # iOS port provides its own versions of test_autofill_manager_injector.h/mm.
-  if (!is_ios) {
-    sources += [
-      "test_autofill_manager_injector.cc",
-      "test_autofill_manager_injector.h",
-    ]
-  }
+  sources += [
+    "test_autofill_manager_injector.cc",
+    "test_autofill_manager_injector.h",
+  ]
 
   public_deps = [
     ":browser",

@@ -20,9 +20,6 @@
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace content {
 class WebContents;
@@ -209,9 +206,6 @@ class XrBrowserTestBase : public PlatformBrowserTest {
   std::unordered_set<std::string> ignored_requirements_;
   std::optional<std::string> forced_runtime_;
 
-#if BUILDFLAG(IS_WIN)
-  HWND hwnd_;
-#endif
 
  private:
   void LogJavaScriptFailure();

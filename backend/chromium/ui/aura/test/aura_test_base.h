@@ -14,9 +14,6 @@
 #include "ui/aura/test/aura_test_helper.h"
 #include "ui/aura/window_tree_host.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#endif
 
 namespace aura {
 class Window;
@@ -65,9 +62,6 @@ class AuraTestBase : public testing::Test {
  private:
   base::test::TaskEnvironment task_environment_;
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedCOMInitializer com_initializer_;
-#endif
 
   bool setup_called_ = false;
   bool teardown_called_ = false;

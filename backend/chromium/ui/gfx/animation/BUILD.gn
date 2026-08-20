@@ -27,16 +27,8 @@ component("animation") {
     "tween.h",
   ]
 
-  if (is_chromeos) {
-    sources += [ "animation_chromeos.cc" ]
-  }
-
   if (is_mac) {
     sources += [ "animation_mac.mm" ]
-  }
-
-  if (is_win) {
-    sources += [ "animation_win.cc" ]
   }
 
   if (is_linux) {

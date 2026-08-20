@@ -18,9 +18,6 @@
 #include "components/policy/core/browser/browser_policy_connector.h"
 #include "components/policy/core/common/policy_service.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/policy/core/browser/android/policy_cache_updater_android.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/apple/scoped_cftyperef.h"
@@ -33,10 +30,8 @@ class ConfigurationPolicyProvider;
 class LocalTestPolicyProvider;
 class ProxyPolicyProvider;
 
-#if !BUILDFLAG(IS_CHROMEOS)
 class ChromeBrowserCloudManagementController;
 class MachineLevelUserCloudPolicyManager;
-#endif
 
 // Extends BrowserPolicyConnector with the setup shared among the desktop
 // implementations and Android.
@@ -88,7 +83,6 @@ class ChromeBrowserPolicyConnector : public BrowserPolicyConnector {
   // at the right time.
   void MaybeApplyLocalTestPolicies(PrefService* local_state);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   ChromeBrowserCloudManagementController*
   chrome_browser_cloud_management_controller() {
     return chrome_browser_cloud_management_controller_.get();
@@ -122,7 +116,6 @@ class ChromeBrowserPolicyConnector : public BrowserPolicyConnector {
   // provider.
   void SetProxyPolicyProviderForTesting(
       ProxyPolicyProvider* proxy_policy_provider);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // BrowserPolicyConnector:
   // Command line switch only supports Dev and Canary channel, trunk and
@@ -139,10 +132,7 @@ class ChromeBrowserPolicyConnector : public BrowserPolicyConnector {
   static void EnablePlatformPolicySupport(const std::string& id);
 
   // Platform-specific retrieval of the policy ID value.
-#if BUILDFLAG(IS_WIN)
-  // Replaces all direct usage of kRegistryChromePolicyKey.
-  static std::wstring GetPolicyKey();
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Replaces all direct usage of CFSTR("com.google.Chrome").
   static base::apple::ScopedCFTypeRef<CFStringRef> GetBundleId();
 #elif BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
@@ -165,7 +155,6 @@ class ChromeBrowserPolicyConnector : public BrowserPolicyConnector {
   // Returns the policy provider that supplies platform policies.
   std::unique_ptr<ConfigurationPolicyProvider> CreatePlatformProvider();
 
-#if !BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<ChromeBrowserCloudManagementController>
       chrome_browser_cloud_management_controller_;
 
@@ -199,11 +188,7 @@ class ChromeBrowserPolicyConnector : public BrowserPolicyConnector {
   // is created. Owned by the proxy policy provider.
   raw_ptr<MachineLevelUserCloudPolicyManager>
       machine_level_user_cloud_policy_manager_ = nullptr;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<android::PolicyCacheUpdater> policy_cache_updater_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Owned by base class.
   raw_ptr<ConfigurationPolicyProvider> platform_provider_ = nullptr;

@@ -20,9 +20,6 @@
 #include "build/build_config.h"
 #include "mojo/public/cpp/bindings/default_construct_tag.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/task/thread_pool.h"
-#endif
 
 namespace on_device_model {
 namespace {
@@ -31,35 +28,17 @@ namespace {
 // (due to an apparent bug?) doesn't seem to support copy-on-write mapping of
 // file objects which are not writable. So we open as writable on Fuchsia even
 // though nothing should write through to the file.
-#if BUILDFLAG(IS_FUCHSIA)
-constexpr uint32_t kWeightsFlags =
-    base::File::FLAG_OPEN | base::File::FLAG_READ | base::File::FLAG_WRITE;
-constexpr uint32_t kCacheFlags = kWeightsFlags;
-#else
 constexpr uint32_t kWeightsFlags =
     base::File::FLAG_OPEN | base::File::FLAG_READ | base::File::FLAG_ASYNC |
     base::File::FLAG_WIN_SEQUENTIAL_SCAN;
 constexpr uint32_t kCacheFlags = base::File::FLAG_OPEN_ALWAYS |
                                  base::File::FLAG_READ | base::File::FLAG_WRITE;
-#endif
 
 // Attempts to make sure `file` will be read from disk quickly when needed.
 void PrefetchFile(const base::FilePath& path) {
   constexpr bool kIsExecutable = false;
   constexpr bool kSequential = true;
-#if BUILDFLAG(IS_WIN)
-  // On Windows PreReadFile() can take on the order of hundreds of milliseconds,
-  // so run on a separate thread.
-  base::ThreadPool::PostTask(
-      FROM_HERE, {base::TaskPriority::USER_BLOCKING, base::MayBlock()},
-      base::BindOnce(
-          [](const base::FilePath& path) {
-            base::PreReadFile(path, kIsExecutable, kSequential);
-          },
-          path));
-#else
   base::PreReadFile(path, kIsExecutable, kSequential);
-#endif
 }
 
 }  // namespace

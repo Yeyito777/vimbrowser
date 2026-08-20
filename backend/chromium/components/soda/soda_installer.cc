@@ -19,10 +19,6 @@
 #include "components/soda/pref_names.h"
 #include "media/base/media_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "ash/constants/ash_pref_names.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -40,10 +36,6 @@ SodaInstaller* g_instance = nullptr;
 
 // static
 SodaInstaller* SodaInstaller::GetInstance() {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(
-      base::FeatureList::IsEnabled(ash::features::kOnDeviceSpeechRecognition));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return g_instance;
 }
 
@@ -67,7 +59,6 @@ void SodaInstaller::RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
                                base::Time());
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Handle non-Chrome-OS logic here. We need to keep the implementation of this
   // method in the parent class to avoid duplicate declaration build errors
   // (specifically on Windows).
@@ -78,18 +69,11 @@ void SodaInstaller::RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
        kLanguageComponentConfigs) {
     registry->RegisterFilePathPref(config.config_path_pref, base::FilePath());
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void SodaInstaller::Init(PrefService* profile_prefs,
                          PrefService* global_prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(
-          ash::features::kOnDeviceSpeechRecognition) ||
-      soda_installer_initialized_) {
-#else  // !BUILDFLAG(IS_CHROMEOS)
   if (soda_installer_initialized_) {
-#endif
     return;
   }
 
@@ -323,16 +307,8 @@ std::optional<SodaInstaller::ErrorCode> SodaInstaller::GetSodaInstallErrorCode(
 }
 
 bool SodaInstaller::IsAnyFeatureUsingSodaEnabled(PrefService* prefs) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return prefs->GetBoolean(prefs::kLiveCaptionEnabled) ||
-         prefs->GetBoolean(ash::prefs::kAccessibilityDictationEnabled) ||
-         prefs->GetBoolean(ash::prefs::kProjectorCreationFlowEnabled) ||
-         prefs->GetString(
-             ash::prefs::kClassManagementToolsAvailabilitySetting) == "teacher";
-#else  // !BUILDFLAG(IS_CHROMEOS)
   return prefs->GetBoolean(prefs::kLiveCaptionEnabled) ||
          prefs->GetBoolean(prefs::kHeadlessCaptionEnabled);
-#endif
 }
 
 std::vector<std::string> SodaInstaller::GetLiveCaptionEnabledLanguages() const {
@@ -360,21 +336,11 @@ void SodaInstaller::MaybeUninstallSoda(PrefService* profile_prefs,
       continue;
     }
 
-#if !BUILDFLAG(IS_CHROMEOS)
     // Don't uninstall language pack if it's the default language for a feature
     // that's currently enabled.
     if (IsLanguageActiveDefault(language.GetString(), profile_prefs)) {
       continue;
     }
-#else
-    if (IsAnyFeatureUsingSodaEnabled(profile_prefs)) {
-      // Don't uninstall any language packs if any feature using SODA is enabled
-      // on ChromeOS.
-      // TODO(crbug.com/433572124): Implement IsLanguageActiveDefault on
-      // ChromeOS.
-      return;
-    }
-#endif
 
     const base::Time language_deletion_time =
         global_prefs->GetTime(config->scheduled_deletion_time_pref);
@@ -417,11 +383,9 @@ bool SodaInstaller::WasSodaUsedRecently(PrefService* global_prefs) {
   return false;
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 bool SodaInstaller::IsLanguageActiveDefault(std::string_view language,
                                             PrefService* profile_prefs) const {
   return IsAnyFeatureUsingSodaEnabled(profile_prefs) &&
          profile_prefs->GetString(prefs::kLiveCaptionLanguageCode) == language;
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }  // namespace speech

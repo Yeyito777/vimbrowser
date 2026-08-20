@@ -323,14 +323,6 @@ void WorkerThread::ThreadMain() {
       case ThreadLabel::DEDICATED:
         RunBackgroundDedicatedWorker();
         return;
-#if BUILDFLAG(IS_WIN)
-      case ThreadLabel::SHARED_COM:
-        RunBackgroundSharedCOMWorker();
-        return;
-      case ThreadLabel::DEDICATED_COM:
-        RunBackgroundDedicatedCOMWorker();
-        return;
-#endif  // BUILDFLAG(IS_WIN)
     }
   }
 
@@ -344,14 +336,6 @@ void WorkerThread::ThreadMain() {
     case ThreadLabel::DEDICATED:
       RunDedicatedWorker();
       return;
-#if BUILDFLAG(IS_WIN)
-    case ThreadLabel::SHARED_COM:
-      RunSharedCOMWorker();
-      return;
-    case ThreadLabel::DEDICATED_COM:
-      RunDedicatedCOMWorker();
-      return;
-#endif  // BUILDFLAG(IS_WIN)
   }
 }
 
@@ -385,27 +369,6 @@ NOINLINE void WorkerThread::RunBackgroundDedicatedWorker() {
   NO_CODE_FOLDING();
 }
 
-#if BUILDFLAG(IS_WIN)
-NOINLINE void WorkerThread::RunSharedCOMWorker() {
-  RunWorker();
-  NO_CODE_FOLDING();
-}
-
-NOINLINE void WorkerThread::RunBackgroundSharedCOMWorker() {
-  RunWorker();
-  NO_CODE_FOLDING();
-}
-
-NOINLINE void WorkerThread::RunDedicatedCOMWorker() {
-  RunWorker();
-  NO_CODE_FOLDING();
-}
-
-NOINLINE void WorkerThread::RunBackgroundDedicatedCOMWorker() {
-  RunWorker();
-  NO_CODE_FOLDING();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void WorkerThread::RunWorker() {
   DCHECK_EQ(self_, this);

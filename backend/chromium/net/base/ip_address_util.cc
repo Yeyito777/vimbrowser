@@ -4,12 +4,7 @@
 
 #include "net/base/ip_address_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
 #include <netinet/in.h>
-#endif
 
 #include <stdint.h>
 

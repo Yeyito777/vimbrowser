@@ -66,9 +66,6 @@ mojom("compositing") {
   if (enable_cast_overlay_strategy) {
     enabled_features += [ "enable_cast_overlay_strategy" ]
   }
-  if (is_chromeos) {
-    enabled_features += [ "can_set_refresh_rate" ]
-  }
 
   shared_cpp_typemaps = [
     {

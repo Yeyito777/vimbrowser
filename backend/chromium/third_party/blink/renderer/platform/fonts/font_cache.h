@@ -87,9 +87,6 @@ enum class AlternateFontName {
 extern const char kColorEmojiLocale[];
 extern const char kMonoEmojiLocale[];
 
-#if BUILDFLAG(IS_ANDROID)
-extern const char kNotoColorEmojiCompat[];
-#endif
 
 class PLATFORM_EXPORT FontCache final {
   DISALLOW_NEW();
@@ -138,15 +135,7 @@ class PLATFORM_EXPORT FontCache final {
 
   void Invalidate();
 
-#if BUILDFLAG(IS_WIN)
-  static WebFontPrewarmer* GetFontPrewarmer() { return prewarmer_; }
-  static void SetFontPrewarmer(WebFontPrewarmer* prewarmer) {
-    prewarmer_ = prewarmer;
-  }
-  static void PrewarmFamily(const AtomicString& family_name);
-#else
   static void PrewarmFamily(const AtomicString& family_name) {}
-#endif
 
   static void MaybePreloadSystemFonts();
 
@@ -170,61 +159,9 @@ class PLATFORM_EXPORT FontCache final {
   static void SetSystemFontFamily(const AtomicString&);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // TODO(https://crbug.com/808221) System font style configuration is not
-  // related to FontCache. Move it somewhere else, e.g. to WebThemeEngine.
-  static bool AntialiasedTextEnabled() { return antialiased_text_enabled_; }
-  static bool LcdTextEnabled() { return lcd_text_enabled_; }
-  static void SetAntialiasedTextEnabled(bool enabled) {
-    antialiased_text_enabled_ = enabled;
-  }
-  static void SetLCDTextEnabled(bool enabled) { lcd_text_enabled_ = enabled; }
-  // Functions to cache and retrieve the system font metrics.
-  static void SetMenuFontMetrics(const AtomicString& family_name,
-                                 int32_t font_height);
-  static void SetSmallCaptionFontMetrics(const AtomicString& family_name,
-                                         int32_t font_height);
-  static void SetStatusFontMetrics(const AtomicString& family_name,
-                                   int32_t font_height);
-  static int32_t MenuFontHeight() { return menu_font_height_; }
-  static const AtomicString& MenuFontFamily() {
-    return *menu_font_family_name_;
-  }
-  static int32_t SmallCaptionFontHeight() { return small_caption_font_height_; }
-  static const AtomicString& SmallCaptionFontFamily() {
-    return *small_caption_font_family_name_;
-  }
-  static int32_t StatusFontHeight() { return status_font_height_; }
-  static const AtomicString& StatusFontFamily() {
-    return *status_font_family_name_;
-  }
-
-  const SimpleFontData* GetFallbackFamilyNameFromHardcodedChoices(
-      const FontDescription&,
-      UChar32 codepoint,
-      FontFallbackPriority fallback_priority);
-
-  const SimpleFontData* GetDWriteFallbackFamily(
-      const FontDescription&,
-      UChar32 codepoint,
-      FontFallbackPriority fallback_priority);
-#endif  // BUILDFLAG(IS_WIN)
 
   static void AcceptLanguagesChanged(const String&);
 
-#if BUILDFLAG(IS_ANDROID)
-  static AtomicString GetGenericFamilyNameForScript(
-      const AtomicString& family_name,
-      const AtomicString& generic_family_name_fallback,
-      const FontDescription&);
-  // Locale-specific families can use different |SkTypeface| for a family name
-  // if locale is different.
-  static const char* GetLocaleSpecificFamilyName(
-      const AtomicString& family_name);
-  sk_sp<SkTypeface> CreateLocaleSpecificTypeface(
-      const FontDescription& font_description,
-      const char* locale_family_name);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   static bool GetFontForCharacter(UChar32,
@@ -298,18 +235,6 @@ class PLATFORM_EXPORT FontCache final {
   const SimpleFontData* FallbackOnStandardFontStyle(const FontDescription&,
                                                     UChar32);
 
-#if BUILDFLAG(IS_WIN)
-  static WebFontPrewarmer* prewarmer_;
-  static bool antialiased_text_enabled_;
-  static bool lcd_text_enabled_;
-  // The system font metrics cache.
-  static AtomicString* menu_font_family_name_;
-  static int32_t menu_font_height_;
-  static AtomicString* small_caption_font_family_name_;
-  static int32_t small_caption_font_height_;
-  static AtomicString* status_font_family_name_;
-  static int32_t status_font_height_;
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   static float device_scale_factor_;
@@ -336,17 +261,6 @@ class PLATFORM_EXPORT FontCache final {
 
 AtomicString ToAtomicString(const SkString&);
 
-#if BUILDFLAG(IS_ANDROID)
-// TODO(crbug.com/1241875) Can this be simplified?
-// static
-inline const char* FontCache::GetLocaleSpecificFamilyName(
-    const AtomicString& family_name) {
-  // Only `serif` has `fallbackFor` according to the current `fonts.xml`.
-  if (family_name == font_family_names::kSerif)
-    return "serif";
-  return nullptr;
-}
-#endif
 
 }  // namespace blink
 

@@ -85,13 +85,6 @@ static_library("ntp_tiles") {
     "//ui/base",
   ]
 
-  if (is_ios) {
-    sources += [
-      "country_code_ios.h",
-      "country_code_ios.mm",
-    ]
-  }
-
   if (enable_extensions) {
     deps += [ "//extensions/common:common_constants" ]
   }

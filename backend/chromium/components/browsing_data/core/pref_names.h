@@ -73,16 +73,6 @@ inline constexpr char kQuickDeleteEverUsed[] = "browser.quick_delete_ever_used";
 // Registers the Clear Browsing Data UI prefs.
 void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry);
 
-#if BUILDFLAG(IS_IOS)
-// Migrates the values of the time period and tabs prefs to the new defaults for
-// Quick Delete. For users who have previously changed their time period pref
-// from the default value, then that value is still kept. If the migration has
-// already happened, then no-op.
-// TODO(crbug.com/471197613): When MaybeMigrateToQuickDeletePrefValues is
-// removed, set default value in iOS for the `kDeleteTimePeriod` pref to 15
-// minutes.
-void MaybeMigrateToQuickDeletePrefValues(PrefService* pref_service);
-#endif  // BUILDFLAG(IS_IOS)
 
 }  // namespace browsing_data::prefs
 

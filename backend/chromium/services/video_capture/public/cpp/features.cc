@@ -10,9 +10,5 @@ namespace video_capture::features {
 // the browser process. Implementing now for Windows.
 // Using a different feature name so as not to confuse with the old one used for
 // Mac.
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kWinCameraMonitoringInVideoCaptureService,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 }  // namespace video_capture::features

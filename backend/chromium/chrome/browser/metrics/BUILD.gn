@@ -20,23 +20,6 @@ source_set("metrics") {
     "//services/metrics/public/cpp:metrics_cpp",
     "//services/network/public/cpp",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "chromeos_metrics_provider.h",
-      "chromeos_system_profile_provider.h",
-    ]
-    public_deps += [
-      "//chrome/browser/metrics/perf",
-      "//chromeos/ash/experiences/arc:arc_base",
-      "//chromeos/dbus/tpm_manager:tpm_manager_proto",
-    ]
-  }
-
-  if (is_win) {
-    sources += [ "antivirus_metrics_provider_win.h" ]
-    public_deps += [ "//chrome/services/util_win/public/mojom" ]
-  }
 }
 
 source_set("test_support") {
@@ -58,10 +41,6 @@ source_set("test_support") {
     "//components/sync:test_support",
     "//third_party/metrics_proto",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/settings" ]
-  }
 }
 
 generate_expired_histograms_array("expired_histograms_array") {

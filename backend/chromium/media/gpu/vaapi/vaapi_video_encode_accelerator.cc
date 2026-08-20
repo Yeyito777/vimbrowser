@@ -208,15 +208,6 @@ EncoderStatus VaapiVideoEncodeAccelerator::Initialize(
       return {EncoderStatus::Codes::kEncoderInitializationError};
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (!IsConfiguredForTesting()) {
-      if (config.inter_layer_pred == SVCInterLayerPredMode::kOff &&
-          !base::FeatureList::IsEnabled(kVaapiVp9SModeHWEncoding)) {
-        MEDIA_LOG(ERROR, media_log.get()) << "Vp9 S-mode encoding is disabled";
-        return {EncoderStatus::Codes::kEncoderInitializationError};
-      }
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     // TODO(crbug.com/40172317): Remove this restriction.
     if (!std::ranges::is_sorted(

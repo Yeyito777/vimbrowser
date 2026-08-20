@@ -45,10 +45,6 @@ rust_static_library("child_process_security_policy_impl") {
   deps = [ "//third_party/rust/cxx/v1:lib" ]
 }
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 source_set("browser") {
   # Only the public target should depend on this. All other targets (even
   # internal content ones) should depend on the public one.
@@ -2638,10 +2634,6 @@ source_set("browser") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//components/stylus_handwriting/win" ]
-  }
-
   if (is_win || is_linux || is_chromeos) {
     deps += [ "//components/services/font_data:lib" ]
   }
@@ -2699,71 +2691,8 @@ source_set("browser") {
   }
 
   # ChromeOS also defines linux but their memory-monitors conflict.
-  if (is_chromeos) {
-    sources += [
-      "gpu/chromeos/delegate_to_browser_gpu_service_accelerator_factory.cc",
-      "gpu/chromeos/video_capture_dependencies.cc",
-      "gpu/chromeos/video_capture_dependencies.h",
-      "screenlock_monitor/screenlock_monitor_device_source_ash.cc",
-      "tracing/cros_tracing_agent.cc",
-      "tracing/cros_tracing_agent.h",
-    ]
-    deps += [
-      "//chromeos/ash/components/assistant:buildflags",
-      "//chromeos/ash/components/audio",
-      "//chromeos/ash/components/dbus",
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//chromeos/ash/components/network",
-      "//chromeos/ash/components/system",
-      "//chromeos/ash/resources",
-      "//components/chromeos_camera:mojo_mjpeg_decode_accelerator",
-      "//components/session_manager/core",
-      "//services/data_decoder/public/cpp",
-      "//services/data_decoder/public/mojom",
-      "//ui/base/ime/ash",
-      "//ui/chromeos/styles:cros_styles_views",
-    ]
-    public_deps += [ "//ash/webui/common/resources" ]
-  }
 
-  if (is_castos) {
-    sources += [
-      "tracing/cast_tracing_agent.cc",
-      "tracing/cast_tracing_agent.h",
-    ]
-
-    deps += [
-      "//chromecast:chromecast_buildflags",
-      "//chromecast/tracing:system_tracer",
-    ]
-
-    defines += [ "CAST_TRACING_AGENT=1" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "accessibility/accessibility_tree_formatter_fuchsia.cc",
-      "accessibility/accessibility_tree_formatter_fuchsia.h",
-      "child_process_launcher_helper_fuchsia.cc",
-      "font_access/font_enumeration_data_source_fuchsia.cc",
-      "font_access/font_enumeration_data_source_fuchsia.h",
-      "memory/swap_metrics_driver_impl_fuchsia.cc",
-      "renderer_host/media/fuchsia_media_cdm_provider_impl.cc",
-      "renderer_host/media/fuchsia_media_cdm_provider_impl.h",
-      "renderer_host/media/fuchsia_media_codec_provider_impl.cc",
-      "renderer_host/media/fuchsia_media_codec_provider_impl.h",
-      "speech/tts_fuchsia.cc",
-    ]
-    deps += [
-      "//third_party/abseil-cpp:absl",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.accessibility.semantics:fuchsia.accessibility.semantics_cpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.mediacodec:fuchsia.mediacodec_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/inspect",
-      "//third_party/fuchsia-sdk/sdk/pkg/inspect_component_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/zx",
-      "//ui/accessibility",
-    ]
-  } else if (is_posix) {
+  if (is_posix) {
     sources += [
       "child_process_launcher_helper_posix.cc",
       "child_process_launcher_helper_posix.h",
@@ -2908,63 +2837,6 @@ source_set("browser") {
       "IOSurface.framework",
       "UniformTypeIdentifiers.framework",
     ]
-  } else if (is_ios) {
-    sources += [
-      "devtools/protocol/native_input_event_builder_ios.mm",
-      "renderer_host/begin_frame_source_ios.h",
-      "renderer_host/begin_frame_source_ios.mm",
-      "renderer_host/browser_compositor_ios.h",
-      "renderer_host/browser_compositor_ios.mm",
-      "renderer_host/delegated_frame_host_client_ios.cc",
-      "renderer_host/delegated_frame_host_client_ios.h",
-      "renderer_host/input/synthetic_gesture_target_ios.h",
-      "renderer_host/input/synthetic_gesture_target_ios.mm",
-      "renderer_host/popup_menu_helper_ios.h",
-      "renderer_host/popup_menu_helper_ios.mm",
-      "renderer_host/render_widget_host_view_ios.h",
-      "renderer_host/render_widget_host_view_ios.mm",
-      "renderer_host/web_menu_runner_ios.h",
-      "renderer_host/web_menu_runner_ios.mm",
-      "speech/tts_ios.mm",
-      "web_contents/web_contents_view_ios.h",
-      "web_contents/web_contents_view_ios.mm",
-    ]
-
-    if (target_platform == "iphoneos") {
-      sources += [
-        "child_process_launcher_helper_ios.mm",
-        "date_time_chooser/ios/date_time_chooser_coordinator.h",
-        "date_time_chooser/ios/date_time_chooser_coordinator.mm",
-        "date_time_chooser/ios/date_time_chooser_delegate.h",
-        "date_time_chooser/ios/date_time_chooser_ios.h",
-        "date_time_chooser/ios/date_time_chooser_ios.mm",
-        "date_time_chooser/ios/date_time_chooser_mediator.h",
-        "date_time_chooser/ios/date_time_chooser_mediator.mm",
-        "date_time_chooser/ios/date_time_chooser_util.h",
-        "date_time_chooser/ios/date_time_chooser_util.mm",
-        "date_time_chooser/ios/date_time_chooser_view_controller.h",
-        "date_time_chooser/ios/date_time_chooser_view_controller.mm",
-        "renderer_host/ios_extended_text_input_traits.h",
-        "renderer_host/ios_extended_text_input_traits.mm",
-        "renderer_host/render_widget_host_view_ios_uiview.h",
-        "renderer_host/render_widget_host_view_ios_uiview.mm",
-      ]
-      frameworks += [ "BrowserEngineKit.framework" ]
-    } else {
-      sources += [
-        "child_process_launcher_helper_tvos.mm",
-        "renderer_host/render_widget_host_view_tvos.h",
-        "renderer_host/render_widget_host_view_tvos.mm",
-        "renderer_host/render_widget_host_view_tvos_uiview.h",
-        "renderer_host/render_widget_host_view_tvos_uiview.mm",
-      ]
-    }
-
-    frameworks += [ "IOSurface.framework" ]
-    deps += [
-      "//build:ios_buildflags",
-      "//ui/accelerated_widget_mac",
-    ]
   } else {
     # Not Mac.
     deps += [ "//sandbox" ]
@@ -2972,10 +2844,6 @@ source_set("browser") {
 
   if (is_linux) {
     sources += [ "accessibility/browser_accessibility_state_impl_auralinux.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "accessibility/browser_accessibility_state_impl_chromeos.cc" ]
   }
 
   # Desktop/Window/WebContents screen capture implementations, conditionally
@@ -2996,23 +2864,19 @@ source_set("browser") {
       "media/capture/web_contents_video_capture_device.cc",
       "media/capture/web_contents_video_capture_device.h",
     ]
-    if (!is_ios) {
-      sources += [
-        "media/capture/desktop_capture_device.cc",
-        "media/capture/desktop_capture_device.h",
-      ]
-    }
-    if (!is_ios) {
-      sources += [
-        "media/capture/mouse_cursor_overlay_controller.cc",
-        "media/capture/mouse_cursor_overlay_controller.h",
-        "media/captured_surface_control_permission_manager.cc",
-        "media/captured_surface_control_permission_manager.h",
-        "media/captured_surface_controller.cc",
-        "media/captured_surface_controller.h",
-      ]
-      public_deps += [ "//ui/base/cursor" ]
-    }
+    sources += [
+      "media/capture/desktop_capture_device.cc",
+      "media/capture/desktop_capture_device.h",
+    ]
+    sources += [
+      "media/capture/mouse_cursor_overlay_controller.cc",
+      "media/capture/mouse_cursor_overlay_controller.h",
+      "media/captured_surface_control_permission_manager.cc",
+      "media/captured_surface_control_permission_manager.h",
+      "media/captured_surface_controller.cc",
+      "media/captured_surface_controller.h",
+    ]
+    public_deps += [ "//ui/base/cursor" ]
     if (use_aura) {
       sources += [
         "media/capture/aura_window_video_capture_device.cc",
@@ -3049,87 +2913,6 @@ source_set("browser") {
       frameworks += [ "CoreMedia.framework" ]
       weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 12.3
     }
-    if (is_chromeos) {
-      sources += [
-        "media/capture/desktop_capturer_ash.cc",
-        "media/capture/desktop_capturer_ash.h",
-        "media/capture/desktop_frame_skia.cc",
-        "media/capture/desktop_frame_skia.h",
-      ]
-    }
-  }
-
-  if (is_win) {
-    sources -=
-        [ "file_system_access/file_path_watcher/file_path_watcher_stub.cc" ]
-
-    sources += [
-      "accessibility/browser_accessibility_state_impl_win.cc",
-      "child_process_launcher_helper_win.cc",
-      "device_posture/device_posture_platform_provider_win.cc",
-      "device_posture/device_posture_platform_provider_win.h",
-      "device_posture/device_posture_registry_watcher_win.cc",
-      "device_posture/device_posture_registry_watcher_win.h",
-      "file_system_access/file_path_watcher/file_path_watcher_change_tracker.cc",
-      "file_system_access/file_path_watcher/file_path_watcher_change_tracker.h",
-      "file_system_access/file_path_watcher/file_path_watcher_win.cc",
-      "font_access/font_enumeration_data_source_win.cc",
-      "font_access/font_enumeration_data_source_win.h",
-      "installedapp/fetch_related_win_apps_task.cc",
-      "installedapp/fetch_related_win_apps_task.h",
-      "installedapp/native_win_app_fetcher.h",
-      "installedapp/native_win_app_fetcher_impl.cc",
-      "installedapp/native_win_app_fetcher_impl.h",
-      "media/dcomp_surface_registry_broker.cc",
-      "media/dcomp_surface_registry_broker.h",
-      "media/key_system_support_win.cc",
-      "media/key_system_support_win.h",
-      "memory/swap_metrics_driver_impl_win.cc",
-      "network/network_service_process_tracker_win.cc",
-      "network/network_service_process_tracker_win.h",
-      "renderer_host/direct_manipulation_event_handler_win.cc",
-      "renderer_host/direct_manipulation_event_handler_win.h",
-      "renderer_host/direct_manipulation_helper_win.cc",
-      "renderer_host/direct_manipulation_helper_win.h",
-      "renderer_host/dwrite_font_file_util_win.cc",
-      "renderer_host/dwrite_font_file_util_win.h",
-      "renderer_host/dwrite_font_proxy_impl_win.cc",
-      "renderer_host/dwrite_font_proxy_impl_win.h",
-      "renderer_host/input/stylus_handwriting_callback_sink_win.cc",
-      "renderer_host/input/stylus_handwriting_callback_sink_win.h",
-      "renderer_host/input/stylus_handwriting_controller_win.cc",
-      "renderer_host/input/stylus_handwriting_controller_win.h",
-      "renderer_host/legacy_render_widget_host_win.cc",
-      "renderer_host/legacy_render_widget_host_win.h",
-      "renderer_host/virtual_keyboard_controller_win.cc",
-      "renderer_host/virtual_keyboard_controller_win.h",
-      "sandbox_support_impl.h",
-      "sandbox_support_win_impl.cc",
-      "screenlock_monitor/screenlock_monitor_device_source_win.cc",
-      "service_host/utility_sandbox_delegate_win.cc",
-      "speech/tts_win.cc",
-      "speech/tts_win_utils.cc",
-      "speech/tts_win_utils.h",
-    ]
-    deps += [
-      "//components/app_launch_prefetch",
-      "//content/utility:delegate_data",
-      "//third_party/blink/public/common:font_unique_name_table_proto",
-      "//third_party/iaccessible2",
-      "//third_party/isimpledom",
-      "//third_party/wtl",
-    ]
-    libs += [
-      "comctl32.lib",
-      "dinput8.lib",
-      "dwmapi.lib",
-      "dxguid.lib",
-      "imm32.lib",
-      "oleacc.lib",
-      "portabledeviceguids.lib",
-      "uiautomationcore.lib",
-      "wtsapi32.lib",
-    ]
   }
 
   if (is_win || is_mac) {
@@ -3201,13 +2984,6 @@ source_set("browser") {
 
   if (use_pangocairo) {
     configs += [ "//build/config/linux/pangocairo" ]
-  }
-
-  if (is_ios) {
-    sources += [
-      "date_time_chooser/date_time_chooser.cc",
-      "date_time_chooser/date_time_chooser.h",
-    ]
   }
 
   # Not Android.
@@ -3283,19 +3059,17 @@ source_set("browser") {
     "digital_credentials/cross_device_transaction_impl.h",
   ]
 
-  if (!is_fuchsia) {
-    sources += [
-      "speech/on_device_speech_recognition_engine_impl.cc",
-      "speech/on_device_speech_recognition_engine_impl.h",
-      "speech/soda_speech_recognition_engine_impl.cc",
-      "speech/soda_speech_recognition_engine_impl.h",
-    ]
+  sources += [
+    "speech/on_device_speech_recognition_engine_impl.cc",
+    "speech/on_device_speech_recognition_engine_impl.h",
+    "speech/soda_speech_recognition_engine_impl.cc",
+    "speech/soda_speech_recognition_engine_impl.h",
+  ]
 
-    deps += [
-      "//components/crash/content/browser/error_reporting",
-      "//media/mojo/mojom:web_speech_recognition",
-    ]
-  }
+  deps += [
+    "//components/crash/content/browser/error_reporting",
+    "//media/mojo/mojom:web_speech_recognition",
+  ]
 
   deps += [
     "//components/device_event_log",
@@ -3310,13 +3084,6 @@ source_set("browser") {
     "//media/mojo/mojom:speech_recognition",
     "//ui/base",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "//content/browser/direct_sockets/firewall_hole_delegate.cc",
-      "//content/browser/direct_sockets/firewall_hole_delegate.h",
-    ]
-  }
 
   if (enable_devtools_frontend) {
     sources += [
@@ -3339,10 +3106,6 @@ source_set("browser") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//ui/base/ime/win" ]
-  }
-
   if (use_aura) {
     deps += [
       "//ui/aura",
@@ -3361,7 +3124,7 @@ source_set("browser") {
     if (is_linux) {
       deps += [ "//ui/base/ime/linux" ]
     }
-  } else {  # Not aura.
+  } else {
     sources -= [
       "media/desktop_media_window_registry_aura.cc",
       "renderer_host/input/synthetic_gesture_target_aura.cc",
@@ -3464,9 +3227,6 @@ source_set("browser") {
   }
 
   # TODO(crbug.com/371609830): Remove dep on experiment end.
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 
   if (enable_surface_embed) {
     sources += [

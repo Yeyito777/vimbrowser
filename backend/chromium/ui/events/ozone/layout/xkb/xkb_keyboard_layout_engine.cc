@@ -628,36 +628,6 @@ const PrintableSimpleEntry kSimpleMap[] = {
     {0x0259, VKEY_OEM_3},      // schwa
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-void LoadKeymap(const std::string& layout_name,
-                scoped_refptr<base::SingleThreadTaskRunner> reply_runner,
-                LoadKeymapCallback reply_callback) {
-  std::string layout_id;
-  std::string layout_variant;
-  XkbKeyboardLayoutEngine::ParseLayoutName(layout_name, &layout_id,
-                                           &layout_variant);
-  xkb_rule_names names = {.rules = NULL,
-                          .model = "pc101",
-                          .layout = layout_id.c_str(),
-                          .variant = layout_variant.c_str(),
-                          .options = ""};
-  std::unique_ptr<xkb_context, XkbContextDeleter> context;
-  context.reset(xkb_context_new(XKB_CONTEXT_NO_DEFAULT_INCLUDES));
-  xkb_context_include_path_append(context.get(), "/usr/share/X11/xkb");
-  std::unique_ptr<xkb_keymap, XkbKeymapDeleter> keymap;
-  keymap.reset(xkb_keymap_new_from_names(context.get(), &names,
-                                         XKB_KEYMAP_COMPILE_NO_FLAGS));
-  if (keymap) {
-    std::unique_ptr<char, base::FreeDeleter> keymap_str(
-        xkb_keymap_get_as_string(keymap.get(), XKB_KEYMAP_FORMAT_TEXT_V1));
-    reply_runner->PostTask(
-        FROM_HERE, base::BindOnce(std::move(reply_callback), layout_name,
-                                  std::move(keymap_str)));
-  } else {
-    LOG(FATAL) << "Keymap file failed to load: " << layout_name;
-  }
-}
-#endif
 
 bool IsControlCharacter(uint32_t character) {
   return (character < 0x20) || (character > 0x7E && character < 0xA0);
@@ -691,37 +661,13 @@ std::string_view XkbKeyboardLayoutEngine::GetLayoutName() const {
 }
 
 bool XkbKeyboardLayoutEngine::CanSetCurrentLayout() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 void XkbKeyboardLayoutEngine::SetCurrentLayoutByName(
     const std::string& layout_name,
     base::OnceCallback<void(bool success)> callback) {
-#if BUILDFLAG(IS_CHROMEOS)
-  current_layout_name_ = layout_name;
-  for (const auto& entry : xkb_keymaps_) {
-    if (entry.layout_name == layout_name) {
-      SetKeymap(entry.keymap);
-      std::move(callback).Run(/*success=*/true);
-      return;
-    }
-  }
-  LoadKeymapCallback reply_callback =
-      base::BindOnce(&XkbKeyboardLayoutEngine::OnKeymapLoaded,
-                     weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  base::ThreadPool::PostTask(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
-      base::BindOnce(&LoadKeymap, layout_name,
-                     base::SingleThreadTaskRunner::GetCurrentDefault(),
-                     std::move(reply_callback)));
-#else
   NOTIMPLEMENTED();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void XkbKeyboardLayoutEngine::OnKeymapLoaded(
@@ -787,32 +733,6 @@ bool XkbKeyboardLayoutEngine::Lookup(DomCode dom_code,
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // XbdLookup conflates KEY_PRINT and KEY_SYSRQ (printscreen) by
-  // mapping them both to XKB_KEY_Print rather than mapping KEY_SYSRQ to
-  // XKB_KEY_3270_PrintScreen. This has become expected behavior on Linux,
-  // but now ChromeOS can and wants to handle these keys separately.
-  //
-  // In the past in crbug/683097 both XKB keys were mapped to
-  // DomKey::PRINT_SCREEN in keyboard_code_conversion_xkb.cc which has also
-  // now been undone for ChromeOS only (not Linux)
-  //
-  // ChromeOS already correctly mapped the DomCode::PRINT_SCREEN and
-  // DomCode::PRINT keys, but the lookup via XKB caused the incorrect
-  // DomKey and subsequently incorrect VKEY to be used.
-  //
-  // This special cases this single key for ChromeOS platform, so that the
-  // two keys behave as intended as below.
-  //
-  // KEY_PRINT > DomCode::PRINT > XKB_KEY_Print >
-  //             DomKey::PRINT > VKEY_PRINT
-  //
-  // KEY_SYSRQ > DomCode::PRINT_SCREEN > XKB_KEY_3270_PrintScreen >
-  //             DomKey::PRINT_SCREEN > VKEY_SNAPSHOT
-  if (dom_code == DomCode::PRINT_SCREEN && xkb_keysym == XKB_KEY_Print) {
-    xkb_keysym = XKB_KEY_3270_PrintScreen;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Classify the keysym and convert to DOM and VKEY representations.
   if (dom_code != DomCode::DIGIT2 || (flags & EF_CONTROL_DOWN) == 0) {
@@ -946,10 +866,6 @@ void XkbKeyboardLayoutEngine::SetKeymap(xkb_keymap* keymap) {
 
 xkb_mod_mask_t XkbKeyboardLayoutEngine::EventFlagsToXkbFlags(
     int ui_flags) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // In ChromeOS NumLock is always on.
-  ui_flags |= ui::EF_NUM_LOCK_ON;
-#endif
   return xkb_modifier_converter_.MaskFromUiFlags(ui_flags);
 }
 

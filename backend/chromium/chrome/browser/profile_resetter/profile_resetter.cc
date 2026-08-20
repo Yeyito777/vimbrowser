@@ -55,43 +55,7 @@
 #include "extensions/common/extension_id.h"
 #include "extensions/common/manifest.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#include "chrome/browser/ash/input_method/input_method_manager_impl.h"
-#include "chromeos/ash/components/network/managed_network_configuration_handler.h"
-#include "chromeos/ash/components/network/network_state_handler.h"
-#include "components/language/core/browser/pref_names.h"
-#include "components/proxy_config/proxy_config_pref_names.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/base_paths.h"
-#include "base/path_service.h"
-#include "chrome/installer/util/shell_util.h"
-
-namespace {
-
-void ResetShortcutsOnBlockingThread() {
-  // Get full path of chrome.
-  base::FilePath chrome_exe;
-  if (!base::PathService::Get(base::FILE_EXE, &chrome_exe))
-    return;
-
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
-  for (int location = ShellUtil::SHORTCUT_LOCATION_FIRST;
-       location <= ShellUtil::SHORTCUT_LOCATION_LAST; ++location) {
-    ShellUtil::ShortcutListMaybeRemoveUnknownArgs(
-        static_cast<ShellUtil::ShortcutLocation>(location),
-        ShellUtil::CURRENT_USER, chrome_exe, true, nullptr, nullptr);
-    ShellUtil::ResetShortcutFileAttributes(
-        static_cast<ShellUtil::ShortcutLocation>(location),
-        ShellUtil::CURRENT_USER, chrome_exe);
-  }
-}
-
-}  // namespace
-#endif  // BUILDFLAG(IS_WIN)
 
 ProfileResetter::ProfileResetter(Profile* profile)
     : profile_(profile),
@@ -201,11 +165,6 @@ void ProfileResetter::ResetSettingsImpl(
       {SHORTCUTS, &ProfileResetter::ResetShortcuts},
       {NTP_CUSTOMIZATIONS, &ProfileResetter::ResetNtpCustomizations},
       {LANGUAGES, &ProfileResetter::ResetLanguages},
-#if BUILDFLAG(IS_CHROMEOS)
-      {DNS_CONFIGURATIONS, &ProfileResetter::ResetDnsConfigurations},
-      {PROXY_SETTINGS, &ProfileResetter::ResetProxySettings},
-      {KEYBOARD_SETTINGS, &ProfileResetter::ResetKeyboardInputSettings},
-#endif  // BUILDFLAG(IS_CHROMEOS)
   });
 
   ResettableFlags reset_triggered_for_flags = 0;
@@ -406,16 +365,7 @@ void ProfileResetter::ResetPinnedTabs() {
 }
 
 void ProfileResetter::ResetShortcuts() {
-#if BUILDFLAG(IS_WIN)
-  base::ThreadPool::CreateCOMSTATaskRunner(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE})
-      ->PostTaskAndReply(
-          FROM_HERE, base::BindOnce(&ResetShortcutsOnBlockingThread),
-          base::BindOnce(&ProfileResetter::MarkAsDone,
-                         weak_ptr_factory_.GetWeakPtr(), SHORTCUTS));
-#else
   MarkAsDone(SHORTCUTS);
-#endif
 }
 
 void ProfileResetter::ResetNtpCustomizations() {
@@ -448,139 +398,3 @@ void ProfileResetter::OnBrowsingDataRemoverDone(uint64_t failed_data_types) {
   cookies_remover_ = nullptr;
   MarkAsDone(COOKIES_AND_SITE_DATA);
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-void ProfileResetter::ResetDnsConfigurations() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // Since certain extensions can modify DNS configurations we want
-  // extensions to be reset beforehand.
-  CHECK(!(pending_reset_flags_ & EXTENSIONS));
-
-  ash::ManagedNetworkConfigurationHandler* network_configuration_handler =
-      ash::NetworkHandler::Get()->managed_network_configuration_handler();
-  if (!network_configuration_handler) {
-    MarkAsDone(DNS_CONFIGURATIONS);
-    return;
-  }
-
-  ash::NetworkStateHandler* network_state_handler =
-      ash::NetworkHandler::Get()->network_state_handler();
-  if (!network_state_handler) {
-    MarkAsDone(DNS_CONFIGURATIONS);
-    return;
-  }
-
-  // Fetch a list of all configured devices (Wifi, ethernet, etc.) for
-  // a given profile.
-  ash::NetworkStateHandler::NetworkStateList network_list;
-  network_state_handler->GetNetworkListByType(
-      ash::NetworkTypePattern::Default(), true /*configured_only*/,
-      false /*visible_only*/, 0 /*no_limit*/, &network_list);
-
-  // Use the list to reset DNS Configurations back to their default.
-  for (const ash::NetworkState* network : network_list) {
-    // Skip the network if the policy is managed. Unlikely to happen in
-    // the backend, but still good to have as an extra check.
-    if (network->IsManagedByPolicy()) {
-      LOG(WARNING) << "Network is managed by policy: " << network->path();
-      continue;
-    }
-
-    network_configuration_handler->ResetDNSProperties(network->path());
-  }
-  MarkAsDone(DNS_CONFIGURATIONS);
-}
-
-void ProfileResetter::ResetProxySettings() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // Since certain extensions can modify proxy settings we want
-  // extensions to be reset beforehand.
-  CHECK(!(pending_reset_flags_ & EXTENSIONS));
-
-  PrefService* prefs = profile_->GetPrefs();
-  CHECK(prefs);
-
-  // Check that user profile isn't managed. Unlikely to happen in
-  // the backend, but still good to have as an extra check.
-  if (prefs->FindPreference(proxy_config::prefs::kUseSharedProxies)
-          ->IsManaged()) {
-    MarkAsDone(PROXY_SETTINGS);
-    return;
-  }
-
-  // Call to reset Proxy prefs set by disabling "Allow proxies for shared
-  // networks" in chrome://settings. Will always write to User Prefs (the only
-  // modifiable store). If a value is already set in a PrefStore with precedence
-  // over User Prefs, re-reading the value might not return the value you just
-  // set. A list of known sources that override User Prefs:
-  // Managed Prefs (cloud policy)
-  // Supervised User Prefs (parental controls)
-  // Extension Prefs (extension overrides)
-  // Command-line Prefs (command-line overrides)
-  prefs->SetBoolean(proxy_config::prefs::kUseSharedProxies, false);
-  MarkAsDone(PROXY_SETTINGS);
-}
-
-void ProfileResetter::ResetKeyboardInputSettings() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // Since spellcheck settings depend on preferred languages, user language
-  // preferences need to be reset beforehand.
-  CHECK(!(pending_reset_flags_ & LANGUAGES));
-
-  PrefService* prefs = profile_->GetPrefs();
-  CHECK(prefs);
-
-  // 1. Call to reset the language of the Input methods, from the current device
-  // language.
-  if (g_browser_process && g_browser_process->local_state()) {
-    // Assume that the session will use the current UI locale.
-    std::string locale = g_browser_process->GetApplicationLocale();
-
-    // Derive kLanguagePreloadEngines from `locale`.
-    // Uses the first input method as the most popular one.
-    std::vector<std::string> input_method_ids;
-    ash::input_method::InputMethodManager* manager =
-        ash::input_method::InputMethodManager::Get();
-    manager->GetInputMethodUtil()->GetInputMethodIdsFromLanguageCode(
-        locale, ash::input_method::kAllInputMethods, &input_method_ids);
-    // Save the input method in the user's preference kLanguagePreloadEngines.
-    prefs->SetString(
-        ash::prefs::kLanguagePreloadEngines,
-        input_method_ids.empty() ? std::string() : input_method_ids[0]);
-  }
-
-  // 2. Call to reset spell check languages, matching the default language and
-  // clearing the other options.
-  prefs->SetList(spellcheck::prefs::kSpellCheckDictionaries,
-                 base::ListValue().Append(
-                     prefs->GetString(language::prefs::kPreferredLanguages)));
-
-  MarkAsDone(KEYBOARD_SETTINGS);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_WIN)
-std::vector<ShortcutCommand> GetChromeLaunchShortcuts(
-    const scoped_refptr<SharedCancellationFlag>& cancel) {
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
-  // Get full path of chrome.
-  base::FilePath chrome_exe;
-  if (!base::PathService::Get(base::FILE_EXE, &chrome_exe))
-    return std::vector<ShortcutCommand>();
-  std::vector<ShortcutCommand> shortcuts;
-  for (int location = ShellUtil::SHORTCUT_LOCATION_FIRST;
-       location <= ShellUtil::SHORTCUT_LOCATION_LAST; ++location) {
-    if (cancel.get() && cancel->data.IsSet())
-      break;
-    ShellUtil::ShortcutListMaybeRemoveUnknownArgs(
-        static_cast<ShellUtil::ShortcutLocation>(location),
-        ShellUtil::CURRENT_USER,
-        chrome_exe,
-        false,
-        cancel,
-        &shortcuts);
-  }
-  return shortcuts;
-}
-#endif  // BUILDFLAG(IS_WIN)

@@ -69,8 +69,8 @@ source_set("tests") {
     "public/cpp/data_decoder_unittest.cc",
     "public/cpp/safe_web_bundle_parser_unittest.cc",
     "public/cpp/safe_xml_parser_unittest.cc",
+    "public/cpp/xml_dom_unittest.cc",
     "xml_parser_unittest.cc",
-    "public/cpp/xml_dom_unittest.cc"
   ]
 
   deps = [
@@ -87,11 +87,7 @@ source_set("tests") {
     "//ui/gfx",
   ]
 
-  if (is_ios) {
-    deps += [ "//components/test:web_package_test_bundle_data" ]
-  } else {
-    data = [ "//components/test/data/web_package/" ]
-  }
+  data = [ "//components/test/data/web_package/" ]
 
   if (use_blink) {
     sources += [ "image_decoder_impl_unittest.cc" ]

@@ -251,16 +251,11 @@ perfetto_unittest_source_set("unittests") {
   }
 
   # TODO: Enable these for Windows when possible.
-  if (!is_win) {
-    sources += [
-      "metatrace_unittest.cc",
-      "thread_task_runner_unittest.cc",
-      "watchdog_posix_unittest.cc",
-    ]
-  }
-  if (is_fuchsia) {
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fdio" ]  # nogncheck
-  }
+  sources += [
+    "metatrace_unittest.cc",
+    "thread_task_runner_unittest.cc",
+    "watchdog_posix_unittest.cc",
+  ]
   if (perfetto_build_standalone || perfetto_build_with_android) {
     sources += [ "unix_socket_unittest.cc" ]
     deps += [ ":unix_socket" ]

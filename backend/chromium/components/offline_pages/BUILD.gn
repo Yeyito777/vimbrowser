@@ -13,11 +13,9 @@ if (use_blink) {
       "//components/test:run_all_unittests",
     ]
 
-    if (!is_fuchsia) {
-      # On Fuchsia, components/test/data seems to change spuriously,
-      # breaking incremental compilation.
-      data = [ "../test" ]
-    }
+    # On Fuchsia, components/test/data seems to change spuriously,
+    # breaking incremental compilation.
+    data = [ "../test" ]
   }
 
   group("unit_tests") {
@@ -30,8 +28,5 @@ if (use_blink) {
       "//components/offline_pages/core/request_header:unit_tests",
       "//components/offline_pages/task:unit_tests",
     ]
-    if (is_ios) {
-      deps += [ "//components/test:offline_pages_test_bundle_data" ]
-    }
   }
 }

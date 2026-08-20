@@ -191,12 +191,6 @@ const char kDiagnosticsFormat[] = "diagnostics-format";
 // Tells the diagnostics mode to do the requested recovery step(s).
 const char kDiagnosticsRecovery[] = "diagnostics-recovery";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Disables the auto maximize feature on ChromeOS so that a browser window
-// always starts in normal state. This is used by tests that do not want this
-// auto maximizing behavior.
-const char kDisableAutoMaximizeForTests[] = "disable-auto-maximize-for-tests";
-#endif
 
 // Disable auto-reload of pages on top-level error.
 const char kDisableAutoReload[] = "disable-auto-reload";
@@ -282,11 +276,6 @@ const char kEnableBookmarkUndo[] = "enable-bookmark-undo";
 // Proxy component within the service process.
 const char kEnableCloudPrintProxy[] = "enable-cloud-print-proxy";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// If enabled, DevTools will allow creating pwa_handler, to enable executing
-// CDP methods (i.e. PWA.install) on browsers connected remotely
-const char kEnableDevToolsPwaHandler[] = "enable-devtools-pwa-handler";
-#endif
 
 // Enables Domain Reliability Monitoring.
 const char kEnableDomainReliability[] = "enable-domain-reliability";
@@ -365,11 +354,6 @@ const char kExtensionsToolbarZeroStateExploreExtensionsByCategory[] =
 // the app to be installed if it hasn't been already.
 const char kForceAppMode[] = "force-app-mode";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Forces developer tools availability, no matter what values the enterprise
-// policies DeveloperToolsDisabled and DeveloperToolsAvailability are set to.
-const char kForceDevToolsAvailable[] = "force-devtools-available";
-#endif
 
 // Displays the First Run experience when the browser is started, regardless of
 // whether or not it's actually the First Run (this overrides kNoFirstRun).
@@ -391,10 +375,8 @@ const char kHideCrashRestoreBubble[] = "hide-crash-restore-bubble";
 // http://google.com.
 const char kHomePage[] = "homepage";
 
-#if !BUILDFLAG(IS_ANDROID)
 // Triggers the import of passwords on startup.
 const char kImportPasswords[] = "import-passwords";
-#endif
 
 // Causes the initial browser opened to be in incognito mode. Further browsers
 // may or may not be in incognito mode; see `IncognitoModePrefs`.
@@ -775,65 +757,18 @@ const char kWinHttpProxyResolver[] = "winhttp-proxy-resolver";
 // resulted in a browser startup.
 const char kWinJumplistAction[] = "win-jumplist-action";
 
-#if BUILDFLAG(IS_ANDROID)
-// Android authentication account type for SPNEGO authentication
-const char kAuthAndroidNegotiateAccountType[] = "auth-spnego-account-type";
 
-// Disable the default browser promo.
-const char kDisableDefaultBrowserPromo[] = "disable-default-browser-promo";
-
-// Forces the device to report being owned by an enterprise. This mimics the
-// presence of an app signaling device ownership.
-const char kForceDeviceOwnership[] = "force-device-ownership";
-
-// Forces the night mode to be enabled.
-const char kForceEnableNightMode[] = "force-enable-night-mode";
-
-// Forces the update menu badge to show.
-const char kForceShowUpdateMenuBadge[] = "force-show-update-menu-badge";
-
-// Forces the update menu type to a specific type.
-const char kForceUpdateMenuType[] = "force-update-menu-type";
-
-// Forces a custom summary to be displayed below the update menu item.
-const char kForceShowUpdateMenuItemCustomSummary[] = "custom_summary";
-
-// Sets the market URL for Chrome for use in testing.
-const char kMarketUrlForTesting[] = "market-url-for-testing";
-
-// Force enable user agent overrides to request desktop sites in Clank.
-const char kRequestDesktopSites[] = "request-desktop-sites";
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if !BUILDFLAG(IS_ANDROID)
 // If enabled, overrides the target playout delay for a casting mirroring
 // session. The value will be parsed as milliseconds. Lowering this value will
 // result in a lower end to end latency, but could come at the cost of other
 // quality standards such as dropped frames or FPS.
 const char kCastMirroringTargetPlayoutDelay[] =
     "cast-mirroring-target-playout-delay";
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Custom crosh command.
-const char kCroshCommand[] = "crosh-command";
-
-// Disables logging redirect for testing.
-const char kDisableLoggingRedirect[] = "disable-logging-redirect";
-
-// Disables apps on the login screen. By default, they are allowed and can be
-// installed through policy.
-const char kDisableLoginScreenApps[] = "disable-login-screen-apps";
-
-// Use a short (1 second) timeout for merge session loader throttle testing.
-const char kShortMergeSessionTimeoutForTest[] =
-    "short-merge-session-timeout-for-test";
-#else
 // Enables saving webpages as MHTML (Webpage, Single) by default, instead of
 // saving as HTML with a directory of sub-resources. (Webpage, Complete).
 // See http://crbug.com/40179885 for how to remove this switch.
 const char kSavePageAsMHTML[] = "save-page-as-mhtml";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_CHROMEOS)
 // These flags show the man page on Linux. They are equivalent to each
@@ -883,79 +818,6 @@ const char kCodeSignCloneCleanupProcess[] = "code-sign-clone-cleanup";
 const char kUniqueTempDirSuffix[] = "unique-temp-dir-suffix";
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-// Force-enables the profile shortcut manager. This is needed for tests since
-// they use a custom-user-data-dir which disables this.
-const char kEnableProfileShortcutManager[] = "enable-profile-shortcut-manager";
-
-// Indicates that this launch of the browser originated from the installer
-// (i.e., following a successful new install or over-install). This triggers
-// browser behaviors for this specific launch, such as a welcome announcement
-// for accessibility software (see https://crbug.com/1072735).
-extern const char kFromInstaller[] = "from-installer";
-
-// Indicates that this launch of the browser originated from the Legacy Browser
-// Support for Edge extension's native host. This is recorded in UMA.
-extern const char kFromBrowserSwitcher[] = "from-browser-switcher";
-
-// Makes Windows happy by allowing it to show "Enable access to this program"
-// checkbox in Add/Remove Programs->Set Program Access and Defaults. This only
-// shows an error box because the only way to hide Chrome is by uninstalling
-// it.
-const char kHideIcons[] = "hide-icons";
-
-// Whether or not the browser should warn if the profile is on a network share.
-// This flag is only relevant for Windows currently.
-const char kNoNetworkProfileWarning[] = "no-network-profile-warning";
-
-// Whether this process should PrefetchVirtualMemory on the contents of
-// Chrome.dll. This warms up the pages in memory to speed up startup but might
-// not be required in later renderers and/or GPU. For experiment info see
-// crbug.com/1350257.
-const char kNoPreReadMainDll[] = "no-pre-read-main-dll";
-
-// Used in combination with kNotificationLaunchId to specify the inline reply
-// entered in the toast in the Windows Action Center.
-const char kNotificationInlineReply[] = "notification-inline-reply";
-
-// Used for launching Chrome when a toast displayed in the Windows Action Center
-// has been activated. Should contain the launch ID encoded by Chrome.
-const char kNotificationLaunchId[] = "notification-launch-id";
-
-// See kHideIcons.
-const char kShowIcons[] = "show-icons";
-
-// When rendezvousing with an existing process, used to indicate that the
-// StartupInfoW of the new Chrome process had dwFlags == STARTF_TITLEISAPPID.
-// This is used to record launch metrics.
-const char kSourceAppId[] = "source-app-id";
-
-// When rendezvousing with an existing process, used to pass the path of the
-// shortcut that launched the new Chrome process. This is used to record launch
-// metrics.
-const char kSourceShortcut[] = "source-shortcut";
-
-// Identifies Chrome instances that start in foreground mode at startup to
-// record related metrics.
-const char kStartupForegroundLaunch[] = "startup-foreground-launch";
-
-// Runs un-installation steps that were done by chrome first-run.
-const char kUninstall[] = "uninstall";
-
-// Specifies that the WebApp with the specified id should be uninstalled.
-const char kUninstallAppId[] = "uninstall-app-id";
-
-// Specifies that the browser is running isolated and should not attempt to
-// start a second isolated browser.
-const char kIsolated[] = "isolated";
-
-// Specifies the version of the Progressive-Web-App launcher that launched
-// Chrome, used to determine whether to update all launchers.
-// NOTE: changing this switch requires adding legacy handling for the previous
-// method, as older PWA launchers still using this switch will rely on Chrome to
-// update them to use the new method.
-const char kPwaLauncherVersion[] = "pwa-launcher-version";
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) && !defined(OFFICIAL_BUILD)
 // Enables support to debug printing subsystem.

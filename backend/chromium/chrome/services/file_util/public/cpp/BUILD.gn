@@ -28,12 +28,6 @@ source_set("cpp") {
         "sandboxed_dmg_analyzer_mac.h",
       ]
     }
-    if (is_chromeos) {
-      sources += [
-        "zip_file_creator.cc",
-        "zip_file_creator.h",
-      ]
-    }
 
     deps += [
       "//components/enterprise/obfuscation/core:enterprise_obfuscation",
@@ -73,27 +67,6 @@ if (safe_browsing_mode == 1) {
       "//skia",
       "//testing/gmock",
       "//testing/gtest",
-    ]
-  }
-}
-
-if (is_chromeos) {
-  source_set("browser_tests") {
-    testonly = true
-
-    sources = [ "zip_file_creator_browsertest.cc" ]
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-
-    deps = [
-      ":cpp",
-      "//base",
-      "//chrome/test:test_support",
-      "//chrome/test:test_support_ui",
-      "//content/public/browser",
-      "//content/public/common",
-      "//content/test:test_support",
-      "//testing/gtest",
-      "//third_party/zlib",
     ]
   }
 }

@@ -51,17 +51,7 @@ static_library("ced") {
 
   public_configs = [ ":ced_config" ]
 
-  if (is_win) {
-    defines = [ "COMPILER_MSVC" ]
-    cflags = [
-      "/wd4005",  # Macro defined twice.
-      "/wd4006",  # #undef expected an identifier.
-      "/wd4018",  # '<': signed/unsigned mismatch
-      "/wd4309",  # Truncation of constant value.
-    ]
-  } else {
-    defines = [ "COMPILER_GCC" ]
-  }
+  defines = [ "COMPILER_GCC" ]
 
   defines += [ "HTML5_MODE" ]
 }
@@ -76,15 +66,7 @@ test("ced_unittests") {
 
   configs += [ ":ced_config_private" ]
 
-  if (is_win) {
-    defines = [ "COMPILER_MSVC" ]
-    cflags = [
-      "/wd4310",  # Truncation of constant value.
-      "/wd4267",  # size_t -> int
-    ]
-  } else {
-    defines = [ "COMPILER_GCC" ]
-  }
+  defines = [ "COMPILER_GCC" ]
 
   defines += [ "HTML5_MODE" ]
 

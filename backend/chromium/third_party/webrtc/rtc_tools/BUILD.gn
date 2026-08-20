@@ -527,14 +527,6 @@ if (rtc_include_tests) {
       "../resources/rtc_event_log/rtc_event_log_500kbps.binarypb",
     ]
 
-    if (is_ios) {
-      bundle_data("tools_unittests_bundle_data") {
-        testonly = true
-        sources = tools_unittests_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
-
     rtc_test("tools_unittests") {
       testonly = true
 
@@ -582,10 +574,6 @@ if (rtc_include_tests) {
       }
 
       data = tools_unittests_resources
-
-      if (is_ios) {
-        deps += [ ":tools_unittests_bundle_data" ]
-      }
     }
 
     if (rtc_enable_protobuf) {

@@ -31,20 +31,13 @@
 #include "services/device/public/mojom/serial.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/settings/public/constants/routes.mojom.h"
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#include "chrome/common/webui_url_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/chooser_controller/title_util.h"  // nogncheck
 #include "chrome/browser/ui/browser.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace {
 
@@ -95,11 +88,7 @@ SerialChooserController::SerialChooserController(
     std::vector<::device::BluetoothUUID> allowed_bluetooth_service_class_ids,
     content::SerialChooser::Callback callback)
     : ChooserController(
-#if BUILDFLAG(IS_ANDROID)
-          u""
-#else
           CreateChooserTitle(render_frame_host, IDS_SERIAL_PORT_CHOOSER_PROMPT)
-#endif  // BUILDFLAG(IS_ANDROID)
           ),
       filters_(std::move(filters)),
       allowed_bluetooth_service_class_ids_(
@@ -146,15 +135,6 @@ void SerialChooserController::GetDevices() {
       return;
     }
 
-#if BUILDFLAG(IS_ANDROID)
-    if (!adapter_->IsPresent()) {
-      // Received a wireless only request on a device without a Bluetooth
-      // adapter. It is redundant to ask users to grant permissions.
-      CHECK_EQ(NumOptions(), 0u);
-      view()->OnOptionsInitialized();
-      return;
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
 
     if (adapter_->GetOsPermissionStatus() !=
         device::BluetoothAdapter::PermissionStatus::kAllowed) {
@@ -177,30 +157,18 @@ bool SerialChooserController::ShouldShowHelpButton() const {
 }
 
 std::u16string SerialChooserController::GetNoOptionsText() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return l10n_util::GetStringUTF16(IDS_DEVICE_CHOOSER_NO_DEVICES_FOUND_PROMPT);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 std::u16string SerialChooserController::GetOkButtonLabel() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return l10n_util::GetStringUTF16(IDS_SERIAL_PORT_CHOOSER_CONNECT_BUTTON_TEXT);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 std::pair<std::u16string, std::u16string>
 SerialChooserController::GetThrobberLabelAndTooltip() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return {
       l10n_util::GetStringUTF16(IDS_SERIAL_PORT_CHOOSER_LOADING_LABEL),
       l10n_util::GetStringUTF16(IDS_SERIAL_PORT_CHOOSER_LOADING_LABEL_TOOLTIP)};
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 size_t SerialChooserController::NumOptions() const {
@@ -326,19 +294,11 @@ bool SerialChooserController::ShouldShowAdapterOffView() const {
 }
 
 int SerialChooserController::GetAdapterOffMessageId() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return IDS_SERIAL_DEVICE_CHOOSER_ADAPTER_OFF;
-#endif
 }
 
 int SerialChooserController::GetTurnAdapterOnLinkTextMessageId() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return IDS_SERIAL_DEVICE_CHOOSER_TURN_ON_BLUETOOTH_LINK_TEXT;
-#endif
 }
 
 bool SerialChooserController::ShouldShowAdapterUnauthorizedView() const {
@@ -346,19 +306,11 @@ bool SerialChooserController::ShouldShowAdapterUnauthorizedView() const {
 }
 
 int SerialChooserController::GetBluetoothUnauthorizedMessageId() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return IDS_SERIAL_DEVICE_CHOOSER_AUTHORIZE_BLUETOOTH;
-#endif
 }
 
 int SerialChooserController::GetAuthorizeBluetoothLinkTextMessageId() const {
-#if BUILDFLAG(IS_ANDROID)
-  NOTREACHED();
-#else
   return IDS_SERIAL_DEVICE_CHOOSER_AUTHORIZE_BLUETOOTH_LINK_TEXT;
-#endif
 }
 
 void SerialChooserController::AdapterPoweredChanged(BluetoothAdapter* adapter,
@@ -517,35 +469,16 @@ bool SerialChooserController::IsWirelessSerialPortOnly() {
 // TODO(crbug.com/355570625): Shared impl with ChromeBluetoothChooserController.
 void SerialChooserController::OpenBluetoothHelpUrl() const {
   CHECK(chooser_context_);
-#if !BUILDFLAG(IS_ANDROID)
   Profile* profile = chooser_context_->profile();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS can directly link to the OS setting to turn on the adapter.
-  chrome::SettingsWindowManager::GetInstance()->ShowOSSettings(
-      profile, chromeos::settings::mojom::kBluetoothDevicesSubpagePath);
-#else
   // For other operating systems, show a help center page in a tab.
   content::OpenURLParams open_url_params(
       GURL(chrome::kBluetoothAdapterOffHelpURL), content::Referrer(),
       WindowOpenDisposition::NEW_FOREGROUND_TAB,
       ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
       /*is_renderer_initiated=*/false);
-#if BUILDFLAG(IS_ANDROID)
-  auto* rfh = initiator_document_.AsRenderFrameHostIfValid();
-  auto* web_contents = rfh && rfh->IsActive()
-                           ? content::WebContents::FromRenderFrameHost(rfh)
-                           : nullptr;
-  if (web_contents) {
-    web_contents->OpenURL(open_url_params,
-                          /*navigation_handle_callback=*/{});
-  }
-#else
   chrome::ScopedTabbedBrowserDisplayer browser_displayer(profile);
   CHECK(browser_displayer.browser());
   browser_displayer.browser()->OpenURL(open_url_params,
                                        /*navigation_handle_callback=*/{});
-#endif  // BUILDFLAG(IS_ANDROID)
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }

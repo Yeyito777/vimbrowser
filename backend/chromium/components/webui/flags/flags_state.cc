@@ -36,9 +36,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/cached_flags/android/jni_delegate_impl.h"
-#endif
 
 namespace flags_ui {
 
@@ -88,10 +85,6 @@ bool IsDefaultValue(const FeatureEntry& entry,
     case FeatureEntry::ENABLE_DISABLE_VALUE:
     case FeatureEntry::FEATURE_VALUE:
     case FeatureEntry::FEATURE_WITH_PARAMS_VALUE:
-#if BUILDFLAG(IS_CHROMEOS)
-    case FeatureEntry::PLATFORM_FEATURE_NAME_VALUE:
-    case FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE:
-#endif  // BUILDFLAG(IS_CHROMEOS)
       for (int i = 0; i < entry.NumOptions(); ++i) {
         if (enabled_entries.count(entry.NameForOption(i)) > 0) {
           return false;
@@ -111,10 +104,6 @@ base::ListValue CreateOptionsData(
          entry.type == FeatureEntry::ENABLE_DISABLE_VALUE ||
          entry.type == FeatureEntry::FEATURE_VALUE ||
          entry.type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE
-#if BUILDFLAG(IS_CHROMEOS)
-         || entry.type == FeatureEntry::PLATFORM_FEATURE_NAME_VALUE ||
-         entry.type == FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE
-#endif  // BUILDFLAG(IS_CHROMEOS)
   );
   base::ListValue result;
   for (int i = 0; i < entry.NumOptions(); ++i) {
@@ -246,60 +235,6 @@ std::string GetCombinedStringValue(const FlagsStorage& flags_storage,
   return new_value;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Removes the specified command line switch (if present).
-void RemoveCommandLineSwitch(base::CommandLine* current_cl,
-                             const std::string& switch_to_remove) {
-  base::CommandLine new_cl(current_cl->GetProgram());
-  const base::CommandLine::SwitchMap switches = current_cl->GetSwitches();
-  for (const auto& it : switches) {
-    const auto& switch_name = it.first;
-    const auto& switch_value = it.second;
-    if (switch_name != switch_to_remove) {
-      if (switch_value.empty()) {
-        new_cl.AppendSwitch(switch_name);
-      } else {
-        new_cl.AppendSwitchNative(switch_name, switch_value);
-      }
-    }
-  }
-  *current_cl = new_cl;
-}
-
-// ChromeOS does not call ConvertFlagsToSwitches on startup (see
-// ChromeFeatureListCreator::ConvertFlagsToSwitches() for details) so the
-// command line cannot be updated using pref values. Instead, this method
-// modifies it on the fly when the user makes a change.
-void DidModifyOriginListFlag(const FlagsStorage& flags_storage,
-                             const FeatureEntry& entry) {
-  base::CommandLine* current_cl = base::CommandLine::ForCurrentProcess();
-  const std::string new_value = GetCombinedOriginListValue(
-      flags_storage, *current_cl, entry.internal_name,
-      entry.switches.command_line_switch);
-
-  RemoveCommandLineSwitch(current_cl, entry.switches.command_line_switch);
-
-  const std::string sanitized =
-      CombineAndSanitizeOriginLists(std::string(), new_value);
-  current_cl->AppendSwitchASCII(entry.switches.command_line_switch, sanitized);
-}
-
-// ChromeOS does not call ConvertFlagsToSwitches on startup (see
-// ChromeFeatureListCreator::ConvertFlagsToSwitches() for details) so the
-// command line cannot be updated using pref values. Instead, this method
-// modifies it on the fly when the user makes a change.
-void DidModifyStringFlag(const FlagsStorage& flags_storage,
-                         const FeatureEntry& entry) {
-  base::CommandLine* current_cl = base::CommandLine::ForCurrentProcess();
-  const std::string new_value =
-      GetCombinedStringValue(flags_storage, *current_cl, entry.internal_name,
-                             entry.switches.command_line_switch);
-
-  RemoveCommandLineSwitch(current_cl, entry.switches.command_line_switch);
-
-  current_cl->AppendSwitchASCII(entry.switches.command_line_switch, new_value);
-}
-#endif
 
 }  // namespace
 
@@ -336,10 +271,6 @@ FlagsState::FlagsState(base::span<const FeatureEntry> feature_entries,
     : feature_entries_(feature_entries),
       needs_restart_(false),
       delegate_(delegate)
-#if BUILDFLAG(IS_ANDROID)
-      ,
-      jni_delegate_(std::make_unique<cached_flags::JniDelegateImpl>())
-#endif
 {
 }
 
@@ -436,17 +367,6 @@ void FlagsState::SetFeatureEntryEnabled(FlagsStorage* flags_storage,
       needs_restart_ |= (enabled_entries.erase(internal_name) > 0);
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // If a string or origin list was enabled or disabled, update the command
-    // line flag.
-    if (enable) {
-      if (e->type == FeatureEntry::ORIGIN_LIST_VALUE) {
-        DidModifyOriginListFlag(*flags_storage, *e);
-      } else if (e->type == FeatureEntry::STRING_VALUE) {
-        DidModifyStringFlag(*flags_storage, *e);
-      }
-    }
-#endif
 
   } else if (e->type == FeatureEntry::SINGLE_DISABLE_VALUE) {
     if (!enable) {
@@ -482,17 +402,6 @@ void FlagsState::SetOriginListFlag(const std::string& internal_name,
       CombineAndSanitizeOriginLists(std::string(), value);
   flags_storage->SetOriginListFlag(internal_name, new_value);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const FeatureEntry* entry = FindFeatureEntryByName(internal_name);
-  DCHECK(entry);
-
-  std::set<std::string> enabled_entries;
-  GetSanitizedEnabledFlags(flags_storage, &enabled_entries);
-  const bool enabled = enabled_entries.contains(entry->internal_name);
-  if (enabled) {
-    DidModifyOriginListFlag(*flags_storage, *entry);
-  }
-#endif
 }
 
 void FlagsState::SetStringFlag(const std::string& internal_name,
@@ -500,17 +409,6 @@ void FlagsState::SetStringFlag(const std::string& internal_name,
                                FlagsStorage* flags_storage) {
   flags_storage->SetStringFlag(internal_name, value);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const FeatureEntry* entry = FindFeatureEntryByName(internal_name);
-  DCHECK(entry);
-
-  std::set<std::string> enabled_entries;
-  GetSanitizedEnabledFlags(flags_storage, &enabled_entries);
-  const bool enabled = enabled_entries.contains(entry->internal_name);
-  if (enabled) {
-    DidModifyStringFlag(*flags_storage, *entry);
-  }
-#endif
 }
 
 void FlagsState::RemoveFlagsSwitches(
@@ -527,11 +425,7 @@ void FlagsState::RemoveFlagsSwitches(
 
     // The below is either a std::string or a std::u16string based on platform.
     const auto& existing_value = (*switch_list)[switch_name];
-#if BUILDFLAG(IS_WIN)
-    const std::string existing_value_utf8 = base::WideToUTF8(existing_value);
-#else
     const std::string& existing_value_utf8 = existing_value;
-#endif
 
     std::vector<std::string_view> features =
         base::FeatureList::SplitFeatureListString(existing_value_utf8);
@@ -550,11 +444,7 @@ void FlagsState::RemoveFlagsSwitches(
       switch_list->erase(switch_name);
     } else {
       std::string switch_value = base::JoinString(remaining_features, ",");
-#if BUILDFLAG(IS_WIN)
-      (*switch_list)[switch_name] = base::UTF8ToWide(switch_value);
-#else
       (*switch_list)[switch_name] = switch_value;
-#endif
     }
   }
 }
@@ -599,9 +489,6 @@ std::vector<std::string> FlagsState::RegisterEnabledFeatureVariationParameters(
   // First collect all the data for each trial.
   for (const FeatureEntry& entry : feature_entries) {
     if (entry.type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE
-#if BUILDFLAG(IS_CHROMEOS)
-        || entry.type == FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE
-#endif  // BUILDFLAG(IS_CHROMEOS)
     ) {
       for (int j = 0; j < entry.NumOptions(); ++j) {
         if (entry.StateForOption(j) == FeatureEntry::FeatureState::ENABLED &&
@@ -613,14 +500,6 @@ std::vector<std::string> FlagsState::RegisterEnabledFeatureVariationParameters(
             enabled_features_by_trial_name[trial_name].insert(
                 entry.feature.feature->name);
           }
-#if BUILDFLAG(IS_CHROMEOS)
-          else {
-            trial_name = entry.platform_feature_name.feature_trial_name;
-            // The user has chosen to enable the feature by this option.
-            enabled_features_by_trial_name[trial_name].insert(
-                entry.platform_feature_name.name);
-          }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
           const FeatureEntry::FeatureVariation* variation =
               entry.VariationForOption(j);
@@ -731,32 +610,11 @@ void FlagsState::GetFlagFeatureEntries(
       case FeatureEntry::ENABLE_DISABLE_VALUE:
       case FeatureEntry::FEATURE_VALUE:
       case FeatureEntry::FEATURE_WITH_PARAMS_VALUE:
-#if BUILDFLAG(IS_CHROMEOS)
-      case FeatureEntry::PLATFORM_FEATURE_NAME_VALUE:
-      case FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE:
-#endif  // BUILDFLAG(IS_CHROMEOS)
         data.Set("options", CreateOptionsData(entry, enabled_entries));
         break;
     }
 
     bool supported = (entry.supported_platforms & current_platform) != 0;
-#if BUILDFLAG(IS_CHROMEOS)
-    if (access == kOwnerAccessToFlags &&
-        (entry.supported_platforms & kOsCrOSOwnerOnly) != 0) {
-      supported = true;
-    }
-
-#if BUILDFLAG(ENABLE_BANNED_BASE_FEATURE_PREFIX)
-    if ((entry.type == FeatureEntry::PLATFORM_FEATURE_NAME_VALUE ||
-         entry.type == FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE) &&
-        !base::StartsWith(entry.platform_feature_name.name,
-                          BUILDFLAG(BANNED_BASE_FEATURE_PREFIX))) {
-      LOG(ERROR) << "mising required prefix for "
-                 << entry.platform_feature_name.name;
-      supported = false;
-    }
-#endif  // BUILDFLAG(ENABLED_BANNED_BASE_FEATURE_PREFIX)
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     if (supported) {
       supported_entries.Append(std::move(data));
@@ -768,20 +626,10 @@ void FlagsState::GetFlagFeatureEntries(
 
 // static
 unsigned short FlagsState::GetCurrentPlatform() {
-#if BUILDFLAG(IS_IOS)
-  return kOsIos;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return kOsMac;
-#elif BUILDFLAG(IS_WIN)
-  return kOsWin;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return kOsCrOS;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OPENBSD)
   return kOsLinux;
-#elif BUILDFLAG(IS_ANDROID)
-  return kOsAndroid;
-#elif BUILDFLAG(IS_FUCHSIA)
-  return kOsFuchsia;
 #else
 #error Unknown platform
 #endif
@@ -965,9 +813,6 @@ void FlagsState::GetSanitizedEnabledFlagsForCurrentPlatform(
   GetSanitizedEnabledFlags(flags_storage, result);
 
   int platform_mask = GetCurrentPlatform();
-#if BUILDFLAG(IS_CHROMEOS)
-  platform_mask |= kOsCrOSOwnerOnly;
-#endif
   std::set<std::string> platform_entries =
       SanitizeList(flags_storage, *result, platform_mask);
   result->swap(platform_entries);
@@ -1038,10 +883,6 @@ void FlagsState::GenerateFlagsToSwitchesMapping(
 
       case FeatureEntry::FEATURE_VALUE:
       case FeatureEntry::FEATURE_WITH_PARAMS_VALUE:
-#if BUILDFLAG(IS_CHROMEOS)
-      case FeatureEntry::PLATFORM_FEATURE_NAME_VALUE:
-      case FeatureEntry::PLATFORM_FEATURE_NAME_WITH_PARAMS_VALUE:
-#endif  // BUILDFLAG(IS_CHROMEOS)
         for (int j = 0; j < entry.NumOptions(); ++j) {
           FeatureEntry::FeatureState state = entry.StateForOption(j);
           if (state == FeatureEntry::FeatureState::DEFAULT) {
@@ -1055,11 +896,6 @@ void FlagsState::GenerateFlagsToSwitchesMapping(
                 entry.type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE) {
               feature_name = entry.feature.feature->name;
             }
-#if BUILDFLAG(IS_CHROMEOS)
-            else {
-              feature_name = entry.platform_feature_name.name;
-            }
-#endif  // BUILDFLAG(IS_CHROMEOS)
             std::vector<std::string> params_value;
 
             std::string variation_id;
@@ -1124,98 +960,6 @@ void FlagsState::SetFlags(
     const std::set<std::string>& prev_enabled_flags) const {
   flags_storage->SetFlags(enabled_flags);
 
-#if BUILDFLAG(IS_ANDROID)
-  // feature name -> feature value
-  // TODO(crbug.com/392871545): Change the type of this to
-  // std::map<std::string, bool> once Jni Autoboxing is working.
-  std::map<std::string, std::string> features;
-  // feature name -> (param name -> param value)
-  std::map<std::string, std::map<std::string, std::string>> feature_params;
-
-  // Handle flags that have been set to "Enabled" or "Disabled".
-  for (const std::string& flag : enabled_flags) {
-    size_t at_index = flag.find(testing::kMultiSeparator);
-    std::string feature_internal_name = flag.substr(0, at_index);
-    const flags_ui::FeatureEntry* entry =
-        FindFeatureEntryByName(feature_internal_name);
-    // Since this flag is currently enabled, we know for sure that we can find
-    // its feature entry using its internal name.
-    CHECK(entry);
-
-    if (entry->type == FeatureEntry::FEATURE_VALUE ||
-        entry->type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE) {
-      std::string feature_name = entry->feature.feature->name;
-      std::string feature_option_str = flag.substr(at_index + 1);
-      int feature_option;
-      bool result = base::StringToInt(feature_option_str, &feature_option);
-      DCHECK(result);
-      FeatureEntry::FeatureState feature_state =
-          entry->StateForOption(feature_option);
-      bool feature_value =
-          (feature_state == FeatureEntry::FeatureState::ENABLED);
-      std::string feature_value_string = base::ToString(feature_value);
-      features[feature_name] = feature_value_string;
-
-      if (entry->type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE) {
-        feature_params[feature_name] = std::map<std::string, std::string>();
-        std::map<std::string, std::string>& cur_feature_params =
-            feature_params[feature_name];
-        const FeatureEntry::FeatureVariation* feature_variations =
-            entry->VariationForOption(feature_option);
-        if (!feature_variations) {
-          // When this line is reached, the feature must be set to either
-          // "Enabled" (without parameters) or "Disabled". Both of these options
-          // are associated with an empty set of parameters. Hence the key
-          // feature_name is mapped to an empty map in feature_params.
-          continue;
-        }
-        for (const auto& feature_param : feature_variations->params) {
-          std::string param_name = std::string(feature_param.param_name);
-          std::string param_value = std::string(feature_param.param_value);
-          cur_feature_params[param_name] = param_value;
-        }
-      }
-    }
-  }
-
-  jni_delegate_->CacheNativeFlagsImmediately(features);
-  jni_delegate_->CacheFeatureParamsImmediately(feature_params);
-
-  // a list of feature names for which we need to erase the
-  // Java cached values of the associated features
-  std::vector<std::string> features_to_erase;
-  // a list of feature names for which we need to erase the
-  // Java cached values of the associated feature params
-  std::vector<std::string> feature_params_to_erase;
-
-  // Handle flags that have been switched to "Default".
-  for (const std::string& flag : prev_enabled_flags) {
-    if (enabled_flags.find(flag) == enabled_flags.end()) {
-      size_t at_index = flag.find(testing::kMultiSeparator);
-      std::string feature_internal_name = flag.substr(0, at_index);
-      const flags_ui::FeatureEntry* entry =
-          FindFeatureEntryByName(feature_internal_name);
-      // Since this flag is enabled previously but not enabled right now, it is
-      // possible that we have removed this flag from the codebase. Therefore,
-      // if we cannot find the feature entry, we just move on.
-      if (entry == nullptr) {
-        continue;
-      }
-
-      if (entry->type == FeatureEntry::FEATURE_VALUE ||
-          entry->type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE) {
-        std::string feature_name = entry->feature.feature->name;
-        features_to_erase.push_back(feature_name);
-        if (entry->type == FeatureEntry::FEATURE_WITH_PARAMS_VALUE) {
-          feature_params_to_erase.push_back(feature_name);
-        }
-      }
-    }
-  }
-
-  jni_delegate_->EraseNativeFlagCachedValues(features_to_erase);
-  jni_delegate_->EraseFeatureParamCachedValues(feature_params_to_erase);
-#endif
 }
 
 }  // namespace flags_ui

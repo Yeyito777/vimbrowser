@@ -21,9 +21,6 @@
 #include "base/compiler_specific.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace crashpad {
 
@@ -129,14 +126,6 @@ class NoCfiIcall {
   explicit NoCfiIcall(PointerType function)
       : function_(reinterpret_cast<Functor>(function)) {}
 
-#if BUILDFLAG(IS_WIN)
-  //! \see NoCfiIcall
-  template <typename = std::enable_if_t<
-                !std::is_same<typename std::remove_cv<Functor>::type,
-                              FARPROC>::value>>
-  explicit NoCfiIcall(FARPROC function)
-      : function_(reinterpret_cast<Functor>(function)) {}
-#endif  // BUILDFLAG(IS_WIN)
 
   ~NoCfiIcall() = default;
 

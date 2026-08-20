@@ -20,12 +20,5 @@ void LogKeyRotationExitCode(int exit_code) {
   base::UmaHistogramSparse(kExitCodeHistogram, exit_code);
 }
 
-#if BUILDFLAG(IS_WIN)
-void LogUnexpectedHresult(HRESULT result) {
-  static constexpr char kHresultHistogram[] =
-      "Enterprise.DeviceTrust.KeyRotationCommand.Error.Hresult";
-  base::UmaHistogramSparse(kHresultHistogram, result);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace enterprise_connectors

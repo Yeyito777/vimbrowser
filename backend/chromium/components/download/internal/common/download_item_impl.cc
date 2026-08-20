@@ -69,9 +69,6 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/download/internal/common/android/download_collection_bridge.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -475,10 +472,6 @@ DownloadItemImpl::DownloadItemImpl(DownloadItemImplDelegate* delegate,
       fetch_error_body_(info.fetch_error_body),
       request_headers_(info.request_headers),
       download_source_(info.download_source)
-#if BUILDFLAG(IS_ANDROID)
-      ,
-      allow_auto_open_after_completion_(info.allow_auto_open_after_completion)
-#endif  // BUILDFLAG(IS_ANDROID)
 {
   delegate_->Attach();
   Init(true /* actively downloading */, TYPE_ACTIVE_DOWNLOAD);
@@ -745,15 +738,6 @@ void DownloadItemImpl::OpenDownload() {
   for (auto& observer : observers_)
     observer.OnDownloadOpened(this);
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, don't actually open the file if it has no extension, to prevent
-  // Windows from interpreting it as the command for an executable of the same
-  // name.
-  if (destination_info_.current_path.Extension().empty()) {
-    delegate_->ShowDownloadInShell(this);
-    return;
-  }
-#endif
   delegate_->OpenDownload(this);
 }
 
@@ -774,9 +758,6 @@ void DownloadItemImpl::RenameDownloadedFileDone(
     DownloadRenameResult result) {
   if (result == DownloadRenameResult::SUCCESS) {
     bool is_content_uri = false;
-#if BUILDFLAG(IS_ANDROID)
-    is_content_uri = GetFullPath().IsContentUri();
-#endif  // BUILDFLAG(IS_ANDROID)
     if (is_content_uri) {
       SetDisplayName(display_name);
     } else {
@@ -1050,15 +1031,6 @@ DownloadItemRenameHandler* DownloadItemImpl::GetRenameHandler() {
   return rename_handler_.get();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool DownloadItemImpl::IsFromExternalApp() {
-  return is_from_external_app_;
-}
-
-bool DownloadItemImpl::AllowAutoOpenAfterCompletion() {
-  return allow_auto_open_after_completion_;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool DownloadItemImpl::IsDangerous() const {
   switch (danger_type_) {
@@ -1477,15 +1449,6 @@ void DownloadItemImpl::MarkAsComplete() {
 
   DCHECK(AllDataSaved());
   destination_info_.end_time = base::Time::Now();
-#if BUILDFLAG(IS_ANDROID)
-  if (GetTargetFilePath().IsContentUri()) {
-    GetDownloadTaskRunner()->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            base::IgnoreResult(&DownloadCollectionBridge::PublishDownload),
-            GetTargetFilePath()));
-  }
-#endif
   TransitionTo(COMPLETE_INTERNAL);
   UpdateObservers();
 }
@@ -1971,17 +1934,6 @@ void DownloadItemImpl::OnDownloadCompleting() {
       base::BindOnce(&DownloadItemImpl::OnRenameAndAnnotateDone,
                      weak_ptr_factory_.GetWeakPtr());
 
-#if BUILDFLAG(IS_ANDROID)
-  if (GetTargetFilePath().IsContentUri()) {
-    GetDownloadTaskRunner()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&DownloadFile::PublishDownload,
-                       // Safe because we control download file lifetime.
-                       base::Unretained(download_file_.get()),
-                       std::move(rename_callback)));
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   mojo::PendingRemote<quarantine::mojom::Quarantine> quarantine;
   auto quarantine_callback = delegate_->GetQuarantineConnectionCallback();

@@ -18,9 +18,6 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "third_party/blink/public/mojom/permissions/permission.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/mojo/mojom/media_foundation_preferences.mojom.h"
-#endif
 
 namespace base {
 class SingleThreadTaskRunner;
@@ -51,10 +48,6 @@ class MediaPermissionDispatcher : public media::MediaPermission {
                          PermissionStatusCB permission_status_cb) override;
   bool IsEncryptedMediaEnabled() override;
 
-#if BUILDFLAG(IS_WIN)
-  void IsHardwareSecureDecryptionAllowed(
-      IsHardwareSecureDecryptionAllowedCB cb) override;
-#endif  // BUILDFLAG(IS_WIN)
 
  private:
   // Map of request IDs and pending PermissionStatusCBs.
@@ -67,17 +60,6 @@ class MediaPermissionDispatcher : public media::MediaPermission {
   // Ensure there is a connection to the permission service and return it.
   blink::mojom::PermissionService* GetPermissionService();
 
-#if BUILDFLAG(IS_WIN)
-  // Ensure there is a connection to the media foundation preferences and
-  // return it.
-  media::mojom::MediaFoundationPreferences* GetMediaFoundationPreferences();
-
-  // Callback for |mf_preferences_| connection errors.
-  void OnMediaFoundationPreferencesConnectionError();
-
-  // Callback for |mf_preferences_|
-  void OnIsHardwareSecureDecryptionAllowed(bool allowed);
-#endif
 
   // Callback for |permission_service_| calls.
   void OnPermissionStatus(uint32_t request_id,
@@ -91,9 +73,6 @@ class MediaPermissionDispatcher : public media::MediaPermission {
   RequestMap requests_;
   mojo::Remote<blink::mojom::PermissionService> permission_service_;
 
-#if BUILDFLAG(IS_WIN)
-  mojo::Remote<media::mojom::MediaFoundationPreferences> mf_preferences_;
-#endif
 
   // The |RenderFrameImpl| that owns this MediaPermissionDispatcher.  It's okay
   // to hold a raw pointer here because the lifetime of this object is bounded

@@ -132,16 +132,6 @@ component("leveldatabase") {
     "//third_party/snappy",
   ]
 
-  if (is_win) {
-    # leveldb compiles with a limited set of warnings enabled, and is not
-    # likely to accept fixes for other warnings. See crbug.com/698013
-    cflags = [ "/wd4018" ]  # Signed/unsigned mismatch in comparison.
-
-    if (is_official_build) {
-      # Function recursive on all control paths, crbug.com/620018
-      cflags += [ "/wd4717" ]
-    }
-  }
   defines += [ "LEVELDB_COMPILE_LIBRARY" ]
 }
 
@@ -168,17 +158,6 @@ static_library("leveldb_static") {
     "//third_party/re2",
     "//third_party/snappy",
   ]
-
-  if (is_win) {
-    # leveldb compiles with a limited set of warnings enabled, and is not
-    # likely to accept fixes for other warnings. See crbug.com/698013
-    cflags = [ "/wd4018" ]  # Signed/unsigned mismatch in comparison.
-
-    if (is_official_build) {
-      # Function recursive on all control paths, crbug.com/620018
-      cflags += [ "/wd4717" ]
-    }
-  }
 }
 
 test("env_chromium_unittests") {
@@ -248,12 +227,6 @@ test("leveldb_unittests") {
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]
 
-  if (is_win) {
-    # util\cache_test.cc(167): warning C4018: '<': signed/unsigned mismatch
-    # util\cache_test.cc(171): warning C4018: '<': signed/unsigned mismatch
-    cflags = [ "/wd4018" ]  # Signed/unsigned mismatch in comparison.
-  }
-
   deps = [
     ":leveldb_testutil",
     "//base",
@@ -261,44 +234,42 @@ test("leveldb_unittests") {
   ]
 }
 
-if (!is_ios) {
-  test("leveldb_db_bench") {
-    sources = [
-      "src/benchmarks/db_bench.cc",
-      "src/util/histogram.cc",
-      "src/util/histogram.h",
-    ]
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-    deps = [ ":leveldb_testutil" ]
-  }
+test("leveldb_db_bench") {
+  sources = [
+    "src/benchmarks/db_bench.cc",
+    "src/util/histogram.cc",
+    "src/util/histogram.h",
+  ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  deps = [ ":leveldb_testutil" ]
+}
 
-  test("leveldb_db_bench_log") {
-    sources = [ "src/benchmarks/db_bench_log.cc" ]
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-    deps = [
-      ":leveldb_testutil",
-      "//third_party/google_benchmark",
-    ]
-  }
+test("leveldb_db_bench_log") {
+  sources = [ "src/benchmarks/db_bench_log.cc" ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  deps = [
+    ":leveldb_testutil",
+    "//third_party/google_benchmark",
+  ]
+}
 
-  executable("leveldb_leveldbutil") {
-    sources = [ "src/db/leveldbutil.cc" ]
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-    deps = [ ":leveldb_static" ]
-  }
+executable("leveldb_leveldbutil") {
+  sources = [ "src/db/leveldbutil.cc" ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  deps = [ ":leveldb_static" ]
+}
 
-  group("leveldb_test_targets") {
-    testonly = true
-    deps = [
-      ":env_chromium_unittests",
-      ":leveldb_db_bench",
-      ":leveldb_db_bench_log",
-      ":leveldb_unittests",
-    ]
-  }
+group("leveldb_test_targets") {
+  testonly = true
+  deps = [
+    ":env_chromium_unittests",
+    ":leveldb_db_bench",
+    ":leveldb_db_bench_log",
+    ":leveldb_unittests",
+  ]
 }
 
 fuzzer_test("leveldb_put_get_delete_fuzzer") {

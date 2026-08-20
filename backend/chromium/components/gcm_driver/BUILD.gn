@@ -115,13 +115,6 @@ static_library("test_support") {
   allow_circular_includes_from =
       [ "//components/gcm_driver/instance_id:test_support" ]
 
-  if (is_ios) {
-    sources -= [
-      "fake_gcm_profile_service.cc",
-      "fake_gcm_profile_service.h",
-    ]
-  }
-
   sources += [
     "fake_gcm_client.cc",
     "fake_gcm_client.h",

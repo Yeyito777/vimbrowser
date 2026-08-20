@@ -16,9 +16,7 @@ namespace ui {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-const int kSystemKeyModifierMask = EF_ALT_DOWN | EF_COMMAND_DOWN;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 // Alt modifier is used to input extended characters on Mac.
 const int kSystemKeyModifierMask = EF_COMMAND_DOWN;
 #else

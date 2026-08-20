@@ -42,13 +42,6 @@ build_webui("build") {
     "//tools/typescript/definitions/metrics_private.d.ts",
     "//tools/typescript/definitions/settings_private.d.ts",
   ]
-  if (is_chromeos) {
-    ts_definitions += [
-      "//tools/typescript/definitions/quick_unlock_private.d.ts",
-      "//tools/typescript/definitions/runtime.d.ts",
-      "//tools/typescript/definitions/tabs.d.ts",
-    ]
-  }
   ts_deps = [
     "//third_party/polymer/v3_0:library",
     "//ui/webui/resources/cr_elements:build_ts",

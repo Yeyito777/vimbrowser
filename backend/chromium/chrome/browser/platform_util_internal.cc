@@ -7,9 +7,6 @@
 #include "build/build_config.h"
 #include "build/buildflag.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/file_manager/open_util.h"
-#endif
 
 namespace platform_util::internal {
 namespace {
@@ -21,10 +18,6 @@ bool g_shell_operations_allowed = true;
 void DisableShellOperationsForTesting() {
   g_shell_operations_allowed = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Chrome OS also needs to customize file manager behavior.
-  file_manager::util::DisableShellOperationsForTesting();
-#endif
 }
 
 bool AreShellOperationsAllowed() {

@@ -25,31 +25,16 @@ source_set("upgrade_detector") {
     "//url",
   ]
 
-  if (!is_chromeos) {
-    sources += [
-      "get_installed_version.h",
-      "installed_version_monitor.h",
-      "installed_version_poller.h",
-      "upgrade_detector_impl.h",
-    ]
-    public_deps += [
-      ":build_state_observer",
-      "//components/variations/service",
-    ]
-  } else {
-    sources += [
-      "installed_version_updater_chromeos.h",
-      "upgrade_detector_chromeos.h",
-    ]
-    public_deps += [
-      ":build_state_observer",
-      "//chromeos/ash/components/dbus/update_engine",
-    ]
-  }
-
-  if (is_win) {
-    sources += [ "registry_monitor.h" ]
-  }
+  sources += [
+    "get_installed_version.h",
+    "installed_version_monitor.h",
+    "installed_version_poller.h",
+    "upgrade_detector_impl.h",
+  ]
+  public_deps += [
+    ":build_state_observer",
+    "//components/variations/service",
+  ]
 
   if (is_mac) {
     sources += [ "directory_monitor.h" ]
@@ -87,33 +72,18 @@ source_set("impl") {
     "//services/network/public/cpp",
     "//ui/base/idle",
   ]
-  if (!is_chromeos) {
-    sources += [
-      "get_installed_version.cc",
-      "installed_version_poller.cc",
-      "upgrade_detector_impl.cc",
-    ]
-    deps += [
-      "//base:build_time",
-      "//chrome/browser:buildflags",
-      "//chrome/browser/google",
-      "//chrome/browser/obsolete_system",
-      "//content/public/browser",
-    ]
-  } else {
-    sources += [
-      "installed_version_updater_chromeos.cc",
-      "upgrade_detector_chromeos.cc",
-    ]
-    deps += [ "//chromeos/ash/components/channel" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "get_installed_version_win.cc",
-      "registry_monitor.cc",
-    ]
-  }
+  sources += [
+    "get_installed_version.cc",
+    "installed_version_poller.cc",
+    "upgrade_detector_impl.cc",
+  ]
+  deps += [
+    "//base:build_time",
+    "//chrome/browser:buildflags",
+    "//chrome/browser/google",
+    "//chrome/browser/obsolete_system",
+    "//content/public/browser",
+  ]
 
   if (is_mac) {
     sources += [
@@ -153,30 +123,8 @@ source_set("unit_tests") {
   public_deps = [ ":build_state_observer" ]
   deps += [ "//components/prefs" ]
 
-  if (is_win) {
-    assert(toolkit_views)
-    sources += [
-      "get_installed_version_win_unittest.cc",
-      "registry_monitor_unittest.cc",
-    ]
-  }
-
   if (is_mac) {
     sources += [ "directory_monitor_unittest.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "installed_version_updater_chromeos_unittest.cc",
-      "upgrade_detector_chromeos_unittest.cc",
-    ]
-
-    deps += [
-      "//chromeos/ash/components/dbus/update_engine",
-      "//chromeos/ash/components/dbus/update_engine:proto",
-      "//components/network_time",
-      "//components/version_info",
-    ]
   }
 
   if (is_linux) {
@@ -188,18 +136,16 @@ source_set("unit_tests") {
     deps += [ "//base:base_static" ]
   }
 
-  if (!is_chromeos) {
-    sources += [
-      "installed_version_poller_unittest.cc",
-      "upgrade_detector_impl_unittest.cc",
-    ]
+  sources += [
+    "installed_version_poller_unittest.cc",
+    "upgrade_detector_impl_unittest.cc",
+  ]
 
-    deps += [
-      "//base:i18n",
-      "//chrome/browser/google",
-      "//components/enterprise:test_support",
-      "//components/network_time",
-      "//content/test:test_support",
-    ]
-  }
+  deps += [
+    "//base:i18n",
+    "//chrome/browser/google",
+    "//components/enterprise:test_support",
+    "//components/network_time",
+    "//content/test:test_support",
+  ]
 }

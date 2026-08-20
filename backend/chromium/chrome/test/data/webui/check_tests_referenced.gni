@@ -23,13 +23,7 @@ template("check_tests_referenced") {
     cc_files_normalized = []
     foreach(f, cc_files) {
       extension = get_path_info(f, "extension")
-      if (!is_chromeos) {
-        assert(extension == "cc")
-      } else {
-        # On CrOS there are still old js2gtest tests so allow .js extension as
-        # well.
-        assert(extension == "cc" || extension == "js")
-      }
+      assert(extension == "cc")
       cc_files_normalized += [ rebase_path(f, root_build_dir) ]
     }
 

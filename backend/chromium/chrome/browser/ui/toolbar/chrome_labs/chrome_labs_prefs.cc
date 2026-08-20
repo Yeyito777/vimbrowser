@@ -15,22 +15,12 @@ namespace chrome_labs_prefs {
 // still need to be met for the feature to be shown.
 const char kBrowserLabsEnabledEnterprisePolicy[] = "browser_labs_enabled";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// For ash-chrome which will use profile prefs. Dictionary pref mapping
-// experiment internal names to the day the experiment was added to the
-// ChromeLabs bubble. This will be used to track time since the new badge was
-// first shown.
-const char kChromeLabsNewBadgeDictAshChrome[] =
-    "chrome_labs_new_badge_dict_ash_chrome";
-
-#else
 // For all other desktop platforms which will use Local State. Dictionary pref
 // mapping experiment internal names to the day the experiment was added to the
 // ChromeLabs bubble. This will be used to track time since the new badge was
 // first shown.
 const char kChromeLabsNewBadgeDict[] = "chrome_labs_new_badge_dict";
 
-#endif
 
 // Integer pref used to determine whether Chrome Labs can be enabled.
 // This is used to replace showing Chrome Labs through Finch.
@@ -51,17 +41,12 @@ const int kChromeLabsNewExperimentPrefValue = -1;
 
 void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterBooleanPref(kBrowserLabsEnabledEnterprisePolicy, true);
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterDictionaryPref(kChromeLabsNewBadgeDictAshChrome);
-#endif
 }
 
 void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
   registry->RegisterIntegerPref(kChromeLabsActivationThreshold,
                                 kChromeLabsActivationThresholdDefaultValue);
-#if !BUILDFLAG(IS_CHROMEOS)
   registry->RegisterDictionaryPref(kChromeLabsNewBadgeDict);
-#endif
 }
 
 }  // namespace chrome_labs_prefs

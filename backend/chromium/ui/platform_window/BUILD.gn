@@ -27,23 +27,6 @@ component("platform_window") {
     "//ui/gfx",
   ]
 
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia/initialize_presenter_api_view.cc",
-      "fuchsia/initialize_presenter_api_view.h",
-      "fuchsia/scenic_window_delegate.h",
-      "fuchsia/view_ref_pair.cc",
-      "fuchsia/view_ref_pair.h",
-    ]
-
-    public_deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.element:fuchsia.element_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.views:fuchsia.ui.views_hlcpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/scenic_cpp",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "extensions/system_modal_extension.cc",
@@ -58,7 +41,4 @@ component("platform_window") {
 
 group("platform_impls") {
   public_deps = [ "//ui/platform_window/stub" ]
-  if (is_win) {
-    public_deps += [ "//ui/platform_window/win" ]
-  }
 }

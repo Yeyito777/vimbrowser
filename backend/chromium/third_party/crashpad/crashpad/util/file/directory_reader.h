@@ -18,13 +18,7 @@
 #include "base/files/file_path.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include "util/posix/scoped_dir.h"
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "util/win/scoped_handle.h"
-#endif  // BUILDFLAG(IS_POSIX)
 
 namespace crashpad {
 
@@ -74,13 +68,7 @@ class DirectoryReader {
 #endif
 
  private:
-#if BUILDFLAG(IS_POSIX)
   ScopedDIR dir_;
-#elif BUILDFLAG(IS_WIN)
-  WIN32_FIND_DATA find_data_;
-  ScopedSearchHANDLE handle_;
-  bool first_entry_;
-#endif  // BUILDFLAG(IS_POSIX)
 };
 
 }  // namespace crashpad

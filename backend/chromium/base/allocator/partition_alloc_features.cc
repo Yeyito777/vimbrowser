@@ -188,11 +188,7 @@ BASE_FEATURE_ENUM_PARAM(BackupRefPtrEnabledProcesses,
                         kBackupRefPtrEnabledProcessesParam,
                         &kPartitionAllocBackupRefPtr,
                         kPAFeatureEnabledProcessesStr,
-#if PA_BUILDFLAG(IS_ANDROID)
-                        BackupRefPtrEnabledProcesses::kNonRenderer,
-#else
                         BackupRefPtrEnabledProcesses::kAllProcesses,
-#endif
                         &kBackupRefPtrEnabledProcessesOptions);
 
 constexpr FeatureParam<BackupRefPtrMode>::Option kBackupRefPtrModeOptions[] = {
@@ -214,13 +210,7 @@ constinit const FeatureParam<bool> kBackupRefPtrSuppressDoubleFreeDetectedCrash{
     false};
 constinit const FeatureParam<bool> kBackupRefPtrSuppressCorruptionDetectedCrash{
     &kPartitionAllocBackupRefPtr, "brp-suppress-corruption-detected-crash",
-#if PA_BUILDFLAG(IS_IOS)
-    // TODO(crbug.com/41497028): Continue investigation and remove once
-    // addressed.
-    true};
-#else
     false};
-#endif
 
 BASE_FEATURE(kPartitionAllocMemoryTagging,
 #if PA_BUILDFLAG(USE_FULL_MTE) || BUILDFLAG(IS_ANDROID)
@@ -358,10 +348,6 @@ BASE_FEATURE(kPartitionAllocSortSmallerSlotSpanFreeLists,
 // Whether to sort the active slot spans in PurgeMemory().
 BASE_FEATURE(kPartitionAllocSortActiveSlotSpans, FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Whether to retry allocations when commit fails.
-BASE_FEATURE(kPageAllocatorRetryOnCommitFailure, FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 // A parameter to exclude or not exclude PartitionAllocSupport from

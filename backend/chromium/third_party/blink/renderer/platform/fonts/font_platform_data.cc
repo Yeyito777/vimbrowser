@@ -107,7 +107,6 @@ FontPlatformData::FontPlatformData(sk_sp<SkTypeface> typeface,
       resolved_font_features_(std::move(resolved_font_features)) {
 #if !BUILDFLAG(IS_MAC)
   style_ = WebFontRenderStyle::GetDefault();
-#if !BUILDFLAG(IS_WIN)
   WebFontRenderStyle system_style;
   system_style = QuerySystemRenderStyle(family, text_size,
                                         typeface_->fontStyle(), text_rendering);
@@ -120,9 +119,6 @@ FontPlatformData::FontPlatformData(sk_sp<SkTypeface> typeface,
             ? WebFontRenderStyle::kNoPreference
             : 0;
   }
-#else
-  auto system_style = QuerySystemForRenderStyle();
-#endif  // !BUILDFLAG(IS_WIN)
   style_.OverrideWith(system_style);
 #endif  // !BUILDFLAG(IS_MAC)
 }

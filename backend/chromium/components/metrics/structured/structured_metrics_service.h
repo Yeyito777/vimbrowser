@@ -93,9 +93,6 @@ class StructuredMetricsService final {
  private:
   friend class StructuredMetricsServiceTest;
   friend class StructuredMetricsMixin;
-#if BUILDFLAG(IS_CHROMEOS)
-  friend class OobeStructuredMetricsWatcher;
-#endif
   friend class metrics::StructuredMetricsServiceTestBase;
 
   FRIEND_TEST_ALL_PREFIXES(metrics::structured::StructuredMetricsServiceTest,

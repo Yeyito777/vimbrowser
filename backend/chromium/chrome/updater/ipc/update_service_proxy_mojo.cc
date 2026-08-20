@@ -50,9 +50,6 @@
 #include "mojo/public/cpp/system/isolated_connection.h"
 #include "mojo/public/cpp/system/message_pipe.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <wrl/client.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace updater {
 namespace {
@@ -384,16 +381,9 @@ void UpdateServiceProxyMojoImpl::GetPoliciesJson(
                            }).Then(ToMojoCallback(std::move(callback))));
 }
 
-#if BUILDFLAG(IS_WIN)
-void UpdateServiceProxyMojoImpl::OnConnected(
-    mojo::PendingReceiver<mojom::UpdateService> pending_receiver,
-    std::optional<mojo::PlatformChannelEndpoint> endpoint,
-    Microsoft::WRL::ComPtr<IUnknown> server) {
-#else   // BUILDFLAG(IS_WIN)
 void UpdateServiceProxyMojoImpl::OnConnected(
     mojo::PendingReceiver<mojom::UpdateService> pending_receiver,
     std::optional<mojo::PlatformChannelEndpoint> endpoint) {
-#endif  // BUILDFLAG(IS_WIN)
   VLOG(1) << __func__;
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!endpoint) {
@@ -415,9 +405,6 @@ void UpdateServiceProxyMojoImpl::OnConnected(
 
   connection_ = std::move(connection);
 
-#if BUILDFLAG(IS_WIN)
-  server_ = server;
-#endif  // BUILDFLAG(IS_WIN)
 
   // A weak pointer is used here to prevent remote_ from forming a reference
   // cycle with this object.
@@ -453,14 +440,8 @@ void UpdateServiceProxyMojoImpl::EnsureConnecting() {
                          remote_.BindNewPipeAndPassReceiver()))));
 }
 
-#if BUILDFLAG(IS_WIN)
-scoped_refptr<UpdateService> CreateUpdateServiceProxyMojo(
-    UpdaterScope scope,
-    base::TimeDelta timeout) {
-#else   // BUILDFLAG(IS_WIN)
 scoped_refptr<UpdateService> CreateUpdateServiceProxy(UpdaterScope scope,
                                                       base::TimeDelta timeout) {
-#endif  // BUILDFLAG(IS_WIN)
   return base::MakeRefCounted<UpdateServiceProxy>(
       base::MakeRefCounted<UpdateServiceProxyMojoImpl>(scope, timeout));
 }

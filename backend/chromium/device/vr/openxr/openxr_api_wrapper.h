@@ -30,10 +30,6 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/openxr/src/include/openxr/openxr.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11_4.h>
-#include <wrl.h>
-#endif
 
 namespace gfx {
 class Transform;

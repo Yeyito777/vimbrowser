@@ -57,10 +57,6 @@
 #include "net/base/network_interfaces.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/native_library.h"
-#include "net/android/network_library.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_APPLE)
 #include "net/base/apple/guarded_fd.h"
@@ -581,15 +577,8 @@ int UDPSocketPosix::BindToNetwork(handles::NetworkHandle network) {
   DCHECK_NE(socket_, kInvalidSocket);
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   DCHECK(!is_connected());
-#if BUILDFLAG(IS_ANDROID)
-  int rv = net::android::BindToNetwork(socket_, network);
-  if (rv == OK)
-    bound_network_ = network;
-  return rv;
-#else
   NOTIMPLEMENTED();
   return ERR_NOT_IMPLEMENTED;
-#endif
 }
 
 int UDPSocketPosix::SetReceiveBufferSize(int32_t size) {
@@ -982,19 +971,6 @@ int UDPSocketPosix::InternalSendTo(IOBuffer* buf,
     // android::GetNetworkBlockedReason()).
     int os_error = errno;
     result = MapSystemError(os_error);
-#if BUILDFLAG(IS_ANDROID)
-    // Android local network permission errors are surfaced as either EPERM or
-    // EACCESS when reading/writing to an UDP socket
-    // (https://developer.android.com/privacy-and-security/local-network-permission).
-    // Note that these errors are not unique to LNP. So, before returning the
-    // LNP-specific ERR_LOCAL_NETWORK_PERMISSION_MISSING, we must check whether
-    // LNP was really the cause.
-    if ((os_error == EPERM || os_error == EACCES) &&
-        android::GetNetworkBlockedReason(socket_) ==
-            android::NetworkBlockedReason::kLnp) {
-      result = ERR_LOCAL_NETWORK_PERMISSION_MISSING;
-    }
-#endif
   } else {
     CHECK_LE(result, buf_len);
   }
@@ -1071,10 +1047,7 @@ int UDPSocketPosix::DoBind(const IPEndPoint& address) {
   if (rv == 0)
     return OK;
   int last_error = errno;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (last_error == EINVAL)
-    return ERR_ADDRESS_IN_USE;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   if (last_error == EADDRNOTAVAIL)
     return ERR_ADDRESS_IN_USE;
 #endif
@@ -1154,11 +1127,7 @@ int UDPSocketPosix::LeaveGroup(const IPAddress& group_address) const {
       if (addr_family_ != AF_INET6)
         return ERR_ADDRESS_INVALID;
       ipv6_mreq mreq;
-#if BUILDFLAG(IS_FUCHSIA)
-      mreq.ipv6mr_interface = multicast_interface_;
-#else   // BUILDFLAG(IS_FUCHSIA)
       mreq.ipv6mr_interface = 0;  // 0 indicates default multicast interface.
-#endif  // !BUILDFLAG(IS_FUCHSIA)
       mreq.ipv6mr_multiaddr = ToIn6Addr(group_address);
       int rv = setsockopt(socket_, IPPROTO_IPV6, IPV6_LEAVE_GROUP,
                           &mreq, sizeof(mreq));
@@ -1329,26 +1298,14 @@ int UDPSocketPosix::SetIOSNetworkServiceType(int ios_network_service_type) {
   if (ios_network_service_type == 0) {
     return OK;
   }
-#if BUILDFLAG(IS_IOS)
-  if (setsockopt(socket_, SOL_SOCKET, SO_NET_SERVICE_TYPE,
-                 &ios_network_service_type, sizeof(ios_network_service_type))) {
-    return MapSystemError(errno);
-  }
-#endif  // BUILDFLAG(IS_IOS)
   return OK;
 }
 
 void UDPSocketPosix::RegisterQuicConnectionClosePayload(
     base::span<uint8_t> payload) {
-#if BUILDFLAG(IS_ANDROID)
-  net::android::RegisterQuicConnectionClosePayload(socket_, payload);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void UDPSocketPosix::UnregisterQuicConnectionClosePayload() {
-#if BUILDFLAG(IS_ANDROID)
-  net::android::UnregisterQuicConnectionClosePayload(socket_);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace net

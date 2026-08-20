@@ -297,10 +297,6 @@ void CPU::Initialize() {
   unsigned long hwcap2 = getauxval(AT_HWCAP2);
   has_mte_ = hwcap2 & HWCAP2_MTE;
   has_bti_ = hwcap2 & HWCAP2_BTI;
-#elif BUILDFLAG(IS_WIN)
-  // Windows makes high-resolution thread timing information available in
-  // user-space.
-  has_non_stop_time_stamp_counter_ = true;
 #endif
 #endif
 }

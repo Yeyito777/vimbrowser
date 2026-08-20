@@ -35,40 +35,15 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
  public:
   ~SandboxedProcessLauncherDelegate() override {}
 
-#if BUILDFLAG(IS_WIN)
-  // sandbox::policy::SandboxDelegate:
-  std::string GetSandboxTag() override;
-  bool DisableDefaultPolicy() override;
-  bool GetAppContainerId(std::string* appcontainer_id) override;
-  bool InitializeConfig(sandbox::TargetConfig* config) override;
-  bool PreSpawnTarget(sandbox::TargetPolicy* policy) override;
-  void PostSpawnTarget(base::ProcessHandle process) override;
-  bool ShouldUnsandboxedRunInJob() override;
-  bool CetCompatible() override;
-  bool RestrictCoreSharing() override;
-  std::optional<std::wstring> GetSecurityAttributeName() override;
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_WIN)
-  // Override to return true if the process should be launched as an elevated
-  // process (which implies no sandbox).
-  virtual bool ShouldLaunchElevated();
-
-  // Whether or not to use the MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS flag
-  // on the outgoing invitation used to create the mojo connection to this
-  // process.
-  virtual bool ShouldUseUntrustedMojoInvitation();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
   // Returns the zygote used to launch the process.
   virtual ZygoteCommunication* GetZygote();
 #endif  // BUILDFLAG(USE_ZYGOTE)
 
-#if BUILDFLAG(IS_POSIX)
   // Override this if the process needs a non-empty environment map.
   virtual base::EnvironmentMap GetEnvironment();
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_MAC)
   // Whether or not to disclaim TCC responsibility for the process, defaults to

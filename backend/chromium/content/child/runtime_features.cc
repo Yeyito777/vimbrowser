@@ -198,9 +198,6 @@ void SetRuntimeFeaturesFromChromiumFeatures() {
           {wf::EnableInstalledApp, raw_ref(features::kInstalledApp)},
           {wf::EnableIntegrityPolicyScript,
            raw_ref(network::features::kIntegrityPolicyScript)},
-#if BUILDFLAG(IS_CHROMEOS)
-          {wf::EnableLockedMode, raw_ref(blink::features::kLockedMode)},
-#endif
           {wf::EnableMediaEngagementBypassAutoplayPolicies,
            raw_ref(media::kMediaEngagementBypassAutoplayPolicies)},
           {wf::EnablePaymentApp, raw_ref(features::kServiceWorkerPaymentApps)},
@@ -460,10 +457,8 @@ void SetCustomizedRuntimeFeaturesFromCombinedArgs(
 
   // These checks are custom wrappers around base::FeatureList::IsEnabled
   // They're moved here to distinguish them from actual base checks
-#if !BUILDFLAG(IS_CHROMEOS)
   WebRuntimeFeatures::EnableOverlayScrollbars(
       ui::NativeTheme::GetInstanceForWeb()->use_overlay_scrollbar());
-#endif
   WebRuntimeFeatures::EnableFluentScrollbars(ui::IsFluentScrollbarEnabled());
 
   // TODO(rodneyding): This is a rare case for a stable feature

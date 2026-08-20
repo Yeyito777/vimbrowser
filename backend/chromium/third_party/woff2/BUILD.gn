@@ -33,7 +33,4 @@ static_library("woff2_dec") {
   public_configs = [ ":woff2_includes" ]
 
   # TODO(ksakamoto): http://crbug.com/167187
-  if (is_win) {
-    cflags = [ "/wd4267" ]  # Conversion from size_t to 'type'.
-  }
 }

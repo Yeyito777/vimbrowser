@@ -45,20 +45,6 @@ component("native_theme") {
     "//ui/resources",
   ]
 
-  if (is_ios) {
-    sources += [
-      "native_theme_mobile.cc",
-      "native_theme_mobile.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "os_settings_provider_ash.cc",
-      "os_settings_provider_ash.h",
-    ]
-  }
-
   if (is_mac) {
     frameworks = [
       "Accessibility.framework",
@@ -75,20 +61,6 @@ component("native_theme") {
       "scrollbar_animator_mac.cc",
       "scrollbar_animator_mac.h",
     ]
-  }
-
-  if (is_win) {
-    sources += [
-      "caption_style_win.cc",
-      "native_theme_win.cc",
-      "native_theme_win.h",
-      "os_settings_provider_win.cc",
-      "os_settings_provider_win.h",
-    ]
-
-    public_deps += [ "//ui/color:accent_color_observer" ]
-
-    libs = [ "uxtheme.lib" ]
   }
 
   # Mac uses `NativeThemeAura` for the web instance. That class does not depend
@@ -146,9 +118,5 @@ test("native_theme_unittests") {
       "scrollbar_animator_mac_unittest.cc",
     ]
     deps += [ "//ui/gfx:test_support" ]
-  }
-
-  if (is_win) {
-    sources += [ "caption_style_win_unittest.cc" ]
   }
 }

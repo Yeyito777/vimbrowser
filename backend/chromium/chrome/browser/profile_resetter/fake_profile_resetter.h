@@ -23,9 +23,6 @@ class FakeProfileResetter : public ProfileResetter {
 
   size_t Resets() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void ResetDnsConfigurations() override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   size_t reset_count_ = 0;

@@ -23,13 +23,9 @@
 #include "components/prefs/pref_service.h"
 #include "components/version_info/version_info.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/enterprise/connectors/core/features.h"
-#endif
 
 namespace enterprise_connectors {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -286,7 +282,6 @@ void CrashReportingContext::RemoveProfile(BrowserCrashEventRouter* router) {
   }
 }
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 CrashReportingContext::~CrashReportingContext() = default;
 

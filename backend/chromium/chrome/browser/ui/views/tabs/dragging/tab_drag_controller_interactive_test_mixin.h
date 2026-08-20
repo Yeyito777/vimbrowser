@@ -33,17 +33,6 @@ class TabDragControllerInteractiveTestMixin : public T {
 
   virtual InputSource input_source() { return InputSource::INPUT_SOURCE_MOUSE; }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool SendTouchEventsSync(int action, int id, const gfx::Point& location) {
-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-    if (!ui_controls::SendTouchEventsNotifyWhenDone(
-            action, id, location.x(), location.y(), run_loop.QuitClosure())) {
-      return false;
-    }
-    run_loop.Run();
-    return true;
-  }
-#endif
 
   gfx::NativeWindow GetWindowHint(const views::View* view) {
     return view->GetWidget() ? view->GetWidget()->GetNativeWindow()
@@ -60,11 +49,7 @@ class TabDragControllerInteractiveTestMixin : public T {
              ui_test_utils::SendMouseEventsSync(ui_controls::LEFT,
                                                 ui_controls::DOWN, window_hint);
     }
-#if BUILDFLAG(IS_CHROMEOS)
-    return SendTouchEventsSync(ui_controls::kTouchPress, id, location);
-#else
     NOTREACHED();
-#endif
   }
 
   // Like PressInput() used together with GetCenterInScreenCoordinates(), but
@@ -80,11 +65,7 @@ class TabDragControllerInteractiveTestMixin : public T {
     if (input_source() == InputSource::INPUT_SOURCE_MOUSE) {
       return ui_test_utils::SendMouseMoveSync(location, window_hint);
     }
-#if BUILDFLAG(IS_CHROMEOS)
-    return SendTouchEventsSync(ui_controls::kTouchMove, 0, location);
-#else
     NOTREACHED();
-#endif
   }
 
   // Like PressInputAtCenter(), but for DragInputTo() instead of PressInput()
@@ -102,14 +83,7 @@ class TabDragControllerInteractiveTestMixin : public T {
                    : ui_test_utils::SendMouseEventsSync(ui_controls::LEFT,
                                                         ui_controls::UP);
     }
-#if BUILDFLAG(IS_CHROMEOS)
-    return async ? ui_controls::SendTouchEvents(ui_controls::kTouchRelease, id,
-                                                0, 0)
-                 : SendTouchEventsSync(ui_controls::kTouchRelease, id,
-                                       gfx::Point());
-#else
     NOTREACHED();
-#endif
   }
 };
 

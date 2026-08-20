@@ -25,11 +25,6 @@ struct SchedulingParams;
 
 using TaskFinishedCallback = base::OnceCallback<void(bool)>;
 
-#if BUILDFLAG(IS_IOS)
-// Identifier for background download service.
-inline constexpr char kBackgroundDownloadIdentifierPrefix[] =
-    "background_download";
-#endif  // BUILDFLAG(IS_IOS)
 
 // A service responsible for helping facilitate the scheduling and downloading
 // of file content from the web.  See |DownloadParams| for more details on the
@@ -105,11 +100,6 @@ class COMPONENT_EXPORT(COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE)
   // components in the larger system.
   virtual Logger* GetLogger() = 0;
 
-#if BUILDFLAG(IS_IOS)
-  // Called by the  system to handle events for background URL session. Once
-  // done, the passed function should be called.
-  virtual void HandleEventsForBackgroundURLSession(base::OnceClosure) {}
-#endif  // BUILDFLAG(IS_IOS)
 
   BackgroundDownloadService(const BackgroundDownloadService&) = delete;
   BackgroundDownloadService& operator=(const BackgroundDownloadService&) =

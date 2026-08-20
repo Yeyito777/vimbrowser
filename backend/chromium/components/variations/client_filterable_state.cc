@@ -41,18 +41,8 @@ base::flat_set<uint64_t> ClientFilterableState::GoogleGroups() const {
 
 // static
 Study::Platform ClientFilterableState::GetCurrentPlatform() {
-#if BUILDFLAG(IS_WIN)
-  return Study::PLATFORM_WINDOWS;
-#elif BUILDFLAG(IS_IOS)
-  return Study::PLATFORM_IOS;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return Study::PLATFORM_MAC;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return Study::PLATFORM_CHROMEOS;
-#elif BUILDFLAG(IS_ANDROID)
-  return Study::PLATFORM_ANDROID;
-#elif BUILDFLAG(IS_FUCHSIA)
-  return Study::PLATFORM_FUCHSIA;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_BSD) || BUILDFLAG(IS_SOLARIS)
   // Default BSD and SOLARIS to Linux to not break those builds, although these
   // platforms are not officially supported by Chrome.
@@ -66,17 +56,11 @@ Study::Platform ClientFilterableState::GetCurrentPlatform() {
 base::Version ClientFilterableState::GetOSVersion() {
   base::Version ret;
 
-#if BUILDFLAG(IS_WIN)
-  std::string win_version = base::SysInfo::OperatingSystemVersion();
-  ret = base::Version(win_version);
-  DCHECK(ret.IsValid()) << win_version;
-#else
   // Every other OS is supported by OperatingSystemVersionNumbers
   int major, minor, build;
   base::SysInfo::OperatingSystemVersionNumbers(&major, &minor, &build);
   ret = base::Version(base::StringPrintf("%d.%d.%d", major, minor, build));
   DCHECK(ret.IsValid());
-#endif
 
   return ret;
 }
