@@ -6,12 +6,15 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -69,6 +72,14 @@ constexpr size_t kMaxUploadFiles = 32;
 constexpr size_t kMaxUploadSelectorBytes = 4096;
 constexpr size_t kMaxUploadPathBytes = 4096;
 constexpr size_t kMaxUploadPayloadBytes = 256 * 1024;
+constexpr size_t kMaxNetworkExecutePayloadBytes = 700 * 1024;
+constexpr size_t kMaxNetworkExecuteBodyBytes = 512 * 1024;
+constexpr size_t kMaxNetworkExecuteHeaderBytes = 256 * 1024;
+constexpr size_t kMaxNetworkExecuteResponseBytes = 8 * 1024 * 1024;
+constexpr size_t kMaxNetworkUrlBytes = 16 * 1024;
+constexpr size_t kMaxNetworkFilterBytes = 16 * 1024;
+constexpr int kMaxNetworkWaitTimeoutMs = 30000;
+constexpr int kDefaultNetworkExecuteTimeoutMs = 30000;
 
 bool DecodeBase64JsPayload(const std::string& encoded,
                            std::string* code,
@@ -185,6 +196,232 @@ struct InspectControlsRequest {
   std::string context_contains;
   uint32_t limit = 100;
 };
+
+struct NetworkExecuteRequest {
+  uint64_t template_request_id = 0;
+  NetworkRequestMutation mutation;
+  int timeout_ms = kDefaultNetworkExecuteTimeoutMs;
+};
+
+bool IsHttpToken(std::string_view value) {
+  if (value.empty()) {
+    return false;
+  }
+  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
+    const bool ascii_alnum = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+                             (c >= 'a' && c <= 'z');
+    return ascii_alnum || std::string_view("!#$%&'*+-.^_`|~").find(c) !=
+                              std::string_view::npos;
+  });
+}
+
+bool IsContextManagedHeader(std::string_view name) {
+  const std::string lower = ToLowerAscii(std::string(name));
+  return lower == "cookie" || lower == "host" || lower == "content-length";
+}
+
+bool JsonUint64(CefRefPtr<CefDictionaryValue> value, const char *key,
+                uint64_t *output) {
+  if (!value || !output) {
+    return false;
+  }
+  if (value->GetType(key) == VTYPE_INT) {
+    const int number = value->GetInt(key);
+    if (number <= 0) {
+      return false;
+    }
+    *output = static_cast<uint64_t>(number);
+    return true;
+  }
+  if (value->GetType(key) == VTYPE_DOUBLE) {
+    const double number = value->GetDouble(key);
+    if (!std::isfinite(number) || number <= 0 || std::floor(number) != number ||
+        number > 9007199254740991.0) {
+      return false;
+    }
+    *output = static_cast<uint64_t>(number);
+    return true;
+  }
+  return false;
+}
+
+bool DecodeNetworkExecutePayload(const std::string &encoded,
+                                 NetworkExecuteRequest *request,
+                                 std::string *error) {
+  auto fail = [error](std::string_view message) {
+    if (error) {
+      *error = std::string(message);
+    }
+    return false;
+  };
+  if (!request || encoded.empty() ||
+      encoded.size() > ((kMaxNetworkExecutePayloadBytes + 2) / 3) * 4 + 4) {
+    return fail("network execute payload is missing or too large");
+  }
+  CefRefPtr<CefBinaryValue> decoded = CefBase64Decode(encoded);
+  if (!decoded || decoded->GetSize() == 0 ||
+      decoded->GetSize() > kMaxNetworkExecutePayloadBytes) {
+    return fail("network execute payload is not valid base64");
+  }
+  std::vector<char> bytes(decoded->GetSize());
+  if (decoded->GetData(bytes.data(), bytes.size(), 0) != bytes.size()) {
+    return fail("network execute payload could not be decoded");
+  }
+  CefRefPtr<CefValue> parsed =
+      CefParseJSON(bytes.data(), bytes.size(), JSON_PARSER_RFC);
+  if (!parsed || parsed->GetType() != VTYPE_DICTIONARY) {
+    return fail("network execute payload is not a JSON object");
+  }
+  CefRefPtr<CefDictionaryValue> root = parsed->GetDictionary();
+  if (!root || root->GetType("version") != VTYPE_INT ||
+      root->GetInt("version") != 1 ||
+      !JsonUint64(root, "templateRequestId", &request->template_request_id)) {
+    return fail("network execute payload has an unsupported schema");
+  }
+
+  std::vector<CefString> keys;
+  if (!root->GetKeys(keys)) {
+    return fail("network execute payload keys are unavailable");
+  }
+  static constexpr std::array<std::string_view, 9> kAllowedKeys = {
+      "version",         "templateRequestId", "url",
+      "method",          "bodyUtf8",          "bodyBase64",
+      "headerOverrides", "removeHeaders",     "timeoutMs",
+  };
+  for (const CefString &key : keys) {
+    const std::string text = key.ToString();
+    if (std::find(kAllowedKeys.begin(), kAllowedKeys.end(), text) ==
+        kAllowedKeys.end()) {
+      return fail("network execute payload contains an unknown field");
+    }
+  }
+
+  auto optional_string = [&](const char *key, size_t max,
+                             std::optional<std::string> *output) {
+    if (!root->HasKey(key)) {
+      return true;
+    }
+    if (root->GetType(key) != VTYPE_STRING) {
+      return false;
+    }
+    std::string text = root->GetString(key).ToString();
+    if (text.empty() || text.size() > max) {
+      return false;
+    }
+    *output = std::move(text);
+    return true;
+  };
+  if (!optional_string("url", kMaxNetworkUrlBytes, &request->mutation.url) ||
+      !optional_string("method", 32, &request->mutation.method)) {
+    return fail("network execute URL or method override is invalid");
+  }
+  if (request->mutation.method && !IsHttpToken(*request->mutation.method)) {
+    return fail("network execute method is not a valid HTTP token");
+  }
+
+  if (root->HasKey("bodyUtf8") && root->HasKey("bodyBase64")) {
+    return fail(
+        "network execute bodyUtf8 and bodyBase64 are mutually exclusive");
+  }
+  if (root->HasKey("bodyUtf8")) {
+    if (root->GetType("bodyUtf8") != VTYPE_STRING) {
+      return fail("network execute bodyUtf8 must be a string");
+    }
+    std::string body = root->GetString("bodyUtf8").ToString();
+    if (body.size() > kMaxNetworkExecuteBodyBytes) {
+      return fail("network execute request body is too large");
+    }
+    request->mutation.body = std::move(body);
+  } else if (root->HasKey("bodyBase64")) {
+    if (root->GetType("bodyBase64") != VTYPE_STRING) {
+      return fail("network execute bodyBase64 must be a string");
+    }
+    const std::string body64 = root->GetString("bodyBase64").ToString();
+    if (body64.empty()) {
+      request->mutation.body = std::string();
+    } else {
+      CefRefPtr<CefBinaryValue> body = CefBase64Decode(body64);
+      if (!body || body->GetSize() > kMaxNetworkExecuteBodyBytes) {
+        return fail("network execute bodyBase64 is invalid or too large");
+      }
+      std::string decoded_body(body->GetSize(), '\0');
+      if (body->GetData(decoded_body.data(), decoded_body.size(), 0) !=
+          decoded_body.size()) {
+        return fail("network execute bodyBase64 could not be decoded");
+      }
+      request->mutation.body = std::move(decoded_body);
+    }
+  }
+
+  size_t header_bytes = 0;
+  if (root->HasKey("headerOverrides")) {
+    if (root->GetType("headerOverrides") != VTYPE_DICTIONARY) {
+      return fail("network execute headerOverrides must be an object");
+    }
+    CefRefPtr<CefDictionaryValue> overrides =
+        root->GetDictionary("headerOverrides");
+    std::vector<CefString> names;
+    if (!overrides || !overrides->GetKeys(names) || names.size() > 128) {
+      return fail("network execute headerOverrides is invalid or too large");
+    }
+    std::vector<std::string> lower_names;
+    for (const CefString &cef_name : names) {
+      const std::string name = cef_name.ToString();
+      if (!IsHttpToken(name) || IsContextManagedHeader(name) ||
+          overrides->GetType(name) != VTYPE_STRING) {
+        return fail("network execute contains an invalid or context-managed "
+                    "header override");
+      }
+      const std::string lower_name = ToLowerAscii(name);
+      if (std::find(lower_names.begin(), lower_names.end(), lower_name) !=
+          lower_names.end()) {
+        return fail("network execute contains duplicate header overrides");
+      }
+      lower_names.push_back(lower_name);
+      std::string value = overrides->GetString(name).ToString();
+      if (value.find_first_of("\r\n") != std::string::npos ||
+          value.find('\0') != std::string::npos) {
+        return fail(
+            "network execute header value contains a forbidden character");
+      }
+      header_bytes += name.size() + value.size();
+      if (header_bytes > kMaxNetworkExecuteHeaderBytes) {
+        return fail("network execute headers are too large");
+      }
+      request->mutation.header_overrides.emplace_back(name, std::move(value));
+    }
+  }
+
+  if (root->HasKey("removeHeaders")) {
+    if (root->GetType("removeHeaders") != VTYPE_LIST) {
+      return fail("network execute removeHeaders must be an array");
+    }
+    CefRefPtr<CefListValue> removed = root->GetList("removeHeaders");
+    if (!removed || removed->GetSize() > 128) {
+      return fail("network execute removeHeaders is too large");
+    }
+    for (size_t i = 0; i < removed->GetSize(); ++i) {
+      if (removed->GetType(i) != VTYPE_STRING) {
+        return fail("network execute removeHeaders entries must be strings");
+      }
+      std::string name = removed->GetString(i).ToString();
+      if (!IsHttpToken(name)) {
+        return fail("network execute removeHeaders contains an invalid name");
+      }
+      request->mutation.remove_headers.push_back(std::move(name));
+    }
+  }
+
+  if (root->HasKey("timeoutMs")) {
+    if (root->GetType("timeoutMs") != VTYPE_INT ||
+        root->GetInt("timeoutMs") < 1 ||
+        root->GetInt("timeoutMs") > kMaxNetworkWaitTimeoutMs) {
+      return fail("network execute timeoutMs must be between 1 and 30000");
+    }
+    request->timeout_ms = root->GetInt("timeoutMs");
+  }
+  return true;
+}
 
 struct UploadFileValidation {
   bool ok = false;
@@ -1084,6 +1321,151 @@ private:
 
   IMPLEMENT_REFCOUNTING(URLRequestReplayClient);
   DISALLOW_COPY_AND_ASSIGN(URLRequestReplayClient);
+};
+
+bool IsValidUtf8(std::string_view text) {
+  size_t i = 0;
+  while (i < text.size()) {
+    const unsigned char first = static_cast<unsigned char>(text[i]);
+    if (first <= 0x7f) {
+      ++i;
+      continue;
+    }
+    size_t length = 0;
+    uint32_t codepoint = 0;
+    if (first >= 0xc2 && first <= 0xdf) {
+      length = 2;
+      codepoint = first & 0x1f;
+    } else if (first >= 0xe0 && first <= 0xef) {
+      length = 3;
+      codepoint = first & 0x0f;
+    } else if (first >= 0xf0 && first <= 0xf4) {
+      length = 4;
+      codepoint = first & 0x07;
+    } else {
+      return false;
+    }
+    if (i + length > text.size()) {
+      return false;
+    }
+    for (size_t j = 1; j < length; ++j) {
+      const unsigned char next = static_cast<unsigned char>(text[i + j]);
+      if ((next & 0xc0) != 0x80) {
+        return false;
+      }
+      codepoint = (codepoint << 6) | (next & 0x3f);
+    }
+    if ((length == 3 && codepoint < 0x800) ||
+        (length == 4 && codepoint < 0x10000) ||
+        (codepoint >= 0xd800 && codepoint <= 0xdfff) || codepoint > 0x10ffff) {
+      return false;
+    }
+    i += length;
+  }
+  return true;
+}
+
+const char *URLRequestStatusText(cef_urlrequest_status_t status) {
+  switch (status) {
+  case UR_SUCCESS:
+    return "success";
+  case UR_IO_PENDING:
+    return "io_pending";
+  case UR_CANCELED:
+    return "canceled";
+  case UR_FAILED:
+    return "failed";
+  case UR_UNKNOWN:
+  default:
+    return "unknown";
+  }
+}
+
+class URLRequestBrokerClient final : public CefURLRequestClient {
+public:
+  URLRequestBrokerClient(uint64_t template_request_id, IpcReplyCallback reply)
+      : template_request_id_(template_request_id), reply_(std::move(reply)) {}
+
+  void OnRequestComplete(CefRefPtr<CefURLRequest> request) override {
+    if (!reply_) {
+      return;
+    }
+    const cef_urlrequest_status_t request_status =
+        request ? request->GetRequestStatus() : UR_UNKNOWN;
+    CefRefPtr<CefResponse> response =
+        request ? request->GetResponse() : nullptr;
+    CefResponse::HeaderMap headers;
+    if (response) {
+      response->GetHeaderMap(headers);
+    }
+    const bool utf8 = IsValidUtf8(body_);
+    const std::string body_base64 =
+        body_.empty() ? std::string()
+                      : CefBase64Encode(body_.data(), body_.size()).ToString();
+    std::ostringstream out;
+    out << "{"
+        << "\"ok\":" << (request_status == UR_SUCCESS ? "true" : "false")
+        << ",\"template_request_id\":" << template_request_id_
+        << ",\"request_status\":" << static_cast<int>(request_status)
+        << ",\"request_status_text\":\"" << URLRequestStatusText(request_status)
+        << "\""
+        << ",\"error\":"
+        << (response ? static_cast<int>(response->GetError()) : 0)
+        << ",\"status\":" << (response ? response->GetStatus() : 0)
+        << ",\"status_text\":\""
+        << JsonEscape(response ? response->GetStatusText().ToString()
+                               : std::string())
+        << "\",\"mime_type\":\""
+        << JsonEscape(response ? response->GetMimeType().ToString()
+                               : std::string())
+        << "\",\"final_url\":\""
+        << JsonEscape(response ? response->GetURL().ToString() : std::string())
+        << "\",\"headers\":" << HeadersJson(headers) << ",\"body_utf8\":";
+    if (utf8) {
+      out << "\"" << JsonEscape(body_) << "\"";
+    } else {
+      out << "null";
+    }
+    out << ",\"body_base64\":\"" << body_base64 << "\""
+        << ",\"body_size\":" << body_.size()
+        << ",\"body_truncated\":" << (body_truncated_ ? "true" : "false")
+        << "}";
+    auto reply = std::move(reply_);
+    reply_ = nullptr;
+    reply(out.str());
+  }
+
+  void OnUploadProgress(CefRefPtr<CefURLRequest>, int64_t, int64_t) override {}
+  void OnDownloadProgress(CefRefPtr<CefURLRequest>, int64_t, int64_t) override {
+  }
+  void OnDownloadData(CefRefPtr<CefURLRequest>, const void *data,
+                      size_t data_length) override {
+    const size_t remaining =
+        body_.size() < kMaxNetworkExecuteResponseBytes
+            ? kMaxNetworkExecuteResponseBytes - body_.size()
+            : 0;
+    const size_t take = std::min(data_length, remaining);
+    if (take > 0) {
+      body_.append(static_cast<const char *>(data), take);
+    }
+    if (take < data_length) {
+      body_truncated_ = true;
+    }
+  }
+  bool GetAuthCredentials(bool, const CefString &, int, const CefString &,
+                          const CefString &,
+                          CefRefPtr<CefAuthCallback>) override {
+    return false;
+  }
+
+private:
+  uint64_t template_request_id_ = 0;
+  IpcReplyCallback reply_;
+  std::string body_;
+  bool body_truncated_ = false;
+
+  IMPLEMENT_REFCOUNTING(URLRequestBrokerClient);
+  DISALLOW_COPY_AND_ASSIGN(URLRequestBrokerClient);
 };
 
 class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
@@ -2212,6 +2594,101 @@ void BrowserWindow::HandleNetworkReplayIpcCommand(uint64_t tab_id,
   CefURLRequest::Create(request, client, context);
 }
 
+void BrowserWindow::HandleNetworkExecuteIpcCommand(uint64_t tab_id,
+                                                   std::string encoded_payload,
+                                                   IpcReplyCallback reply) {
+  NetworkExecuteRequest payload;
+  std::string error;
+  if (!DecodeNetworkExecutePayload(encoded_payload, &payload, &error)) {
+    reply("ERR " + error + "\n");
+    return;
+  }
+
+  size_t index = 0;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error, &index);
+  if (!browser) {
+    reply(error);
+    return;
+  }
+  if (!tabs_[index].client) {
+    reply("ERR tab has no client\n");
+    return;
+  }
+  CefRefPtr<CefRequest> request = tabs_[index].client->BuildDerivedRequest(
+      payload.template_request_id, payload.mutation, &error);
+  if (!request) {
+    reply(error);
+    return;
+  }
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
+  if (!context) {
+    reply("ERR tab has no request context\n");
+    return;
+  }
+  CefRefPtr<URLRequestBrokerClient> client(new URLRequestBrokerClient(
+      payload.template_request_id, std::move(reply)));
+  CefRefPtr<CefURLRequest> url_request =
+      CefURLRequest::Create(request, client, context);
+  if (!url_request) {
+    client->OnRequestComplete(nullptr);
+    return;
+  }
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(
+                         [](CefRefPtr<CefURLRequest> request) {
+                           if (request &&
+                               request->GetRequestStatus() == UR_IO_PENDING) {
+                             request->Cancel();
+                           }
+                         },
+                         url_request),
+                     payload.timeout_ms);
+}
+
+void BrowserWindow::HandleNetworkWaitIpcCommand(uint64_t tab_id,
+                                                std::string url_prefix,
+                                                int timeout_ms,
+                                                uint64_t after_request_id,
+                                                IpcReplyCallback reply) {
+  PollNetworkWait(tab_id, std::move(url_prefix), after_request_id,
+                  std::chrono::steady_clock::now() +
+                      std::chrono::milliseconds(timeout_ms),
+                  std::move(reply));
+}
+
+void BrowserWindow::PollNetworkWait(
+    uint64_t tab_id, std::string url_prefix, uint64_t after_request_id,
+    std::chrono::steady_clock::time_point deadline, IpcReplyCallback reply) {
+  const std::optional<size_t> index = FindTabIndexById(tab_id);
+  if (!index || !tabs_[*index].client) {
+    reply("ERR tab has no client\n");
+    return;
+  }
+  if (std::optional<std::string> match = tabs_[*index].client->NetworkMatchJson(
+          url_prefix, after_request_id)) {
+    reply("{\"matched\":true,\"timed_out\":false,\"request\":" + *match + "}");
+    return;
+  }
+  if (std::chrono::steady_clock::now() >= deadline) {
+    reply("{\"matched\":false,\"timed_out\":true,"
+          "\"after_request_id\":" +
+          std::to_string(after_request_id) + "}");
+    return;
+  }
+
+  CefRefPtr<BrowserWindow> self(this);
+  IpcReplyCallback scheduled_reply = reply;
+  if (!CefPostDelayedTask(TID_UI,
+                          base::BindOnce(&BrowserWindow::PollNetworkWait, self,
+                                         tab_id, std::move(url_prefix),
+                                         after_request_id, deadline,
+                                         std::move(scheduled_reply)),
+                          25)) {
+    reply("ERR failed to schedule network wait\n");
+  }
+}
+
 void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
                                                IpcReplyCallback reply) {
   std::string error;
@@ -3250,11 +3727,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  cookies-url <url>\n"
            "  cookie-delete <tabid> <name>\n"
            "  cookie-set <tabid> <name> <value> [domain] [path]\n"
+           "  network <tabid> capture status|on [url-prefix]|off\n"
+           "  network <tabid> wait <url-prefix> [timeout-ms] "
+           "[after-request-id]\n"
            "  network <tabid> list\n"
            "  network <tabid> detail <requestid>\n"
            "  network <tabid> body <requestid>\n"
            "  network <tabid> replay <requestid>\n"
            "  network <tabid> clear\n"
+           "  network-execute-base64 <tabid> <base64-json-payload>\n"
            "  fps\n"
            "  refresh\n"
            "  url\n"
@@ -3620,7 +4101,8 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
 
   if (command == "network") {
     if (argv.size() < 3) {
-      reply("ERR usage: network <tabid> list|detail|body|replay [requestid]\n");
+      reply("ERR usage: network <tabid> "
+            "capture|wait|list|detail|body|replay|clear ...\n");
       return;
     }
     uint64_t tab_id = 0;
@@ -3633,6 +4115,60 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       return;
     }
     const std::string subcommand = ToLowerAscii(argv[2]);
+    if (subcommand == "capture") {
+      if (argv.size() < 4) {
+        reply(
+            "ERR usage: network <tabid> capture status|on [url-prefix]|off\n");
+        return;
+      }
+      const std::string setting = ToLowerAscii(argv[3]);
+      if (setting == "status" && argv.size() == 4) {
+        reply(tabs_[*index].client->NetworkCaptureJson());
+        return;
+      }
+      if (setting == "off" && argv.size() == 4) {
+        reply(tabs_[*index].client->SetNetworkCapture(false, {}));
+        return;
+      }
+      if (setting == "on") {
+        const std::string url_prefix =
+            argv.size() > 4 ? JoinArgs(argv, 4) : std::string();
+        if (url_prefix.size() > kMaxNetworkFilterBytes) {
+          reply("ERR network capture URL prefix is too long\n");
+          return;
+        }
+        reply(tabs_[*index].client->SetNetworkCapture(true, url_prefix));
+        return;
+      }
+      reply("ERR usage: network <tabid> capture status|on [url-prefix]|off\n");
+      return;
+    }
+    if (subcommand == "wait") {
+      if (argv.size() < 4 || argv.size() > 6) {
+        reply("ERR usage: network <tabid> wait <url-prefix> [timeout-ms] "
+              "[after-request-id]\n");
+        return;
+      }
+      if (argv[3].size() > kMaxNetworkFilterBytes) {
+        reply("ERR network wait URL prefix is too long\n");
+        return;
+      }
+      uint64_t timeout_ms = 10000;
+      if (argv.size() >= 5 &&
+          (!ParseUint64Arg(argv[4], &timeout_ms) || timeout_ms == 0 ||
+           timeout_ms > static_cast<uint64_t>(kMaxNetworkWaitTimeoutMs))) {
+        reply("ERR network wait timeout must be between 1 and 30000 ms\n");
+        return;
+      }
+      uint64_t after_request_id = 0;
+      if (argv.size() >= 6 && !ParseUint64Arg(argv[5], &after_request_id)) {
+        reply("ERR invalid after-request-id\n");
+        return;
+      }
+      HandleNetworkWaitIpcCommand(tab_id, argv[3], static_cast<int>(timeout_ms),
+                                  after_request_id, std::move(reply));
+      return;
+    }
     if (subcommand == "list" || subcommand == "clear") {
       if (argv.size() != 3) {
         reply("ERR usage: network <tabid> list|clear\n");
@@ -3674,7 +4210,22 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       HandleNetworkReplayIpcCommand(tab_id, request_id, std::move(reply));
       return;
     }
-    reply("ERR usage: network <tabid> list|detail|body|replay [requestid]\n");
+    reply("ERR usage: network <tabid> "
+          "capture|wait|list|detail|body|replay|clear ...\n");
+    return;
+  }
+
+  if (command == "network-execute-base64") {
+    if (argv.size() != 3) {
+      reply(
+          "ERR usage: network-execute-base64 <tabid> <base64-json-payload>\n");
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleNetworkExecuteIpcCommand(tab_id, argv[2], std::move(reply));
     return;
   }
 

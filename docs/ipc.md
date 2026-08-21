@@ -728,7 +728,57 @@ Sets a cookie for the tab URL. If `domain` is omitted CEF creates a host cookie.
 
 ### Network debugging commands
 
-Network capture is per tab and backend-owned. `BrowserClient` implements CEF request/resource hooks, assigns a per-tab monotonic request ID, stores a bounded ring of recent requests, captures headers/timing/status, and captures response bodies through a native `CefResponseFilter` up to a size limit.
+Network capture is exact-tab and backend-owned. `BrowserClient` implements CEF
+request/resource hooks, assigns a per-tab monotonic request ID, stores a bounded
+ring of recent requests, captures headers/timing/status, and captures response
+bodies through a native `CefResponseFilter` up to a size limit. Runtime capture
+defaults off independently for every tab. The legacy startup-wide
+`VIMBROWSER_NETWORK_CAPTURE`/`--enable-vimbrowser-network-capture` switch still
+captures every request in every tab and is reported as `global_enabled`.
+
+#### `network <tabid> capture status`
+
+Returns the exact tab's runtime capture state and current request-ID cursor:
+
+```json
+{"enabled":false,"global_enabled":false,"url_prefix":"","latest_request_id":0}
+```
+
+#### `network <tabid> capture on [url-prefix]`
+
+Enables capture for this tab only. When a prefix is supplied, only requests
+whose complete URL begins with that exact, case-sensitive prefix are recorded.
+Returns the same state object as `capture status`. Capture filtering does not
+disable the browser's normal content-blocking request handler.
+
+#### `network <tabid> capture off`
+
+Disables runtime capture for this tab and clears its prefix. Existing records
+remain available until `clear`. A startup-wide capture switch, when present,
+continues to capture and is visible as `global_enabled:true`.
+
+#### `network <tabid> wait <url-prefix> [timeout-ms] [after-request-id]`
+
+Waits up to 10 seconds by default (maximum 30 seconds) for a captured request
+whose URL begins with the prefix. If `after-request-id` is omitted or zero, the
+newest existing match can satisfy the wait; this intentionally closes the race
+between triggering a page request and issuing `wait`. Supplying the
+`latest_request_id` cursor returned by `capture status` restricts the result to
+a later request. Issue an IPC-triggered page action first and then call `wait`;
+while a wait is pending, renderer/network activity continues but the IPC server
+serializes other commands behind it.
+
+Matched response:
+
+```json
+{"matched":true,"timed_out":false,"request":{"id":42,"url":"https://example.test/sync","method":"POST","complete":false}}
+```
+
+Timeout response:
+
+```json
+{"matched":false,"timed_out":true,"after_request_id":41}
+```
 
 #### `network <tabid> list`
 
@@ -748,7 +798,85 @@ Returns the captured response body bytes/text directly. Bodies are capped by the
 
 #### `network <tabid> replay <requestid>`
 
-Replays a captured request using native `CefURLRequest` in the tab's request context and returns JSON with status, headers, and body. Requests with truncated request bodies are refused instead of replaying partial data.
+Replays a captured request using native `CefURLRequest` in the tab's request
+context and returns JSON with status, headers, and body. Requests with truncated
+request bodies are refused instead of replaying partial data. Captured `Cookie`,
+`Host`, and `Content-Length` are discarded; CEF supplies current context cookies,
+the destination host, and the computed body length.
+
+#### `network-execute-base64 <tabid> <base64-json-payload>`
+
+Executes a mutable request derived from a captured template using the exact
+tab's current `CefRequestContext`. The payload is base64 only to keep the IPC
+transport one-line and binary-safe. Callers must send the underlying JSON over
+stdin or directly over the Unix socket; sensitive URL/body/header values must
+not be placed in OS arguments or logs. The reference CLI provides this as:
+
+```sh
+printf '%s' "$payload_json" | vimbrowser-cli network-execute TABID
+```
+
+Version-1 payload:
+
+```json
+{
+  "version": 1,
+  "templateRequestId": 42,
+  "url": "https://example.test/sync/next",
+  "method": "POST",
+  "bodyUtf8": "request body",
+  "headerOverrides": {
+    "Content-Type": "application/x-www-form-urlencoded",
+    "X-Request-Token": "current-template-value"
+  },
+  "removeHeaders": ["X-Unwanted-Template-Header"],
+  "timeoutMs": 30000
+}
+```
+
+All fields after `templateRequestId` are optional:
+
+- Omitted URL, method, body, and headers inherit from the captured request.
+- `bodyUtf8` and `bodyBase64` are mutually exclusive. An explicitly empty body
+  clears a captured body. The request-body limit is 512 KiB and the complete
+  decoded payload limit is 700 KiB.
+- `headerOverrides` is an object of case-insensitive replacements;
+  `removeHeaders` is an array of case-insensitive names removed before overrides.
+- `Cookie`, `Host`, and `Content-Length` are always removed from the template and
+  forbidden in overrides. `UR_FLAG_ALLOW_STORED_CREDENTIALS` lets CEF attach the
+  context's current cookies and persist response `Set-Cookie` values.
+- A URL override must retain the captured template's exact HTTP(S) origin.
+  Redirect following is disabled so template credentials cannot cross an origin;
+  an HTTP redirect is returned to the caller for explicit handling.
+- A truncated template request body may only be used when a complete body
+  override is supplied.
+- `timeoutMs` defaults to 30000 and is constrained to 1–30000.
+
+Structured result:
+
+```json
+{
+  "ok": true,
+  "template_request_id": 42,
+  "request_status": 2,
+  "request_status_text": "success",
+  "error": 0,
+  "status": 200,
+  "status_text": "OK",
+  "mime_type": "application/json",
+  "final_url": "https://example.test/sync/next",
+  "headers": [{"name":"Content-Type","value":"application/json"}],
+  "body_utf8": "{}",
+  "body_base64": "e30=",
+  "body_size": 2,
+  "body_truncated": false
+}
+```
+
+`body_utf8` is `null` when the response is not valid UTF-8. `body_base64` is
+always present, including for UTF-8 responses. Broker response bodies are capped
+at 8 MiB and report truncation explicitly. HTTP error status codes remain
+structured responses; `ok` describes CEF transport completion, not HTTP success.
 
 #### `network <tabid> clear`
 

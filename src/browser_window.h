@@ -489,6 +489,19 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleNetworkReplayIpcCommand(uint64_t tab_id,
                                      uint64_t request_id,
                                      IpcReplyCallback reply);
+  void HandleNetworkExecuteIpcCommand(uint64_t tab_id,
+                                      std::string encoded_payload,
+                                      IpcReplyCallback reply);
+  void HandleNetworkWaitIpcCommand(uint64_t tab_id,
+                                   std::string url_prefix,
+                                   int timeout_ms,
+                                   uint64_t after_request_id,
+                                   IpcReplyCallback reply);
+  void PollNetworkWait(uint64_t tab_id,
+                       std::string url_prefix,
+                       uint64_t after_request_id,
+                       std::chrono::steady_clock::time_point deadline,
+                       IpcReplyCallback reply);
   void HandleScreenshotIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
   std::string ArmFileChooserUpload(uint64_t tab_id,
                                    std::vector<std::string> paths);

@@ -18,6 +18,7 @@
 #include "config.h"
 #include "include/cef_app.h"
 #include "include/cef_callback.h"
+#include "include/cef_parser.h"
 #include "include/cef_response.h"
 #include "include/cef_response_filter.h"
 
@@ -112,6 +113,39 @@ bool NativeNetworkCaptureEnabled() {
     return result;
   }();
   return enabled;
+}
+
+bool HeaderNameEquals(std::string_view left, std::string_view right) {
+  return left.size() == right.size() &&
+         std::equal(left.begin(), left.end(), right.begin(),
+                    [](unsigned char a, unsigned char b) {
+                      return std::tolower(a) == std::tolower(b);
+                    });
+}
+
+bool IsContextManagedRequestHeader(std::string_view name) {
+  return HeaderNameEquals(name, "cookie") || HeaderNameEquals(name, "host") ||
+         HeaderNameEquals(name, "content-length");
+}
+
+bool SameHttpOrigin(std::string_view template_url,
+                    std::string_view derived_url) {
+  CefURLParts template_parts;
+  CefURLParts derived_parts;
+  if (!CefParseURL(std::string(template_url), template_parts) ||
+      !CefParseURL(std::string(derived_url), derived_parts)) {
+    return false;
+  }
+  const std::string template_scheme =
+      LowerAscii(CefString(&template_parts.scheme).ToString());
+  const std::string derived_scheme =
+      LowerAscii(CefString(&derived_parts.scheme).ToString());
+  if ((template_scheme != "http" && template_scheme != "https") ||
+      derived_scheme != template_scheme) {
+    return false;
+  }
+  return CefString(&template_parts.origin).ToString() ==
+         CefString(&derived_parts.origin).ToString();
 }
 
 bool HostIsOrSubdomain(std::string_view host, std::string_view domain) {
@@ -1302,13 +1336,22 @@ CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(
     return nullptr;
   }
 
-  if (!NativeNetworkCaptureEnabled()) {
+  const std::string request_url = request->GetURL().ToString();
+  bool capture_request = NativeNetworkCaptureEnabled();
+  if (!capture_request) {
+    std::lock_guard<std::mutex> lock(network_mutex_);
+    capture_request = dynamic_network_capture_enabled_ &&
+                      (dynamic_network_capture_url_prefix_.empty() ||
+                       request_url.starts_with(
+                           dynamic_network_capture_url_prefix_));
+  }
+  if (!capture_request) {
     return ShouldBlockRequest(request) ? this : nullptr;
   }
 
   auto record = std::make_shared<NetworkRequestRecord>();
   record->cef_request_id = request->GetIdentifier();
-  record->url = request->GetURL().ToString();
+  record->url = request_url;
   record->method = request->GetMethod().ToString();
   record->resource_type = request->GetResourceType();
   record->is_navigation = is_navigation;
@@ -1529,6 +1572,63 @@ bool BrowserClient::NetworkBody(uint64_t request_id, std::string *body,
   return true;
 }
 
+std::string BrowserClient::SetNetworkCapture(bool enabled,
+                                             std::string url_prefix) {
+  std::lock_guard<std::mutex> lock(network_mutex_);
+  dynamic_network_capture_enabled_ = enabled;
+  dynamic_network_capture_url_prefix_ =
+      enabled ? std::move(url_prefix) : std::string();
+  std::ostringstream out;
+  out << "{\"enabled\":"
+      << (dynamic_network_capture_enabled_ ? "true" : "false")
+      << ",\"global_enabled\":"
+      << (NativeNetworkCaptureEnabled() ? "true" : "false")
+      << ",\"url_prefix\":\"" << JsonEscape(dynamic_network_capture_url_prefix_)
+      << "\""
+      << ",\"latest_request_id\":"
+      << (next_network_request_id_ > 1 ? next_network_request_id_ - 1 : 0)
+      << "}";
+  return out.str();
+}
+
+std::string BrowserClient::NetworkCaptureJson() const {
+  std::lock_guard<std::mutex> lock(network_mutex_);
+  std::ostringstream out;
+  out << "{\"enabled\":"
+      << (dynamic_network_capture_enabled_ ? "true" : "false")
+      << ",\"global_enabled\":"
+      << (NativeNetworkCaptureEnabled() ? "true" : "false")
+      << ",\"url_prefix\":\"" << JsonEscape(dynamic_network_capture_url_prefix_)
+      << "\""
+      << ",\"latest_request_id\":"
+      << (next_network_request_id_ > 1 ? next_network_request_id_ - 1 : 0)
+      << "}";
+  return out.str();
+}
+
+std::optional<std::string>
+BrowserClient::NetworkMatchJson(const std::string &url_prefix,
+                                uint64_t after_request_id) const {
+  std::shared_ptr<NetworkRequestRecord> match;
+  {
+    std::lock_guard<std::mutex> lock(network_mutex_);
+    for (auto it = network_log_.rbegin(); it != network_log_.rend(); ++it) {
+      if (!*it || (*it)->id <= after_request_id) {
+        continue;
+      }
+      std::lock_guard<std::mutex> record_lock((*it)->mutex);
+      if (url_prefix.empty() || (*it)->url.starts_with(url_prefix)) {
+        match = *it;
+        break;
+      }
+    }
+  }
+  if (!match) {
+    return std::nullopt;
+  }
+  return RecordJson(*match, false);
+}
+
 void BrowserClient::ClearNetworkLog() {
   std::lock_guard<std::mutex> lock(network_mutex_);
   active_network_by_cef_id_.clear();
@@ -1578,7 +1678,8 @@ BrowserClient::BuildReplayRequest(uint64_t request_id,
           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
       return lower;
     }();
-    if (lower_name == "host" || lower_name == "content-length") {
+    if (lower_name == "cookie" || lower_name == "host" ||
+        lower_name == "content-length") {
       continue;
     }
     header_map.insert({name, value});
@@ -1595,6 +1696,107 @@ BrowserClient::BuildReplayRequest(uint64_t request_id,
   CefRefPtr<CefRequest> request = CefRequest::Create();
   request->Set(url, method, post_data, header_map);
   request->SetFlags(UR_FLAG_ALLOW_STORED_CREDENTIALS);
+  request->SetFirstPartyForCookies(url);
+  return request;
+}
+
+CefRefPtr<CefRequest>
+BrowserClient::BuildDerivedRequest(uint64_t request_id,
+                                   const NetworkRequestMutation &mutation,
+                                   std::string *error) const {
+  auto record = FindNetworkRecord(request_id);
+  if (!record) {
+    if (error) {
+      *error = "ERR no such template request\n";
+    }
+    return nullptr;
+  }
+
+  std::string template_url;
+  std::string url;
+  std::string method;
+  std::string body;
+  bool request_body_truncated = false;
+  std::vector<std::pair<std::string, std::string>> headers;
+  {
+    std::lock_guard<std::mutex> lock(record->mutex);
+    template_url = record->url;
+    url = mutation.url.value_or(record->url);
+    method = mutation.method.value_or(record->method.empty() ? "GET"
+                                                             : record->method);
+    body = mutation.body.value_or(record->request_body);
+    request_body_truncated = record->request_body_truncated;
+    headers = record->request_headers;
+  }
+  if (template_url.empty() || url.empty()) {
+    if (error) {
+      *error = "ERR template or derived request has no url\n";
+    }
+    return nullptr;
+  }
+  if (!SameHttpOrigin(template_url, url)) {
+    if (error) {
+      *error = "ERR derived request URL must use the template HTTP(S) origin\n";
+    }
+    return nullptr;
+  }
+  if (!mutation.body.has_value() && request_body_truncated) {
+    if (error) {
+      *error =
+          "ERR template request body was truncated; provide a body override\n";
+    }
+    return nullptr;
+  }
+
+  auto should_remove = [&mutation](std::string_view name) {
+    if (IsContextManagedRequestHeader(name)) {
+      return true;
+    }
+    return std::any_of(mutation.remove_headers.begin(),
+                       mutation.remove_headers.end(),
+                       [name](const std::string &removed) {
+                         return HeaderNameEquals(name, removed);
+                       });
+  };
+  headers.erase(std::remove_if(headers.begin(), headers.end(),
+                               [&should_remove](const auto &header) {
+                                 return should_remove(header.first);
+                               }),
+                headers.end());
+
+  for (const auto &[name, value] : mutation.header_overrides) {
+    if (IsContextManagedRequestHeader(name)) {
+      if (error) {
+        *error = "ERR Cookie, Host, and Content-Length are context-managed and "
+                 "cannot be overridden\n";
+      }
+      return nullptr;
+    }
+    headers.erase(std::remove_if(headers.begin(), headers.end(),
+                                 [&name](const auto &header) {
+                                   return HeaderNameEquals(header.first, name);
+                                 }),
+                  headers.end());
+    headers.emplace_back(name, value);
+  }
+
+  CefRequest::HeaderMap header_map;
+  for (const auto &[name, value] : headers) {
+    header_map.insert({name, value});
+  }
+
+  CefRefPtr<CefPostData> post_data;
+  if (!body.empty()) {
+    CefRefPtr<CefPostDataElement> element = CefPostDataElement::Create();
+    element->SetToBytes(body.size(), body.data());
+    post_data = CefPostData::Create();
+    post_data->AddElement(element);
+  }
+
+  CefRefPtr<CefRequest> request = CefRequest::Create();
+  request->Set(url, method, post_data, header_map);
+  request->SetFlags(UR_FLAG_ALLOW_STORED_CREDENTIALS |
+                    UR_FLAG_STOP_ON_REDIRECT);
   request->SetFirstPartyForCookies(url);
   return request;
 }

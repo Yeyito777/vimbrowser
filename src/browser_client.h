@@ -15,11 +15,20 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace vimbrowser {
 
 class BrowserWindow;
+
+struct NetworkRequestMutation {
+  std::optional<std::string> url;
+  std::optional<std::string> method;
+  std::optional<std::string> body;
+  std::vector<std::pair<std::string, std::string>> header_overrides;
+  std::vector<std::string> remove_headers;
+};
 
 class BrowserClient final : public CefClient,
                             public CefDialogHandler,
@@ -169,9 +178,16 @@ public:
   std::string NetworkDetailJson(uint64_t request_id) const;
   bool NetworkBody(uint64_t request_id, std::string *body,
                    std::string *error) const;
+  std::string SetNetworkCapture(bool enabled, std::string url_prefix);
+  std::string NetworkCaptureJson() const;
+  std::optional<std::string> NetworkMatchJson(
+      const std::string& url_prefix, uint64_t after_request_id) const;
   void ClearNetworkLog();
   CefRefPtr<CefRequest> BuildReplayRequest(uint64_t request_id,
                                            std::string *error) const;
+  CefRefPtr<CefRequest> BuildDerivedRequest(
+      uint64_t request_id, const NetworkRequestMutation& mutation,
+      std::string* error) const;
   struct NetworkRequestRecord;
 
 private:
@@ -190,6 +206,8 @@ private:
   std::vector<std::shared_ptr<NetworkRequestRecord>> network_log_;
   std::unordered_map<uint64_t, std::shared_ptr<NetworkRequestRecord>>
       active_network_by_cef_id_;
+  bool dynamic_network_capture_enabled_ = false;
+  std::string dynamic_network_capture_url_prefix_;
   IMPLEMENT_REFCOUNTING(BrowserClient);
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

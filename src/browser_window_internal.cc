@@ -1178,7 +1178,18 @@ const std::vector<IpcCommandInfo> &IpcCommandList() {
       {"cookies-url", "cookies-url <url>", "list cookies visible to an explicit URL using the global backend cookie manager", "json"},
       {"cookie-delete", "cookie-delete <tabid> <name>", "delete a cookie visible to the tab URL", "json"},
       {"cookie-set", "cookie-set <tabid> <name> <value> [domain] [path]", "set a cookie for the tab URL", "json"},
-      {"network", "network <tabid> list|detail|body|replay|clear [requestid]", "inspect, replay, or clear native captured network requests", "json/body"},
+      {"network",
+       "network <tabid> capture status|on [url-prefix]|off | wait <url-prefix> "
+       "[timeout-ms] [after-request-id] | list|clear | detail|body|replay "
+       "<requestid>",
+       "control exact-tab capture, wait for, inspect, replay, or clear native "
+       "requests",
+       "json/body"},
+      {"network-execute-base64",
+       "network-execute-base64 <tabid> <base64-json-payload>",
+       "execute a same-origin request derived from a captured template in the "
+       "exact tab request context",
+       "json"},
       {"fps", "fps", "active tab fps sample", "text/plain"},
       {"refresh", "refresh", "active tab compositor refresh rate",
        "text/plain"},
