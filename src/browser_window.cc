@@ -592,6 +592,21 @@ void BrowserWindow::OnClientLoadingStateChange(BrowserClient* client,
   }
 }
 
+bool BrowserWindow::CanClientReceiveFocus(BrowserClient* client,
+                                          cef_focus_source_t source) {
+  (void)source;
+  const bool active_browser_is_focus_target =
+      client && active_index_ < tabs_.size() &&
+      visible_tab_index_ == active_index_ &&
+      tabs_[active_index_].client.get() == client &&
+      (focus_area_ == FocusArea::kWebView ||
+       focus_area_ == FocusArea::kTabSidebar);
+  if (!active_browser_is_focus_target) {
+    ++rejected_background_focus_requests_;
+  }
+  return active_browser_is_focus_target;
+}
+
 void BrowserWindow::UpdateClientUrl(BrowserClient* client,
                                     const std::string& url,
                                     bool force_update) {
@@ -727,6 +742,9 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
                              ActiveTab()->client.get() == client;
   const uint64_t opener_tab_id = source->id;
   const std::string source_context = source->context;
+  // Renderer and automation work in a background tab must never select a tab
+  // as a side effect. Foreground page gestures keep their requested disposition.
+  activate = activate && ActiveTab() && ActiveTab()->client.get() == client;
 
   if (!popup_client) {
     if (target_url.empty()) {

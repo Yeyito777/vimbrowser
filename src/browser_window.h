@@ -81,6 +81,8 @@ class BrowserWindow final : public CefWindowDelegate,
                                   bool is_loading,
                                   bool can_go_back,
                                   bool can_go_forward);
+  bool CanClientReceiveFocus(BrowserClient* client,
+                             cef_focus_source_t source);
   bool OnClientProcessMessage(BrowserClient* client,
                               CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
@@ -401,6 +403,7 @@ class BrowserWindow final : public CefWindowDelegate,
                  uint64_t restored_id = 0);
   bool AddContextTab(std::string context_name,
                      std::string url,
+                     bool activate,
                      std::string* error);
   CefRefPtr<CefRequestContext> RequestContextForName(
       const std::string& context_name,
@@ -809,6 +812,7 @@ class BrowserWindow final : public CefWindowDelegate,
   bool window_close_pending_ = false;
   bool window_close_allowed_ = false;
   size_t visible_tab_index_ = static_cast<size_t>(-1);
+  uint64_t rejected_background_focus_requests_ = 0;
   uint64_t active_browser_sync_generation_ = 0;
   uint64_t state_save_generation_ = 0;
   uint64_t sidebar_refresh_generation_ = 0;

@@ -163,11 +163,12 @@ void BrowserWindow::InsertTab(std::string url,
 
 bool BrowserWindow::AddContextTab(std::string context_name,
                                   std::string url,
+                                  bool activate,
                                   std::string* error) {
   if (!RequestContextForName(context_name, error)) {
     return false;
   }
-  AddTab(std::move(url), true, std::move(context_name));
+  AddTab(std::move(url), activate, std::move(context_name));
   return true;
 }
 
@@ -236,12 +237,17 @@ void BrowserWindow::OnNamedRequestContextInitialized(
   // Disk-backed contexts initialize asynchronously. Materialize every tab that
   // was queued while the profile loaded, then rerun active-view selection so an
   // active context tab becomes visible and focused.
+  bool active_view_materialized = false;
   for (size_t i = 0; i < tabs_.size(); ++i) {
     if (tabs_[i].context == context_name && !tabs_[i].view) {
-      EnsureTabBrowser(i, false);
+      if (EnsureTabBrowser(i, false) && i == active_index_) {
+        active_view_materialized = true;
+      }
     }
   }
-  ScheduleActiveBrowserSync();
+  if (active_view_materialized) {
+    ScheduleActiveBrowserSync();
+  }
 }
 
 bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {

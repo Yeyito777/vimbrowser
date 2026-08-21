@@ -118,6 +118,8 @@ Returns canonical app/tab state as JSON. Fields include:
   "ipc_protocol": "vimbrowser-ipc",
   "ipc_version": 1,
   "active_tabid": 1,
+  "visible_tabid": 1,
+  "rejected_background_focus_requests": 0,
   "active_index": 0,
   "active_tab": 1,
   "tabs": 1,
@@ -142,6 +144,8 @@ Returns all tabs as JSON:
   "ipc_protocol": "vimbrowser-ipc",
   "ipc_version": 1,
   "active_tabid": 3,
+  "visible_tabid": 3,
+  "rejected_background_focus_requests": 2,
   "active_index": 1,
   "active_tab": 2,
   "tabs": [
@@ -170,6 +174,12 @@ Notes:
 - `index` is zero-based.
 - `tab` is one-based.
 - `active_tabid` is the stable runtime tab ID.
+- `visible_tabid` is the BrowserView currently mapped in the content pane. It
+  converges on `active_tabid` after explicit tab activation and does not change
+  for background automation.
+- `rejected_background_focus_requests` is a monotonic diagnostic count of CEF
+  focus requests rejected because their browser was inactive, hidden, or not
+  the shell's current focus area.
 - `audible` mirrors Chromium's current per-tab audible state and drives the
   sidebar audio indicator.
 - `context` is `null` for the default profile or the named isolated request
@@ -303,6 +313,12 @@ Moves a tab to a target zero-based index. The target is clamped into the valid r
 
 Resolves the text with the same native URL/search/local-file path used by `:open`, records open history, opens a new active tab, and returns `status` JSON.
 
+#### `open-background-tab <url-or-query-or-local-path>`
+
+Resolves and records the target like `open-tab`, but creates the tab without
+changing the active or visible tab. Returns `tabs` JSON. Native CEF focus
+requests from the background browser are rejected by the shell.
+
 #### `open-context-tab <context-name> <url-or-query-or-local-path>`
 
 Opens a new active tab in a named persistent `CefRequestContext`. A name must be
@@ -324,6 +340,11 @@ context. Tabs created from an isolated tab (new-tab link actions, clones,
 targeted links, and popups) retain the same context and are transient too.
 Closing/restarting the browser does not delete the named context directory; open
 it again with this command to continue using the persisted login/storage state.
+
+#### `open-background-context-tab <context-name> <url-or-query-or-local-path>`
+
+Creates the same persistent isolated request context without changing the
+active or visible tab. Returns `tabs` JSON.
 
 Example:
 
