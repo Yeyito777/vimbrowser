@@ -1033,6 +1033,11 @@ void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
   }
 }
 
+bool BrowserClient::OnSetFocus(CefRefPtr<CefBrowser>,
+                               FocusSource source) {
+  return owner_ && !owner_->CanClientReceiveFocus(this, source);
+}
+
 #if CEF_API_ADDED(13700)
 bool BrowserClient::GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
                                             CefRect &rect) {

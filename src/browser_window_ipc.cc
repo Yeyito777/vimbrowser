@@ -2415,6 +2415,12 @@ std::string BrowserWindow::TabsJson() const {
   AppendJsonNumber(out, kIpcProtocolVersion);
   out += ",\"active_tabid\":";
   AppendJsonNumber(out, ActiveTabId());
+  out += ",\"visible_tabid\":";
+  AppendJsonNumber(out, visible_tab_index_ < tabs_.size()
+                            ? tabs_[visible_tab_index_].id
+                            : 0);
+  out += ",\"rejected_background_focus_requests\":";
+  AppendJsonNumber(out, rejected_background_focus_requests_);
   out += ",\"active_index\":";
   AppendJsonNumber(out, active_index_);
   out += ",\"active_tab\":";
@@ -2922,28 +2928,32 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     MoveTabToIndex(*index, static_cast<size_t>(target));
     return TabsJson();
   }
-  if (command == "open-tab") {
+  if (command == "open-tab" || command == "open-background-tab") {
     if (argv.size() < 2) {
-      return "ERR usage: open-tab <url-or-query>\n";
+      return "ERR usage: open-tab|open-background-tab <url-or-query>\n";
     }
     const std::string text = JoinArgs(argv, 1);
     const std::string url = ResolveUrlOrSearch(text);
     RecordOpenHistory(text);
-    AddTab(url, true);
-    return IpcStatusJson();
+    const bool activate = command == "open-tab";
+    AddTab(url, activate);
+    return activate ? IpcStatusJson() : TabsJson();
   }
-  if (command == "open-context-tab") {
+  if (command == "open-context-tab" ||
+      command == "open-background-context-tab") {
     if (argv.size() < 3) {
-      return "ERR usage: open-context-tab <context-name> <url-or-query>\n";
+      return "ERR usage: open-context-tab|open-background-context-tab "
+             "<context-name> <url-or-query>\n";
     }
     const std::string text = JoinArgs(argv, 2);
     const std::string url = ResolveUrlOrSearch(text);
     std::string error;
-    if (!AddContextTab(argv[1], url, &error)) {
+    const bool activate = command == "open-context-tab";
+    if (!AddContextTab(argv[1], url, activate, &error)) {
       return error;
     }
     RecordOpenHistory(text);
-    return IpcStatusJson();
+    return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open") {
     if (argv.size() < 3) {
@@ -3189,7 +3199,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  tab-delete <tabid>\n"
            "  tab-order <tabid> <zero-based-index>\n"
            "  open-tab <url-or-query>\n"
+           "  open-background-tab <url-or-query>\n"
            "  open-context-tab <context-name> <url-or-query>\n"
+           "  open-background-context-tab <context-name> <url-or-query>\n"
            "  open <tabid> <url-or-query>\n"
            "  reload [tabid]\n"
            "  reload-ignore-cache [tabid]\n"
@@ -3618,6 +3630,12 @@ std::string BrowserWindow::IpcStatusJson() const {
   AppendJsonNumber(out, kIpcProtocolVersion);
   out += ",\"active_tabid\":";
   AppendJsonNumber(out, ActiveTabId());
+  out += ",\"visible_tabid\":";
+  AppendJsonNumber(out, visible_tab_index_ < tabs_.size()
+                            ? tabs_[visible_tab_index_].id
+                            : 0);
+  out += ",\"rejected_background_focus_requests\":";
+  AppendJsonNumber(out, rejected_background_focus_requests_);
   out += ",\"active_index\":";
   AppendJsonNumber(out, active_index_);
   out += ",\"active_tab\":";
