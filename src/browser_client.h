@@ -4,6 +4,7 @@
 #include "include/cef_dialog_handler.h"
 #include "include/cef_display_handler.h"
 #include "include/cef_focus_handler.h"
+#include "include/cef_jsdialog_handler.h"
 #include "include/cef_life_span_handler.h"
 #include "include/cef_load_handler.h"
 #include "include/cef_request.h"
@@ -34,6 +35,7 @@ class BrowserClient final : public CefClient,
                             public CefDialogHandler,
                             public CefDisplayHandler,
                             public CefFocusHandler,
+                            public CefJSDialogHandler,
                             public CefLifeSpanHandler,
                             public CefLoadHandler,
                             public CefKeyboardHandler,
@@ -48,6 +50,7 @@ public:
   CefRefPtr<CefDialogHandler> GetDialogHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; }
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override {
@@ -77,6 +80,11 @@ public:
                        const CefString& url) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override;
+  bool OnBeforeUnloadDialog(
+      CefRefPtr<CefBrowser> browser,
+      const CefString& message_text,
+      bool is_reload,
+      CefRefPtr<CefJSDialogCallback> callback) override;
   bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) override;
 #if CEF_API_ADDED(13700)
   bool GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,

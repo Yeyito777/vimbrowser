@@ -948,6 +948,18 @@ private:
 
 BrowserClient::BrowserClient(BrowserWindow *owner) : owner_(owner) {}
 
+bool BrowserClient::OnBeforeUnloadDialog(
+    CefRefPtr<CefBrowser>,
+    const CefString&,
+    bool,
+    CefRefPtr<CefJSDialogCallback> callback) {
+  // Vimbrowser never blocks navigation, reload, or close on beforeunload.
+  // Continuing through CEF's native handler prevents the tab-modal leave-page
+  // prompt from being created at all.
+  callback->Continue(true, CefString());
+  return true;
+}
+
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
   if (owner_) {
