@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits.h>
 #include <string>
+#include <thread>
 #include <vector>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -47,6 +48,10 @@ extern "C" void VimbrowserInitMacApplication();
 #endif
 
 namespace {
+
+#if defined(__APPLE__)
+std::filesystem::path g_mac_ipc_socket_path;
+#endif
 
 void SetCefString(cef_string_t* target, const std::string& value) {
   CefString(target).FromString(value);
@@ -279,6 +284,41 @@ bool ForwardLaunchUrlsToExistingProfile(
   return ok;
 }
 
+#if defined(__APPLE__)
+void ForwardMacOpenUrls(std::filesystem::path ipc_socket,
+                        std::vector<std::string> urls) {
+  for (const std::string& url : urls) {
+    if (url.empty() || url.find_first_of("\r\n") != std::string::npos) {
+      continue;
+    }
+
+    bool forwarded = false;
+    for (int attempt = 0; attempt < 100; ++attempt) {
+      std::string response;
+      if (SendIpcCommand(ipc_socket, "open-tab " + url, &response)) {
+        if (response.rfind("ERR", 0) == 0) {
+          std::cerr << "vimbrowser: rejected macOS open URL " << url << ": "
+                    << response;
+        } else {
+          forwarded = true;
+        }
+        break;
+      }
+
+      // A cold LaunchServices start can deliver application:openURLs: before
+      // BrowserWindow has brought up its IPC server. Keep AppKit responsive and
+      // retry from this worker until normal CEF initialization completes.
+      usleep(100000);
+    }
+
+    if (!forwarded) {
+      std::cerr << "vimbrowser: failed to handle macOS open URL: " << url
+                << std::endl;
+    }
+  }
+}
+#endif
+
 bool ShouldExitForExistingProfile(const std::string& root_cache_path,
                                   const std::string& state_path,
                                   const std::vector<std::string>& launch_urls) {
@@ -317,6 +357,28 @@ bool ShouldExitForExistingProfile(const std::string& root_cache_path,
 }
 
 }  // namespace
+
+#if defined(__APPLE__)
+extern "C" void VimbrowserOpenMacUrls(const char* const* urls, size_t count) {
+  std::vector<std::string> copied_urls;
+  copied_urls.reserve(count);
+  for (size_t i = 0; i < count; ++i) {
+    if (urls[i] && *urls[i]) {
+      copied_urls.emplace_back(urls[i]);
+    }
+  }
+  if (copied_urls.empty() || g_mac_ipc_socket_path.empty()) {
+    return;
+  }
+
+  // application:openURLs: runs on the main AppKit/CEF UI thread. The IPC server
+  // posts commands back to that thread and waits for their replies, so perform
+  // the socket round trip on a worker to avoid a UI-thread deadlock.
+  std::thread(ForwardMacOpenUrls, g_mac_ipc_socket_path,
+              std::move(copied_urls))
+      .detach();
+}
+#endif
 
 VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
 #if defined(__linux__)
@@ -428,6 +490,7 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
 #endif
 
 #if defined(__APPLE__)
+  g_mac_ipc_socket_path = IpcSocketPathForStatePath(config.state_path);
   VimbrowserInitMacApplication();
 #endif
 
