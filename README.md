@@ -321,6 +321,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   native PDF in `~/Desktop/musescore-sheets` (override with
   `MUSESCORE_DOWNLOAD_DIR`). The network transfer and SVG/PNG-to-PDF conversion
   are implemented in C/C++ with libcurl, librsvg, and Cairo on both desktops
+- A separate, vimbrowser-independent Python alternative lives in
+  [`Yeyito777/musescore-download-script`](https://github.com/Yeyito777/musescore-download-script)
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.
