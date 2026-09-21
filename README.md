@@ -1,5 +1,10 @@
 # vimbrowser
 
+For read-only transport/UI/target diagnostics, exact control readiness, timeout
+ambiguity and staged activation, see [docs/diagnostics.md](docs/diagnostics.md).
+`vimbrowser-cli diagnose TAB` never focuses or wakes tabs. Use
+`open-context --brief CONTEXT URL` for an opt-in exact-created-tab response.
+
 Fresh, minimal CEF-based vim browser.
 
 Goals:
@@ -191,6 +196,28 @@ vimbrowser --remote-debugging-port=9333 https://example.com
 
 Use `--remote-debugging-port=0` to disable remote CDP.
 
+## Two-person IPC browsing
+
+Page-directed IPC (background open, navigation, JS/frame inspection, controls,
+uploads, scrolling and screenshots) automatically renews a **60-second activity
+lease on that tab only**, without selecting it or moving native keyboard focus.
+Leased BrowserViews have a viewport/compositor surface behind the user's page;
+Chromium's `Emulation.setFocusEmulationEnabled` visible-capturer keeps Blink rAF,
+timers, child frames and rendering active even when occluded. `document.hasFocus()`
+and page visibility are emulated on the addressed page; native focus is not.
+Auth popups inherit the opener's remaining lease and stay in background tabs.
+
+Use `vimbrowser-cli activity TAB 300000` before a longer authentication/wait step
+(maximum five minutes), renew as needed, and `vimbrowser-cli activity TAB 0` when
+finished. Raw IPC is `tab-activity <tabid> <0..300000 milliseconds>`. Expiry/release
+restores normal hidden-tab behavior. Tab/status/network/cookie metadata reads do
+not renew leases; `tabs` exposes `activity_remaining_ms` for passive observation.
+Leases are not saved/restored, and dormant unrelated tabs are not initialized.
+
+`make background-activity-test` runs the local rAF/cross-origin-form/auth-popup,
+screenshot, native owner typing and idle-expiry regression in a disposable xenv
+and profile only. Requires `xenv`, `vimbrowser-cli`, Python and Pillow.
+
 ## Current shell behavior
 
 - one top-level CEF Views window; page-created popups are captured into the tab
@@ -202,6 +229,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   persistent default; `--profile-dir DIR` always selects an explicit profile
 - `Ctrl+Shift+I` opens DevTools
 - web view focused by default in website-normal mode
+
 - media autoplay is disabled by default; pages need an explicit user gesture to
   start playback after fresh loads or browser restarts
 - the source-built CEF backend enables Chrome-branded FFmpeg proprietary codec

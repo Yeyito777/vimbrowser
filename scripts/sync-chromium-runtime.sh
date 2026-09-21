@@ -56,18 +56,20 @@ copy_file() {
   local dst=$2
   [[ -f "${src}" ]] || return 0
 
-  if [[ -f "${dst}" && ! "${src}" -nt "${dst}" ]]; then
-    return 0
+  # CMake can copy an older CEF distribution over this runtime with a NEW
+  # destination mtime. Timestamps therefore cannot prove backend identity.
+  # Compare ELF build IDs (stripped/unstripped compatible), or exact payloads.
+  if [[ -f "${dst}" ]]; then
+    if is_elf "${src}" && is_elf "${dst}" && same_elf_build_id "${src}" "${dst}"; then
+      return 0
+    fi
+    if cmp -s "${src}" "${dst}"; then
+      return 0
+    fi
   fi
 
   mkdir -p "$(dirname "${dst}")"
   if [[ "${strip_enabled}" == "1" ]] && is_elf "${src}"; then
-    if [[ -f "${dst}" ]] && is_elf "${dst}" && same_elf_build_id "${src}" "${dst}"; then
-      touch -r "${src}" "${dst}"
-      echo "matched stripped ${src#${repo_dir}/} -> ${dst#${repo_dir}/}"
-      return 0
-    fi
-
     local tmp
     tmp=$(mktemp "${dst}.XXXXXX")
     if ! "${strip_tool}" --strip-unneeded -o "${tmp}" "${src}" 2>/dev/null; then

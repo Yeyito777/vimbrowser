@@ -377,6 +377,7 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
                                                       config.initial_tab_folder_ids,
                                                       config.initial_tab_sort_orders,
                                                       config.initial_tab_pinned,
+                                                      config.initial_tab_contexts,
                                                       config.active_index,
                                                       config.next_tab_id,
                                                       config.show_mode_indicator,

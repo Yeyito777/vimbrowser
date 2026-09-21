@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
       /*initial_urls=*/{}, /*initial_tab_ids=*/{},
       /*initial_tab_folder_ids=*/{},
       /*initial_tab_sort_orders=*/{}, /*initial_tab_pinned=*/{},
+      /*initial_tab_contexts=*/{},
       /*active_index=*/0, /*next_tab_id=*/1,
       /*show_mode_indicator=*/false,
       /*show_fps_indicator=*/false, /*show_statusline=*/false,

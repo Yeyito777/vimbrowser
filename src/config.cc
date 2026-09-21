@@ -453,7 +453,35 @@ AppState ReadAppState(const std::string& state_path) {
 
   std::string line;
   while (std::getline(file, line)) {
-    if (StartsWith(line, "tab=")) {
+    if (StartsWith(line, "context_tab=")) {
+      // Single independent record: older binaries ignore it rather than
+      // accidentally restoring an isolated URL in the default context.
+      std::string_view payload(line);
+      payload.remove_prefix(12);
+      std::vector<std::string_view> fields;
+      for (size_t i = 0; i < 5; ++i) {
+        const size_t separator = payload.find('\t');
+        if (separator == std::string_view::npos) break;
+        fields.push_back(payload.substr(0, separator));
+        payload.remove_prefix(separator + 1);
+      }
+      if (fields.size() != 5 || fields[0].empty() || fields[0].size() > 48 ||
+          fields[0].find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-_") != std::string_view::npos ||
+          !((fields[0][0] >= 'a' && fields[0][0] <= 'z') ||
+            (fields[0][0] >= '0' && fields[0][0] <= '9'))) continue;
+      uint64_t id = 0, folder = 0, order = 0;
+      if (!ParseStateUint64(fields[1], &id) || !ParseStateUint64(fields[2], &folder) ||
+          !ParseStateUint64(fields[3], &order) ||
+          (fields[4] != "on" && fields[4] != "off")) continue;
+      std::string url = UnescapeStateValue(payload);
+      if (url.empty()) continue;
+      state.tabs.push_back(std::move(url));
+      state.tab_ids.push_back(id);
+      state.tab_folder_ids.push_back(folder);
+      state.tab_sort_orders.push_back(order);
+      state.tab_pinned.push_back(fields[4] == "on");
+      state.tab_contexts.emplace_back(fields[0]);
+    } else if (StartsWith(line, "tab=")) {
       const std::string tab = UnescapeStateValue(std::string_view(line).substr(4));
       if (!tab.empty()) {
         state.tabs.push_back(tab);
@@ -461,6 +489,7 @@ AppState ReadAppState(const std::string& state_path) {
         state.tab_folder_ids.push_back(0);
         state.tab_sort_orders.push_back(0);
         state.tab_pinned.push_back(false);
+        state.tab_contexts.emplace_back();
       }
     } else if (StartsWith(line, "tab_id=") && !state.tab_ids.empty()) {
       uint64_t tab_id = 0;
@@ -618,6 +647,15 @@ void WriteAppState(const std::string& state_path, const AppState& state) {
     for (size_t i = 0; i < state.tabs.size(); ++i) {
       const std::string& tab = state.tabs[i];
       if (!tab.empty()) {
+        if (i < state.tab_contexts.size() && !state.tab_contexts[i].empty()) {
+          file << "context_tab=" << EscapeStateValue(state.tab_contexts[i]) << '\t'
+               << (i < state.tab_ids.size() ? state.tab_ids[i] : 0) << '\t'
+               << (i < state.tab_folder_ids.size() ? state.tab_folder_ids[i] : 0) << '\t'
+               << (i < state.tab_sort_orders.size() ? state.tab_sort_orders[i] : 0) << '\t'
+               << (i < state.tab_pinned.size() && state.tab_pinned[i] ? "on" : "off") << '\t'
+               << EscapeStateValue(tab) << '\n';
+          continue;
+        }
         file << "tab=" << EscapeStateValue(tab) << '\n';
         const uint64_t tab_id =
             i < state.tab_ids.size() ? state.tab_ids[i] : 0;
@@ -788,6 +826,7 @@ Config ParseConfig(int argc, char* argv[]) {
       config.initial_tab_folder_ids.push_back(0);
       config.initial_tab_sort_orders.push_back(0);
       config.initial_tab_pinned.push_back(false);
+      config.initial_tab_contexts.emplace_back();
       config.explicit_initial_urls.push_back(url);
     }
   }
@@ -819,6 +858,7 @@ Config ParseConfig(int argc, char* argv[]) {
       config.initial_tab_folder_ids = state.tab_folder_ids;
       config.initial_tab_sort_orders = state.tab_sort_orders;
       config.initial_tab_pinned = state.tab_pinned;
+      config.initial_tab_contexts = state.tab_contexts;
       config.initial_urls.insert(config.initial_urls.end(),
                                  config.explicit_initial_urls.begin(),
                                  config.explicit_initial_urls.end());
@@ -826,6 +866,7 @@ Config ParseConfig(int argc, char* argv[]) {
       config.initial_tab_folder_ids.resize(config.initial_urls.size(), 0);
       config.initial_tab_sort_orders.resize(config.initial_urls.size(), 0);
       config.initial_tab_pinned.resize(config.initial_urls.size(), false);
+      config.initial_tab_contexts.resize(config.initial_urls.size());
       config.active_index = config.initial_urls.size() - 1;
     }
     if (!config.initial_urls.empty()) {
@@ -838,6 +879,7 @@ Config ParseConfig(int argc, char* argv[]) {
     config.initial_tab_folder_ids = state.tab_folder_ids;
     config.initial_tab_sort_orders = state.tab_sort_orders;
     config.initial_tab_pinned = state.tab_pinned;
+    config.initial_tab_contexts = state.tab_contexts;
     config.active_index = std::min(state.active_index, config.initial_urls.size() - 1);
     config.initial_url = config.initial_urls[config.active_index];
   } else {
@@ -846,6 +888,7 @@ Config ParseConfig(int argc, char* argv[]) {
     config.initial_tab_folder_ids.push_back(0);
     config.initial_tab_sort_orders.push_back(0);
     config.initial_tab_pinned.push_back(false);
+    config.initial_tab_contexts.emplace_back();
   }
 
   if (!dwm_save_disabled && config.dwm_save_argv.empty()) {

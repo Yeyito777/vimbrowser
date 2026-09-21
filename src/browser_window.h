@@ -59,6 +59,7 @@ class BrowserWindow final : public CefWindowDelegate,
                 std::vector<uint64_t> initial_tab_folder_ids,
                 std::vector<uint64_t> initial_tab_sort_orders,
                 std::vector<bool> initial_tab_pinned,
+                std::vector<std::string> initial_tab_contexts,
                 size_t active_index,
                 uint64_t next_tab_id,
                 bool show_mode_indicator,
@@ -409,6 +410,10 @@ class BrowserWindow final : public CefWindowDelegate,
       const std::string& context_name,
       std::string* error = nullptr);
   bool EnsureTabBrowser(size_t index, bool load_deferred_now);
+  bool SetTabActivity(uint64_t tab_id, int duration_ms = 60000,
+                      bool extend_only = true);
+  void ApplyTabActivity(uint64_t tab_id);
+  void ExpireTabActivity(uint64_t tab_id, uint64_t generation);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
                       std::string url,
@@ -759,6 +764,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
   std::vector<bool> initial_tab_pinned_;
+  std::vector<std::string> initial_tab_contexts_;
   std::string state_path_;
   std::string dwm_save_argv_;
   std::string root_cache_path_;

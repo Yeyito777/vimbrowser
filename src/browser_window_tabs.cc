@@ -307,6 +307,88 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
   return true;
 }
 
+bool BrowserWindow::SetTabActivity(uint64_t tab_id, int duration_ms,
+                                   bool extend_only) {
+  const auto index = FindTabIndexById(tab_id);
+  if (!index || duration_ms < 0 || duration_ms > 300000) {
+    return false;
+  }
+  Tab& tab = tabs_[*index];
+  const auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::milliseconds(duration_ms);
+  if (!extend_only && deadline < tab.activity_deadline) {
+    // Explicit shorten/release invalidates the existing later expiry task.
+    ++tab.activity_timer_generation;
+    tab.activity_timer_pending = false;
+  }
+  tab.activity_deadline = extend_only && duration_ms > 0
+                              ? std::max(tab.activity_deadline, deadline)
+                              : deadline;
+  if (duration_ms > 0) {
+    // Only the explicitly addressed tab may leave lazy/dormant state.
+    EnsureTabBrowser(*index, true);
+  }
+  ApplyTabActivity(tab_id);
+  if (duration_ms > 0 && !tab.activity_timer_pending) {
+    tab.activity_timer_pending = true;
+    CefPostDelayedTask(TID_UI,
+        base::BindOnce(&BrowserWindow::ExpireTabActivity,
+                       CefRefPtr<BrowserWindow>(this), tab_id,
+                       ++tab.activity_timer_generation), duration_ms);
+  }
+  return true;
+}
+
+void BrowserWindow::ApplyTabActivity(uint64_t tab_id) {
+  const auto index = FindTabIndexById(tab_id);
+  if (!index) return;
+  Tab& tab = tabs_[*index];
+  const bool enabled = tab.activity_deadline > std::chrono::steady_clock::now();
+  if (enabled == tab.activity_applied || !tab.client ||
+      !tab.client->browser() || !tab.client->browser()->GetHost()) return;
+
+  // Chromium's focus emulation owns a visible-capturer lease. It keeps the
+  // page and its child frames visible to Blink, running rAF and compositing,
+  // even when occluded by the owner's native BrowserView. No real focus moves.
+  // Unlike global throttle switches this affects only this WebContents, and
+  // disabling it restores ordinary hidden-tab lifecycle/resource behavior.
+  auto params = CefDictionaryValue::Create();
+  if (tab.view && content_inner_panel_) {
+    // Views skips hidden children during layout/native widget sizing. Attach a
+    // leased surface behind the currently displayed page so it has a real
+    // viewport for layout, hit-testing and screenshots. Never RequestFocus.
+    if (enabled || *index != visible_tab_index_) tab.view->SetVisible(enabled);
+    if (visible_tab_index_ < tabs_.size() && tabs_[visible_tab_index_].view) {
+      content_inner_panel_->ReorderChildView(tabs_[visible_tab_index_].view, -1);
+    }
+    content_inner_panel_->Layout();
+  }
+  params->SetBool("enabled", enabled);
+  if (tab.client->browser()->GetHost()->ExecuteDevToolsMethod(
+          0, "Emulation.setFocusEmulationEnabled", params) != 0) {
+    tab.activity_applied = enabled;
+  }
+}
+
+void BrowserWindow::ExpireTabActivity(uint64_t tab_id, uint64_t generation) {
+  const auto index = FindTabIndexById(tab_id);
+  if (!index) return;  // Closed tabs cannot be resurrected by a stale timer.
+  Tab& tab = tabs_[*index];
+  if (generation != tab.activity_timer_generation) return;
+  const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+      tab.activity_deadline - std::chrono::steady_clock::now()).count();
+  if (tab.activity_deadline > std::chrono::steady_clock::now()) {
+    // One timer per addressed tab, not one timer per IPC request.
+    CefPostDelayedTask(TID_UI,
+        base::BindOnce(&BrowserWindow::ExpireTabActivity,
+                       CefRefPtr<BrowserWindow>(this), tab_id, generation),
+        remaining + 1);
+    return;
+  }
+  tab.activity_timer_pending = false;
+  ApplyTabActivity(tab_id);
+}
+
 void BrowserWindow::InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                                    CefRefPtr<BrowserClient> popup_client,
                                    std::string url,
@@ -412,7 +494,8 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
 
   if (visible_tab_index_ < tabs_.size() && visible_tab_index_ != active_index_ &&
       tabs_[visible_tab_index_].view) {
-    tabs_[visible_tab_index_].view->SetVisible(false);
+    tabs_[visible_tab_index_].view->SetVisible(
+        tabs_[visible_tab_index_].activity_applied);
   }
 
   visible_tab_index_ = active_index_;
@@ -420,6 +503,7 @@ void BrowserWindow::ApplyActiveBrowserSelection(uint64_t generation) {
   Tab& tab = tabs_[active_index_];
   if (tab.view) {
     tab.view->SetVisible(true);
+    if (content_inner_panel_) content_inner_panel_->ReorderChildView(tab.view, -1);
     if (tab.deferred_load && tab.client && tab.client->browser() &&
         tab.client->browser()->GetMainFrame()) {
       tab.deferred_load = false;
@@ -727,6 +811,7 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
       EnsureTabBrowser(active_index_, true);
       if (tabs_[active_index_].view) {
         tabs_[active_index_].view->SetVisible(true);
+        content_inner_panel_->ReorderChildView(tabs_[active_index_].view, -1);
       }
       visible_tab_index_ = active_index_;
     }

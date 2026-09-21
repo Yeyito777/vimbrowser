@@ -18,7 +18,7 @@ public:
       std::vector<uint64_t> initial_tab_ids,
       std::vector<uint64_t> initial_tab_folder_ids,
       std::vector<uint64_t> initial_tab_sort_orders,
-      std::vector<bool> initial_tab_pinned, size_t active_index,
+      std::vector<bool> initial_tab_pinned, std::vector<std::string> initial_tab_contexts, size_t active_index,
       uint64_t next_tab_id,
       bool show_mode_indicator, bool show_fps_indicator, bool show_statusline,
       bool shader_enabled, std::string state_path, std::string dwm_save_argv,
@@ -51,6 +51,7 @@ private:
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
   std::vector<bool> initial_tab_pinned_;
+  std::vector<std::string> initial_tab_contexts_;
   size_t active_index_;
   uint64_t next_tab_id_;
   bool show_mode_indicator_;

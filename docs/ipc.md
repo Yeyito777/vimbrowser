@@ -75,10 +75,10 @@ The client is intentionally thin. Protocol semantics belong in the browser comma
 - `index` is the current zero-based position in the tab vector and can change.
 - `tab` is the one-based UI-friendly position.
 
-Named isolated request-context tabs are intentionally transient shell state and
-are not restored. Their IDs therefore cannot identify a tab after restart,
-although those consumed IDs are still never reused by that persistent profile.
-An instance-local state path likewise provides persistence only while that state
+Named isolated request-context tabs are restored with their exact context names,
+IDs, folders/order and pinned flags in the context-aware state format. Older
+binaries omitted those tabs; they must not be used for full-session recovery.
+An instance-local state path provides persistence only while that state
 file remains available; use `--profile-dir` for durable automation identity.
 
 Use ID-based commands for automation. Keep `tab <1-based-index>` only for legacy index-style scripts.
@@ -332,14 +332,14 @@ cache paths be immediate children of the configured root cache. Different names
 do not share request-context storage with each other or with the default profile.
 Reusing a name shares the same context and storage.
 
-Named-context tabs are deliberately **transient shell tabs**: vimbrowser keeps
-their context data on disk but excludes their restorable tab entries from
-session state and excludes them from the undo-close stack. This avoids the
-legacy URL-only session format ever restoring an isolated URL in the default
-context. Tabs created from an isolated tab (new-tab link actions, clones,
-targeted links, and popups) retain the same context and are transient too.
-Closing/restarting the browser does not delete the named context directory; open
-it again with this command to continue using the persisted login/storage state.
+Named-context tabs persist both storage and exact shell identity. Each uses a
+single `context_tab=` state record containing context, ID, folder, sort order,
+pinned flag and escaped URL. Legacy binaries ignore these records instead of
+restoring isolated URLs in the default context. Tabs created from isolated tabs
+(new-tab link actions, clones, targeted links and popups) keep their context.
+The URL-only undo-close stack still excludes named tabs; that separate behavior
+is unchanged. For recovery from a pre-restart `tabs` snapshot see
+[session-recovery.md](session-recovery.md).
 
 #### `open-background-context-tab <context-name> <url-or-query-or-local-path>`
 

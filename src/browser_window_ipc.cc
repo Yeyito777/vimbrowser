@@ -36,6 +36,8 @@
 #include "include/cef_values.h"
 #include "include/wrapper/cef_closure_task.h"
 
+extern "C" const char* vimbrowser_control_backend_build() __attribute__((weak));
+
 extern "C" bool vimbrowser_frame_is_out_of_process(
     int browser_id,
     const char* frame_identifier,
@@ -176,7 +178,7 @@ VimbrowserElementActivationError ElementActivationErrorForResult(
     case VimbrowserElementActivationResult::kBackendUnavailable:
     default:
       return {"activation_backend_unavailable",
-              "custom Chromium element activation backend became unavailable"};
+              "activation backend failed, disconnected, or exceeded its deadline; outcome unknown; do not blindly retry"};
   }
 }
 
@@ -2354,11 +2356,17 @@ void BrowserWindow::HandleInspectControlsIpcCommand(
           return;
         }
         if (result != 0) {
+          const std::string detail = json && json_size ? std::string(json, json_size) : "";
+          if (detail.find("\"deadline_exceeded\"") != std::string::npos) {
+            context->reply(UploadFileErrorJson("inspection_timeout",
+                "renderer inspection exceeded 2500ms; backend is present; readiness/cause unknown"));
+            return;
+          }
           context->reply(UploadFileErrorJson(
               result == 1 ? "stale_document" : "inspection_backend_unavailable",
               result == 1
                   ? "frame document changed or became unavailable during inspection"
-                  : "custom Chromium control inspection backend is unavailable"));
+                  : "control backend call failed or disconnected; this does not prove it is missing"));
           return;
         }
         const std::string inspection =
@@ -2726,58 +2734,29 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
     return;
   }
 
-  // Paint the inactive tab into a background compositor surface without
-  // activating or focusing it. CEF/Views only keeps a reliable surface for
-  // views that are attached and visible, so briefly show the target behind the
-  // active view, keep the active view frontmost, then let the backend CDP
-  // new-surface path copy the target's own surface. The cleanup hides the
-  // target again if it is still inactive.
-  CefRefPtr<CefBrowserView> target_view = tabs_[index].view;
-  CefRefPtr<CefBrowserView> active_view =
-      active_index_ < tabs_.size() ? tabs_[active_index_].view : nullptr;
-  if (target_view) {
-    target_view->SetVisible(true);
-  }
-  if (content_inner_panel_ && active_view && active_view != target_view) {
-    content_inner_panel_->ReorderChildView(active_view, -1);
-  }
-  if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
-    content_inner_panel_->Layout();
-  }
-
-  CefRefPtr<BrowserWindow> self(this);
-  auto cleanup = [self, target_view, tab_id]() {
-    const std::optional<size_t> index = self->FindTabIndexById(tab_id);
-    if (!index || *index != self->active_index_) {
-      if (target_view) {
-        target_view->SetVisible(false);
-      }
-    }
-    if (self->content_inner_panel_ && self->content_inner_panel_->GetLayout()) {
-      self->content_inner_panel_->Layout();
-    }
-  };
-
+  // The IPC activity lease supplies a live compositor surface behind the
+  // owner's page. The screenshot does not shorten/release another operation's
+  // lease or change native focus/selection.
   CefPostDelayedTask(
       TID_UI,
       base::BindOnce(
           [](CefRefPtr<CefBrowserHost> host,
              CefRefPtr<CefDictionaryValue> params, uint64_t tab_id,
-             std::string url, IpcReplyCallback reply,
-             std::function<void()> cleanup) mutable {
+             std::string url, IpcReplyCallback reply) mutable {
             CefRefPtr<ScreenshotDevToolsObserver> observer =
                 new ScreenshotDevToolsObserver(tab_id, std::move(url),
-                                               std::move(reply),
-                                               std::move(cleanup));
+                                               std::move(reply));
             StartScreenshotDevToolsCapture(host, params, observer);
           },
-          host, params, tab_id, std::move(url), std::move(reply),
-          std::move(cleanup)),
+          host, params, tab_id, std::move(url), std::move(reply)),
       75);
 }
 
 void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
                                   size_t index) const {
+  const auto activity_remaining_ms = std::max<int64_t>(0,
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          tab.activity_deadline - std::chrono::steady_clock::now()).count());
   if (!tab.client && !tab.url.empty()) {
     out += "{\"id\":";
     out += tab.id_json;
@@ -2787,6 +2766,8 @@ void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
     AppendJsonNumber(out, index + 1);
     out += ",\"active\":";
     AppendJsonBool(out, index == active_index_);
+    out += ",\"activity_remaining_ms\":";
+    AppendJsonNumber(out, activity_remaining_ms);
     out += ",\"audible\":";
     AppendJsonBool(out, tab.audible);
     out += ",\"folder_id\":";
@@ -2856,6 +2837,8 @@ void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
   AppendJsonNumber(out, index + 1);
   out += ",\"active\":";
   AppendJsonBool(out, index == active_index_);
+  out += ",\"activity_remaining_ms\":";
+  AppendJsonNumber(out, activity_remaining_ms);
   out += ",\"audible\":";
   AppendJsonBool(out, tab.audible);
   out += ",\"folder_id\":";
@@ -2963,6 +2946,25 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
   if (command == "status" || command == "json") {
     RefreshAudibleTabs();
     return IpcStatusJson();
+  }
+  if (command == "diagnose-tab") {
+    uint64_t tab_id = 0;
+    if (argv.size() != 2 || !ParseUint64Arg(argv[1], &tab_id))
+      return "ERR usage: diagnose-tab <tabid>\n";
+    const auto index = FindTabIndexById(tab_id);
+    std::string out = "{\"ok\":true,\"shell_build\":\"" __DATE__ " " __TIME__ "\",\"control_backend_build\":\"";
+    out += vimbrowser_control_backend_build ? vimbrowser_control_backend_build() : "legacy-unversioned";
+    out += "\",\"renderer_probe\":\"not_requested_metadata_only\",\"tab\":";
+    if (!index) return out + "null}";
+    const Tab& tab = tabs_[*index];
+    AppendTabJson(out, tab, *index);
+    const auto browser = tab.client ? tab.client->browser() : nullptr;
+    const auto frame = browser ? browser->GetMainFrame() : nullptr;
+    out += ",\"browser_present\":";
+    AppendJsonBool(out, !!browser);
+    out += ",\"main_frame_valid\":";
+    AppendJsonBool(out, frame && frame->IsValid());
+    return out + "}";
   }
   if (command == "tabs") {
     RefreshAudibleTabs();
@@ -3432,10 +3434,12 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     RecordOpenHistory(text);
     const bool activate = command == "open-tab";
     AddTab(url, activate);
+    if (!activate && !tabs_.empty()) SetTabActivity(tabs_.back().id);
     return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open-context-tab" ||
-      command == "open-background-context-tab") {
+      command == "open-background-context-tab" ||
+      command == "open-background-context-tab-brief") {
     if (argv.size() < 3) {
       return "ERR usage: open-context-tab|open-background-context-tab "
              "<context-name> <url-or-query>\n";
@@ -3447,7 +3451,13 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     if (!AddContextTab(argv[1], url, activate, &error)) {
       return error;
     }
+    if (!activate && !tabs_.empty()) SetTabActivity(tabs_.back().id);
     RecordOpenHistory(text);
+    if (command == "open-background-context-tab-brief") {
+      std::string out = "{\"ok\":true,\"tab\":";
+      AppendTabJson(out, tabs_.back(), tabs_.size() - 1);
+      return out + "}";
+    }
     return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open") {
@@ -3465,6 +3475,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     Tab &tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
     SetTabUrl(tab, url);
+    SetTabActivity(tab.id);
     if (tab.client && tab.client->browser() &&
         tab.client->browser()->GetMainFrame()) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
@@ -3491,13 +3502,17 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
       return "ERR tab has no browser\n";
     }
     if (command == "reload") {
+      SetTabActivity(tab.id);
       browser->Reload();
     } else if (command == "reload-ignore-cache") {
+      SetTabActivity(tab.id);
       browser->ReloadIgnoreCache();
     } else if (command == "back") {
+      SetTabActivity(tab.id);
       if (browser->CanGoBack())
         browser->GoBack();
     } else if (command == "forward") {
+      SetTabActivity(tab.id);
       if (browser->CanGoForward())
         browser->GoForward();
     } else if (command == "stop") {
@@ -3715,6 +3730,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  frame-html <tabid> <frameid>\n"
            "  frame-text <tabid> <frameid>\n"
            "  screenshot <tabid>\n"
+           "  tab-activity <tabid> <0..300000 milliseconds> (0 releases)\n"
+           "  diagnose-tab <tabid> (metadata only; no wake/focus)\n"
+           "  open-background-context-tab-brief <context> <target>\n"
            "  js <tabid> <javascript>\n"
            "  frame-js <tabid> <frameid> <javascript>\n"
            "  js-base64 <tabid> <base64-utf8-javascript>\n"
@@ -3757,6 +3775,32 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
   }
 
   const std::string command = ToLowerAscii(argv[0]);
+  if (command == "tab-activity") {
+    uint64_t tab_id = 0;
+    long duration_ms = 0;
+    if (argv.size() != 3 || !ParseUint64Arg(argv[1], &tab_id) ||
+        !ParseLongArg(argv[2], &duration_ms) || duration_ms < 0 ||
+        duration_ms > 300000) {
+      reply("ERR usage: tab-activity <tabid> <0..300000 milliseconds>\n");
+      return;
+    }
+    reply(SetTabActivity(tab_id, static_cast<int>(duration_ms), false)
+              ? "OK\n" : "ERR no such tabid\n");
+    return;
+  }
+  // Observation of browser/tab metadata and network/cookies must not wake
+  // dormant tabs. Only page-directed automation renews the bounded lease.
+  if (argv.size() > 1 &&
+      (command == "js" || command == "js-base64" || command == "js-file" ||
+       command == "frame-js" || command == "frame-js-base64" ||
+       command == "html" || command == "text" || command == "frame-html" ||
+       command == "frame-text" || command == "frame-tree" ||
+       command == "inspect-controls" || command == "activate-control" ||
+       command == "upload-file" || command == "screenshot" ||
+       command == "scroll-tab")) {
+    uint64_t tab_id = 0;
+    if (ParseUint64Arg(argv[1], &tab_id)) SetTabActivity(tab_id);
+  }
   if (command == "upload-file") {
     if (argv.size() != 3) {
       reply(UploadFileErrorJson(

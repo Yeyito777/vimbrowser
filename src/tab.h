@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 
@@ -22,6 +23,11 @@ struct Tab {
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
   bool deferred_load = false;
+  // Transient IPC activity only: never persisted or granted to restored tabs.
+  std::chrono::steady_clock::time_point activity_deadline{};
+  bool activity_applied = false;
+  bool activity_timer_pending = false;
+  uint64_t activity_timer_generation = 0;
   bool audible = false;
   bool focused_editable_node = false;
   std::string focused_editable_purpose = "text";

@@ -144,6 +144,14 @@ benchmark-all:
 network-broker-test:
 	VIMBROWSER_TEST_BINARY="$(BENCH_BINARY)" ./scripts/vimbrowser-network-broker-test
 
+.PHONY: diagnostic-controls-test
+diagnostic-controls-test:
+	python3 tests/diagnostic_controls_test.py --binary "$(BENCH_BINARY)"
+
+.PHONY: background-activity-test
+background-activity-test:
+	python3 tests/background_activity_test.py --binary "$(BENCH_BINARY)"
+
 key-regression:
 	./scripts/vimbrowser-key-regression --binary "$(BENCH_BINARY)"
 

@@ -1181,7 +1181,7 @@ JSON.stringify((() => {{
         self.assertEqual(inspection.returncode, 1)
         self.assertEqual(
             json.loads(inspection.stdout)["error"]["code"],
-            "inspection_backend_unavailable",
+            "inspection_timeout",  # Backend presence is not a renderer deadline.
         )
         self.assertLess(inspection_elapsed, 4.0)
 

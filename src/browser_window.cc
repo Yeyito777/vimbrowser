@@ -348,6 +348,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
                              std::vector<uint64_t> initial_tab_folder_ids,
                              std::vector<uint64_t> initial_tab_sort_orders,
                              std::vector<bool> initial_tab_pinned,
+                             std::vector<std::string> initial_tab_contexts,
                              size_t active_index, uint64_t next_tab_id,
                              bool show_mode_indicator,
                              bool show_fps_indicator, bool show_statusline,
@@ -359,6 +360,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
+      initial_tab_contexts_(std::move(initial_tab_contexts)),
       state_path_(std::move(state_path)),
       dwm_save_argv_(std::move(dwm_save_argv)),
       root_cache_path_(std::move(root_cache_path)),
@@ -411,6 +413,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   initial_tab_folder_ids_.resize(initial_urls_.size(), 0);
   initial_tab_sort_orders_.resize(initial_urls_.size(), 0);
   initial_tab_pinned_.resize(initial_urls_.size(), false);
+  initial_tab_contexts_.resize(initial_urls_.size());
   for (uint64_t &folder_id : initial_tab_folder_ids_) {
     if (folder_id != 0 && !folder_ids.contains(folder_id)) {
       folder_id = 0;
@@ -449,6 +452,7 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient *client) {
       tabs_[i].is_loading = client->browser()->IsLoading();
       tabs_[i].can_go_back = client->browser()->CanGoBack();
       tabs_[i].can_go_forward = client->browser()->CanGoForward();
+      ApplyTabActivity(tabs_[i].id);
       if (i == active_index_) {
         UpdateA26Chrome();
       }
@@ -742,6 +746,10 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
                              ActiveTab()->client.get() == client;
   const uint64_t opener_tab_id = source->id;
   const std::string source_context = source->context;
+  const int activity_remaining_ms = source->activity_deadline >
+      std::chrono::steady_clock::now() ? static_cast<int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          source->activity_deadline - std::chrono::steady_clock::now()).count()) : 0;
   // Renderer and automation work in a background tab must never select a tab
   // as a side effect. Foreground page gestures keep their requested disposition.
   activate = activate && ActiveTab() && ActiveTab()->client.get() == client;
@@ -755,6 +763,9 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
       AddTabAfterSelection(target_url, activate);
     } else {
       AddTab(target_url, activate, source_context);
+      if (activity_remaining_ms > 0 && !tabs_.empty()) {
+        SetTabActivity(tabs_.back().id, activity_remaining_ms);
+      }
     }
     UpdateModeIndicator();
     return true;
@@ -939,9 +950,18 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
       insert_index = active_index_ + 1;
     }
   }
+  const int activity_remaining_ms = opener_index &&
+      tabs_[*opener_index].activity_deadline > std::chrono::steady_clock::now()
+      ? static_cast<int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          tabs_[*opener_index].activity_deadline -
+          std::chrono::steady_clock::now()).count()) : 0;
   InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
                  insert_index, activate, popup_folder_id, popup_sort_order,
                  std::move(popup_context));
+  if (activity_remaining_ms > 0) {
+    SetTabActivity(tabs_[insert_index].id, activity_remaining_ms);
+  }
   UpdateModeIndicator();
   return true;
 }
@@ -1203,7 +1223,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
     InsertTab(initial_urls_[i], tabs_.size(), activate,
               lazy_restore_background_tabs && !activate,
               initial_tab_folder_ids_[i], initial_tab_sort_orders_[i],
-              initial_tab_pinned_[i], {}, initial_tab_ids_[i]);
+              initial_tab_pinned_[i], initial_tab_contexts_[i], initial_tab_ids_[i]);
   }
   bulk_tab_update_ = false;
   RefreshSidebar();
@@ -6393,10 +6413,8 @@ void BrowserWindow::BroadcastShaderState() {
 
 void BrowserWindow::SaveState() const {
   AppState state;
-  // Named request-context tabs are intentionally transient shell state. Their
-  // request-context data remains persistent on disk, but excluding the tabs
-  // from this URL-only state format makes it impossible to restore one in the
-  // default context after restart.
+  // Persist context identity with every tab: restoring a named-context tab
+  // into the default context would cross storage/authentication boundaries.
   state.active_index = 0;
   state.next_tab_id = next_tab_id_;
   state.show_mode_indicator = show_mode_indicator_;
@@ -6419,7 +6437,7 @@ void BrowserWindow::SaveState() const {
   }
   for (size_t i = 0; i < tabs_.size(); ++i) {
     const Tab &tab = tabs_[i];
-    if (tab.context.empty() && !tab.url.empty()) {
+    if (!tab.url.empty()) {
       if (i <= active_index_) {
         state.active_index = state.tabs.size();
       }
@@ -6428,6 +6446,7 @@ void BrowserWindow::SaveState() const {
       state.tab_folder_ids.push_back(tab.folder_id);
       state.tab_sort_orders.push_back(tab.sidebar_sort_order);
       state.tab_pinned.push_back(tab.pinned);
+      state.tab_contexts.push_back(tab.context);
     }
   }
   if (!state.tabs.empty() && state.active_index >= state.tabs.size()) {

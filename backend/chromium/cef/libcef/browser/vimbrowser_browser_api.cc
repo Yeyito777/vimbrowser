@@ -1,6 +1,7 @@
 // Copyright 2026 The vimbrowser Authors. All rights reserved.
 
 #include <cstdint>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <memory>
@@ -95,7 +96,7 @@ void ScheduleInspectionDeadline(
                 state,
                 blink::mojom::VimbrowserControlInspectionResult::
                     kBackendUnavailable,
-                "{}");
+                "{\"failure\":\"deadline_exceeded\",\"deadline_ms\":2500}");
           },
           state),
       kVimbrowserBackendDeadline);
@@ -148,8 +149,22 @@ struct VimbrowserHandleActivationState {
   CefBrowserHostBase::VimbrowserElementHandle handle;
   base::UnguessableToken activation_nonce;
   bool grant_user_activation = false;
+  int preflight_retries = 0;
   std::shared_ptr<VimbrowserActivationCompletion> completion;
 };
+
+void PrepareHandleActivation(const std::shared_ptr<VimbrowserHandleActivationState>& state);
+
+bool RetryHandlePreflight(const std::shared_ptr<VimbrowserHandleActivationState>& state) {
+  if (!state || !state->completion || state->completion->completed ||
+      state->preflight_retries++ >= 3) return false;
+  // Only retry read-only hit-test preflight. Never replay a dispatched event.
+  // A fresh compositor surface for a hidden OOPIF can lag DOM/layout readiness.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, base::BindOnce(&PrepareHandleActivation, state),
+      base::Milliseconds(50));
+  return true;
+}
 
 void FinishHandleActivation(
     const std::shared_ptr<VimbrowserHandleActivationState>& state,
@@ -241,6 +256,11 @@ void DispatchPreparedHandle(
       !hit_point ||
       std::hypot(hit_point->x() - expected_point.x(),
                  hit_point->y() - expected_point.y()) > 2.0f) {
+    if (RetryHandlePreflight(state)) return;
+    if (std::getenv("VIMBROWSER_CONTROL_TRACE"))
+      LOG(ERROR) << "control preflight router mismatch expected=" << expected_point.ToString()
+                 << " hit=" << (hit_point ? hit_point->ToString() : "none")
+                 << " view_match=" << (hit_view && hit_view.get() == target_view);
     FinishHandleActivation(state, Result::kTargetObscured);
     return;
   }
@@ -274,6 +294,9 @@ void ContinueHandleActivation(
     return;
   }
   if (result != Result::kDispatched) {
+    if (result == Result::kTargetObscured && RetryHandlePreflight(state)) return;
+    if (std::getenv("VIMBROWSER_CONTROL_TRACE"))
+      LOG(ERROR) << "control preflight prepare failure=" << static_cast<int>(result);
     FinishHandleActivation(state, result);
     return;
   }
@@ -298,11 +321,45 @@ void ContinueHandleActivation(
     FinishHandleActivation(state, Result::kStaleFrame);
     return;
   }
-  const gfx::PointF point_in_root =
-      target_view->TransformPointToRootCoordSpaceF(point_in_local_root);
+  gfx::Transform target_to_root;
+  gfx::PointF point_in_root;
+  if (target_view->GetTransformToViewCoordSpace(root_view, &target_to_root)) {
+    point_in_root = target_to_root.MapPoint(point_in_local_root);
+  } else {
+    // A fully covered background view may be absent from Viz's display hit-test
+    // transform table. The unchecked TransformPointToRootCoordSpaceF helper can
+    // silently return an identity/partial transform in that case. Use current
+    // native frame placement only as a READ-ONLY hit-test proposal instead.
+    // DispatchPreparedHandle must still prove the exact target view AND the
+    // round-trip local point (within 2 DIP), followed by exact-node revalidation.
+    // Scaled/rotated/stale placements that don't round-trip fail closed: never
+    // click a guessed screen point or bypass an ancestor overlay.
+    const gfx::Rect target_bounds = target_view->GetViewBounds();
+    const gfx::Rect root_bounds = root_view->GetViewBounds();
+    point_in_root = point_in_local_root;
+    point_in_root.Offset(target_bounds.x() - root_bounds.x(),
+                         target_bounds.y() - root_bounds.y());
+    if (std::getenv("VIMBROWSER_CONTROL_TRACE"))
+      LOG(ERROR) << "control preflight using verified native-placement proposal";
+  }
   router->GetRenderWidgetHostAtPointAsynchronously(
       root_view, point_in_root,
       base::BindOnce(&DispatchPreparedHandle, state, point_in_local_root));
+}
+
+void PrepareHandleActivation(const std::shared_ptr<VimbrowserHandleActivationState>& state) {
+  using Result = blink::mojom::VimbrowserElementActivationResult;
+  if (!state || !state->completion || state->completion->completed) return;
+  auto* frame = ResolveHandleFrame(state->browser, state->handle);
+  if (!frame) {
+    FinishHandleActivation(state, Result::kStaleFrame);
+    return;
+  }
+  frame->GetAssociatedLocalFrame()->VimbrowserPrepareElementActivation(
+      state->handle.document_token, state->handle.dom_node_id,
+      mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+          base::BindOnce(&ContinueHandleActivation, state),
+          Result::kBackendUnavailable, gfx::PointF()));
 }
 
 }  // namespace
@@ -403,6 +460,10 @@ extern "C" CEF_EXPORT bool vimbrowser_frame_is_out_of_process(
   content::RenderFrameHost* main =
       web_contents ? web_contents->GetPrimaryMainFrame() : nullptr;
   return frame && main && frame->GetProcess()->GetID() != main->GetProcess()->GetID();
+}
+
+extern "C" CEF_EXPORT const char* vimbrowser_control_backend_build() {
+  return "controls-v2 " __DATE__ " " __TIME__;
 }
 
 extern "C" CEF_EXPORT bool vimbrowser_inspect_frame_controls(
@@ -549,12 +610,7 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_handle(
   *activation_nonce_high = state->activation_nonce.GetHighForSerialization();
   *activation_nonce_low = state->activation_nonce.GetLowForSerialization();
   ScheduleHandleActivationDeadline(state);
-  auto prepare_callback = base::BindOnce(&ContinueHandleActivation, state);
-  frame->GetAssociatedLocalFrame()->VimbrowserPrepareElementActivation(
-      state->handle.document_token, state->handle.dom_node_id,
-      mojo::WrapCallbackWithDefaultInvokeIfNotRun(
-          std::move(prepare_callback), Result::kBackendUnavailable,
-          gfx::PointF()));
+  PrepareHandleActivation(state);
   return true;
 }
 

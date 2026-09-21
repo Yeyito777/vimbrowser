@@ -18,6 +18,7 @@ struct Config {
   std::vector<uint64_t> initial_tab_folder_ids;
   std::vector<uint64_t> initial_tab_sort_orders;
   std::vector<bool> initial_tab_pinned;
+  std::vector<std::string> initial_tab_contexts;
   std::vector<std::string> explicit_initial_urls;
   std::string profile_dir;
   std::string cache_path;
@@ -55,6 +56,7 @@ struct AppState {
   std::vector<uint64_t> tab_folder_ids;
   std::vector<uint64_t> tab_sort_orders;
   std::vector<bool> tab_pinned;
+  std::vector<std::string> tab_contexts;
   std::vector<SavedSidebarFolder> sidebar_folders;
   std::vector<std::string> open_history;
   std::map<std::string, std::vector<std::string>> search_history;

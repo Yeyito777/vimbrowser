@@ -33,6 +33,7 @@ void TestPersistentTabIdRoundTrip(const std::filesystem::path& state_path) {
   written.tab_folder_ids = {3, 1, 2};
   written.tab_sort_orders = {300, 100, 200};
   written.tab_pinned = {true, false, true};
+  written.tab_contexts = {"", "fixture-a", "fixture-b"};
   written.active_index = 1;
   // The allocator can be higher than every live tab after higher-id tabs close.
   written.next_tab_id = 91;
@@ -42,6 +43,7 @@ void TestPersistentTabIdRoundTrip(const std::filesystem::path& state_path) {
       vimbrowser::ReadAppState(state_path.string());
 
   Expect(read.tabs == written.tabs, "tab URLs changed during state round trip");
+  Expect(read.tab_contexts == written.tab_contexts, "tab contexts changed during round trip");
   ExpectEqual(read.tab_ids, written.tab_ids,
               "tab IDs changed during state round trip");
   Expect(read.tab_folder_ids == written.tab_folder_ids,
@@ -75,6 +77,8 @@ void TestConfigRestoresIdsAndAllocatesExplicitUrls(
          "explicit URL was not appended to restored tabs");
   ExpectEqual(config.initial_tab_ids, {30, 10, 20, 0},
               "config did not preserve restored IDs and reserve a fresh one");
+  Expect(config.initial_tab_contexts == std::vector<std::string>({"", "fixture-a", "fixture-b", ""}),
+         "config lost restored context identity or misassigned explicit URL context");
   Expect(config.next_tab_id == 91,
          "config did not restore the persistent tab allocator");
 }
@@ -129,6 +133,32 @@ void TestAllocatorExhaustionSentinel(const std::filesystem::path& state_path) {
          "uint64_t exhaustion must use the zero allocator sentinel");
 }
 
+void TestMoreThan200MixedContexts(const std::filesystem::path& path) {
+  vimbrowser::AppState written;
+  for (uint64_t i = 0; i < 223; ++i) {
+    written.tabs.push_back("https://fixture.invalid/" + std::to_string(i));
+    written.tab_ids.push_back(400 + i);
+    written.tab_contexts.push_back(i % 10 == 0 ? "fixture-isolated" : "");
+    written.tab_folder_ids.push_back(0);
+    written.tab_sort_orders.push_back(i * 1024 + 1);
+    written.tab_pinned.push_back(i % 2 == 0);
+  }
+  written.active_index = 222;
+  written.next_tab_id = 700;
+  vimbrowser::WriteAppState(path.string(), written);
+  const auto read = vimbrowser::ReadAppState(path.string());
+  Expect(read.tabs == written.tabs && read.tab_ids == written.tab_ids &&
+         read.tab_contexts == written.tab_contexts && read.tab_pinned == written.tab_pinned &&
+         read.tab_sort_orders == written.tab_sort_orders && read.active_index == 222 && read.next_tab_id == 700,
+         "223 mixed-context tabs failed exact round trip");
+  std::ofstream file(path, std::ios::trunc);
+  file << "tab=https://safe.invalid/\ntab_id=1\ncontext_tab=../unsafe\t2\t0\t0\toff\thttps://isolated.invalid/\n";
+  file.close();
+  const auto invalid = vimbrowser::ReadAppState(path.string());
+  Expect(invalid.tabs.size() == 1 && invalid.tab_contexts[0].empty(),
+         "malformed context record must not fall back to global context");
+}
+
 }  // namespace
 
 int main() {
@@ -146,6 +176,7 @@ int main() {
     TestLegacyStateMigration(state_path);
     TestMalformedIdsAreRepaired(state_path);
     TestAllocatorExhaustionSentinel(state_path);
+    TestMoreThan200MixedContexts(state_path);
   } catch (const std::exception& error) {
     std::cerr << "vimbrowser config state test failed: " << error.what()
               << '\n';
