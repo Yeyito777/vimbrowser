@@ -217,7 +217,8 @@ void BrowserWindow::OnNamedRequestContextInitialized(
   // active context tab becomes visible and focused.
   bool active_view_materialized = false;
   for (size_t i = 0; i < tabs_.size(); ++i) {
-    if (tabs_[i].context == context_name && !tabs_[i].view) {
+    if (tabs_[i].context == context_name && !tabs_[i].view &&
+        !tabs_[i].deferred_load) {
       if (EnsureTabBrowser(i, false) && i == active_index_) {
         active_view_materialized = true;
       }
@@ -240,6 +241,12 @@ bool BrowserWindow::EnsureTabBrowser(size_t index, bool load_deferred_now) {
       tab.client->browser()->GetMainFrame()->LoadURL(tab.url);
     }
     return true;
+  }
+
+  // Remember an explicit background load while its named context initializes.
+  // Otherwise that callback would materialize about:blank instead of the URL.
+  if (load_deferred_now) {
+    tab.deferred_load = false;
   }
 
   CefBrowserSettings browser_settings;
@@ -336,6 +343,7 @@ void BrowserWindow::ActivateTab(size_t index) {
   if (tabs_.empty() || index >= tabs_.size()) {
     return;
   }
+  tabs_[index].automation_popup_background = false;
 
   if (active_index_ == index) {
     if (!bulk_tab_update_) {

@@ -58,6 +58,7 @@ class BrowserWindow final : public CefWindowDelegate,
                 std::vector<uint64_t> initial_tab_folder_ids,
                 std::vector<uint64_t> initial_tab_sort_orders,
                 std::vector<bool> initial_tab_pinned,
+                std::vector<std::string> initial_tab_contexts,
                 size_t active_index,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
@@ -150,7 +151,8 @@ class BrowserWindow final : public CefWindowDelegate,
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
-  void HandleIpcCommandAsync(const std::string& command, IpcReplyCallback reply);
+  void HandleIpcCommandAsync(const std::string& command, IpcReplyCallback reply,
+                             int readiness_attempt = 0);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override;
@@ -741,6 +743,7 @@ class BrowserWindow final : public CefWindowDelegate,
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
   std::vector<bool> initial_tab_pinned_;
+  std::vector<std::string> initial_tab_contexts_;
   std::string state_path_;
   std::string dwm_save_argv_;
   std::string root_cache_path_;

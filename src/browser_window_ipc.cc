@@ -2583,7 +2583,20 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     if (!parse_folder_id(argv[1], &parent_id)) {
       return "ERR no such parent folder\n";
     }
-    if (CreateSidebarFolder(JoinArgs(argv, 2), parent_id) == 0) {
+    // UI folder creation selects the new folder; automation must not.
+    const uint64_t saved_folder = current_sidebar_folder_id_;
+    const SidebarItemRef saved_selection = sidebar_selected_item_;
+    const SidebarItemRef saved_anchor = sidebar_visual_anchor_;
+    const size_t saved_scroll = sidebar_scroll_offset_;
+    const uint64_t created = CreateSidebarFolder(JoinArgs(argv, 2), parent_id);
+    current_sidebar_folder_id_ = saved_folder;
+    sidebar_selected_item_ = saved_selection;
+    sidebar_visual_anchor_ = saved_anchor;
+    sidebar_scroll_offset_ = saved_scroll;
+    SaveState();
+    RefreshSidebar();
+    Layout();
+    if (created == 0) {
       return "ERR invalid or duplicate folder name\n";
     }
     return FoldersJson();
@@ -2617,8 +2630,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     return FoldersJson();
   }
   if (command == "folder-move") {
-    if (argv.size() != 3) {
-      return "ERR usage: folder-move <folderid> <parent-folderid|0>\n";
+    if (argv.size() != 3 &&
+        !(argv.size() == 4 && argv[3] == "--force")) {
+      return "ERR usage: folder-move <folderid> <parent-folderid|0> [--force]\n";
     }
     uint64_t folder_id = 0;
     uint64_t parent_id = 0;
@@ -2628,14 +2642,20 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     if (!parse_folder_id(argv[2], &parent_id)) {
       return "ERR no such parent folder\n";
     }
+    if (argv.size() == 3 && parent_id != current_sidebar_folder_id_ &&
+        sidebar_selected_item_ ==
+            SidebarItemRef{SidebarItemType::kFolder, folder_id}) {
+      return "ERR move would change sidebar selection; use --force\n";
+    }
     if (!MoveSidebarItems({{SidebarItemType::kFolder, folder_id}}, parent_id)) {
       return "ERR invalid folder move\n";
     }
     return FoldersJson();
   }
   if (command == "tab-folder") {
-    if (argv.size() != 3) {
-      return "ERR usage: tab-folder <tabid> <folderid|0>\n";
+    if (argv.size() != 3 &&
+        !(argv.size() == 4 && argv[3] == "--force")) {
+      return "ERR usage: tab-folder <tabid> <folderid|0> [--force]\n";
     }
     std::string error;
     const std::optional<size_t> index = find_tab_index_arg(argv[1], &error);
@@ -2645,6 +2665,11 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     uint64_t folder_id = 0;
     if (!parse_folder_id(argv[2], &folder_id)) {
       return "ERR no such folder\n";
+    }
+    if (argv.size() == 3 && folder_id != current_sidebar_folder_id_ &&
+        sidebar_selected_item_ ==
+            SidebarItemRef{SidebarItemType::kTab, tabs_[*index].id}) {
+      return "ERR move would change sidebar selection; use --force\n";
     }
     MoveSidebarItems({{SidebarItemType::kTab, tabs_[*index].id}}, folder_id);
     return TabsJson();
@@ -2928,27 +2953,29 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     MoveTabToIndex(*index, static_cast<size_t>(target));
     return TabsJson();
   }
-  if (command == "open-tab" || command == "open-background-tab") {
+  if (command == "open-tab" || command == "open-background-tab" ||
+      command == "open-focus-tab") {
     if (argv.size() < 2) {
-      return "ERR usage: open-tab|open-background-tab <url-or-query>\n";
+      return "ERR usage: open-tab|open-background-tab|open-focus-tab <url-or-query>\n";
     }
     const std::string text = JoinArgs(argv, 1);
     const std::string url = ResolveUrlOrSearch(text);
     RecordOpenHistory(text);
-    const bool activate = command == "open-tab";
+    const bool activate = command == "open-focus-tab";
     AddTab(url, activate);
     return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open-context-tab" ||
-      command == "open-background-context-tab") {
+      command == "open-background-context-tab" ||
+      command == "open-focus-context-tab") {
     if (argv.size() < 3) {
-      return "ERR usage: open-context-tab|open-background-context-tab "
+      return "ERR usage: open-context-tab|open-background-context-tab|open-focus-context-tab "
              "<context-name> <url-or-query>\n";
     }
     const std::string text = JoinArgs(argv, 2);
     const std::string url = ResolveUrlOrSearch(text);
     std::string error;
-    const bool activate = command == "open-context-tab";
+    const bool activate = command == "open-focus-context-tab";
     if (!AddContextTab(argv[1], url, activate, &error)) {
       return error;
     }
@@ -2970,6 +2997,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     Tab &tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
     SetTabUrl(tab, url);
+    EnsureTabBrowser(tab_index, true);
     if (tab.client && tab.client->browser() &&
         tab.client->browser()->GetMainFrame()) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
@@ -3200,8 +3228,10 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  tab-order <tabid> <zero-based-index>\n"
            "  open-tab <url-or-query>\n"
            "  open-background-tab <url-or-query>\n"
+           "  open-focus-tab <url-or-query>\n"
            "  open-context-tab <context-name> <url-or-query>\n"
            "  open-background-context-tab <context-name> <url-or-query>\n"
+           "  open-focus-context-tab <context-name> <url-or-query>\n"
            "  open <tabid> <url-or-query>\n"
            "  reload [tabid]\n"
            "  reload-ignore-cache [tabid]\n"
@@ -3249,7 +3279,8 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
 }
 
 void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
-                                          IpcReplyCallback reply) {
+                                          IpcReplyCallback reply,
+                                          int readiness_attempt) {
   const std::vector<std::string> argv = SplitArgs(command_line);
   if (argv.empty()) {
     reply("ERR empty command\n");
@@ -3257,6 +3288,47 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
   }
 
   const std::string command = ToLowerAscii(argv[0]);
+  // Materialize only the addressed lazy tab, never ActivateTab/RequestFocus.
+  // Browser/context creation and initial navigation are asynchronous. Retry on
+  // the UI thread with a bounded deadline, preserving the original stable ID.
+  const bool page_command =
+      command == "html" || command == "text" || command == "screenshot" ||
+      command == "js" || command == "js-base64" || command == "js-file" ||
+      command == "frame-html" || command == "frame-text" ||
+      command == "frame-js" || command == "frame-js-base64" ||
+      command == "frame-tree" || command == "inspect-controls" ||
+      command == "activate-control" || command == "upload-file" ||
+      command == "scroll-tab";
+  uint64_t target_id = 0;
+  if (page_command && argv.size() > 1 &&
+      ParseUint64Arg(argv[1], &target_id)) {
+    const auto index = FindTabIndexById(target_id);
+    if (index) {
+      if (command == "js" || command == "js-base64" || command == "js-file" ||
+          command == "frame-js" || command == "frame-js-base64" ||
+          command == "activate-control" || command == "upload-file") {
+        tabs_[*index].automation_popup_background = true;
+      }
+      const bool was_dormant = tabs_[*index].deferred_load ||
+                               !tabs_[*index].view;
+      EnsureTabBrowser(*index, true);
+      const auto browser = tabs_[*index].client
+                               ? tabs_[*index].client->browser() : nullptr;
+      if (was_dormant || !browser ||
+          (readiness_attempt > 0 &&
+           (browser->IsLoading() || !browser->HasDocument()))) {
+        if (readiness_attempt >= 100) {
+          reply("ERR background tab readiness timed out; retry by tabid\n");
+          return;
+        }
+        CefPostDelayedTask(TID_UI,
+            base::BindOnce(&BrowserWindow::HandleIpcCommandAsync,
+                           CefRefPtr<BrowserWindow>(this), command_line,
+                           std::move(reply), readiness_attempt + 1), 100);
+        return;
+      }
+    }
+  }
   if (command == "upload-file") {
     if (argv.size() != 3) {
       reply(UploadFileErrorJson(

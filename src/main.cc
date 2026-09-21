@@ -269,7 +269,7 @@ bool ForwardLaunchUrlsToExistingProfile(
       continue;
     }
     std::string response;
-    if (!SendIpcCommand(ipc_socket, "open-tab " + url, &response)) {
+    if (!SendIpcCommand(ipc_socket, "open-focus-tab " + url, &response)) {
       std::cerr << "vimbrowser: failed to forward URL to existing profile: "
                 << url << std::endl;
       ok = false;
@@ -295,7 +295,7 @@ void ForwardMacOpenUrls(std::filesystem::path ipc_socket,
     bool forwarded = false;
     for (int attempt = 0; attempt < 100; ++attempt) {
       std::string response;
-      if (SendIpcCommand(ipc_socket, "open-tab " + url, &response)) {
+      if (SendIpcCommand(ipc_socket, "open-focus-tab " + url, &response)) {
         if (response.rfind("ERR", 0) == 0) {
           std::cerr << "vimbrowser: rejected macOS open URL " << url << ": "
                     << response;
@@ -438,6 +438,7 @@ VIMBROWSER_NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
                                                       config.initial_tab_folder_ids,
                                                       config.initial_tab_sort_orders,
                                                       config.initial_tab_pinned,
+                                                      config.initial_tab_contexts,
                                                       config.active_index,
                                                       config.show_mode_indicator,
                                                       config.show_fps_indicator,

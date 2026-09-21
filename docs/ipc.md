@@ -300,7 +300,10 @@ Moves a tab to a target zero-based index. The target is clamped into the valid r
 
 #### `open-tab <url-or-query-or-local-path>`
 
-Resolves the text with the same native URL/search/local-file path used by `:open`, records open history, opens a new active tab, and returns `status` JSON.
+Resolves the text with the same native URL/search/local-file path used by `:open`,
+records open history, opens a background tab, and returns `tabs` JSON.
+`open-focus-tab` is the explicit foreground variant and returns `status` JSON.
+Desktop URL events use that explicit variant; automation defaults do not.
 
 #### `open-background-tab <url-or-query-or-local-path>`
 
@@ -310,7 +313,7 @@ requests from the background browser are rejected by the shell.
 
 #### `open-context-tab <context-name> <url-or-query-or-local-path>`
 
-Opens a new active tab in a named persistent `CefRequestContext`. A name must be
+Opens a new background tab in a named persistent `CefRequestContext`. A name must be
 1-48 characters, start with a lowercase ASCII letter or digit, and contain only
 lowercase ASCII letters, digits, `-`, and `_`. Each name maps to
 `<CEF-root-cache>/contexts-<context-name>`; cookies (including session cookies),
@@ -321,14 +324,13 @@ cache paths be immediate children of the configured root cache. Different names
 do not share request-context storage with each other or with the default profile.
 Reusing a name shares the same context and storage.
 
-Named-context tabs are deliberately **transient shell tabs**: vimbrowser keeps
-their context data on disk but excludes their restorable tab entries from
-session state and excludes them from the undo-close stack. This avoids the
-legacy URL-only session format ever restoring an isolated URL in the default
-context. Tabs created from an isolated tab (new-tab link actions, clones,
-targeted links, and popups) retain the same context and are transient too.
-Closing/restarting the browser does not delete the named context directory; open
-it again with this command to continue using the persisted login/storage state.
+Named-context tabs are persisted as independent `context_tab=` state records
+(backported from upstream `8dd9f2b220`). Older binaries ignore those records,
+rather than loading isolated URLs in the default profile. Context names are
+validated on restore. Context tabs remain excluded from the legacy undo-close
+stack. Upgrading from the old running binary requires recording its named tabs
+before quitting because that binary cannot write the new state records.
+`open-focus-context-tab` is the explicit foreground variant.
 
 #### `open-background-context-tab <context-name> <url-or-query-or-local-path>`
 

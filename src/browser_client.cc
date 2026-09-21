@@ -1074,7 +1074,8 @@ bool BrowserClient::OnBeforePopup(
 
   CefRefPtr<BrowserClient> popup_client = new BrowserClient(owner_);
   client = popup_client;
-  const bool activate = target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
+  const bool activate = user_gesture &&
+                        target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
   return owner_->OnClientBeforePopup(this, popup_client, popup_id,
                                      target_url.ToString(), activate);
 }
@@ -1091,7 +1092,8 @@ bool BrowserClient::OnOpenURLFromTab(
     return false;
   }
 
-  const bool activate = target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
+  const bool activate = user_gesture &&
+                        target_disposition != CEF_WOD_NEW_BACKGROUND_TAB;
   return owner_->OnClientBeforePopup(this, nullptr, 0, target_url.ToString(),
                                      activate);
 }

@@ -22,6 +22,9 @@ struct Tab {
   CefRefPtr<BrowserClient> client;
   CefRefPtr<CefBrowserView> view;
   bool deferred_load = false;
+  // Trusted automation can create user-gesture popups too. Keep them in the
+  // background until this tab is explicitly activated again by the user/IPC.
+  bool automation_popup_background = false;
   bool audible = false;
   bool focused_editable_node = false;
   std::string focused_editable_purpose = "text";

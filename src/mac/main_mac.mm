@@ -5,6 +5,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -79,6 +80,9 @@ static VimBrowserApplicationDelegate* gApplicationDelegate = nil;
 extern "C" void VimbrowserInitMacApplication() {
   VimBrowserApplication* application =
       [VimBrowserApplication sharedApplication];
+  if (std::getenv("VIMBROWSER_TEST_NO_ACTIVATE")) {
+    [application setActivationPolicy:NSApplicationActivationPolicyProhibited];
+  }
   if (!gApplicationDelegate) {
     gApplicationDelegate = [[VimBrowserApplicationDelegate alloc] init];
   }
