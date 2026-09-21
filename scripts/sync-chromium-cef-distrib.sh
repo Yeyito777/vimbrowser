@@ -41,6 +41,11 @@ if [[ ! -d "${out_dir}" ]]; then
   exit 1
 fi
 
+mkdir -p "${dist_dir}/include/internal"
+cp -p \
+  "${chromium_src}/cef/include/internal/vimbrowser_private_api.h" \
+  "${dist_dir}/include/internal/vimbrowser_private_api.h"
+
 if [[ "${platform}" == "mac" ]]; then
   framework_name='Chromium Embedded Framework.framework'
   framework_src="${out_dir}/${framework_name}"
@@ -55,6 +60,11 @@ if [[ "${platform}" == "mac" ]]; then
 
   mkdir -p "${dist_dir}/Release"
   ditto "${framework_src}" "${framework_dst}"
+
+  mkdir -p "${dist_dir}/libcef_dll/wrapper"
+  cp -p \
+    "${chromium_src}/cef/libcef_dll/wrapper/libcef_dll_dylib.cc" \
+    "${dist_dir}/libcef_dll/wrapper/libcef_dll_dylib.cc"
 
   if ! /usr/bin/nm -gUj "${framework_binary}" | \
       grep -x '_cef_browser_host_vimbrowser_send_browser_command_key_event' \

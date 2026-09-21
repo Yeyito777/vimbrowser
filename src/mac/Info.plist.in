@@ -42,6 +42,8 @@
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.3</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>vimbrowser uses Bluetooth to let websites connect to nearby Bluetooth devices with your permission.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>

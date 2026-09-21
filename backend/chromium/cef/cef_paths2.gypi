@@ -41,6 +41,7 @@
       'include/internal/cef_string_wrappers.h',
       'include/internal/cef_time_wrappers.h',
       'include/internal/cef_types_wrappers.h',
+      'include/internal/vimbrowser_private_api.h',
     ],
     'includes_common_capi': [
       'include/cef_id_mappers.h',

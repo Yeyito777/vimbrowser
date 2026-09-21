@@ -21,6 +21,7 @@ OTHER_HEADERS = [
     'internal/cef_thread_internal.h',
     'internal/cef_time.h',
     'internal/cef_trace_event_internal.h',
+    'internal/vimbrowser_private_api.h',
 ]
 
 

@@ -31,34 +31,8 @@
 #include "include/cef_string_visitor.h"
 #include "include/cef_urlrequest.h"
 #include "include/cef_values.h"
+#include "include/internal/vimbrowser_private_api.h"
 #include "include/wrapper/cef_closure_task.h"
-
-extern "C" bool vimbrowser_frame_is_out_of_process(
-    int browser_id,
-    const char* frame_identifier,
-    size_t frame_identifier_size);
-extern "C" bool vimbrowser_inspect_frame_controls(
-    int browser_id,
-    const char* frame_identifier,
-    size_t frame_identifier_size,
-    const char* role,
-    size_t role_size,
-    const char* exact_name,
-    size_t exact_name_size,
-    const char* context_contains,
-    size_t context_contains_size,
-    uint32_t limit,
-    void (*callback)(void* user_data, int result, const char* json,
-                     size_t json_size),
-    void* user_data);
-extern "C" bool vimbrowser_activate_element_handle(
-    int browser_id,
-    const char* handle,
-    size_t handle_size,
-    uint64_t* activation_nonce_high,
-    uint64_t* activation_nonce_low,
-    void (*callback)(void* user_data, int result, int match_count),
-    void* user_data);
 
 namespace vimbrowser {
 namespace {

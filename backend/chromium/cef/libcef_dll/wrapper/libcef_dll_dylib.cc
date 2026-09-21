@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dfba1a93d5e5f09b23cbc8a167d2e96a6eb9bd0b$
+// $hash=6117b56f6f2992d0ea45ab358f878f65a290f6dd$
 //
 
 
@@ -80,6 +80,7 @@
 #include "include/internal/cef_thread_internal.h"
 #include "include/internal/cef_time.h"
 #include "include/internal/cef_trace_event_internal.h"
+#include "include/internal/vimbrowser_private_api.h"
 #include "include/wrapper/cef_library_loader.h"
 
 // GLOBAL WRAPPER FUNCTIONS - Do not edit by hand.
@@ -397,6 +398,9 @@ decltype(&cef_trace_event_async_begin) cef_trace_event_async_begin;
 decltype(&cef_trace_event_async_step_into) cef_trace_event_async_step_into;
 decltype(&cef_trace_event_async_step_past) cef_trace_event_async_step_past;
 decltype(&cef_trace_event_async_end) cef_trace_event_async_end;
+decltype(&vimbrowser_frame_is_out_of_process) vimbrowser_frame_is_out_of_process;
+decltype(&vimbrowser_inspect_frame_controls) vimbrowser_inspect_frame_controls;
+decltype(&vimbrowser_activate_element_handle) vimbrowser_activate_element_handle;
 
 } g_libcef_pointers = {0};
 
@@ -703,6 +707,9 @@ INIT_ENTRY(cef_trace_event_async_begin);
 INIT_ENTRY(cef_trace_event_async_step_into);
 INIT_ENTRY(cef_trace_event_async_step_past);
 INIT_ENTRY(cef_trace_event_async_end);
+INIT_ENTRY(vimbrowser_frame_is_out_of_process);
+INIT_ENTRY(vimbrowser_inspect_frame_controls);
+INIT_ENTRY(vimbrowser_activate_element_handle);
 
   return 1;
 }
@@ -1780,5 +1787,17 @@ NO_SANITIZE("cfi-icall") void cef_trace_event_async_step_past(const char* catego
 
 NO_SANITIZE("cfi-icall") void cef_trace_event_async_end(const char* category, const char* name, uint64_t id, const char* arg1_name, uint64_t arg1_val, const char* arg2_name, uint64_t arg2_val) {
   g_libcef_pointers.cef_trace_event_async_end(category, name, id, arg1_name, arg1_val, arg2_name, arg2_val);
+}
+
+NO_SANITIZE("cfi-icall") bool vimbrowser_frame_is_out_of_process(int browser_id, const char* frame_identifier, size_t frame_identifier_size) {
+  return g_libcef_pointers.vimbrowser_frame_is_out_of_process(browser_id, frame_identifier, frame_identifier_size);
+}
+
+NO_SANITIZE("cfi-icall") bool vimbrowser_inspect_frame_controls(int browser_id, const char* frame_identifier, size_t frame_identifier_size, const char* role, size_t role_size, const char* exact_name, size_t exact_name_size, const char* context_contains, size_t context_contains_size, uint32_t limit, vimbrowser_control_inspection_callback_t callback, void* user_data) {
+  return g_libcef_pointers.vimbrowser_inspect_frame_controls(browser_id, frame_identifier, frame_identifier_size, role, role_size, exact_name, exact_name_size, context_contains, context_contains_size, limit, callback, user_data);
+}
+
+NO_SANITIZE("cfi-icall") bool vimbrowser_activate_element_handle(int browser_id, const char* handle, size_t handle_size, uint64_t* activation_nonce_high, uint64_t* activation_nonce_low, vimbrowser_element_activation_callback_t callback, void* user_data) {
+  return g_libcef_pointers.vimbrowser_activate_element_handle(browser_id, handle, handle_size, activation_nonce_high, activation_nonce_low, callback, user_data);
 }
 

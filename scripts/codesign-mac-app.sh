@@ -5,6 +5,14 @@ app=${1:?usage: codesign-mac-app.sh APP IDENTITY}
 identity=${2:?usage: codesign-mac-app.sh APP IDENTITY}
 framework="${app}/Contents/Frameworks/Chromium Embedded Framework.framework"
 
+# Chromium can initialize CoreBluetooth in the browser process. macOS TCC
+# terminates the app (rather than denying access) if this declaration is absent.
+if ! bluetooth_description=$(/usr/bin/plutil -extract NSBluetoothAlwaysUsageDescription raw -expect string "${app}/Contents/Info.plist") ||
+   [[ -z "${bluetooth_description//[[:space:]]/}" ]]; then
+  echo "error: NSBluetoothAlwaysUsageDescription must be a nonempty string in ${app}/Contents/Info.plist" >&2
+  exit 1
+fi
+
 if [[ ! -d "${framework}" ]]; then
   echo "error: CEF framework missing from ${app}" >&2
   exit 1

@@ -13,6 +13,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "cef/include/internal/cef_export.h"
+#include "cef/include/internal/vimbrowser_private_api.h"
 #include "cef/include/cef_browser.h"
 #include "cef/libcef/browser/browser_host_base.h"
 #include "cef/libcef/browser/browser_platform_delegate.h"
@@ -31,16 +32,11 @@
 
 namespace {
 
-using VimbrowserElementActivationCallback =
-    void (*)(void* user_data, int result, int match_count);
-using VimbrowserControlInspectionCallback =
-    void (*)(void* user_data, int result, const char* json, size_t json_size);
-
 constexpr base::TimeDelta kVimbrowserBackendDeadline =
     base::Milliseconds(2500);
 
 struct VimbrowserActivationCompletion {
-  VimbrowserElementActivationCallback callback = nullptr;
+  vimbrowser_element_activation_callback_t callback = nullptr;
   void* user_data = nullptr;
   bool completed = false;
 };
@@ -53,7 +49,7 @@ void FinishActivation(
     return;
   }
   completion->completed = true;
-  VimbrowserElementActivationCallback callback = completion->callback;
+  vimbrowser_element_activation_callback_t callback = completion->callback;
   void* user_data = completion->user_data;
   completion->callback = nullptr;
   completion->user_data = nullptr;
@@ -64,7 +60,7 @@ struct VimbrowserInspectionState {
   CefRefPtr<CefBrowserHostBase> browser;
   content::GlobalRenderFrameHostToken frame_token;
   blink::DocumentToken document_token;
-  VimbrowserControlInspectionCallback callback = nullptr;
+  vimbrowser_control_inspection_callback_t callback = nullptr;
   void* user_data = nullptr;
   bool completed = false;
 };
@@ -77,7 +73,7 @@ void FinishInspection(
     return;
   }
   state->completed = true;
-  VimbrowserControlInspectionCallback callback = state->callback;
+  vimbrowser_control_inspection_callback_t callback = state->callback;
   void* user_data = state->user_data;
   state->callback = nullptr;
   state->user_data = nullptr;
@@ -415,7 +411,7 @@ extern "C" CEF_EXPORT bool vimbrowser_inspect_frame_controls(
     const char* context_contains,
     size_t context_contains_size,
     uint32_t limit,
-    VimbrowserControlInspectionCallback callback,
+    vimbrowser_control_inspection_callback_t callback,
     void* user_data) {
   if (!callback || role_size > 128 || exact_name_size > 256 ||
       context_contains_size > 512 || (!role && role_size) ||
@@ -506,7 +502,7 @@ extern "C" CEF_EXPORT bool vimbrowser_activate_element_handle(
     size_t capability_size,
     uint64_t* activation_nonce_high,
     uint64_t* activation_nonce_low,
-    VimbrowserElementActivationCallback callback,
+    vimbrowser_element_activation_callback_t callback,
     void* user_data) {
   using Result = blink::mojom::VimbrowserElementActivationResult;
   if (!capability || capability_size == 0 || capability_size > 128 ||

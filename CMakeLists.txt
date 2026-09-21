@@ -136,6 +136,8 @@ if(OS_MAC)
   # signing steps below.
   set_property(TARGET vimbrowser APPEND PROPERTY LINK_DEPENDS
     "${VIMBROWSER_CEF_FRAMEWORK_BINARY}"
+    # Plist-only edits must rerun bundle signing as well.
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist.in"
   )
   target_link_libraries(vimbrowser PRIVATE
     libcef_dll_wrapper
