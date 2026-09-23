@@ -374,6 +374,10 @@ content blocking, network capture, and MuseScore export all use the same source
 paths and backend API contract. The build targets Apple silicon and macOS 13.3
 or newer.
 
+The macOS browser window has no title bar or traffic-light buttons; its sidebar
+and page content fill the window. Resizing and window-manager controls remain
+available, and the system menu bar is unchanged.
+
 Chromium 147 requires Xcode 26.0.1 and its separately installed Metal
 Toolchain. Point `DEVELOPER_DIR` at that Xcode without changing the machine-wide
 selection if desired:

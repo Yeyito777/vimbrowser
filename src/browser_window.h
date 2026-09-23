@@ -156,6 +156,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleIpcCommandAsync(const std::string& command, IpcReplyCallback reply);
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override;
+#if defined(__APPLE__)
+  // CEF keeps a normal resizable macOS window, but hides its title bar and
+  // (via WithStandardWindowButtons' default) the traffic-light buttons.
+  bool IsFrameless(CefRefPtr<CefWindow> window) override { return true; }
+#endif
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override;
   void OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
                              const CefRect& new_bounds) override;
