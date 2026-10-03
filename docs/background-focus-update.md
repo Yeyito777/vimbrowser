@@ -1,8 +1,9 @@
 # Background automation update (macOS)
 
-Upstream `991414c77abeee80a3851ee9668a2bcc709f6470` adds background
-open/context commands and a CEF focus handler. This branch backports that fix
-without the unrelated Chromium platform-removal migration. It additionally:
+Upstream `991414c77abeee80a3851ee9668a2bcc709f6470` added background
+open/context commands and a CEF focus handler. The initial macOS update
+backported that fix separately from the Chromium platform-removal migration.
+Upstream through `e1fade81d0` is now merged, retaining these local safeguards:
 
 - Makes IPC `open-tab` and `open-context-tab` background by default.
   `open-focus-tab`, `open-focus-context-tab`, `tab-focus`, and sidebar selection/
@@ -22,9 +23,16 @@ without the unrelated Chromium platform-removal migration. It additionally:
   folder creation. Moving the selected item out of view requires `--force`.
   Explicit deletion necessarily removes its target; it is not a focus command.
 - Persists isolated context tabs using the independent record format from
-  upstream `8dd9f2b220d9a847a8a7b149fe63872e70751384`, without importing
-  the unrelated network-broker/backend changes. Runtime tab IDs remain the
-  existing process-local IDs; state records reserve the upstream ID column.
+  upstream `8dd9f2b220d9a847a8a7b149fe63872e70751384`. The full merge also
+  preserves stable tab IDs, the allocator, network-broker commands and bounded
+  background activity leases; page-readiness retries still do not select tabs.
+
+The shell can still build against the cached macOS CEF distribution. The
+private activation adapter follows that distribution's header signature;
+newer distributions receive the explicit activation option and older ones
+retain their original behavior. Keep each distribution's headers, wrapper and
+framework together. Folder-targeted opening changes only shell IPC code and
+does not require rebuilding Chromium or regenerating the CEF distribution.
 
 The Exocortex CLI update through upstream `c8ce75d` uses background opening and
 stdin-only JavaScript/raw payloads. Integrations must not silently fall back to

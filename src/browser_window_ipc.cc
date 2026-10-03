@@ -1,6 +1,7 @@
 #include "browser_window.h"
 #include "browser_window_internal.h"
 
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -37,10 +38,16 @@
 #include "include/internal/vimbrowser_private_api.h"
 #include "include/wrapper/cef_closure_task.h"
 
-extern "C" const char* vimbrowser_control_backend_build() __attribute__((weak));
-
 namespace vimbrowser {
 namespace {
+
+const char* ControlBackendBuild() {
+  // Optional diagnostic symbol: cached CEF runtimes may not export it, and
+  // macOS cannot link an unresolved weak extern from a runtime-loaded library.
+  const auto build = reinterpret_cast<const char* (*)()>(
+      dlsym(RTLD_DEFAULT, "vimbrowser_control_backend_build"));
+  return build ? build() : "legacy-unversioned";
+}
 
 // Cached macOS distributions expose the original activation signature. Use the
 // declaration from that distribution, not a mismatched hand-written extern.
@@ -1807,7 +1814,8 @@ void BrowserWindow::StartFileChooserHandleUpload(
   context->owner = this;
   context->generation = file_chooser_upload_.generation;
   auto* context_ptr = context.release();
-  const bool started = ActivateElementHandleCompat(vimbrowser_activate_element_handle,
+  const bool started = ActivateElementHandleCompat(
+      vimbrowser_activate_element_handle,
       browser->GetIdentifier(), handle.data(), handle.size(),
       false,
       &file_chooser_upload_.activation_nonce_high,
@@ -2947,7 +2955,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
       return "ERR usage: diagnose-tab <tabid>\n";
     const auto index = FindTabIndexById(tab_id);
     std::string out = "{\"ok\":true,\"shell_build\":\"" __DATE__ " " __TIME__ "\",\"control_backend_build\":\"";
-    out += vimbrowser_control_backend_build ? vimbrowser_control_backend_build() : "legacy-unversioned";
+    out += ControlBackendBuild();
     out += "\",\"renderer_probe\":\"not_requested_metadata_only\",\"tab\":";
     if (!index) return out + "null}";
     const Tab& tab = tabs_[*index];
@@ -3444,6 +3452,46 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     MoveTabToIndex(*index, static_cast<size_t>(target));
     return TabsJson();
   }
+  // Additive command names let older servers fail closed rather than treating
+  // an unrecognized --folder option as URL/search text. Validate everything
+  // before touching history, creating a context, or allocating a tab.
+  if (command == "open-tab-in-folder" ||
+      command == "open-background-tab-in-folder" ||
+      command == "open-focus-tab-in-folder" ||
+      command == "open-context-tab-in-folder" ||
+      command == "open-background-context-tab-in-folder" ||
+      command == "open-focus-context-tab-in-folder") {
+    const bool with_context = command.find("context-tab") != std::string::npos;
+    const size_t target_arg = with_context ? 3 : 2;
+    if (argv.size() <= target_arg) {
+      return "ERR usage: " + command + " <folderid|0> " +
+             (with_context ? "<context-name> " : "") + "<url-or-query>\n";
+    }
+    uint64_t folder_id = 0;
+    if (!std::all_of(argv[1].begin(), argv[1].end(),
+                     [](char c) { return c >= '0' && c <= '9'; }) ||
+        !parse_folder_id(argv[1], &folder_id)) {
+      return "ERR no such folder\n";
+    }
+    const std::string context_name = with_context ? argv[2] : std::string();
+    if (with_context) {
+      std::string error;
+      if (!RequestContextForName(context_name, &error)) {
+        return error;
+      }
+    }
+    const std::string text = JoinArgs(argv, target_arg);
+    const std::string url = ResolveUrlOrSearch(text);
+    const bool activate = command == "open-focus-tab-in-folder" ||
+                          command == "open-focus-context-tab-in-folder";
+    RecordOpenHistory(text);
+    // Assign the folder before creating the backend or saving any state. This
+    // does not navigate the sidebar or temporarily move the tab through root.
+    InsertTab(url, tabs_.size(), activate, false, folder_id, 0, false,
+              context_name);
+    if (!activate) SetTabActivity(tabs_.back().id);
+    return activate ? IpcStatusJson() : TabsJson();
+  }
   if (command == "open-tab" || command == "open-background-tab" ||
       command == "open-focus-tab") {
     if (argv.size() < 2) {
@@ -3735,6 +3783,12 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  open-context-tab <context-name> <url-or-query>\n"
            "  open-background-context-tab <context-name> <url-or-query>\n"
            "  open-focus-context-tab <context-name> <url-or-query>\n"
+           "  open-tab-in-folder <folderid|0> <url-or-query>\n"
+           "  open-background-tab-in-folder <folderid|0> <url-or-query>\n"
+           "  open-focus-tab-in-folder <folderid|0> <url-or-query>\n"
+           "  open-context-tab-in-folder <folderid|0> <context-name> <url-or-query>\n"
+           "  open-background-context-tab-in-folder <folderid|0> <context-name> <url-or-query>\n"
+           "  open-focus-context-tab-in-folder <folderid|0> <context-name> <url-or-query>\n"
            "  open <tabid> <url-or-query>\n"
            "  reload [tabid]\n"
            "  reload-ignore-cache [tabid]\n"
@@ -4016,7 +4070,8 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
     auto* context = new ActivateControlContext{tab_id, std::move(reply)};
     uint64_t ignored_nonce_high = 0;
     uint64_t ignored_nonce_low = 0;
-    const bool started = ActivateElementHandleCompat(vimbrowser_activate_element_handle,
+    const bool started = ActivateElementHandleCompat(
+        vimbrowser_activate_element_handle,
         browser->GetIdentifier(), handle.data(), handle.size(), true,
         &ignored_nonce_high, &ignored_nonce_low,
         +[](void* user_data, int result, int match_count) {

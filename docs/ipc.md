@@ -322,6 +322,53 @@ Resolves and records the target like `open-tab`, but creates the tab without
 changing the active or visible tab. Returns `tabs` JSON. Native CEF focus
 requests from the background browser are rejected by the shell.
 
+#### Explicit folder targeting
+
+The following additive commands create a tab **directly** in an existing
+sidebar folder, in a single UI-thread operation:
+
+```text
+open-tab-in-folder <folderid|0> <url-or-query-or-local-path>
+open-background-tab-in-folder <folderid|0> <url-or-query-or-local-path>
+open-focus-tab-in-folder <folderid|0> <url-or-query-or-local-path>
+open-context-tab-in-folder <folderid|0> <context-name> <url-or-query-or-local-path>
+open-background-context-tab-in-folder <folderid|0> <context-name> <url-or-query-or-local-path>
+open-focus-context-tab-in-folder <folderid|0> <context-name> <url-or-query-or-local-path>
+```
+
+Use a stable folder ID from `folders`; `0` explicitly means root. Folder IDs
+must be unsigned decimal integers. A missing/deleted/invalid folder or invalid
+context returns `ERR` without creating a tab or changing open history. Folder
+validation precedes request-context creation. The folder is assigned before the
+tab backend is created or state is saved; this is not an open-then-move wrapper.
+
+Default/background variants return `tabs` JSON and preserve the active/visible
+tab and sidebar folder, focus, selection and scroll. Only the explicit
+`open-focus-*` variants select/reveal the new tab and return `status` JSON.
+Context storage isolation is independent of folder placement. IDs, folder,
+context and normal sidebar ordering persist in the usual tab state.
+
+Legacy open commands remain unchanged: when the sidebar has focus they inherit
+its current folder; otherwise they inherit the active tab's folder (or root).
+Separate command names prevent older browsers from interpreting an unsupported
+folder option as search text. Discover support through `commands`; do not
+silently fall back to opening elsewhere.
+
+```bash
+scripts/vimbrowser-ipc open-background-tab-in-folder 42 https://example.com
+vimbrowser-cli open --folder 42 https://example.com
+vimbrowser-cli open-context --folder 0 work https://example.com
+```
+
+Isolated macOS regression (never uses the real browser profile):
+
+```bash
+python3 tests/folder_open_e2e.py \
+  --binary build-mac.noindex/Release/vimbrowser.app/Contents/MacOS/vimbrowser \
+  --cli /path/to/vimbrowser-cli/bin/vimbrowser-cli \
+  --foreground-monitor build-mac.noindex/foreground-monitor
+```
+
 #### `open-background-tab <url-or-query-or-local-path>`
 
 Resolves and records the target like `open-tab`, but creates the tab without
